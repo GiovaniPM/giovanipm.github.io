@@ -11,8 +11,8 @@ echo (2/7) Movendo pacote >> %ant%\log.txt
 xcopy home.000 ..\help\docker\home\. /y >> %ant%\log.txt
 del home.000 >> %ant%\log.txt
 
-echo (3/7) Aplicando container
-echo (3/7) Aplicando container >> %ant%\log.txt
+echo (3/7) Parando container
+echo (3/7) Parando container >> %ant%\log.txt
 docker stop home >> %ant%\log.txt
 
 echo (4/7) Removendo container
