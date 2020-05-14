@@ -4,12 +4,12 @@ set ant=%cd%
 
 echo (1/7) Gerando pacote
 echo (1/7) Gerando pacote > %ant%\log.txt
-tar --exclude="./.git" --exclude="./gpm.ktz" --exclude="./home.000" --exclude="./log.txt" -cvf home.000 .
+tar --exclude="./.git" --exclude="./gpm.ktz" --exclude="./home.000" --exclude="./log.txt" -cvf home.000 . >> %ant%\log.txt
 
-echo (2/7) Movendo pacote
-echo (2/7) Movendo pacote >> %ant%\log.txt
+echo (2/7) Aplicando pacote
+echo (2/7) Aplicando pacote >> %ant%\log.txt
 xcopy home.000 ..\help\docker\home\. /y >> %ant%\log.txt
-del home.000 >> %ant%\log.txt
+del home.000
 
 echo (3/7) Parando container
 echo (3/7) Parando container >> %ant%\log.txt
@@ -31,5 +31,6 @@ docker build --tag=home . >> %ant%\log.txt
 echo (7/7) Criando container
 echo (7/7) Criando container >> %ant%\log.txt
 docker run -d --name="home" -p 8081:80 home >> %ant%\log.txt
+del home.000
 
 cd %ant%
