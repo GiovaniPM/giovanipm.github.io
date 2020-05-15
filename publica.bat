@@ -4,7 +4,7 @@ set ant=%cd%
 
 echo (1/7) Gerando pacote
 echo (1/7) Gerando pacote > %ant%\log.txt
-tar --exclude="./.git" --exclude="./gpm.ktz" --exclude="./home.000" --exclude="./log.txt" -cvf home.000 . >> %ant%\log.txt
+tar --exclude="./.git" --exclude="./gpm.ktz" --exclude="./home.000" --exclude="./log.txt" -czvf home.000 . >> %ant%\log.txt
 
 echo (2/7) Aplicando pacote
 echo (2/7) Aplicando pacote >> %ant%\log.txt
