@@ -30,7 +30,7 @@ docker build --tag=homeimg . >> %ant%\log.txt
 
 echo (7/7) Criando container
 echo (7/7) Criando container >> %ant%\log.txt
-docker run -d --name="homeimg" -p 8081:80 home >> %ant%\log.txt
+docker run -d --name="home" -p 8081:80 homeimg >> %ant%\log.txt
 del home.000
 
 cd %ant%
