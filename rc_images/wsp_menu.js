@@ -394,7 +394,11 @@ function wsp_menu(elementid, menuidsuffix, panepadding, animations, openViaMouse
 			
 			menupane.style.overflowY = 'scroll';
 						
-			makeElementScroll(menupane, startpos);
+			// the mobile menu is fixed to overlap other elements, but we still need it to scroll vertically, so make it do this with
+			// the following code, *unless* the parent menu or its containing container is also fixed, then we must not do this since it 
+			// would scroll out of the view
+			if (!isElemFixed(htmlelement))
+				makeElementScroll(menupane, startpos);
 						
 			// add close button
 			var closebtn = document.createElement("a");							
@@ -423,6 +427,17 @@ function wsp_menu(elementid, menuidsuffix, panepadding, animations, openViaMouse
 		updatePosition();
 	}
 
+
+	function isElemFixed(elm) 
+	{
+		while (elm && elm.nodeName.toLowerCase() !== 'body')
+		{
+			if (window.getComputedStyle(elm).getPropertyValue('position').toLowerCase() === 'fixed')
+				return true;
+			elm = elm.parentNode;
+		}
+		return false; 
+	}
 
 	
 	this.closeAllMenus = function()
