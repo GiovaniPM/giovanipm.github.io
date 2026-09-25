@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Guia do mochileiro do SQL · Giovani Perotto Mesquita</title>
+<meta name="description" content="Tutorial de SQL: subconjuntos, SELECT, plano de execução, junções, subconsultas, operadores, agregação, funções analíticas, operadores de conjunto, consultas hierárquicas, WITH e variáveis de BIND, com exemplos testados. Disponível em português, inglês e italiano.">
+<meta name="author" content="Giovani Perotto Mesquita">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Paleta alegre: roxo e magenta vibrantes, amarelo-girassol, verde-água e coral */
+    --bg: #FFF7EC;
+    --surface: #FFFFFF;
+    --ink: #2B1B3D;
+    --text: #3E3350;
+    --muted: #756986;
+    --line: #F1E2CF;
+    --accent: #0E8074;
+    --accent-soft: #E2F6F2;
+    --accent-strong: #5B2A86;
+    --navy: #5B2A86;
+    --navy-deep: #C2185B;
+    --on-navy: #FFFFFF;
+    --on-navy-muted: #FCE4F0;
+    --gold: #FFB703;
+    --gold-ink: #B35300;
+    --gold-soft: #FFF1C9;
+    --coral: #FF6B6B;
+    --sky: #3A86FF;
+    --mint: #2A9D8F;
+    --pink: #EF476F;
+    --sans: "Hanken Grotesk", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1A1328; --surface: #241A36; --ink: #F7F0FF; --text: #E2D8F0; --muted: #A898C0;
+      --line: #3A2D52; --accent: #5FD3C4; --accent-soft: #1D3A38; --accent-strong: #C9A7F5;
+      --navy: #3D1A5C; --navy-deep: #7A1240; --gold: #FFC94D; --gold-ink: #FFC94D; --gold-soft: #3A2E12;
+      --coral: #FF8A8A; --sky: #6FA8FF; --mint: #4CC3B3; --pink: #FF6F91;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 4px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 1.5rem; }
+
+  /* navegação */
+  .nav {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: saturate(160%) blur(10px); -webkit-backdrop-filter: saturate(160%) blur(10px);
+    border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px);
+  }
+  .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 58px; gap: 1rem; }
+  .brand { font-family: var(--serif); font-weight: 600; color: var(--accent-strong); text-decoration: none; font-size: 1.05rem; }
+  .nav ul { list-style: none; display: flex; gap: 1.4rem; margin: 0; padding: 0; }
+  .nav ul a { color: var(--muted); text-decoration: none; font-size: 0.93rem; font-weight: 500; }
+  .nav ul a:hover, .nav ul a[aria-current="page"] { color: var(--ink); }
+  .nav-right { display: flex; align-items: center; gap: 1rem; }
+  .lang { display: flex; gap: 0.2rem; }
+  .lang button { font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; color: var(--muted); background: none; padding: 0.2rem 0.45rem; border-radius: 6px; border: 1px solid transparent; }
+  .lang button:hover { color: var(--ink); }
+  .lang button[aria-selected="true"] { color: var(--accent-strong); border-color: var(--line); background: var(--surface); }
+  [hidden] { display: none !important; }
+  .progress { position: absolute; left: 0; bottom: -1px; height: 3px; width: 0; background: linear-gradient(90deg, var(--coral), var(--gold), var(--mint)); }
+
+  /* abertura */
+  .hero-band {
+    background:
+      radial-gradient(900px 420px at 85% -10%, rgba(255,255,255,.07), transparent 60%),
+      linear-gradient(160deg, var(--navy) 0%, var(--navy-deep) 100%);
+    border-top: 4px solid var(--gold); color: var(--on-navy);
+  }
+  .hero { padding: 3.5rem 0 3.5rem; max-width: 820px; }
+  .crumb { margin: 0 0 1.4rem; font-size: 0.92rem; }
+  .crumb a { color: var(--on-navy-muted); text-decoration: none; }
+  .crumb a:hover { color: var(--gold); }
+  .eyebrow { color: var(--gold); font-weight: 600; font-size: 1rem; margin: 0 0 0.7rem; }
+  h1 { font-family: var(--serif); font-weight: 600; color: var(--on-navy); font-size: clamp(2.3rem, 5.5vw, 3.8rem); line-height: 1.05; letter-spacing: -0.025em; margin: 0; }
+  .dek { font-family: var(--serif); font-style: italic; font-size: clamp(1.1rem, 2.2vw, 1.35rem); color: var(--on-navy-muted); margin: 1.1rem 0 1.6rem; max-width: 58ch; }
+  .byline { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; font-size: 0.92rem; color: var(--on-navy-muted); }
+  .byline strong { color: var(--on-navy); font-weight: 600; }
+  .byline .credit { margin-left: auto; font-style: italic; }
+
+  /* layout do artigo */
+  .layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 3rem; padding: 3rem 0 4rem; align-items: start; }
+  .toc { position: sticky; top: 82px; font-size: 0.92rem; max-height: calc(100vh - 100px); overflow-y: auto; }
+  .toc h2 { font-family: var(--sans); font-size: 0.85rem; font-weight: 600; color: var(--muted); margin: 0 0 0.7rem; border: 0; padding: 0; }
+  .toc ol { list-style: none; margin: 0; padding: 0; counter-reset: toc; border-left: 2px solid var(--line); }
+  .toc li { counter-increment: toc; }
+  .toc a { display: block; padding: 0.3rem 0 0.3rem 1rem; margin-left: -2px; border-left: 2px solid transparent; color: var(--muted); text-decoration: none; line-height: 1.35; }
+  .toc a::before { content: counter(toc) ". "; color: var(--gold-ink); font-weight: 600; }
+  .toc a:hover { color: var(--ink); }
+  .toc a[aria-current="true"] { color: var(--accent-strong); border-left-color: var(--gold); font-weight: 600; }
+
+  article { background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: var(--radius); padding: 3rem clamp(1.25rem, 4vw, 3.5rem); min-width: 0; }
+  article section + section { margin-top: 3.2rem; }
+  article h2 { font-family: var(--serif); font-weight: 600; color: var(--ink); font-size: clamp(1.5rem, 2.8vw, 1.9rem); letter-spacing: -0.015em; line-height: 1.2; margin: 0 0 1.1rem; padding-left: 0.9rem; border-left: 3px solid var(--gold); }
+  article h3 { font-family: var(--sans); font-size: 1.1rem; font-weight: 600; color: var(--ink); margin: 2rem 0 0.8rem; }
+  article p, article li { font-family: var(--serif); font-size: 1.12rem; line-height: 1.7; color: var(--text); }
+  article p { margin: 0 0 1.1rem; max-width: 68ch; }
+  article ul, article ol { margin: 0 0 1.1rem; padding-left: 1.4rem; max-width: 68ch; }
+  article li { margin-bottom: 0.3rem; }
+  article strong { color: var(--ink); }
+  sup a { font-family: var(--sans); font-size: 0.72rem; font-weight: 700; text-decoration: none; padding: 0 0.15em; }
+
+  figure { margin: 2rem 0; }
+  figure img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: #FFF7EC; }
+  figcaption { margin-top: 0.6rem; font-size: 0.9rem; color: var(--muted); text-align: center; font-family: var(--sans); line-height: 1.5; }
+
+  blockquote { margin: 1.5rem 0; padding: 1.2rem 1.5rem; background: var(--accent-soft); border-left: 3px solid var(--gold); border-radius: 0 10px 10px 0; }
+  blockquote p { font-size: 1.05rem; margin: 0 0 0.8rem; }
+  blockquote p:last-child { margin-bottom: 0; }
+  blockquote.pull p { font-size: clamp(1.15rem, 2.3vw, 1.35rem); font-style: italic; line-height: 1.45; color: var(--ink); }
+  blockquote cite { font-family: var(--sans); font-size: 0.88rem; font-style: normal; color: var(--muted); }
+
+  /* tabelas */
+  .table-wrap { overflow-x: auto; margin: 1.5rem 0; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-family: var(--sans); font-size: 0.95rem; }
+  th, td { text-align: left; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.5; }
+  thead th { background: var(--gold-soft); color: var(--ink); font-weight: 600; }
+  tbody th { color: var(--ink); font-weight: 600; }
+  tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
+  td code, th code { font-size: 0.9em; }
+
+  /* mitos */
+  .myths { list-style: none; padding: 0; margin: 1.5rem 0; max-width: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
+  .myths li { margin: 0; padding: 1rem 1.2rem; border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: 10px; }
+  .myths li:nth-child(4n+2) { border-top-color: var(--sky); }
+  .myths li:nth-child(4n+3) { border-top-color: var(--mint); }
+  .myths li:nth-child(4n+4) { border-top-color: var(--gold); }
+  .myths h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+  .myths p { margin: 0; font-size: 1rem; line-height: 1.6; }
+
+  /* para fixar */
+  .recap { margin: 1.8rem 0 0; padding: 1.1rem 1.4rem; background: var(--gold-soft); border-left: 4px solid var(--mint); border-radius: 0 10px 10px 0; }
+  .recap h3 { margin: 0 0 0.5rem; font-size: 0.85rem; letter-spacing: .05em; text-transform: uppercase; color: var(--gold-ink); }
+  .recap ul { margin: 0; padding-left: 1.2rem; }
+  .recap li { font-family: var(--sans); font-size: 0.98rem; line-height: 1.55; margin-bottom: 0.25rem; }
+
+  /* revisão rápida */
+  .quiz { display: grid; gap: 0.7rem; margin: 1.5rem 0; }
+  .quiz details { border: 1px solid var(--line); border-left: 4px solid var(--sky); border-radius: 0 10px 10px 0; padding: 0.8rem 1.1rem; }
+  .quiz details:nth-child(3n+2) { border-left-color: var(--pink); }
+  .quiz details:nth-child(3n+3) { border-left-color: var(--mint); }
+  .quiz summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); line-height: 1.45; }
+  .quiz details[open] summary { margin-bottom: 0.5rem; }
+  .quiz p { margin: 0; font-size: 1.02rem; }
+
+  .refs { font-family: var(--sans); padding-left: 1.4rem; margin: 0; }
+  .refs li { font-family: var(--sans); font-size: 0.92rem; line-height: 1.55; margin-bottom: 0.7rem; word-break: break-word; }
+  .refs li:target { background: var(--gold-soft); border-radius: 6px; }
+
+  .back { display: inline-block; margin-top: 1rem; font-family: var(--sans); font-size: 0.85rem; text-decoration: none; }
+
+  footer { background: var(--navy-deep); color: var(--on-navy-muted); border-top: 3px solid var(--gold); padding: 1.5rem 0 calc(1.5rem + env(safe-area-inset-bottom, 0px)); font-size: 0.88rem; }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1.5rem; }
+  footer a { color: var(--on-navy); text-decoration: none; }
+  footer a:hover { color: var(--gold); }
+
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+    .toc { position: static; max-height: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.2rem 1.4rem; }
+  }
+  @media (max-width: 760px) {
+    .myths { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .nav ul { display: none; }
+    .hero { padding: 2.5rem 0; }
+    .wrap { padding: 0 1rem; }
+    article p, article li { font-size: 1.05rem; }
+    th, td { padding: 0.6rem 0.7rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  @media print {
+    .nav, .toc, footer, .back, .crumb { display: none !important; }
+    body { background: #fff; }
+    .hero-band { background: none; color: #111; border: 0; }
+    .hero-band h1 { color: #5B2A86; }
+    .dek, .byline, .byline strong { color: #333; }
+    .layout { display: block; padding: 0; }
+    article { border: 0; padding: 0; }
+    .table-wrap { overflow: visible; }
+    figure, blockquote, .myths li, .recap, .quiz details, tr { break-inside: avoid; }
+  }
+
+  /* blocos de código (Gherkin) */
+  pre.code { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: #2B1B3D; color: #F7F0FF; border-radius: 10px; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.92rem; line-height: 1.6; tab-size: 2; }
+  pre.code code { font-family: inherit; white-space: pre; }
+  pre.code .k { color: #FFB703; font-weight: 700; }
+  pre.code .s { color: #5FD3C4; font-weight: 700; }
+  pre.code .c { color: #A898C0; }
+  pre.code .p { color: #C9A7F5; }
+  article code { font-family: Consolas, "Courier New", monospace; font-size: 0.92em; }
+  article :not(pre) > code { background: var(--accent-soft); color: var(--ink); padding: 0.05em 0.35em; border-radius: 4px; }
+
+  /* fórmulas */
+  pre.formula { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.95rem; line-height: 1.5; }
+
+  /* glossário */
+  dl.glossary { margin: 1.2rem 0; display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  dl.glossary dt, dl.glossary dd { margin: 0; padding: 0.65rem 0.9rem; border-bottom: 1px solid var(--line); font-family: var(--sans); font-size: 0.95rem; line-height: 1.5; }
+  dl.glossary dt { font-weight: 600; color: var(--ink); background: color-mix(in srgb, var(--gold-soft) 60%, var(--surface)); }
+  dl.glossary dd { color: var(--text); }
+  dl.glossary dt:nth-last-of-type(1), dl.glossary dd:last-of-type { border-bottom: 0; }
+  @media (max-width: 720px) { dl.glossary { grid-template-columns: 1fr; } dl.glossary dt { border-bottom: 0; padding-bottom: 0.2rem; } }
+
+  /* nota de atenção */
+  aside.note { margin: 1.2rem 0 1.5rem; padding: 0.8rem 1.1rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; }
+  aside.note p { margin: 0; }
+</style>
+</head>
+<body id="top">
+
+<nav class="nav" aria-label="Navegação do site">
+  <div class="wrap">
+    <a class="brand" href="index.html" data-home>Giovani Perotto Mesquita</a>
+    <div class="nav-right">
+      <ul>
+        <li><a href="index.html" data-home>Home</a></li>
+        <li><a href="about.html" data-about>About</a></li>
+        <li><a href="resume.html" data-resume>Resume</a></li>
+        <li><a href="projects.html" data-projects aria-current="page">Projects</a></li>
+        <li><a href="contact.html" data-contact>Contact</a></li>
+      </ul>
+      <div class="lang" role="tablist" aria-label="Idioma / Language / Lingua">
+        <button type="button" role="tab" id="tab-pt" aria-controls="pt" aria-selected="true" lang="pt-BR">PT</button>
+        <button type="button" role="tab" id="tab-en" aria-controls="en" aria-selected="false" lang="en" tabindex="-1">EN</button>
+        <button type="button" role="tab" id="tab-it" aria-controls="it" aria-selected="false" lang="it" tabindex="-1">IT</button>
+      </div>
+    </div>
+  </div>
+  <div class="progress" aria-hidden="true"></div>
+</nav>
+
+<!-- ===================== PT ===================== -->
+<div id="pt" role="tabpanel" aria-labelledby="tab-pt" lang="pt-BR">
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projetos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>O guia do mochileiro do SQL</h1>
+      <p class="dek">Do SELECT básico às funções analíticas: junções, subconsultas, agregação, operadores de conjunto, consultas hierárquicas, WITH e variáveis de BIND, com exemplos testados e os erros do texto original corrigidos.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado em <time datetime="2026-09-25">25/09/2026</time></span>
+        <span class="credit">Revisado e formatado usando Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-pt">
+    <h2 id="toc-pt">Índice</h2>
+    <ol>
+      <li><a href="#intro-pt">O que é SQL</a></li>
+      <li><a href="#subconjuntos-pt">Os subconjuntos do SQL</a></li>
+      <li><a href="#select-pt">A estrutura do SELECT</a></li>
+      <li><a href="#plano-pt">Plano de execução</a></li>
+      <li><a href="#joins-pt">Junções e apelidos</a></li>
+      <li><a href="#subconsultas-pt">Subconsultas, IN e EXISTS</a></li>
+      <li><a href="#operadores-pt">Operadores e NULL</a></li>
+      <li><a href="#agregacao-pt">Agregação: GROUP BY e HAVING</a></li>
+      <li><a href="#analiticas-pt">Funções analíticas</a></li>
+      <li><a href="#conjuntos-pt">Operadores de conjunto</a></li>
+      <li><a href="#hierarquia-pt">Consultas hierárquicas</a></li>
+      <li><a href="#with-pt">WITH para consultas complexas</a></li>
+      <li><a href="#bind-pt">Variáveis de BIND</a></li>
+      <li><a href="#revisao-pt">Revisão rápida</a></li>
+      <li><a href="#referencias-pt">Referências</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="intro-pt" aria-labelledby="h-intro-pt">
+      <h2 id="h-intro-pt">O que é SQL</h2>
+      <p>O <strong>SQL</strong> (<em>Structured Query Language</em>) é a linguagem padrão dos bancos de dados relacionais. Ela é <strong>declarativa</strong>: você descreve o resultado que quer, e o banco decide como obtê-lo. Suas ideias vêm do modelo relacional que Edgar F. Codd publicou em 1970 e da <strong>álgebra relacional</strong>, que trata tabelas como conjuntos. <sup><a href="#ref-2-pt">[2]</a></sup> <sup><a href="#ref-3-pt">[3]</a></sup> <sup><a href="#ref-4-pt">[4]</a></sup></p>
+      <p>A IBM criou a primeira versão nos anos 1970, e logo surgiram “dialetos” de outros fabricantes. Para organizá-los, o ANSI publicou um padrão em 1986 e a ISO, em 1987; desde então o padrão foi revisto várias vezes. Oracle, SQL Server, PostgreSQL, MySQL e SQLite seguem o núcleo do padrão, mas cada um tem extensões próprias. <sup><a href="#ref-2-pt">[2]</a></sup></p>
+      <aside class="note">
+        <p><strong>Sobre este tutorial:</strong> o texto original foi escrito para uma equipe que usava Oracle com o ERP JD Edwards, cujas tabelas têm nomes como <code>F4101</code> (cadastro de itens) e <code>F4102</code> (itens por filial). Os pré-requisitos de ambiente daquela equipe foram omitidos. Os exemplos novos usam tabelas pequenas e foram testados no SQLite 3.50; o que é exclusivo do Oracle foi conferido na documentação oficial. <sup><a href="#ref-1-pt">[1]</a></sup> <sup><a href="#ref-28-pt">[28]</a></sup></p>
+      </aside>
+    </section>
+
+    <section id="subconjuntos-pt" aria-labelledby="h-subconjuntos-pt">
+      <h2 id="h-subconjuntos-pt">Os subconjuntos do SQL</h2>
+      <p>Os comandos do SQL costumam ser divididos em grupos, conforme o que fazem. <sup><a href="#ref-5-pt">[5]</a></sup></p>
+      <figure>
+        <img src="rc_images/SqlSubconjuntos.svg" alt="Cinco cartões: DDL, definição de dados, com CREATE, ALTER e DROP; DML, manipulação de dados, com INSERT, UPDATE e DELETE; DQL, consulta de dados, com SELECT; DCL, controle de dados, com GRANT e REVOKE; e DTL, transações, também chamada TCL, com COMMIT, ROLLBACK e SAVEPOINT." width="1000" height="416" loading="lazy">
+        <figcaption>Cinco grupos de comandos: estrutura, dados, consultas, permissões e transações.</figcaption>
+      </figure>
+      <p>A tabela do original tem alguns erros de sintaxe nos exemplos da DML. Estas são as versões corrigidas:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Comando</th><th scope="col">Exemplo</th><th scope="col">Correção</th></tr></thead>
+          <tbody>
+            <tr><td><code>INSERT</code></td><td><code>INSERT INTO pessoa (id, nome, sexo) VALUES (7, 'Aluno', 'M');</code></td><td>É <code>VALUES</code>, não <code>value</code>; faltava fechar o parêntese; textos vão entre aspas simples (aspas duplas indicam nomes de colunas).</td></tr>
+            <tr><td><code>SELECT</code></td><td><code>SELECT * FROM pessoa;</code></td><td>—</td></tr>
+            <tr><td><code>UPDATE</code></td><td><code>UPDATE pessoa SET data_nascimento = DATE '1985-09-11' WHERE id = 7;</code></td><td>Uma data em texto, como <code>'11/09/1985'</code>, depende da configuração regional do banco; o literal <code>DATE 'AAAA-MM-DD'</code> não. O original também usava <code>id_pessoa</code> numa tabela cuja coluna é <code>id</code>.</td></tr>
+            <tr><td><code>DELETE</code></td><td><code>DELETE FROM pessoa WHERE id = 7;</code></td><td>Sem o <code>WHERE</code>, apaga a tabela inteira.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Sobre transações: <code>COMMIT</code> torna as mudanças permanentes e <code>ROLLBACK</code> as desfaz desde o último <code>COMMIT</code>. No Oracle, uma transação começa sozinha no primeiro comando DML, e todo comando DDL faz um <code>COMMIT</code> implícito. <sup><a href="#ref-5-pt">[5]</a></sup></p>
+    </section>
+
+    <section id="select-pt" aria-labelledby="h-select-pt">
+      <h2 id="h-select-pt">A estrutura do SELECT</h2>
+      <p>A sintaxe do original omite justamente a lista de colunas e tem colchetes desencontrados. A forma geral é: <sup><a href="#ref-6-pt">[6]</a></sup></p>
+      <pre class="code"><code><span class="k">SELECT</span> [DISTINCT] lista_de_colunas
+  <span class="k">FROM</span> tabelas_e_junções
+ [<span class="k">WHERE</span> condição_sobre_linhas]
+ [<span class="k">GROUP BY</span> colunas_de_agrupamento]
+ [<span class="k">HAVING</span> condição_sobre_grupos]
+ [<span class="k">ORDER BY</span> colunas [ASC | DESC]]</code></pre>
+      <p>O <code>DISTINCTROW</code> citado no original só existe no MySQL, como sinônimo de <code>DISTINCT</code>. Repare que a ordem em que as cláusulas são escritas não é a ordem em que o banco as avalia:</p>
+      <figure>
+        <img src="rc_images/SqlOrdem.svg" alt="À esquerda, as cláusulas na ordem em que são escritas: SELECT, FROM, WHERE, GROUP BY, HAVING e ORDER BY. À direita, a ordem lógica de avaliação: FROM e JOIN, WHERE, GROUP BY, HAVING, SELECT e ORDER BY. Linhas ligam cada cláusula à sua posição, mostrando que o SELECT passa da primeira para a quinta posição." width="1000" height="506" loading="lazy">
+        <figcaption>O banco monta as linhas (FROM, WHERE), agrupa, filtra os grupos e só então calcula o SELECT.</figcaption>
+      </figure>
+      <p>O original descreve o SELECT como um recorte “horizontal” (as colunas) e “vertical” (as linhas escolhidas pelo critério). Na álgebra relacional, são a <strong>projeção</strong> e a <strong>seleção</strong>: <sup><a href="#ref-3-pt">[3]</a></sup></p>
+      <figure>
+        <img src="rc_images/SqlProjecao.svg" alt="Uma tabela emp com sete funcionários e as colunas id, nome, depto, salario e idade. As colunas nome e salario estão destacadas em lilás, indicando a projeção feita pelo SELECT; as linhas do departamento 20 estão destacadas em verde, indicando a seleção feita pelo WHERE; os cruzamentos estão em dourado. À direita, a consulta e o resultado: Eva 6000, Fábio 3500 e Gil 3500." width="1000" height="472" loading="lazy">
+        <figcaption>O SELECT escolhe as colunas; o WHERE, as linhas.</figcaption>
+      </figure>
+      <p><strong>Dica:</strong> <em>“A perfeição não é alcançada quando não há mais nada a acrescentar, mas quando não há mais nada a retirar”</em>, escreveu Saint-Exupéry (em <em>Terra dos homens</em>, e não em <em>O pequeno príncipe</em>, como diz o original). Em SQL: evite <code>SELECT *</code> e peça só as colunas de que precisa. Menos colunas significam menos dados lidos e transferidos e, às vezes, a chance de responder usando só um índice. <sup><a href="#ref-1-pt">[1]</a></sup></p>
+    </section>
+
+    <section id="plano-pt" aria-labelledby="h-plano-pt">
+      <h2 id="h-plano-pt">Plano de execução</h2>
+      <p>Antes de executar uma consulta, o otimizador do banco monta um <strong>plano de execução</strong>: em que ordem ler as tabelas, quais índices usar e como juntar os resultados. No Oracle, o plano aparece com <code>EXPLAIN PLAN FOR</code> seguido de <code>SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY)</code>, ou pelo botão de plano do SQL Developer. <sup><a href="#ref-7-pt">[7]</a></sup></p>
+      <p>Três números guiam essas escolhas:</p>
+      <ul>
+        <li><strong>Seletividade</strong>: a fração das linhas que passa por um filtro, de 0,0 (nenhuma) a 1,0 (todas).</li>
+        <li><strong>Cardinalidade</strong>: a estimativa de quantas linhas cada etapa devolve.</li>
+        <li><strong>Custo</strong>: a estimativa de recursos (leituras de disco, CPU, rede) de cada etapa.</li>
+      </ul>
+      <h3>Não aplique funções às colunas filtradas</h3>
+      <p>Uma condição como <code>WHERE TO_CHAR(data, 'YYYY') = '2026'</code> obriga o banco a calcular a função em cada linha e impede o uso de um índice comum sobre <code>data</code>. Prefira transformar o <em>valor</em>, e não a coluna: <code>WHERE data &gt;= DATE '2026-01-01' AND data &lt; DATE '2027-01-01'</code>. Condições escritas assim são chamadas de <em>sargable</em>. <sup><a href="#ref-8-pt">[8]</a></sup> <sup><a href="#ref-34-pt">[34]</a></sup></p>
+      <p>É o que o original recomenda para o JD Edwards, que guarda datas no formato juliano <code>CYYDDD</code>. Em vez de converter a coluna, converte-se a data de hoje: <code>ixefff &lt;= TO_CHAR(SYSDATE, 'YYYYDDD') - 1900000</code>.</p>
+      <h3>Tabela condutora</h3>
+      <p>O original chama de <em>drive table</em> a tabela pela qual a consulta começa, em geral a mais restritiva. Nos otimizadores atuais, baseados em custo, essa escolha é automática e costuma ser boa quando as estatísticas estão em dia. Quando não é, o Oracle aceita dicas como <code>/*+ LEADING(a) */</code>, que devem ser a exceção, não a regra. <sup><a href="#ref-7-pt">[7]</a></sup></p>
+    </section>
+
+    <section id="joins-pt" aria-labelledby="h-joins-pt">
+      <h2 id="h-joins-pt">Junções e apelidos</h2>
+      <p>Uma <strong>junção</strong> (<code>JOIN</code>) combina linhas de duas tabelas por uma condição. A figura mostra os tipos principais sobre os mesmos dados. <sup><a href="#ref-9-pt">[9]</a></sup> <sup><a href="#ref-10-pt">[10]</a></sup></p>
+      <figure>
+        <img src="rc_images/SqlJoins.svg" alt="No alto, a tabela cliente com Ana, Bruno e Carla e a tabela pedido com os pedidos 101 e 102 de Ana, 103 de Bruno e 104 de um cliente 4 inexistente. Abaixo, cinco painéis com diagramas de Venn e resultados: INNER JOIN devolve Ana 101, Ana 102 e Bruno 103; LEFT JOIN acrescenta Carla com NULL; RIGHT JOIN acrescenta o pedido 104 com nome NULL; FULL JOIN traz os dois; e CROSS JOIN gera 3 vezes 4, 12 combinações." width="1000" height="652" loading="lazy">
+        <figcaption>Os cinco tipos de junção aplicados a clientes e pedidos.</figcaption>
+      </figure>
+      <p>O <code>NATURAL JOIN</code>, citado no original, junta automaticamente pelas colunas de mesmo nome. É prático, mas frágil: se alguém acrescentar uma coluna com um nome repetido, a junção muda sem aviso. Prefira escrever a condição com <code>ON</code>.</p>
+      <h3>Junção explícita em vez de implícita</h3>
+      <p>A forma antiga lista as tabelas separadas por vírgula e põe a condição de junção no <code>WHERE</code>. A forma explícita separa o que é junção (<code>ON</code>) do que é filtro (<code>WHERE</code>), o que deixa consultas grandes mais legíveis. No exemplo implícito do original falta o <code>AND</code> entre as duas condições, o que causa erro de sintaxe:</p>
+      <pre class="code"><code><span class="c">-- implícita (corrigida: faltava o AND)</span>
+<span class="k">SELECT</span> a.iblitm, b.imdsc1
+  <span class="k">FROM</span> proddta.f4102 a, proddta.f4101 b
+ <span class="k">WHERE</span> b.imitm = a.ibitm
+   <span class="k">AND</span> a.ibmcu = <span class="s">'     PRODCAN'</span>;
+
+<span class="c">-- explícita</span>
+<span class="k">SELECT</span> a.iblitm, b.imdsc1
+  <span class="k">FROM</span> proddta.f4102 a
+ <span class="k">INNER JOIN</span> proddta.f4101 b <span class="k">ON</span> b.imitm = a.ibitm
+ <span class="k">WHERE</span> a.ibmcu = <span class="s">'     PRODCAN'</span>;</code></pre>
+      <p>Os espaços em <code>'     PRODCAN'</code> não são erro: o JD Edwards guarda o código da filial alinhado à direita, com espaços à esquerda.</p>
+      <h3>A César o que é de César: apelidos</h3>
+      <p><strong>Apelidos</strong> (<em>aliases</em>) dão nomes curtos a tabelas e colunas. Eles são obrigatórios quando a mesma tabela aparece duas vezes, como neste exemplo do original, que busca a descrição do kit e a do componente na mesma tabela de itens:</p>
+      <pre class="code"><code><span class="k">SELECT</span> a.ixkitl,
+       b.imdsc1 <span class="k">AS</span> desc_kit,
+       a.ixlitm,
+       c.imdsc1 <span class="k">AS</span> desc_comp
+  <span class="k">FROM</span> proddta.f3002 a
+ <span class="k">INNER JOIN</span> proddta.f4101 b <span class="k">ON</span> b.imitm = a.ixkit   <span class="c">-- o item kit</span>
+ <span class="k">INNER JOIN</span> proddta.f4101 c <span class="k">ON</span> c.imitm = a.ixitm   <span class="c">-- o componente</span>
+ <span class="k">WHERE</span> a.ixtbm = <span class="s">'M'</span>
+   <span class="k">AND</span> a.ixmmcu = <span class="s">'     PRODCAN'</span>
+   <span class="k">AND</span> a.ixkitl = <span class="s">'7415K00893F'</span>;</code></pre>
+    </section>
+
+    <section id="subconsultas-pt" aria-labelledby="h-subconsultas-pt">
+      <h2 id="h-subconsultas-pt">Subconsultas, IN e EXISTS</h2>
+      <h3>Dividir para conquistar</h3>
+      <p>Uma <strong>subconsulta</strong> é um SELECT dentro de outro. No <code>FROM</code>, ela funciona como uma tabela temporária: no exemplo do original, soma o estoque por item e filial antes da junção. <sup><a href="#ref-6-pt">[6]</a></sup></p>
+      <pre class="code"><code><span class="k">SELECT</span> a.iblitm, b.imdsc1, c.lipqoh
+  <span class="k">FROM</span> proddta.f4102 a
+ <span class="k">INNER JOIN</span> proddta.f4101 b <span class="k">ON</span> b.imitm = a.ibitm
+ <span class="k">INNER JOIN</span> (<span class="k">SELECT</span> liitm, limcu, <span class="k">SUM</span>(lipqoh) <span class="k">AS</span> lipqoh
+               <span class="k">FROM</span> proddta.f41021
+              <span class="k">GROUP BY</span> liitm, limcu) c
+    <span class="k">ON</span> c.liitm = a.ibitm <span class="k">AND</span> c.limcu = a.ibmcu
+ <span class="k">WHERE</span> a.ibmcu = <span class="s">'     PRODCAN'</span>;</code></pre>
+      <p>O original mostra que a mesma consulta, escrita com <code>GROUP BY</code> no nível de fora, teve custo e cardinalidade maiores naquele banco. Isso vale para aqueles dados e aquela versão do otimizador; a regra geral é conferir o plano das duas formas.</p>
+      <h3>IN ou EXISTS?</h3>
+      <p>O original cita um texto de 2007 segundo o qual o <code>IN</code> resolve primeiro a subconsulta e o <code>EXISTS</code> primeiro a consulta externa. Nos otimizadores atuais, os dois costumam ser transformados na mesma operação (uma <em>semi-junção</em>) e têm desempenho parecido. A diferença que realmente importa aparece na negação, quando há <code>NULL</code>: <sup><a href="#ref-13-pt">[13]</a></sup> <sup><a href="#ref-32-pt">[32]</a></sup></p>
+      <pre class="code"><code><span class="c">-- clientes sem pedido; se algum pedido tiver cliente_id NULL…</span>
+<span class="k">SELECT</span> nome <span class="k">FROM</span> cliente
+ <span class="k">WHERE</span> id <span class="k">NOT IN</span> (<span class="k">SELECT</span> cliente_id <span class="k">FROM</span> pedido);        <span class="c">-- …devolve zero linhas</span>
+
+<span class="k">SELECT</span> nome <span class="k">FROM</span> cliente c
+ <span class="k">WHERE</span> <span class="k">NOT EXISTS</span> (<span class="k">SELECT</span> 1 <span class="k">FROM</span> pedido p
+                    <span class="k">WHERE</span> p.cliente_id = c.id);          <span class="c">-- devolve Carla</span></code></pre>
+      <p>Com um <code>NULL</code> na lista, <code>id NOT IN (1, 2, NULL)</code> nunca é verdadeiro, porque comparar com <code>NULL</code> dá “desconhecido”. Para “não existe”, prefira <code>NOT EXISTS</code>.</p>
+    </section>
+
+    <section id="operadores-pt" aria-labelledby="h-operadores-pt">
+      <h2 id="h-operadores-pt">Operadores e NULL</h2>
+      <p>No original, os operadores aparecem em imagens de tabelas, em inglês. Aqui eles estão em texto; valem para o Oracle e, com pequenas variações, para os outros bancos: <sup><a href="#ref-11-pt">[11]</a></sup> <sup><a href="#ref-12-pt">[12]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Tipo</th><th scope="col">Operadores</th><th scope="col">Exemplo</th></tr></thead>
+          <tbody>
+            <tr><td>Aritméticos</td><td><code>+ - * /</code></td><td><code>salario * 1.1</code></td></tr>
+            <tr><td>Concatenação</td><td><code>||</code></td><td><code>nome || ' (' || depto || ')'</code>; no SQL Server, <code>+</code> ou <code>CONCAT()</code></td></tr>
+            <tr><td>Comparação</td><td><code>= &lt;&gt; != &lt; &gt; &lt;= &gt;=</code></td><td><code>salario &gt;= 4000</code></td></tr>
+            <tr><td>Condições</td><td><code>BETWEEN · IN · LIKE · IS NULL</code></td><td><code>nome LIKE 'A%'</code> · <code>depto IN (10, 20)</code></td></tr>
+            <tr><td>Lógicos</td><td><code>NOT · AND · OR</code></td><td><code>depto = 10 AND NOT salario &lt; 3000</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <figure>
+        <img src="rc_images/SqlPrecedencia.svg" alt="À esquerda, uma escada com oito níveis de precedência, do mais forte ao mais fraco: sinais e PRIOR; multiplicação e divisão; soma, subtração e concatenação; comparações; IS NULL, LIKE, BETWEEN e IN; NOT; AND; e OR. À direita, o exemplo depto = 10 OR depto = 20 AND salario &gt; 4000, que o banco lê como depto = 10 OR, entre parênteses, depto = 20 AND salario &gt; 4000, devolvendo 5 linhas; com os parênteses no lugar certo, voltam só 2 linhas, Ana e Eva." width="1000" height="508" loading="lazy">
+        <figcaption>Sem parênteses, o AND é avaliado antes do OR, e a consulta traz linhas a mais.</figcaption>
+      </figure>
+      <p>A tabela de precedência do original vem de material de treinamento e põe o <code>BETWEEN</code> num nível próprio, abaixo de <code>IS NULL</code>, <code>LIKE</code> e <code>IN</code>. A documentação atual do Oracle agrupa os quatro no mesmo nível, como na figura. Em nenhum dos dois casos isso muda o resultado de uma condição comum; a regra prática é a mesma: <code>NOT</code>, depois <code>AND</code>, depois <code>OR</code>. <sup><a href="#ref-11-pt">[11]</a></sup></p>
+      <h3>O NULL não é um valor</h3>
+      <p><code>NULL</code> significa “desconhecido”. Qualquer comparação com ele dá desconhecido, inclusive <code>NULL = NULL</code>, e o <code>WHERE</code> só deixa passar o que é verdadeiro. Para testar, use <code>IS NULL</code> e <code>IS NOT NULL</code>; para trocar um nulo por um valor, <code>NVL</code> (Oracle) ou <code>COALESCE</code> (padrão). <sup><a href="#ref-13-pt">[13]</a></sup></p>
+    </section>
+
+    <section id="agregacao-pt" aria-labelledby="h-agregacao-pt">
+      <h2 id="h-agregacao-pt">Agregação: GROUP BY e HAVING</h2>
+      <p>As <strong>funções agregadas</strong> (<code>COUNT</code>, <code>SUM</code>, <code>AVG</code>, <code>MIN</code>, <code>MAX</code> e outras) resumem várias linhas num só valor. Com <code>GROUP BY</code>, calculam um valor por grupo. Toda coluna do SELECT que não está dentro de uma agregação precisa estar no <code>GROUP BY</code>. <sup><a href="#ref-14-pt">[14]</a></sup></p>
+      <h3>WHERE ou HAVING?</h3>
+      <p>O <code>WHERE</code> filtra linhas antes do agrupamento; o <code>HAVING</code> filtra grupos depois dele, e por isso pode usar agregações. <sup><a href="#ref-29-pt">[29]</a></sup></p>
+      <figure>
+        <img src="rc_images/SqlWhereHaving.svg" alt="Quatro etapas. Primeiro, a tabela emp_bonus com cinco linhas; o WHERE bonus maior ou igual a 700 descarta a linha A 500. Depois, o GROUP BY junta as linhas por funcionário: A com 1000, B com 2000 e 1250, C com 700. Em seguida, as somas são A 1000, B 3250 e C 700, e o HAVING SUM maior que 1000 descarta A e C. O resultado é B 3250." width="1000" height="474" loading="lazy">
+        <figcaption>Cada filtro age num momento: WHERE nas linhas, HAVING nos grupos.</figcaption>
+      </figure>
+      <pre class="code"><code><span class="k">SELECT</span> employee, <span class="k">SUM</span>(bonus)
+  <span class="k">FROM</span> emp_bonus
+ <span class="k">GROUP BY</span> employee
+<span class="k">HAVING</span> <span class="k">SUM</span>(bonus) &gt; 1000;     <span class="c">-- A 1500 e B 3250</span></code></pre>
+      <p>O exemplo “errado” do original, <code>… GROUP BY employee WHERE SUM(bonus) &gt; 1000</code>, falha por dois motivos: o <code>WHERE</code> vem antes do <code>GROUP BY</code> e não aceita agregações. Nos blocos de código do original também sobraram barras invertidas (<code>emp\_bonus</code>), restos da conversão do documento.</p>
+      <h3>Além do GROUP BY simples</h3>
+      <p>O original só indica um artigo sobre agrupamentos em várias dimensões. Em resumo, o Oracle e o padrão SQL oferecem: <sup><a href="#ref-15-pt">[15]</a></sup></p>
+      <ul>
+        <li><code>GROUP BY ROLLUP(depto)</code>: os totais por departamento e mais uma linha de total geral (16000, 13000 e 29000 nos dados deste tutorial).</li>
+        <li><code>GROUP BY CUBE(a, b)</code>: os subtotais de todas as combinações de <code>a</code> e <code>b</code>.</li>
+        <li><code>GROUP BY GROUPING SETS ((a), (b), ())</code>: exatamente os agrupamentos listados.</li>
+      </ul>
+      <p>A função <code>GROUPING(coluna)</code> devolve 1 nas linhas de subtotal, para distingui-las de um <code>NULL</code> real nos dados.</p>
+      <h3>Ordem no caos</h3>
+      <p>Sem <code>ORDER BY</code>, nenhum banco garante a ordem das linhas, nem mesmo com <code>GROUP BY</code> ou <code>DISTINCT</code>. Se a ordem importa, peça-a explicitamente; no Oracle, <code>NULLS FIRST</code> ou <code>NULLS LAST</code> decidem onde ficam os nulos. <sup><a href="#ref-6-pt">[6]</a></sup></p>
+    </section>
+
+    <section id="analiticas-pt" aria-labelledby="h-analiticas-pt">
+      <h2 id="h-analiticas-pt">Funções analíticas</h2>
+      <p>O original chama esta parte de “nível Jedi”, e com razão. Uma <strong>função analítica</strong> (ou <em>de janela</em>) calcula sobre um grupo de linhas, como uma agregada, mas <strong>não junta</strong> as linhas: cada linha continua no resultado, com o valor calculado ao lado. <sup><a href="#ref-16-pt">[16]</a></sup> <sup><a href="#ref-17-pt">[17]</a></sup> <sup><a href="#ref-33-pt">[33]</a></sup></p>
+      <figure>
+        <img src="rc_images/SqlAnaliticas.svg" alt="À esquerda, sete funcionários de dois departamentos. No meio, a versão agregada, AVG com GROUP BY, reduz tudo a duas linhas: departamento 10 com média 4000 e departamento 20 com média 4333,33. À direita, a versão analítica, AVG OVER PARTITION BY depto, mantém as sete linhas e acrescenta a coluna media_depto com a média do departamento de cada um." width="1000" height="456" loading="lazy">
+        <figcaption>A mesma média, de duas formas: agrupando as linhas ou mantendo todas.</figcaption>
+      </figure>
+      <p>A marca de uma função analítica é a cláusula <code>OVER</code>, que tem três partes opcionais:</p>
+      <pre class="code"><code>função(…) <span class="k">OVER</span> (
+    <span class="k">PARTITION BY</span> depto        <span class="c">-- em que grupos calcular</span>
+    <span class="k">ORDER BY</span> admissao         <span class="c">-- em que ordem, dentro do grupo</span>
+    <span class="k">ROWS BETWEEN</span> …            <span class="c">-- quais linhas entram na conta (a janela)</span>
+)</code></pre>
+      <p>Funções analíticas só podem aparecer na lista do SELECT e no <code>ORDER BY</code>, porque são calculadas depois do <code>WHERE</code>, do <code>GROUP BY</code> e do <code>HAVING</code>. Para filtrar por elas, use uma subconsulta ou um <code>WITH</code>.</p>
+      <aside class="note">
+        <p><strong>Cuidado com o ORDER BY dentro do OVER:</strong> ele muda a janela. Sem ele, <code>AVG(salario) OVER (PARTITION BY depto)</code> é a média do departamento inteiro. Com ele, a janela passa a ir do início da partição até a linha atual, e o resultado vira uma <strong>média acumulada</strong>. É o que acontece no primeiro exemplo do original, <code>AVG(SALARIO) OVER (PARTITION BY IDADE ORDER BY ID_EMP)</code>, apresentado como “média salarial por idade”. No teste deste tutorial, as médias do departamento 10 saíram 5000, 4500, 4333 e 4000, e não 4000 em todas as linhas.</p>
+      </aside>
+      <h3>Numerar e classificar</h3>
+      <figure>
+        <img src="rc_images/SqlRanking.svg" alt="Tabela com sete funcionários ordenados por salário decrescente e três colunas de numeração. Eva 6000 e Ana 5000 recebem 1 e 2 nas três. Bruno e Carla, empatados em 4000, recebem 3 e 4 no ROW_NUMBER, 3 e 3 no RANK e 3 e 3 no DENSE_RANK. Fábio e Gil, empatados em 3500, recebem 5 e 6, 5 e 5, e 4 e 4. Davi 3000 recebe 7, 7 e 5. Setas mostram que o RANK pula as posições 4 e 6." width="1000" height="560" loading="lazy">
+        <figcaption>Três funções de posição que só diferem no tratamento dos empates.</figcaption>
+      </figure>
+      <h3>Olhar as linhas vizinhas</h3>
+      <figure>
+        <img src="rc_images/SqlJanela.svg" alt="Tabela com sete funcionários em ordem de admissão, de Eva, em 2012, a Davi, em 2023. A linha de Ana está destacada. Uma seta roxa mostra que o LAG de Ana, 3500, vem do salário de Gil, na linha anterior; uma seta azul mostra que o LEAD de Ana, Fábio, vem da linha seguinte; e um colchete verde mostra que a soma acumulada de Ana, 18500, soma os salários das quatro primeiras linhas." width="1000" height="554" loading="lazy">
+        <figcaption>LAG, LEAD e a soma acumulada, todas ordenadas pela data de admissão.</figcaption>
+      </figure>
+      <p>O mesmo cuidado com a janela explica por que <code>LAST_VALUE</code> costuma “falhar”: com <code>ORDER BY</code> e sem moldura, a janela termina na linha atual, e o último valor é sempre o da própria linha (ou do último empatado com ela). Por isso o exemplo do original escreve <code>ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING</code>, que estende a janela à partição inteira.</p>
+      <h3>Catálogo das funções do original</h3>
+      <p>O original lista as funções analíticas do Oracle 11.2, cada uma com um exemplo agregado e outro analítico. Em resumo, com as correções encontradas: <sup><a href="#ref-16-pt">[16]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Função</th><th scope="col">O que calcula</th><th scope="col">Observação</th></tr></thead>
+          <tbody>
+            <tr><td><code>AVG · SUM · COUNT · MIN · MAX</code></td><td>Média, soma, contagem, mínimo e máximo.</td><td>Com <code>ORDER BY</code> no <code>OVER</code>, viram acumuladas.</td></tr>
+            <tr><td><code>ROW_NUMBER · RANK · DENSE_RANK</code></td><td>Posição da linha no grupo.</td><td>Veja a figura acima.</td></tr>
+            <tr><td><code>NTILE(n)</code></td><td>Divide as linhas ordenadas em <em>n</em> faixas (4 = quartis).</td><td>No exemplo do original, o <code>SELECT</code> ficou comentado (<code>--SELECT</code>), e a consulta não roda.</td></tr>
+            <tr><td><code>PERCENT_RANK · CUME_DIST</code></td><td>Posição relativa, de 0 a 1.</td><td><code>PERCENT_RANK</code> começa em 0; <code>CUME_DIST</code> nunca é 0.</td></tr>
+            <tr><td><code>LAG · LEAD</code></td><td>Valor de uma linha anterior ou seguinte.</td><td>O 2º argumento é a distância; o 3º, o valor padrão.</td></tr>
+            <tr><td><code>FIRST_VALUE · LAST_VALUE</code></td><td>Primeiro e último valor da janela.</td><td>No 2º exemplo de <code>FIRST_VALUE</code>, o <code>DESC</code> fica no <code>ORDER BY</code>, não “no final do PARTITION BY”, e o apelido <code>MENOR_SALARIO</code> passa a mostrar o <em>maior</em>.</td></tr>
+            <tr><td><code>FIRST · LAST</code> (com <code>KEEP</code>)</td><td>Agregação só das linhas que ficam em primeiro ou último numa ordenação.</td><td>Sintaxe exclusiva do Oracle.</td></tr>
+            <tr><td><code>LISTAGG</code></td><td>Concatena os valores de várias linhas num só texto.</td><td>O original diz que ela “transforma uma coluna em linhas”; é o contrário: várias linhas viram um texto. <sup><a href="#ref-19-pt">[19]</a></sup></td></tr>
+            <tr><td><code>RATIO_TO_REPORT</code></td><td>Fração de cada valor sobre o total da janela.</td><td>Exclusiva do Oracle; no padrão, <code>x / SUM(x) OVER ()</code>.</td></tr>
+            <tr><td><code>STDDEV · VARIANCE · VAR_POP · COVAR_* · CORR</code></td><td>Desvio padrão, variância, covariância e correlação de Pearson.</td><td>Funções estatísticas, agregadas ou analíticas.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Outros detalhes dos exemplos do original: o comentário do <code>LISTAGG</code> escreve “LISTADD”; o exemplo de <code>COUNT</code> com <code>RANGE BETWEEN 2000 PRECEDING AND 10000 FOLLOWING</code> conta os empregados com salário entre o próprio salário menos 2000 e mais 10000. O SQLite, usado nos testes, não tem <code>LISTAGG</code>; o equivalente é <code>GROUP_CONCAT</code>. <sup><a href="#ref-18-pt">[18]</a></sup></p>
+    </section>
+
+    <section id="conjuntos-pt" aria-labelledby="h-conjuntos-pt">
+      <h2 id="h-conjuntos-pt">Operadores de conjunto</h2>
+      <p><code>UNION</code>, <code>INTERSECT</code> e <code>EXCEPT</code> combinam os resultados de duas consultas, comparando linhas inteiras. As duas consultas precisam ter o mesmo número de colunas, com tipos compatíveis; os nomes das colunas do resultado vêm da primeira. <sup><a href="#ref-20-pt">[20]</a></sup> <sup><a href="#ref-21-pt">[21]</a></sup></p>
+      <figure>
+        <img src="rc_images/SqlConjuntos.svg" alt="Diagrama de Venn com vendas2005 à esquerda, contendo João 1000 e Roberto 5000, vendas2006 à direita, com João 2000 e Isaque 35000, e Alex 2000 na interseção. Abaixo, quatro resultados: UNION com 5 linhas, UNION ALL com 6, pois Alex 2000 aparece duas vezes, INTERSECT com 1, Alex 2000, e EXCEPT ou MINUS com 2, João 1000 e Roberto 5000." width="1000" height="698" loading="lazy">
+        <figcaption>Com os dados de vendas do original: só Alex 2000 aparece igual nos dois anos.</figcaption>
+      </figure>
+      <ul>
+        <li><code>UNION</code> elimina linhas repetidas, o que exige ordenar ou comparar tudo; quando se sabe que não há repetição, <code>UNION ALL</code> é mais rápido.</li>
+        <li>No exemplo do original, a segunda tabela tem colunas <code>person</code> e <code>amount</code>, e não <code>pessoa</code> e <code>quantia</code>. Funciona, porque o que importa é a posição das colunas, mas é mais claro usar os mesmos nomes.</li>
+        <li>O texto do <code>EXCEPT</code> diz que a consulta retorna as linhas entre 1 e 100 “além de” as linhas entre 50 e 75. É o contrário: são as linhas entre 1 e 100 <strong>exceto</strong> as que estão entre 50 e 75.</li>
+        <li>No Oracle, o operador se chama <code>MINUS</code>; a partir da versão 21c, <code>EXCEPT</code>, <code>EXCEPT ALL</code> e <code>INTERSECT ALL</code> também são aceitos. <sup><a href="#ref-21-pt">[21]</a></sup></li>
+      </ul>
+      <p>Onde não há <code>EXCEPT</code>, dá para obter o mesmo com um <code>LEFT JOIN</code> que mantém só as linhas sem par (<code>WHERE o2.id IS NULL</code>), como mostra o original, ou com <code>NOT EXISTS</code>.</p>
+    </section>
+
+    <section id="hierarquia-pt" aria-labelledby="h-hierarquia-pt">
+      <h2 id="h-hierarquia-pt">Consultas hierárquicas</h2>
+      <p>Quando cada linha aponta para uma linha-pai da mesma tabela (funcionário e chefe, mensagem e resposta, kit e componente), é preciso uma consulta que percorra a árvore. O exemplo do original é um fórum em que cada mensagem guarda em <code>parent_id</code> o <code>id</code> da mensagem que ela responde. <sup><a href="#ref-22-pt">[22]</a></sup> <sup><a href="#ref-31-pt">[31]</a></sup></p>
+      <figure>
+        <img src="rc_images/SqlHierarquia.svg" alt="À esquerda, duas árvores de mensagens. A primeira começa na mensagem 1, do Usuário 1, com nível 1, e desce pelas respostas 2, 3, 4 e 5, com níveis de 2 a 5. A segunda começa na mensagem 6, do Usuário 23, com a resposta 7 no nível 2. À direita, a tabela com id, login e parent_id, em que as raízes 1 e 6 têm parent_id nulo, e a cláusula CONNECT BY PRIOR id = parent_id, com a explicação de que PRIOR marca a coluna da linha-pai." width="1000" height="552" loading="lazy">
+        <figcaption>START WITH escolhe as raízes, CONNECT BY PRIOR liga pai e filho, e LEVEL conta a profundidade.</figcaption>
+      </figure>
+      <h3>CONNECT BY, do Oracle</h3>
+      <pre class="code"><code><span class="k">SELECT</span> <span class="k">LEVEL</span> <span class="k">AS</span> nivel,
+       LPAD(<span class="s">' '</span>, (<span class="k">LEVEL</span> - 1) * 3, <span class="s">'-'</span>) || m.login || <span class="s">': '</span> || m.texto <span class="k">AS</span> mensagem
+  <span class="k">FROM</span> mensagem m
+ <span class="k">START WITH</span> m.parent_id <span class="k">IS NULL</span>
+<span class="k">CONNECT BY</span> <span class="k">PRIOR</span> m.id_mensagem = m.parent_id
+ <span class="k">ORDER SIBLINGS BY</span> m.data_envio;</code></pre>
+      <ul>
+        <li><code>START WITH</code> define as raízes. O original usa uma subconsulta (<code>id_mensagem IN (SELECT … WHERE parent_id IS NULL)</code>); <code>parent_id IS NULL</code> diretamente faz o mesmo.</li>
+        <li><code>CONNECT BY PRIOR</code> define a relação. O original afirma que o Oracle considera o lado <em>esquerdo</em> da igualdade como pai. Não é bem assim: quem indica o pai é o operador <code>PRIOR</code>, que pode estar de qualquer lado. <code>PRIOR id = parent_id</code> e <code>parent_id = PRIOR id</code> são idênticos; já <code>id = PRIOR parent_id</code> inverte o sentido e sobe da folha para a raiz. <sup><a href="#ref-22-pt">[22]</a></sup></li>
+        <li><code>LEVEL</code> é a profundidade; <code>ORDER SIBLINGS BY</code> ordena as respostas de um mesmo pai sem desmontar a árvore; <code>SYS_CONNECT_BY_PATH</code> e <code>CONNECT_BY_ROOT</code> devolvem o caminho desde a raiz e a própria raiz.</li>
+      </ul>
+      <p>Dois detalhes do script do original: <code>TEXTO CLOB DEFAULT '' NOT NULL</code> é contraditório no Oracle, que trata o texto vazio como <code>NULL</code>; e a “Tabela 2” diz ser o resultado da “listagem 2”, mas é o da listagem 3.</p>
+      <h3>A forma padrão: WITH recursivo</h3>
+      <p>O padrão SQL resolve o mesmo problema com um <code>WITH</code> recursivo, aceito pelo Oracle desde a versão 11g R2 e pelos demais bancos atuais. O original diz que o Oracle ainda não o implementava; isso mudou em 2009. Esta versão foi testada no SQLite: <sup><a href="#ref-23-pt">[23]</a></sup> <sup><a href="#ref-24-pt">[24]</a></sup></p>
+      <pre class="code"><code><span class="k">WITH RECURSIVE</span> arvore (id, login, texto, nivel) <span class="k">AS</span> (
+    <span class="k">SELECT</span> id, login, texto, 1
+      <span class="k">FROM</span> mensagem <span class="k">WHERE</span> parent_id <span class="k">IS NULL</span>          <span class="c">-- raízes</span>
+    <span class="k">UNION ALL</span>
+    <span class="k">SELECT</span> m.id, m.login, m.texto, a.nivel + 1
+      <span class="k">FROM</span> mensagem m <span class="k">JOIN</span> arvore a <span class="k">ON</span> m.parent_id = a.id  <span class="c">-- filhos</span>
+)
+<span class="k">SELECT</span> * <span class="k">FROM</span> arvore;</code></pre>
+      <p>No Oracle, escreve-se só <code>WITH</code>, sem a palavra <code>RECURSIVE</code>. O grande exemplo final do original usa <code>CONNECT BY</code> sobre a lista de materiais do JD Edwards e <code>SYS_CONNECT_BY_PATH</code> para multiplicar as quantidades de cada nível. Com o <code>WITH</code> recursivo, basta levar o produto acumulado numa coluna (<code>a.qtd_acum * m.quantidade</code>), sem as 23 colunas auxiliares.</p>
+    </section>
+
+    <section id="with-pt" aria-labelledby="h-with-pt">
+      <h2 id="h-with-pt">WITH para consultas complexas</h2>
+      <p>A cláusula <code>WITH</code> (em inglês, <em>subquery factoring</em> ou <em>common table expression</em>) dá nomes a subconsultas, que depois são usadas na consulta principal como se fossem tabelas. Isso deixa consultas longas legíveis e evita repetir a mesma subconsulta. <sup><a href="#ref-6-pt">[6]</a></sup> <sup><a href="#ref-24-pt">[24]</a></sup></p>
+      <p>O exemplo do original não roda: faltam os parênteses em volta de cada subconsulta e as vírgulas entre elas, há um ponto e vírgula no meio do comando, e a subconsulta por loja usa <code>SUM</code> sem <code>GROUP BY</code>. Corrigido e testado:</p>
+      <pre class="code"><code><span class="k">WITH</span>
+  sum_sales <span class="k">AS</span> (
+    <span class="k">SELECT</span> <span class="k">SUM</span>(quantity) <span class="k">AS</span> all_sales <span class="k">FROM</span> sales
+  ),
+  number_stores <span class="k">AS</span> (
+    <span class="k">SELECT</span> <span class="k">COUNT</span>(*) <span class="k">AS</span> nbr_stores <span class="k">FROM</span> store
+  ),
+  sales_by_store <span class="k">AS</span> (
+    <span class="k">SELECT</span> s.store_name, <span class="k">SUM</span>(v.quantity) <span class="k">AS</span> store_sales
+      <span class="k">FROM</span> store s <span class="k">JOIN</span> sales v <span class="k">ON</span> v.store_id = s.store_id
+     <span class="k">GROUP BY</span> s.store_name
+  )
+<span class="k">SELECT</span> b.store_name, b.store_sales
+  <span class="k">FROM</span> sales_by_store b
+ <span class="k">CROSS JOIN</span> sum_sales t
+ <span class="k">CROSS JOIN</span> number_stores n
+ <span class="k">WHERE</span> b.store_sales &gt; t.all_sales / n.nbr_stores;   <span class="c">-- lojas acima da média</span></code></pre>
+      <p>O Oracle decide sozinho se guarda o resultado de cada subconsulta numa tabela temporária (<em>materializar</em>) ou se a incorpora à consulta principal. A dica <code>/*+ MATERIALIZE */</code> citada no original força a primeira opção, mas não é documentada oficialmente; use-a só depois de comparar os planos.</p>
+    </section>
+
+    <section id="bind-pt" aria-labelledby="h-bind-pt">
+      <h2 id="h-bind-pt">Variáveis de BIND</h2>
+      <p>Antes de executar um comando, o Oracle procura o texto exato dele na <em>shared pool</em>, uma área de memória compartilhada. Se encontra, reaproveita o plano já calculado (<em>soft parse</em>). Se não, analisa o comando e monta um plano novo (<em>hard parse</em>), o que em sistemas com muitas transações pode custar mais que a própria consulta. <sup><a href="#ref-7-pt">[7]</a></sup> <sup><a href="#ref-30-pt">[30]</a></sup></p>
+      <figure>
+        <img src="rc_images/SqlBind.svg" alt="À esquerda, três consultas iguais exceto pelo número no WHERE, 674, 234 e 332; cada uma provoca um hard parse, em que o banco analisa o comando e monta um plano. À direita, a mesma consulta com a variável :cust_no recebendo os três valores; só a primeira execução faz hard parse, e as outras duas reaproveitam o plano com um soft parse. Embaixo, a shared pool, onde o Oracle guarda o texto e o plano de cada comando." width="1000" height="508" loading="lazy">
+        <figcaption>Com BIND, o texto do comando não muda, e o plano é reaproveitado.</figcaption>
+      </figure>
+      <p>Uma <strong>variável de BIND</strong> (<code>:cust_no</code>) substitui o valor literal. O texto do comando fica sempre igual, e só o valor muda a cada execução. Nas linguagens de programação, isso se faz com <em>prepared statements</em>, que têm uma vantagem ainda maior: como o valor nunca é colado no texto do SQL, eles impedem a <strong>injeção de SQL</strong>. <sup><a href="#ref-25-pt">[25]</a></sup> <sup><a href="#ref-26-pt">[26]</a></sup> <sup><a href="#ref-27-pt">[27]</a></sup></p>
+      <aside class="recap" aria-label="Para fixar">
+        <h3>Para fixar</h3>
+        <ul>
+          <li>Peça só as colunas e linhas de que precisa, e não aplique funções às colunas filtradas.</li>
+          <li>Junções explícitas (<code>JOIN … ON</code>) e apelidos deixam a consulta legível.</li>
+          <li><code>WHERE</code> filtra linhas; <code>HAVING</code>, grupos.</li>
+          <li><code>OVER</code> calcula sem juntar as linhas; o <code>ORDER BY</code> dentro dele muda a janela.</li>
+          <li><code>NOT IN</code> com <code>NULL</code> não devolve nada; prefira <code>NOT EXISTS</code>.</li>
+          <li>Use variáveis de BIND: melhor desempenho e nenhuma injeção de SQL.</li>
+        </ul>
+      </aside>
+      <h3>Duas dicas finais do original</h3>
+      <p>Para tirar quebras de linha de um campo de texto antes de exportá-lo (dica de Felipe Renz):</p>
+      <pre class="code"><code><span class="k">SELECT</span> REPLACE(REPLACE(campo, CHR(10), <span class="s">' '</span>), CHR(13), <span class="s">' '</span>) <span class="k">FROM</span> …</code></pre>
+      <p>E as funções de data e hora do SQL Server; no original, faltava um espaço em <code>CURRENT_TIMESTAMPAS</code>:</p>
+      <pre class="code"><code><span class="k">SELECT</span> GETDATE(), CURRENT_TIMESTAMP, GETUTCDATE(),
+       SYSDATETIME(), SYSUTCDATETIME(), SYSDATETIMEOFFSET();</code></pre>
+      <p>E, como diz a última página do original: <em>Don’t panic!</em></p>
+    </section>
+
+    <section id="revisao-pt" aria-labelledby="h-revisao-pt">
+      <h2 id="h-revisao-pt">Revisão rápida</h2>
+      <p>Tente responder antes de abrir cada pergunta.</p>
+      <div class="quiz">
+        <details><summary>1. A que subconjunto pertencem GRANT e REVOKE?</summary><p>À DCL, a linguagem de controle de dados: elas dão e tiram permissões.</p></details>
+        <details><summary>2. Por que um apelido criado no SELECT não funciona no WHERE?</summary><p>Porque, na ordem lógica, o WHERE é avaliado antes do SELECT; quando o filtro roda, o apelido ainda não existe. No ORDER BY, que vem depois, ele funciona.</p></details>
+        <details><summary>3. Qual a diferença entre LEFT JOIN e INNER JOIN?</summary><p>O INNER traz só as linhas com par nas duas tabelas; o LEFT traz todas as da esquerda, com NULL onde não há par.</p></details>
+        <details><summary>4. Por que <code>WHERE TO_CHAR(data, 'YYYY') = '2026'</code> pode ser lento?</summary><p>A função é aplicada à coluna em cada linha, o que impede o uso de um índice comum. Compare a coluna com um intervalo de datas.</p></details>
+        <details><summary>5. O que <code>WHERE a = 1 OR a = 2 AND b &gt; 0</code> significa de fato?</summary><p><code>a = 1 OR (a = 2 AND b &gt; 0)</code>, porque AND vem antes de OR. Use parênteses para dizer o que quer.</p></details>
+        <details><summary>6. Por que <code>NOT IN</code> pode devolver zero linhas?</summary><p>Se a subconsulta tiver algum NULL, a comparação com ele dá “desconhecido”, e nenhuma linha passa. <code>NOT EXISTS</code> não tem esse problema.</p></details>
+        <details><summary>7. Onde se filtra por <code>SUM(bonus) &gt; 1000</code>: no WHERE ou no HAVING?</summary><p>No HAVING, que filtra os grupos depois da agregação.</p></details>
+        <details><summary>8. Em salários 5000, 4000, 4000 e 3000, que posições dão RANK e DENSE_RANK?</summary><p>RANK: 1, 2, 2, 4. DENSE_RANK: 1, 2, 2, 3.</p></details>
+        <details><summary>9. Qual a diferença entre UNION e UNION ALL?</summary><p>UNION elimina linhas repetidas; UNION ALL mantém todas e é mais rápido.</p></details>
+        <details><summary>10. <code>CONNECT BY PRIOR id = parent_id</code> e <code>CONNECT BY parent_id = PRIOR id</code> dão o mesmo resultado?</summary><p>Sim: o que conta é em qual expressão está o PRIOR, não o lado da igualdade.</p></details>
+      </div>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="referencias-pt" aria-labelledby="h-referencias-pt">
+      <h2 id="h-referencias-pt">Referências</h2>
+      <ol class="refs">
+        <li id="ref-1-pt"><strong>Giovani Perotto Mesquita</strong>, “The Hitchhiker’s Guide to the Structured Query Language”, GitHub, texto original deste tutorial, <a href="https://github.com/GiovaniPM/MyCourses/blob/master/SQL/Overview%20Structured%20Query%20Language.md" rel="noopener">github.com/GiovaniPM/MyCourses/blob/master/SQL/Overview Structured Query Language.md</a>.</li>
+        <li id="ref-2-pt"><strong>Wikipedia</strong> (em inglês), “SQL”, acesso em 25/09/2026, <a href="https://en.wikipedia.org/wiki/SQL" rel="noopener">en.wikipedia.org/wiki/SQL</a>.</li>
+        <li id="ref-3-pt"><strong>Wikipedia</strong> (em inglês), “Relational algebra”, acesso em 25/09/2026, <a href="https://en.wikipedia.org/wiki/Relational_algebra" rel="noopener">en.wikipedia.org/wiki/Relational_algebra</a>.</li>
+        <li id="ref-4-pt"><strong>Wikipedia</strong> (em inglês), “Edgar F. Codd”, acesso em 25/09/2026, <a href="https://en.wikipedia.org/wiki/Edgar_F._Codd" rel="noopener">en.wikipedia.org/wiki/Edgar_F._Codd</a>.</li>
+        <li id="ref-5-pt"><strong>Oracle</strong>, <em>SQL Language Reference 19c</em>, “Types of SQL Statements”, acesso em 25/09/2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Types-of-SQL-Statements.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Types-of-SQL-Statements.html</a>.</li>
+        <li id="ref-6-pt"><strong>Oracle</strong>, <em>SQL Language Reference 19c</em>, “SELECT”, acesso em 25/09/2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SELECT.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SELECT.html</a>.</li>
+        <li id="ref-7-pt"><strong>Oracle</strong>, <em>SQL Tuning Guide 19c</em>, “SQL Processing”, acesso em 25/09/2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/tgsql/sql-processing.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/19/tgsql/sql-processing.html</a>.</li>
+        <li id="ref-8-pt"><strong>Markus Winand</strong>, <em>Use The Index, Luke</em>, “Functions”, acesso em 25/09/2026, <a href="https://use-the-index-luke.com/sql/where-clause/functions" rel="noopener">use-the-index-luke.com/sql/where-clause/functions</a>.</li>
+        <li id="ref-9-pt"><strong>Wikipedia</strong> (em inglês), “Join (SQL)”, acesso em 25/09/2026, <a href="https://en.wikipedia.org/wiki/Join_(SQL)" rel="noopener">en.wikipedia.org/wiki/Join_(SQL)</a>.</li>
+        <li id="ref-10-pt"><strong>Oracle</strong>, <em>SQL Language Reference 19c</em>, “Joins”, acesso em 25/09/2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Joins.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Joins.html</a>.</li>
+        <li id="ref-11-pt"><strong>Oracle</strong>, <em>SQL Language Reference 19c</em>, “About SQL Conditions”, acesso em 25/09/2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/About-SQL-Conditions.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/About-SQL-Conditions.html</a>.</li>
+        <li id="ref-12-pt"><strong>Oracle</strong>, <em>SQL Language Reference 19c</em>, “About SQL Operators”, acesso em 25/09/2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/About-SQL-Operators.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/About-SQL-Operators.html</a>.</li>
+        <li id="ref-13-pt"><strong>Wikipedia</strong> (em inglês), “Null (SQL)”, acesso em 25/09/2026, <a href="https://en.wikipedia.org/wiki/Null_(SQL)" rel="noopener">en.wikipedia.org/wiki/Null_(SQL)</a>.</li>
+        <li id="ref-14-pt"><strong>Oracle</strong>, <em>SQL Language Reference 19c</em>, “Aggregate Functions”, acesso em 25/09/2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Aggregate-Functions.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Aggregate-Functions.html</a>.</li>
+        <li id="ref-15-pt"><strong>Oracle</strong>, <em>Data Warehousing Guide 19c</em>, “SQL for Aggregation in Data Warehouses”, acesso em 25/09/2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/dwhsg/sql-aggregation-data-warehouses.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/19/dwhsg/sql-aggregation-data-warehouses.html</a>.</li>
+        <li id="ref-16-pt"><strong>Oracle</strong>, <em>SQL Language Reference 19c</em>, “Analytic Functions”, acesso em 25/09/2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Analytic-Functions.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Analytic-Functions.html</a>.</li>
+        <li id="ref-17-pt"><strong>Wikipedia</strong> (em inglês), “Window function (SQL)”, acesso em 25/09/2026, <a href="https://en.wikipedia.org/wiki/Window_function_(SQL)" rel="noopener">en.wikipedia.org/wiki/Window_function_(SQL)</a>.</li>
+        <li id="ref-18-pt"><strong>SQLite</strong>, “Window Functions”, acesso em 25/09/2026, <a href="https://www.sqlite.org/windowfunctions.html" rel="noopener">sqlite.org/windowfunctions.html</a>.</li>
+        <li id="ref-19-pt"><strong>Oracle</strong>, <em>SQL Language Reference 19c</em>, “LISTAGG”, acesso em 25/09/2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/LISTAGG.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/LISTAGG.html</a>.</li>
+        <li id="ref-20-pt"><strong>Wikipedia</strong> (em inglês), “Set operations (SQL)”, acesso em 25/09/2026, <a href="https://en.wikipedia.org/wiki/Set_operations_(SQL)" rel="noopener">en.wikipedia.org/wiki/Set_operations_(SQL)</a>.</li>
+        <li id="ref-21-pt"><strong>Oracle</strong>, <em>SQL Language Reference 21c</em>, “The Set Operators”, acesso em 25/09/2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/21/sqlrf/The-UNION-ALL-INTERSECT-MINUS-Operators.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/21/sqlrf/The-UNION-ALL-INTERSECT-MINUS-Operators.html</a>.</li>
+        <li id="ref-22-pt"><strong>Oracle</strong>, <em>SQL Language Reference 19c</em>, “Hierarchical Queries”, acesso em 25/09/2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Hierarchical-Queries.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Hierarchical-Queries.html</a>.</li>
+        <li id="ref-23-pt"><strong>Wikipedia</strong> (em inglês), “Hierarchical and recursive queries in SQL”, acesso em 25/09/2026, <a href="https://en.wikipedia.org/wiki/Hierarchical_and_recursive_queries_in_SQL" rel="noopener">en.wikipedia.org/wiki/Hierarchical_and_recursive_queries_in_SQL</a>.</li>
+        <li id="ref-24-pt"><strong>SQLite</strong>, “The WITH Clause”, acesso em 25/09/2026, <a href="https://www.sqlite.org/lang_with.html" rel="noopener">sqlite.org/lang_with.html</a>.</li>
+        <li id="ref-25-pt"><strong>Markus Winand</strong>, <em>Use The Index, Luke</em>, “Bind Parameters”, acesso em 25/09/2026, <a href="https://use-the-index-luke.com/sql/where-clause/bind-parameters" rel="noopener">use-the-index-luke.com/sql/where-clause/bind-parameters</a>.</li>
+        <li id="ref-26-pt"><strong>Wikipedia</strong> (em inglês), “Prepared statement”, acesso em 25/09/2026, <a href="https://en.wikipedia.org/wiki/Prepared_statement" rel="noopener">en.wikipedia.org/wiki/Prepared_statement</a>.</li>
+        <li id="ref-27-pt"><strong>Wikipedia</strong> (em inglês), “SQL injection”, acesso em 25/09/2026, <a href="https://en.wikipedia.org/wiki/SQL_injection" rel="noopener">en.wikipedia.org/wiki/SQL_injection</a>.</li>
+        <li id="ref-28-pt"><strong>Wikipedia</strong> (em inglês), “JD Edwards”, acesso em 25/09/2026, <a href="https://en.wikipedia.org/wiki/JD_Edwards" rel="noopener">en.wikipedia.org/wiki/JD_Edwards</a>.</li>
+        <li id="ref-29-pt"><strong>Programmer Interview</strong>, “Having vs. Where Clause”, acesso em 25/09/2026, <a href="http://www.programmerinterview.com/index.php/database-sql/having-vs-where-clause/" rel="noopener">programmerinterview.com/index.php/database-sql/having-vs-where-clause</a>.</li>
+        <li id="ref-30-pt"><strong>Akadia</strong>, “Oracle Bind Variables”, acesso em 25/09/2026, <a href="http://www.akadia.com/services/ora_bind_variables.html" rel="noopener">akadia.com/services/ora_bind_variables.html</a>.</li>
+        <li id="ref-31-pt"><strong>DevMedia</strong>, “Uso do CONNECT BY no Oracle”, acesso em 25/09/2026, <a href="https://www.devmedia.com.br/uso-do-connect-by-no-oracle/23647" rel="noopener">devmedia.com.br/uso-do-connect-by-no-oracle/23647</a>.</li>
+        <li id="ref-32-pt"><strong>Oracle Blues</strong>, “Diferença entre o IN e o EXISTS”, 2007, acesso em 25/09/2026, <a href="http://oracleblues.blogspot.com/2007/02/diferena-entre-o-in-e-o-exists.html" rel="noopener">oracleblues.blogspot.com/2007/02/diferena-entre-o-in-e-o-exists.html</a>.</li>
+        <li id="ref-33-pt"><strong>Certificação BD</strong>, “SQL e PL/SQL”, acesso em 25/09/2026, <a href="http://certificacaobd.com.br/category/geral/dbarea/oracle-dbarea/sql-e-plsql/" rel="noopener">certificacaobd.com.br/category/geral/dbarea/oracle-dbarea/sql-e-plsql</a>.</li>
+        <li id="ref-34-pt"><strong>Wikipedia</strong> (em inglês), “Sargable”, acesso em 25/09/2026, <a href="https://en.wikipedia.org/wiki/Sargable" rel="noopener">en.wikipedia.org/wiki/Sargable</a>.</li>
+      </ol>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== EN ===================== -->
+<div id="en" role="tabpanel" aria-labelledby="tab-en" lang="en" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projects</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>The hitchhiker’s guide to SQL</h1>
+      <p class="dek">From the basic SELECT to analytic functions: joins, subqueries, aggregation, set operators, hierarchical queries, WITH and BIND variables, with tested examples and the original text’s mistakes corrected.</p>
+      <div class="byline">
+        <span>By <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Published on <time datetime="2026-09-25">25 September 2026</time></span>
+        <span class="credit">Reviewed and formatted using Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-en">
+    <h2 id="toc-en">Contents</h2>
+    <ol>
+      <li><a href="#intro-en">What SQL is</a></li>
+      <li><a href="#subsets-en">The subsets of SQL</a></li>
+      <li><a href="#select-en">The structure of SELECT</a></li>
+      <li><a href="#plan-en">Execution plan</a></li>
+      <li><a href="#joins-en">Joins and aliases</a></li>
+      <li><a href="#subqueries-en">Subqueries, IN and EXISTS</a></li>
+      <li><a href="#operators-en">Operators and NULL</a></li>
+      <li><a href="#aggregation-en">Aggregation: GROUP BY and HAVING</a></li>
+      <li><a href="#analytic-en">Analytic functions</a></li>
+      <li><a href="#setops-en">Set operators</a></li>
+      <li><a href="#hierarchy-en">Hierarchical queries</a></li>
+      <li><a href="#with-en">WITH for complex queries</a></li>
+      <li><a href="#bind-en">BIND variables</a></li>
+      <li><a href="#review-en">Quick review</a></li>
+      <li><a href="#references-en">References</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="intro-en" aria-labelledby="h-intro-en">
+      <h2 id="h-intro-en">What SQL is</h2>
+      <p><strong>SQL</strong> (<em>Structured Query Language</em>) is the standard language of relational databases. It is <strong>declarative</strong>: you describe the result you want, and the database decides how to get it. Its ideas come from the relational model Edgar F. Codd published in 1970 and from <strong>relational algebra</strong>, which treats tables as sets. <sup><a href="#ref-2-en">[2]</a></sup> <sup><a href="#ref-3-en">[3]</a></sup> <sup><a href="#ref-4-en">[4]</a></sup></p>
+      <p>IBM built the first version in the 1970s, and other vendors’ “dialects” soon followed. To bring order, ANSI published a standard in 1986 and ISO in 1987; the standard has been revised many times since. Oracle, SQL Server, PostgreSQL, MySQL and SQLite follow its core, but each has its own extensions. <sup><a href="#ref-2-en">[2]</a></sup></p>
+      <aside class="note">
+        <p><strong>About this tutorial:</strong> the original text, in Portuguese, was written for a team using Oracle with the JD Edwards ERP, whose tables have names like <code>F4101</code> (item master) and <code>F4102</code> (item branch). That team’s environment prerequisites have been left out. The new examples use small tables and were tested on SQLite 3.50; Oracle-only features were checked against the official documentation. <sup><a href="#ref-1-en">[1]</a></sup> <sup><a href="#ref-28-en">[28]</a></sup></p>
+      </aside>
+    </section>
+
+    <section id="subsets-en" aria-labelledby="h-subsets-en">
+      <h2 id="h-subsets-en">The subsets of SQL</h2>
+      <p>SQL commands are usually split into groups according to what they do. <sup><a href="#ref-5-en">[5]</a></sup></p>
+      <figure>
+        <img src="rc_images/SqlSubconjuntos-en.svg" alt="Five cards: DDL, data definition, with CREATE, ALTER and DROP; DML, data manipulation, with INSERT, UPDATE and DELETE; DQL, data query, with SELECT; DCL, data control, with GRANT and REVOKE; and DTL, transactions, also called TCL, with COMMIT, ROLLBACK and SAVEPOINT." width="1000" height="416" loading="lazy">
+        <figcaption>Five groups of commands: structure, data, queries, permissions and transactions.</figcaption>
+      </figure>
+      <p>The original’s table has a few syntax errors in the DML examples. These are the corrected versions:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Command</th><th scope="col">Example</th><th scope="col">Correction</th></tr></thead>
+          <tbody>
+            <tr><td><code>INSERT</code></td><td><code>INSERT INTO person (id, name, sex) VALUES (7, 'Student', 'M');</code></td><td>It is <code>VALUES</code>, not <code>value</code>; the parenthesis was left open; text goes in single quotes (double quotes denote column names).</td></tr>
+            <tr><td><code>SELECT</code></td><td><code>SELECT * FROM person;</code></td><td>—</td></tr>
+            <tr><td><code>UPDATE</code></td><td><code>UPDATE person SET birth_date = DATE '1985-09-11' WHERE id = 7;</code></td><td>A date as text, such as <code>'11/09/1985'</code>, depends on the database’s regional settings; the <code>DATE 'YYYY-MM-DD'</code> literal does not. The original also used <code>id_pessoa</code> on a table whose column is <code>id</code>.</td></tr>
+            <tr><td><code>DELETE</code></td><td><code>DELETE FROM person WHERE id = 7;</code></td><td>Without <code>WHERE</code>, it empties the whole table.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>On transactions: <code>COMMIT</code> makes changes permanent and <code>ROLLBACK</code> undoes them back to the last <code>COMMIT</code>. In Oracle, a transaction starts by itself with the first DML statement, and every DDL statement performs an implicit <code>COMMIT</code>. <sup><a href="#ref-5-en">[5]</a></sup></p>
+    </section>
+
+    <section id="select-en" aria-labelledby="h-select-en">
+      <h2 id="h-select-en">The structure of SELECT</h2>
+      <p>The original’s syntax leaves out the column list itself and has mismatched brackets. The general form is: <sup><a href="#ref-6-en">[6]</a></sup></p>
+      <pre class="code"><code><span class="k">SELECT</span> [DISTINCT] column_list
+  <span class="k">FROM</span> tables_and_joins
+ [<span class="k">WHERE</span> row_condition]
+ [<span class="k">GROUP BY</span> grouping_columns]
+ [<span class="k">HAVING</span> group_condition]
+ [<span class="k">ORDER BY</span> columns [ASC | DESC]]</code></pre>
+      <p>The <code>DISTINCTROW</code> mentioned in the original exists only in MySQL, as a synonym for <code>DISTINCT</code>. Notice that the order in which the clauses are written is not the order in which the database evaluates them:</p>
+      <figure>
+        <img src="rc_images/SqlOrdem-en.svg" alt="On the left, the clauses in the order they are written: SELECT, FROM, WHERE, GROUP BY, HAVING and ORDER BY. On the right, the logical evaluation order: FROM and JOIN, WHERE, GROUP BY, HAVING, SELECT and ORDER BY. Lines link each clause to its position, showing that SELECT moves from first to fifth place." width="1000" height="506" loading="lazy">
+        <figcaption>The database builds the rows (FROM, WHERE), groups them, filters the groups and only then computes SELECT.</figcaption>
+      </figure>
+      <p>The original describes SELECT as a “horizontal” cut (the columns) and a “vertical” one (the rows chosen by the criteria). In relational algebra these are <strong>projection</strong> and <strong>selection</strong>: <sup><a href="#ref-3-en">[3]</a></sup></p>
+      <figure>
+        <img src="rc_images/SqlProjecao-en.svg" alt="An emp table with seven employees and the columns id, name, dept, salary and age. The name and salary columns are highlighted in lilac, showing the projection done by SELECT; the rows of department 20 are highlighted in green, showing the selection done by WHERE; the intersections are gold. On the right, the query and its result: Eva 6000, Fábio 3500 and Gil 3500." width="1000" height="472" loading="lazy">
+        <figcaption>SELECT chooses the columns; WHERE chooses the rows.</figcaption>
+      </figure>
+      <p><strong>Tip:</strong> <em>“Perfection is achieved not when there is nothing more to add, but when there is nothing left to take away”</em>, wrote Saint-Exupéry (in <em>Wind, Sand and Stars</em>, not in <em>The Little Prince</em>, as the original says). In SQL: avoid <code>SELECT *</code> and ask only for the columns you need. Fewer columns mean less data read and transferred and, sometimes, the chance to answer from an index alone. <sup><a href="#ref-1-en">[1]</a></sup></p>
+    </section>
+
+    <section id="plan-en" aria-labelledby="h-plan-en">
+      <h2 id="h-plan-en">Execution plan</h2>
+      <p>Before running a query, the database optimizer builds an <strong>execution plan</strong>: in what order to read the tables, which indexes to use and how to join the results. In Oracle, the plan is shown by <code>EXPLAIN PLAN FOR</code> followed by <code>SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY)</code>, or by SQL Developer’s plan button. <sup><a href="#ref-7-en">[7]</a></sup></p>
+      <p>Three numbers drive those choices:</p>
+      <ul>
+        <li><strong>Selectivity</strong>: the fraction of rows that passes a filter, from 0.0 (none) to 1.0 (all).</li>
+        <li><strong>Cardinality</strong>: the estimate of how many rows each step returns.</li>
+        <li><strong>Cost</strong>: the estimate of resources (disk reads, CPU, network) for each step.</li>
+      </ul>
+      <h3>Do not apply functions to filtered columns</h3>
+      <p>A condition such as <code>WHERE TO_CHAR(hired, 'YYYY') = '2026'</code> makes the database compute the function on every row and prevents the use of a normal index on <code>hired</code>. Transform the <em>value</em>, not the column: <code>WHERE hired &gt;= DATE '2026-01-01' AND hired &lt; DATE '2027-01-01'</code>. Conditions written this way are called <em>sargable</em>. <sup><a href="#ref-8-en">[8]</a></sup> <sup><a href="#ref-34-en">[34]</a></sup></p>
+      <p>That is what the original recommends for JD Edwards, which stores dates in the Julian <code>CYYDDD</code> format. Instead of converting the column, convert today’s date: <code>ixefff &lt;= TO_CHAR(SYSDATE, 'YYYYDDD') - 1900000</code>.</p>
+      <h3>Driving table</h3>
+      <p>The original calls the table a query starts from, usually the most restrictive one, the <em>drive table</em>. Modern cost-based optimizers make that choice automatically and tend to get it right when statistics are up to date. When they do not, Oracle accepts hints such as <code>/*+ LEADING(a) */</code>, which should be the exception, not the rule. <sup><a href="#ref-7-en">[7]</a></sup></p>
+    </section>
+
+    <section id="joins-en" aria-labelledby="h-joins-en">
+      <h2 id="h-joins-en">Joins and aliases</h2>
+      <p>A <strong>join</strong> combines rows from two tables through a condition. The figure shows the main kinds on the same data. <sup><a href="#ref-9-en">[9]</a></sup> <sup><a href="#ref-10-en">[10]</a></sup></p>
+      <figure>
+        <img src="rc_images/SqlJoins-en.svg" alt="At the top, the customer table with Ana, Bruno and Carla and the orders table with orders 101 and 102 for Ana, 103 for Bruno and 104 for a non-existent customer 4. Below, five panels with Venn diagrams and results: INNER JOIN returns Ana 101, Ana 102 and Bruno 103; LEFT JOIN adds Carla with NULL; RIGHT JOIN adds order 104 with a NULL name; FULL JOIN brings both; and CROSS JOIN produces 3 times 4, 12 combinations." width="1000" height="652" loading="lazy">
+        <figcaption>The five kinds of join applied to customers and orders.</figcaption>
+      </figure>
+      <p><code>NATURAL JOIN</code>, mentioned in the original, joins automatically on the columns with the same name. It is handy but fragile: if someone adds a column with a repeated name, the join changes silently. Prefer writing the condition with <code>ON</code>.</p>
+      <h3>Explicit rather than implicit joins</h3>
+      <p>The old form lists the tables separated by commas and puts the join condition in <code>WHERE</code>. The explicit form separates what is a join (<code>ON</code>) from what is a filter (<code>WHERE</code>), which keeps large queries readable. The original’s implicit example is missing the <code>AND</code> between its two conditions, which is a syntax error:</p>
+      <pre class="code"><code><span class="c">-- implicit (corrected: the AND was missing)</span>
+<span class="k">SELECT</span> a.iblitm, b.imdsc1
+  <span class="k">FROM</span> proddta.f4102 a, proddta.f4101 b
+ <span class="k">WHERE</span> b.imitm = a.ibitm
+   <span class="k">AND</span> a.ibmcu = <span class="s">'     PRODCAN'</span>;
+
+<span class="c">-- explicit</span>
+<span class="k">SELECT</span> a.iblitm, b.imdsc1
+  <span class="k">FROM</span> proddta.f4102 a
+ <span class="k">INNER JOIN</span> proddta.f4101 b <span class="k">ON</span> b.imitm = a.ibitm
+ <span class="k">WHERE</span> a.ibmcu = <span class="s">'     PRODCAN'</span>;</code></pre>
+      <p>The spaces in <code>'     PRODCAN'</code> are not a mistake: JD Edwards stores the branch code right-aligned, padded with spaces on the left.</p>
+      <h3>Render unto Caesar: aliases</h3>
+      <p><strong>Aliases</strong> give short names to tables and columns. They are required when the same table appears twice, as in this example from the original, which fetches the kit’s description and the component’s description from the same item table:</p>
+      <pre class="code"><code><span class="k">SELECT</span> a.ixkitl,
+       b.imdsc1 <span class="k">AS</span> kit_desc,
+       a.ixlitm,
+       c.imdsc1 <span class="k">AS</span> comp_desc
+  <span class="k">FROM</span> proddta.f3002 a
+ <span class="k">INNER JOIN</span> proddta.f4101 b <span class="k">ON</span> b.imitm = a.ixkit   <span class="c">-- the kit item</span>
+ <span class="k">INNER JOIN</span> proddta.f4101 c <span class="k">ON</span> c.imitm = a.ixitm   <span class="c">-- the component</span>
+ <span class="k">WHERE</span> a.ixtbm = <span class="s">'M'</span>
+   <span class="k">AND</span> a.ixmmcu = <span class="s">'     PRODCAN'</span>
+   <span class="k">AND</span> a.ixkitl = <span class="s">'7415K00893F'</span>;</code></pre>
+    </section>
+
+    <section id="subqueries-en" aria-labelledby="h-subqueries-en">
+      <h2 id="h-subqueries-en">Subqueries, IN and EXISTS</h2>
+      <h3>Divide and conquer</h3>
+      <p>A <strong>subquery</strong> is a SELECT inside another. In <code>FROM</code>, it works as a temporary table: in the original’s example, it adds up stock per item and branch before the join. <sup><a href="#ref-6-en">[6]</a></sup></p>
+      <pre class="code"><code><span class="k">SELECT</span> a.iblitm, b.imdsc1, c.lipqoh
+  <span class="k">FROM</span> proddta.f4102 a
+ <span class="k">INNER JOIN</span> proddta.f4101 b <span class="k">ON</span> b.imitm = a.ibitm
+ <span class="k">INNER JOIN</span> (<span class="k">SELECT</span> liitm, limcu, <span class="k">SUM</span>(lipqoh) <span class="k">AS</span> lipqoh
+               <span class="k">FROM</span> proddta.f41021
+              <span class="k">GROUP BY</span> liitm, limcu) c
+    <span class="k">ON</span> c.liitm = a.ibitm <span class="k">AND</span> c.limcu = a.ibmcu
+ <span class="k">WHERE</span> a.ibmcu = <span class="s">'     PRODCAN'</span>;</code></pre>
+      <p>The original shows that the same query, written with <code>GROUP BY</code> at the outer level, had higher cost and cardinality on that database. That holds for that data and that optimizer version; the general rule is to check the plan of both forms.</p>
+      <h3>IN or EXISTS?</h3>
+      <p>The original quotes a 2007 text saying that <code>IN</code> resolves the subquery first and <code>EXISTS</code> the outer query first. Modern optimizers usually turn both into the same operation (a <em>semi-join</em>), with similar performance. The difference that really matters shows up in negation, when there are <code>NULL</code>s: <sup><a href="#ref-13-en">[13]</a></sup> <sup><a href="#ref-32-en">[32]</a></sup></p>
+      <pre class="code"><code><span class="c">-- customers without orders; if any order has a NULL customer_id…</span>
+<span class="k">SELECT</span> name <span class="k">FROM</span> customer
+ <span class="k">WHERE</span> id <span class="k">NOT IN</span> (<span class="k">SELECT</span> customer_id <span class="k">FROM</span> orders);   <span class="c">-- …returns zero rows</span>
+
+<span class="k">SELECT</span> name <span class="k">FROM</span> customer c
+ <span class="k">WHERE</span> <span class="k">NOT EXISTS</span> (<span class="k">SELECT</span> 1 <span class="k">FROM</span> orders o
+                    <span class="k">WHERE</span> o.customer_id = c.id);       <span class="c">-- returns Carla</span></code></pre>
+      <p>With a <code>NULL</code> in the list, <code>id NOT IN (1, 2, NULL)</code> is never true, because comparing with <code>NULL</code> yields “unknown”. For “does not exist”, prefer <code>NOT EXISTS</code>.</p>
+    </section>
+
+    <section id="operators-en" aria-labelledby="h-operators-en">
+      <h2 id="h-operators-en">Operators and NULL</h2>
+      <p>In the original, the operators appear as images of tables. Here they are in text; they apply to Oracle and, with small variations, to other databases: <sup><a href="#ref-11-en">[11]</a></sup> <sup><a href="#ref-12-en">[12]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Kind</th><th scope="col">Operators</th><th scope="col">Example</th></tr></thead>
+          <tbody>
+            <tr><td>Arithmetic</td><td><code>+ - * /</code></td><td><code>salary * 1.1</code></td></tr>
+            <tr><td>Concatenation</td><td><code>||</code></td><td><code>name || ' (' || dept || ')'</code>; in SQL Server, <code>+</code> or <code>CONCAT()</code></td></tr>
+            <tr><td>Comparison</td><td><code>= &lt;&gt; != &lt; &gt; &lt;= &gt;=</code></td><td><code>salary &gt;= 4000</code></td></tr>
+            <tr><td>Conditions</td><td><code>BETWEEN · IN · LIKE · IS NULL</code></td><td><code>name LIKE 'A%'</code> · <code>dept IN (10, 20)</code></td></tr>
+            <tr><td>Logical</td><td><code>NOT · AND · OR</code></td><td><code>dept = 10 AND NOT salary &lt; 3000</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <figure>
+        <img src="rc_images/SqlPrecedencia-en.svg" alt="On the left, a ladder of eight precedence levels, from strongest to weakest: signs and PRIOR; multiplication and division; addition, subtraction and concatenation; comparisons; IS NULL, LIKE, BETWEEN and IN; NOT; AND; and OR. On the right, the example dept = 10 OR dept = 20 AND salary &gt; 4000, which the database reads as dept = 10 OR, in parentheses, dept = 20 AND salary &gt; 4000, returning 5 rows; with the parentheses in the right place, only 2 rows come back, Ana and Eva." width="1000" height="508" loading="lazy">
+        <figcaption>Without parentheses, AND is evaluated before OR, and the query returns extra rows.</figcaption>
+      </figure>
+      <p>The original’s precedence table comes from training material and gives <code>BETWEEN</code> a level of its own, below <code>IS NULL</code>, <code>LIKE</code> and <code>IN</code>. The current Oracle documentation groups all four on one level, as in the figure. Neither version changes the result of an ordinary condition; the practical rule is the same: <code>NOT</code>, then <code>AND</code>, then <code>OR</code>. <sup><a href="#ref-11-en">[11]</a></sup></p>
+      <h3>NULL is not a value</h3>
+      <p><code>NULL</code> means “unknown”. Any comparison with it yields unknown, including <code>NULL = NULL</code>, and <code>WHERE</code> only lets through what is true. To test for it, use <code>IS NULL</code> and <code>IS NOT NULL</code>; to replace a null with a value, <code>NVL</code> (Oracle) or <code>COALESCE</code> (standard). <sup><a href="#ref-13-en">[13]</a></sup></p>
+    </section>
+
+    <section id="aggregation-en" aria-labelledby="h-aggregation-en">
+      <h2 id="h-aggregation-en">Aggregation: GROUP BY and HAVING</h2>
+      <p><strong>Aggregate functions</strong> (<code>COUNT</code>, <code>SUM</code>, <code>AVG</code>, <code>MIN</code>, <code>MAX</code> and others) summarise many rows into one value. With <code>GROUP BY</code>, they compute one value per group. Every SELECT column that is not inside an aggregate must be in <code>GROUP BY</code>. <sup><a href="#ref-14-en">[14]</a></sup></p>
+      <h3>WHERE or HAVING?</h3>
+      <p><code>WHERE</code> filters rows before grouping; <code>HAVING</code> filters groups after it, which is why it can use aggregates. <sup><a href="#ref-29-en">[29]</a></sup></p>
+      <figure>
+        <img src="rc_images/SqlWhereHaving-en.svg" alt="Four stages. First, the emp_bonus table with five rows; WHERE bonus greater than or equal to 700 drops the row A 500. Next, GROUP BY gathers the rows by employee: A with 1000, B with 2000 and 1250, C with 700. Then the sums are A 1000, B 3250 and C 700, and HAVING SUM greater than 1000 drops A and C. The result is B 3250." width="1000" height="474" loading="lazy">
+        <figcaption>Each filter acts at its own moment: WHERE on rows, HAVING on groups.</figcaption>
+      </figure>
+      <pre class="code"><code><span class="k">SELECT</span> employee, <span class="k">SUM</span>(bonus)
+  <span class="k">FROM</span> emp_bonus
+ <span class="k">GROUP BY</span> employee
+<span class="k">HAVING</span> <span class="k">SUM</span>(bonus) &gt; 1000;     <span class="c">-- A 1500 and B 3250</span></code></pre>
+      <p>The original’s “wrong” example, <code>… GROUP BY employee WHERE SUM(bonus) &gt; 1000</code>, fails for two reasons: <code>WHERE</code> comes before <code>GROUP BY</code> and does not accept aggregates. The original’s code blocks also contain stray backslashes (<code>emp\_bonus</code>), leftovers from the document conversion.</p>
+      <h3>Beyond the simple GROUP BY</h3>
+      <p>The original only points to an article on multidimensional grouping. In short, Oracle and standard SQL offer: <sup><a href="#ref-15-en">[15]</a></sup></p>
+      <ul>
+        <li><code>GROUP BY ROLLUP(dept)</code>: the totals per department plus a grand-total row (16000, 13000 and 29000 with this tutorial’s data).</li>
+        <li><code>GROUP BY CUBE(a, b)</code>: subtotals for every combination of <code>a</code> and <code>b</code>.</li>
+        <li><code>GROUP BY GROUPING SETS ((a), (b), ())</code>: exactly the groupings listed.</li>
+      </ul>
+      <p>The <code>GROUPING(column)</code> function returns 1 on subtotal rows, to tell them apart from a real <code>NULL</code> in the data.</p>
+      <h3>Order out of chaos</h3>
+      <p>Without <code>ORDER BY</code>, no database guarantees row order, not even with <code>GROUP BY</code> or <code>DISTINCT</code>. If the order matters, ask for it explicitly; in Oracle, <code>NULLS FIRST</code> or <code>NULLS LAST</code> decides where the nulls go. <sup><a href="#ref-6-en">[6]</a></sup></p>
+    </section>
+
+    <section id="analytic-en" aria-labelledby="h-analytic-en">
+      <h2 id="h-analytic-en">Analytic functions</h2>
+      <p>The original calls this part “Jedi level”, and rightly so. An <strong>analytic function</strong> (or <em>window function</em>) computes over a group of rows, like an aggregate, but <strong>does not merge</strong> them: each row stays in the result, with the computed value next to it. <sup><a href="#ref-16-en">[16]</a></sup> <sup><a href="#ref-17-en">[17]</a></sup> <sup><a href="#ref-33-en">[33]</a></sup></p>
+      <figure>
+        <img src="rc_images/SqlAnaliticas-en.svg" alt="On the left, seven employees from two departments. In the middle, the aggregate version, AVG with GROUP BY, reduces everything to two rows: department 10 with average 4000 and department 20 with average 4333.33. On the right, the analytic version, AVG OVER PARTITION BY dept, keeps all seven rows and adds the dept_avg column with each person’s department average." width="1000" height="456" loading="lazy">
+        <figcaption>The same average, two ways: merging the rows or keeping them all.</figcaption>
+      </figure>
+      <p>The hallmark of an analytic function is the <code>OVER</code> clause, which has three optional parts:</p>
+      <pre class="code"><code>function(…) <span class="k">OVER</span> (
+    <span class="k">PARTITION BY</span> dept         <span class="c">-- which groups to compute over</span>
+    <span class="k">ORDER BY</span> hired            <span class="c">-- in what order, within the group</span>
+    <span class="k">ROWS BETWEEN</span> …            <span class="c">-- which rows count (the window)</span>
+)</code></pre>
+      <p>Analytic functions can appear only in the SELECT list and in <code>ORDER BY</code>, because they are computed after <code>WHERE</code>, <code>GROUP BY</code> and <code>HAVING</code>. To filter on them, use a subquery or a <code>WITH</code>.</p>
+      <aside class="note">
+        <p><strong>Beware of ORDER BY inside OVER:</strong> it changes the window. Without it, <code>AVG(salary) OVER (PARTITION BY dept)</code> is the whole department’s average. With it, the window runs from the start of the partition to the current row, and the result becomes a <strong>running average</strong>. That is what happens in the original’s first example, <code>AVG(SALARIO) OVER (PARTITION BY IDADE ORDER BY ID_EMP)</code>, presented as “average salary by age”. In this tutorial’s test, department 10’s averages came out as 5000, 4500, 4333 and 4000, not 4000 on every row.</p>
+      </aside>
+      <h3>Numbering and ranking</h3>
+      <figure>
+        <img src="rc_images/SqlRanking-en.svg" alt="Table with seven employees sorted by descending salary and three numbering columns. Eva 6000 and Ana 5000 get 1 and 2 in all three. Bruno and Carla, tied at 4000, get 3 and 4 in ROW_NUMBER, 3 and 3 in RANK and 3 and 3 in DENSE_RANK. Fábio and Gil, tied at 3500, get 5 and 6, 5 and 5, and 4 and 4. Davi 3000 gets 7, 7 and 5. Arrows show that RANK skips positions 4 and 6." width="1000" height="560" loading="lazy">
+        <figcaption>Three ranking functions that differ only in how they handle ties.</figcaption>
+      </figure>
+      <h3>Looking at neighbouring rows</h3>
+      <figure>
+        <img src="rc_images/SqlJanela-en.svg" alt="Table with seven employees in hiring order, from Eva in 2012 to Davi in 2023. Ana’s row is highlighted. A purple arrow shows that Ana’s LAG, 3500, comes from Gil’s salary on the previous row; a blue arrow shows that Ana’s LEAD, Fábio, comes from the next row; and a green bracket shows that Ana’s running total, 18500, adds up the salaries of the first four rows." width="1000" height="554" loading="lazy">
+        <figcaption>LAG, LEAD and the running total, all ordered by hiring date.</figcaption>
+      </figure>
+      <p>The same care with the window explains why <code>LAST_VALUE</code> often seems to “fail”: with <code>ORDER BY</code> and no frame, the window ends at the current row, so the last value is always the row’s own (or that of the last row tied with it). That is why the original’s example writes <code>ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING</code>, stretching the window over the whole partition.</p>
+      <h3>Catalogue of the original’s functions</h3>
+      <p>The original lists Oracle 11.2’s analytic functions, each with an aggregate example and an analytic one. In short, with the corrections found: <sup><a href="#ref-16-en">[16]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Function</th><th scope="col">What it computes</th><th scope="col">Note</th></tr></thead>
+          <tbody>
+            <tr><td><code>AVG · SUM · COUNT · MIN · MAX</code></td><td>Average, sum, count, minimum and maximum.</td><td>With <code>ORDER BY</code> in <code>OVER</code>, they become running values.</td></tr>
+            <tr><td><code>ROW_NUMBER · RANK · DENSE_RANK</code></td><td>The row’s position in the group.</td><td>See the figure above.</td></tr>
+            <tr><td><code>NTILE(n)</code></td><td>Splits the ordered rows into <em>n</em> buckets (4 = quartiles).</td><td>In the original’s example the <code>SELECT</code> is commented out (<code>--SELECT</code>), so the query does not run.</td></tr>
+            <tr><td><code>PERCENT_RANK · CUME_DIST</code></td><td>Relative position, from 0 to 1.</td><td><code>PERCENT_RANK</code> starts at 0; <code>CUME_DIST</code> is never 0.</td></tr>
+            <tr><td><code>LAG · LEAD</code></td><td>Value from a previous or following row.</td><td>The 2nd argument is the offset; the 3rd, the default.</td></tr>
+            <tr><td><code>FIRST_VALUE · LAST_VALUE</code></td><td>First and last value in the window.</td><td>In the 2nd <code>FIRST_VALUE</code> example, <code>DESC</code> belongs to <code>ORDER BY</code>, not “to the end of PARTITION BY”, and the alias <code>MENOR_SALARIO</code> (lowest salary) now shows the <em>highest</em>.</td></tr>
+            <tr><td><code>FIRST · LAST</code> (with <code>KEEP</code>)</td><td>Aggregates only the rows ranked first or last in an ordering.</td><td>Oracle-only syntax.</td></tr>
+            <tr><td><code>LISTAGG</code></td><td>Concatenates values from many rows into one string.</td><td>The original says it “turns a column into rows”; it is the reverse: many rows become one string. <sup><a href="#ref-19-en">[19]</a></sup></td></tr>
+            <tr><td><code>RATIO_TO_REPORT</code></td><td>Each value’s share of the window’s total.</td><td>Oracle-only; in the standard, <code>x / SUM(x) OVER ()</code>.</td></tr>
+            <tr><td><code>STDDEV · VARIANCE · VAR_POP · COVAR_* · CORR</code></td><td>Standard deviation, variance, covariance and Pearson correlation.</td><td>Statistical functions, aggregate or analytic.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Other details in the original’s examples: the <code>LISTAGG</code> comment says “LISTADD”; the <code>COUNT</code> example with <code>RANGE BETWEEN 2000 PRECEDING AND 10000 FOLLOWING</code> counts employees whose salary lies between the row’s salary minus 2000 and plus 10000. SQLite, used for the tests, has no <code>LISTAGG</code>; its equivalent is <code>GROUP_CONCAT</code>. <sup><a href="#ref-18-en">[18]</a></sup></p>
+    </section>
+
+    <section id="setops-en" aria-labelledby="h-setops-en">
+      <h2 id="h-setops-en">Set operators</h2>
+      <p><code>UNION</code>, <code>INTERSECT</code> and <code>EXCEPT</code> combine the results of two queries by comparing whole rows. Both queries need the same number of columns, with compatible types; the result’s column names come from the first. <sup><a href="#ref-20-en">[20]</a></sup> <sup><a href="#ref-21-en">[21]</a></sup></p>
+      <figure>
+        <img src="rc_images/SqlConjuntos-en.svg" alt="Venn diagram with sales2005 on the left, holding João 1000 and Roberto 5000, sales2006 on the right, with João 2000 and Isaque 35000, and Alex 2000 in the intersection. Below, four results: UNION with 5 rows, UNION ALL with 6, since Alex 2000 appears twice, INTERSECT with 1, Alex 2000, and EXCEPT or MINUS with 2, João 1000 and Roberto 5000." width="1000" height="698" loading="lazy">
+        <figcaption>With the original’s sales data: only Alex 2000 is identical in both years.</figcaption>
+      </figure>
+      <ul>
+        <li><code>UNION</code> removes duplicate rows, which requires sorting or comparing everything; when you know there are no duplicates, <code>UNION ALL</code> is faster.</li>
+        <li>In the original’s example, the second table has columns <code>person</code> and <code>amount</code> rather than <code>pessoa</code> and <code>quantia</code>. It works, because what matters is the column position, but using the same names is clearer.</li>
+        <li>The <code>EXCEPT</code> text says the query returns the rows between 1 and 100 “as well as” the rows between 50 and 75. It is the opposite: the rows between 1 and 100 <strong>except</strong> those between 50 and 75.</li>
+        <li>In Oracle the operator is called <code>MINUS</code>; from version 21c, <code>EXCEPT</code>, <code>EXCEPT ALL</code> and <code>INTERSECT ALL</code> are also accepted. <sup><a href="#ref-21-en">[21]</a></sup></li>
+      </ul>
+      <p>Where there is no <code>EXCEPT</code>, you can get the same with a <code>LEFT JOIN</code> that keeps only unmatched rows (<code>WHERE o2.id IS NULL</code>), as the original shows, or with <code>NOT EXISTS</code>.</p>
+    </section>
+
+    <section id="hierarchy-en" aria-labelledby="h-hierarchy-en">
+      <h2 id="h-hierarchy-en">Hierarchical queries</h2>
+      <p>When each row points to a parent row in the same table (employee and manager, message and reply, kit and component), you need a query that walks the tree. The original’s example is a forum where each message stores in <code>parent_id</code> the <code>id</code> of the message it replies to. <sup><a href="#ref-22-en">[22]</a></sup> <sup><a href="#ref-31-en">[31]</a></sup></p>
+      <figure>
+        <img src="rc_images/SqlHierarquia-en.svg" alt="On the left, two message trees. The first starts at message 1, by User 1, at level 1, and goes down through replies 2, 3, 4 and 5, at levels 2 to 5. The second starts at message 6, by User 23, with reply 7 at level 2. On the right, the table with id, login and parent_id, where roots 1 and 6 have a null parent_id, and the clause CONNECT BY PRIOR id = parent_id, explaining that PRIOR marks the parent row’s column." width="1000" height="552" loading="lazy">
+        <figcaption>START WITH picks the roots, CONNECT BY PRIOR links parent and child, and LEVEL counts the depth.</figcaption>
+      </figure>
+      <h3>Oracle’s CONNECT BY</h3>
+      <pre class="code"><code><span class="k">SELECT</span> <span class="k">LEVEL</span> <span class="k">AS</span> depth,
+       LPAD(<span class="s">' '</span>, (<span class="k">LEVEL</span> - 1) * 3, <span class="s">'-'</span>) || m.login || <span class="s">': '</span> || m.text <span class="k">AS</span> message
+  <span class="k">FROM</span> message m
+ <span class="k">START WITH</span> m.parent_id <span class="k">IS NULL</span>
+<span class="k">CONNECT BY</span> <span class="k">PRIOR</span> m.id = m.parent_id
+ <span class="k">ORDER SIBLINGS BY</span> m.sent_at;</code></pre>
+      <ul>
+        <li><code>START WITH</code> sets the roots. The original uses a subquery (<code>id_mensagem IN (SELECT … WHERE parent_id IS NULL)</code>); <code>parent_id IS NULL</code> directly does the same.</li>
+        <li><code>CONNECT BY PRIOR</code> sets the relationship. The original claims Oracle treats the <em>left</em> side of the equality as the parent. Not quite: the parent is marked by the <code>PRIOR</code> operator, which can be on either side. <code>PRIOR id = parent_id</code> and <code>parent_id = PRIOR id</code> are identical; <code>id = PRIOR parent_id</code>, however, reverses the direction and climbs from leaf to root. <sup><a href="#ref-22-en">[22]</a></sup></li>
+        <li><code>LEVEL</code> is the depth; <code>ORDER SIBLINGS BY</code> sorts the replies to the same parent without breaking up the tree; <code>SYS_CONNECT_BY_PATH</code> and <code>CONNECT_BY_ROOT</code> return the path from the root and the root itself.</li>
+      </ul>
+      <p>Two details in the original’s script: <code>TEXTO CLOB DEFAULT '' NOT NULL</code> is contradictory in Oracle, which treats the empty string as <code>NULL</code>; and “Table 2” claims to be the result of “listing 2”, but it is the result of listing 3.</p>
+      <h3>The standard way: recursive WITH</h3>
+      <p>Standard SQL solves the same problem with a recursive <code>WITH</code>, supported by Oracle since 11g R2 and by every current database. The original says Oracle had not implemented it yet; that changed in 2009. This version was tested on SQLite: <sup><a href="#ref-23-en">[23]</a></sup> <sup><a href="#ref-24-en">[24]</a></sup></p>
+      <pre class="code"><code><span class="k">WITH RECURSIVE</span> tree (id, login, text, depth) <span class="k">AS</span> (
+    <span class="k">SELECT</span> id, login, text, 1
+      <span class="k">FROM</span> message <span class="k">WHERE</span> parent_id <span class="k">IS NULL</span>          <span class="c">-- roots</span>
+    <span class="k">UNION ALL</span>
+    <span class="k">SELECT</span> m.id, m.login, m.text, t.depth + 1
+      <span class="k">FROM</span> message m <span class="k">JOIN</span> tree t <span class="k">ON</span> m.parent_id = t.id   <span class="c">-- children</span>
+)
+<span class="k">SELECT</span> * <span class="k">FROM</span> tree;</code></pre>
+      <p>In Oracle you write just <code>WITH</code>, without the word <code>RECURSIVE</code>. The original’s big final example uses <code>CONNECT BY</code> over the JD Edwards bill of materials and <code>SYS_CONNECT_BY_PATH</code> to multiply each level’s quantities. With a recursive <code>WITH</code>, you just carry the running product in a column (<code>t.qty_acc * m.quantity</code>), without the 23 helper columns.</p>
+    </section>
+
+    <section id="with-en" aria-labelledby="h-with-en">
+      <h2 id="h-with-en">WITH for complex queries</h2>
+      <p>The <code>WITH</code> clause (<em>subquery factoring</em> or <em>common table expression</em>) names subqueries that the main query then uses as if they were tables. It keeps long queries readable and avoids repeating the same subquery. <sup><a href="#ref-6-en">[6]</a></sup> <sup><a href="#ref-24-en">[24]</a></sup></p>
+      <p>The original’s example does not run: the parentheses around each subquery and the commas between them are missing, there is a semicolon in the middle of the statement, and the per-store subquery uses <code>SUM</code> without <code>GROUP BY</code>. Corrected and tested:</p>
+      <pre class="code"><code><span class="k">WITH</span>
+  sum_sales <span class="k">AS</span> (
+    <span class="k">SELECT</span> <span class="k">SUM</span>(quantity) <span class="k">AS</span> all_sales <span class="k">FROM</span> sales
+  ),
+  number_stores <span class="k">AS</span> (
+    <span class="k">SELECT</span> <span class="k">COUNT</span>(*) <span class="k">AS</span> nbr_stores <span class="k">FROM</span> store
+  ),
+  sales_by_store <span class="k">AS</span> (
+    <span class="k">SELECT</span> s.store_name, <span class="k">SUM</span>(v.quantity) <span class="k">AS</span> store_sales
+      <span class="k">FROM</span> store s <span class="k">JOIN</span> sales v <span class="k">ON</span> v.store_id = s.store_id
+     <span class="k">GROUP BY</span> s.store_name
+  )
+<span class="k">SELECT</span> b.store_name, b.store_sales
+  <span class="k">FROM</span> sales_by_store b
+ <span class="k">CROSS JOIN</span> sum_sales t
+ <span class="k">CROSS JOIN</span> number_stores n
+ <span class="k">WHERE</span> b.store_sales &gt; t.all_sales / n.nbr_stores;   <span class="c">-- stores above average</span></code></pre>
+      <p>Oracle decides by itself whether to store each subquery’s result in a temporary table (<em>materialise</em> it) or merge it into the main query. The <code>/*+ MATERIALIZE */</code> hint mentioned in the original forces the first option, but it is not officially documented; use it only after comparing plans.</p>
+    </section>
+
+    <section id="bind-en" aria-labelledby="h-bind-en">
+      <h2 id="h-bind-en">BIND variables</h2>
+      <p>Before running a statement, Oracle looks for its exact text in the <em>shared pool</em>, a shared memory area. If it finds it, it reuses the plan already computed (<em>soft parse</em>). If not, it parses the statement and builds a new plan (<em>hard parse</em>), which on systems with many transactions can cost more than the query itself. <sup><a href="#ref-7-en">[7]</a></sup> <sup><a href="#ref-30-en">[30]</a></sup></p>
+      <figure>
+        <img src="rc_images/SqlBind-en.svg" alt="On the left, three queries identical except for the number in WHERE, 674, 234 and 332; each triggers a hard parse, in which the database parses the statement and builds a plan. On the right, the same query with the variable :cust_no receiving the three values; only the first execution does a hard parse, and the other two reuse the plan with a soft parse. Below, the shared pool, where Oracle keeps the text and plan of each statement." width="1000" height="508" loading="lazy">
+        <figcaption>With BIND, the statement text does not change, and the plan is reused.</figcaption>
+      </figure>
+      <p>A <strong>BIND variable</strong> (<code>:cust_no</code>) takes the place of the literal value. The statement text stays the same, and only the value changes on each run. In programming languages this is done with <em>prepared statements</em>, which bring an even bigger benefit: since the value is never pasted into the SQL text, they prevent <strong>SQL injection</strong>. <sup><a href="#ref-25-en">[25]</a></sup> <sup><a href="#ref-26-en">[26]</a></sup> <sup><a href="#ref-27-en">[27]</a></sup></p>
+      <aside class="recap" aria-label="Key points">
+        <h3>Key points</h3>
+        <ul>
+          <li>Ask only for the columns and rows you need, and do not apply functions to filtered columns.</li>
+          <li>Explicit joins (<code>JOIN … ON</code>) and aliases keep a query readable.</li>
+          <li><code>WHERE</code> filters rows; <code>HAVING</code>, groups.</li>
+          <li><code>OVER</code> computes without merging rows; the <code>ORDER BY</code> inside it changes the window.</li>
+          <li><code>NOT IN</code> with a <code>NULL</code> returns nothing; prefer <code>NOT EXISTS</code>.</li>
+          <li>Use BIND variables: better performance and no SQL injection.</li>
+        </ul>
+      </aside>
+      <h3>Two final tips from the original</h3>
+      <p>To strip line breaks from a text field before exporting it (a tip from Felipe Renz):</p>
+      <pre class="code"><code><span class="k">SELECT</span> REPLACE(REPLACE(field, CHR(10), <span class="s">' '</span>), CHR(13), <span class="s">' '</span>) <span class="k">FROM</span> …</code></pre>
+      <p>And SQL Server’s date and time functions; in the original, a space was missing in <code>CURRENT_TIMESTAMPAS</code>:</p>
+      <pre class="code"><code><span class="k">SELECT</span> GETDATE(), CURRENT_TIMESTAMP, GETUTCDATE(),
+       SYSDATETIME(), SYSUTCDATETIME(), SYSDATETIMEOFFSET();</code></pre>
+      <p>And, as the original’s last page says: <em>Don’t panic!</em></p>
+    </section>
+
+    <section id="review-en" aria-labelledby="h-review-en">
+      <h2 id="h-review-en">Quick review</h2>
+      <p>Try to answer before opening each question.</p>
+      <div class="quiz">
+        <details><summary>1. Which subset do GRANT and REVOKE belong to?</summary><p>DCL, the data control language: they grant and revoke permissions.</p></details>
+        <details><summary>2. Why does an alias created in SELECT not work in WHERE?</summary><p>Because, in the logical order, WHERE is evaluated before SELECT; when the filter runs, the alias does not exist yet. In ORDER BY, which comes later, it works.</p></details>
+        <details><summary>3. What is the difference between LEFT JOIN and INNER JOIN?</summary><p>INNER returns only rows with a match in both tables; LEFT returns every row from the left, with NULL where there is no match.</p></details>
+        <details><summary>4. Why can <code>WHERE TO_CHAR(hired, 'YYYY') = '2026'</code> be slow?</summary><p>The function is applied to the column on every row, which prevents using a normal index. Compare the column with a date range.</p></details>
+        <details><summary>5. What does <code>WHERE a = 1 OR a = 2 AND b &gt; 0</code> actually mean?</summary><p><code>a = 1 OR (a = 2 AND b &gt; 0)</code>, because AND comes before OR. Use parentheses to say what you mean.</p></details>
+        <details><summary>6. Why can <code>NOT IN</code> return zero rows?</summary><p>If the subquery contains a NULL, the comparison with it yields “unknown”, and no row passes. <code>NOT EXISTS</code> does not have this problem.</p></details>
+        <details><summary>7. Where do you filter on <code>SUM(bonus) &gt; 1000</code>: WHERE or HAVING?</summary><p>In HAVING, which filters groups after aggregation.</p></details>
+        <details><summary>8. For salaries 5000, 4000, 4000 and 3000, what positions do RANK and DENSE_RANK give?</summary><p>RANK: 1, 2, 2, 4. DENSE_RANK: 1, 2, 2, 3.</p></details>
+        <details><summary>9. What is the difference between UNION and UNION ALL?</summary><p>UNION removes duplicate rows; UNION ALL keeps them all and is faster.</p></details>
+        <details><summary>10. Do <code>CONNECT BY PRIOR id = parent_id</code> and <code>CONNECT BY parent_id = PRIOR id</code> give the same result?</summary><p>Yes: what counts is which expression PRIOR is attached to, not the side of the equality.</p></details>
+      </div>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="references-en" aria-labelledby="h-references-en">
+      <h2 id="h-references-en">References</h2>
+      <ol class="refs">
+        <li id="ref-1-en"><strong>Giovani Perotto Mesquita</strong>, “The Hitchhiker’s Guide to the Structured Query Language”, GitHub, original text of this tutorial (in Portuguese), <a href="https://github.com/GiovaniPM/MyCourses/blob/master/SQL/Overview%20Structured%20Query%20Language.md" rel="noopener">github.com/GiovaniPM/MyCourses/blob/master/SQL/Overview Structured Query Language.md</a>.</li>
+        <li id="ref-2-en"><strong>Wikipedia</strong>, “SQL”, accessed 25 September 2026, <a href="https://en.wikipedia.org/wiki/SQL" rel="noopener">en.wikipedia.org/wiki/SQL</a>.</li>
+        <li id="ref-3-en"><strong>Wikipedia</strong>, “Relational algebra”, accessed 25 September 2026, <a href="https://en.wikipedia.org/wiki/Relational_algebra" rel="noopener">en.wikipedia.org/wiki/Relational_algebra</a>.</li>
+        <li id="ref-4-en"><strong>Wikipedia</strong>, “Edgar F. Codd”, accessed 25 September 2026, <a href="https://en.wikipedia.org/wiki/Edgar_F._Codd" rel="noopener">en.wikipedia.org/wiki/Edgar_F._Codd</a>.</li>
+        <li id="ref-5-en"><strong>Oracle</strong>, <em>SQL Language Reference 19c</em>, “Types of SQL Statements”, accessed 25 September 2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Types-of-SQL-Statements.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Types-of-SQL-Statements.html</a>.</li>
+        <li id="ref-6-en"><strong>Oracle</strong>, <em>SQL Language Reference 19c</em>, “SELECT”, accessed 25 September 2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SELECT.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SELECT.html</a>.</li>
+        <li id="ref-7-en"><strong>Oracle</strong>, <em>SQL Tuning Guide 19c</em>, “SQL Processing”, accessed 25 September 2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/tgsql/sql-processing.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/19/tgsql/sql-processing.html</a>.</li>
+        <li id="ref-8-en"><strong>Markus Winand</strong>, <em>Use The Index, Luke</em>, “Functions”, accessed 25 September 2026, <a href="https://use-the-index-luke.com/sql/where-clause/functions" rel="noopener">use-the-index-luke.com/sql/where-clause/functions</a>.</li>
+        <li id="ref-9-en"><strong>Wikipedia</strong>, “Join (SQL)”, accessed 25 September 2026, <a href="https://en.wikipedia.org/wiki/Join_(SQL)" rel="noopener">en.wikipedia.org/wiki/Join_(SQL)</a>.</li>
+        <li id="ref-10-en"><strong>Oracle</strong>, <em>SQL Language Reference 19c</em>, “Joins”, accessed 25 September 2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Joins.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Joins.html</a>.</li>
+        <li id="ref-11-en"><strong>Oracle</strong>, <em>SQL Language Reference 19c</em>, “About SQL Conditions”, accessed 25 September 2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/About-SQL-Conditions.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/About-SQL-Conditions.html</a>.</li>
+        <li id="ref-12-en"><strong>Oracle</strong>, <em>SQL Language Reference 19c</em>, “About SQL Operators”, accessed 25 September 2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/About-SQL-Operators.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/About-SQL-Operators.html</a>.</li>
+        <li id="ref-13-en"><strong>Wikipedia</strong>, “Null (SQL)”, accessed 25 September 2026, <a href="https://en.wikipedia.org/wiki/Null_(SQL)" rel="noopener">en.wikipedia.org/wiki/Null_(SQL)</a>.</li>
+        <li id="ref-14-en"><strong>Oracle</strong>, <em>SQL Language Reference 19c</em>, “Aggregate Functions”, accessed 25 September 2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Aggregate-Functions.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Aggregate-Functions.html</a>.</li>
+        <li id="ref-15-en"><strong>Oracle</strong>, <em>Data Warehousing Guide 19c</em>, “SQL for Aggregation in Data Warehouses”, accessed 25 September 2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/dwhsg/sql-aggregation-data-warehouses.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/19/dwhsg/sql-aggregation-data-warehouses.html</a>.</li>
+        <li id="ref-16-en"><strong>Oracle</strong>, <em>SQL Language Reference 19c</em>, “Analytic Functions”, accessed 25 September 2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Analytic-Functions.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Analytic-Functions.html</a>.</li>
+        <li id="ref-17-en"><strong>Wikipedia</strong>, “Window function (SQL)”, accessed 25 September 2026, <a href="https://en.wikipedia.org/wiki/Window_function_(SQL)" rel="noopener">en.wikipedia.org/wiki/Window_function_(SQL)</a>.</li>
+        <li id="ref-18-en"><strong>SQLite</strong>, “Window Functions”, accessed 25 September 2026, <a href="https://www.sqlite.org/windowfunctions.html" rel="noopener">sqlite.org/windowfunctions.html</a>.</li>
+        <li id="ref-19-en"><strong>Oracle</strong>, <em>SQL Language Reference 19c</em>, “LISTAGG”, accessed 25 September 2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/LISTAGG.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/LISTAGG.html</a>.</li>
+        <li id="ref-20-en"><strong>Wikipedia</strong>, “Set operations (SQL)”, accessed 25 September 2026, <a href="https://en.wikipedia.org/wiki/Set_operations_(SQL)" rel="noopener">en.wikipedia.org/wiki/Set_operations_(SQL)</a>.</li>
+        <li id="ref-21-en"><strong>Oracle</strong>, <em>SQL Language Reference 21c</em>, “The Set Operators”, accessed 25 September 2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/21/sqlrf/The-UNION-ALL-INTERSECT-MINUS-Operators.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/21/sqlrf/The-UNION-ALL-INTERSECT-MINUS-Operators.html</a>.</li>
+        <li id="ref-22-en"><strong>Oracle</strong>, <em>SQL Language Reference 19c</em>, “Hierarchical Queries”, accessed 25 September 2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Hierarchical-Queries.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Hierarchical-Queries.html</a>.</li>
+        <li id="ref-23-en"><strong>Wikipedia</strong>, “Hierarchical and recursive queries in SQL”, accessed 25 September 2026, <a href="https://en.wikipedia.org/wiki/Hierarchical_and_recursive_queries_in_SQL" rel="noopener">en.wikipedia.org/wiki/Hierarchical_and_recursive_queries_in_SQL</a>.</li>
+        <li id="ref-24-en"><strong>SQLite</strong>, “The WITH Clause”, accessed 25 September 2026, <a href="https://www.sqlite.org/lang_with.html" rel="noopener">sqlite.org/lang_with.html</a>.</li>
+        <li id="ref-25-en"><strong>Markus Winand</strong>, <em>Use The Index, Luke</em>, “Bind Parameters”, accessed 25 September 2026, <a href="https://use-the-index-luke.com/sql/where-clause/bind-parameters" rel="noopener">use-the-index-luke.com/sql/where-clause/bind-parameters</a>.</li>
+        <li id="ref-26-en"><strong>Wikipedia</strong>, “Prepared statement”, accessed 25 September 2026, <a href="https://en.wikipedia.org/wiki/Prepared_statement" rel="noopener">en.wikipedia.org/wiki/Prepared_statement</a>.</li>
+        <li id="ref-27-en"><strong>Wikipedia</strong>, “SQL injection”, accessed 25 September 2026, <a href="https://en.wikipedia.org/wiki/SQL_injection" rel="noopener">en.wikipedia.org/wiki/SQL_injection</a>.</li>
+        <li id="ref-28-en"><strong>Wikipedia</strong>, “JD Edwards”, accessed 25 September 2026, <a href="https://en.wikipedia.org/wiki/JD_Edwards" rel="noopener">en.wikipedia.org/wiki/JD_Edwards</a>.</li>
+        <li id="ref-29-en"><strong>Programmer Interview</strong>, “Having vs. Where Clause”, accessed 25 September 2026, <a href="http://www.programmerinterview.com/index.php/database-sql/having-vs-where-clause/" rel="noopener">programmerinterview.com/index.php/database-sql/having-vs-where-clause</a>.</li>
+        <li id="ref-30-en"><strong>Akadia</strong>, “Oracle Bind Variables”, accessed 25 September 2026, <a href="http://www.akadia.com/services/ora_bind_variables.html" rel="noopener">akadia.com/services/ora_bind_variables.html</a>.</li>
+        <li id="ref-31-en"><strong>DevMedia</strong>, “Uso do CONNECT BY no Oracle”, accessed 25 September 2026, <a href="https://www.devmedia.com.br/uso-do-connect-by-no-oracle/23647" rel="noopener">devmedia.com.br/uso-do-connect-by-no-oracle/23647</a>.</li>
+        <li id="ref-32-en"><strong>Oracle Blues</strong>, “Diferença entre o IN e o EXISTS”, 2007, accessed 25 September 2026, <a href="http://oracleblues.blogspot.com/2007/02/diferena-entre-o-in-e-o-exists.html" rel="noopener">oracleblues.blogspot.com/2007/02/diferena-entre-o-in-e-o-exists.html</a>.</li>
+        <li id="ref-33-en"><strong>Certificação BD</strong>, “SQL e PL/SQL”, accessed 25 September 2026, <a href="http://certificacaobd.com.br/category/geral/dbarea/oracle-dbarea/sql-e-plsql/" rel="noopener">certificacaobd.com.br/category/geral/dbarea/oracle-dbarea/sql-e-plsql</a>.</li>
+        <li id="ref-34-en"><strong>Wikipedia</strong>, “Sargable”, accessed 25 September 2026, <a href="https://en.wikipedia.org/wiki/Sargable" rel="noopener">en.wikipedia.org/wiki/Sargable</a>.</li>
+      </ol>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== IT ===================== -->
+<div id="it" role="tabpanel" aria-labelledby="tab-it" lang="it" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Progetti</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Guida galattica per SQL</h1>
+      <p class="dek">Dalla SELECT di base alle funzioni analitiche: join, sottoquery, aggregazione, operatori insiemistici, query gerarchiche, WITH e variabili di BIND, con esempi verificati e gli errori del testo originale corretti.</p>
+      <div class="byline">
+        <span>Di <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Pubblicato il <time datetime="2026-09-25">25/09/2026</time></span>
+        <span class="credit">Rivisto e impaginato con Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-it">
+    <h2 id="toc-it">Indice</h2>
+    <ol>
+      <li><a href="#intro-it">Che cos’è SQL</a></li>
+      <li><a href="#sottoinsiemi-it">I sottoinsiemi di SQL</a></li>
+      <li><a href="#select-it">La struttura della SELECT</a></li>
+      <li><a href="#piano-it">Piano di esecuzione</a></li>
+      <li><a href="#join-it">Join e alias</a></li>
+      <li><a href="#sottoquery-it">Sottoquery, IN ed EXISTS</a></li>
+      <li><a href="#operatori-it">Operatori e NULL</a></li>
+      <li><a href="#aggregazione-it">Aggregazione: GROUP BY e HAVING</a></li>
+      <li><a href="#analitiche-it">Funzioni analitiche</a></li>
+      <li><a href="#insiemi-it">Operatori insiemistici</a></li>
+      <li><a href="#gerarchia-it">Query gerarchiche</a></li>
+      <li><a href="#with-it">WITH per query complesse</a></li>
+      <li><a href="#bind-it">Variabili di BIND</a></li>
+      <li><a href="#ripasso-it">Ripasso veloce</a></li>
+      <li><a href="#riferimenti-it">Riferimenti</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="intro-it" aria-labelledby="h-intro-it">
+      <h2 id="h-intro-it">Che cos’è SQL</h2>
+      <p><strong>SQL</strong> (<em>Structured Query Language</em>) è il linguaggio standard dei database relazionali. È <strong>dichiarativo</strong>: si descrive il risultato voluto, e il database decide come ottenerlo. Le sue idee vengono dal modello relazionale pubblicato da Edgar F. Codd nel 1970 e dall’<strong>algebra relazionale</strong>, che tratta le tabelle come insiemi. <sup><a href="#ref-2-it">[2]</a></sup> <sup><a href="#ref-3-it">[3]</a></sup> <sup><a href="#ref-4-it">[4]</a></sup></p>
+      <p>IBM creò la prima versione negli anni ’70, e presto nacquero i “dialetti” di altri produttori. Per metterli in ordine, l’ANSI pubblicò uno standard nel 1986 e l’ISO nel 1987; da allora lo standard è stato rivisto molte volte. Oracle, SQL Server, PostgreSQL, MySQL e SQLite ne seguono il nucleo, ma ognuno ha le proprie estensioni. <sup><a href="#ref-2-it">[2]</a></sup></p>
+      <aside class="note">
+        <p><strong>Su questo tutorial:</strong> il testo originale, in portoghese, era scritto per un team che usava Oracle con l’ERP JD Edwards, le cui tabelle hanno nomi come <code>F4101</code> (anagrafica articoli) e <code>F4102</code> (articoli per filiale). I prerequisiti d’ambiente di quel team sono stati omessi. I nuovi esempi usano tabelle piccole e sono stati verificati con SQLite 3.50; ciò che è esclusivo di Oracle è stato controllato sulla documentazione ufficiale. <sup><a href="#ref-1-it">[1]</a></sup> <sup><a href="#ref-28-it">[28]</a></sup></p>
+      </aside>
+    </section>
+
+    <section id="sottoinsiemi-it" aria-labelledby="h-sottoinsiemi-it">
+      <h2 id="h-sottoinsiemi-it">I sottoinsiemi di SQL</h2>
+      <p>I comandi SQL si dividono di solito in gruppi, secondo ciò che fanno. <sup><a href="#ref-5-it">[5]</a></sup></p>
+      <figure>
+        <img src="rc_images/SqlSubconjuntos-it.svg" alt="Cinque schede: DDL, definizione dei dati, con CREATE, ALTER e DROP; DML, manipolazione dei dati, con INSERT, UPDATE e DELETE; DQL, interrogazione, con SELECT; DCL, controllo dei dati, con GRANT e REVOKE; e DTL, transazioni, detta anche TCL, con COMMIT, ROLLBACK e SAVEPOINT." width="1000" height="416" loading="lazy">
+        <figcaption>Cinque gruppi di comandi: struttura, dati, interrogazioni, permessi e transazioni.</figcaption>
+      </figure>
+      <p>La tabella dell’originale ha alcuni errori di sintassi negli esempi di DML. Queste sono le versioni corrette:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Comando</th><th scope="col">Esempio</th><th scope="col">Correzione</th></tr></thead>
+          <tbody>
+            <tr><td><code>INSERT</code></td><td><code>INSERT INTO persona (id, nome, sesso) VALUES (7, 'Studente', 'M');</code></td><td>È <code>VALUES</code>, non <code>value</code>; mancava la parentesi di chiusura; i testi vanno tra apici singoli (le virgolette doppie indicano nomi di colonna).</td></tr>
+            <tr><td><code>SELECT</code></td><td><code>SELECT * FROM persona;</code></td><td>—</td></tr>
+            <tr><td><code>UPDATE</code></td><td><code>UPDATE persona SET data_nascita = DATE '1985-09-11' WHERE id = 7;</code></td><td>Una data come testo, per esempio <code>'11/09/1985'</code>, dipende dalle impostazioni regionali del database; il letterale <code>DATE 'AAAA-MM-GG'</code> no. L’originale usava anche <code>id_pessoa</code> in una tabella la cui colonna è <code>id</code>.</td></tr>
+            <tr><td><code>DELETE</code></td><td><code>DELETE FROM persona WHERE id = 7;</code></td><td>Senza <code>WHERE</code>, svuota l’intera tabella.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Sulle transazioni: <code>COMMIT</code> rende definitive le modifiche e <code>ROLLBACK</code> le annulla fino all’ultimo <code>COMMIT</code>. In Oracle una transazione inizia da sola con il primo comando DML, e ogni comando DDL esegue un <code>COMMIT</code> implicito. <sup><a href="#ref-5-it">[5]</a></sup></p>
+    </section>
+
+    <section id="select-it" aria-labelledby="h-select-it">
+      <h2 id="h-select-it">La struttura della SELECT</h2>
+      <p>La sintassi dell’originale omette proprio l’elenco delle colonne e ha parentesi quadre spaiate. La forma generale è: <sup><a href="#ref-6-it">[6]</a></sup></p>
+      <pre class="code"><code><span class="k">SELECT</span> [DISTINCT] elenco_colonne
+  <span class="k">FROM</span> tabelle_e_join
+ [<span class="k">WHERE</span> condizione_sulle_righe]
+ [<span class="k">GROUP BY</span> colonne_di_raggruppamento]
+ [<span class="k">HAVING</span> condizione_sui_gruppi]
+ [<span class="k">ORDER BY</span> colonne [ASC | DESC]]</code></pre>
+      <p>Il <code>DISTINCTROW</code> citato nell’originale esiste solo in MySQL, come sinonimo di <code>DISTINCT</code>. Notate che l’ordine in cui si scrivono le clausole non è quello in cui il database le valuta:</p>
+      <figure>
+        <img src="rc_images/SqlOrdem-it.svg" alt="A sinistra, le clausole nell’ordine in cui si scrivono: SELECT, FROM, WHERE, GROUP BY, HAVING e ORDER BY. A destra, l’ordine logico di valutazione: FROM e JOIN, WHERE, GROUP BY, HAVING, SELECT e ORDER BY. Delle linee collegano ogni clausola alla sua posizione, mostrando che SELECT passa dal primo al quinto posto." width="1000" height="506" loading="lazy">
+        <figcaption>Il database costruisce le righe (FROM, WHERE), le raggruppa, filtra i gruppi e solo allora calcola la SELECT.</figcaption>
+      </figure>
+      <p>L’originale descrive la SELECT come un taglio “orizzontale” (le colonne) e “verticale” (le righe scelte dal criterio). Nell’algebra relazionale sono la <strong>proiezione</strong> e la <strong>selezione</strong>: <sup><a href="#ref-3-it">[3]</a></sup></p>
+      <figure>
+        <img src="rc_images/SqlProjecao-it.svg" alt="Una tabella emp con sette dipendenti e le colonne id, nome, reparto, stipendio ed eta. Le colonne nome e stipendio sono evidenziate in lilla, a indicare la proiezione fatta dalla SELECT; le righe del reparto 20 sono evidenziate in verde, a indicare la selezione fatta dal WHERE; le intersezioni sono dorate. A destra, la query e il risultato: Eva 6000, Fábio 3500 e Gil 3500." width="1000" height="472" loading="lazy">
+        <figcaption>La SELECT sceglie le colonne; il WHERE, le righe.</figcaption>
+      </figure>
+      <p><strong>Consiglio:</strong> <em>“La perfezione si raggiunge non quando non c’è più nulla da aggiungere, ma quando non c’è più nulla da togliere”</em>, scrisse Saint-Exupéry (in <em>Terra degli uomini</em>, non ne <em>Il piccolo principe</em>, come dice l’originale). In SQL: evitate <code>SELECT *</code> e chiedete solo le colonne che servono. Meno colonne significano meno dati letti e trasferiti e, a volte, la possibilità di rispondere usando solo un indice. <sup><a href="#ref-1-it">[1]</a></sup></p>
+    </section>
+
+    <section id="piano-it" aria-labelledby="h-piano-it">
+      <h2 id="h-piano-it">Piano di esecuzione</h2>
+      <p>Prima di eseguire una query, l’ottimizzatore del database costruisce un <strong>piano di esecuzione</strong>: in che ordine leggere le tabelle, quali indici usare e come unire i risultati. In Oracle il piano si vede con <code>EXPLAIN PLAN FOR</code> seguito da <code>SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY)</code>, oppure con il pulsante del piano di SQL Developer. <sup><a href="#ref-7-it">[7]</a></sup></p>
+      <p>Tre numeri guidano queste scelte:</p>
+      <ul>
+        <li><strong>Selettività</strong>: la frazione di righe che supera un filtro, da 0,0 (nessuna) a 1,0 (tutte).</li>
+        <li><strong>Cardinalità</strong>: la stima di quante righe restituisce ogni passo.</li>
+        <li><strong>Costo</strong>: la stima delle risorse (letture su disco, CPU, rete) di ogni passo.</li>
+      </ul>
+      <h3>Non applicate funzioni alle colonne filtrate</h3>
+      <p>Una condizione come <code>WHERE TO_CHAR(assunzione, 'YYYY') = '2026'</code> costringe il database a calcolare la funzione su ogni riga e impedisce l’uso di un indice normale su <code>assunzione</code>. Trasformate il <em>valore</em>, non la colonna: <code>WHERE assunzione &gt;= DATE '2026-01-01' AND assunzione &lt; DATE '2027-01-01'</code>. Le condizioni scritte così si chiamano <em>sargable</em>. <sup><a href="#ref-8-it">[8]</a></sup> <sup><a href="#ref-34-it">[34]</a></sup></p>
+      <p>È ciò che l’originale consiglia per JD Edwards, che memorizza le date nel formato giuliano <code>CYYDDD</code>. Invece di convertire la colonna, si converte la data di oggi: <code>ixefff &lt;= TO_CHAR(SYSDATE, 'YYYYDDD') - 1900000</code>.</p>
+      <h3>Tabella guida</h3>
+      <p>L’originale chiama <em>drive table</em> la tabella da cui parte la query, di solito la più restrittiva. Gli ottimizzatori attuali, basati sui costi, fanno questa scelta da soli e di solito la fanno bene quando le statistiche sono aggiornate. Quando non è così, Oracle accetta suggerimenti come <code>/*+ LEADING(a) */</code>, che dovrebbero essere l’eccezione, non la regola. <sup><a href="#ref-7-it">[7]</a></sup></p>
+    </section>
+
+    <section id="join-it" aria-labelledby="h-join-it">
+      <h2 id="h-join-it">Join e alias</h2>
+      <p>Un <strong>join</strong> combina le righe di due tabelle tramite una condizione. La figura mostra i tipi principali sugli stessi dati. <sup><a href="#ref-9-it">[9]</a></sup> <sup><a href="#ref-10-it">[10]</a></sup></p>
+      <figure>
+        <img src="rc_images/SqlJoins-it.svg" alt="In alto, la tabella cliente con Ana, Bruno e Carla e la tabella ordine con gli ordini 101 e 102 di Ana, 103 di Bruno e 104 di un cliente 4 inesistente. Sotto, cinque pannelli con diagrammi di Venn e risultati: INNER JOIN restituisce Ana 101, Ana 102 e Bruno 103; LEFT JOIN aggiunge Carla con NULL; RIGHT JOIN aggiunge l’ordine 104 con nome NULL; FULL JOIN porta entrambi; e CROSS JOIN produce 3 per 4, 12 combinazioni." width="1000" height="652" loading="lazy">
+        <figcaption>I cinque tipi di join applicati a clienti e ordini.</figcaption>
+      </figure>
+      <p>Il <code>NATURAL JOIN</code>, citato nell’originale, unisce automaticamente sulle colonne con lo stesso nome. È comodo ma fragile: se qualcuno aggiunge una colonna con un nome ripetuto, il join cambia senza avviso. Meglio scrivere la condizione con <code>ON</code>.</p>
+      <h3>Join esplicito invece che implicito</h3>
+      <p>La forma vecchia elenca le tabelle separate da virgole e mette la condizione di join nel <code>WHERE</code>. La forma esplicita separa ciò che è join (<code>ON</code>) da ciò che è filtro (<code>WHERE</code>), e rende leggibili le query grandi. Nell’esempio implicito dell’originale manca l’<code>AND</code> tra le due condizioni, il che è un errore di sintassi:</p>
+      <pre class="code"><code><span class="c">-- implicito (corretto: mancava l’AND)</span>
+<span class="k">SELECT</span> a.iblitm, b.imdsc1
+  <span class="k">FROM</span> proddta.f4102 a, proddta.f4101 b
+ <span class="k">WHERE</span> b.imitm = a.ibitm
+   <span class="k">AND</span> a.ibmcu = <span class="s">'     PRODCAN'</span>;
+
+<span class="c">-- esplicito</span>
+<span class="k">SELECT</span> a.iblitm, b.imdsc1
+  <span class="k">FROM</span> proddta.f4102 a
+ <span class="k">INNER JOIN</span> proddta.f4101 b <span class="k">ON</span> b.imitm = a.ibitm
+ <span class="k">WHERE</span> a.ibmcu = <span class="s">'     PRODCAN'</span>;</code></pre>
+      <p>Gli spazi in <code>'     PRODCAN'</code> non sono un errore: JD Edwards memorizza il codice della filiale allineato a destra, con spazi a sinistra.</p>
+      <h3>A Cesare quel che è di Cesare: gli alias</h3>
+      <p>Gli <strong>alias</strong> danno nomi brevi a tabelle e colonne. Sono obbligatori quando la stessa tabella compare due volte, come in questo esempio dell’originale, che prende la descrizione del kit e quella del componente dalla stessa tabella degli articoli:</p>
+      <pre class="code"><code><span class="k">SELECT</span> a.ixkitl,
+       b.imdsc1 <span class="k">AS</span> desc_kit,
+       a.ixlitm,
+       c.imdsc1 <span class="k">AS</span> desc_comp
+  <span class="k">FROM</span> proddta.f3002 a
+ <span class="k">INNER JOIN</span> proddta.f4101 b <span class="k">ON</span> b.imitm = a.ixkit   <span class="c">-- l’articolo kit</span>
+ <span class="k">INNER JOIN</span> proddta.f4101 c <span class="k">ON</span> c.imitm = a.ixitm   <span class="c">-- il componente</span>
+ <span class="k">WHERE</span> a.ixtbm = <span class="s">'M'</span>
+   <span class="k">AND</span> a.ixmmcu = <span class="s">'     PRODCAN'</span>
+   <span class="k">AND</span> a.ixkitl = <span class="s">'7415K00893F'</span>;</code></pre>
+    </section>
+
+    <section id="sottoquery-it" aria-labelledby="h-sottoquery-it">
+      <h2 id="h-sottoquery-it">Sottoquery, IN ed EXISTS</h2>
+      <h3>Dividi e conquista</h3>
+      <p>Una <strong>sottoquery</strong> è una SELECT dentro un’altra. Nel <code>FROM</code> funziona come una tabella temporanea: nell’esempio dell’originale somma la giacenza per articolo e filiale prima del join. <sup><a href="#ref-6-it">[6]</a></sup></p>
+      <pre class="code"><code><span class="k">SELECT</span> a.iblitm, b.imdsc1, c.lipqoh
+  <span class="k">FROM</span> proddta.f4102 a
+ <span class="k">INNER JOIN</span> proddta.f4101 b <span class="k">ON</span> b.imitm = a.ibitm
+ <span class="k">INNER JOIN</span> (<span class="k">SELECT</span> liitm, limcu, <span class="k">SUM</span>(lipqoh) <span class="k">AS</span> lipqoh
+               <span class="k">FROM</span> proddta.f41021
+              <span class="k">GROUP BY</span> liitm, limcu) c
+    <span class="k">ON</span> c.liitm = a.ibitm <span class="k">AND</span> c.limcu = a.ibmcu
+ <span class="k">WHERE</span> a.ibmcu = <span class="s">'     PRODCAN'</span>;</code></pre>
+      <p>L’originale mostra che la stessa query, scritta con il <code>GROUP BY</code> al livello esterno, aveva costo e cardinalità maggiori su quel database. Vale per quei dati e quella versione dell’ottimizzatore; la regola generale è controllare il piano di entrambe le forme.</p>
+      <h3>IN o EXISTS?</h3>
+      <p>L’originale cita un testo del 2007 secondo cui <code>IN</code> risolve prima la sottoquery ed <code>EXISTS</code> prima la query esterna. Gli ottimizzatori attuali trasformano di solito entrambi nella stessa operazione (un <em>semi-join</em>), con prestazioni simili. La differenza che conta davvero appare nella negazione, quando ci sono dei <code>NULL</code>: <sup><a href="#ref-13-it">[13]</a></sup> <sup><a href="#ref-32-it">[32]</a></sup></p>
+      <pre class="code"><code><span class="c">-- clienti senza ordini; se un ordine ha cliente_id NULL…</span>
+<span class="k">SELECT</span> nome <span class="k">FROM</span> cliente
+ <span class="k">WHERE</span> id <span class="k">NOT IN</span> (<span class="k">SELECT</span> cliente_id <span class="k">FROM</span> ordine);        <span class="c">-- …restituisce zero righe</span>
+
+<span class="k">SELECT</span> nome <span class="k">FROM</span> cliente c
+ <span class="k">WHERE</span> <span class="k">NOT EXISTS</span> (<span class="k">SELECT</span> 1 <span class="k">FROM</span> ordine o
+                    <span class="k">WHERE</span> o.cliente_id = c.id);          <span class="c">-- restituisce Carla</span></code></pre>
+      <p>Con un <code>NULL</code> nell’elenco, <code>id NOT IN (1, 2, NULL)</code> non è mai vero, perché il confronto con <code>NULL</code> dà “sconosciuto”. Per “non esiste”, preferite <code>NOT EXISTS</code>.</p>
+    </section>
+
+    <section id="operatori-it" aria-labelledby="h-operatori-it">
+      <h2 id="h-operatori-it">Operatori e NULL</h2>
+      <p>Nell’originale gli operatori compaiono come immagini di tabelle, in inglese. Qui sono in testo; valgono per Oracle e, con piccole variazioni, per gli altri database: <sup><a href="#ref-11-it">[11]</a></sup> <sup><a href="#ref-12-it">[12]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Tipo</th><th scope="col">Operatori</th><th scope="col">Esempio</th></tr></thead>
+          <tbody>
+            <tr><td>Aritmetici</td><td><code>+ - * /</code></td><td><code>stipendio * 1.1</code></td></tr>
+            <tr><td>Concatenazione</td><td><code>||</code></td><td><code>nome || ' (' || reparto || ')'</code>; in SQL Server, <code>+</code> o <code>CONCAT()</code></td></tr>
+            <tr><td>Confronto</td><td><code>= &lt;&gt; != &lt; &gt; &lt;= &gt;=</code></td><td><code>stipendio &gt;= 4000</code></td></tr>
+            <tr><td>Condizioni</td><td><code>BETWEEN · IN · LIKE · IS NULL</code></td><td><code>nome LIKE 'A%'</code> · <code>reparto IN (10, 20)</code></td></tr>
+            <tr><td>Logici</td><td><code>NOT · AND · OR</code></td><td><code>reparto = 10 AND NOT stipendio &lt; 3000</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <figure>
+        <img src="rc_images/SqlPrecedencia-it.svg" alt="A sinistra, una scala di otto livelli di precedenza, dal più forte al più debole: segni e PRIOR; moltiplicazione e divisione; somma, sottrazione e concatenazione; confronti; IS NULL, LIKE, BETWEEN e IN; NOT; AND; e OR. A destra, l’esempio reparto = 10 OR reparto = 20 AND stipendio &gt; 4000, che il database legge come reparto = 10 OR, tra parentesi, reparto = 20 AND stipendio &gt; 4000, restituendo 5 righe; con le parentesi al posto giusto tornano solo 2 righe, Ana ed Eva." width="1000" height="508" loading="lazy">
+        <figcaption>Senza parentesi, AND viene valutato prima di OR, e la query restituisce righe in più.</figcaption>
+      </figure>
+      <p>La tabella di precedenza dell’originale viene da materiale di formazione e mette <code>BETWEEN</code> su un livello a sé, sotto <code>IS NULL</code>, <code>LIKE</code> e <code>IN</code>. La documentazione attuale di Oracle raggruppa i quattro sullo stesso livello, come nella figura. In nessuno dei due casi cambia il risultato di una condizione comune; la regola pratica resta la stessa: <code>NOT</code>, poi <code>AND</code>, poi <code>OR</code>. <sup><a href="#ref-11-it">[11]</a></sup></p>
+      <h3>NULL non è un valore</h3>
+      <p><code>NULL</code> significa “sconosciuto”. Qualsiasi confronto con esso dà sconosciuto, anche <code>NULL = NULL</code>, e il <code>WHERE</code> lascia passare solo ciò che è vero. Per verificarlo usate <code>IS NULL</code> e <code>IS NOT NULL</code>; per sostituire un nullo con un valore, <code>NVL</code> (Oracle) o <code>COALESCE</code> (standard). <sup><a href="#ref-13-it">[13]</a></sup></p>
+    </section>
+
+    <section id="aggregazione-it" aria-labelledby="h-aggregazione-it">
+      <h2 id="h-aggregazione-it">Aggregazione: GROUP BY e HAVING</h2>
+      <p>Le <strong>funzioni aggregate</strong> (<code>COUNT</code>, <code>SUM</code>, <code>AVG</code>, <code>MIN</code>, <code>MAX</code> e altre) riassumono molte righe in un solo valore. Con <code>GROUP BY</code> calcolano un valore per gruppo. Ogni colonna della SELECT che non sta dentro un’aggregazione deve comparire nel <code>GROUP BY</code>. <sup><a href="#ref-14-it">[14]</a></sup></p>
+      <h3>WHERE o HAVING?</h3>
+      <p>Il <code>WHERE</code> filtra le righe prima del raggruppamento; l’<code>HAVING</code> filtra i gruppi dopo, e per questo può usare le aggregazioni. <sup><a href="#ref-29-it">[29]</a></sup></p>
+      <figure>
+        <img src="rc_images/SqlWhereHaving-it.svg" alt="Quattro fasi. Prima, la tabella emp_bonus con cinque righe; il WHERE bonus maggiore o uguale a 700 scarta la riga A 500. Poi il GROUP BY riunisce le righe per dipendente: A con 1000, B con 2000 e 1250, C con 700. Quindi le somme sono A 1000, B 3250 e C 700, e l’HAVING SUM maggiore di 1000 scarta A e C. Il risultato è B 3250." width="1000" height="474" loading="lazy">
+        <figcaption>Ogni filtro agisce nel suo momento: WHERE sulle righe, HAVING sui gruppi.</figcaption>
+      </figure>
+      <pre class="code"><code><span class="k">SELECT</span> employee, <span class="k">SUM</span>(bonus)
+  <span class="k">FROM</span> emp_bonus
+ <span class="k">GROUP BY</span> employee
+<span class="k">HAVING</span> <span class="k">SUM</span>(bonus) &gt; 1000;     <span class="c">-- A 1500 e B 3250</span></code></pre>
+      <p>L’esempio “sbagliato” dell’originale, <code>… GROUP BY employee WHERE SUM(bonus) &gt; 1000</code>, fallisce per due motivi: il <code>WHERE</code> viene prima del <code>GROUP BY</code> e non accetta aggregazioni. Nei blocchi di codice dell’originale sono rimaste anche delle barre rovesciate (<code>emp\_bonus</code>), residui della conversione del documento.</p>
+      <h3>Oltre il GROUP BY semplice</h3>
+      <p>L’originale rimanda solo a un articolo sui raggruppamenti multidimensionali. In breve, Oracle e lo standard SQL offrono: <sup><a href="#ref-15-it">[15]</a></sup></p>
+      <ul>
+        <li><code>GROUP BY ROLLUP(reparto)</code>: i totali per reparto più una riga di totale generale (16000, 13000 e 29000 con i dati di questo tutorial).</li>
+        <li><code>GROUP BY CUBE(a, b)</code>: i subtotali di tutte le combinazioni di <code>a</code> e <code>b</code>.</li>
+        <li><code>GROUP BY GROUPING SETS ((a), (b), ())</code>: esattamente i raggruppamenti elencati.</li>
+      </ul>
+      <p>La funzione <code>GROUPING(colonna)</code> restituisce 1 nelle righe di subtotale, per distinguerle da un <code>NULL</code> vero nei dati.</p>
+      <h3>Ordine nel caos</h3>
+      <p>Senza <code>ORDER BY</code>, nessun database garantisce l’ordine delle righe, nemmeno con <code>GROUP BY</code> o <code>DISTINCT</code>. Se l’ordine conta, chiedetelo esplicitamente; in Oracle, <code>NULLS FIRST</code> o <code>NULLS LAST</code> decidono dove finiscono i nulli. <sup><a href="#ref-6-it">[6]</a></sup></p>
+    </section>
+
+    <section id="analitiche-it" aria-labelledby="h-analitiche-it">
+      <h2 id="h-analitiche-it">Funzioni analitiche</h2>
+      <p>L’originale chiama questa parte “livello Jedi”, e a ragione. Una <strong>funzione analitica</strong> (o <em>di finestra</em>) calcola su un gruppo di righe, come un’aggregata, ma <strong>non le unisce</strong>: ogni riga resta nel risultato, con il valore calcolato accanto. <sup><a href="#ref-16-it">[16]</a></sup> <sup><a href="#ref-17-it">[17]</a></sup> <sup><a href="#ref-33-it">[33]</a></sup></p>
+      <figure>
+        <img src="rc_images/SqlAnaliticas-it.svg" alt="A sinistra, sette dipendenti di due reparti. Al centro, la versione aggregata, AVG con GROUP BY, riduce tutto a due righe: reparto 10 con media 4000 e reparto 20 con media 4333,33. A destra, la versione analitica, AVG OVER PARTITION BY reparto, mantiene le sette righe e aggiunge la colonna media_rep con la media del reparto di ciascuno." width="1000" height="456" loading="lazy">
+        <figcaption>La stessa media, in due modi: unendo le righe o mantenendole tutte.</figcaption>
+      </figure>
+      <p>Il segno distintivo di una funzione analitica è la clausola <code>OVER</code>, che ha tre parti facoltative:</p>
+      <pre class="code"><code>funzione(…) <span class="k">OVER</span> (
+    <span class="k">PARTITION BY</span> reparto      <span class="c">-- su quali gruppi calcolare</span>
+    <span class="k">ORDER BY</span> assunzione       <span class="c">-- in che ordine, dentro il gruppo</span>
+    <span class="k">ROWS BETWEEN</span> …            <span class="c">-- quali righe entrano nel calcolo (la finestra)</span>
+)</code></pre>
+      <p>Le funzioni analitiche possono comparire solo nell’elenco della SELECT e nell’<code>ORDER BY</code>, perché sono calcolate dopo <code>WHERE</code>, <code>GROUP BY</code> e <code>HAVING</code>. Per filtrare su di esse usate una sottoquery o un <code>WITH</code>.</p>
+      <aside class="note">
+        <p><strong>Attenzione all’ORDER BY dentro OVER:</strong> cambia la finestra. Senza, <code>AVG(stipendio) OVER (PARTITION BY reparto)</code> è la media dell’intero reparto. Con, la finestra va dall’inizio della partizione alla riga corrente, e il risultato diventa una <strong>media progressiva</strong>. È ciò che accade nel primo esempio dell’originale, <code>AVG(SALARIO) OVER (PARTITION BY IDADE ORDER BY ID_EMP)</code>, presentato come “media salariale per età”. Nel test di questo tutorial le medie del reparto 10 sono risultate 5000, 4500, 4333 e 4000, non 4000 su ogni riga.</p>
+      </aside>
+      <h3>Numerare e classificare</h3>
+      <figure>
+        <img src="rc_images/SqlRanking-it.svg" alt="Tabella con sette dipendenti ordinati per stipendio decrescente e tre colonne di numerazione. Eva 6000 e Ana 5000 ricevono 1 e 2 in tutte e tre. Bruno e Carla, pari a 4000, ricevono 3 e 4 in ROW_NUMBER, 3 e 3 in RANK e 3 e 3 in DENSE_RANK. Fábio e Gil, pari a 3500, ricevono 5 e 6, 5 e 5, e 4 e 4. Davi 3000 riceve 7, 7 e 5. Delle frecce mostrano che RANK salta le posizioni 4 e 6." width="1000" height="560" loading="lazy">
+        <figcaption>Tre funzioni di posizione che differiscono solo nel modo di trattare i pareggi.</figcaption>
+      </figure>
+      <h3>Guardare le righe vicine</h3>
+      <figure>
+        <img src="rc_images/SqlJanela-it.svg" alt="Tabella con sette dipendenti in ordine di assunzione, da Eva nel 2012 a Davi nel 2023. La riga di Ana è evidenziata. Una freccia viola mostra che il LAG di Ana, 3500, viene dallo stipendio di Gil nella riga precedente; una freccia blu mostra che il LEAD di Ana, Fábio, viene dalla riga successiva; e una parentesi verde mostra che la somma progressiva di Ana, 18500, somma gli stipendi delle prime quattro righe." width="1000" height="554" loading="lazy">
+        <figcaption>LAG, LEAD e la somma progressiva, tutte ordinate per data di assunzione.</figcaption>
+      </figure>
+      <p>La stessa attenzione alla finestra spiega perché <code>LAST_VALUE</code> sembra spesso “non funzionare”: con <code>ORDER BY</code> e senza cornice, la finestra finisce alla riga corrente, e l’ultimo valore è sempre quello della riga stessa (o dell’ultima pari con essa). Per questo l’esempio dell’originale scrive <code>ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING</code>, che estende la finestra all’intera partizione.</p>
+      <h3>Catalogo delle funzioni dell’originale</h3>
+      <p>L’originale elenca le funzioni analitiche di Oracle 11.2, ognuna con un esempio aggregato e uno analitico. In sintesi, con le correzioni trovate: <sup><a href="#ref-16-it">[16]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Funzione</th><th scope="col">Che cosa calcola</th><th scope="col">Nota</th></tr></thead>
+          <tbody>
+            <tr><td><code>AVG · SUM · COUNT · MIN · MAX</code></td><td>Media, somma, conteggio, minimo e massimo.</td><td>Con <code>ORDER BY</code> in <code>OVER</code> diventano progressive.</td></tr>
+            <tr><td><code>ROW_NUMBER · RANK · DENSE_RANK</code></td><td>Posizione della riga nel gruppo.</td><td>Vedi la figura sopra.</td></tr>
+            <tr><td><code>NTILE(n)</code></td><td>Divide le righe ordinate in <em>n</em> fasce (4 = quartili).</td><td>Nell’esempio dell’originale la <code>SELECT</code> è commentata (<code>--SELECT</code>), e la query non gira.</td></tr>
+            <tr><td><code>PERCENT_RANK · CUME_DIST</code></td><td>Posizione relativa, da 0 a 1.</td><td><code>PERCENT_RANK</code> parte da 0; <code>CUME_DIST</code> non vale mai 0.</td></tr>
+            <tr><td><code>LAG · LEAD</code></td><td>Valore di una riga precedente o successiva.</td><td>Il 2º argomento è la distanza; il 3º, il valore predefinito.</td></tr>
+            <tr><td><code>FIRST_VALUE · LAST_VALUE</code></td><td>Primo e ultimo valore della finestra.</td><td>Nel 2º esempio di <code>FIRST_VALUE</code>, il <code>DESC</code> va nell’<code>ORDER BY</code>, non “alla fine del PARTITION BY”, e l’alias <code>MENOR_SALARIO</code> (stipendio più basso) mostra ora il <em>più alto</em>.</td></tr>
+            <tr><td><code>FIRST · LAST</code> (con <code>KEEP</code>)</td><td>Aggrega solo le righe che risultano prime o ultime in un ordinamento.</td><td>Sintassi esclusiva di Oracle.</td></tr>
+            <tr><td><code>LISTAGG</code></td><td>Concatena i valori di più righe in un solo testo.</td><td>L’originale dice che “trasforma una colonna in righe”; è il contrario: più righe diventano un testo. <sup><a href="#ref-19-it">[19]</a></sup></td></tr>
+            <tr><td><code>RATIO_TO_REPORT</code></td><td>Quota di ogni valore sul totale della finestra.</td><td>Esclusiva di Oracle; nello standard, <code>x / SUM(x) OVER ()</code>.</td></tr>
+            <tr><td><code>STDDEV · VARIANCE · VAR_POP · COVAR_* · CORR</code></td><td>Deviazione standard, varianza, covarianza e correlazione di Pearson.</td><td>Funzioni statistiche, aggregate o analitiche.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Altri dettagli degli esempi dell’originale: il commento di <code>LISTAGG</code> scrive “LISTADD”; l’esempio di <code>COUNT</code> con <code>RANGE BETWEEN 2000 PRECEDING AND 10000 FOLLOWING</code> conta i dipendenti con stipendio compreso tra quello della riga meno 2000 e più 10000. SQLite, usato nei test, non ha <code>LISTAGG</code>; l’equivalente è <code>GROUP_CONCAT</code>. <sup><a href="#ref-18-it">[18]</a></sup></p>
+    </section>
+
+    <section id="insiemi-it" aria-labelledby="h-insiemi-it">
+      <h2 id="h-insiemi-it">Operatori insiemistici</h2>
+      <p><code>UNION</code>, <code>INTERSECT</code> ed <code>EXCEPT</code> combinano i risultati di due query confrontando righe intere. Le due query devono avere lo stesso numero di colonne, con tipi compatibili; i nomi delle colonne del risultato vengono dalla prima. <sup><a href="#ref-20-it">[20]</a></sup> <sup><a href="#ref-21-it">[21]</a></sup></p>
+      <figure>
+        <img src="rc_images/SqlConjuntos-it.svg" alt="Diagramma di Venn con vendite2005 a sinistra, con João 1000 e Roberto 5000, vendite2006 a destra, con João 2000 e Isaque 35000, e Alex 2000 nell’intersezione. Sotto, quattro risultati: UNION con 5 righe, UNION ALL con 6, perché Alex 2000 compare due volte, INTERSECT con 1, Alex 2000, ed EXCEPT o MINUS con 2, João 1000 e Roberto 5000." width="1000" height="698" loading="lazy">
+        <figcaption>Con i dati di vendita dell’originale: solo Alex 2000 è identico nei due anni.</figcaption>
+      </figure>
+      <ul>
+        <li><code>UNION</code> elimina le righe ripetute, il che richiede di ordinare o confrontare tutto; quando si sa che non ci sono ripetizioni, <code>UNION ALL</code> è più veloce.</li>
+        <li>Nell’esempio dell’originale la seconda tabella ha le colonne <code>person</code> e <code>amount</code>, non <code>pessoa</code> e <code>quantia</code>. Funziona, perché conta la posizione delle colonne, ma è più chiaro usare gli stessi nomi.</li>
+        <li>Il testo di <code>EXCEPT</code> dice che la query restituisce le righe tra 1 e 100 “oltre a” quelle tra 50 e 75. È il contrario: le righe tra 1 e 100 <strong>tranne</strong> quelle tra 50 e 75.</li>
+        <li>In Oracle l’operatore si chiama <code>MINUS</code>; dalla versione 21c sono accettati anche <code>EXCEPT</code>, <code>EXCEPT ALL</code> e <code>INTERSECT ALL</code>. <sup><a href="#ref-21-it">[21]</a></sup></li>
+      </ul>
+      <p>Dove non c’è <code>EXCEPT</code>, si ottiene lo stesso con un <code>LEFT JOIN</code> che tiene solo le righe senza corrispondenza (<code>WHERE o2.id IS NULL</code>), come mostra l’originale, oppure con <code>NOT EXISTS</code>.</p>
+    </section>
+
+    <section id="gerarchia-it" aria-labelledby="h-gerarchia-it">
+      <h2 id="h-gerarchia-it">Query gerarchiche</h2>
+      <p>Quando ogni riga punta a una riga padre della stessa tabella (dipendente e capo, messaggio e risposta, kit e componente), serve una query che percorra l’albero. L’esempio dell’originale è un forum in cui ogni messaggio memorizza in <code>parent_id</code> l’<code>id</code> del messaggio a cui risponde. <sup><a href="#ref-22-it">[22]</a></sup> <sup><a href="#ref-31-it">[31]</a></sup></p>
+      <figure>
+        <img src="rc_images/SqlHierarquia-it.svg" alt="A sinistra, due alberi di messaggi. Il primo parte dal messaggio 1, dell’Utente 1, al livello 1, e scende per le risposte 2, 3, 4 e 5, ai livelli da 2 a 5. Il secondo parte dal messaggio 6, dell’Utente 23, con la risposta 7 al livello 2. A destra, la tabella con id, login e parent_id, in cui le radici 1 e 6 hanno parent_id nullo, e la clausola CONNECT BY PRIOR id = parent_id, con la spiegazione che PRIOR indica la colonna della riga padre." width="1000" height="552" loading="lazy">
+        <figcaption>START WITH sceglie le radici, CONNECT BY PRIOR collega padre e figlio, e LEVEL conta la profondità.</figcaption>
+      </figure>
+      <h3>CONNECT BY di Oracle</h3>
+      <pre class="code"><code><span class="k">SELECT</span> <span class="k">LEVEL</span> <span class="k">AS</span> livello,
+       LPAD(<span class="s">' '</span>, (<span class="k">LEVEL</span> - 1) * 3, <span class="s">'-'</span>) || m.login || <span class="s">': '</span> || m.testo <span class="k">AS</span> messaggio
+  <span class="k">FROM</span> messaggio m
+ <span class="k">START WITH</span> m.parent_id <span class="k">IS NULL</span>
+<span class="k">CONNECT BY</span> <span class="k">PRIOR</span> m.id = m.parent_id
+ <span class="k">ORDER SIBLINGS BY</span> m.data_invio;</code></pre>
+      <ul>
+        <li><code>START WITH</code> definisce le radici. L’originale usa una sottoquery (<code>id_mensagem IN (SELECT … WHERE parent_id IS NULL)</code>); <code>parent_id IS NULL</code> direttamente fa lo stesso.</li>
+        <li><code>CONNECT BY PRIOR</code> definisce la relazione. L’originale afferma che Oracle considera padre il lato <em>sinistro</em> dell’uguaglianza. Non è proprio così: il padre è indicato dall’operatore <code>PRIOR</code>, che può stare da entrambi i lati. <code>PRIOR id = parent_id</code> e <code>parent_id = PRIOR id</code> sono identici; <code>id = PRIOR parent_id</code>, invece, inverte il verso e risale dalla foglia alla radice. <sup><a href="#ref-22-it">[22]</a></sup></li>
+        <li><code>LEVEL</code> è la profondità; <code>ORDER SIBLINGS BY</code> ordina le risposte di uno stesso padre senza smontare l’albero; <code>SYS_CONNECT_BY_PATH</code> e <code>CONNECT_BY_ROOT</code> restituiscono il percorso dalla radice e la radice stessa.</li>
+      </ul>
+      <p>Due dettagli dello script dell’originale: <code>TEXTO CLOB DEFAULT '' NOT NULL</code> è contraddittorio in Oracle, che tratta la stringa vuota come <code>NULL</code>; e la “Tabella 2” dice di essere il risultato del “listato 2”, ma è quello del listato 3.</p>
+      <h3>La forma standard: WITH ricorsivo</h3>
+      <p>Lo standard SQL risolve lo stesso problema con un <code>WITH</code> ricorsivo, supportato da Oracle dalla versione 11g R2 e da tutti i database attuali. L’originale dice che Oracle non lo implementava ancora; questo è cambiato nel 2009. Questa versione è stata verificata su SQLite: <sup><a href="#ref-23-it">[23]</a></sup> <sup><a href="#ref-24-it">[24]</a></sup></p>
+      <pre class="code"><code><span class="k">WITH RECURSIVE</span> albero (id, login, testo, livello) <span class="k">AS</span> (
+    <span class="k">SELECT</span> id, login, testo, 1
+      <span class="k">FROM</span> messaggio <span class="k">WHERE</span> parent_id <span class="k">IS NULL</span>          <span class="c">-- radici</span>
+    <span class="k">UNION ALL</span>
+    <span class="k">SELECT</span> m.id, m.login, m.testo, a.livello + 1
+      <span class="k">FROM</span> messaggio m <span class="k">JOIN</span> albero a <span class="k">ON</span> m.parent_id = a.id  <span class="c">-- figli</span>
+)
+<span class="k">SELECT</span> * <span class="k">FROM</span> albero;</code></pre>
+      <p>In Oracle si scrive solo <code>WITH</code>, senza la parola <code>RECURSIVE</code>. Il grande esempio finale dell’originale usa <code>CONNECT BY</code> sulla distinta base di JD Edwards e <code>SYS_CONNECT_BY_PATH</code> per moltiplicare le quantità di ogni livello. Con un <code>WITH</code> ricorsivo basta portare il prodotto progressivo in una colonna (<code>a.qta_acc * m.quantita</code>), senza le 23 colonne ausiliarie.</p>
+    </section>
+
+    <section id="with-it" aria-labelledby="h-with-it">
+      <h2 id="h-with-it">WITH per query complesse</h2>
+      <p>La clausola <code>WITH</code> (<em>subquery factoring</em> o <em>common table expression</em>) dà un nome alle sottoquery, che la query principale usa poi come se fossero tabelle. Rende leggibili le query lunghe ed evita di ripetere la stessa sottoquery. <sup><a href="#ref-6-it">[6]</a></sup> <sup><a href="#ref-24-it">[24]</a></sup></p>
+      <p>L’esempio dell’originale non gira: mancano le parentesi attorno a ogni sottoquery e le virgole tra di esse, c’è un punto e virgola in mezzo al comando, e la sottoquery per negozio usa <code>SUM</code> senza <code>GROUP BY</code>. Corretto e verificato:</p>
+      <pre class="code"><code><span class="k">WITH</span>
+  sum_sales <span class="k">AS</span> (
+    <span class="k">SELECT</span> <span class="k">SUM</span>(quantity) <span class="k">AS</span> all_sales <span class="k">FROM</span> sales
+  ),
+  number_stores <span class="k">AS</span> (
+    <span class="k">SELECT</span> <span class="k">COUNT</span>(*) <span class="k">AS</span> nbr_stores <span class="k">FROM</span> store
+  ),
+  sales_by_store <span class="k">AS</span> (
+    <span class="k">SELECT</span> s.store_name, <span class="k">SUM</span>(v.quantity) <span class="k">AS</span> store_sales
+      <span class="k">FROM</span> store s <span class="k">JOIN</span> sales v <span class="k">ON</span> v.store_id = s.store_id
+     <span class="k">GROUP BY</span> s.store_name
+  )
+<span class="k">SELECT</span> b.store_name, b.store_sales
+  <span class="k">FROM</span> sales_by_store b
+ <span class="k">CROSS JOIN</span> sum_sales t
+ <span class="k">CROSS JOIN</span> number_stores n
+ <span class="k">WHERE</span> b.store_sales &gt; t.all_sales / n.nbr_stores;   <span class="c">-- negozi sopra la media</span></code></pre>
+      <p>Oracle decide da solo se salvare il risultato di ogni sottoquery in una tabella temporanea (<em>materializzarla</em>) o incorporarla nella query principale. Il suggerimento <code>/*+ MATERIALIZE */</code> citato nell’originale forza la prima opzione, ma non è documentato ufficialmente; usatelo solo dopo aver confrontato i piani.</p>
+    </section>
+
+    <section id="bind-it" aria-labelledby="h-bind-it">
+      <h2 id="h-bind-it">Variabili di BIND</h2>
+      <p>Prima di eseguire un comando, Oracle ne cerca il testo esatto nella <em>shared pool</em>, un’area di memoria condivisa. Se lo trova, riusa il piano già calcolato (<em>soft parse</em>). Altrimenti analizza il comando e costruisce un piano nuovo (<em>hard parse</em>), che nei sistemi con molte transazioni può costare più della query stessa. <sup><a href="#ref-7-it">[7]</a></sup> <sup><a href="#ref-30-it">[30]</a></sup></p>
+      <figure>
+        <img src="rc_images/SqlBind-it.svg" alt="A sinistra, tre query identiche tranne il numero nel WHERE, 674, 234 e 332; ognuna provoca un hard parse, in cui il database analizza il comando e costruisce un piano. A destra, la stessa query con la variabile :cust_no che riceve i tre valori; solo la prima esecuzione fa un hard parse, e le altre due riusano il piano con un soft parse. Sotto, la shared pool, dove Oracle conserva il testo e il piano di ogni comando." width="1000" height="508" loading="lazy">
+        <figcaption>Con il BIND il testo del comando non cambia, e il piano viene riusato.</figcaption>
+      </figure>
+      <p>Una <strong>variabile di BIND</strong> (<code>:cust_no</code>) prende il posto del valore letterale. Il testo del comando resta sempre uguale, e cambia solo il valore a ogni esecuzione. Nei linguaggi di programmazione si fa con i <em>prepared statement</em>, che hanno un vantaggio ancora maggiore: poiché il valore non viene mai incollato nel testo SQL, impediscono la <strong>SQL injection</strong>. <sup><a href="#ref-25-it">[25]</a></sup> <sup><a href="#ref-26-it">[26]</a></sup> <sup><a href="#ref-27-it">[27]</a></sup></p>
+      <aside class="recap" aria-label="Da ricordare">
+        <h3>Da ricordare</h3>
+        <ul>
+          <li>Chiedete solo le colonne e le righe che servono, e non applicate funzioni alle colonne filtrate.</li>
+          <li>Join espliciti (<code>JOIN … ON</code>) e alias rendono la query leggibile.</li>
+          <li><code>WHERE</code> filtra le righe; <code>HAVING</code>, i gruppi.</li>
+          <li><code>OVER</code> calcola senza unire le righe; l’<code>ORDER BY</code> al suo interno cambia la finestra.</li>
+          <li><code>NOT IN</code> con un <code>NULL</code> non restituisce nulla; preferite <code>NOT EXISTS</code>.</li>
+          <li>Usate le variabili di BIND: prestazioni migliori e nessuna SQL injection.</li>
+        </ul>
+      </aside>
+      <h3>Due ultimi consigli dell’originale</h3>
+      <p>Per togliere gli a capo da un campo di testo prima di esportarlo (consiglio di Felipe Renz):</p>
+      <pre class="code"><code><span class="k">SELECT</span> REPLACE(REPLACE(campo, CHR(10), <span class="s">' '</span>), CHR(13), <span class="s">' '</span>) <span class="k">FROM</span> …</code></pre>
+      <p>E le funzioni di data e ora di SQL Server; nell’originale mancava uno spazio in <code>CURRENT_TIMESTAMPAS</code>:</p>
+      <pre class="code"><code><span class="k">SELECT</span> GETDATE(), CURRENT_TIMESTAMP, GETUTCDATE(),
+       SYSDATETIME(), SYSUTCDATETIME(), SYSDATETIMEOFFSET();</code></pre>
+      <p>E, come dice l’ultima pagina dell’originale: <em>Don’t panic!</em></p>
+    </section>
+
+    <section id="ripasso-it" aria-labelledby="h-ripasso-it">
+      <h2 id="h-ripasso-it">Ripasso veloce</h2>
+      <p>Provate a rispondere prima di aprire ogni domanda.</p>
+      <div class="quiz">
+        <details><summary>1. A quale sottoinsieme appartengono GRANT e REVOKE?</summary><p>Alla DCL, il linguaggio di controllo dei dati: concedono e revocano permessi.</p></details>
+        <details><summary>2. Perché un alias creato nella SELECT non funziona nel WHERE?</summary><p>Perché, nell’ordine logico, il WHERE è valutato prima della SELECT; quando il filtro viene eseguito, l’alias non esiste ancora. Nell’ORDER BY, che viene dopo, funziona.</p></details>
+        <details><summary>3. Qual è la differenza tra LEFT JOIN e INNER JOIN?</summary><p>L’INNER restituisce solo le righe con corrispondenza in entrambe le tabelle; il LEFT restituisce tutte quelle di sinistra, con NULL dove non c’è corrispondenza.</p></details>
+        <details><summary>4. Perché <code>WHERE TO_CHAR(assunzione, 'YYYY') = '2026'</code> può essere lento?</summary><p>La funzione viene applicata alla colonna su ogni riga, il che impedisce l’uso di un indice normale. Confrontate la colonna con un intervallo di date.</p></details>
+        <details><summary>5. Che cosa significa davvero <code>WHERE a = 1 OR a = 2 AND b &gt; 0</code>?</summary><p><code>a = 1 OR (a = 2 AND b &gt; 0)</code>, perché AND viene prima di OR. Usate le parentesi per dire ciò che volete.</p></details>
+        <details><summary>6. Perché <code>NOT IN</code> può restituire zero righe?</summary><p>Se la sottoquery contiene un NULL, il confronto con esso dà “sconosciuto”, e nessuna riga passa. <code>NOT EXISTS</code> non ha questo problema.</p></details>
+        <details><summary>7. Dove si filtra su <code>SUM(bonus) &gt; 1000</code>: nel WHERE o nell’HAVING?</summary><p>Nell’HAVING, che filtra i gruppi dopo l’aggregazione.</p></details>
+        <details><summary>8. Con stipendi 5000, 4000, 4000 e 3000, quali posizioni danno RANK e DENSE_RANK?</summary><p>RANK: 1, 2, 2, 4. DENSE_RANK: 1, 2, 2, 3.</p></details>
+        <details><summary>9. Qual è la differenza tra UNION e UNION ALL?</summary><p>UNION elimina le righe ripetute; UNION ALL le mantiene tutte ed è più veloce.</p></details>
+        <details><summary>10. <code>CONNECT BY PRIOR id = parent_id</code> e <code>CONNECT BY parent_id = PRIOR id</code> danno lo stesso risultato?</summary><p>Sì: conta a quale espressione è attaccato PRIOR, non il lato dell’uguaglianza.</p></details>
+      </div>
+      <a class="back" href="#top">↑ Torna all’inizio</a>
+    </section>
+
+    <section id="riferimenti-it" aria-labelledby="h-riferimenti-it">
+      <h2 id="h-riferimenti-it">Riferimenti</h2>
+      <ol class="refs">
+        <li id="ref-1-it"><strong>Giovani Perotto Mesquita</strong>, “The Hitchhiker’s Guide to the Structured Query Language”, GitHub, testo originale di questo tutorial (in portoghese), <a href="https://github.com/GiovaniPM/MyCourses/blob/master/SQL/Overview%20Structured%20Query%20Language.md" rel="noopener">github.com/GiovaniPM/MyCourses/blob/master/SQL/Overview Structured Query Language.md</a>.</li>
+        <li id="ref-2-it"><strong>Wikipedia</strong> (in inglese), “SQL”, consultato il 25/09/2026, <a href="https://en.wikipedia.org/wiki/SQL" rel="noopener">en.wikipedia.org/wiki/SQL</a>.</li>
+        <li id="ref-3-it"><strong>Wikipedia</strong> (in inglese), “Relational algebra”, consultato il 25/09/2026, <a href="https://en.wikipedia.org/wiki/Relational_algebra" rel="noopener">en.wikipedia.org/wiki/Relational_algebra</a>.</li>
+        <li id="ref-4-it"><strong>Wikipedia</strong> (in inglese), “Edgar F. Codd”, consultato il 25/09/2026, <a href="https://en.wikipedia.org/wiki/Edgar_F._Codd" rel="noopener">en.wikipedia.org/wiki/Edgar_F._Codd</a>.</li>
+        <li id="ref-5-it"><strong>Oracle</strong>, <em>SQL Language Reference 19c</em>, “Types of SQL Statements”, consultato il 25/09/2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Types-of-SQL-Statements.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Types-of-SQL-Statements.html</a>.</li>
+        <li id="ref-6-it"><strong>Oracle</strong>, <em>SQL Language Reference 19c</em>, “SELECT”, consultato il 25/09/2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SELECT.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SELECT.html</a>.</li>
+        <li id="ref-7-it"><strong>Oracle</strong>, <em>SQL Tuning Guide 19c</em>, “SQL Processing”, consultato il 25/09/2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/tgsql/sql-processing.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/19/tgsql/sql-processing.html</a>.</li>
+        <li id="ref-8-it"><strong>Markus Winand</strong>, <em>Use The Index, Luke</em>, “Functions”, consultato il 25/09/2026, <a href="https://use-the-index-luke.com/sql/where-clause/functions" rel="noopener">use-the-index-luke.com/sql/where-clause/functions</a>.</li>
+        <li id="ref-9-it"><strong>Wikipedia</strong> (in inglese), “Join (SQL)”, consultato il 25/09/2026, <a href="https://en.wikipedia.org/wiki/Join_(SQL)" rel="noopener">en.wikipedia.org/wiki/Join_(SQL)</a>.</li>
+        <li id="ref-10-it"><strong>Oracle</strong>, <em>SQL Language Reference 19c</em>, “Joins”, consultato il 25/09/2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Joins.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Joins.html</a>.</li>
+        <li id="ref-11-it"><strong>Oracle</strong>, <em>SQL Language Reference 19c</em>, “About SQL Conditions”, consultato il 25/09/2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/About-SQL-Conditions.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/About-SQL-Conditions.html</a>.</li>
+        <li id="ref-12-it"><strong>Oracle</strong>, <em>SQL Language Reference 19c</em>, “About SQL Operators”, consultato il 25/09/2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/About-SQL-Operators.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/About-SQL-Operators.html</a>.</li>
+        <li id="ref-13-it"><strong>Wikipedia</strong> (in inglese), “Null (SQL)”, consultato il 25/09/2026, <a href="https://en.wikipedia.org/wiki/Null_(SQL)" rel="noopener">en.wikipedia.org/wiki/Null_(SQL)</a>.</li>
+        <li id="ref-14-it"><strong>Oracle</strong>, <em>SQL Language Reference 19c</em>, “Aggregate Functions”, consultato il 25/09/2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Aggregate-Functions.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Aggregate-Functions.html</a>.</li>
+        <li id="ref-15-it"><strong>Oracle</strong>, <em>Data Warehousing Guide 19c</em>, “SQL for Aggregation in Data Warehouses”, consultato il 25/09/2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/dwhsg/sql-aggregation-data-warehouses.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/19/dwhsg/sql-aggregation-data-warehouses.html</a>.</li>
+        <li id="ref-16-it"><strong>Oracle</strong>, <em>SQL Language Reference 19c</em>, “Analytic Functions”, consultato il 25/09/2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Analytic-Functions.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Analytic-Functions.html</a>.</li>
+        <li id="ref-17-it"><strong>Wikipedia</strong> (in inglese), “Window function (SQL)”, consultato il 25/09/2026, <a href="https://en.wikipedia.org/wiki/Window_function_(SQL)" rel="noopener">en.wikipedia.org/wiki/Window_function_(SQL)</a>.</li>
+        <li id="ref-18-it"><strong>SQLite</strong>, “Window Functions”, consultato il 25/09/2026, <a href="https://www.sqlite.org/windowfunctions.html" rel="noopener">sqlite.org/windowfunctions.html</a>.</li>
+        <li id="ref-19-it"><strong>Oracle</strong>, <em>SQL Language Reference 19c</em>, “LISTAGG”, consultato il 25/09/2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/LISTAGG.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/LISTAGG.html</a>.</li>
+        <li id="ref-20-it"><strong>Wikipedia</strong> (in inglese), “Set operations (SQL)”, consultato il 25/09/2026, <a href="https://en.wikipedia.org/wiki/Set_operations_(SQL)" rel="noopener">en.wikipedia.org/wiki/Set_operations_(SQL)</a>.</li>
+        <li id="ref-21-it"><strong>Oracle</strong>, <em>SQL Language Reference 21c</em>, “The Set Operators”, consultato il 25/09/2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/21/sqlrf/The-UNION-ALL-INTERSECT-MINUS-Operators.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/21/sqlrf/The-UNION-ALL-INTERSECT-MINUS-Operators.html</a>.</li>
+        <li id="ref-22-it"><strong>Oracle</strong>, <em>SQL Language Reference 19c</em>, “Hierarchical Queries”, consultato il 25/09/2026, <a href="https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Hierarchical-Queries.html" rel="noopener">docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/Hierarchical-Queries.html</a>.</li>
+        <li id="ref-23-it"><strong>Wikipedia</strong> (in inglese), “Hierarchical and recursive queries in SQL”, consultato il 25/09/2026, <a href="https://en.wikipedia.org/wiki/Hierarchical_and_recursive_queries_in_SQL" rel="noopener">en.wikipedia.org/wiki/Hierarchical_and_recursive_queries_in_SQL</a>.</li>
+        <li id="ref-24-it"><strong>SQLite</strong>, “The WITH Clause”, consultato il 25/09/2026, <a href="https://www.sqlite.org/lang_with.html" rel="noopener">sqlite.org/lang_with.html</a>.</li>
+        <li id="ref-25-it"><strong>Markus Winand</strong>, <em>Use The Index, Luke</em>, “Bind Parameters”, consultato il 25/09/2026, <a href="https://use-the-index-luke.com/sql/where-clause/bind-parameters" rel="noopener">use-the-index-luke.com/sql/where-clause/bind-parameters</a>.</li>
+        <li id="ref-26-it"><strong>Wikipedia</strong> (in inglese), “Prepared statement”, consultato il 25/09/2026, <a href="https://en.wikipedia.org/wiki/Prepared_statement" rel="noopener">en.wikipedia.org/wiki/Prepared_statement</a>.</li>
+        <li id="ref-27-it"><strong>Wikipedia</strong> (in inglese), “SQL injection”, consultato il 25/09/2026, <a href="https://en.wikipedia.org/wiki/SQL_injection" rel="noopener">en.wikipedia.org/wiki/SQL_injection</a>.</li>
+        <li id="ref-28-it"><strong>Wikipedia</strong> (in inglese), “JD Edwards”, consultato il 25/09/2026, <a href="https://en.wikipedia.org/wiki/JD_Edwards" rel="noopener">en.wikipedia.org/wiki/JD_Edwards</a>.</li>
+        <li id="ref-29-it"><strong>Programmer Interview</strong>, “Having vs. Where Clause”, consultato il 25/09/2026, <a href="http://www.programmerinterview.com/index.php/database-sql/having-vs-where-clause/" rel="noopener">programmerinterview.com/index.php/database-sql/having-vs-where-clause</a>.</li>
+        <li id="ref-30-it"><strong>Akadia</strong>, “Oracle Bind Variables”, consultato il 25/09/2026, <a href="http://www.akadia.com/services/ora_bind_variables.html" rel="noopener">akadia.com/services/ora_bind_variables.html</a>.</li>
+        <li id="ref-31-it"><strong>DevMedia</strong>, “Uso do CONNECT BY no Oracle”, consultato il 25/09/2026, <a href="https://www.devmedia.com.br/uso-do-connect-by-no-oracle/23647" rel="noopener">devmedia.com.br/uso-do-connect-by-no-oracle/23647</a>.</li>
+        <li id="ref-32-it"><strong>Oracle Blues</strong>, “Diferença entre o IN e o EXISTS”, 2007, consultato il 25/09/2026, <a href="http://oracleblues.blogspot.com/2007/02/diferena-entre-o-in-e-o-exists.html" rel="noopener">oracleblues.blogspot.com/2007/02/diferena-entre-o-in-e-o-exists.html</a>.</li>
+        <li id="ref-33-it"><strong>Certificação BD</strong>, “SQL e PL/SQL”, consultato il 25/09/2026, <a href="http://certificacaobd.com.br/category/geral/dbarea/oracle-dbarea/sql-e-plsql/" rel="noopener">certificacaobd.com.br/category/geral/dbarea/oracle-dbarea/sql-e-plsql</a>.</li>
+        <li id="ref-34-it"><strong>Wikipedia</strong> (in inglese), “Sargable”, consultato il 25/09/2026, <a href="https://en.wikipedia.org/wiki/Sargable" rel="noopener">en.wikipedia.org/wiki/Sargable</a>.</li>
+      </ol>
+      <a class="back" href="#top">↑ Torna all’inizio</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span>Giovani Perotto Mesquita · Porto Alegre, RS</span>
+    <span><a href="projects.html" data-projects data-foot="0">Projetos</a> · <a href="resume.html" data-resume data-foot="1">Currículo</a> · <a href="contact.html" data-contact data-foot="2">Contato</a></span>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('.lang [role="tab"]'));
+    var titles = {"pt": "Guia do mochileiro do SQL · Giovani Perotto Mesquita", "en": "The hitchhiker’s guide to SQL · Giovani Perotto Mesquita", "it": "Guida galattica per SQL · Giovani Perotto Mesquita"};
+    var foots = {"pt": ["Projetos", "Currículo", "Contato"], "en": ["Projects", "Resume", "Contact"], "it": ["Progetti", "Curriculum", "Contatti"]};
+    var langs = { pt: 'pt-BR', en: 'en', it: 'it' };
+    var bar = document.querySelector('.progress');
+    var article = document.querySelector('[role="tabpanel"]:not([hidden]) article');
+
+    function show(id, focus) {
+      tabs.forEach(function (t) {
+        var on = t.getAttribute('aria-controls') === id;
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+        if (on && focus) t.focus();
+      });
+      document.documentElement.lang = langs[id];
+      document.title = titles[id];
+      var suffix = id === 'pt' ? '' : '#' + id;
+      [['data-home', 'index.html'], ['data-about', 'about.html'], ['data-resume', 'resume.html'], ['data-projects', 'projects.html'], ['data-contact', 'contact.html']].forEach(function (p) {
+        document.querySelectorAll('[' + p[0] + ']').forEach(function (a) { a.href = p[1] + suffix; });
+      });
+      document.querySelectorAll('[data-foot]').forEach(function (a) { a.textContent = foots[id][+a.getAttribute('data-foot')]; });
+      article = document.querySelector('#' + id + ' article');
+      if (history.replaceState) history.replaceState(null, '', id === 'pt' ? location.pathname : '#' + id);
+      progress();
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () { show(t.getAttribute('aria-controls')); });
+      t.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (d) { e.preventDefault(); show(tabs[(i + d + tabs.length) % tabs.length].getAttribute('aria-controls'), true); }
+      });
+    });
+
+    // barra de progresso de leitura
+    function progress() {
+      if (!article) return;
+      var r = article.getBoundingClientRect();
+      var total = r.height - window.innerHeight;
+      var p = total > 0 ? Math.min(Math.max(-r.top / total, 0), 1) : 1;
+      bar.style.width = (p * 100) + '%';
+    }
+    window.addEventListener('scroll', progress, { passive: true });
+    window.addEventListener('resize', progress);
+
+    // destaca a seção atual no índice
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          var panel = e.target.closest('[role="tabpanel"]');
+          panel.querySelectorAll('.toc a').forEach(function (a) {
+            if (a.getAttribute('href') === '#' + e.target.id) a.setAttribute('aria-current', 'true');
+            else a.removeAttribute('aria-current');
+          });
+        });
+      }, { rootMargin: '-20% 0px -70% 0px' });
+      document.querySelectorAll('article section[id]').forEach(function (s) { io.observe(s); });
+    }
+
+    var h = (location.hash || '').replace('#', '');
+    var m = h.match(/^(?:.*-)?(en|it)$/);
+    if (m) {
+      show(m[1]);
+      if (h !== m[1]) { var el = document.getElementById(h); if (el) el.scrollIntoView(); if (history.replaceState) history.replaceState(null, '', '#' + h); }
+    } else progress();
+  })();
+</script>
+</body>
+</html>

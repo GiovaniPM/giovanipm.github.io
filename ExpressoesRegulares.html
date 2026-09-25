@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Expressões regulares · Giovani Perotto Mesquita</title>
+<meta name="description" content="Tutorial de expressões regulares: flags, conjuntos, quantificadores, âncoras, atalhos, grupos e classes POSIX, com exemplos testados em JavaScript e correções dos erros mais comuns. Disponível em português, inglês e italiano.">
+<meta name="author" content="Giovani Perotto Mesquita">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Paleta alegre: roxo e magenta vibrantes, amarelo-girassol, verde-água e coral */
+    --bg: #FFF7EC;
+    --surface: #FFFFFF;
+    --ink: #2B1B3D;
+    --text: #3E3350;
+    --muted: #756986;
+    --line: #F1E2CF;
+    --accent: #0E8074;
+    --accent-soft: #E2F6F2;
+    --accent-strong: #5B2A86;
+    --navy: #5B2A86;
+    --navy-deep: #C2185B;
+    --on-navy: #FFFFFF;
+    --on-navy-muted: #FCE4F0;
+    --gold: #FFB703;
+    --gold-ink: #B35300;
+    --gold-soft: #FFF1C9;
+    --coral: #FF6B6B;
+    --sky: #3A86FF;
+    --mint: #2A9D8F;
+    --pink: #EF476F;
+    --sans: "Hanken Grotesk", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1A1328; --surface: #241A36; --ink: #F7F0FF; --text: #E2D8F0; --muted: #A898C0;
+      --line: #3A2D52; --accent: #5FD3C4; --accent-soft: #1D3A38; --accent-strong: #C9A7F5;
+      --navy: #3D1A5C; --navy-deep: #7A1240; --gold: #FFC94D; --gold-ink: #FFC94D; --gold-soft: #3A2E12;
+      --coral: #FF8A8A; --sky: #6FA8FF; --mint: #4CC3B3; --pink: #FF6F91;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 4px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 1.5rem; }
+
+  /* navegação */
+  .nav {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: saturate(160%) blur(10px); -webkit-backdrop-filter: saturate(160%) blur(10px);
+    border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px);
+  }
+  .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 58px; gap: 1rem; }
+  .brand { font-family: var(--serif); font-weight: 600; color: var(--accent-strong); text-decoration: none; font-size: 1.05rem; }
+  .nav ul { list-style: none; display: flex; gap: 1.4rem; margin: 0; padding: 0; }
+  .nav ul a { color: var(--muted); text-decoration: none; font-size: 0.93rem; font-weight: 500; }
+  .nav ul a:hover, .nav ul a[aria-current="page"] { color: var(--ink); }
+  .nav-right { display: flex; align-items: center; gap: 1rem; }
+  .lang { display: flex; gap: 0.2rem; }
+  .lang button { font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; color: var(--muted); background: none; padding: 0.2rem 0.45rem; border-radius: 6px; border: 1px solid transparent; }
+  .lang button:hover { color: var(--ink); }
+  .lang button[aria-selected="true"] { color: var(--accent-strong); border-color: var(--line); background: var(--surface); }
+  [hidden] { display: none !important; }
+  .progress { position: absolute; left: 0; bottom: -1px; height: 3px; width: 0; background: linear-gradient(90deg, var(--coral), var(--gold), var(--mint)); }
+
+  /* abertura */
+  .hero-band {
+    background:
+      radial-gradient(900px 420px at 85% -10%, rgba(255,255,255,.07), transparent 60%),
+      linear-gradient(160deg, var(--navy) 0%, var(--navy-deep) 100%);
+    border-top: 4px solid var(--gold); color: var(--on-navy);
+  }
+  .hero { padding: 3.5rem 0 3.5rem; max-width: 820px; }
+  .crumb { margin: 0 0 1.4rem; font-size: 0.92rem; }
+  .crumb a { color: var(--on-navy-muted); text-decoration: none; }
+  .crumb a:hover { color: var(--gold); }
+  .eyebrow { color: var(--gold); font-weight: 600; font-size: 1rem; margin: 0 0 0.7rem; }
+  h1 { font-family: var(--serif); font-weight: 600; color: var(--on-navy); font-size: clamp(2.3rem, 5.5vw, 3.8rem); line-height: 1.05; letter-spacing: -0.025em; margin: 0; }
+  .dek { font-family: var(--serif); font-style: italic; font-size: clamp(1.1rem, 2.2vw, 1.35rem); color: var(--on-navy-muted); margin: 1.1rem 0 1.6rem; max-width: 58ch; }
+  .byline { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; font-size: 0.92rem; color: var(--on-navy-muted); }
+  .byline strong { color: var(--on-navy); font-weight: 600; }
+  .byline .credit { margin-left: auto; font-style: italic; }
+
+  /* layout do artigo */
+  .layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 3rem; padding: 3rem 0 4rem; align-items: start; }
+  .toc { position: sticky; top: 82px; font-size: 0.92rem; max-height: calc(100vh - 100px); overflow-y: auto; }
+  .toc h2 { font-family: var(--sans); font-size: 0.85rem; font-weight: 600; color: var(--muted); margin: 0 0 0.7rem; border: 0; padding: 0; }
+  .toc ol { list-style: none; margin: 0; padding: 0; counter-reset: toc; border-left: 2px solid var(--line); }
+  .toc li { counter-increment: toc; }
+  .toc a { display: block; padding: 0.3rem 0 0.3rem 1rem; margin-left: -2px; border-left: 2px solid transparent; color: var(--muted); text-decoration: none; line-height: 1.35; }
+  .toc a::before { content: counter(toc) ". "; color: var(--gold-ink); font-weight: 600; }
+  .toc a:hover { color: var(--ink); }
+  .toc a[aria-current="true"] { color: var(--accent-strong); border-left-color: var(--gold); font-weight: 600; }
+
+  article { background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: var(--radius); padding: 3rem clamp(1.25rem, 4vw, 3.5rem); min-width: 0; }
+  article section + section { margin-top: 3.2rem; }
+  article h2 { font-family: var(--serif); font-weight: 600; color: var(--ink); font-size: clamp(1.5rem, 2.8vw, 1.9rem); letter-spacing: -0.015em; line-height: 1.2; margin: 0 0 1.1rem; padding-left: 0.9rem; border-left: 3px solid var(--gold); }
+  article h3 { font-family: var(--sans); font-size: 1.1rem; font-weight: 600; color: var(--ink); margin: 2rem 0 0.8rem; }
+  article p, article li { font-family: var(--serif); font-size: 1.12rem; line-height: 1.7; color: var(--text); }
+  article p { margin: 0 0 1.1rem; max-width: 68ch; }
+  article ul, article ol { margin: 0 0 1.1rem; padding-left: 1.4rem; max-width: 68ch; }
+  article li { margin-bottom: 0.3rem; }
+  article strong { color: var(--ink); }
+  sup a { font-family: var(--sans); font-size: 0.72rem; font-weight: 700; text-decoration: none; padding: 0 0.15em; }
+
+  figure { margin: 2rem 0; }
+  figure img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: #FFF7EC; }
+  figcaption { margin-top: 0.6rem; font-size: 0.9rem; color: var(--muted); text-align: center; font-family: var(--sans); line-height: 1.5; }
+
+  blockquote { margin: 1.5rem 0; padding: 1.2rem 1.5rem; background: var(--accent-soft); border-left: 3px solid var(--gold); border-radius: 0 10px 10px 0; }
+  blockquote p { font-size: 1.05rem; margin: 0 0 0.8rem; }
+  blockquote p:last-child { margin-bottom: 0; }
+  blockquote.pull p { font-size: clamp(1.15rem, 2.3vw, 1.35rem); font-style: italic; line-height: 1.45; color: var(--ink); }
+  blockquote cite { font-family: var(--sans); font-size: 0.88rem; font-style: normal; color: var(--muted); }
+
+  /* tabelas */
+  .table-wrap { overflow-x: auto; margin: 1.5rem 0; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-family: var(--sans); font-size: 0.95rem; }
+  th, td { text-align: left; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.5; }
+  thead th { background: var(--gold-soft); color: var(--ink); font-weight: 600; }
+  tbody th { color: var(--ink); font-weight: 600; }
+  tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
+  td code, th code { font-size: 0.9em; }
+
+  /* mitos */
+  .myths { list-style: none; padding: 0; margin: 1.5rem 0; max-width: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
+  .myths li { margin: 0; padding: 1rem 1.2rem; border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: 10px; }
+  .myths li:nth-child(4n+2) { border-top-color: var(--sky); }
+  .myths li:nth-child(4n+3) { border-top-color: var(--mint); }
+  .myths li:nth-child(4n+4) { border-top-color: var(--gold); }
+  .myths h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+  .myths p { margin: 0; font-size: 1rem; line-height: 1.6; }
+
+  /* para fixar */
+  .recap { margin: 1.8rem 0 0; padding: 1.1rem 1.4rem; background: var(--gold-soft); border-left: 4px solid var(--mint); border-radius: 0 10px 10px 0; }
+  .recap h3 { margin: 0 0 0.5rem; font-size: 0.85rem; letter-spacing: .05em; text-transform: uppercase; color: var(--gold-ink); }
+  .recap ul { margin: 0; padding-left: 1.2rem; }
+  .recap li { font-family: var(--sans); font-size: 0.98rem; line-height: 1.55; margin-bottom: 0.25rem; }
+
+  /* revisão rápida */
+  .quiz { display: grid; gap: 0.7rem; margin: 1.5rem 0; }
+  .quiz details { border: 1px solid var(--line); border-left: 4px solid var(--sky); border-radius: 0 10px 10px 0; padding: 0.8rem 1.1rem; }
+  .quiz details:nth-child(3n+2) { border-left-color: var(--pink); }
+  .quiz details:nth-child(3n+3) { border-left-color: var(--mint); }
+  .quiz summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); line-height: 1.45; }
+  .quiz details[open] summary { margin-bottom: 0.5rem; }
+  .quiz p { margin: 0; font-size: 1.02rem; }
+
+  .refs { font-family: var(--sans); padding-left: 1.4rem; margin: 0; }
+  .refs li { font-family: var(--sans); font-size: 0.92rem; line-height: 1.55; margin-bottom: 0.7rem; word-break: break-word; }
+  .refs li:target { background: var(--gold-soft); border-radius: 6px; }
+
+  .back { display: inline-block; margin-top: 1rem; font-family: var(--sans); font-size: 0.85rem; text-decoration: none; }
+
+  footer { background: var(--navy-deep); color: var(--on-navy-muted); border-top: 3px solid var(--gold); padding: 1.5rem 0 calc(1.5rem + env(safe-area-inset-bottom, 0px)); font-size: 0.88rem; }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1.5rem; }
+  footer a { color: var(--on-navy); text-decoration: none; }
+  footer a:hover { color: var(--gold); }
+
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+    .toc { position: static; max-height: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.2rem 1.4rem; }
+  }
+  @media (max-width: 760px) {
+    .myths { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .nav ul { display: none; }
+    .hero { padding: 2.5rem 0; }
+    .wrap { padding: 0 1rem; }
+    article p, article li { font-size: 1.05rem; }
+    th, td { padding: 0.6rem 0.7rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  @media print {
+    .nav, .toc, footer, .back, .crumb { display: none !important; }
+    body { background: #fff; }
+    .hero-band { background: none; color: #111; border: 0; }
+    .hero-band h1 { color: #5B2A86; }
+    .dek, .byline, .byline strong { color: #333; }
+    .layout { display: block; padding: 0; }
+    article { border: 0; padding: 0; }
+    .table-wrap { overflow: visible; }
+    figure, blockquote, .myths li, .recap, .quiz details, tr { break-inside: avoid; }
+  }
+
+  /* blocos de código (Gherkin) */
+  pre.code { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: #2B1B3D; color: #F7F0FF; border-radius: 10px; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.92rem; line-height: 1.6; tab-size: 2; }
+  pre.code code { font-family: inherit; white-space: pre; }
+  pre.code .k { color: #FFB703; font-weight: 700; }
+  pre.code .s { color: #5FD3C4; font-weight: 700; }
+  pre.code .c { color: #A898C0; }
+  pre.code .p { color: #C9A7F5; }
+  article code { font-family: Consolas, "Courier New", monospace; font-size: 0.92em; }
+  article :not(pre) > code { background: var(--accent-soft); color: var(--ink); padding: 0.05em 0.35em; border-radius: 4px; }
+
+  /* fórmulas */
+  pre.formula { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.95rem; line-height: 1.5; }
+
+  /* glossário */
+  dl.glossary { margin: 1.2rem 0; display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  dl.glossary dt, dl.glossary dd { margin: 0; padding: 0.65rem 0.9rem; border-bottom: 1px solid var(--line); font-family: var(--sans); font-size: 0.95rem; line-height: 1.5; }
+  dl.glossary dt { font-weight: 600; color: var(--ink); background: color-mix(in srgb, var(--gold-soft) 60%, var(--surface)); }
+  dl.glossary dd { color: var(--text); }
+  dl.glossary dt:nth-last-of-type(1), dl.glossary dd:last-of-type { border-bottom: 0; }
+  @media (max-width: 720px) { dl.glossary { grid-template-columns: 1fr; } dl.glossary dt { border-bottom: 0; padding-bottom: 0.2rem; } }
+
+  /* nota de atenção */
+  aside.note { margin: 1.2rem 0 1.5rem; padding: 0.8rem 1.1rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; }
+  aside.note p { margin: 0; }
+</style>
+</head>
+<body id="top">
+
+<nav class="nav" aria-label="Navegação do site">
+  <div class="wrap">
+    <a class="brand" href="index.html" data-home>Giovani Perotto Mesquita</a>
+    <div class="nav-right">
+      <ul>
+        <li><a href="index.html" data-home>Home</a></li>
+        <li><a href="about.html" data-about>About</a></li>
+        <li><a href="resume.html" data-resume>Resume</a></li>
+        <li><a href="projects.html" data-projects aria-current="page">Projects</a></li>
+        <li><a href="contact.html" data-contact>Contact</a></li>
+      </ul>
+      <div class="lang" role="tablist" aria-label="Idioma / Language / Lingua">
+        <button type="button" role="tab" id="tab-pt" aria-controls="pt" aria-selected="true" lang="pt-BR">PT</button>
+        <button type="button" role="tab" id="tab-en" aria-controls="en" aria-selected="false" lang="en" tabindex="-1">EN</button>
+        <button type="button" role="tab" id="tab-it" aria-controls="it" aria-selected="false" lang="it" tabindex="-1">IT</button>
+      </div>
+    </div>
+  </div>
+  <div class="progress" aria-hidden="true"></div>
+</nav>
+
+<!-- ===================== PT ===================== -->
+<div id="pt" role="tabpanel" aria-labelledby="tab-pt" lang="pt-BR">
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projetos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Expressões regulares</h1>
+      <p class="dek">Um guia prático para descrever padrões de texto: flags, conjuntos, quantificadores, âncoras, atalhos e grupos, com exemplos testados e os erros mais comuns corrigidos.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado em <time datetime="2026-09-25">25/09/2026</time></span>
+        <span class="credit">Revisado e formatado usando Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-pt">
+    <h2 id="toc-pt">Índice</h2>
+    <ol>
+      <li><a href="#conceito-pt">O que é uma expressão regular</a></li>
+      <li><a href="#anatomia-pt">Anatomia de um padrão</a></li>
+      <li><a href="#flags-pt">Flags</a></li>
+      <li><a href="#conjuntos-pt">Alternância e conjuntos</a></li>
+      <li><a href="#meta-pt">Metacaracteres e escape</a></li>
+      <li><a href="#quant-pt">Quantificadores</a></li>
+      <li><a href="#ancoras-pt">Âncoras</a></li>
+      <li><a href="#atalhos-pt">Atalhos (shorthands)</a></li>
+      <li><a href="#grupos-pt">Grupos e retrovisores</a></li>
+      <li><a href="#posix-pt">Classes POSIX</a></li>
+      <li><a href="#exemplos-pt">Exemplos práticos</a></li>
+      <li><a href="#ferramentas-pt">Ferramentas</a></li>
+      <li><a href="#revisao-pt">Revisão rápida</a></li>
+      <li><a href="#referencias-pt">Referências</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="conceito-pt" aria-labelledby="h-conceito-pt">
+      <h2 id="h-conceito-pt">O que é uma expressão regular</h2>
+      <p>Uma <strong>expressão regular</strong> (<em>regular expression</em>, ou <em>regex</em>) é uma forma compacta e formal de descrever um padrão de texto. Em vez de procurar uma palavra exata, você descreve a forma do que procura, por exemplo “dois dígitos, uma barra, dois dígitos, outra barra e quatro dígitos”, e o programa encontra tudo o que se encaixa. <sup><a href="#ref-1-pt">[1]</a></sup> <sup><a href="#ref-3-pt">[3]</a></sup></p>
+      <p>A ideia vem da teoria da computação: o matemático Stephen Kleene formalizou as “linguagens regulares” nos anos 1950, e Ken Thompson levou a notação para o editor de texto QED em 1968 e, depois, para ferramentas do Unix como o <code>grep</code>. Hoje quase toda linguagem de programação tem um motor de regex. <sup><a href="#ref-5-pt">[5]</a></sup> <sup><a href="#ref-6-pt">[6]</a></sup></p>
+      <p>Usos típicos:</p>
+      <ul>
+        <li><strong>busca</strong>: encontrar todas as datas de um documento;</li>
+        <li><strong>substituição</strong>: trocar <code>dd/mm/aaaa</code> por <code>aaaa-mm-dd</code>;</li>
+        <li><strong>validação</strong>: conferir se um CEP ou um horário tem o formato certo;</li>
+        <li><strong>extração e filtragem</strong>: tirar de um log só as linhas com erro.</li>
+      </ul>
+      <p>Existem vários “sabores” (<em>flavors</em>) de regex, e eles não são idênticos. Os exemplos deste tutorial usam a sintaxe do <strong>JavaScript</strong> e foram testados no Node.js 22; quando um recurso só existe em outros motores, como PCRE (PHP), .NET ou Python, isso está indicado. <sup><a href="#ref-2-pt">[2]</a></sup> <sup><a href="#ref-7-pt">[7]</a></sup> <sup><a href="#ref-8-pt">[8]</a></sup></p>
+    </section>
+
+    <section id="anatomia-pt" aria-labelledby="h-anatomia-pt">
+      <h2 id="h-anatomia-pt">Anatomia de um padrão</h2>
+      <p>O <strong>padrão</strong> (<em>pattern</em>) é a sequência de caracteres que forma a expressão. Em JavaScript ele fica entre barras, e as <strong>flags</strong> vêm depois da barra final: <code>/padrão/flags</code>. A maioria dos caracteres casa com ele mesmo; alguns, os <strong>metacaracteres</strong>, têm significado especial.</p>
+      <pre class="code"><code><span class="c">padrão:  /a/</span>
+texto:   A casa está limpa.
+casa:       <span class="s">^</span>
+
+<span class="c">padrão:  /celular/</span>
+texto:   O celular está tocando.
+casa:      <span class="s">^^^^^^^</span></code></pre>
+      <p>No primeiro exemplo, o <code>A</code> maiúsculo não casa, porque a busca diferencia maiúsculas de minúsculas, e sem a flag <code>g</code> só a primeira ocorrência é devolvida. A figura mostra um padrão completo, peça por peça.</p>
+      <figure>
+        <img src="rc_images/RegexAnatomia.svg" alt="O padrão /^(\d{2})\/(\d{2})\/(\d{4})$/g decomposto em partes coloridas: delimitadores, âncoras de início e fim, três grupos de captura, o atalho \d para dígito, os quantificadores {2} e {4}, as barras escapadas e a flag g. Abaixo, o teste com 25/09/2026: o texto inteiro casa, e os grupos capturam 25, 09 e 2026." width="1000" height="452" loading="lazy">
+        <figcaption>Delimitadores, âncoras, grupos, atalhos, quantificadores, escape e flag: as peças que compõem quase toda regex.</figcaption>
+      </figure>
+    </section>
+
+    <section id="flags-pt" aria-labelledby="h-flags-pt">
+      <h2 id="h-flags-pt">Flags</h2>
+      <p>As flags mudam o comportamento do motor para o padrão inteiro. Estas são as do JavaScript: <sup><a href="#ref-4-pt">[4]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Flag</th><th scope="col">Nome</th><th scope="col">O que faz</th></tr></thead>
+          <tbody>
+            <tr><td><code>g</code></td><td>global</td><td>Procura todas as ocorrências, não só a primeira.</td></tr>
+            <tr><td><code>i</code></td><td>ignore case</td><td>Não diferencia maiúsculas de minúsculas.</td></tr>
+            <tr><td><code>m</code></td><td>multiline</td><td>Faz <code>^</code> e <code>$</code> casarem no início e no fim de cada linha, e não só do texto inteiro.</td></tr>
+            <tr><td><code>s</code></td><td>dotAll</td><td>Faz o ponto (<code>.</code>) casar também com a quebra de linha.</td></tr>
+            <tr><td><code>u</code></td><td>unicode</td><td>Trata o padrão como Unicode completo (emojis, <code>\u{1F600}</code>, <code>\p{L}</code>).</td></tr>
+            <tr><td><code>v</code></td><td>unicodeSets</td><td>Versão ampliada de <code>u</code>, com operações de conjunto dentro de <code>[ ]</code>.</td></tr>
+            <tr><td><code>y</code></td><td>sticky</td><td>Só casa exatamente na posição indicada por <code>lastIndex</code>.</td></tr>
+            <tr><td><code>d</code></td><td>hasIndices</td><td>Devolve também as posições de início e fim de cada grupo.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Duas correções em relação ao texto original: <sup><a href="#ref-1-pt">[1]</a></sup></p>
+      <ul>
+        <li>A flag <code>s</code> não quer dizer “linha única” no sentido de desligar o modo multilinha: ela faz o ponto aceitar <code>\n</code>. O nome “single line” vem do Perl e confunde muita gente. <sup><a href="#ref-3-pt">[3]</a></sup></li>
+        <li>A flag <code>x</code> (<em>extended</em>) existe em PCRE, Perl, .NET e Python (<code>re.X</code>): ela ignora espaços no padrão e permite comentários com <code>#</code>. O JavaScript <strong>não</strong> tem essa flag e dá erro ao recebê-la. <sup><a href="#ref-7-pt">[7]</a></sup> <sup><a href="#ref-8-pt">[8]</a></sup></li>
+      </ul>
+      <figure>
+        <img src="rc_images/RegexFlags.svg" alt="O texto Ontem faltou água, anteontem faltou luz testado com quatro variações do padrão ontem: sem flags, casa só o ontem dentro de anteontem; com i, casa só o Ontem do início; com g, casa só o ontem de anteontem; com gi, casa os dois." width="1000" height="444" loading="lazy">
+        <figcaption>Com i e g combinadas, “Ontem” e o “ontem” de “anteontem” são encontrados.</figcaption>
+      </figure>
+    </section>
+
+    <section id="conjuntos-pt" aria-labelledby="h-conjuntos-pt">
+      <h2 id="h-conjuntos-pt">Alternância e conjuntos</h2>
+      <h3>Ou: <code>|</code></h3>
+      <p>A barra vertical separa alternativas: o motor aceita o que estiver à esquerda <em>ou</em> à direita.</p>
+      <pre class="code"><code><span class="c">padrão:  /ver|distrai/gi</span>
+texto:   Ver a linha do horizonte me distrai
+casa:    <span class="s">^^^</span>                         <span class="s">^^^^^^^</span>
+
+<span class="c">padrão:  /20|nove/gi</span>
+texto:   Perdi 20 em 20 e nove amizades
+casa:          <span class="s">^^</span>    <span class="s">^^</span>   <span class="s">^^^^</span></code></pre>
+      <h3>Conjunto: <code>[ ]</code></h3>
+      <p>Os colchetes definem uma <strong>classe de caracteres</strong>: uma única posição que aceita qualquer um dos caracteres listados. <code>/[em²]/gi</code> e <code>/e|m|²/gi</code> dão o mesmo resultado em <code>E = mc²</code>, mas o conjunto é mais curto e mais rápido.</p>
+      <h3>Intervalos: <code>[a-z]</code></h3>
+      <p>Dentro de um conjunto, o hífen indica um intervalo na ordem da tabela Unicode: <code>[a-z]</code>, <code>[A-Z]</code>, <code>[0-9]</code>. Por isso <code>[a-Z]</code> e <code>[4-1]</code> são erros: o início vem depois do fim na tabela.</p>
+      <pre class="code"><code><span class="c">padrão:  /[a-z]/g</span>
+texto:   João de Santo Cristo
+casa:     <span class="s">^</span> <span class="s">^</span> <span class="s">^^</span>  <span class="s">^^^^</span>  <span class="s">^^^^^</span>
+
+<span class="c">padrão:  /[0-9.,]/g</span>
+texto:   Um ps4 custa R$ 1.600,00
+casa:         <span class="s">^</span>          <span class="s">^^^^^^^^</span></code></pre>
+      <p>No original, estes dois padrões aparecem sem a flag <code>g</code>, mas com todas as ocorrências marcadas; sem <code>g</code>, só a primeira seria encontrada (o <code>o</code> de “João” e o <code>4</code> de “ps4”). Repare também que o <code>ã</code> não casa com <code>[a-z]</code>: letras acentuadas estão fora desse intervalo.</p>
+      <p>Para aceitar letras acentuadas, o original sugere <code>[À-ü]</code>. Funciona para o português, mas o intervalo de U+00C0 a U+00FC também inclui os sinais <code>×</code> e <code>÷</code>. Com a flag <code>u</code>, a forma robusta é <code>\p{L}</code>, “qualquer letra de qualquer alfabeto”. <sup><a href="#ref-19-pt">[19]</a></sup> <sup><a href="#ref-3-pt">[3]</a></sup></p>
+      <h3>Negação: <code>[^ ]</code></h3>
+      <p>Um <code>^</code> logo depois do <code>[</code> inverte o conjunto: casa com tudo o que <em>não</em> está listado.</p>
+      <pre class="code"><code><span class="c">padrão:  /[^aeiouí]/gi</span>
+texto:   Paralelepípedo
+casa:    <span class="s">^</span> <span class="s">^</span> <span class="s">^</span> <span class="s">^</span> <span class="s">^</span> <span class="s">^</span> <span class="s">^</span></code></pre>
+      <figure>
+        <img src="rc_images/RegexClasses.svg" alt="Tabela com os caracteres a, Z, 7, espaço, sublinhado, é, hífen e ponto nas colunas, e oito classes nas linhas: [a-z], [A-Za-z], [0-9] ou \d, \w, \s, [^a-z], [À-ü] e o ponto. Uma marca verde indica que o caractere casa com a classe. Por exemplo, \w casa com a, Z, 7 e sublinhado, mas não com é nem com o hífen." width="1000" height="506" loading="lazy">
+        <figcaption>O que cada classe aceita; note que \w e [a-z] ignoram letras acentuadas.</figcaption>
+      </figure>
+    </section>
+
+    <section id="meta-pt" aria-labelledby="h-meta-pt">
+      <h2 id="h-meta-pt">Metacaracteres e escape</h2>
+      <p>Os metacaracteres são <code>. ^ $ * + ? ( ) [ ] { } | \ /</code>. Para usar qualquer um deles como caractere comum, coloque uma barra invertida antes: <code>\.</code> casa com um ponto, <code>\/</code> com uma barra. <sup><a href="#ref-3-pt">[3]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Símbolo</th><th scope="col">Significado</th></tr></thead>
+          <tbody>
+            <tr><td><code>.</code></td><td>Curinga: qualquer caractere, exceto quebra de linha (a menos que se use a flag <code>s</code>).</td></tr>
+            <tr><td><code>-</code></td><td>Intervalo, mas só dentro de <code>[ ]</code>, como em <code>[1-9]</code>. Fora dos colchetes é um hífen comum.</td></tr>
+            <tr><td><code>^</code></td><td>Dois papéis: no início de um conjunto (<code>[^…]</code>) é negação; fora dele é a <strong>âncora</strong> de início. O original cita só a negação.</td></tr>
+            <tr><td><code>\</code></td><td>Escape: transforma um metacaractere em literal, ou uma letra comum em atalho (<code>\d</code>, <code>\w</code>).</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <pre class="code"><code><span class="c">padrão:  /cas./gi</span>
+texto:   Casa, caso, case
+casa:    <span class="s">^^^^</span>  <span class="s">^^^^</span>  <span class="s">^^^^</span>
+
+<span class="c">padrão:  /[a\-o]/gi</span>     <span class="c">// a, hífen ou o; não o intervalo de a até o</span>
+texto:   cachorro-quente.
+casa:     <span class="s">^</span>  <span class="s">^</span>  <span class="s">^^</span></code></pre>
+    </section>
+
+    <section id="quant-pt" aria-labelledby="h-quant-pt">
+      <h2 id="h-quant-pt">Quantificadores</h2>
+      <p>Um quantificador diz quantas vezes o elemento anterior pode se repetir.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Guloso</th><th scope="col">Preguiçoso</th><th scope="col">Repetições</th></tr></thead>
+          <tbody>
+            <tr><td><code>?</code></td><td><code>??</code></td><td>0 ou 1 (opcional)</td></tr>
+            <tr><td><code>*</code></td><td><code>*?</code></td><td>0 ou mais</td></tr>
+            <tr><td><code>+</code></td><td><code>+?</code></td><td>1 ou mais</td></tr>
+            <tr><td><code>{n}</code></td><td>—</td><td>exatamente n</td></tr>
+            <tr><td><code>{n,}</code></td><td><code>{n,}?</code></td><td>n ou mais</td></tr>
+            <tr><td><code>{n,m}</code></td><td><code>{n,m}?</code></td><td>de n até m</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>O quantificador <strong>guloso</strong> pega o máximo que consegue e só devolve caracteres se o resto do padrão precisar. O <strong>preguiçoso</strong>, com um <code>?</code> no fim, faz o contrário: pega o mínimo e só avança se precisar. <sup><a href="#ref-3-pt">[3]</a></sup> <sup><a href="#ref-15-pt">[15]</a></sup></p>
+      <aside class="note">
+        <p><strong>Atenção ao espaço:</strong> o original escreve <code>{n, m}</code>. Com o espaço, o JavaScript não reconhece o quantificador e procura o texto literal “{1, 3}”. Escreva sempre <code>{n,m}</code>, sem espaços.</p>
+      </aside>
+      <figure>
+        <img src="rc_images/RegexQuantificadores.svg" alt="No alto, barras mostram quantas repetições cada quantificador aceita: ? de 0 a 1, * de 0 ao infinito, + de 1 ao infinito, {2,4} de 2 a 4 e {3} exatamente 3. Abaixo, no texto &lt;b&gt;um&lt;/b&gt; e &lt;b&gt;dois&lt;/b&gt;, o padrão guloso &lt;.+&gt; casa o texto inteiro de uma vez, e o preguiçoso &lt;.+?&gt; casa cada uma das quatro tags separadamente." width="1000" height="510" loading="lazy">
+        <figcaption>Acima, o alcance de cada quantificador; abaixo, a diferença prática entre guloso e preguiçoso.</figcaption>
+      </figure>
+    </section>
+
+    <section id="ancoras-pt" aria-labelledby="h-ancoras-pt">
+      <h2 id="h-ancoras-pt">Âncoras</h2>
+      <p>Âncoras não casam com caracteres, e sim com <strong>posições</strong>. Elas servem para exigir que o padrão esteja num certo lugar. <sup><a href="#ref-3-pt">[3]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Âncora</th><th scope="col">Posição</th></tr></thead>
+          <tbody>
+            <tr><td><code>^</code></td><td>Início do texto (ou de cada linha, com a flag <code>m</code>).</td></tr>
+            <tr><td><code>$</code></td><td>Fim do texto (ou de cada linha, com a flag <code>m</code>).</td></tr>
+            <tr><td><code>\b</code></td><td>Borda de palavra: entre um caractere de palavra (<code>\w</code>) e um que não é.</td></tr>
+            <tr><td><code>\B</code></td><td>O contrário de <code>\b</code>: uma posição que <em>não</em> é borda de palavra.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Em validações, use <code>^</code> e <code>$</code> juntos: sem eles, <code>/\d{5}-\d{3}/</code> aceitaria “abc90050-170xyz”, porque o CEP aparece <em>dentro</em> do texto.</p>
+      <figure>
+        <img src="rc_images/RegexAncoras.svg" alt="O texto o rato e a ratoeira com losangos marcando as posições encontradas por cada âncora: \b nas bordas de cada palavra, \B nas posições dentro das palavras, ^ no início e $ no fim. Abaixo, /rato/g encontra 2 correspondências, incluindo o início de ratoeira, e /\brato\b/g encontra só 1, a palavra inteira." width="1000" height="504" loading="lazy">
+        <figcaption>\b encontra a palavra inteira; sem ele, “rato” também é achado no início de “ratoeira”.</figcaption>
+      </figure>
+    </section>
+
+    <section id="atalhos-pt" aria-labelledby="h-atalhos-pt">
+      <h2 id="h-atalhos-pt">Atalhos (shorthands)</h2>
+      <p>Os atalhos são abreviações de classes e caracteres comuns. A tabela do original foi tirada da referência do .NET; a coluna “JS” diz se o atalho também funciona no JavaScript. <sup><a href="#ref-2-pt">[2]</a></sup> <sup><a href="#ref-3-pt">[3]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Atalho</th><th scope="col">Casa com</th><th scope="col">JS</th></tr></thead>
+          <tbody>
+            <tr><td><code>\d</code> · <code>\D</code></td><td>Um dígito <code>[0-9]</code> · qualquer coisa que não seja dígito.</td><td>sim</td></tr>
+            <tr><td><code>\w</code> · <code>\W</code></td><td>Caractere de palavra <code>[A-Za-z0-9_]</code> · o contrário. Letras acentuadas não entram.</td><td>sim</td></tr>
+            <tr><td><code>\s</code> · <code>\S</code></td><td>Espaço em branco (espaço, tab, quebras de linha…) · o contrário.</td><td>sim</td></tr>
+            <tr><td><code>\b</code> · <code>\B</code></td><td>Borda de palavra · <strong>não</strong>-borda. Dentro de <code>[ ]</code>, <code>[\b]</code> é o backspace (U+0008). O original descreve <code>\B</code> como “um limite”; é o oposto.</td><td>sim</td></tr>
+            <tr><td><code>\t \n \r \v \f</code></td><td>Tab, nova linha, retorno de carro, tab vertical, avanço de página.</td><td>sim</td></tr>
+            <tr><td><code>\0</code></td><td>O caractere nulo (U+0000).</td><td>sim</td></tr>
+            <tr><td><code>\xhh</code> · <code>\uhhhh</code></td><td>Caractere pelo código hexadecimal, sem espaço entre o <code>x</code> e os dígitos: <code>\x2A</code> é <code>*</code>, <code>é</code> é <code>é</code>.</td><td>sim</td></tr>
+            <tr><td><code>\cX</code></td><td>Caractere de controle: <code>\cC</code> é o Ctrl+C (U+0003). O original também diz que <code>\c</code> “torna literal o caractere c”, o que está errado.</td><td>sim</td></tr>
+            <tr><td><code>\1</code>, <code>\2</code>…</td><td>Retrovisor: repete o que o grupo 1, 2… capturou.</td><td>sim</td></tr>
+            <tr><td><code>\a</code> · <code>\e</code></td><td>Sino (U+0007) · escape (U+001B).</td><td>não</td></tr>
+            <tr><td><code>\A</code> · <code>\z</code> · <code>\Z</code></td><td>Início do texto · fim do texto · fim do texto ou antes da última quebra de linha. Em JS, use <code>^</code> e <code>$</code> sem a flag <code>m</code>.</td><td>não</td></tr>
+            <tr><td><code>\nnn</code></td><td>Caractere em octal, como <code>\040</code> (espaço). É uma forma antiga; prefira <code>\x20</code> ou o próprio espaço.</td><td>legado</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="grupos-pt" aria-labelledby="h-grupos-pt">
+      <h2 id="h-grupos-pt">Grupos e retrovisores</h2>
+      <p>Os parênteses <code>( )</code> agrupam parte do padrão. Isso tem três usos: aplicar um quantificador a vários caracteres de uma vez, <strong>capturar</strong> o trecho para usá-lo depois e criar <strong>retrovisores</strong> (<em>backreferences</em>), que exigem repetir o que já foi capturado. O original chama esta seção de “Conjunto”, o mesmo nome dos colchetes; o nome certo é <strong>grupo</strong>. <sup><a href="#ref-1-pt">[1]</a></sup></p>
+      <pre class="code"><code><span class="c">padrão:  /(\d{2})\/?(\d{2})?\/(\d{4})/</span>
+texto:   Hoje é dia 20/01/2020
+casa:               <span class="s">^^^^^^^^^^</span>
+
+<span class="c">padrão:  /\d{2}(\/?)\d{2}\1\d{4}/g</span>
+texto:   20/01/2020 25091991 25-09/2000
+casa:    <span class="s">^^^^^^^^^^</span> <span class="s">^^^^^^^^</span></code></pre>
+      <p>No segundo exemplo, <code>\1</code> repete o separador capturado: barra com barra, ou nada com nada. Por isso “25-09/2000” fica de fora. O original escreve <code>\d{2}?</code> no meio; isso não torna os dígitos opcionais, é só a versão preguiçosa de <code>{2}</code>, que continua exigindo dois dígitos, então o <code>?</code> pode ser removido.</p>
+      <figure>
+        <img src="rc_images/RegexGrupos.svg" alt="O padrão (\d{2})([/-])(\d{2})\2(\d{4}) com os grupos numerados de 1 a 4 e uma seta mostrando que \2 repete o separador capturado pelo grupo 2. Abaixo, três testes: 25/09/2026 e 25-09-2026 casam, com dia, mês e ano capturados; 25/09-2026 não casa, porque os separadores são diferentes." width="1000" height="480" loading="lazy">
+        <figcaption>O retrovisor \2 obriga os dois separadores a serem iguais.</figcaption>
+      </figure>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Sintaxe</th><th scope="col">Função</th><th scope="col">Onde funciona</th></tr></thead>
+          <tbody>
+            <tr><td><code>(…)</code></td><td>Grupo de captura, numerado a partir de 1 pela ordem dos parênteses.</td><td>todos</td></tr>
+            <tr><td><code>(?:…)</code></td><td>Agrupa sem capturar; útil só para aplicar um quantificador ou uma alternância.</td><td>todos</td></tr>
+            <tr><td><code>(?&lt;nome&gt;…)</code></td><td>Captura com nome; o retrovisor é <code>\k&lt;nome&gt;</code>. <sup><a href="#ref-20-pt">[20]</a></sup></td><td>JS, PCRE, .NET, Python 3.11+ (em Python também <code>(?P&lt;nome&gt;…)</code>)</td></tr>
+            <tr><td><code>(?'nome'…)</code></td><td>Mesma coisa, com aspas simples.</td><td>PCRE, .NET</td></tr>
+            <tr><td><code>(?&gt;…)</code></td><td>Grupo atômico: depois de casar, não volta atrás (<em>backtracking</em>) para tentar outra divisão. <sup><a href="#ref-9-pt">[9]</a></sup></td><td>PCRE, .NET, Java, Python 3.11+</td></tr>
+            <tr><td><code>(?|…)</code></td><td><em>Branch reset</em>: cada alternativa reutiliza os mesmos números de grupo. <sup><a href="#ref-10-pt">[10]</a></sup></td><td>PCRE, Perl</td></tr>
+            <tr><td><code>(?#…)</code></td><td>Comentário dentro do padrão.</td><td>PCRE, .NET, Python</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>O JavaScript rejeita as quatro últimas sintaxes com o erro “Invalid group”. Também há os <em>lookarounds</em>, que olham para a frente ou para trás sem consumir caracteres: <code>(?=…)</code>, <code>(?!…)</code>, <code>(?&lt;=…)</code> e <code>(?&lt;!…)</code>. Eles funcionam no JavaScript. <sup><a href="#ref-3-pt">[3]</a></sup></p>
+    </section>
+
+    <section id="posix-pt" aria-labelledby="h-posix-pt">
+      <h2 id="h-posix-pt">Classes POSIX</h2>
+      <p>As classes POSIX são nomes para conjuntos comuns e só valem <strong>dentro</strong> de colchetes: <code>[[:digit:]]</code>. Funcionam em PCRE (PHP), Perl, <code>grep</code> e <code>sed</code>, mas <strong>não</strong> em JavaScript, .NET ou Python. No JavaScript, <code>[[:alpha:]]</code> nem dá erro: vira um conjunto com os caracteres <code>[ : a l p h</code>, seguido de um <code>]</code> literal. <sup><a href="#ref-7-pt">[7]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">POSIX</th><th scope="col">Equivalente ASCII</th><th scope="col">Significado</th></tr></thead>
+          <tbody>
+            <tr><td><code>[[:alnum:]]</code></td><td><code>[a-zA-Z0-9]</code></td><td>letras e dígitos</td></tr>
+            <tr><td><code>[[:alpha:]]</code></td><td><code>[a-zA-Z]</code></td><td>letras</td></tr>
+            <tr><td><code>[[:digit:]]</code></td><td><code>[0-9]</code></td><td>dígitos</td></tr>
+            <tr><td><code>[[:xdigit:]]</code></td><td><code>[A-Fa-f0-9]</code></td><td>dígitos hexadecimais</td></tr>
+            <tr><td><code>[[:lower:]]</code> · <code>[[:upper:]]</code></td><td><code>[a-z]</code> · <code>[A-Z]</code></td><td>minúsculas · maiúsculas</td></tr>
+            <tr><td><code>[[:space:]]</code></td><td><code>[ \t\r\n\v\f]</code></td><td>espaços, incluindo quebras de linha</td></tr>
+            <tr><td><code>[[:blank:]]</code></td><td><code>[ \t]</code></td><td>só espaço e tab (o original escreve <code>[\s\t]</code>, que incluiria quebras de linha)</td></tr>
+            <tr><td><code>[[:punct:]]</code></td><td><code>[!-/:-@[-`{-~]</code></td><td>pontuação ASCII</td></tr>
+            <tr><td><code>[[:cntrl:]]</code></td><td><code>[\x00-\x1F\x7F]</code></td><td>caracteres de controle</td></tr>
+            <tr><td><code>[[:print:]]</code> · <code>[[:graph:]]</code></td><td><code>[\x20-\x7E]</code> · <code>[\x21-\x7E]</code></td><td>visíveis com espaço · visíveis sem espaço</td></tr>
+            <tr><td><code>[[:word:]]</code></td><td><code>[A-Za-z0-9_]</code></td><td>o mesmo que <code>\w</code> (extensão do Perl e do PCRE)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="exemplos-pt" aria-labelledby="h-exemplos-pt">
+      <h2 id="h-exemplos-pt">Exemplos práticos</h2>
+      <p>Os padrões do original, testados e, quando necessário, corrigidos. Em validação, todos levam <code>^</code> e <code>$</code> para exigir o texto inteiro. <sup><a href="#ref-1-pt">[1]</a></sup></p>
+      <h3>Data dd/mm/aaaa</h3>
+      <pre class="code"><code>^(0[1-9]|[12][0-9]|3[01])[-\/.](0[1-9]|1[0-2])[-\/.]((19|20)\d{2})$</code></pre>
+      <p>Aceita 25/09/2026 e 31.12.1999 e rejeita 32/01/2020. Mas regex só confere o formato: 31/04/2026 e 29/02/2021, que não existem, também passam. Para validar a data de verdade, converta e confira no código.</p>
+      <h3>Hora hh:mm</h3>
+      <pre class="code"><code>^([01]?\d|2[0-3]):([0-5]\d)$</code></pre>
+      <p>Aceita 7:05 e 23:59 e rejeita 24:00. Sem o <code>$</code> final, que falta no original, “12:345” também passaria.</p>
+      <h3>Data e hora ISO 8601 (AAAA-MM-DDTHH:MM:SS)</h3>
+      <pre class="code"><code>^(?&lt;ano&gt;\d{4})-(?&lt;mes&gt;0[1-9]|1[0-2])-(?&lt;dia&gt;0[1-9]|[12]\d|3[01])T(?&lt;hora&gt;[01]\d|2[0-3]):(?&lt;min&gt;[0-5]\d):(?&lt;seg&gt;[0-5]\d)(?:Z|\.(?&lt;ms&gt;\d{2,3}))$</code></pre>
+      <p>Duas correções: o original usa <code>1[1-2]</code> para o mês, o que <strong>exclui outubro</strong> (o certo é <code>1[0-2]</code>), e usa um ponto sem escape antes dos milissegundos, que aceitaria qualquer caractere. O formato completo da norma também admite fusos como <code>-03:00</code>. <sup><a href="#ref-12-pt">[12]</a></sup></p>
+      <h3>CEP</h3>
+      <pre class="code"><code>^\d{2}\.?\d{3}-?\d{3}$</code></pre>
+      <p>O original aceita “90.050-170” e “90050170”, mas rejeita a forma mais comum, “90050-170”. Com o ponto e o hífen opcionais, as três formas passam.</p>
+      <h3>E-mail</h3>
+      <pre class="code"><code>^[^\s@]+@[^\s@]+\.[^\s@]+$</code></pre>
+      <p>É uma checagem simples de “algo@algo.algo”, e é o bastante para um formulário. A sintaxe completa de endereços (RFC 5322) é tão ampla que nenhuma regex curta a cobre; a única validação real é enviar uma mensagem de confirmação. <sup><a href="#ref-11-pt">[11]</a></sup></p>
+      <h3>IPv4</h3>
+      <pre class="code"><code>^(?:(?:25[0-5]|2[0-4]\d|1?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|1?\d\d?)$</code></pre>
+      <p>Correto: aceita 192.168.0.1 e rejeita 256.1.1.1. Repare na alternância que limita cada número a no máximo 255.</p>
+      <h3>URL simples</h3>
+      <pre class="code"><code>^([a-z]+):\/\/([^\/:]+)(?::(\d+))?(\/[^?#]*)?$</code></pre>
+      <p>O padrão original, <code>^([a-z]+):\/\/([^\/]+)\/?([^:]+):?(\d+)?$</code>, quebra quando não há caminho: em “https://example.com” o host sai “example.co” e o caminho “m”, porque <code>([^:]+)</code> exige pelo menos um caractere. A versão acima separa esquema, host, porta e caminho.</p>
+      <h3>Nome de arquivo PDF</h3>
+      <pre class="code"><code>^[\w-]+\.pdf$</code></pre>
+      <p>Equivale ao <code>^(\w*)(-\w*)*\.pdf</code> original, mais curto e sem aceitar um “.pdf” sem nome. Nos dois, “relatório.pdf” é rejeitado por causa do <code>ó</code>; com a flag <code>u</code>, use <code>[\p{L}\d_-]</code>.</p>
+      <h3>Separadores e telefones</h3>
+      <p>Os padrões de hífen e telefone do original usam <code>\040</code> para o espaço, uma forma octal antiga, e o último usa <code>[[:punct:]]</code>, que não funciona em JavaScript. Uma versão mais legível para telefones brasileiros com DDD:</p>
+      <pre class="code"><code>^\(?(\d{2})\)?[ .-]?(9?\d{4})[ .-]?(\d{4})$</code></pre>
+      <p>Aceita “(51) 99999-8888”, “51 3333.4444” e “51999998888”.</p>
+      <aside class="recap" aria-label="Para fixar">
+        <h3>Para fixar</h3>
+        <ul>
+          <li>Regex valida <strong>formato</strong>, não significado: datas impossíveis e e-mails inexistentes passam.</li>
+          <li>Em validação, sempre <code>^…$</code>.</li>
+          <li>Escape o ponto (<code>\.</code>) sempre que quiser um ponto de verdade.</li>
+          <li>Teste com casos que devem passar <em>e</em> com casos que devem falhar.</li>
+        </ul>
+      </aside>
+    </section>
+
+    <section id="ferramentas-pt" aria-labelledby="h-ferramentas-pt">
+      <h2 id="h-ferramentas-pt">Ferramentas</h2>
+      <ul>
+        <li><strong>regex101</strong>: testa o padrão em tempo real, explica cada pedaço e permite trocar o sabor (PCRE, JavaScript, Python, .NET, Java). <sup><a href="#ref-13-pt">[13]</a></sup></li>
+        <li><strong>Regexper</strong>: desenha o padrão como um diagrama de trilhos, ótimo para entender expressões longas. <sup><a href="#ref-14-pt">[14]</a></sup></li>
+        <li><strong>Code Beautify</strong>: gera dados aleatórios a partir de uma regex, útil para testes. <sup><a href="#ref-18-pt">[18]</a></sup></li>
+        <li><strong>RexEgg</strong> e o guia de Alexandre Servian: textos para se aprofundar, incluindo técnicas avançadas. <sup><a href="#ref-15-pt">[15]</a></sup> <sup><a href="#ref-16-pt">[16]</a></sup></li>
+        <li>Para ir além, o livro de referência sobre o assunto é <em>Mastering Regular Expressions</em>, de Jeffrey Friedl. <sup><a href="#ref-17-pt">[17]</a></sup></li>
+      </ul>
+    </section>
+
+    <section id="revisao-pt" aria-labelledby="h-revisao-pt">
+      <h2 id="h-revisao-pt">Revisão rápida</h2>
+      <p>Tente responder antes de abrir cada pergunta.</p>
+      <div class="quiz">
+        <details><summary>1. Quantas ocorrências <code>/[a-z]/</code> encontra em “João de Santo Cristo”?</summary><p>Uma só, o <code>o</code>. Sem a flag <code>g</code>, a busca para na primeira; com <code>/[a-z]/g</code>, são 13.</p></details>
+        <details><summary>2. Qual a diferença entre <code>[^a]</code> e <code>^a</code>?</summary><p><code>[^a]</code> é um caractere qualquer que não seja <code>a</code>; <code>^a</code> é um <code>a</code> no início do texto.</p></details>
+        <details><summary>3. O que a flag <code>s</code> faz no JavaScript?</summary><p>Faz o ponto casar também com a quebra de linha (modo <em>dotAll</em>).</p></details>
+        <details><summary>4. Por que <code>/a{1, 3}/</code> não encontra “aaa”?</summary><p>Por causa do espaço: o JavaScript não reconhece o quantificador e procura o texto literal “a{1, 3}”. O certo é <code>/a{1,3}/</code>.</p></details>
+        <details><summary>5. Em <code>&lt;b&gt;um&lt;/b&gt;</code>, o que <code>/&lt;.+&gt;/</code> e <code>/&lt;.+?&gt;/</code> encontram primeiro?</summary><p>O guloso pega o texto inteiro, de <code>&lt;b&gt;</code> até <code>&lt;/b&gt;</code>; o preguiçoso pega só <code>&lt;b&gt;</code>.</p></details>
+        <details><summary>6. Com que posições <code>\B</code> casa?</summary><p>Com as que <em>não</em> são borda de palavra, como entre o <code>r</code> e o <code>a</code> de “rato”.</p></details>
+        <details><summary>7. Em <code>/(\d{2})([\/-])\d{2}\2\d{4}/</code>, para que serve o <code>\2</code>?</summary><p>É um retrovisor: exige que o segundo separador seja igual ao que o grupo 2 capturou. Assim, 25/09/2026 casa e 25/09-2026 não.</p></details>
+        <details><summary>8. Qual o erro no mês <code>(0[1-9]|1[1-2])</code>?</summary><p>Ele não aceita 10. O certo é <code>(0[1-9]|1[0-2])</code>.</p></details>
+        <details><summary>9. <code>[[:digit:]]</code> funciona no JavaScript?</summary><p>Não. Classes POSIX são de PCRE, Perl e ferramentas como <code>grep</code>; no JavaScript, use <code>\d</code> ou <code>[0-9]</code>.</p></details>
+      </div>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="referencias-pt" aria-labelledby="h-referencias-pt">
+      <h2 id="h-referencias-pt">Referências</h2>
+      <ol class="refs">
+        <li id="ref-1-pt"><strong>Giovani Perotto Mesquita</strong>, “Regular Expression”, GitHub Gist, texto original deste tutorial, <a href="https://gist.github.com/GiovaniPM/04efc466d19ccc8d112d036c48de4a5c" rel="noopener">gist.github.com/GiovaniPM/04efc466d19ccc8d112d036c48de4a5c</a>.</li>
+        <li id="ref-2-pt"><strong>Microsoft Learn</strong>, “Linguagem de expressões regulares – referência rápida”, acesso em 25/09/2026, <a href="https://learn.microsoft.com/pt-br/dotnet/standard/base-types/regular-expression-language-quick-reference" rel="noopener">learn.microsoft.com/pt-br/dotnet/standard/base-types/regular-expression-language-quick-reference</a>.</li>
+        <li id="ref-3-pt"><strong>MDN Web Docs</strong>, “Expressões regulares”, acesso em 25/09/2026, <a href="https://developer.mozilla.org/pt-BR/docs/Web/JavaScript/Guide/Regular_expressions" rel="noopener">developer.mozilla.org/pt-BR/docs/Web/JavaScript/Guide/Regular_expressions</a>.</li>
+        <li id="ref-4-pt"><strong>MDN Web Docs</strong>, “RegExp.prototype.flags”, acesso em 25/09/2026, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/flags" rel="noopener">developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/flags</a>.</li>
+        <li id="ref-5-pt"><strong>Wikipedia</strong> (em inglês), “Regular expression”, acesso em 25/09/2026, <a href="https://en.wikipedia.org/wiki/Regular_expression" rel="noopener">en.wikipedia.org/wiki/Regular_expression</a>.</li>
+        <li id="ref-6-pt"><strong>Wikipedia</strong> (em inglês), “Stephen Cole Kleene”, acesso em 25/09/2026, <a href="https://en.wikipedia.org/wiki/Stephen_Cole_Kleene" rel="noopener">en.wikipedia.org/wiki/Stephen_Cole_Kleene</a>.</li>
+        <li id="ref-7-pt"><strong>PCRE2</strong>, “pcre2pattern”, documentação da sintaxe de padrões, acesso em 25/09/2026, <a href="https://www.pcre.org/current/doc/html/pcre2pattern.html" rel="noopener">pcre.org/current/doc/html/pcre2pattern.html</a>.</li>
+        <li id="ref-8-pt"><strong>Python Software Foundation</strong>, “re — Regular expression operations”, acesso em 25/09/2026, <a href="https://docs.python.org/3/library/re.html" rel="noopener">docs.python.org/3/library/re.html</a>.</li>
+        <li id="ref-9-pt"><strong>Jan Goyvaerts</strong>, “Atomic Grouping”, Regular-Expressions.info, acesso em 25/09/2026, <a href="https://www.regular-expressions.info/atomic.html" rel="noopener">regular-expressions.info/atomic.html</a>.</li>
+        <li id="ref-10-pt"><strong>Jan Goyvaerts</strong>, “Branch Reset Groups”, Regular-Expressions.info, acesso em 25/09/2026, <a href="https://www.regular-expressions.info/branchreset.html" rel="noopener">regular-expressions.info/branchreset.html</a>.</li>
+        <li id="ref-11-pt"><strong>P. Resnick (ed.)</strong>, <em>RFC 5322: Internet Message Format</em>, IETF, 2008, acesso em 25/09/2026, <a href="https://www.rfc-editor.org/rfc/rfc5322" rel="noopener">rfc-editor.org/rfc/rfc5322</a>.</li>
+        <li id="ref-12-pt"><strong>Wikipedia</strong> (em inglês), “ISO 8601”, acesso em 25/09/2026, <a href="https://en.wikipedia.org/wiki/ISO_8601" rel="noopener">en.wikipedia.org/wiki/ISO_8601</a>.</li>
+        <li id="ref-13-pt"><strong>regex101</strong>, site oficial, acesso em 25/09/2026, <a href="https://regex101.com/" rel="noopener">regex101.com</a>.</li>
+        <li id="ref-14-pt"><strong>Jeff Avallone</strong>, Regexper, site oficial, acesso em 25/09/2026, <a href="https://regexper.com/" rel="noopener">regexper.com</a>.</li>
+        <li id="ref-15-pt"><strong>RexEgg</strong>, “Rex Eats Regular Expressions for Breakfast”, acesso em 25/09/2026, <a href="https://www.rexegg.com/" rel="noopener">rexegg.com</a>.</li>
+        <li id="ref-16-pt"><strong>Alexandre Servian</strong>, “Regex: um guia prático para expressões regulares”, Medium, acesso em 25/09/2026, <a href="https://medium.com/@alexandreservian/regex-um-guia-pratico-para-express%C3%B5es-regulares-1ac5fa4dd39f" rel="noopener">medium.com/@alexandreservian/regex-um-guia-pratico-para-expressões-regulares-1ac5fa4dd39f</a>.</li>
+        <li id="ref-17-pt"><strong>Jeffrey E. F. Friedl</strong>, <em>Mastering Regular Expressions</em>, 3. ed., O’Reilly Media, 2006.</li>
+        <li id="ref-18-pt"><strong>Code Beautify</strong>, “Generate Random Data from Regular Expression”, acesso em 25/09/2026, <a href="https://codebeautify.org/generate-random-data-from-regexp" rel="noopener">codebeautify.org/generate-random-data-from-regexp</a>.</li>
+        <li id="ref-19-pt"><strong>Wikipedia</strong> (em inglês), “Latin-1 Supplement”, acesso em 25/09/2026, <a href="https://en.wikipedia.org/wiki/Latin-1_Supplement" rel="noopener">en.wikipedia.org/wiki/Latin-1_Supplement</a>.</li>
+        <li id="ref-20-pt"><strong>MDN Web Docs</strong>, “Named capturing group”, acesso em 25/09/2026, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Regular_expressions/Named_capturing_group" rel="noopener">developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Regular_expressions/Named_capturing_group</a>.</li>
+      </ol>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== EN ===================== -->
+<div id="en" role="tabpanel" aria-labelledby="tab-en" lang="en" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projects</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Regular expressions</h1>
+      <p class="dek">A practical guide to describing text patterns: flags, character sets, quantifiers, anchors, shorthands and groups, with tested examples and the most common mistakes corrected.</p>
+      <div class="byline">
+        <span>By <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Published on <time datetime="2026-09-25">25 September 2026</time></span>
+        <span class="credit">Reviewed and formatted using Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-en">
+    <h2 id="toc-en">Contents</h2>
+    <ol>
+      <li><a href="#concept-en">What a regular expression is</a></li>
+      <li><a href="#anatomy-en">Anatomy of a pattern</a></li>
+      <li><a href="#flags-en">Flags</a></li>
+      <li><a href="#sets-en">Alternation and sets</a></li>
+      <li><a href="#meta-en">Metacharacters and escaping</a></li>
+      <li><a href="#quant-en">Quantifiers</a></li>
+      <li><a href="#anchors-en">Anchors</a></li>
+      <li><a href="#shorthands-en">Shorthands</a></li>
+      <li><a href="#groups-en">Groups and backreferences</a></li>
+      <li><a href="#posix-en">POSIX classes</a></li>
+      <li><a href="#examples-en">Practical examples</a></li>
+      <li><a href="#tools-en">Tools</a></li>
+      <li><a href="#review-en">Quick review</a></li>
+      <li><a href="#references-en">References</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="concept-en" aria-labelledby="h-concept-en">
+      <h2 id="h-concept-en">What a regular expression is</h2>
+      <p>A <strong>regular expression</strong> (<em>regex</em>) is a compact, formal way to describe a text pattern. Instead of searching for an exact word, you describe the shape of what you are looking for, such as “two digits, a slash, two digits, another slash and four digits”, and the program finds everything that fits. <sup><a href="#ref-1-en">[1]</a></sup> <sup><a href="#ref-3-en">[3]</a></sup></p>
+      <p>The idea comes from the theory of computation: mathematician Stephen Kleene formalised “regular languages” in the 1950s, and Ken Thompson brought the notation to the QED text editor in 1968 and later to Unix tools such as <code>grep</code>. Today almost every programming language ships a regex engine. <sup><a href="#ref-5-en">[5]</a></sup> <sup><a href="#ref-6-en">[6]</a></sup></p>
+      <p>Typical uses:</p>
+      <ul>
+        <li><strong>searching</strong>: finding every date in a document;</li>
+        <li><strong>replacing</strong>: turning <code>dd/mm/yyyy</code> into <code>yyyy-mm-dd</code>;</li>
+        <li><strong>validating</strong>: checking that a postcode or a time has the right format;</li>
+        <li><strong>extracting and filtering</strong>: keeping only the error lines of a log.</li>
+      </ul>
+      <p>There are several regex <em>flavours</em>, and they are not identical. The examples in this tutorial use <strong>JavaScript</strong> syntax and were tested on Node.js 22; when a feature exists only in other engines, such as PCRE (PHP), .NET or Python, the text says so. <sup><a href="#ref-2-en">[2]</a></sup> <sup><a href="#ref-7-en">[7]</a></sup> <sup><a href="#ref-8-en">[8]</a></sup></p>
+    </section>
+
+    <section id="anatomy-en" aria-labelledby="h-anatomy-en">
+      <h2 id="h-anatomy-en">Anatomy of a pattern</h2>
+      <p>The <strong>pattern</strong> is the sequence of characters that makes up the expression. In JavaScript it sits between slashes, and the <strong>flags</strong> come after the closing slash: <code>/pattern/flags</code>. Most characters match themselves; a few, the <strong>metacharacters</strong>, have a special meaning.</p>
+      <pre class="code"><code><span class="c">pattern: /a/</span>
+text:    A casa está limpa.
+match:      <span class="s">^</span>
+
+<span class="c">pattern: /celular/</span>
+text:    O celular está tocando.
+match:     <span class="s">^^^^^^^</span></code></pre>
+      <p>In the first example the capital <code>A</code> does not match, because the search is case-sensitive, and without the <code>g</code> flag only the first occurrence is returned. The figure breaks a complete pattern into its pieces.</p>
+      <figure>
+        <img src="rc_images/RegexAnatomia-en.svg" alt="The pattern /^(\d{2})\/(\d{2})\/(\d{4})$/g broken into colored parts: delimiters, start and end anchors, three capturing groups, the \d digit shorthand, the {2} and {4} quantifiers, the escaped slashes and the g flag. Below, the test with 25/09/2026: the whole text matches, and the groups capture 25, 09 and 2026." width="1000" height="452" loading="lazy">
+        <figcaption>Delimiters, anchors, groups, shorthands, quantifiers, escapes and flags: the pieces of almost every regex.</figcaption>
+      </figure>
+    </section>
+
+    <section id="flags-en" aria-labelledby="h-flags-en">
+      <h2 id="h-flags-en">Flags</h2>
+      <p>Flags change how the engine treats the whole pattern. These are JavaScript’s: <sup><a href="#ref-4-en">[4]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Flag</th><th scope="col">Name</th><th scope="col">What it does</th></tr></thead>
+          <tbody>
+            <tr><td><code>g</code></td><td>global</td><td>Finds every occurrence, not just the first.</td></tr>
+            <tr><td><code>i</code></td><td>ignore case</td><td>Treats upper and lower case as equal.</td></tr>
+            <tr><td><code>m</code></td><td>multiline</td><td>Makes <code>^</code> and <code>$</code> match at the start and end of each line, not only of the whole text.</td></tr>
+            <tr><td><code>s</code></td><td>dotAll</td><td>Lets the dot (<code>.</code>) match line breaks too.</td></tr>
+            <tr><td><code>u</code></td><td>unicode</td><td>Treats the pattern as full Unicode (emoji, <code>\u{1F600}</code>, <code>\p{L}</code>).</td></tr>
+            <tr><td><code>v</code></td><td>unicodeSets</td><td>An extended <code>u</code>, with set operations inside <code>[ ]</code>.</td></tr>
+            <tr><td><code>y</code></td><td>sticky</td><td>Matches only at the exact position given by <code>lastIndex</code>.</td></tr>
+            <tr><td><code>d</code></td><td>hasIndices</td><td>Also returns the start and end positions of each group.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Two corrections to the original text: <sup><a href="#ref-1-en">[1]</a></sup></p>
+      <ul>
+        <li>The <code>s</code> flag does not mean “single line” in the sense of switching multiline mode off: it lets the dot accept <code>\n</code>. The name “single line” comes from Perl and confuses many people. <sup><a href="#ref-3-en">[3]</a></sup></li>
+        <li>The <code>x</code> (<em>extended</em>) flag exists in PCRE, Perl, .NET and Python (<code>re.X</code>): it ignores whitespace in the pattern and allows <code>#</code> comments. JavaScript does <strong>not</strong> have it and throws an error if you pass it. <sup><a href="#ref-7-en">[7]</a></sup> <sup><a href="#ref-8-en">[8]</a></sup></li>
+      </ul>
+      <figure>
+        <img src="rc_images/RegexFlags-en.svg" alt="The text Day one, then Monday and Sunday tested with four variations of the pattern day: with no flags, only the day inside Monday matches; with i, only the Day at the start; with g, the day in Monday and in Sunday; with gi, all three." width="1000" height="444" loading="lazy">
+        <figcaption>With i and g combined, both “Day” and the “day” inside the other words are found.</figcaption>
+      </figure>
+    </section>
+
+    <section id="sets-en" aria-labelledby="h-sets-en">
+      <h2 id="h-sets-en">Alternation and sets</h2>
+      <h3>Or: <code>|</code></h3>
+      <p>The vertical bar separates alternatives: the engine accepts whatever is on the left <em>or</em> on the right.</p>
+      <pre class="code"><code><span class="c">pattern: /ver|distrai/gi</span>
+text:    Ver a linha do horizonte me distrai
+match:   <span class="s">^^^</span>                         <span class="s">^^^^^^^</span>
+
+<span class="c">pattern: /20|nove/gi</span>
+text:    Perdi 20 em 20 e nove amizades
+match:         <span class="s">^^</span>    <span class="s">^^</span>   <span class="s">^^^^</span></code></pre>
+      <h3>Set: <code>[ ]</code></h3>
+      <p>Square brackets define a <strong>character class</strong>: a single position that accepts any of the listed characters. <code>/[em²]/gi</code> and <code>/e|m|²/gi</code> give the same result on <code>E = mc²</code>, but the set is shorter and faster.</p>
+      <h3>Ranges: <code>[a-z]</code></h3>
+      <p>Inside a set, a hyphen marks a range in Unicode order: <code>[a-z]</code>, <code>[A-Z]</code>, <code>[0-9]</code>. That is why <code>[a-Z]</code> and <code>[4-1]</code> are errors: the start comes after the end in the table.</p>
+      <pre class="code"><code><span class="c">pattern: /[a-z]/g</span>
+text:    João de Santo Cristo
+match:    <span class="s">^</span> <span class="s">^</span> <span class="s">^^</span>  <span class="s">^^^^</span>  <span class="s">^^^^^</span>
+
+<span class="c">pattern: /[0-9.,]/g</span>
+text:    Um ps4 custa R$ 1.600,00
+match:        <span class="s">^</span>          <span class="s">^^^^^^^^</span></code></pre>
+      <p>In the original these two patterns appear without the <code>g</code> flag, yet with every occurrence marked; without <code>g</code>, only the first would be found (the <code>o</code> in “João” and the <code>4</code> in “ps4”). Note also that <code>ã</code> does not match <code>[a-z]</code>: accented letters are outside that range.</p>
+      <p>To accept accented letters, the original suggests <code>[À-ü]</code>. It works for Portuguese, but the range U+00C0 to U+00FC also contains the signs <code>×</code> and <code>÷</code>. With the <code>u</code> flag, the robust form is <code>\p{L}</code>, “any letter in any script”. <sup><a href="#ref-19-en">[19]</a></sup> <sup><a href="#ref-3-en">[3]</a></sup></p>
+      <h3>Negation: <code>[^ ]</code></h3>
+      <p>A <code>^</code> right after <code>[</code> inverts the set: it matches anything that is <em>not</em> listed.</p>
+      <pre class="code"><code><span class="c">pattern: /[^aeiouí]/gi</span>
+text:    Paralelepípedo
+match:   <span class="s">^</span> <span class="s">^</span> <span class="s">^</span> <span class="s">^</span> <span class="s">^</span> <span class="s">^</span> <span class="s">^</span></code></pre>
+      <figure>
+        <img src="rc_images/RegexClasses-en.svg" alt="Table with the characters a, Z, 7, space, underscore, é, hyphen and dot in the columns, and eight classes in the rows: [a-z], [A-Za-z], [0-9] or \d, \w, \s, [^a-z], [À-ü] and the dot. A green mark means the character matches the class. For example, \w matches a, Z, 7 and underscore, but not é or the hyphen." width="1000" height="506" loading="lazy">
+        <figcaption>What each class accepts; note that \w and [a-z] skip accented letters.</figcaption>
+      </figure>
+    </section>
+
+    <section id="meta-en" aria-labelledby="h-meta-en">
+      <h2 id="h-meta-en">Metacharacters and escaping</h2>
+      <p>The metacharacters are <code>. ^ $ * + ? ( ) [ ] { } | \ /</code>. To use any of them as an ordinary character, put a backslash before it: <code>\.</code> matches a dot, <code>\/</code> a slash. <sup><a href="#ref-3-en">[3]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Symbol</th><th scope="col">Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>.</code></td><td>Wildcard: any character except a line break (unless the <code>s</code> flag is on).</td></tr>
+            <tr><td><code>-</code></td><td>A range, but only inside <code>[ ]</code>, as in <code>[1-9]</code>. Outside brackets it is a plain hyphen.</td></tr>
+            <tr><td><code>^</code></td><td>Two roles: at the start of a set (<code>[^…]</code>) it negates; elsewhere it is the start <strong>anchor</strong>. The original lists only negation.</td></tr>
+            <tr><td><code>\</code></td><td>Escape: turns a metacharacter into a literal, or an ordinary letter into a shorthand (<code>\d</code>, <code>\w</code>).</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <pre class="code"><code><span class="c">pattern: /cas./gi</span>
+text:    Casa, caso, case
+match:   <span class="s">^^^^</span>  <span class="s">^^^^</span>  <span class="s">^^^^</span>
+
+<span class="c">pattern: /[a\-o]/gi</span>     <span class="c">// a, hyphen or o; not the range a to o</span>
+text:    cachorro-quente.
+match:    <span class="s">^</span>  <span class="s">^</span>  <span class="s">^^</span></code></pre>
+    </section>
+
+    <section id="quant-en" aria-labelledby="h-quant-en">
+      <h2 id="h-quant-en">Quantifiers</h2>
+      <p>A quantifier says how many times the previous element may repeat.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Greedy</th><th scope="col">Lazy</th><th scope="col">Repetitions</th></tr></thead>
+          <tbody>
+            <tr><td><code>?</code></td><td><code>??</code></td><td>0 or 1 (optional)</td></tr>
+            <tr><td><code>*</code></td><td><code>*?</code></td><td>0 or more</td></tr>
+            <tr><td><code>+</code></td><td><code>+?</code></td><td>1 or more</td></tr>
+            <tr><td><code>{n}</code></td><td>—</td><td>exactly n</td></tr>
+            <tr><td><code>{n,}</code></td><td><code>{n,}?</code></td><td>n or more</td></tr>
+            <tr><td><code>{n,m}</code></td><td><code>{n,m}?</code></td><td>from n to m</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>A <strong>greedy</strong> quantifier takes as much as it can and gives characters back only if the rest of the pattern needs them. A <strong>lazy</strong> one, with a trailing <code>?</code>, does the opposite: it takes as little as possible and moves on only when it must. <sup><a href="#ref-3-en">[3]</a></sup> <sup><a href="#ref-15-en">[15]</a></sup></p>
+      <aside class="note">
+        <p><strong>Watch the space:</strong> the original writes <code>{n, m}</code>. With the space, JavaScript does not recognise the quantifier and looks for the literal text “{1, 3}”. Always write <code>{n,m}</code>, with no spaces.</p>
+      </aside>
+      <figure>
+        <img src="rc_images/RegexQuantificadores-en.svg" alt="At the top, bars show how many repetitions each quantifier accepts: ? from 0 to 1, * from 0 to infinity, + from 1 to infinity, {2,4} from 2 to 4 and {3} exactly 3. Below, on the text &lt;b&gt;um&lt;/b&gt; e &lt;b&gt;dois&lt;/b&gt;, the greedy pattern &lt;.+&gt; matches the whole text at once, and the lazy &lt;.+?&gt; matches each of the four tags separately." width="1000" height="510" loading="lazy">
+        <figcaption>Above, the reach of each quantifier; below, the practical difference between greedy and lazy.</figcaption>
+      </figure>
+    </section>
+
+    <section id="anchors-en" aria-labelledby="h-anchors-en">
+      <h2 id="h-anchors-en">Anchors</h2>
+      <p>Anchors do not match characters but <strong>positions</strong>. They require the pattern to be in a certain place. <sup><a href="#ref-3-en">[3]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Anchor</th><th scope="col">Position</th></tr></thead>
+          <tbody>
+            <tr><td><code>^</code></td><td>Start of the text (or of each line, with the <code>m</code> flag).</td></tr>
+            <tr><td><code>$</code></td><td>End of the text (or of each line, with the <code>m</code> flag).</td></tr>
+            <tr><td><code>\b</code></td><td>Word boundary: between a word character (<code>\w</code>) and one that is not.</td></tr>
+            <tr><td><code>\B</code></td><td>The opposite of <code>\b</code>: a position that is <em>not</em> a word boundary.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>When validating, use <code>^</code> and <code>$</code> together: without them, <code>/\d{5}-\d{3}/</code> would accept “abc90050-170xyz”, because the postcode appears <em>inside</em> the text.</p>
+      <figure>
+        <img src="rc_images/RegexAncoras-en.svg" alt="The text the cat and the catalog with diamonds marking the positions found by each anchor: \b at the edges of each word, \B at positions inside words, ^ at the start and $ at the end. Below, /cat/g finds 2 matches, including the start of catalog, and /\bcat\b/g finds only 1, the whole word." width="1000" height="504" loading="lazy">
+        <figcaption>\b finds the whole word; without it, “cat” is also found at the start of “catalog”.</figcaption>
+      </figure>
+    </section>
+
+    <section id="shorthands-en" aria-labelledby="h-shorthands-en">
+      <h2 id="h-shorthands-en">Shorthands</h2>
+      <p>Shorthands abbreviate common classes and characters. The original table was taken from the .NET reference; the “JS” column says whether the shorthand also works in JavaScript. <sup><a href="#ref-2-en">[2]</a></sup> <sup><a href="#ref-3-en">[3]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Shorthand</th><th scope="col">Matches</th><th scope="col">JS</th></tr></thead>
+          <tbody>
+            <tr><td><code>\d</code> · <code>\D</code></td><td>A digit <code>[0-9]</code> · anything that is not a digit.</td><td>yes</td></tr>
+            <tr><td><code>\w</code> · <code>\W</code></td><td>A word character <code>[A-Za-z0-9_]</code> · the opposite. Accented letters are not included.</td><td>yes</td></tr>
+            <tr><td><code>\s</code> · <code>\S</code></td><td>Whitespace (space, tab, line breaks…) · the opposite.</td><td>yes</td></tr>
+            <tr><td><code>\b</code> · <code>\B</code></td><td>Word boundary · <strong>non</strong>-boundary. Inside <code>[ ]</code>, <code>[\b]</code> is backspace (U+0008). The original describes <code>\B</code> as “a boundary”; it is the opposite.</td><td>yes</td></tr>
+            <tr><td><code>\t \n \r \v \f</code></td><td>Tab, newline, carriage return, vertical tab, form feed.</td><td>yes</td></tr>
+            <tr><td><code>\0</code></td><td>The null character (U+0000).</td><td>yes</td></tr>
+            <tr><td><code>\xhh</code> · <code>\uhhhh</code></td><td>A character by hexadecimal code, with no space after the <code>x</code>: <code>\x2A</code> is <code>*</code>, <code>é</code> is <code>é</code>.</td><td>yes</td></tr>
+            <tr><td><code>\cX</code></td><td>A control character: <code>\cC</code> is Ctrl+C (U+0003). The original also says <code>\c</code> “makes the character c literal”, which is wrong.</td><td>yes</td></tr>
+            <tr><td><code>\1</code>, <code>\2</code>…</td><td>Backreference: repeats what group 1, 2… captured.</td><td>yes</td></tr>
+            <tr><td><code>\a</code> · <code>\e</code></td><td>Bell (U+0007) · escape (U+001B).</td><td>no</td></tr>
+            <tr><td><code>\A</code> · <code>\z</code> · <code>\Z</code></td><td>Start of text · end of text · end of text or before a final line break. In JS, use <code>^</code> and <code>$</code> without the <code>m</code> flag.</td><td>no</td></tr>
+            <tr><td><code>\nnn</code></td><td>A character in octal, such as <code>\040</code> (space). It is a legacy form; prefer <code>\x20</code> or a literal space.</td><td>legacy</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="groups-en" aria-labelledby="h-groups-en">
+      <h2 id="h-groups-en">Groups and backreferences</h2>
+      <p>Parentheses <code>( )</code> group part of the pattern. They have three uses: applying a quantifier to several characters at once, <strong>capturing</strong> the matched text for later use, and creating <strong>backreferences</strong>, which require repeating what was already captured. The original calls this section “Set” (<em>Conjunto</em>), the same name as the brackets; the right name is <strong>group</strong>. <sup><a href="#ref-1-en">[1]</a></sup></p>
+      <pre class="code"><code><span class="c">pattern: /(\d{2})\/?(\d{2})?\/(\d{4})/</span>
+text:    Hoje é dia 20/01/2020
+match:              <span class="s">^^^^^^^^^^</span>
+
+<span class="c">pattern: /\d{2}(\/?)\d{2}\1\d{4}/g</span>
+text:    20/01/2020 25091991 25-09/2000
+match:   <span class="s">^^^^^^^^^^</span> <span class="s">^^^^^^^^</span></code></pre>
+      <p>In the second example, <code>\1</code> repeats the captured separator: slash with slash, or nothing with nothing. That is why “25-09/2000” is left out. The original writes <code>\d{2}?</code> in the middle; that does not make the digits optional, it is just the lazy version of <code>{2}</code>, which still requires two digits, so the <code>?</code> can be dropped.</p>
+      <figure>
+        <img src="rc_images/RegexGrupos-en.svg" alt="The pattern (\d{2})([/-])(\d{2})\2(\d{4}) with groups numbered 1 to 4 and an arrow showing that \2 repeats the separator captured by group 2. Below, three tests: 25/09/2026 and 25-09-2026 match, with day, month and year captured; 25/09-2026 does not match, because the separators differ." width="1000" height="480" loading="lazy">
+        <figcaption>The backreference \2 forces both separators to be the same.</figcaption>
+      </figure>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Syntax</th><th scope="col">Purpose</th><th scope="col">Where it works</th></tr></thead>
+          <tbody>
+            <tr><td><code>(…)</code></td><td>Capturing group, numbered from 1 in the order of the opening parentheses.</td><td>everywhere</td></tr>
+            <tr><td><code>(?:…)</code></td><td>Groups without capturing; useful just to apply a quantifier or an alternation.</td><td>everywhere</td></tr>
+            <tr><td><code>(?&lt;name&gt;…)</code></td><td>Named capture; the backreference is <code>\k&lt;name&gt;</code>. <sup><a href="#ref-20-en">[20]</a></sup></td><td>JS, PCRE, .NET, Python 3.11+ (Python also has <code>(?P&lt;name&gt;…)</code>)</td></tr>
+            <tr><td><code>(?'name'…)</code></td><td>The same, with single quotes.</td><td>PCRE, .NET</td></tr>
+            <tr><td><code>(?&gt;…)</code></td><td>Atomic group: once matched, it never backtracks to try another split. <sup><a href="#ref-9-en">[9]</a></sup></td><td>PCRE, .NET, Java, Python 3.11+</td></tr>
+            <tr><td><code>(?|…)</code></td><td><em>Branch reset</em>: every alternative reuses the same group numbers. <sup><a href="#ref-10-en">[10]</a></sup></td><td>PCRE, Perl</td></tr>
+            <tr><td><code>(?#…)</code></td><td>A comment inside the pattern.</td><td>PCRE, .NET, Python</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>JavaScript rejects the last four with an “Invalid group” error. There are also <em>lookarounds</em>, which look ahead or behind without consuming characters: <code>(?=…)</code>, <code>(?!…)</code>, <code>(?&lt;=…)</code> and <code>(?&lt;!…)</code>. These do work in JavaScript. <sup><a href="#ref-3-en">[3]</a></sup></p>
+    </section>
+
+    <section id="posix-en" aria-labelledby="h-posix-en">
+      <h2 id="h-posix-en">POSIX classes</h2>
+      <p>POSIX classes are names for common sets and are valid only <strong>inside</strong> brackets: <code>[[:digit:]]</code>. They work in PCRE (PHP), Perl, <code>grep</code> and <code>sed</code>, but <strong>not</strong> in JavaScript, .NET or Python. In JavaScript, <code>[[:alpha:]]</code> does not even raise an error: it becomes a set of the characters <code>[ : a l p h</code>, followed by a literal <code>]</code>. <sup><a href="#ref-7-en">[7]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">POSIX</th><th scope="col">ASCII equivalent</th><th scope="col">Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>[[:alnum:]]</code></td><td><code>[a-zA-Z0-9]</code></td><td>letters and digits</td></tr>
+            <tr><td><code>[[:alpha:]]</code></td><td><code>[a-zA-Z]</code></td><td>letters</td></tr>
+            <tr><td><code>[[:digit:]]</code></td><td><code>[0-9]</code></td><td>digits</td></tr>
+            <tr><td><code>[[:xdigit:]]</code></td><td><code>[A-Fa-f0-9]</code></td><td>hexadecimal digits</td></tr>
+            <tr><td><code>[[:lower:]]</code> · <code>[[:upper:]]</code></td><td><code>[a-z]</code> · <code>[A-Z]</code></td><td>lower case · upper case</td></tr>
+            <tr><td><code>[[:space:]]</code></td><td><code>[ \t\r\n\v\f]</code></td><td>whitespace, including line breaks</td></tr>
+            <tr><td><code>[[:blank:]]</code></td><td><code>[ \t]</code></td><td>space and tab only (the original writes <code>[\s\t]</code>, which would include line breaks)</td></tr>
+            <tr><td><code>[[:punct:]]</code></td><td><code>[!-/:-@[-`{-~]</code></td><td>ASCII punctuation</td></tr>
+            <tr><td><code>[[:cntrl:]]</code></td><td><code>[\x00-\x1F\x7F]</code></td><td>control characters</td></tr>
+            <tr><td><code>[[:print:]]</code> · <code>[[:graph:]]</code></td><td><code>[\x20-\x7E]</code> · <code>[\x21-\x7E]</code></td><td>visible with space · visible without space</td></tr>
+            <tr><td><code>[[:word:]]</code></td><td><code>[A-Za-z0-9_]</code></td><td>the same as <code>\w</code> (a Perl and PCRE extension)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="examples-en" aria-labelledby="h-examples-en">
+      <h2 id="h-examples-en">Practical examples</h2>
+      <p>The original’s patterns, tested and corrected where needed. For validation, each one uses <code>^</code> and <code>$</code> to require the whole text. <sup><a href="#ref-1-en">[1]</a></sup></p>
+      <h3>Date dd/mm/yyyy</h3>
+      <pre class="code"><code>^(0[1-9]|[12][0-9]|3[01])[-\/.](0[1-9]|1[0-2])[-\/.]((19|20)\d{2})$</code></pre>
+      <p>Accepts 25/09/2026 and 31.12.1999 and rejects 32/01/2020. But a regex checks only the format: 31/04/2026 and 29/02/2021, which do not exist, also pass. To validate a real date, parse it and check it in code.</p>
+      <h3>Time hh:mm</h3>
+      <pre class="code"><code>^([01]?\d|2[0-3]):([0-5]\d)$</code></pre>
+      <p>Accepts 7:05 and 23:59 and rejects 24:00. Without the final <code>$</code>, missing in the original, “12:345” would also pass.</p>
+      <h3>ISO 8601 date and time (YYYY-MM-DDTHH:MM:SS)</h3>
+      <pre class="code"><code>^(?&lt;year&gt;\d{4})-(?&lt;month&gt;0[1-9]|1[0-2])-(?&lt;day&gt;0[1-9]|[12]\d|3[01])T(?&lt;hour&gt;[01]\d|2[0-3]):(?&lt;min&gt;[0-5]\d):(?&lt;sec&gt;[0-5]\d)(?:Z|\.(?&lt;ms&gt;\d{2,3}))$</code></pre>
+      <p>Two corrections: the original uses <code>1[1-2]</code> for the month, which <strong>excludes October</strong> (it should be <code>1[0-2]</code>), and an unescaped dot before the milliseconds, which would accept any character. The full standard also allows offsets such as <code>-03:00</code>. <sup><a href="#ref-12-en">[12]</a></sup></p>
+      <h3>Brazilian postcode (CEP)</h3>
+      <pre class="code"><code>^\d{2}\.?\d{3}-?\d{3}$</code></pre>
+      <p>The original accepts “90.050-170” and “90050170” but rejects the most common form, “90050-170”. With the dot and hyphen optional, all three pass.</p>
+      <h3>Email</h3>
+      <pre class="code"><code>^[^\s@]+@[^\s@]+\.[^\s@]+$</code></pre>
+      <p>This is a simple “something@something.something” check, and that is enough for a form. The full address syntax (RFC 5322) is so broad that no short regex covers it; the only real validation is sending a confirmation message. <sup><a href="#ref-11-en">[11]</a></sup></p>
+      <h3>IPv4</h3>
+      <pre class="code"><code>^(?:(?:25[0-5]|2[0-4]\d|1?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|1?\d\d?)$</code></pre>
+      <p>Correct: accepts 192.168.0.1 and rejects 256.1.1.1. Notice how the alternation caps each number at 255.</p>
+      <h3>Simple URL</h3>
+      <pre class="code"><code>^([a-z]+):\/\/([^\/:]+)(?::(\d+))?(\/[^?#]*)?$</code></pre>
+      <p>The original pattern, <code>^([a-z]+):\/\/([^\/]+)\/?([^:]+):?(\d+)?$</code>, breaks when there is no path: for “https://example.com” the host comes out as “example.co” and the path as “m”, because <code>([^:]+)</code> needs at least one character. The version above separates scheme, host, port and path.</p>
+      <h3>PDF file name</h3>
+      <pre class="code"><code>^[\w-]+\.pdf$</code></pre>
+      <p>Equivalent to the original <code>^(\w*)(-\w*)*\.pdf</code>, shorter and without accepting a bare “.pdf”. Both reject “relatório.pdf” because of the <code>ó</code>; with the <code>u</code> flag, use <code>[\p{L}\d_-]</code>.</p>
+      <h3>Separators and phone numbers</h3>
+      <p>The original hyphen and phone patterns use <code>\040</code> for a space, a legacy octal form, and the last one uses <code>[[:punct:]]</code>, which does not work in JavaScript. A more readable version for Brazilian phone numbers with area code:</p>
+      <pre class="code"><code>^\(?(\d{2})\)?[ .-]?(9?\d{4})[ .-]?(\d{4})$</code></pre>
+      <p>Accepts “(51) 99999-8888”, “51 3333.4444” and “51999998888”.</p>
+      <aside class="recap" aria-label="Key points">
+        <h3>Key points</h3>
+        <ul>
+          <li>A regex validates <strong>format</strong>, not meaning: impossible dates and non-existent emails get through.</li>
+          <li>For validation, always <code>^…$</code>.</li>
+          <li>Escape the dot (<code>\.</code>) whenever you mean a real dot.</li>
+          <li>Test with cases that should pass <em>and</em> cases that should fail.</li>
+        </ul>
+      </aside>
+    </section>
+
+    <section id="tools-en" aria-labelledby="h-tools-en">
+      <h2 id="h-tools-en">Tools</h2>
+      <ul>
+        <li><strong>regex101</strong>: tests the pattern live, explains each piece and lets you switch flavour (PCRE, JavaScript, Python, .NET, Java). <sup><a href="#ref-13-en">[13]</a></sup></li>
+        <li><strong>Regexper</strong>: draws the pattern as a railroad diagram, great for understanding long expressions. <sup><a href="#ref-14-en">[14]</a></sup></li>
+        <li><strong>Code Beautify</strong>: generates random data from a regex, handy for tests. <sup><a href="#ref-18-en">[18]</a></sup></li>
+        <li><strong>RexEgg</strong> and Alexandre Servian’s guide (in Portuguese): further reading, including advanced techniques. <sup><a href="#ref-15-en">[15]</a></sup> <sup><a href="#ref-16-en">[16]</a></sup></li>
+        <li>To go further, the standard book on the subject is Jeffrey Friedl’s <em>Mastering Regular Expressions</em>. <sup><a href="#ref-17-en">[17]</a></sup></li>
+      </ul>
+    </section>
+
+    <section id="review-en" aria-labelledby="h-review-en">
+      <h2 id="h-review-en">Quick review</h2>
+      <p>Try to answer before opening each question.</p>
+      <div class="quiz">
+        <details><summary>1. How many matches does <code>/[a-z]/</code> find in “João de Santo Cristo”?</summary><p>Just one, the <code>o</code>. Without the <code>g</code> flag the search stops at the first; with <code>/[a-z]/g</code> there are 13.</p></details>
+        <details><summary>2. What is the difference between <code>[^a]</code> and <code>^a</code>?</summary><p><code>[^a]</code> is any single character other than <code>a</code>; <code>^a</code> is an <code>a</code> at the start of the text.</p></details>
+        <details><summary>3. What does the <code>s</code> flag do in JavaScript?</summary><p>It lets the dot match line breaks too (<em>dotAll</em> mode).</p></details>
+        <details><summary>4. Why does <code>/a{1, 3}/</code> not find “aaa”?</summary><p>Because of the space: JavaScript does not recognise the quantifier and looks for the literal text “a{1, 3}”. The right form is <code>/a{1,3}/</code>.</p></details>
+        <details><summary>5. In <code>&lt;b&gt;um&lt;/b&gt;</code>, what do <code>/&lt;.+&gt;/</code> and <code>/&lt;.+?&gt;/</code> find first?</summary><p>The greedy one takes the whole text, from <code>&lt;b&gt;</code> to <code>&lt;/b&gt;</code>; the lazy one takes only <code>&lt;b&gt;</code>.</p></details>
+        <details><summary>6. Which positions does <code>\B</code> match?</summary><p>Those that are <em>not</em> word boundaries, such as between the <code>c</code> and the <code>a</code> in “cat”.</p></details>
+        <details><summary>7. In <code>/(\d{2})([\/-])\d{2}\2\d{4}/</code>, what is <code>\2</code> for?</summary><p>It is a backreference: it requires the second separator to equal what group 2 captured. So 25/09/2026 matches and 25/09-2026 does not.</p></details>
+        <details><summary>8. What is wrong with the month <code>(0[1-9]|1[1-2])</code>?</summary><p>It does not accept 10. It should be <code>(0[1-9]|1[0-2])</code>.</p></details>
+        <details><summary>9. Does <code>[[:digit:]]</code> work in JavaScript?</summary><p>No. POSIX classes belong to PCRE, Perl and tools such as <code>grep</code>; in JavaScript, use <code>\d</code> or <code>[0-9]</code>.</p></details>
+      </div>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="references-en" aria-labelledby="h-references-en">
+      <h2 id="h-references-en">References</h2>
+      <ol class="refs">
+        <li id="ref-1-en"><strong>Giovani Perotto Mesquita</strong>, “Regular Expression”, GitHub Gist, original text of this tutorial, <a href="https://gist.github.com/GiovaniPM/04efc466d19ccc8d112d036c48de4a5c" rel="noopener">gist.github.com/GiovaniPM/04efc466d19ccc8d112d036c48de4a5c</a>.</li>
+        <li id="ref-2-en"><strong>Microsoft Learn</strong>, “Regular Expression Language – Quick Reference”, accessed 25 September 2026, <a href="https://learn.microsoft.com/en-us/dotnet/standard/base-types/regular-expression-language-quick-reference" rel="noopener">learn.microsoft.com/en-us/dotnet/standard/base-types/regular-expression-language-quick-reference</a>.</li>
+        <li id="ref-3-en"><strong>MDN Web Docs</strong>, “Regular expressions”, accessed 25 September 2026, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions" rel="noopener">developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions</a>.</li>
+        <li id="ref-4-en"><strong>MDN Web Docs</strong>, “RegExp.prototype.flags”, accessed 25 September 2026, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/flags" rel="noopener">developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/flags</a>.</li>
+        <li id="ref-5-en"><strong>Wikipedia</strong>, “Regular expression”, accessed 25 September 2026, <a href="https://en.wikipedia.org/wiki/Regular_expression" rel="noopener">en.wikipedia.org/wiki/Regular_expression</a>.</li>
+        <li id="ref-6-en"><strong>Wikipedia</strong>, “Stephen Cole Kleene”, accessed 25 September 2026, <a href="https://en.wikipedia.org/wiki/Stephen_Cole_Kleene" rel="noopener">en.wikipedia.org/wiki/Stephen_Cole_Kleene</a>.</li>
+        <li id="ref-7-en"><strong>PCRE2</strong>, “pcre2pattern”, pattern syntax documentation, accessed 25 September 2026, <a href="https://www.pcre.org/current/doc/html/pcre2pattern.html" rel="noopener">pcre.org/current/doc/html/pcre2pattern.html</a>.</li>
+        <li id="ref-8-en"><strong>Python Software Foundation</strong>, “re — Regular expression operations”, accessed 25 September 2026, <a href="https://docs.python.org/3/library/re.html" rel="noopener">docs.python.org/3/library/re.html</a>.</li>
+        <li id="ref-9-en"><strong>Jan Goyvaerts</strong>, “Atomic Grouping”, Regular-Expressions.info, accessed 25 September 2026, <a href="https://www.regular-expressions.info/atomic.html" rel="noopener">regular-expressions.info/atomic.html</a>.</li>
+        <li id="ref-10-en"><strong>Jan Goyvaerts</strong>, “Branch Reset Groups”, Regular-Expressions.info, accessed 25 September 2026, <a href="https://www.regular-expressions.info/branchreset.html" rel="noopener">regular-expressions.info/branchreset.html</a>.</li>
+        <li id="ref-11-en"><strong>P. Resnick (ed.)</strong>, <em>RFC 5322: Internet Message Format</em>, IETF, 2008, accessed 25 September 2026, <a href="https://www.rfc-editor.org/rfc/rfc5322" rel="noopener">rfc-editor.org/rfc/rfc5322</a>.</li>
+        <li id="ref-12-en"><strong>Wikipedia</strong>, “ISO 8601”, accessed 25 September 2026, <a href="https://en.wikipedia.org/wiki/ISO_8601" rel="noopener">en.wikipedia.org/wiki/ISO_8601</a>.</li>
+        <li id="ref-13-en"><strong>regex101</strong>, official website, accessed 25 September 2026, <a href="https://regex101.com/" rel="noopener">regex101.com</a>.</li>
+        <li id="ref-14-en"><strong>Jeff Avallone</strong>, Regexper, official website, accessed 25 September 2026, <a href="https://regexper.com/" rel="noopener">regexper.com</a>.</li>
+        <li id="ref-15-en"><strong>RexEgg</strong>, “Rex Eats Regular Expressions for Breakfast”, accessed 25 September 2026, <a href="https://www.rexegg.com/" rel="noopener">rexegg.com</a>.</li>
+        <li id="ref-16-en"><strong>Alexandre Servian</strong>, “Regex: um guia prático para expressões regulares”, Medium, accessed 25 September 2026, <a href="https://medium.com/@alexandreservian/regex-um-guia-pratico-para-express%C3%B5es-regulares-1ac5fa4dd39f" rel="noopener">medium.com/@alexandreservian/regex-um-guia-pratico-para-expressões-regulares-1ac5fa4dd39f</a>.</li>
+        <li id="ref-17-en"><strong>Jeffrey E. F. Friedl</strong>, <em>Mastering Regular Expressions</em>, 3rd ed., O’Reilly Media, 2006.</li>
+        <li id="ref-18-en"><strong>Code Beautify</strong>, “Generate Random Data from Regular Expression”, accessed 25 September 2026, <a href="https://codebeautify.org/generate-random-data-from-regexp" rel="noopener">codebeautify.org/generate-random-data-from-regexp</a>.</li>
+        <li id="ref-19-en"><strong>Wikipedia</strong>, “Latin-1 Supplement”, accessed 25 September 2026, <a href="https://en.wikipedia.org/wiki/Latin-1_Supplement" rel="noopener">en.wikipedia.org/wiki/Latin-1_Supplement</a>.</li>
+        <li id="ref-20-en"><strong>MDN Web Docs</strong>, “Named capturing group”, accessed 25 September 2026, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Regular_expressions/Named_capturing_group" rel="noopener">developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Regular_expressions/Named_capturing_group</a>.</li>
+      </ol>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== IT ===================== -->
+<div id="it" role="tabpanel" aria-labelledby="tab-it" lang="it" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Progetti</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Espressioni regolari</h1>
+      <p class="dek">Una guida pratica per descrivere modelli di testo: flag, insiemi, quantificatori, ancore, scorciatoie e gruppi, con esempi verificati e gli errori più comuni corretti.</p>
+      <div class="byline">
+        <span>Di <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Pubblicato il <time datetime="2026-09-25">25/09/2026</time></span>
+        <span class="credit">Rivisto e impaginato con Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-it">
+    <h2 id="toc-it">Indice</h2>
+    <ol>
+      <li><a href="#concetto-it">Che cos’è un’espressione regolare</a></li>
+      <li><a href="#anatomia-it">Anatomia di un pattern</a></li>
+      <li><a href="#flag-it">Flag</a></li>
+      <li><a href="#insiemi-it">Alternanza e insiemi</a></li>
+      <li><a href="#meta-it">Metacaratteri ed escape</a></li>
+      <li><a href="#quant-it">Quantificatori</a></li>
+      <li><a href="#ancore-it">Ancore</a></li>
+      <li><a href="#scorciatoie-it">Scorciatoie (shorthand)</a></li>
+      <li><a href="#gruppi-it">Gruppi e backreference</a></li>
+      <li><a href="#posix-it">Classi POSIX</a></li>
+      <li><a href="#esempi-it">Esempi pratici</a></li>
+      <li><a href="#strumenti-it">Strumenti</a></li>
+      <li><a href="#ripasso-it">Ripasso veloce</a></li>
+      <li><a href="#riferimenti-it">Riferimenti</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="concetto-it" aria-labelledby="h-concetto-it">
+      <h2 id="h-concetto-it">Che cos’è un’espressione regolare</h2>
+      <p>Un’<strong>espressione regolare</strong> (<em>regular expression</em>, o <em>regex</em>) è un modo compatto e formale di descrivere un modello di testo. Invece di cercare una parola esatta, si descrive la forma di ciò che si cerca, per esempio “due cifre, una barra, due cifre, un’altra barra e quattro cifre”, e il programma trova tutto ciò che corrisponde. <sup><a href="#ref-1-it">[1]</a></sup> <sup><a href="#ref-3-it">[3]</a></sup></p>
+      <p>L’idea nasce dalla teoria della computazione: il matematico Stephen Kleene formalizzò i “linguaggi regolari” negli anni ’50, e Ken Thompson portò la notazione nell’editor di testo QED nel 1968 e poi in strumenti Unix come <code>grep</code>. Oggi quasi ogni linguaggio di programmazione ha un motore regex. <sup><a href="#ref-5-it">[5]</a></sup> <sup><a href="#ref-6-it">[6]</a></sup></p>
+      <p>Usi tipici:</p>
+      <ul>
+        <li><strong>ricerca</strong>: trovare tutte le date in un documento;</li>
+        <li><strong>sostituzione</strong>: trasformare <code>gg/mm/aaaa</code> in <code>aaaa-mm-gg</code>;</li>
+        <li><strong>validazione</strong>: verificare che un CAP o un orario abbia il formato giusto;</li>
+        <li><strong>estrazione e filtro</strong>: tenere da un log solo le righe di errore.</li>
+      </ul>
+      <p>Esistono vari “dialetti” (<em>flavor</em>) di regex, e non sono identici. Gli esempi di questo tutorial usano la sintassi di <strong>JavaScript</strong> e sono stati verificati con Node.js 22; quando una funzione esiste solo in altri motori, come PCRE (PHP), .NET o Python, il testo lo indica. <sup><a href="#ref-2-it">[2]</a></sup> <sup><a href="#ref-7-it">[7]</a></sup> <sup><a href="#ref-8-it">[8]</a></sup></p>
+    </section>
+
+    <section id="anatomia-it" aria-labelledby="h-anatomia-it">
+      <h2 id="h-anatomia-it">Anatomia di un pattern</h2>
+      <p>Il <strong>pattern</strong> è la sequenza di caratteri che forma l’espressione. In JavaScript sta tra due barre, e le <strong>flag</strong> vengono dopo la barra finale: <code>/pattern/flag</code>. La maggior parte dei caratteri corrisponde a se stessa; alcuni, i <strong>metacaratteri</strong>, hanno un significato speciale.</p>
+      <pre class="code"><code><span class="c">pattern:  /a/</span>
+testo:    A casa está limpa.
+trovato:     <span class="s">^</span>
+
+<span class="c">pattern:  /celular/</span>
+testo:    O celular está tocando.
+trovato:    <span class="s">^^^^^^^</span></code></pre>
+      <p>Nel primo esempio la <code>A</code> maiuscola non corrisponde, perché la ricerca distingue maiuscole e minuscole, e senza la flag <code>g</code> viene restituita solo la prima occorrenza. La figura scompone un pattern completo, pezzo per pezzo.</p>
+      <figure>
+        <img src="rc_images/RegexAnatomia-it.svg" alt="Il pattern /^(\d{2})\/(\d{2})\/(\d{4})$/g scomposto in parti colorate: delimitatori, ancore di inizio e fine, tre gruppi di cattura, la scorciatoia \d per le cifre, i quantificatori {2} e {4}, le barre con escape e la flag g. Sotto, la prova con 25/09/2026: tutto il testo corrisponde e i gruppi catturano 25, 09 e 2026." width="1000" height="452" loading="lazy">
+        <figcaption>Delimitatori, ancore, gruppi, scorciatoie, quantificatori, escape e flag: i pezzi di quasi ogni regex.</figcaption>
+      </figure>
+    </section>
+
+    <section id="flag-it" aria-labelledby="h-flag-it">
+      <h2 id="h-flag-it">Flag</h2>
+      <p>Le flag cambiano il comportamento del motore per l’intero pattern. Queste sono quelle di JavaScript: <sup><a href="#ref-4-it">[4]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Flag</th><th scope="col">Nome</th><th scope="col">Che cosa fa</th></tr></thead>
+          <tbody>
+            <tr><td><code>g</code></td><td>global</td><td>Trova tutte le occorrenze, non solo la prima.</td></tr>
+            <tr><td><code>i</code></td><td>ignore case</td><td>Non distingue maiuscole e minuscole.</td></tr>
+            <tr><td><code>m</code></td><td>multiline</td><td>Fa corrispondere <code>^</code> e <code>$</code> all’inizio e alla fine di ogni riga, non solo dell’intero testo.</td></tr>
+            <tr><td><code>s</code></td><td>dotAll</td><td>Fa sì che il punto (<code>.</code>) corrisponda anche all’a capo.</td></tr>
+            <tr><td><code>u</code></td><td>unicode</td><td>Tratta il pattern come Unicode completo (emoji, <code>\u{1F600}</code>, <code>\p{L}</code>).</td></tr>
+            <tr><td><code>v</code></td><td>unicodeSets</td><td>Versione estesa di <code>u</code>, con operazioni tra insiemi dentro <code>[ ]</code>.</td></tr>
+            <tr><td><code>y</code></td><td>sticky</td><td>Corrisponde solo nella posizione esatta indicata da <code>lastIndex</code>.</td></tr>
+            <tr><td><code>d</code></td><td>hasIndices</td><td>Restituisce anche le posizioni di inizio e fine di ogni gruppo.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Due correzioni rispetto al testo originale: <sup><a href="#ref-1-it">[1]</a></sup></p>
+      <ul>
+        <li>La flag <code>s</code> non significa “riga singola” nel senso di disattivare la modalità multiriga: fa accettare <code>\n</code> al punto. Il nome “single line” viene dal Perl e confonde molte persone. <sup><a href="#ref-3-it">[3]</a></sup></li>
+        <li>La flag <code>x</code> (<em>extended</em>) esiste in PCRE, Perl, .NET e Python (<code>re.X</code>): ignora gli spazi nel pattern e permette commenti con <code>#</code>. JavaScript <strong>non</strong> la prevede e dà errore se la si passa. <sup><a href="#ref-7-it">[7]</a></sup> <sup><a href="#ref-8-it">[8]</a></sup></li>
+      </ul>
+      <figure>
+        <img src="rc_images/RegexFlags-it.svg" alt="Il testo Ieri pioveva, l’altro ieri e ieri l’altro no provato con quattro varianti del pattern ieri: senza flag corrisponde solo il primo ieri minuscolo; con i, solo il Ieri iniziale; con g, i due ieri minuscoli; con gi, tutti e tre." width="1000" height="444" loading="lazy">
+        <figcaption>Con i e g combinate vengono trovati sia “Ieri” sia i due “ieri” minuscoli.</figcaption>
+      </figure>
+    </section>
+
+    <section id="insiemi-it" aria-labelledby="h-insiemi-it">
+      <h2 id="h-insiemi-it">Alternanza e insiemi</h2>
+      <h3>Oppure: <code>|</code></h3>
+      <p>La barra verticale separa le alternative: il motore accetta ciò che sta a sinistra <em>oppure</em> a destra.</p>
+      <pre class="code"><code><span class="c">pattern:  /ver|distrai/gi</span>
+testo:    Ver a linha do horizonte me distrai
+trovato:  <span class="s">^^^</span>                         <span class="s">^^^^^^^</span>
+
+<span class="c">pattern:  /20|nove/gi</span>
+testo:    Perdi 20 em 20 e nove amizades
+trovato:        <span class="s">^^</span>    <span class="s">^^</span>   <span class="s">^^^^</span></code></pre>
+      <h3>Insieme: <code>[ ]</code></h3>
+      <p>Le parentesi quadre definiscono una <strong>classe di caratteri</strong>: una sola posizione che accetta uno qualsiasi dei caratteri elencati. <code>/[em²]/gi</code> e <code>/e|m|²/gi</code> danno lo stesso risultato su <code>E = mc²</code>, ma l’insieme è più breve e più veloce.</p>
+      <h3>Intervalli: <code>[a-z]</code></h3>
+      <p>Dentro un insieme, il trattino indica un intervallo nell’ordine della tabella Unicode: <code>[a-z]</code>, <code>[A-Z]</code>, <code>[0-9]</code>. Per questo <code>[a-Z]</code> e <code>[4-1]</code> sono errori: l’inizio viene dopo la fine nella tabella.</p>
+      <pre class="code"><code><span class="c">pattern:  /[a-z]/g</span>
+testo:    João de Santo Cristo
+trovato:   <span class="s">^</span> <span class="s">^</span> <span class="s">^^</span>  <span class="s">^^^^</span>  <span class="s">^^^^^</span>
+
+<span class="c">pattern:  /[0-9.,]/g</span>
+testo:    Um ps4 custa R$ 1.600,00
+trovato:       <span class="s">^</span>          <span class="s">^^^^^^^^</span></code></pre>
+      <p>Nell’originale questi due pattern compaiono senza la flag <code>g</code>, ma con tutte le occorrenze segnate; senza <code>g</code> si troverebbe solo la prima (la <code>o</code> di “João” e il <code>4</code> di “ps4”). Notate anche che la <code>ã</code> non corrisponde a <code>[a-z]</code>: le lettere accentate sono fuori da quell’intervallo.</p>
+      <p>Per accettare le lettere accentate, l’originale suggerisce <code>[À-ü]</code>. Funziona per il portoghese e l’italiano, ma l’intervallo da U+00C0 a U+00FC contiene anche i segni <code>×</code> e <code>÷</code>. Con la flag <code>u</code>, la forma robusta è <code>\p{L}</code>, “qualsiasi lettera di qualsiasi alfabeto”. <sup><a href="#ref-19-it">[19]</a></sup> <sup><a href="#ref-3-it">[3]</a></sup></p>
+      <h3>Negazione: <code>[^ ]</code></h3>
+      <p>Un <code>^</code> subito dopo la <code>[</code> inverte l’insieme: corrisponde a tutto ciò che <em>non</em> è elencato.</p>
+      <pre class="code"><code><span class="c">pattern:  /[^aeiouí]/gi</span>
+testo:    Paralelepípedo
+trovato:  <span class="s">^</span> <span class="s">^</span> <span class="s">^</span> <span class="s">^</span> <span class="s">^</span> <span class="s">^</span> <span class="s">^</span></code></pre>
+      <figure>
+        <img src="rc_images/RegexClasses-it.svg" alt="Tabella con i caratteri a, Z, 7, spazio, trattino basso, é, trattino e punto nelle colonne, e otto classi nelle righe: [a-z], [A-Za-z], [0-9] o \d, \w, \s, [^a-z], [À-ü] e il punto. Un segno verde indica che il carattere corrisponde alla classe. Per esempio, \w corrisponde ad a, Z, 7 e trattino basso, ma non a é né al trattino." width="1000" height="506" loading="lazy">
+        <figcaption>Che cosa accetta ogni classe; \w e [a-z] ignorano le lettere accentate.</figcaption>
+      </figure>
+    </section>
+
+    <section id="meta-it" aria-labelledby="h-meta-it">
+      <h2 id="h-meta-it">Metacaratteri ed escape</h2>
+      <p>I metacaratteri sono <code>. ^ $ * + ? ( ) [ ] { } | \ /</code>. Per usarne uno come carattere normale, lo si fa precedere da una barra rovesciata: <code>\.</code> corrisponde a un punto, <code>\/</code> a una barra. <sup><a href="#ref-3-it">[3]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Simbolo</th><th scope="col">Significato</th></tr></thead>
+          <tbody>
+            <tr><td><code>.</code></td><td>Jolly: qualsiasi carattere tranne l’a capo (a meno di usare la flag <code>s</code>).</td></tr>
+            <tr><td><code>-</code></td><td>Intervallo, ma solo dentro <code>[ ]</code>, come in <code>[1-9]</code>. Fuori dalle parentesi è un trattino normale.</td></tr>
+            <tr><td><code>^</code></td><td>Due ruoli: all’inizio di un insieme (<code>[^…]</code>) è negazione; altrove è l’<strong>ancora</strong> di inizio. L’originale cita solo la negazione.</td></tr>
+            <tr><td><code>\</code></td><td>Escape: trasforma un metacarattere in letterale, o una lettera normale in scorciatoia (<code>\d</code>, <code>\w</code>).</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <pre class="code"><code><span class="c">pattern:  /cas./gi</span>
+testo:    Casa, caso, case
+trovato:  <span class="s">^^^^</span>  <span class="s">^^^^</span>  <span class="s">^^^^</span>
+
+<span class="c">pattern:  /[a\-o]/gi</span>     <span class="c">// a, trattino oppure o; non l’intervallo da a a o</span>
+testo:    cachorro-quente.
+trovato:   <span class="s">^</span>  <span class="s">^</span>  <span class="s">^^</span></code></pre>
+    </section>
+
+    <section id="quant-it" aria-labelledby="h-quant-it">
+      <h2 id="h-quant-it">Quantificatori</h2>
+      <p>Un quantificatore dice quante volte l’elemento precedente può ripetersi.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Avido</th><th scope="col">Pigro</th><th scope="col">Ripetizioni</th></tr></thead>
+          <tbody>
+            <tr><td><code>?</code></td><td><code>??</code></td><td>0 o 1 (facoltativo)</td></tr>
+            <tr><td><code>*</code></td><td><code>*?</code></td><td>0 o più</td></tr>
+            <tr><td><code>+</code></td><td><code>+?</code></td><td>1 o più</td></tr>
+            <tr><td><code>{n}</code></td><td>—</td><td>esattamente n</td></tr>
+            <tr><td><code>{n,}</code></td><td><code>{n,}?</code></td><td>n o più</td></tr>
+            <tr><td><code>{n,m}</code></td><td><code>{n,m}?</code></td><td>da n a m</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Il quantificatore <strong>avido</strong> (<em>greedy</em>) prende il massimo possibile e restituisce caratteri solo se il resto del pattern ne ha bisogno. Quello <strong>pigro</strong> (<em>lazy</em>), con un <code>?</code> finale, fa il contrario: prende il minimo e avanza solo se necessario. <sup><a href="#ref-3-it">[3]</a></sup> <sup><a href="#ref-15-it">[15]</a></sup></p>
+      <aside class="note">
+        <p><strong>Attenzione allo spazio:</strong> l’originale scrive <code>{n, m}</code>. Con lo spazio, JavaScript non riconosce il quantificatore e cerca il testo letterale “{1, 3}”. Scrivete sempre <code>{n,m}</code>, senza spazi.</p>
+      </aside>
+      <figure>
+        <img src="rc_images/RegexQuantificadores-it.svg" alt="In alto, delle barre mostrano quante ripetizioni accetta ogni quantificatore: ? da 0 a 1, * da 0 all’infinito, + da 1 all’infinito, {2,4} da 2 a 4 e {3} esattamente 3. Sotto, sul testo &lt;b&gt;um&lt;/b&gt; e &lt;b&gt;dois&lt;/b&gt;, il pattern avido &lt;.+&gt; corrisponde a tutto il testo in una volta, e quello pigro &lt;.+?&gt; a ciascuno dei quattro tag separatamente." width="1000" height="510" loading="lazy">
+        <figcaption>Sopra, la portata di ogni quantificatore; sotto, la differenza pratica tra avido e pigro.</figcaption>
+      </figure>
+    </section>
+
+    <section id="ancore-it" aria-labelledby="h-ancore-it">
+      <h2 id="h-ancore-it">Ancore</h2>
+      <p>Le ancore non corrispondono a caratteri ma a <strong>posizioni</strong>. Servono a imporre che il pattern si trovi in un certo punto. <sup><a href="#ref-3-it">[3]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Ancora</th><th scope="col">Posizione</th></tr></thead>
+          <tbody>
+            <tr><td><code>^</code></td><td>Inizio del testo (o di ogni riga, con la flag <code>m</code>).</td></tr>
+            <tr><td><code>$</code></td><td>Fine del testo (o di ogni riga, con la flag <code>m</code>).</td></tr>
+            <tr><td><code>\b</code></td><td>Confine di parola: tra un carattere di parola (<code>\w</code>) e uno che non lo è.</td></tr>
+            <tr><td><code>\B</code></td><td>Il contrario di <code>\b</code>: una posizione che <em>non</em> è confine di parola.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Nelle validazioni usate <code>^</code> e <code>$</code> insieme: senza di loro, <code>/\d{5}/</code> accetterebbe “abc20121xyz”, perché il CAP compare <em>dentro</em> il testo.</p>
+      <figure>
+        <img src="rc_images/RegexAncoras-it.svg" alt="Il testo il topo e il topolino con rombi che segnano le posizioni trovate da ciascuna ancora: \b ai bordi di ogni parola, \B dentro le parole, ^ all’inizio e $ alla fine. Sotto, /topo/g trova 2 corrispondenze, compreso l’inizio di topolino, e /\btopo\b/g ne trova solo 1, la parola intera." width="1000" height="504" loading="lazy">
+        <figcaption>\b trova la parola intera; senza, “topo” viene trovato anche all’inizio di “topolino”.</figcaption>
+      </figure>
+    </section>
+
+    <section id="scorciatoie-it" aria-labelledby="h-scorciatoie-it">
+      <h2 id="h-scorciatoie-it">Scorciatoie (shorthand)</h2>
+      <p>Le scorciatoie abbreviano classi e caratteri comuni. La tabella dell’originale viene dal riferimento di .NET; la colonna “JS” indica se la scorciatoia funziona anche in JavaScript. <sup><a href="#ref-2-it">[2]</a></sup> <sup><a href="#ref-3-it">[3]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Scorciatoia</th><th scope="col">Corrisponde a</th><th scope="col">JS</th></tr></thead>
+          <tbody>
+            <tr><td><code>\d</code> · <code>\D</code></td><td>Una cifra <code>[0-9]</code> · qualsiasi cosa che non sia una cifra.</td><td>sì</td></tr>
+            <tr><td><code>\w</code> · <code>\W</code></td><td>Carattere di parola <code>[A-Za-z0-9_]</code> · il contrario. Le lettere accentate non sono incluse.</td><td>sì</td></tr>
+            <tr><td><code>\s</code> · <code>\S</code></td><td>Spazio bianco (spazio, tab, a capo…) · il contrario.</td><td>sì</td></tr>
+            <tr><td><code>\b</code> · <code>\B</code></td><td>Confine di parola · <strong>non</strong>-confine. Dentro <code>[ ]</code>, <code>[\b]</code> è il backspace (U+0008). L’originale descrive <code>\B</code> come “un confine”; è l’opposto.</td><td>sì</td></tr>
+            <tr><td><code>\t \n \r \v \f</code></td><td>Tab, a capo, ritorno carrello, tab verticale, avanzamento pagina.</td><td>sì</td></tr>
+            <tr><td><code>\0</code></td><td>Il carattere nullo (U+0000).</td><td>sì</td></tr>
+            <tr><td><code>\xhh</code> · <code>\uhhhh</code></td><td>Carattere per codice esadecimale, senza spazio dopo la <code>x</code>: <code>\x2A</code> è <code>*</code>, <code>é</code> è <code>é</code>.</td><td>sì</td></tr>
+            <tr><td><code>\cX</code></td><td>Carattere di controllo: <code>\cC</code> è Ctrl+C (U+0003). L’originale dice anche che <code>\c</code> “rende letterale il carattere c”, il che è sbagliato.</td><td>sì</td></tr>
+            <tr><td><code>\1</code>, <code>\2</code>…</td><td>Backreference: ripete ciò che il gruppo 1, 2… ha catturato.</td><td>sì</td></tr>
+            <tr><td><code>\a</code> · <code>\e</code></td><td>Campanello (U+0007) · escape (U+001B).</td><td>no</td></tr>
+            <tr><td><code>\A</code> · <code>\z</code> · <code>\Z</code></td><td>Inizio del testo · fine del testo · fine del testo o prima dell’ultimo a capo. In JS usate <code>^</code> e <code>$</code> senza la flag <code>m</code>.</td><td>no</td></tr>
+            <tr><td><code>\nnn</code></td><td>Carattere in ottale, come <code>\040</code> (spazio). È una forma antiquata; preferite <code>\x20</code> o lo spazio stesso.</td><td>legacy</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="gruppi-it" aria-labelledby="h-gruppi-it">
+      <h2 id="h-gruppi-it">Gruppi e backreference</h2>
+      <p>Le parentesi tonde <code>( )</code> raggruppano parte del pattern. Servono a tre cose: applicare un quantificatore a più caratteri insieme, <strong>catturare</strong> il testo trovato per usarlo dopo e creare <strong>backreference</strong>, che impongono di ripetere ciò che è già stato catturato. L’originale chiama questa sezione “Insieme” (<em>Conjunto</em>), lo stesso nome delle parentesi quadre; il nome giusto è <strong>gruppo</strong>. <sup><a href="#ref-1-it">[1]</a></sup></p>
+      <pre class="code"><code><span class="c">pattern:  /(\d{2})\/?(\d{2})?\/(\d{4})/</span>
+testo:    Hoje é dia 20/01/2020
+trovato:             <span class="s">^^^^^^^^^^</span>
+
+<span class="c">pattern:  /\d{2}(\/?)\d{2}\1\d{4}/g</span>
+testo:    20/01/2020 25091991 25-09/2000
+trovato:  <span class="s">^^^^^^^^^^</span> <span class="s">^^^^^^^^</span></code></pre>
+      <p>Nel secondo esempio, <code>\1</code> ripete il separatore catturato: barra con barra, oppure niente con niente. Per questo “25-09/2000” resta fuori. L’originale scrive <code>\d{2}?</code> nel mezzo; questo non rende le cifre facoltative, è solo la versione pigra di <code>{2}</code>, che richiede comunque due cifre, quindi il <code>?</code> si può togliere.</p>
+      <figure>
+        <img src="rc_images/RegexGrupos-it.svg" alt="Il pattern (\d{2})([/-])(\d{2})\2(\d{4}) con i gruppi numerati da 1 a 4 e una freccia che mostra che \2 ripete il separatore catturato dal gruppo 2. Sotto, tre prove: 25/09/2026 e 25-09-2026 corrispondono, con giorno, mese e anno catturati; 25/09-2026 non corrisponde, perché i separatori sono diversi." width="1000" height="480" loading="lazy">
+        <figcaption>La backreference \2 obbliga i due separatori a essere uguali.</figcaption>
+      </figure>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Sintassi</th><th scope="col">Funzione</th><th scope="col">Dove funziona</th></tr></thead>
+          <tbody>
+            <tr><td><code>(…)</code></td><td>Gruppo di cattura, numerato da 1 nell’ordine delle parentesi aperte.</td><td>ovunque</td></tr>
+            <tr><td><code>(?:…)</code></td><td>Raggruppa senza catturare; utile solo per applicare un quantificatore o un’alternanza.</td><td>ovunque</td></tr>
+            <tr><td><code>(?&lt;nome&gt;…)</code></td><td>Cattura con nome; la backreference è <code>\k&lt;nome&gt;</code>. <sup><a href="#ref-20-it">[20]</a></sup></td><td>JS, PCRE, .NET, Python 3.11+ (in Python anche <code>(?P&lt;nome&gt;…)</code>)</td></tr>
+            <tr><td><code>(?'nome'…)</code></td><td>La stessa cosa, con apici singoli.</td><td>PCRE, .NET</td></tr>
+            <tr><td><code>(?&gt;…)</code></td><td>Gruppo atomico: una volta trovato, non torna indietro (<em>backtracking</em>) per provare un’altra divisione. <sup><a href="#ref-9-it">[9]</a></sup></td><td>PCRE, .NET, Java, Python 3.11+</td></tr>
+            <tr><td><code>(?|…)</code></td><td><em>Branch reset</em>: ogni alternativa riusa gli stessi numeri di gruppo. <sup><a href="#ref-10-it">[10]</a></sup></td><td>PCRE, Perl</td></tr>
+            <tr><td><code>(?#…)</code></td><td>Commento dentro il pattern.</td><td>PCRE, .NET, Python</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>JavaScript rifiuta le ultime quattro sintassi con l’errore “Invalid group”. Esistono anche i <em>lookaround</em>, che guardano avanti o indietro senza consumare caratteri: <code>(?=…)</code>, <code>(?!…)</code>, <code>(?&lt;=…)</code> e <code>(?&lt;!…)</code>. Questi funzionano in JavaScript. <sup><a href="#ref-3-it">[3]</a></sup></p>
+    </section>
+
+    <section id="posix-it" aria-labelledby="h-posix-it">
+      <h2 id="h-posix-it">Classi POSIX</h2>
+      <p>Le classi POSIX sono nomi per insiemi comuni e valgono solo <strong>dentro</strong> le parentesi quadre: <code>[[:digit:]]</code>. Funzionano in PCRE (PHP), Perl, <code>grep</code> e <code>sed</code>, ma <strong>non</strong> in JavaScript, .NET o Python. In JavaScript, <code>[[:alpha:]]</code> non dà nemmeno errore: diventa un insieme con i caratteri <code>[ : a l p h</code>, seguito da una <code>]</code> letterale. <sup><a href="#ref-7-it">[7]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">POSIX</th><th scope="col">Equivalente ASCII</th><th scope="col">Significato</th></tr></thead>
+          <tbody>
+            <tr><td><code>[[:alnum:]]</code></td><td><code>[a-zA-Z0-9]</code></td><td>lettere e cifre</td></tr>
+            <tr><td><code>[[:alpha:]]</code></td><td><code>[a-zA-Z]</code></td><td>lettere</td></tr>
+            <tr><td><code>[[:digit:]]</code></td><td><code>[0-9]</code></td><td>cifre</td></tr>
+            <tr><td><code>[[:xdigit:]]</code></td><td><code>[A-Fa-f0-9]</code></td><td>cifre esadecimali</td></tr>
+            <tr><td><code>[[:lower:]]</code> · <code>[[:upper:]]</code></td><td><code>[a-z]</code> · <code>[A-Z]</code></td><td>minuscole · maiuscole</td></tr>
+            <tr><td><code>[[:space:]]</code></td><td><code>[ \t\r\n\v\f]</code></td><td>spazi, compresi gli a capo</td></tr>
+            <tr><td><code>[[:blank:]]</code></td><td><code>[ \t]</code></td><td>solo spazio e tab (l’originale scrive <code>[\s\t]</code>, che includerebbe gli a capo)</td></tr>
+            <tr><td><code>[[:punct:]]</code></td><td><code>[!-/:-@[-`{-~]</code></td><td>punteggiatura ASCII</td></tr>
+            <tr><td><code>[[:cntrl:]]</code></td><td><code>[\x00-\x1F\x7F]</code></td><td>caratteri di controllo</td></tr>
+            <tr><td><code>[[:print:]]</code> · <code>[[:graph:]]</code></td><td><code>[\x20-\x7E]</code> · <code>[\x21-\x7E]</code></td><td>visibili con spazio · visibili senza spazio</td></tr>
+            <tr><td><code>[[:word:]]</code></td><td><code>[A-Za-z0-9_]</code></td><td>lo stesso di <code>\w</code> (estensione di Perl e PCRE)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="esempi-it" aria-labelledby="h-esempi-it">
+      <h2 id="h-esempi-it">Esempi pratici</h2>
+      <p>I pattern dell’originale, verificati e, dove serve, corretti. Per la validazione, tutti usano <code>^</code> e <code>$</code> per richiedere l’intero testo. <sup><a href="#ref-1-it">[1]</a></sup></p>
+      <h3>Data gg/mm/aaaa</h3>
+      <pre class="code"><code>^(0[1-9]|[12][0-9]|3[01])[-\/.](0[1-9]|1[0-2])[-\/.]((19|20)\d{2})$</code></pre>
+      <p>Accetta 25/09/2026 e 31.12.1999 e rifiuta 32/01/2020. Ma una regex controlla solo il formato: anche 31/04/2026 e 29/02/2021, che non esistono, passano. Per validare davvero una data, convertitela e controllatela nel codice.</p>
+      <h3>Ora hh:mm</h3>
+      <pre class="code"><code>^([01]?\d|2[0-3]):([0-5]\d)$</code></pre>
+      <p>Accetta 7:05 e 23:59 e rifiuta 24:00. Senza il <code>$</code> finale, che manca nell’originale, passerebbe anche “12:345”.</p>
+      <h3>Data e ora ISO 8601 (AAAA-MM-GGTHH:MM:SS)</h3>
+      <pre class="code"><code>^(?&lt;anno&gt;\d{4})-(?&lt;mese&gt;0[1-9]|1[0-2])-(?&lt;giorno&gt;0[1-9]|[12]\d|3[01])T(?&lt;ora&gt;[01]\d|2[0-3]):(?&lt;min&gt;[0-5]\d):(?&lt;sec&gt;[0-5]\d)(?:Z|\.(?&lt;ms&gt;\d{2,3}))$</code></pre>
+      <p>Due correzioni: l’originale usa <code>1[1-2]</code> per il mese, che <strong>esclude ottobre</strong> (deve essere <code>1[0-2]</code>), e un punto senza escape prima dei millisecondi, che accetterebbe qualsiasi carattere. Lo standard completo ammette anche fusi orari come <code>+02:00</code>. <sup><a href="#ref-12-it">[12]</a></sup></p>
+      <h3>CEP (codice postale brasiliano)</h3>
+      <pre class="code"><code>^\d{2}\.?\d{3}-?\d{3}$</code></pre>
+      <p>L’originale accetta “90.050-170” e “90050170” ma rifiuta la forma più comune, “90050-170”. Con punto e trattino facoltativi, passano tutte e tre. Per il CAP italiano basta <code>^\d{5}$</code>.</p>
+      <h3>E-mail</h3>
+      <pre class="code"><code>^[^\s@]+@[^\s@]+\.[^\s@]+$</code></pre>
+      <p>È un controllo semplice di “qualcosa@qualcosa.qualcosa”, sufficiente per un modulo. La sintassi completa degli indirizzi (RFC 5322) è così ampia che nessuna regex breve la copre; l’unica validazione reale è inviare un messaggio di conferma. <sup><a href="#ref-11-it">[11]</a></sup></p>
+      <h3>IPv4</h3>
+      <pre class="code"><code>^(?:(?:25[0-5]|2[0-4]\d|1?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|1?\d\d?)$</code></pre>
+      <p>Corretto: accetta 192.168.0.1 e rifiuta 256.1.1.1. Notate come l’alternanza limita ogni numero a 255.</p>
+      <h3>URL semplice</h3>
+      <pre class="code"><code>^([a-z]+):\/\/([^\/:]+)(?::(\d+))?(\/[^?#]*)?$</code></pre>
+      <p>Il pattern originale, <code>^([a-z]+):\/\/([^\/]+)\/?([^:]+):?(\d+)?$</code>, si rompe quando manca il percorso: con “https://example.com” l’host risulta “example.co” e il percorso “m”, perché <code>([^:]+)</code> richiede almeno un carattere. La versione sopra separa schema, host, porta e percorso.</p>
+      <h3>Nome di file PDF</h3>
+      <pre class="code"><code>^[\w-]+\.pdf$</code></pre>
+      <p>Equivale all’originale <code>^(\w*)(-\w*)*\.pdf</code>, più breve e senza accettare un “.pdf” senza nome. Entrambi rifiutano “relazione-attività.pdf” per via della <code>à</code>; con la flag <code>u</code>, usate <code>[\p{L}\d_-]</code>.</p>
+      <h3>Separatori e telefoni</h3>
+      <p>I pattern per trattini e telefoni dell’originale usano <code>\040</code> per lo spazio, una forma ottale antiquata, e l’ultimo usa <code>[[:punct:]]</code>, che in JavaScript non funziona. Una versione più leggibile per i telefoni brasiliani con prefisso:</p>
+      <pre class="code"><code>^\(?(\d{2})\)?[ .-]?(9?\d{4})[ .-]?(\d{4})$</code></pre>
+      <p>Accetta “(51) 99999-8888”, “51 3333.4444” e “51999998888”.</p>
+      <aside class="recap" aria-label="Da ricordare">
+        <h3>Da ricordare</h3>
+        <ul>
+          <li>Una regex valida il <strong>formato</strong>, non il significato: date impossibili ed e-mail inesistenti passano.</li>
+          <li>Nelle validazioni, sempre <code>^…$</code>.</li>
+          <li>Fate l’escape del punto (<code>\.</code>) ogni volta che volete un punto vero.</li>
+          <li>Provate con casi che devono passare <em>e</em> con casi che devono fallire.</li>
+        </ul>
+      </aside>
+    </section>
+
+    <section id="strumenti-it" aria-labelledby="h-strumenti-it">
+      <h2 id="h-strumenti-it">Strumenti</h2>
+      <ul>
+        <li><strong>regex101</strong>: prova il pattern in tempo reale, spiega ogni pezzo e permette di cambiare dialetto (PCRE, JavaScript, Python, .NET, Java). <sup><a href="#ref-13-it">[13]</a></sup></li>
+        <li><strong>Regexper</strong>: disegna il pattern come diagramma a binari, ottimo per capire espressioni lunghe. <sup><a href="#ref-14-it">[14]</a></sup></li>
+        <li><strong>Code Beautify</strong>: genera dati casuali a partire da una regex, utile per i test. <sup><a href="#ref-18-it">[18]</a></sup></li>
+        <li><strong>RexEgg</strong> e la guida di Alexandre Servian (in portoghese): letture per approfondire, comprese tecniche avanzate. <sup><a href="#ref-15-it">[15]</a></sup> <sup><a href="#ref-16-it">[16]</a></sup></li>
+        <li>Per andare oltre, il libro di riferimento sull’argomento è <em>Mastering Regular Expressions</em> di Jeffrey Friedl. <sup><a href="#ref-17-it">[17]</a></sup></li>
+      </ul>
+    </section>
+
+    <section id="ripasso-it" aria-labelledby="h-ripasso-it">
+      <h2 id="h-ripasso-it">Ripasso veloce</h2>
+      <p>Provate a rispondere prima di aprire ogni domanda.</p>
+      <div class="quiz">
+        <details><summary>1. Quante occorrenze trova <code>/[a-z]/</code> in “João de Santo Cristo”?</summary><p>Una sola, la <code>o</code>. Senza la flag <code>g</code> la ricerca si ferma alla prima; con <code>/[a-z]/g</code> sono 13.</p></details>
+        <details><summary>2. Qual è la differenza tra <code>[^a]</code> e <code>^a</code>?</summary><p><code>[^a]</code> è un qualsiasi carattere diverso da <code>a</code>; <code>^a</code> è una <code>a</code> all’inizio del testo.</p></details>
+        <details><summary>3. Che cosa fa la flag <code>s</code> in JavaScript?</summary><p>Fa corrispondere il punto anche all’a capo (modalità <em>dotAll</em>).</p></details>
+        <details><summary>4. Perché <code>/a{1, 3}/</code> non trova “aaa”?</summary><p>Per lo spazio: JavaScript non riconosce il quantificatore e cerca il testo letterale “a{1, 3}”. La forma giusta è <code>/a{1,3}/</code>.</p></details>
+        <details><summary>5. In <code>&lt;b&gt;um&lt;/b&gt;</code>, che cosa trovano per primo <code>/&lt;.+&gt;/</code> e <code>/&lt;.+?&gt;/</code>?</summary><p>Quello avido prende tutto il testo, da <code>&lt;b&gt;</code> a <code>&lt;/b&gt;</code>; quello pigro prende solo <code>&lt;b&gt;</code>.</p></details>
+        <details><summary>6. A quali posizioni corrisponde <code>\B</code>?</summary><p>A quelle che <em>non</em> sono confini di parola, come tra la <code>t</code> e la <code>o</code> di “topo”.</p></details>
+        <details><summary>7. In <code>/(\d{2})([\/-])\d{2}\2\d{4}/</code>, a che cosa serve <code>\2</code>?</summary><p>È una backreference: impone che il secondo separatore sia uguale a ciò che il gruppo 2 ha catturato. Così 25/09/2026 corrisponde e 25/09-2026 no.</p></details>
+        <details><summary>8. Che cosa non va nel mese <code>(0[1-9]|1[1-2])</code>?</summary><p>Non accetta 10. Deve essere <code>(0[1-9]|1[0-2])</code>.</p></details>
+        <details><summary>9. <code>[[:digit:]]</code> funziona in JavaScript?</summary><p>No. Le classi POSIX sono di PCRE, Perl e strumenti come <code>grep</code>; in JavaScript usate <code>\d</code> o <code>[0-9]</code>.</p></details>
+      </div>
+      <a class="back" href="#top">↑ Torna all’inizio</a>
+    </section>
+
+    <section id="riferimenti-it" aria-labelledby="h-riferimenti-it">
+      <h2 id="h-riferimenti-it">Riferimenti</h2>
+      <ol class="refs">
+        <li id="ref-1-it"><strong>Giovani Perotto Mesquita</strong>, “Regular Expression”, GitHub Gist, testo originale di questo tutorial, <a href="https://gist.github.com/GiovaniPM/04efc466d19ccc8d112d036c48de4a5c" rel="noopener">gist.github.com/GiovaniPM/04efc466d19ccc8d112d036c48de4a5c</a>.</li>
+        <li id="ref-2-it"><strong>Microsoft Learn</strong>, “Linguaggio di espressioni regolari - Riferimento rapido”, consultato il 25/09/2026, <a href="https://learn.microsoft.com/it-it/dotnet/standard/base-types/regular-expression-language-quick-reference" rel="noopener">learn.microsoft.com/it-it/dotnet/standard/base-types/regular-expression-language-quick-reference</a>.</li>
+        <li id="ref-3-it"><strong>MDN Web Docs</strong>, “Espressioni regolari”, consultato il 25/09/2026, <a href="https://developer.mozilla.org/it/docs/Web/JavaScript/Guide/Regular_expressions" rel="noopener">developer.mozilla.org/it/docs/Web/JavaScript/Guide/Regular_expressions</a>.</li>
+        <li id="ref-4-it"><strong>MDN Web Docs</strong>, “RegExp.prototype.flags”, consultato il 25/09/2026, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/flags" rel="noopener">developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/flags</a>.</li>
+        <li id="ref-5-it"><strong>Wikipedia</strong> (in inglese), “Regular expression”, consultato il 25/09/2026, <a href="https://en.wikipedia.org/wiki/Regular_expression" rel="noopener">en.wikipedia.org/wiki/Regular_expression</a>.</li>
+        <li id="ref-6-it"><strong>Wikipedia</strong> (in inglese), “Stephen Cole Kleene”, consultato il 25/09/2026, <a href="https://en.wikipedia.org/wiki/Stephen_Cole_Kleene" rel="noopener">en.wikipedia.org/wiki/Stephen_Cole_Kleene</a>.</li>
+        <li id="ref-7-it"><strong>PCRE2</strong>, “pcre2pattern”, documentazione della sintassi dei pattern, consultato il 25/09/2026, <a href="https://www.pcre.org/current/doc/html/pcre2pattern.html" rel="noopener">pcre.org/current/doc/html/pcre2pattern.html</a>.</li>
+        <li id="ref-8-it"><strong>Python Software Foundation</strong>, “re — Regular expression operations”, consultato il 25/09/2026, <a href="https://docs.python.org/3/library/re.html" rel="noopener">docs.python.org/3/library/re.html</a>.</li>
+        <li id="ref-9-it"><strong>Jan Goyvaerts</strong>, “Atomic Grouping”, Regular-Expressions.info, consultato il 25/09/2026, <a href="https://www.regular-expressions.info/atomic.html" rel="noopener">regular-expressions.info/atomic.html</a>.</li>
+        <li id="ref-10-it"><strong>Jan Goyvaerts</strong>, “Branch Reset Groups”, Regular-Expressions.info, consultato il 25/09/2026, <a href="https://www.regular-expressions.info/branchreset.html" rel="noopener">regular-expressions.info/branchreset.html</a>.</li>
+        <li id="ref-11-it"><strong>P. Resnick (ed.)</strong>, <em>RFC 5322: Internet Message Format</em>, IETF, 2008, consultato il 25/09/2026, <a href="https://www.rfc-editor.org/rfc/rfc5322" rel="noopener">rfc-editor.org/rfc/rfc5322</a>.</li>
+        <li id="ref-12-it"><strong>Wikipedia</strong> (in inglese), “ISO 8601”, consultato il 25/09/2026, <a href="https://en.wikipedia.org/wiki/ISO_8601" rel="noopener">en.wikipedia.org/wiki/ISO_8601</a>.</li>
+        <li id="ref-13-it"><strong>regex101</strong>, sito ufficiale, consultato il 25/09/2026, <a href="https://regex101.com/" rel="noopener">regex101.com</a>.</li>
+        <li id="ref-14-it"><strong>Jeff Avallone</strong>, Regexper, sito ufficiale, consultato il 25/09/2026, <a href="https://regexper.com/" rel="noopener">regexper.com</a>.</li>
+        <li id="ref-15-it"><strong>RexEgg</strong>, “Rex Eats Regular Expressions for Breakfast”, consultato il 25/09/2026, <a href="https://www.rexegg.com/" rel="noopener">rexegg.com</a>.</li>
+        <li id="ref-16-it"><strong>Alexandre Servian</strong>, “Regex: um guia prático para expressões regulares”, Medium, consultato il 25/09/2026, <a href="https://medium.com/@alexandreservian/regex-um-guia-pratico-para-express%C3%B5es-regulares-1ac5fa4dd39f" rel="noopener">medium.com/@alexandreservian/regex-um-guia-pratico-para-expressões-regulares-1ac5fa4dd39f</a>.</li>
+        <li id="ref-17-it"><strong>Jeffrey E. F. Friedl</strong>, <em>Mastering Regular Expressions</em>, 3ª ed., O’Reilly Media, 2006.</li>
+        <li id="ref-18-it"><strong>Code Beautify</strong>, “Generate Random Data from Regular Expression”, consultato il 25/09/2026, <a href="https://codebeautify.org/generate-random-data-from-regexp" rel="noopener">codebeautify.org/generate-random-data-from-regexp</a>.</li>
+        <li id="ref-19-it"><strong>Wikipedia</strong> (in inglese), “Latin-1 Supplement”, consultato il 25/09/2026, <a href="https://en.wikipedia.org/wiki/Latin-1_Supplement" rel="noopener">en.wikipedia.org/wiki/Latin-1_Supplement</a>.</li>
+        <li id="ref-20-it"><strong>MDN Web Docs</strong>, “Named capturing group”, consultato il 25/09/2026, <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Regular_expressions/Named_capturing_group" rel="noopener">developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Regular_expressions/Named_capturing_group</a>.</li>
+      </ol>
+      <a class="back" href="#top">↑ Torna all’inizio</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span>Giovani Perotto Mesquita · Porto Alegre, RS</span>
+    <span><a href="projects.html" data-projects data-foot="0">Projetos</a> · <a href="resume.html" data-resume data-foot="1">Currículo</a> · <a href="contact.html" data-contact data-foot="2">Contato</a></span>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('.lang [role="tab"]'));
+    var titles = {"pt": "Expressões regulares · Giovani Perotto Mesquita", "en": "Regular expressions · Giovani Perotto Mesquita", "it": "Espressioni regolari · Giovani Perotto Mesquita"};
+    var foots = {"pt": ["Projetos", "Currículo", "Contato"], "en": ["Projects", "Resume", "Contact"], "it": ["Progetti", "Curriculum", "Contatti"]};
+    var langs = { pt: 'pt-BR', en: 'en', it: 'it' };
+    var bar = document.querySelector('.progress');
+    var article = document.querySelector('[role="tabpanel"]:not([hidden]) article');
+
+    function show(id, focus) {
+      tabs.forEach(function (t) {
+        var on = t.getAttribute('aria-controls') === id;
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+        if (on && focus) t.focus();
+      });
+      document.documentElement.lang = langs[id];
+      document.title = titles[id];
+      var suffix = id === 'pt' ? '' : '#' + id;
+      [['data-home', 'index.html'], ['data-about', 'about.html'], ['data-resume', 'resume.html'], ['data-projects', 'projects.html'], ['data-contact', 'contact.html']].forEach(function (p) {
+        document.querySelectorAll('[' + p[0] + ']').forEach(function (a) { a.href = p[1] + suffix; });
+      });
+      document.querySelectorAll('[data-foot]').forEach(function (a) { a.textContent = foots[id][+a.getAttribute('data-foot')]; });
+      article = document.querySelector('#' + id + ' article');
+      if (history.replaceState) history.replaceState(null, '', id === 'pt' ? location.pathname : '#' + id);
+      progress();
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () { show(t.getAttribute('aria-controls')); });
+      t.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (d) { e.preventDefault(); show(tabs[(i + d + tabs.length) % tabs.length].getAttribute('aria-controls'), true); }
+      });
+    });
+
+    // barra de progresso de leitura
+    function progress() {
+      if (!article) return;
+      var r = article.getBoundingClientRect();
+      var total = r.height - window.innerHeight;
+      var p = total > 0 ? Math.min(Math.max(-r.top / total, 0), 1) : 1;
+      bar.style.width = (p * 100) + '%';
+    }
+    window.addEventListener('scroll', progress, { passive: true });
+    window.addEventListener('resize', progress);
+
+    // destaca a seção atual no índice
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          var panel = e.target.closest('[role="tabpanel"]');
+          panel.querySelectorAll('.toc a').forEach(function (a) {
+            if (a.getAttribute('href') === '#' + e.target.id) a.setAttribute('aria-current', 'true');
+            else a.removeAttribute('aria-current');
+          });
+        });
+      }, { rootMargin: '-20% 0px -70% 0px' });
+      document.querySelectorAll('article section[id]').forEach(function (s) { io.observe(s); });
+    }
+
+    var h = (location.hash || '').replace('#', '');
+    var m = h.match(/^(?:.*-)?(en|it)$/);
+    if (m) {
+      show(m[1]);
+      if (h !== m[1]) { var el = document.getElementById(h); if (el) el.scrollIntoView(); if (history.replaceState) history.replaceState(null, '', '#' + h); }
+    } else progress();
+  })();
+</script>
+</body>
+</html>
