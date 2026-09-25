@@ -1,0 +1,1835 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BDD · Giovani Perotto Mesquita</title>
+<meta name="description" content="Tutorial de BDD, o desenvolvimento orientado a comportamento: origens no TDD, ciclo Vermelho-Verde-Refatorar, ATDD, Especificação por Exemplo, Três Amigos, Gherkin, Cucumber e ferramentas. Disponível em português, inglês e italiano.">
+<meta name="author" content="Giovani Perotto Mesquita">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Paleta alegre: roxo e magenta vibrantes, amarelo-girassol, verde-água e coral */
+    --bg: #FFF7EC;
+    --surface: #FFFFFF;
+    --ink: #2B1B3D;
+    --text: #3E3350;
+    --muted: #756986;
+    --line: #F1E2CF;
+    --accent: #0E8074;
+    --accent-soft: #E2F6F2;
+    --accent-strong: #5B2A86;
+    --navy: #5B2A86;
+    --navy-deep: #C2185B;
+    --on-navy: #FFFFFF;
+    --on-navy-muted: #FCE4F0;
+    --gold: #FFB703;
+    --gold-ink: #B35300;
+    --gold-soft: #FFF1C9;
+    --coral: #FF6B6B;
+    --sky: #3A86FF;
+    --mint: #2A9D8F;
+    --pink: #EF476F;
+    --sans: "Hanken Grotesk", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1A1328; --surface: #241A36; --ink: #F7F0FF; --text: #E2D8F0; --muted: #A898C0;
+      --line: #3A2D52; --accent: #5FD3C4; --accent-soft: #1D3A38; --accent-strong: #C9A7F5;
+      --navy: #3D1A5C; --navy-deep: #7A1240; --gold: #FFC94D; --gold-ink: #FFC94D; --gold-soft: #3A2E12;
+      --coral: #FF8A8A; --sky: #6FA8FF; --mint: #4CC3B3; --pink: #FF6F91;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 4px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 1.5rem; }
+
+  /* navegação */
+  .nav {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: saturate(160%) blur(10px); -webkit-backdrop-filter: saturate(160%) blur(10px);
+    border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px);
+  }
+  .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 58px; gap: 1rem; }
+  .brand { font-family: var(--serif); font-weight: 600; color: var(--accent-strong); text-decoration: none; font-size: 1.05rem; }
+  .nav ul { list-style: none; display: flex; gap: 1.4rem; margin: 0; padding: 0; }
+  .nav ul a { color: var(--muted); text-decoration: none; font-size: 0.93rem; font-weight: 500; }
+  .nav ul a:hover, .nav ul a[aria-current="page"] { color: var(--ink); }
+  .nav-right { display: flex; align-items: center; gap: 1rem; }
+  .lang { display: flex; gap: 0.2rem; }
+  .lang button { font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; color: var(--muted); background: none; padding: 0.2rem 0.45rem; border-radius: 6px; border: 1px solid transparent; }
+  .lang button:hover { color: var(--ink); }
+  .lang button[aria-selected="true"] { color: var(--accent-strong); border-color: var(--line); background: var(--surface); }
+  [hidden] { display: none !important; }
+  .progress { position: absolute; left: 0; bottom: -1px; height: 3px; width: 0; background: linear-gradient(90deg, var(--coral), var(--gold), var(--mint)); }
+
+  /* abertura */
+  .hero-band {
+    background:
+      radial-gradient(900px 420px at 85% -10%, rgba(255,255,255,.07), transparent 60%),
+      linear-gradient(160deg, var(--navy) 0%, var(--navy-deep) 100%);
+    border-top: 4px solid var(--gold); color: var(--on-navy);
+  }
+  .hero { padding: 3.5rem 0 3.5rem; max-width: 820px; }
+  .crumb { margin: 0 0 1.4rem; font-size: 0.92rem; }
+  .crumb a { color: var(--on-navy-muted); text-decoration: none; }
+  .crumb a:hover { color: var(--gold); }
+  .eyebrow { color: var(--gold); font-weight: 600; font-size: 1rem; margin: 0 0 0.7rem; }
+  h1 { font-family: var(--serif); font-weight: 600; color: var(--on-navy); font-size: clamp(2.3rem, 5.5vw, 3.8rem); line-height: 1.05; letter-spacing: -0.025em; margin: 0; }
+  .dek { font-family: var(--serif); font-style: italic; font-size: clamp(1.1rem, 2.2vw, 1.35rem); color: var(--on-navy-muted); margin: 1.1rem 0 1.6rem; max-width: 58ch; }
+  .byline { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; font-size: 0.92rem; color: var(--on-navy-muted); }
+  .byline strong { color: var(--on-navy); font-weight: 600; }
+  .byline .credit { margin-left: auto; font-style: italic; }
+
+  /* layout do artigo */
+  .layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 3rem; padding: 3rem 0 4rem; align-items: start; }
+  .toc { position: sticky; top: 82px; font-size: 0.92rem; max-height: calc(100vh - 100px); overflow-y: auto; }
+  .toc h2 { font-family: var(--sans); font-size: 0.85rem; font-weight: 600; color: var(--muted); margin: 0 0 0.7rem; border: 0; padding: 0; }
+  .toc ol { list-style: none; margin: 0; padding: 0; counter-reset: toc; border-left: 2px solid var(--line); }
+  .toc li { counter-increment: toc; }
+  .toc a { display: block; padding: 0.3rem 0 0.3rem 1rem; margin-left: -2px; border-left: 2px solid transparent; color: var(--muted); text-decoration: none; line-height: 1.35; }
+  .toc a::before { content: counter(toc) ". "; color: var(--gold-ink); font-weight: 600; }
+  .toc a:hover { color: var(--ink); }
+  .toc a[aria-current="true"] { color: var(--accent-strong); border-left-color: var(--gold); font-weight: 600; }
+
+  article { background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: var(--radius); padding: 3rem clamp(1.25rem, 4vw, 3.5rem); min-width: 0; }
+  article section + section { margin-top: 3.2rem; }
+  article h2 { font-family: var(--serif); font-weight: 600; color: var(--ink); font-size: clamp(1.5rem, 2.8vw, 1.9rem); letter-spacing: -0.015em; line-height: 1.2; margin: 0 0 1.1rem; padding-left: 0.9rem; border-left: 3px solid var(--gold); }
+  article h3 { font-family: var(--sans); font-size: 1.1rem; font-weight: 600; color: var(--ink); margin: 2rem 0 0.8rem; }
+  article p, article li { font-family: var(--serif); font-size: 1.12rem; line-height: 1.7; color: var(--text); }
+  article p { margin: 0 0 1.1rem; max-width: 68ch; }
+  article ul, article ol { margin: 0 0 1.1rem; padding-left: 1.4rem; max-width: 68ch; }
+  article li { margin-bottom: 0.3rem; }
+  article strong { color: var(--ink); }
+  sup a { font-family: var(--sans); font-size: 0.72rem; font-weight: 700; text-decoration: none; padding: 0 0.15em; }
+
+  figure { margin: 2rem 0; }
+  figure img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: #FFF7EC; }
+  figcaption { margin-top: 0.6rem; font-size: 0.9rem; color: var(--muted); text-align: center; font-family: var(--sans); line-height: 1.5; }
+
+  blockquote { margin: 1.5rem 0; padding: 1.2rem 1.5rem; background: var(--accent-soft); border-left: 3px solid var(--gold); border-radius: 0 10px 10px 0; }
+  blockquote p { font-size: 1.05rem; margin: 0 0 0.8rem; }
+  blockquote p:last-child { margin-bottom: 0; }
+  blockquote.pull p { font-size: clamp(1.15rem, 2.3vw, 1.35rem); font-style: italic; line-height: 1.45; color: var(--ink); }
+  blockquote cite { font-family: var(--sans); font-size: 0.88rem; font-style: normal; color: var(--muted); }
+
+  /* tabelas */
+  .table-wrap { overflow-x: auto; margin: 1.5rem 0; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-family: var(--sans); font-size: 0.95rem; }
+  th, td { text-align: left; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.5; }
+  thead th { background: var(--gold-soft); color: var(--ink); font-weight: 600; }
+  tbody th { color: var(--ink); font-weight: 600; }
+  tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
+  td code, th code { font-size: 0.9em; }
+
+  /* mitos */
+  .myths { list-style: none; padding: 0; margin: 1.5rem 0; max-width: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
+  .myths li { margin: 0; padding: 1rem 1.2rem; border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: 10px; }
+  .myths li:nth-child(4n+2) { border-top-color: var(--sky); }
+  .myths li:nth-child(4n+3) { border-top-color: var(--mint); }
+  .myths li:nth-child(4n+4) { border-top-color: var(--gold); }
+  .myths h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+  .myths p { margin: 0; font-size: 1rem; line-height: 1.6; }
+
+  /* para fixar */
+  .recap { margin: 1.8rem 0 0; padding: 1.1rem 1.4rem; background: var(--gold-soft); border-left: 4px solid var(--mint); border-radius: 0 10px 10px 0; }
+  .recap h3 { margin: 0 0 0.5rem; font-size: 0.85rem; letter-spacing: .05em; text-transform: uppercase; color: var(--gold-ink); }
+  .recap ul { margin: 0; padding-left: 1.2rem; }
+  .recap li { font-family: var(--sans); font-size: 0.98rem; line-height: 1.55; margin-bottom: 0.25rem; }
+
+  /* revisão rápida */
+  .quiz { display: grid; gap: 0.7rem; margin: 1.5rem 0; }
+  .quiz details { border: 1px solid var(--line); border-left: 4px solid var(--sky); border-radius: 0 10px 10px 0; padding: 0.8rem 1.1rem; }
+  .quiz details:nth-child(3n+2) { border-left-color: var(--pink); }
+  .quiz details:nth-child(3n+3) { border-left-color: var(--mint); }
+  .quiz summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); line-height: 1.45; }
+  .quiz details[open] summary { margin-bottom: 0.5rem; }
+  .quiz p { margin: 0; font-size: 1.02rem; }
+
+  .refs { font-family: var(--sans); padding-left: 1.4rem; margin: 0; }
+  .refs li { font-family: var(--sans); font-size: 0.92rem; line-height: 1.55; margin-bottom: 0.7rem; word-break: break-word; }
+  .refs li:target { background: var(--gold-soft); border-radius: 6px; }
+
+  .back { display: inline-block; margin-top: 1rem; font-family: var(--sans); font-size: 0.85rem; text-decoration: none; }
+
+  footer { background: var(--navy-deep); color: var(--on-navy-muted); border-top: 3px solid var(--gold); padding: 1.5rem 0 calc(1.5rem + env(safe-area-inset-bottom, 0px)); font-size: 0.88rem; }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1.5rem; }
+  footer a { color: var(--on-navy); text-decoration: none; }
+  footer a:hover { color: var(--gold); }
+
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+    .toc { position: static; max-height: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.2rem 1.4rem; }
+  }
+  @media (max-width: 760px) {
+    .myths { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .nav ul { display: none; }
+    .hero { padding: 2.5rem 0; }
+    .wrap { padding: 0 1rem; }
+    article p, article li { font-size: 1.05rem; }
+    th, td { padding: 0.6rem 0.7rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  @media print {
+    .nav, .toc, footer, .back, .crumb { display: none !important; }
+    body { background: #fff; }
+    .hero-band { background: none; color: #111; border: 0; }
+    .hero-band h1 { color: #5B2A86; }
+    .dek, .byline, .byline strong { color: #333; }
+    .layout { display: block; padding: 0; }
+    article { border: 0; padding: 0; }
+    .table-wrap { overflow: visible; }
+    figure, blockquote, .myths li, .recap, .quiz details, tr { break-inside: avoid; }
+  }
+
+  /* blocos de código (Gherkin) */
+  pre.code { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: #2B1B3D; color: #F7F0FF; border-radius: 10px; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.92rem; line-height: 1.6; tab-size: 2; }
+  pre.code code { font-family: inherit; white-space: pre; }
+  pre.code .k { color: #FFB703; font-weight: 700; }
+  pre.code .s { color: #5FD3C4; font-weight: 700; }
+  pre.code .c { color: #A898C0; }
+  pre.code .p { color: #C9A7F5; }
+  article code { font-family: Consolas, "Courier New", monospace; font-size: 0.92em; }
+  article :not(pre) > code { background: var(--accent-soft); color: var(--ink); padding: 0.05em 0.35em; border-radius: 4px; }
+</style>
+</head>
+<body id="top">
+
+<nav class="nav" aria-label="Navegação do site">
+  <div class="wrap">
+    <a class="brand" href="index.html" data-home>Giovani Perotto Mesquita</a>
+    <div class="nav-right">
+      <ul>
+        <li><a href="index.html" data-home>Home</a></li>
+        <li><a href="about.html" data-about>About</a></li>
+        <li><a href="resume.html" data-resume>Resume</a></li>
+        <li><a href="projects.html" data-projects aria-current="page">Projects</a></li>
+        <li><a href="contact.html" data-contact>Contact</a></li>
+      </ul>
+      <div class="lang" role="tablist" aria-label="Idioma / Language / Lingua">
+        <button type="button" role="tab" id="tab-pt" aria-controls="pt" aria-selected="true" lang="pt-BR">PT</button>
+        <button type="button" role="tab" id="tab-en" aria-controls="en" aria-selected="false" lang="en" tabindex="-1">EN</button>
+        <button type="button" role="tab" id="tab-it" aria-controls="it" aria-selected="false" lang="it" tabindex="-1">IT</button>
+      </div>
+    </div>
+  </div>
+  <div class="progress" aria-hidden="true"></div>
+</nav>
+
+<!-- ===================== PT ===================== -->
+<div id="pt" role="tabpanel" aria-labelledby="tab-pt" lang="pt-BR">
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projetos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>BDD: desenvolvimento orientado a comportamento</h1>
+      <p class="dek">Como transformar conversas sobre exemplos concretos em especificações que rodam como testes: das origens no TDD à Especificação por Exemplo, ao Gherkin e ao Cucumber.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado em <time datetime="2026-09-25">25/09/2026</time></span>
+        <span class="credit">Revisado e formatado usando Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-pt">
+    <h2 id="toc-pt">Índice</h2>
+    <ol>
+      <li><a href="#oque-pt">O que é BDD</a></li>
+      <li><a href="#origem-pt">Por que o BDD surgiu</a></li>
+      <li><a href="#agil-pt">BDD e o Manifesto Ágil</a></li>
+      <li><a href="#tdd-pt">TDD, a base do BDD</a></li>
+      <li><a href="#atdd-pt">ATDD: aceitação primeiro</a></li>
+      <li><a href="#tdd-bdd-pt">De TDD para BDD</a></li>
+      <li><a href="#ciclo-pt">O ciclo de fora para dentro</a></li>
+      <li><a href="#sbe-pt">Especificação por Exemplo</a></li>
+      <li><a href="#anti-pt">Antipadrões</a></li>
+      <li><a href="#gherkin-pt">Gherkin</a></li>
+      <li><a href="#cucumber-pt">Cucumber e as definições de passos</a></li>
+      <li><a href="#ferramentas-pt">Ferramentas</a></li>
+      <li><a href="#revisao-pt">Revisão rápida</a></li>
+      <li><a href="#referencias-pt">Referências</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="oque-pt" aria-labelledby="h-oque-pt">
+      <h2 id="h-oque-pt">O que é BDD</h2>
+      <p>O desenvolvimento orientado a comportamento (<em>Behavior Driven Development</em>, BDD) é um processo de desenvolvimento de software que nasceu do desenvolvimento orientado a testes (TDD). Ele usa <strong>exemplos</strong> para ilustrar o comportamento do sistema, escritos numa linguagem que todos os envolvidos entendem, do cliente ao desenvolvedor. <sup><a href="#ref-1-pt">[1]</a></sup> <sup><a href="#ref-2-pt">[2]</a></sup> <sup><a href="#ref-8-pt">[8]</a></sup></p>
+      <p>Dan North, que deu nome e forma ao BDD, o resume assim:</p>
+      <blockquote class="pull">
+        <p>BDD é usar exemplos em vários níveis para criar um entendimento comum e trazer à tona as incertezas, para entregar software que importa.</p>
+        <p><cite>Dan North</cite> <sup><a href="#ref-2-pt">[2]</a></sup></p>
+      </blockquote>
+      <p>Esses exemplos têm dois destinos: viram <strong>especificações executáveis</strong> e servem como <strong>testes de aceitação</strong>. O BDD se concentra em:</p>
+      <ul>
+        <li>oferecer um processo e ferramentas comuns, que aproximam desenvolvedores, analistas de negócio e demais interessados, para entregar software com valor de negócio;</li>
+        <li>descrever <em>o que</em> o sistema deve fazer, e não <em>como</em> deve ser implementado;</li>
+        <li>dar mais legibilidade e visibilidade ao que está sendo construído;</li>
+        <li>verificar não só se o software funciona, mas se atende ao que o cliente espera.</li>
+      </ul>
+      <p>Este tutorial serve tanto para desenvolvedores quanto para analistas de negócio. Ele supõe que você já conhece os fundamentos de testes; se precisar revisá-los, veja o tutorial <a href="TestesDeSoftware.html">Testes de software</a>.</p>
+    </section>
+
+    <section id="origem-pt" aria-labelledby="h-origem-pt">
+      <h2 id="h-origem-pt">Por que o BDD surgiu</h2>
+      <p>O custo de corrigir um defeito se multiplica quando ele não é encontrado no momento certo. E muitos defeitos nascem antes do código: de requisitos mal entendidos. Se o requisito não for capturado corretamente, o erro atravessa projeto, código e testes, fica caro de corrigir e o produto final pode não atender ao cliente. <sup><a href="#ref-2-pt">[2]</a></sup></p>
+      <p>Era preciso uma abordagem que partisse dos requisitos, mantivesse o foco neles durante todo o desenvolvimento e garantisse que fossem cumpridos. O BDD faz isso porque:</p>
+      <ul>
+        <li>deriva exemplos dos diferentes comportamentos esperados do sistema;</li>
+        <li>escreve esses exemplos com os termos do domínio do negócio, para que todos entendam, inclusive o cliente;</li>
+        <li>confirma os exemplos com o cliente de tempos em tempos, por meio de conversas;</li>
+        <li>mantém o foco nos exemplos durante todo o desenvolvimento;</li>
+        <li>usa os exemplos como testes de aceitação.</li>
+      </ul>
+      <h3>As duas práticas do BDD</h3>
+      <figure>
+        <img src="rc_images/BDDPraticas.svg" alt="Dois quadros no alto, Especificação por Exemplo, com conversas sobre exemplos concretos na linguagem do negócio, e TDD, com o teste escrito antes do código em ciclos curtos, unidos por um sinal de mais. As setas levam a um quadro embaixo, BDD, em que os exemplos viram especificações executáveis que servem de testes de aceitação e de documentação viva." width="1000" height="520" loading="lazy">
+        <figcaption>O BDD une a Especificação por Exemplo (o que construir) ao TDD (como construir).</figcaption>
+      </figure>
+      <ul>
+        <li><strong>Especificação por Exemplo (SbE):</strong> usa exemplos nas conversas para ilustrar as regras de negócio e o comportamento do software. Assim, product owner, analistas, testadores e desenvolvedores eliminam os mal-entendidos mais comuns sobre os requisitos. <sup><a href="#ref-6-pt">[6]</a></sup></li>
+        <li><strong>Desenvolvimento orientado a testes (TDD):</strong> no contexto do BDD, transforma os exemplos em especificações executáveis e legíveis. Os desenvolvedores as usam como guia para implementar cada pedaço de funcionalidade, o que gera um código enxuto e uma suíte de testes de regressão automatizados que mantém baixo o custo de manutenção. <sup><a href="#ref-4-pt">[4]</a></sup></li>
+      </ul>
+      <aside class="recap" aria-label="Para fixar">
+        <h3>Para fixar</h3>
+        <ul>
+          <li>BDD descreve o comportamento do sistema com exemplos que todos entendem.</li>
+          <li>Os exemplos viram especificações executáveis e testes de aceitação.</li>
+          <li>BDD = Especificação por Exemplo + TDD.</li>
+        </ul>
+      </aside>
+    </section>
+
+    <section id="agil-pt" aria-labelledby="h-agil-pt">
+      <h2 id="h-agil-pt">BDD e o Manifesto Ágil</h2>
+      <p>No desenvolvimento ágil, o BDD é a forma de chegar a um entendimento comum sobre o que ainda falta especificar. O product owner descreve os comportamentos que espera; os desenvolvedores detalham as especificações e fazem perguntas; e o comportamento atual do sistema é considerado, para que a nova funcionalidade não quebre as existentes.</p>
+      <p>O Manifesto Ágil valoriza mais os itens da esquerda do que os da direita, e o BDD se alinha a cada um deles: <sup><a href="#ref-7-pt">[7]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Manifesto Ágil</th><th scope="col">Como o BDD se alinha</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Indivíduos e interações</strong> mais que processos e ferramentas</td><td>BDD é, antes de tudo, conversa.</td></tr>
+            <tr><td><strong>Software em funcionamento</strong> mais que documentação abrangente</td><td>O foco é criar software com valor de negócio, e a documentação é o próprio teste executável.</td></tr>
+            <tr><td><strong>Colaboração com o cliente</strong> mais que negociação de contratos</td><td>Os cenários nascem de ideias discutidas com o cliente durante todo o desenvolvimento, não de promessas.</td></tr>
+            <tr><td><strong>Responder a mudanças</strong> mais que seguir um plano</td><td>A comunicação contínua facilita absorver mudanças.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="tdd-pt" aria-labelledby="h-tdd-pt">
+      <h2 id="h-tdd-pt">TDD, a base do BDD</h2>
+      <p>Para entender por que se diz que “o BDD vem do TDD”, é preciso entender o TDD.</p>
+      <h3>O problema do teste no final</h3>
+      <p>Na abordagem tradicional, o teste vem depois de cada etapa (<em>test-last</em>). Na prática, ele acaba sendo espremido ou pulado por atrasos, prazos apertados e pressão para entregar. O teste unitário, que caberia ao desenvolvedor, costuma ser o primeiro a cair, com justificativas como “sou desenvolvedor, não testador” ou “meu código não tem defeitos”. O resultado é qualidade comprometida, responsabilidade concentrada nos testadores, correções caras depois da entrega e clientes insatisfeitos.</p>
+      <h3>Teste primeiro</h3>
+      <p>A abordagem <em>test-first</em> inverte a ordem: em vez de escrever o código e depois testar (de dentro para fora), escreve-se o teste e depois o código (de fora para dentro). Ela aparece na Programação Extrema (XP) e no TDD, formalizado por Kent Beck: o desenvolvedor escreve o teste unitário de um módulo antes de escrever uma única linha dele, e então escreve o código com o objetivo de fazer o teste passar. <sup><a href="#ref-4-pt">[4]</a></sup> <sup><a href="#ref-5-pt">[5]</a></sup></p>
+      <h3>O ciclo Vermelho, Verde, Refatorar</h3>
+      <figure>
+        <img src="rc_images/BDDCicloTDD.svg" alt="Ciclo com três etapas ligadas por setas no sentido horário: vermelho, escreva um teste que falha; verde, escreva o código mínimo para passar; refatorar, melhore o código sem mudar o que ele faz. No centro: rode todos os testes a cada passo." width="1000" height="610" loading="lazy">
+        <figcaption>O ciclo do TDD: vermelho, verde, refatorar, em voltas de poucos minutos.</figcaption>
+      </figure>
+      <ol>
+        <li>escolha o pedaço de código a escrever;</li>
+        <li>escreva um teste para ele;</li>
+        <li>rode o teste: ele falha, porque o código ainda não existe (<strong>vermelho</strong>);</li>
+        <li>escreva o mínimo de código para o teste passar (<strong>verde</strong>);</li>
+        <li>rode todos os testes para garantir que continuam passando;</li>
+        <li><strong>refatore</strong>: remova duplicações e melhore o código;</li>
+        <li>repita para o próximo pedaço.</li>
+      </ol>
+      <p>Cada volta deve ser curta; uma hora de trabalho costuma ter muitos ciclos.</p>
+      <h3>Vantagens do TDD</h3>
+      <ul>
+        <li>o desenvolvedor precisa entender o resultado esperado, e como testá-lo, antes de codificar;</li>
+        <li>um componente só está pronto quando o teste passa e o código foi refatorado;</li>
+        <li>como a suíte roda a cada refatoração, o retorno sobre o que ainda funciona é constante;</li>
+        <li>os testes unitários servem de documentação sempre atualizada;</li>
+        <li>cada defeito encontrado ganha um teste que o reproduz, o que reduz o tempo de depuração e impede que ele volte;</li>
+        <li>o desenvolvedor pode mudar o projeto e refatorar com segurança, o que torna o software mais fácil de manter;</li>
+        <li>como boa parte do teste acontece durante o desenvolvimento, o teste antes da entrega fica mais curto.</li>
+      </ul>
+      <h3>Onde o TDD deixa dúvidas</h3>
+      <p>O ponto de partida são as histórias de usuário, que descrevem comportamento. Com o TDD puro, o desenvolvedor fica com perguntas: quando testar? O que testar? Como saber se uma especificação foi atendida? O código entrega valor de negócio? É aqui que o BDD entra.</p>
+      <h3>Mitos sobre o TDD</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Mito</th><th scope="col">Esclarecimento</th></tr></thead>
+          <tbody>
+            <tr><td>TDD é só teste e automação de testes.</td><td>TDD é uma forma de desenvolver, usando a abordagem de teste primeiro.</td></tr>
+            <tr><td>TDD não tem projeto.</td><td>Tem análise e projeto baseados nos requisitos; o projeto emerge durante o desenvolvimento.</td></tr>
+            <tr><td>TDD é só para testes unitários.</td><td>Pode ser usado também nos níveis de integração e de sistema.</td></tr>
+            <tr><td>TDD só serve para projetos ágeis.</td><td>Ficou popular com a XP, mas pode ser usado em projetos tradicionais.</td></tr>
+            <tr><td>TDD é uma ferramenta.</td><td>É uma metodologia. As ferramentas de automação apenas facilitam rodar toda a suíte a cada mudança.</td></tr>
+            <tr><td>TDD significa entregar os testes de aceitação aos desenvolvedores.</td><td>Não significa.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="atdd-pt" aria-labelledby="h-atdd-pt">
+      <h2 id="h-atdd-pt">ATDD: aceitação primeiro</h2>
+      <p>O desenvolvimento orientado a testes de aceitação (ATDD) define os critérios e os testes de aceitação quando as histórias de usuário são criadas, no início do desenvolvimento. O foco é a comunicação e o entendimento comum entre clientes, desenvolvedores e testadores. <sup><a href="#ref-9-pt">[9]</a></sup></p>
+      <p>As práticas centrais são:</p>
+      <ul>
+        <li>discutir cenários do mundo real para construir um entendimento comum do domínio;</li>
+        <li>usar esses cenários para chegar aos critérios de aceitação;</li>
+        <li>automatizar os testes de aceitação;</li>
+        <li>concentrar o desenvolvimento em fazer esses testes passarem;</li>
+        <li>usar os testes como especificação viva, que facilita as mudanças.</li>
+      </ul>
+      <p>Com isso, os requisitos ficam sem ambiguidade e sem lacunas funcionais, todos passam a enxergar os casos especiais que os desenvolvedores previram, e os testes de aceitação guiam o desenvolvimento.</p>
+    </section>
+
+    <section id="tdd-bdd-pt" aria-labelledby="h-tdd-bdd-pt">
+      <h2 id="h-tdd-bdd-pt">De TDD para BDD</h2>
+      <p>Dan North percebeu que programadores que praticavam TDD esbarravam sempre nas mesmas dúvidas: por onde começar, o que testar e o que não testar, quanto testar de uma vez, que nome dar aos testes e como entender por que um teste falhou. A resposta dele foi mudar o vocabulário: pensar em <strong>comportamento</strong>, e não em testes. <sup><a href="#ref-3-pt">[3]</a></sup></p>
+      <blockquote class="pull">
+        <p>Achei a mudança de pensar em testes para pensar em comportamento tão profunda que comecei a chamar o TDD de BDD, ou desenvolvimento orientado a comportamento.</p>
+        <p><cite>Dan North, “Introducing BDD”, 2006</cite> <sup><a href="#ref-3-pt">[3]</a></sup></p>
+      </blockquote>
+      <p>O TDD se preocupa com <em>como</em> algo vai funcionar; o BDD, com <em>por que</em> estamos construindo aquilo. As respostas do BDD às dúvidas do TDD são:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Pergunta</th><th scope="col">Resposta do BDD</th></tr></thead>
+          <tbody>
+            <tr><td>Por onde começar?</td><td>De fora para dentro</td></tr>
+            <tr><td>O que testar?</td><td>As histórias de usuário</td></tr>
+            <tr><td>O que não testar?</td><td>Todo o resto</td></tr>
+            <tr><td>Quanto testar de uma vez?</td><td>Muito pouco, com foco</td></tr>
+            <tr><td>Que nome dar aos testes?</td><td>Uma frase, seguindo um modelo</td></tr>
+            <tr><td>Como entender por que um teste falhou?</td><td>Pela documentação que o próprio teste é</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>O modelo de história</h3>
+      <pre class="code" lang="pt-BR"><code><span class="k">Como</span> [papel]
+<span class="k">Eu quero</span> [funcionalidade]
+<span class="k">Para que</span> [benefício]</code></pre>
+      <p>Ou seja: quando a <em>funcionalidade</em> é executada, quem ganha o <em>benefício</em> é a pessoa no <em>papel</em>.</p>
+      <h3>O modelo de exemplo</h3>
+      <pre class="code" lang="pt-BR"><code><span class="s">Dado</span> um contexto inicial,
+<span class="s">Quando</span> um evento acontece,
+<span class="s">Então</span> garanta alguns resultados.</code></pre>
+      <p>Partindo de um contexto, quando um evento acontece, sabemos quais resultados <em>devem</em> ocorrer. Martin Fowler descreve esse formato como uma forma de representar testes a partir da especificação por exemplo. <sup><a href="#ref-16-pt">[16]</a></sup></p>
+      <h3>Exemplo: o caixa eletrônico de Dan North</h3>
+      <pre class="code" lang="pt-BR"><code><span class="k">História:</span> O cliente saca dinheiro
+  <span class="k">Como</span> cliente,
+  <span class="k">Eu quero</span> sacar dinheiro no caixa eletrônico,
+  <span class="k">Para que</span> eu não precise enfrentar fila no banco.
+
+<span class="k">Cenário 1:</span> A conta tem saldo
+  <span class="s">Dado</span> que a conta tem saldo
+  <span class="s">E</span> o cartão é válido
+  <span class="s">E</span> o caixa tem dinheiro
+  <span class="s">Quando</span> o cliente pede dinheiro
+  <span class="s">Então</span> a conta é debitada
+  <span class="s">E</span> o dinheiro é entregue
+  <span class="s">E</span> o cartão é devolvido
+
+<span class="k">Cenário 2:</span> A conta passou do limite do cheque especial
+  <span class="s">Dado</span> que a conta está negativa além do limite
+  <span class="s">E</span> o cartão é válido
+  <span class="s">Quando</span> o cliente pede dinheiro
+  <span class="s">Então</span> uma mensagem de recusa é exibida
+  <span class="s">E</span> o dinheiro não é entregue
+  <span class="s">E</span> o cartão é devolvido</code></pre>
+      <p>O evento é o mesmo nos dois cenários, mas o contexto muda, e por isso os resultados são diferentes. <sup><a href="#ref-3-pt">[3]</a></sup></p>
+      <h3>TDD × BDD</h3>
+      <ul>
+        <li>O <strong>TDD</strong> descreve como o software funciona.</li>
+        <li>O <strong>BDD</strong> descreve como o usuário usa o software, promove colaboração e comunicação, dá ênfase a exemplos de comportamento e busca especificações executáveis derivadas desses exemplos.</li>
+      </ul>
+      <aside class="recap" aria-label="Para fixar">
+        <h3>Para fixar</h3>
+        <ul>
+          <li>BDD é TDD com vocabulário de comportamento em vez de testes.</li>
+          <li>História: Como / Eu quero / Para que.</li>
+          <li>Exemplo: Dado / Quando / Então. Mesmo evento com outro contexto gera outro resultado.</li>
+        </ul>
+      </aside>
+    </section>
+
+    <section id="ciclo-pt" aria-labelledby="h-ciclo-pt">
+      <h2 id="h-ciclo-pt">O ciclo de fora para dentro</h2>
+      <p>O ciclo de desenvolvimento do BDD começa pelo lado de fora, no comportamento que o usuário vê, e desce até as unidades de código. Steve Freeman e Nat Pryce chamam isso de ciclo duplo: um ciclo externo de aceitação envolve vários ciclos internos de TDD. <sup><a href="#ref-17-pt">[17]</a></sup></p>
+      <figure>
+        <img src="rc_images/BDDDuploCiclo.svg" alt="Ciclo duplo. À esquerda, passo 1: escreva um cenário de aceitação em linguagem de negócio, que falha. No centro, o ciclo interno de TDD, vermelho, verde e refatorar, repetido nos passos 2 a 4 até o cenário passar. À direita, passo 5: o cenário passa. Uma seta tracejada volta por cima para o passo 6, o próximo cenário." width="1000" height="550" loading="lazy">
+        <figcaption>O cenário de aceitação puxa o trabalho; o TDD constrói cada pedaço.</figcaption>
+      </figure>
+      <ol>
+        <li>escreva um exemplo de alto nível, de valor para o negócio (com Cucumber, por exemplo), que fica vermelho;</li>
+        <li>escreva um exemplo de baixo nível, de unidade, para o primeiro passo da implementação, que também fica vermelho;</li>
+        <li>implemente o mínimo de código para esse exemplo passar: verde;</li>
+        <li>escreva o próximo exemplo de baixo nível que aproxima o passo 1 de passar;</li>
+        <li>repita os passos 3 e 4 até o exemplo de alto nível ficar verde.</li>
+      </ol>
+      <p>O estado vermelho ou verde funciona como uma <strong>permissão</strong>:</p>
+      <ul>
+        <li>com os testes de baixo nível <strong>verdes</strong>, você pode escrever novos exemplos ou refatorar, mas sem acrescentar funcionalidade durante a refatoração;</li>
+        <li>com os testes <strong>vermelhos</strong>, você só pode mexer no código para fazê-los passar. Resista à vontade de adiantar o próximo teste, que ainda não existe, ou de criar funções que o cliente não pediu.</li>
+      </ul>
+    </section>
+
+    <section id="sbe-pt" aria-labelledby="h-sbe-pt">
+      <h2 id="h-sbe-pt">Especificação por Exemplo</h2>
+      <p>Gojko Adzic, autor de <em>Specification by Example</em>, a define como um conjunto de padrões de processo que facilitam mudanças em produtos de software, para garantir que o produto certo seja entregue com eficiência. Em vez de declarações abstratas, os requisitos e os testes funcionais são capturados com <strong>exemplos realistas</strong>, definidos em colaboração. <sup><a href="#ref-6-pt">[6]</a></sup></p>
+      <p>Ela se apoia numa <strong>linguagem ubíqua</strong>, conceito de Eric Evans: um vocabulário preciso e compartilhado, criado por uma equipe multidisciplinar e usado por todos, nos requisitos, no código e nos testes. <sup><a href="#ref-12-pt">[12]</a></sup> Os exemplos servem de entrada direta para testes automatizados que refletem o domínio do negócio, e por isso a SbE cuida ao mesmo tempo de construir o produto certo e de construí-lo do jeito certo.</p>
+      <h3>Por que exemplos</h3>
+      <p>Exemplos são mais fáceis de entender e mais difíceis de interpretar errado. Viram requisitos executáveis, que podem ser testados sem tradução e ficam registrados numa documentação viva. O foco passa a ser <strong>prevenir</strong> defeitos, e não apenas detectá-los.</p>
+      <p><strong>Vantagens:</strong> mais qualidade, menos desperdício, menos risco de defeitos em produção, esforço mais focado, mudanças mais seguras e maior envolvimento do negócio.</p>
+      <p><strong>Quando usar:</strong> funciona bem em negócios ou organizações complexas, inclusive em sistemas legados. Funciona mal em problemas puramente técnicos e em produtos centrados na interface gráfica.</p>
+      <h3>Exemplos como testes de aceitação</h3>
+      <ul>
+        <li>uma mesma ilustração serve de requisito detalhado e de teste;</li>
+        <li>o progresso do projeto é medido em comportamentos: cada teste verifica um comportamento, e um teste que passa significa que aquele comportamento está pronto. Se o projeto precisa de 100 comportamentos e 60 passam, ele está 60% concluído;</li>
+        <li>os testadores deixam de só achar defeitos e passam a preveni-los, participando do desenho da solução;</li>
+        <li>a automação mostra na hora o impacto de uma mudança de requisito.</li>
+      </ul>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Papel</th><th scope="col">O que ganha com a SbE</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Analista de negócio</th><td>Requisitos sem ambiguidade e sem lacunas; os desenvolvedores de fato leem as especificações.</td></tr>
+            <tr><th scope="row">Desenvolvedor</th><td>Entende melhor o que está construindo; o progresso é medido pelas especificações que passam.</td></tr>
+            <tr><th scope="row">Testador</th><td>Entende melhor o que testa, participa desde o início e trabalha na prevenção de defeitos.</td></tr>
+            <tr><th scope="row">Todos</th><td>Economia de tempo ao achar erros cedo e um produto de qualidade desde o começo.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>Os seis padrões de processo</h3>
+      <figure>
+        <img src="rc_images/BDDEspecificacao.svg" alt="Seis etapas em círculo ao redor da Especificação por Exemplo, ligadas por setas: 1, especificar juntos, com os Três Amigos e uma linguagem comum; 2, ilustrar com exemplos Dado, Quando, Então; 3, refinar; 4, automatizar com uma camada fina; 5, validar sempre, a cada mudança; 6, documentação viva, que volta à etapa 1." width="1000" height="580" loading="lazy">
+        <figcaption>Os padrões de processo da Especificação por Exemplo, segundo Gojko Adzic.</figcaption>
+      </figure>
+      <h3>1. Especificar em colaboração: os Três Amigos</h3>
+      <p>O objetivo é que os diferentes papéis tenham um entendimento e um vocabulário comuns, que todos contribuam com a sua perspectiva e que a responsabilidade pelas funcionalidades seja compartilhada. Isso acontece numa oficina de especificação conhecida como reunião dos <strong>Três Amigos</strong>: negócio (analista ou PO), desenvolvimento e teste. <sup><a href="#ref-10-pt">[10]</a></sup></p>
+      <figure>
+        <img src="rc_images/BDDTresAmigos.svg" alt="À esquerda, três pessoas, negócio, desenvolvimento e teste, reunidas numa oficina de especificação. Uma seta leva ao mapeamento de exemplos, à direita: um cartão amarelo com a história sacar dinheiro no caixa, dois cartões azuis com regras, saldo suficiente e cartão válido, cartões verdes com exemplos de cada regra e um cartão vermelho com a pergunta e se o caixa estiver sem notas." width="1000" height="515" loading="lazy">
+        <figcaption>Os Três Amigos organizam a conversa com o mapeamento de exemplos, técnica proposta por Matt Wynne.</figcaption>
+      </figure>
+      <p>Na reunião, o negócio apresenta os requisitos e os testes da nova funcionalidade; os três discutem e revisam as especificações; desenvolvimento e teste apontam o que falta. Todos usam a linguagem do domínio (mantendo um glossário, se preciso), procuram diferenças e conflitos, evitam detalhes de implementação e chegam a um consenso sobre se a funcionalidade está suficientemente especificada. O <strong>mapeamento de exemplos</strong> ajuda a dar forma à conversa, com cartões para a história, as regras, os exemplos e as perguntas em aberto. <sup><a href="#ref-11-pt">[11]</a></sup></p>
+      <h3>2. Ilustrar com exemplos</h3>
+      <pre class="code" lang="pt-BR"><code><span class="s">Dado</span> &lt;uma pré-condição&gt;
+<span class="s">E</span> &lt;outras pré-condições&gt;        <span class="c"># opcional</span>
+<span class="s">Quando</span> &lt;uma ação ou gatilho ocorre&gt;
+<span class="s">Então</span> &lt;uma pós-condição&gt;
+<span class="s">E</span> &lt;outras pós-condições&gt;       <span class="c"># opcional</span></code></pre>
+      <p>Cada exemplo descreve um comportamento do sistema e é também um critério de aceitação. A equipe discute os exemplos até concordar que cobrem o comportamento esperado.</p>
+      <h3>3. Refinar a especificação</h3>
+      <ul>
+        <li>seja preciso; se um exemplo ficar complexo, divida-o;</li>
+        <li>use a perspectiva do negócio e evite detalhes técnicos;</li>
+        <li>considere condições positivas e negativas, valores-limite e casos extremos;</li>
+        <li>mantenha o vocabulário do domínio;</li>
+        <li>discuta os exemplos com o cliente e fique só com os que interessam a ele, sem tentar cobrir todas as combinações;</li>
+        <li>especifique regras de negócio adicionais, como cálculos complexos e transformações de dados;</li>
+        <li>inclua cenários não funcionais, como desempenho e usabilidade, quando fizer sentido.</li>
+      </ul>
+      <h3>4. Automatizar os exemplos</h3>
+      <p>A camada de automação deve ser bem fina: apenas ligar a especificação ao sistema em teste. Foque na especificação, e não no script; mostre com clareza a relação entre entradas e saídas.</p>
+      <h3>5. Validar com frequência</h3>
+      <p>Inclua a validação dos exemplos no pipeline, a cada mudança. Os princípios são testar cedo, testar bem e testar sempre. Um comportamento só está pronto quando o teste correspondente passa.</p>
+      <h3>6. Documentação viva</h3>
+      <p>Mantenha as especificações curtas e simples, organize-as, evolua-as com o trabalho e deixe-as acessíveis a todo o time. Como elas rodam como testes, nunca ficam desatualizadas sem que alguém perceba.</p>
+    </section>
+
+    <section id="anti-pt" aria-labelledby="h-anti-pt">
+      <h2 id="h-anti-pt">Antipadrões</h2>
+      <p>Antipadrões são práticas recorrentes que parecem razoáveis, mas causam problemas. Na Especificação por Exemplo, os mais comuns são: <sup><a href="#ref-6-pt">[6]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Antipadrão</th><th scope="col">Problemas</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Falta de colaboração</th><td>Muitas suposições; construir e testar a coisa errada; não saber quando o código está pronto.</td></tr>
+            <tr><th scope="row">Exemplos detalhados demais ou centrados na interface</th><td>Testes difíceis de manter; especificações difíceis de entender; o negócio perde o interesse.</td></tr>
+            <tr><th scope="row">Subestimar o esforço</th><td>O time acha que falhou e se desanima cedo.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Para evitá-los, reúna-se para especificar com exemplos, limpe e melhore os exemplos, escreva o código que os satisfaz, automatize-os e repita a cada história. Na prática, isso significa:</p>
+      <ul>
+        <li><strong>Colaborar:</strong> negócio, desenvolvimento e teste contribuem com as suas perspectivas; o processo vale mais do que os próprios testes.</li>
+        <li><strong>Focar no “o quê”:</strong> não tente cobrir todos os casos, mantenha os exemplos simples e compreensíveis para os usuários e deixe as ferramentas fora das oficinas.</li>
+        <li><strong>Focar no negócio:</strong> escreva as especificações no nível da intenção de negócio, envolva o negócio na criação e na revisão e esconda os detalhes na camada de automação.</li>
+        <li><strong>Estar preparado:</strong> os benefícios não aparecem de imediato, a adoção é desafiadora e exige tempo e investimento, e a automação tem custo.</li>
+      </ul>
+    </section>
+
+    <section id="gherkin-pt" aria-labelledby="h-gherkin-pt">
+      <h2 id="h-gherkin-pt">Gherkin</h2>
+      <p>Gherkin é a linguagem usada para escrever funcionalidades, cenários e passos. O objetivo é escrever <strong>requisitos concretos</strong>. Compare: <sup><a href="#ref-13-pt">[13]</a></sup></p>
+      <ul>
+        <li><em>“Clientes devem ser impedidos de informar dados de cartão inválidos.”</em></li>
+        <li><em>“Se o cliente informar um número de cartão que não tem exatamente 16 dígitos, ao enviar o formulário ele deve ser exibido de novo, com uma mensagem informando o número correto de dígitos.”</em></li>
+      </ul>
+      <p>A segunda frase não tem ambiguidade, evita erros e pode ser testada. O Gherkin tem versões em dezenas de idiomas, inclusive o português; basta indicar o idioma na primeira linha. <sup><a href="#ref-14-pt">[14]</a></sup></p>
+      <figure>
+        <img src="rc_images/BDDGherkin.svg" alt="Um arquivo .feature de exemplo, em Gherkin com palavras-chave em português, com anotações à direita. Linha de idioma; tag @saque; Funcionalidade com nome e descrição; Contexto com um passo comum a todos os cenários; um Cenário com Dado, Quando, Então e E; e um Esquema do Cenário com marcadores entre sinais de menor e maior, preenchidos pela tabela de Exemplos." width="1000" height="558" loading="lazy">
+        <figcaption>Anatomia de um arquivo .feature, com as palavras-chave em português.</figcaption>
+      </figure>
+      <h3>Palavras-chave</h3>
+      <p>Arquivos Gherkin são texto simples com extensão <code>.feature</code>. Toda linha não vazia começa com uma palavra-chave:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Português</th><th scope="col">Inglês</th><th scope="col">Para que serve</th></tr></thead>
+          <tbody>
+            <tr><td><code>Funcionalidade</code></td><td><code>Feature</code></td><td>Descreve uma funcionalidade e agrupa os seus cenários.</td></tr>
+            <tr><td><code>Regra</code></td><td><code>Rule</code></td><td>Agrupa os cenários de uma mesma regra de negócio (desde o Gherkin 6).</td></tr>
+            <tr><td><code>Contexto</code></td><td><code>Background</code></td><td>Passos executados antes de cada cenário do arquivo.</td></tr>
+            <tr><td><code>Cenário</code> ou <code>Exemplo</code></td><td><code>Scenario</code> ou <code>Example</code></td><td>Um exemplo concreto de comportamento.</td></tr>
+            <tr><td><code>Dado</code>, <code>Quando</code>, <code>Então</code>, <code>E</code>, <code>Mas</code></td><td><code>Given</code>, <code>When</code>, <code>Then</code>, <code>And</code>, <code>But</code></td><td>Os passos: contexto, ação, resultado e continuações.</td></tr>
+            <tr><td><code>Esquema do Cenário</code></td><td><code>Scenario Outline</code></td><td>Um modelo de cenário com marcadores <code>&lt;assim&gt;</code>.</td></tr>
+            <tr><td><code>Exemplos</code></td><td><code>Examples</code></td><td>A tabela que preenche os marcadores; cada linha gera um cenário.</td></tr>
+            <tr><td colspan="2"><code>"""</code> · <code>|</code> · <code>@</code> · <code>#</code></td><td>Texto de várias linhas, tabelas de dados, tags e comentários.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>Funcionalidade</h3>
+      <p>Tem a palavra-chave, um nome na mesma linha e uma descrição opcional (mas recomendada) nas linhas seguintes. Por convenção, o arquivo leva o nome da funcionalidade em minúsculas, com sublinhados: <code>saque_no_caixa_eletronico.feature</code>. Para identificar funcionalidades, pode-se usar o modelo de injeção de funcionalidade: <em>Para</em> &lt;atingir um objetivo&gt;, <em>como</em> &lt;tipo de usuário&gt;, <em>eu quero</em> &lt;uma funcionalidade&gt;.</p>
+      <h3>Cenário</h3>
+      <p>Uma funcionalidade costuma ter de 5 a 20 cenários. Cada um descreve um contexto (<strong>Dado</strong>), uma ação (<strong>Quando</strong>) e um resultado esperado (<strong>Então</strong>); <strong>E</strong> e <strong>Mas</strong> acrescentam passos do mesmo tipo:</p>
+      <pre class="code" lang="pt-BR"><code><span class="k">Cenário:</span> Tentativa de saque com cartão roubado
+  <span class="s">Dado</span> que tenho R$ 100 na conta
+  <span class="s">Mas</span> o meu cartão é inválido
+  <span class="s">Quando</span> peço R$ 50
+  <span class="s">Então</span> o cartão não deve ser devolvido
+  <span class="s">E</span> devo ser orientado a procurar o banco</code></pre>
+      <p>Cada cenário deve fazer sentido e rodar <strong>sozinho</strong>, sem depender de outro ter rodado antes. Isso torna os testes mais simples, permite rodar só uma parte deles e, dependendo do sistema, rodá-los em paralelo.</p>
+      <h3>Esquema do cenário</h3>
+      <p>Quando vários cenários só mudam os valores, use um esquema: os marcadores ficam entre <code>&lt;</code> e <code>&gt;</code> e os valores vêm na tabela de exemplos, em que cada linha vira um cenário.</p>
+      <pre class="code" lang="pt-BR"><code><span class="c"># language: pt</span>
+<span class="k">Funcionalidade:</span> Somar
+  <span class="k">Esquema do Cenário:</span> Somar dois números
+    <span class="s">Dado</span> a entrada "<span class="p">&lt;entrada&gt;</span>"
+    <span class="s">Quando</span> a calculadora é executada
+    <span class="s">Então</span> a saída deve ser "<span class="p">&lt;saida&gt;</span>"
+
+    <span class="k">Exemplos:</span>
+      | entrada | saida |
+      | 2+2     | 4     |
+      | 98+1    | 99    |
+      | 255+390 | 645   |</code></pre>
+      <aside class="recap" aria-label="Para fixar">
+        <h3>Para fixar</h3>
+        <ul>
+          <li>Gherkin serve para escrever requisitos concretos, sem ambiguidade.</li>
+          <li>Funcionalidade → Cenários → Passos (Dado, Quando, Então).</li>
+          <li>Cenários independentes; esquemas para variar só os dados.</li>
+        </ul>
+      </aside>
+    </section>
+
+    <section id="cucumber-pt" aria-labelledby="h-cucumber-pt">
+      <h2 id="h-cucumber-pt">Cucumber e as definições de passos</h2>
+      <p>O Cucumber é uma ferramenta livre de linha de comando que lê arquivos <code>.feature</code> e executa os cenários contra o sistema. Ele junta, num só lugar, a especificação executável, o teste automatizado e a documentação viva. <sup><a href="#ref-15-pt">[15]</a></sup></p>
+      <p>Um teste de aceitação típico em Cucumber mostra a hierarquia: testes de aceitação se referem a <strong>funcionalidades</strong>, as funcionalidades são explicadas por <strong>cenários</strong> e os cenários são feitos de <strong>passos</strong>.</p>
+      <pre class="code" lang="pt-BR"><code><span class="c"># language: pt</span>
+<span class="k">Funcionalidade:</span> Cadastro
+  O cadastro deve ser rápido e simpático.
+
+  <span class="k">Cenário:</span> Cadastro bem-sucedido
+    Novos usuários devem receber um e-mail de confirmação
+    e ser cumprimentados pelo nome.
+
+    <span class="s">Dado</span> que escolhi me cadastrar
+    <span class="s">Quando</span> me cadastro com dados válidos
+    <span class="s">Então</span> devo receber um e-mail de confirmação
+    <span class="s">E</span> devo ver uma mensagem de boas-vindas personalizada</code></pre>
+      <h3>Como funciona</h3>
+      <figure>
+        <img src="rc_images/BDDPassos.svg" alt="Três colunas ligadas por setas. À esquerda, os passos Dado que tenho R$ 100 na conta, Quando peço R$ 20 e Então recebo R$ 20. No meio, as definições de passos em código, cada uma com a expressão que casa com o texto e um parâmetro {int}. À direita, o sistema em teste, um caixa eletrônico. Embaixo: todos os passos passaram e o cenário fica verde." width="1000" height="508" loading="lazy">
+        <figcaption>Cada passo casa com uma definição de passo, que chama o código real.</figcaption>
+      </figure>
+      <ul>
+        <li>cada passo em Gherkin precisa de uma <strong>definição de passo</strong>: um trecho de código com uma expressão associada;</li>
+        <li>ao executar um passo, o Cucumber procura a definição cuja expressão casa com o texto e roda o código dela. A palavra-chave (Dado, Quando, Então) não entra na comparação;</li>
+        <li>parâmetros como <code>{int}</code> ou <code>{string}</code> capturam valores do texto e os passam para o código;</li>
+        <li>se todos os passos rodam sem erro, o cenário passa; ao final, o Cucumber informa quantos cenários passaram e o que falhou.</li>
+      </ul>
+      <p>O Cucumber tem implementações para várias plataformas, como Java (Cucumber-JVM), JavaScript (Cucumber.js) e Ruby, e se integra a ferramentas como Selenium e Spring.</p>
+    </section>
+
+    <section id="ferramentas-pt" aria-labelledby="h-ferramentas-pt">
+      <h2 id="h-ferramentas-pt">Ferramentas</h2>
+      <p>Um equívoco comum é achar que BDD é uma ferramenta. BDD é uma abordagem de desenvolvimento; as ferramentas apenas ajudam. Há até equipes que praticam Especificação por Exemplo sem ferramenta nenhuma. As mais conhecidas:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Plataforma</th><th scope="col">Ferramentas</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Várias</th><td>Cucumber (Ruby, Java, JavaScript e outras) <sup><a href="#ref-15-pt">[15]</a></sup></td></tr>
+            <tr><th scope="row">.NET</th><td>Reqnroll, sucessor do SpecFlow <sup><a href="#ref-18-pt">[18]</a></sup></td></tr>
+            <tr><th scope="row">Python</th><td>Behave <sup><a href="#ref-19-pt">[19]</a></sup>, Lettuce</td></tr>
+            <tr><th scope="row">Java</th><td>JBehave, Concordion <sup><a href="#ref-20-pt">[20]</a></sup></td></tr>
+            <tr><th scope="row">PHP</th><td>Behat <sup><a href="#ref-20-pt">[20]</a></sup>, Kahlan</td></tr>
+            <tr><th scope="row">JavaScript</th><td>Cucumber.js, Jasmine, Yadda</td></tr>
+            <tr><th scope="row">Groovy</th><td>Spock</td></tr>
+            <tr><th scope="row">Interface gráfica</th><td>Squish GUI Tester</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>SpecFlow e Reqnroll</h3>
+      <p>O SpecFlow foi por anos a ferramenta de BDD do .NET: usava Gherkin, gerava uma classe de teste por funcionalidade e um método por cenário, transformava tags em categorias de teste e esquemas de cenário em testes por linha. A Tricentis aposentou o SpecFlow, e o <strong>Reqnroll</strong> nasceu como uma retomada de código aberto do projeto, compatível com ele e com migração simples. <sup><a href="#ref-18-pt">[18]</a></sup></p>
+      <h3>Behave</h3>
+      <p>No Behave, para Python, os arquivos ficam numa pasta <code>features</code>: os arquivos <code>.feature</code> com os cenários, uma pasta <code>steps</code> com as definições de passos em Python e, opcionalmente, um arquivo de ambiente com código para rodar antes e depois de passos, cenários ou funcionalidades. <sup><a href="#ref-19-pt">[19]</a></sup></p>
+      <h3>Concordion</h3>
+      <p>O Concordion, para Java, automatiza a Especificação por Exemplo com especificações escritas em linguagem natural, com parágrafos e tabelas, sem exigir o formato Dado/Quando/Então. <sup><a href="#ref-20-pt">[20]</a></sup></p>
+    </section>
+
+    <section id="revisao-pt" aria-labelledby="h-revisao-pt">
+      <h2 id="h-revisao-pt">Revisão rápida</h2>
+      <p>Tente responder antes de abrir cada pergunta.</p>
+      <div class="quiz">
+        <details><summary>1. Quais são as duas práticas que formam o BDD?</summary><p>A Especificação por Exemplo, que define o que construir com exemplos concretos, e o TDD, que constrói o código guiado por testes escritos antes.</p></details>
+        <details><summary>2. O que acontece em cada etapa do ciclo Vermelho, Verde, Refatorar?</summary><p>Vermelho: escreve-se um teste que falha. Verde: escreve-se o mínimo de código para passar. Refatorar: melhora-se o código sem mudar o comportamento, com todos os testes verdes.</p></details>
+        <details><summary>3. Qual a principal diferença entre TDD e BDD?</summary><p>O TDD descreve como o software funciona; o BDD descreve como o usuário usa o software e por que ele está sendo construído, com um vocabulário de comportamento que todos entendem.</p></details>
+        <details><summary>4. Quem são os Três Amigos?</summary><p>Negócio (analista ou product owner), desenvolvimento e teste, que se reúnem para especificar juntos a funcionalidade antes de codificar.</p></details>
+        <details><summary>5. Qual é o modelo de uma história e o de um exemplo?</summary><p>História: Como [papel], eu quero [funcionalidade], para que [benefício]. Exemplo: Dado [contexto], Quando [evento], Então [resultado].</p></details>
+        <details><summary>6. Quando usar um Esquema do Cenário?</summary><p>Quando vários cenários só diferem nos valores. Os marcadores entre &lt; e &gt; são preenchidos pela tabela de Exemplos, e cada linha gera um cenário.</p></details>
+        <details><summary>7. Como o Cucumber sabe qual código rodar para um passo?</summary><p>Procurando a definição de passo cuja expressão casa com o texto do passo. Parâmetros como {int} passam os valores do texto para o código.</p></details>
+        <details><summary>8. BDD é uma ferramenta?</summary><p>Não. É uma abordagem de desenvolvimento. Cucumber, Reqnroll, Behave e outras apenas ajudam a automatizar as especificações.</p></details>
+      </div>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="referencias-pt" aria-labelledby="h-referencias-pt">
+      <h2 id="h-referencias-pt">Referências</h2>
+      <ol class="refs">
+        <li id="ref-1-pt"><strong>Giovani Perotto Mesquita</strong>, “Behavior Driven Development Tutorial”, GitHub Gist, texto original deste tutorial, <a href="https://gist.github.com/GiovaniPM/d115d35e2d4c0fe4062f8b6f98c84d82" rel="noopener">gist.github.com/GiovaniPM/d115d35e2d4c0fe4062f8b6f98c84d82</a>.</li>
+        <li id="ref-2-pt"><strong>Tutorialspoint</strong>, “Behavior Driven Development Tutorial”, acesso em 25/09/2026, <a href="https://www.tutorialspoint.com/behavior_driven_development/index.htm" rel="noopener">tutorialspoint.com/behavior_driven_development</a>.</li>
+        <li id="ref-3-pt"><strong>Dan North</strong>, “Introducing BDD”, 2006, <a href="https://dannorth.net/introducing-bdd/" rel="noopener">dannorth.net/introducing-bdd</a>.</li>
+        <li id="ref-4-pt"><strong>Kent Beck</strong>, <em>Test-Driven Development: By Example</em>, Addison-Wesley, 2002.</li>
+        <li id="ref-5-pt"><strong>Martin Fowler</strong>, “Test Driven Development”, <a href="https://martinfowler.com/bliki/TestDrivenDevelopment.html" rel="noopener">martinfowler.com/bliki/TestDrivenDevelopment.html</a>.</li>
+        <li id="ref-6-pt"><strong>Gojko Adzic</strong>, <em>Specification by Example</em>, Manning, 2011, <a href="https://gojko.net/books/specification-by-example/" rel="noopener">gojko.net/books/specification-by-example</a>.</li>
+        <li id="ref-7-pt"><strong>Manifesto para o Desenvolvimento Ágil de Software</strong>, 2001, <a href="https://agilemanifesto.org/iso/ptbr/manifesto.html" rel="noopener">agilemanifesto.org/iso/ptbr/manifesto.html</a>.</li>
+        <li id="ref-8-pt"><strong>Agile Alliance</strong>, “Behavior Driven Development (BDD)”, glossário, <a href="https://www.agilealliance.org/glossary/bdd/" rel="noopener">agilealliance.org/glossary/bdd</a>.</li>
+        <li id="ref-9-pt"><strong>Agile Alliance</strong>, “Acceptance Test Driven Development (ATDD)”, glossário, <a href="https://www.agilealliance.org/glossary/atdd/" rel="noopener">agilealliance.org/glossary/atdd</a>.</li>
+        <li id="ref-10-pt"><strong>Agile Alliance</strong>, “Three Amigos”, glossário, <a href="https://www.agilealliance.org/glossary/three-amigos/" rel="noopener">agilealliance.org/glossary/three-amigos</a>.</li>
+        <li id="ref-11-pt"><strong>Matt Wynne</strong>, “Introducing Example Mapping”, blog do Cucumber, <a href="https://cucumber.io/blog/bdd/example-mapping-introduction/" rel="noopener">cucumber.io/blog/bdd/example-mapping-introduction</a>.</li>
+        <li id="ref-12-pt"><strong>Eric Evans</strong>, <em>Domain-Driven Design: Tackling Complexity in the Heart of Software</em>, Addison-Wesley, 2003.</li>
+        <li id="ref-13-pt"><strong>Cucumber</strong>, “Gherkin Reference”, acesso em 25/09/2026, <a href="https://cucumber.io/docs/gherkin/reference/" rel="noopener">cucumber.io/docs/gherkin/reference</a>.</li>
+        <li id="ref-14-pt"><strong>Cucumber</strong>, “Localisation” (idiomas do Gherkin), acesso em 25/09/2026, <a href="https://cucumber.io/docs/gherkin/languages/" rel="noopener">cucumber.io/docs/gherkin/languages</a>.</li>
+        <li id="ref-15-pt"><strong>Cucumber</strong>, “Step Definitions”, acesso em 25/09/2026, <a href="https://cucumber.io/docs/cucumber/step-definitions/" rel="noopener">cucumber.io/docs/cucumber/step-definitions</a>.</li>
+        <li id="ref-16-pt"><strong>Martin Fowler</strong>, “GivenWhenThen”, <a href="https://martinfowler.com/bliki/GivenWhenThen.html" rel="noopener">martinfowler.com/bliki/GivenWhenThen.html</a>.</li>
+        <li id="ref-17-pt"><strong>Steve Freeman e Nat Pryce</strong>, <em>Growing Object-Oriented Software, Guided by Tests</em>, Addison-Wesley, 2009.</li>
+        <li id="ref-18-pt"><strong>Reqnroll</strong>, site oficial, acesso em 25/09/2026, <a href="https://reqnroll.net/" rel="noopener">reqnroll.net</a>.</li>
+        <li id="ref-19-pt"><strong>Behave</strong>, documentação, acesso em 25/09/2026, <a href="https://behave.readthedocs.io/" rel="noopener">behave.readthedocs.io</a>.</li>
+        <li id="ref-20-pt"><strong>Outras ferramentas</strong>: Concordion, <a href="https://concordion.org/" rel="noopener">concordion.org</a>; JBehave, <a href="https://jbehave.org/" rel="noopener">jbehave.org</a>; Behat, <a href="https://docs.behat.org/" rel="noopener">docs.behat.org</a>.</li>
+      </ol>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== EN ===================== -->
+<div id="en" role="tabpanel" aria-labelledby="tab-en" lang="en" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projects</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>BDD: behavior-driven development</h1>
+      <p class="dek">How to turn conversations about concrete examples into specifications that run as tests: from its roots in TDD to Specification by Example, Gherkin and Cucumber.</p>
+      <div class="byline">
+        <span>By <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Published on <time datetime="2026-09-25">25 September 2026</time></span>
+        <span class="credit">Reviewed and formatted using Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-en">
+    <h2 id="toc-en">Contents</h2>
+    <ol>
+      <li><a href="#oque-en">What BDD is</a></li>
+      <li><a href="#origem-en">Why BDD came about</a></li>
+      <li><a href="#agil-en">BDD and the Agile Manifesto</a></li>
+      <li><a href="#tdd-en">TDD, the foundation of BDD</a></li>
+      <li><a href="#atdd-en">ATDD: acceptance first</a></li>
+      <li><a href="#tdd-bdd-en">From TDD to BDD</a></li>
+      <li><a href="#ciclo-en">The outside-in cycle</a></li>
+      <li><a href="#sbe-en">Specification by Example</a></li>
+      <li><a href="#anti-en">Anti-patterns</a></li>
+      <li><a href="#gherkin-en">Gherkin</a></li>
+      <li><a href="#cucumber-en">Cucumber and step definitions</a></li>
+      <li><a href="#ferramentas-en">Tools</a></li>
+      <li><a href="#revisao-en">Quick review</a></li>
+      <li><a href="#referencias-en">References</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="oque-en" aria-labelledby="h-oque-en">
+      <h2 id="h-oque-en">What BDD is</h2>
+      <p>Behavior-driven development (BDD) is a software development process that grew out of test-driven development (TDD). It uses <strong>examples</strong> to illustrate how the system behaves, written in a language everyone involved understands, from the client to the developer. <sup><a href="#ref-1-en">[1]</a></sup> <sup><a href="#ref-2-en">[2]</a></sup> <sup><a href="#ref-8-en">[8]</a></sup></p>
+      <p>Dan North, who named and shaped BDD, sums it up like this:</p>
+      <blockquote class="pull">
+        <p>BDD is using examples at multiple levels to create a shared understanding and surface uncertainty to deliver software that matters.</p>
+        <p><cite>Dan North</cite> <sup><a href="#ref-2-en">[2]</a></sup></p>
+      </blockquote>
+      <p>These examples have two uses: they become <strong>executable specifications</strong> and they serve as <strong>acceptance tests</strong>. BDD focuses on:</p>
+      <ul>
+        <li>providing a shared process and shared tools that bring developers, business analysts and other stakeholders together to deliver software with business value;</li>
+        <li>describing <em>what</em> the system should do, not <em>how</em> it should be implemented;</li>
+        <li>making what is being built more readable and visible;</li>
+        <li>checking not only that the software works, but that it meets what the client expects.</li>
+      </ul>
+      <p>This tutorial is for developers and business analysts alike. It assumes you already know the basics of testing; if you need a refresher, see the <a href="TestesDeSoftware.html#en">Software testing</a> tutorial.</p>
+    </section>
+
+    <section id="origem-en" aria-labelledby="h-origem-en">
+      <h2 id="h-origem-en">Why BDD came about</h2>
+      <p>The cost of fixing a defect multiplies when it is not found at the right time. And many defects are born before the code: from misunderstood requirements. If a requirement is not captured correctly, the error travels through design, code and tests, becomes expensive to fix, and the final product may not meet the client’s needs. <sup><a href="#ref-2-en">[2]</a></sup></p>
+      <p>What was needed was an approach that starts from the requirements, keeps the focus on them throughout development and makes sure they are met. BDD does this because it:</p>
+      <ul>
+        <li>derives examples of the system’s different expected behaviors;</li>
+        <li>writes those examples in the terms of the business domain, so that everyone understands them, including the client;</li>
+        <li>confirms the examples with the client from time to time, through conversations;</li>
+        <li>keeps the focus on the examples throughout development;</li>
+        <li>uses the examples as acceptance tests.</li>
+      </ul>
+      <h3>The two practices of BDD</h3>
+      <figure>
+        <img src="rc_images/BDDPraticas-en.svg" alt="Two boxes at the top, Specification by Example, with conversations about concrete examples in the language of the business, and TDD, with the test written before the code in short cycles, joined by a plus sign. Arrows lead to a box below, BDD, where the examples become executable specifications that serve as acceptance tests and living documentation." width="1000" height="520" loading="lazy">
+        <figcaption>BDD combines Specification by Example (what to build) with TDD (how to build it).</figcaption>
+      </figure>
+      <ul>
+        <li><strong>Specification by Example (SbE):</strong> uses examples in conversations to illustrate the business rules and the behavior of the software. Product owners, analysts, testers and developers thereby remove the most common misunderstandings about the requirements. <sup><a href="#ref-6-en">[6]</a></sup></li>
+        <li><strong>Test-driven development (TDD):</strong> in the context of BDD, it turns the examples into readable, executable specifications. Developers use them as a guide to implement each piece of functionality, which produces lean code and a suite of automated regression tests that keeps maintenance costs low. <sup><a href="#ref-4-en">[4]</a></sup></li>
+      </ul>
+      <aside class="recap" aria-label="Key points">
+        <h3>Key points</h3>
+        <ul>
+          <li>BDD describes the system’s behavior with examples everyone understands.</li>
+          <li>The examples become executable specifications and acceptance tests.</li>
+          <li>BDD = Specification by Example + TDD.</li>
+        </ul>
+      </aside>
+    </section>
+
+    <section id="agil-en" aria-labelledby="h-agil-en">
+      <h2 id="h-agil-en">BDD and the Agile Manifesto</h2>
+      <p>In agile development, BDD is the way to reach a shared understanding of what is still to be specified. The product owner describes the behaviors they expect; developers flesh out the specifications and ask questions; and the system’s current behavior is taken into account, so the new feature does not break existing ones.</p>
+      <p>The Agile Manifesto values the items on the left more than those on the right, and BDD aligns with each of them: <sup><a href="#ref-7-en">[7]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Agile Manifesto</th><th scope="col">How BDD aligns</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Individuals and interactions</strong> over processes and tools</td><td>BDD is, above all, conversation.</td></tr>
+            <tr><td><strong>Working software</strong> over comprehensive documentation</td><td>The focus is on software with business value, and the documentation is the executable test itself.</td></tr>
+            <tr><td><strong>Customer collaboration</strong> over contract negotiation</td><td>Scenarios come from ideas discussed with the client throughout development, not from promises.</td></tr>
+            <tr><td><strong>Responding to change</strong> over following a plan</td><td>Continuous communication makes it easier to absorb change.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="tdd-en" aria-labelledby="h-tdd-en">
+      <h2 id="h-tdd-en">TDD, the foundation of BDD</h2>
+      <p>To understand why people say that “BDD comes from TDD”, you need to understand TDD.</p>
+      <h3>The problem with testing last</h3>
+      <p>In the traditional approach, testing comes after each stage (<em>test-last</em>). In practice, it gets squeezed or skipped because of delays, tight deadlines and pressure to deliver. Unit testing, which belongs to the developer, is usually the first to go, with excuses such as “I’m a developer, not a tester” or “my code has no defects”. The result is compromised quality, responsibility concentrated on testers, expensive fixes after delivery and unhappy clients.</p>
+      <h3>Test first</h3>
+      <p>The <em>test-first</em> approach flips the order: instead of writing code and then testing it (inside-out), you write the test and then the code (outside-in). It appears in Extreme Programming (XP) and in TDD, formalized by Kent Beck: the developer writes the unit test for a module before writing a single line of it, then writes the code with the goal of making the test pass. <sup><a href="#ref-4-en">[4]</a></sup> <sup><a href="#ref-5-en">[5]</a></sup></p>
+      <h3>The Red, Green, Refactor cycle</h3>
+      <figure>
+        <img src="rc_images/BDDCicloTDD-en.svg" alt="Cycle with three steps linked by clockwise arrows: red, write a test that fails; green, write the minimum code to pass; refactor, improve the code without changing what it does. At the center: run all the tests at every step." width="1000" height="610" loading="lazy">
+        <figcaption>The TDD cycle: red, green, refactor, in turns of a few minutes.</figcaption>
+      </figure>
+      <ol>
+        <li>pick the piece of code to write;</li>
+        <li>write a test for it;</li>
+        <li>run the test: it fails, because the code does not exist yet (<strong>red</strong>);</li>
+        <li>write the minimum code to make the test pass (<strong>green</strong>);</li>
+        <li>run all the tests to make sure they still pass;</li>
+        <li><strong>refactor</strong>: remove duplication and improve the code;</li>
+        <li>repeat for the next piece.</li>
+      </ol>
+      <p>Each turn should be short; an hour of work usually contains many cycles.</p>
+      <h3>Advantages of TDD</h3>
+      <ul>
+        <li>the developer must understand the expected result, and how to test it, before coding;</li>
+        <li>a component is only done when the test passes and the code has been refactored;</li>
+        <li>since the suite runs after every refactoring, feedback on what still works is constant;</li>
+        <li>unit tests act as documentation that is always up to date;</li>
+        <li>every defect found gets a test that reproduces it, which cuts debugging time and keeps it from coming back;</li>
+        <li>the developer can change the design and refactor safely, which makes the software easier to maintain;</li>
+        <li>since much of the testing happens during development, testing before delivery is shorter.</li>
+      </ul>
+      <h3>Where TDD leaves questions</h3>
+      <p>The starting point is user stories, which describe behavior. With plain TDD, the developer is left with questions: when to test? What to test? How do I know a specification has been met? Does the code deliver business value? This is where BDD comes in.</p>
+      <h3>TDD misconceptions</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Misconception</th><th scope="col">Clarification</th></tr></thead>
+          <tbody>
+            <tr><td>TDD is only about testing and test automation.</td><td>TDD is a way of developing, using the test-first approach.</td></tr>
+            <tr><td>TDD involves no design.</td><td>It includes analysis and design based on the requirements; the design emerges during development.</td></tr>
+            <tr><td>TDD is only for unit tests.</td><td>It can also be used at the integration and system levels.</td></tr>
+            <tr><td>TDD is only for agile projects.</td><td>It became popular with XP, but it can be used in traditional projects.</td></tr>
+            <tr><td>TDD is a tool.</td><td>It is a methodology. Automation tools just make it easy to run the whole suite at every change.</td></tr>
+            <tr><td>TDD means handing acceptance tests to developers.</td><td>It does not.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="atdd-en" aria-labelledby="h-atdd-en">
+      <h2 id="h-atdd-en">ATDD: acceptance first</h2>
+      <p>Acceptance test-driven development (ATDD) defines acceptance criteria and acceptance tests when user stories are created, early in development. The focus is on communication and shared understanding among clients, developers and testers. <sup><a href="#ref-9-en">[9]</a></sup></p>
+      <p>Its key practices are:</p>
+      <ul>
+        <li>discussing real-world scenarios to build a shared understanding of the domain;</li>
+        <li>using those scenarios to arrive at acceptance criteria;</li>
+        <li>automating the acceptance tests;</li>
+        <li>focusing development on making those tests pass;</li>
+        <li>using the tests as a living specification that makes change easier.</li>
+      </ul>
+      <p>As a result, requirements are unambiguous and free of functional gaps, everyone gets to see the special cases developers foresaw, and the acceptance tests guide development.</p>
+    </section>
+
+    <section id="tdd-bdd-en" aria-labelledby="h-tdd-bdd-en">
+      <h2 id="h-tdd-bdd-en">From TDD to BDD</h2>
+      <p>Dan North noticed that programmers practicing TDD kept running into the same doubts: where to start, what to test and what not to test, how much to test in one go, what to call their tests and how to understand why a test fails. His answer was to change the vocabulary: think in terms of <strong>behavior</strong>, not tests. <sup><a href="#ref-3-en">[3]</a></sup></p>
+      <blockquote class="pull">
+        <p>I found the shift from thinking in tests to thinking in behaviour so profound that I started to refer to TDD as BDD, or behaviour-driven development.</p>
+        <p><cite>Dan North, “Introducing BDD”, 2006</cite> <sup><a href="#ref-3-en">[3]</a></sup></p>
+      </blockquote>
+      <p>TDD is concerned with <em>how</em> something will work; BDD, with <em>why</em> we are building it at all. BDD’s answers to TDD’s doubts are:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Question</th><th scope="col">BDD’s answer</th></tr></thead>
+          <tbody>
+            <tr><td>Where to start?</td><td>Outside-in</td></tr>
+            <tr><td>What to test?</td><td>User stories</td></tr>
+            <tr><td>What not to test?</td><td>Anything else</td></tr>
+            <tr><td>How much to test in one go?</td><td>Very little, focused</td></tr>
+            <tr><td>What to call the tests?</td><td>A sentence, following a template</td></tr>
+            <tr><td>How to understand why a test fails?</td><td>Through the documentation the test itself is</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>The story template</h3>
+      <pre class="code" lang="en"><code><span class="k">As a</span> [role]
+<span class="k">I want</span> [feature]
+<span class="k">So that</span> [benefit]</code></pre>
+      <p>That is: when the <em>feature</em> is executed, the person in the <em>role</em> gets the <em>benefit</em>.</p>
+      <h3>The example template</h3>
+      <pre class="code" lang="en"><code><span class="s">Given</span> some initial context,
+<span class="s">When</span> an event occurs,
+<span class="s">Then</span> ensure some outcomes.</code></pre>
+      <p>Starting from a context, when an event happens, we know what the outcomes <em>should</em> be. Martin Fowler describes this format as a way of representing tests that comes from specification by example. <sup><a href="#ref-16-en">[16]</a></sup></p>
+      <h3>Example: Dan North’s ATM</h3>
+      <pre class="code" lang="en"><code><span class="k">Story:</span> Customer withdraws cash
+  <span class="k">As a</span> customer,
+  <span class="k">I want</span> to withdraw cash from an ATM,
+  <span class="k">So that</span> I don’t have to wait in line at the bank.
+
+<span class="k">Scenario 1:</span> Account is in credit
+  <span class="s">Given</span> the account is in credit
+  <span class="s">And</span> the card is valid
+  <span class="s">And</span> the dispenser contains cash
+  <span class="s">When</span> the customer requests cash
+  <span class="s">Then</span> ensure the account is debited
+  <span class="s">And</span> ensure cash is dispensed
+  <span class="s">And</span> ensure the card is returned
+
+<span class="k">Scenario 2:</span> Account is overdrawn past the overdraft limit
+  <span class="s">Given</span> the account is overdrawn
+  <span class="s">And</span> the card is valid
+  <span class="s">When</span> the customer requests cash
+  <span class="s">Then</span> ensure a rejection message is displayed
+  <span class="s">And</span> ensure cash is not dispensed
+  <span class="s">And</span> ensure the card is returned</code></pre>
+      <p>The event is the same in both scenarios, but the context differs, so the outcomes differ. <sup><a href="#ref-3-en">[3]</a></sup></p>
+      <h3>TDD × BDD</h3>
+      <ul>
+        <li><strong>TDD</strong> describes how the software works.</li>
+        <li><strong>BDD</strong> describes how the end user uses the software, fosters collaboration and communication, emphasizes examples of behavior and aims at executable specifications derived from those examples.</li>
+      </ul>
+      <aside class="recap" aria-label="Key points">
+        <h3>Key points</h3>
+        <ul>
+          <li>BDD is TDD with a vocabulary of behavior instead of tests.</li>
+          <li>Story: As a / I want / So that.</li>
+          <li>Example: Given / When / Then. The same event in another context gives another outcome.</li>
+        </ul>
+      </aside>
+    </section>
+
+    <section id="ciclo-en" aria-labelledby="h-ciclo-en">
+      <h2 id="h-ciclo-en">The outside-in cycle</h2>
+      <p>The BDD development cycle starts on the outside, with the behavior the user sees, and works down to the units of code. Steve Freeman and Nat Pryce call this the double loop: an outer acceptance loop wraps several inner TDD loops. <sup><a href="#ref-17-en">[17]</a></sup></p>
+      <figure>
+        <img src="rc_images/BDDDuploCiclo-en.svg" alt="Double loop. On the left, step 1: write an acceptance scenario in business language, which fails. At the center, the inner TDD loop, red, green and refactor, repeated in steps 2 to 4 until the scenario passes. On the right, step 5: the scenario passes. A dashed arrow goes back over the top to step 6, the next scenario." width="1000" height="550" loading="lazy">
+        <figcaption>The acceptance scenario pulls the work; TDD builds each piece.</figcaption>
+      </figure>
+      <ol>
+        <li>write a high-level example of business value (with Cucumber, for instance) that goes red;</li>
+        <li>write a low-level, unit example for the first step of the implementation, which also goes red;</li>
+        <li>implement the minimum code to make that example pass: green;</li>
+        <li>write the next low-level example that moves step 1 closer to passing;</li>
+        <li>repeat steps 3 and 4 until the high-level example goes green.</li>
+      </ol>
+      <p>The red or green state works as a <strong>permission</strong>:</p>
+      <ul>
+        <li>with the low-level tests <strong>green</strong>, you may write new examples or refactor, but without adding functionality while refactoring;</li>
+        <li>with the tests <strong>red</strong>, you may only change code to make them pass. Resist the urge to get ahead of the next test, which does not exist yet, or to build features the client did not ask for.</li>
+      </ul>
+    </section>
+
+    <section id="sbe-en" aria-labelledby="h-sbe-en">
+      <h2 id="h-sbe-en">Specification by Example</h2>
+      <p>Gojko Adzic, author of <em>Specification by Example</em>, defines it as a set of process patterns that facilitate change in software products to ensure that the right product is delivered efficiently. Instead of abstract statements, requirements and functional tests are captured with <strong>realistic examples</strong>, defined collaboratively. <sup><a href="#ref-6-en">[6]</a></sup></p>
+      <p>It relies on a <strong>ubiquitous language</strong>, a concept from Eric Evans: a precise, shared vocabulary, created by a cross-functional team and used by everyone, in requirements, code and tests. <sup><a href="#ref-12-en">[12]</a></sup> The examples feed directly into automated tests that reflect the business domain, which is why SbE takes care of building the right product and building it right at the same time.</p>
+      <h3>Why examples</h3>
+      <p>Examples are easier to understand and harder to misinterpret. They become executable requirements that can be tested without translation and are kept in living documentation. The focus shifts to <strong>preventing</strong> defects, not just detecting them.</p>
+      <p><strong>Advantages:</strong> higher quality, less waste, lower risk of production defects, more focused effort, safer changes and greater business involvement.</p>
+      <p><strong>When to use it:</strong> it works well in complex businesses or organizations, including legacy systems. It works poorly for purely technical problems and for products centered on the graphical interface.</p>
+      <h3>Examples as acceptance tests</h3>
+      <ul>
+        <li>a single illustration serves as both detailed requirement and test;</li>
+        <li>project progress is measured in behaviors: each test checks one behavior, and a passing test means that behavior is done. If a project needs 100 behaviors and 60 pass, it is 60% finished;</li>
+        <li>testers move from finding defects to preventing them, taking part in the design of the solution;</li>
+        <li>automation shows the impact of a requirement change right away.</li>
+      </ul>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Role</th><th scope="col">What they gain from SbE</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Business analyst</th><td>Unambiguous requirements without gaps; developers actually read the specifications.</td></tr>
+            <tr><th scope="row">Developer</th><td>Better understanding of what is being built; progress measured by the specifications that pass.</td></tr>
+            <tr><th scope="row">Tester</th><td>Better understanding of what is tested, involvement from the start and work on defect prevention.</td></tr>
+            <tr><th scope="row">Everyone</th><td>Time saved by finding errors early and a quality product from the beginning.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>The six process patterns</h3>
+      <figure>
+        <img src="rc_images/BDDEspecificacao-en.svg" alt="Six steps in a circle around Specification by Example, linked by arrows: 1, specify together, with the Three Amigos and a shared language; 2, illustrate with concrete Given, When, Then examples; 3, refine; 4, automate with a thin layer; 5, validate often, at every change; 6, living documentation, which leads back to step 1." width="1000" height="580" loading="lazy">
+        <figcaption>The process patterns of Specification by Example, according to Gojko Adzic.</figcaption>
+      </figure>
+      <h3>1. Specify collaboratively: the Three Amigos</h3>
+      <p>The goal is for the different roles to share understanding and vocabulary, for everyone to contribute their perspective and for ownership of features to be shared. This happens in a specification workshop known as the <strong>Three Amigos</strong> meeting: business (analyst or PO), development and testing. <sup><a href="#ref-10-en">[10]</a></sup></p>
+      <figure>
+        <img src="rc_images/BDDTresAmigos-en.svg" alt="On the left, three people, business, development and testing, meeting in a specification workshop. An arrow leads to example mapping, on the right: a yellow card with the story withdraw cash at the ATM, two blue cards with rules, enough balance and valid card, green cards with examples for each rule and a red card with the question what if the ATM is out of notes." width="1000" height="515" loading="lazy">
+        <figcaption>The Three Amigos shape the conversation with example mapping, a technique proposed by Matt Wynne.</figcaption>
+      </figure>
+      <p>In the meeting, the business side presents the requirements and tests for the new feature; the three discuss and review the specifications; development and testing point out what is missing. Everyone uses the domain language (keeping a glossary if needed), looks for differences and conflicts, avoids implementation details and reaches consensus on whether the feature is specified well enough. <strong>Example mapping</strong> helps structure the conversation, with cards for the story, the rules, the examples and the open questions. <sup><a href="#ref-11-en">[11]</a></sup></p>
+      <h3>2. Illustrate with examples</h3>
+      <pre class="code" lang="en"><code><span class="s">Given</span> &lt;some precondition&gt;
+<span class="s">And</span> &lt;additional preconditions&gt;      <span class="c"># optional</span>
+<span class="s">When</span> &lt;an action or trigger occurs&gt;
+<span class="s">Then</span> &lt;some postcondition&gt;
+<span class="s">And</span> &lt;additional postconditions&gt;     <span class="c"># optional</span></code></pre>
+      <p>Each example describes one behavior of the system and is also an acceptance criterion. The team discusses the examples until it agrees they cover the expected behavior.</p>
+      <h3>3. Refine the specification</h3>
+      <ul>
+        <li>be precise; if an example gets complex, split it;</li>
+        <li>take the business perspective and avoid technical details;</li>
+        <li>consider positive and negative conditions, boundary values and edge cases;</li>
+        <li>stick to the domain vocabulary;</li>
+        <li>discuss the examples with the client and keep only those that matter to them, without trying to cover every combination;</li>
+        <li>specify additional business rules, such as complex calculations and data transformations;</li>
+        <li>include non-functional scenarios, such as performance and usability, when it makes sense.</li>
+      </ul>
+      <h3>4. Automate the examples</h3>
+      <p>The automation layer should be very thin: just wiring the specification to the system under test. Focus on the specification, not the script; show the link between inputs and outputs clearly.</p>
+      <h3>5. Validate frequently</h3>
+      <p>Add example validation to the pipeline, at every change. The principles are test early, test well and test often. A behavior is only done when its test passes.</p>
+      <h3>6. Living documentation</h3>
+      <p>Keep the specifications short and simple, organize them, evolve them with the work and make them accessible to the whole team. Since they run as tests, they never go out of date without someone noticing.</p>
+    </section>
+
+    <section id="anti-en" aria-labelledby="h-anti-en">
+      <h2 id="h-anti-en">Anti-patterns</h2>
+      <p>Anti-patterns are recurring practices that look reasonable but cause problems. In Specification by Example, the most common are: <sup><a href="#ref-6-en">[6]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Anti-pattern</th><th scope="col">Problems</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">No collaboration</th><td>Many assumptions; building and testing the wrong thing; not knowing when the code is done.</td></tr>
+            <tr><th scope="row">Examples too detailed or too UI-centric</th><td>Tests hard to maintain; specifications hard to understand; the business loses interest.</td></tr>
+            <tr><th scope="row">Underestimating the effort</th><td>The team thinks it has failed and gets discouraged early.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>To avoid them, get together to specify with examples, clean up and improve the examples, write the code that satisfies them, automate them and repeat for every story. In practice, this means:</p>
+      <ul>
+        <li><strong>Collaborating:</strong> business, development and testing contribute their perspectives; the process is worth more than the tests themselves.</li>
+        <li><strong>Focusing on the “what”:</strong> do not try to cover every case, keep examples simple and understandable to users, and keep tools out of the workshops.</li>
+        <li><strong>Focusing on the business:</strong> write specifications at the level of business intent, involve the business in creating and reviewing them and hide the details in the automation layer.</li>
+        <li><strong>Being prepared:</strong> the benefits are not immediate, adoption is challenging and takes time and investment, and automation has a cost.</li>
+      </ul>
+    </section>
+
+    <section id="gherkin-en" aria-labelledby="h-gherkin-en">
+      <h2 id="h-gherkin-en">Gherkin</h2>
+      <p>Gherkin is the language used to write features, scenarios and steps. Its purpose is to write <strong>concrete requirements</strong>. Compare: <sup><a href="#ref-13-en">[13]</a></sup></p>
+      <ul>
+        <li><em>“Customers should be prevented from entering invalid credit card details.”</em></li>
+        <li><em>“If a customer enters a credit card number that is not exactly 16 digits long, when they try to submit the form, it should be redisplayed with an error message advising them of the correct number of digits.”</em></li>
+      </ul>
+      <p>The second sentence has no ambiguity, avoids errors and can be tested. Gherkin exists in dozens of languages; you just declare the language on the first line. <sup><a href="#ref-14-en">[14]</a></sup></p>
+      <figure>
+        <img src="rc_images/BDDGherkin-en.svg" alt="An example .feature file, in Gherkin with English keywords, annotated on the right. Language line; @withdrawal tag; Feature with a name and a description; Background with a step shared by all scenarios; a Scenario with Given, When, Then and And; and a Scenario Outline with placeholders in angle brackets, filled in by the Examples table." width="1000" height="558" loading="lazy">
+        <figcaption>Anatomy of a .feature file.</figcaption>
+      </figure>
+      <h3>Keywords</h3>
+      <p>Gherkin files are plain text with the <code>.feature</code> extension. Every non-blank line starts with a keyword:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Keyword</th><th scope="col">What it is for</th></tr></thead>
+          <tbody>
+            <tr><td><code>Feature</code></td><td>Describes a feature and groups its scenarios.</td></tr>
+            <tr><td><code>Rule</code></td><td>Groups the scenarios of one business rule (since Gherkin 6).</td></tr>
+            <tr><td><code>Background</code></td><td>Steps run before each scenario in the file.</td></tr>
+            <tr><td><code>Scenario</code> or <code>Example</code></td><td>A concrete example of behavior.</td></tr>
+            <tr><td><code>Given</code>, <code>When</code>, <code>Then</code>, <code>And</code>, <code>But</code></td><td>The steps: context, action, outcome and continuations.</td></tr>
+            <tr><td><code>Scenario Outline</code></td><td>A scenario template with <code>&lt;placeholders&gt;</code>.</td></tr>
+            <tr><td><code>Examples</code></td><td>The table that fills the placeholders; each row produces a scenario.</td></tr>
+            <tr><td><code>"""</code> · <code>|</code> · <code>@</code> · <code>#</code></td><td>Doc strings, data tables, tags and comments.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>Feature</h3>
+      <p>It has the keyword, a name on the same line and an optional (but recommended) description on the following lines. By convention, the file is named after the feature in lowercase, with underscores: <code>atm_cash_withdrawal.feature</code>. To identify features, you can use the feature injection template: <em>In order to</em> &lt;meet some goal&gt;, <em>as a</em> &lt;type of user&gt;, <em>I want</em> &lt;a feature&gt;.</p>
+      <h3>Scenario</h3>
+      <p>A feature usually has 5 to 20 scenarios. Each describes a context (<strong>Given</strong>), an action (<strong>When</strong>) and an expected outcome (<strong>Then</strong>); <strong>And</strong> and <strong>But</strong> add more steps of the same kind:</p>
+      <pre class="code" lang="en"><code><span class="k">Scenario:</span> Attempt withdrawal using stolen card
+  <span class="s">Given</span> I have $100 in my account
+  <span class="s">But</span> my card is invalid
+  <span class="s">When</span> I request $50
+  <span class="s">Then</span> my card should not be returned
+  <span class="s">And</span> I should be told to contact the bank</code></pre>
+      <p>Each scenario must make sense and run <strong>on its own</strong>, without depending on another having run before. This makes tests simpler, lets you run just a subset of them and, depending on the system, run them in parallel.</p>
+      <h3>Scenario outline</h3>
+      <p>When several scenarios differ only in their values, use an outline: placeholders go between <code>&lt;</code> and <code>&gt;</code>, and the values come from the examples table, where each row becomes a scenario.</p>
+      <pre class="code" lang="en"><code><span class="k">Feature:</span> Add
+  <span class="k">Scenario Outline:</span> Add two numbers
+    <span class="s">Given</span> the input "<span class="p">&lt;input&gt;</span>"
+    <span class="s">When</span> the calculator is run
+    <span class="s">Then</span> the output should be "<span class="p">&lt;output&gt;</span>"
+
+    <span class="k">Examples:</span>
+      | input   | output |
+      | 2+2     | 4      |
+      | 98+1    | 99     |
+      | 255+390 | 645    |</code></pre>
+      <aside class="recap" aria-label="Key points">
+        <h3>Key points</h3>
+        <ul>
+          <li>Gherkin is for writing concrete, unambiguous requirements.</li>
+          <li>Feature → Scenarios → Steps (Given, When, Then).</li>
+          <li>Independent scenarios; outlines to vary only the data.</li>
+        </ul>
+      </aside>
+    </section>
+
+    <section id="cucumber-en" aria-labelledby="h-cucumber-en">
+      <h2 id="h-cucumber-en">Cucumber and step definitions</h2>
+      <p>Cucumber is a free command-line tool that reads <code>.feature</code> files and runs the scenarios against the system. It brings executable specification, automated test and living documentation together in one place. <sup><a href="#ref-15-en">[15]</a></sup></p>
+      <p>A typical Cucumber acceptance test shows the hierarchy: acceptance tests refer to <strong>features</strong>, features are explained by <strong>scenarios</strong> and scenarios are made of <strong>steps</strong>.</p>
+      <pre class="code" lang="en"><code><span class="k">Feature:</span> Sign up
+  Sign up should be quick and friendly.
+
+  <span class="k">Scenario:</span> Successful sign up
+    New users should get a confirmation email
+    and be greeted personally.
+
+    <span class="s">Given</span> I have chosen to sign up
+    <span class="s">When</span> I sign up with valid details
+    <span class="s">Then</span> I should receive a confirmation email
+    <span class="s">And</span> I should see a personalized greeting message</code></pre>
+      <h3>How it works</h3>
+      <figure>
+        <img src="rc_images/BDDPassos-en.svg" alt="Three columns linked by arrows. On the left, the steps Given I have $100 in my account, When I request $20 and Then $20 should be dispensed. In the middle, the step definitions in code, each with the expression that matches the text and an {int} parameter. On the right, the system under test, an ATM. Below: all steps passed and the scenario turns green." width="1000" height="508" loading="lazy">
+        <figcaption>Each step matches a step definition, which calls the real code.</figcaption>
+      </figure>
+      <ul>
+        <li>each Gherkin step needs a <strong>step definition</strong>: a piece of code with an expression attached;</li>
+        <li>when running a step, Cucumber looks for the definition whose expression matches the text and runs its code. The keyword (Given, When, Then) is not part of the match;</li>
+        <li>parameters such as <code>{int}</code> or <code>{string}</code> capture values from the text and pass them to the code;</li>
+        <li>if every step runs without error, the scenario passes; at the end, Cucumber reports how many scenarios passed and what failed.</li>
+      </ul>
+      <p>Cucumber has implementations for several platforms, such as Java (Cucumber-JVM), JavaScript (Cucumber.js) and Ruby, and integrates with tools such as Selenium and Spring.</p>
+    </section>
+
+    <section id="ferramentas-en" aria-labelledby="h-ferramentas-en">
+      <h2 id="h-ferramentas-en">Tools</h2>
+      <p>A common misconception is that BDD is a tool. BDD is a development approach; tools only help. Some teams even practice Specification by Example with no tool at all. The best known:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Platform</th><th scope="col">Tools</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Several</th><td>Cucumber (Ruby, Java, JavaScript and others) <sup><a href="#ref-15-en">[15]</a></sup></td></tr>
+            <tr><th scope="row">.NET</th><td>Reqnroll, successor to SpecFlow <sup><a href="#ref-18-en">[18]</a></sup></td></tr>
+            <tr><th scope="row">Python</th><td>Behave <sup><a href="#ref-19-en">[19]</a></sup>, Lettuce</td></tr>
+            <tr><th scope="row">Java</th><td>JBehave, Concordion <sup><a href="#ref-20-en">[20]</a></sup></td></tr>
+            <tr><th scope="row">PHP</th><td>Behat <sup><a href="#ref-20-en">[20]</a></sup>, Kahlan</td></tr>
+            <tr><th scope="row">JavaScript</th><td>Cucumber.js, Jasmine, Yadda</td></tr>
+            <tr><th scope="row">Groovy</th><td>Spock</td></tr>
+            <tr><th scope="row">Graphical interface</th><td>Squish GUI Tester</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>SpecFlow and Reqnroll</h3>
+      <p>For years, SpecFlow was the BDD tool for .NET: it used Gherkin, generated one test class per feature and one method per scenario, turned tags into test categories and scenario outlines into row-based tests. Tricentis retired SpecFlow, and <strong>Reqnroll</strong> was created as an open-source reboot of the project, compatible with it and easy to migrate to. <sup><a href="#ref-18-en">[18]</a></sup></p>
+      <h3>Behave</h3>
+      <p>In Behave, for Python, files live in a <code>features</code> folder: the <code>.feature</code> files with the scenarios, a <code>steps</code> folder with the Python step definitions and, optionally, an environment file with code to run before and after steps, scenarios or features. <sup><a href="#ref-19-en">[19]</a></sup></p>
+      <h3>Concordion</h3>
+      <p>Concordion, for Java, automates Specification by Example with specifications written in natural language, with paragraphs and tables, without requiring the Given/When/Then format. <sup><a href="#ref-20-en">[20]</a></sup></p>
+    </section>
+
+    <section id="revisao-en" aria-labelledby="h-revisao-en">
+      <h2 id="h-revisao-en">Quick review</h2>
+      <p>Try to answer before opening each question.</p>
+      <div class="quiz">
+        <details><summary>1. Which two practices make up BDD?</summary><p>Specification by Example, which defines what to build with concrete examples, and TDD, which builds the code guided by tests written first.</p></details>
+        <details><summary>2. What happens at each step of the Red, Green, Refactor cycle?</summary><p>Red: write a test that fails. Green: write the minimum code to pass. Refactor: improve the code without changing its behavior, with all tests green.</p></details>
+        <details><summary>3. What is the main difference between TDD and BDD?</summary><p>TDD describes how the software works; BDD describes how the user uses the software and why it is being built, with a vocabulary of behavior everyone understands.</p></details>
+        <details><summary>4. Who are the Three Amigos?</summary><p>Business (analyst or product owner), development and testing, who meet to specify the feature together before coding.</p></details>
+        <details><summary>5. What are the story template and the example template?</summary><p>Story: As a [role], I want [feature], so that [benefit]. Example: Given [context], When [event], Then [outcome].</p></details>
+        <details><summary>6. When should you use a Scenario Outline?</summary><p>When several scenarios differ only in their values. The placeholders between &lt; and &gt; are filled by the Examples table, and each row produces a scenario.</p></details>
+        <details><summary>7. How does Cucumber know which code to run for a step?</summary><p>By finding the step definition whose expression matches the step’s text. Parameters such as {int} pass values from the text to the code.</p></details>
+        <details><summary>8. Is BDD a tool?</summary><p>No. It is a development approach. Cucumber, Reqnroll, Behave and others only help automate the specifications.</p></details>
+      </div>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="referencias-en" aria-labelledby="h-referencias-en">
+      <h2 id="h-referencias-en">References</h2>
+      <ol class="refs">
+        <li id="ref-1-en"><strong>Giovani Perotto Mesquita</strong>, “Behavior Driven Development Tutorial”, GitHub Gist, original text of this tutorial, <a href="https://gist.github.com/GiovaniPM/d115d35e2d4c0fe4062f8b6f98c84d82" rel="noopener">gist.github.com/GiovaniPM/d115d35e2d4c0fe4062f8b6f98c84d82</a>.</li>
+        <li id="ref-2-en"><strong>Tutorialspoint</strong>, “Behavior Driven Development Tutorial”, accessed 25 September 2026, <a href="https://www.tutorialspoint.com/behavior_driven_development/index.htm" rel="noopener">tutorialspoint.com/behavior_driven_development</a>.</li>
+        <li id="ref-3-en"><strong>Dan North</strong>, “Introducing BDD”, 2006, <a href="https://dannorth.net/introducing-bdd/" rel="noopener">dannorth.net/introducing-bdd</a>.</li>
+        <li id="ref-4-en"><strong>Kent Beck</strong>, <em>Test-Driven Development: By Example</em>, Addison-Wesley, 2002.</li>
+        <li id="ref-5-en"><strong>Martin Fowler</strong>, “Test Driven Development”, <a href="https://martinfowler.com/bliki/TestDrivenDevelopment.html" rel="noopener">martinfowler.com/bliki/TestDrivenDevelopment.html</a>.</li>
+        <li id="ref-6-en"><strong>Gojko Adzic</strong>, <em>Specification by Example</em>, Manning, 2011, <a href="https://gojko.net/books/specification-by-example/" rel="noopener">gojko.net/books/specification-by-example</a>.</li>
+        <li id="ref-7-en"><strong>Manifesto for Agile Software Development</strong>, 2001, <a href="https://agilemanifesto.org/" rel="noopener">agilemanifesto.org</a>.</li>
+        <li id="ref-8-en"><strong>Agile Alliance</strong>, “Behavior Driven Development (BDD)”, glossary, <a href="https://www.agilealliance.org/glossary/bdd/" rel="noopener">agilealliance.org/glossary/bdd</a>.</li>
+        <li id="ref-9-en"><strong>Agile Alliance</strong>, “Acceptance Test Driven Development (ATDD)”, glossary, <a href="https://www.agilealliance.org/glossary/atdd/" rel="noopener">agilealliance.org/glossary/atdd</a>.</li>
+        <li id="ref-10-en"><strong>Agile Alliance</strong>, “Three Amigos”, glossary, <a href="https://www.agilealliance.org/glossary/three-amigos/" rel="noopener">agilealliance.org/glossary/three-amigos</a>.</li>
+        <li id="ref-11-en"><strong>Matt Wynne</strong>, “Introducing Example Mapping”, Cucumber blog, <a href="https://cucumber.io/blog/bdd/example-mapping-introduction/" rel="noopener">cucumber.io/blog/bdd/example-mapping-introduction</a>.</li>
+        <li id="ref-12-en"><strong>Eric Evans</strong>, <em>Domain-Driven Design: Tackling Complexity in the Heart of Software</em>, Addison-Wesley, 2003.</li>
+        <li id="ref-13-en"><strong>Cucumber</strong>, “Gherkin Reference”, accessed 25 September 2026, <a href="https://cucumber.io/docs/gherkin/reference/" rel="noopener">cucumber.io/docs/gherkin/reference</a>.</li>
+        <li id="ref-14-en"><strong>Cucumber</strong>, “Localisation” (Gherkin languages), accessed 25 September 2026, <a href="https://cucumber.io/docs/gherkin/languages/" rel="noopener">cucumber.io/docs/gherkin/languages</a>.</li>
+        <li id="ref-15-en"><strong>Cucumber</strong>, “Step Definitions”, accessed 25 September 2026, <a href="https://cucumber.io/docs/cucumber/step-definitions/" rel="noopener">cucumber.io/docs/cucumber/step-definitions</a>.</li>
+        <li id="ref-16-en"><strong>Martin Fowler</strong>, “GivenWhenThen”, <a href="https://martinfowler.com/bliki/GivenWhenThen.html" rel="noopener">martinfowler.com/bliki/GivenWhenThen.html</a>.</li>
+        <li id="ref-17-en"><strong>Steve Freeman and Nat Pryce</strong>, <em>Growing Object-Oriented Software, Guided by Tests</em>, Addison-Wesley, 2009.</li>
+        <li id="ref-18-en"><strong>Reqnroll</strong>, official website, accessed 25 September 2026, <a href="https://reqnroll.net/" rel="noopener">reqnroll.net</a>.</li>
+        <li id="ref-19-en"><strong>Behave</strong>, documentation, accessed 25 September 2026, <a href="https://behave.readthedocs.io/" rel="noopener">behave.readthedocs.io</a>.</li>
+        <li id="ref-20-en"><strong>Other tools</strong>: Concordion, <a href="https://concordion.org/" rel="noopener">concordion.org</a>; JBehave, <a href="https://jbehave.org/" rel="noopener">jbehave.org</a>; Behat, <a href="https://docs.behat.org/" rel="noopener">docs.behat.org</a>.</li>
+      </ol>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== IT ===================== -->
+<div id="it" role="tabpanel" aria-labelledby="tab-it" lang="it" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Progetti</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>BDD: sviluppo guidato dal comportamento</h1>
+      <p class="dek">Come trasformare conversazioni su esempi concreti in specifiche che si eseguono come test: dalle radici nel TDD alla Specifica tramite esempi, a Gherkin e a Cucumber.</p>
+      <div class="byline">
+        <span>Di <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Pubblicato il <time datetime="2026-09-25">25/09/2026</time></span>
+        <span class="credit">Rivisto e impaginato con Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-it">
+    <h2 id="toc-it">Indice</h2>
+    <ol>
+      <li><a href="#oque-it">Cos’è il BDD</a></li>
+      <li><a href="#origem-it">Perché è nato il BDD</a></li>
+      <li><a href="#agil-it">BDD e Manifesto Agile</a></li>
+      <li><a href="#tdd-it">Il TDD, base del BDD</a></li>
+      <li><a href="#atdd-it">ATDD: prima l’accettazione</a></li>
+      <li><a href="#tdd-bdd-it">Dal TDD al BDD</a></li>
+      <li><a href="#ciclo-it">Il ciclo dall’esterno all’interno</a></li>
+      <li><a href="#sbe-it">Specifica tramite esempi</a></li>
+      <li><a href="#anti-it">Anti-pattern</a></li>
+      <li><a href="#gherkin-it">Gherkin</a></li>
+      <li><a href="#cucumber-it">Cucumber e le definizioni dei passi</a></li>
+      <li><a href="#ferramentas-it">Strumenti</a></li>
+      <li><a href="#revisao-it">Ripasso veloce</a></li>
+      <li><a href="#referencias-it">Riferimenti</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="oque-it" aria-labelledby="h-oque-it">
+      <h2 id="h-oque-it">Cos’è il BDD</h2>
+      <p>Lo sviluppo guidato dal comportamento (<em>Behavior Driven Development</em>, BDD) è un processo di sviluppo software nato dallo sviluppo guidato dai test (TDD). Usa degli <strong>esempi</strong> per illustrare il comportamento del sistema, scritti in un linguaggio che tutti i partecipanti capiscono, dal cliente allo sviluppatore. <sup><a href="#ref-1-it">[1]</a></sup> <sup><a href="#ref-2-it">[2]</a></sup> <sup><a href="#ref-8-it">[8]</a></sup></p>
+      <p>Dan North, che ha dato nome e forma al BDD, lo riassume così:</p>
+      <blockquote class="pull">
+        <p>Il BDD consiste nell’usare esempi a più livelli per creare una comprensione condivisa e far emergere le incertezze, per consegnare software che conta.</p>
+        <p><cite>Dan North</cite> <sup><a href="#ref-2-it">[2]</a></sup></p>
+      </blockquote>
+      <p>Questi esempi hanno due usi: diventano <strong>specifiche eseguibili</strong> e fanno da <strong>test di accettazione</strong>. Il BDD si concentra su:</p>
+      <ul>
+        <li>offrire un processo e strumenti comuni, che avvicinano sviluppatori, analisti di business e altri interessati, per consegnare software con valore di business;</li>
+        <li>descrivere <em>cosa</em> deve fare il sistema, e non <em>come</em> deve essere implementato;</li>
+        <li>rendere più leggibile e visibile ciò che si sta costruendo;</li>
+        <li>verificare non solo che il software funzioni, ma che soddisfi le aspettative del cliente.</li>
+      </ul>
+      <p>Questo tutorial è utile sia agli sviluppatori sia agli analisti di business. Presuppone che conosca già le basi del test; se ti serve un ripasso, vedi il tutorial <a href="TestesDeSoftware.html#it">Test del software</a>.</p>
+    </section>
+
+    <section id="origem-it" aria-labelledby="h-origem-it">
+      <h2 id="h-origem-it">Perché è nato il BDD</h2>
+      <p>Il costo per correggere un difetto si moltiplica quando non viene trovato al momento giusto. E molti difetti nascono prima del codice: da requisiti fraintesi. Se un requisito non viene colto correttamente, l’errore attraversa progetto, codice e test, diventa costoso da correggere e il prodotto finale può non soddisfare il cliente. <sup><a href="#ref-2-it">[2]</a></sup></p>
+      <p>Serviva un approccio che partisse dai requisiti, li tenesse al centro per tutto lo sviluppo e garantisse che fossero rispettati. Il BDD lo fa perché:</p>
+      <ul>
+        <li>ricava esempi dei diversi comportamenti attesi del sistema;</li>
+        <li>scrive questi esempi con i termini del dominio di business, perché tutti li capiscano, cliente compreso;</li>
+        <li>conferma gli esempi con il cliente di tanto in tanto, attraverso conversazioni;</li>
+        <li>mantiene il focus sugli esempi per tutto lo sviluppo;</li>
+        <li>usa gli esempi come test di accettazione.</li>
+      </ul>
+      <h3>Le due pratiche del BDD</h3>
+      <figure>
+        <img src="rc_images/BDDPraticas-it.svg" alt="Due riquadri in alto, Specifica tramite esempi, con conversazioni su esempi concreti nel linguaggio del business, e TDD, con il test scritto prima del codice in cicli brevi, uniti da un segno più. Le frecce portano a un riquadro in basso, BDD, dove gli esempi diventano specifiche eseguibili che fanno da test di accettazione e da documentazione viva." width="1000" height="520" loading="lazy">
+        <figcaption>Il BDD unisce la Specifica tramite esempi (cosa costruire) al TDD (come costruirlo).</figcaption>
+      </figure>
+      <ul>
+        <li><strong>Specifica tramite esempi (SbE):</strong> usa esempi nelle conversazioni per illustrare le regole di business e il comportamento del software. Così product owner, analisti, tester e sviluppatori eliminano i malintesi più comuni sui requisiti. <sup><a href="#ref-6-it">[6]</a></sup></li>
+        <li><strong>Sviluppo guidato dai test (TDD):</strong> nel contesto del BDD, trasforma gli esempi in specifiche eseguibili e leggibili. Gli sviluppatori le usano come guida per implementare ogni pezzo di funzionalità, il che produce codice snello e una suite di test di regressione automatizzati che tiene bassi i costi di manutenzione. <sup><a href="#ref-4-it">[4]</a></sup></li>
+      </ul>
+      <aside class="recap" aria-label="Da ricordare">
+        <h3>Da ricordare</h3>
+        <ul>
+          <li>Il BDD descrive il comportamento del sistema con esempi che tutti capiscono.</li>
+          <li>Gli esempi diventano specifiche eseguibili e test di accettazione.</li>
+          <li>BDD = Specifica tramite esempi + TDD.</li>
+        </ul>
+      </aside>
+    </section>
+
+    <section id="agil-it" aria-labelledby="h-agil-it">
+      <h2 id="h-agil-it">BDD e Manifesto Agile</h2>
+      <p>Nello sviluppo agile, il BDD è il modo per arrivare a una comprensione comune di ciò che resta da specificare. Il product owner descrive i comportamenti che si aspetta; gli sviluppatori dettagliano le specifiche e fanno domande; e si tiene conto del comportamento attuale del sistema, perché la nuova funzionalità non rompa quelle esistenti.</p>
+      <p>Il Manifesto Agile dà più valore alle voci a sinistra che a quelle a destra, e il BDD si allinea a ciascuna: <sup><a href="#ref-7-it">[7]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Manifesto Agile</th><th scope="col">Come si allinea il BDD</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Gli individui e le interazioni</strong> più che i processi e gli strumenti</td><td>Il BDD è, prima di tutto, conversazione.</td></tr>
+            <tr><td><strong>Il software funzionante</strong> più che la documentazione esaustiva</td><td>Il focus è su software con valore di business, e la documentazione è il test eseguibile stesso.</td></tr>
+            <tr><td><strong>La collaborazione col cliente</strong> più che la negoziazione dei contratti</td><td>Gli scenari nascono da idee discusse con il cliente per tutto lo sviluppo, non da promesse.</td></tr>
+            <tr><td><strong>Rispondere al cambiamento</strong> più che seguire un piano</td><td>La comunicazione continua rende più facile assorbire i cambiamenti.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="tdd-it" aria-labelledby="h-tdd-it">
+      <h2 id="h-tdd-it">Il TDD, base del BDD</h2>
+      <p>Per capire perché si dice che “il BDD deriva dal TDD”, bisogna capire il TDD.</p>
+      <h3>Il problema del test alla fine</h3>
+      <p>Nell’approccio tradizionale il test arriva dopo ogni fase (<em>test-last</em>). In pratica viene compresso o saltato per ritardi, scadenze strette e pressione a consegnare. Il test di unità, che spetta allo sviluppatore, è di solito il primo a saltare, con giustificazioni come “sono uno sviluppatore, non un tester” o “il mio codice non ha difetti”. Il risultato è qualità compromessa, responsabilità concentrata sui tester, correzioni costose dopo la consegna e clienti insoddisfatti.</p>
+      <h3>Prima il test</h3>
+      <p>L’approccio <em>test-first</em> inverte l’ordine: invece di scrivere il codice e poi testarlo (dall’interno all’esterno), si scrive il test e poi il codice (dall’esterno all’interno). Compare nella Programmazione Estrema (XP) e nel TDD, formalizzato da Kent Beck: lo sviluppatore scrive il test di unità di un modulo prima di scriverne una sola riga, e poi scrive il codice con l’obiettivo di far passare il test. <sup><a href="#ref-4-it">[4]</a></sup> <sup><a href="#ref-5-it">[5]</a></sup></p>
+      <h3>Il ciclo Rosso, Verde, Refactoring</h3>
+      <figure>
+        <img src="rc_images/BDDCicloTDD-it.svg" alt="Ciclo con tre fasi collegate da frecce in senso orario: rosso, scrivi un test che fallisce; verde, scrivi il codice minimo per passare; refactoring, migliora il codice senza cambiarne l’effetto. Al centro: esegui tutti i test a ogni passo." width="1000" height="610" loading="lazy">
+        <figcaption>Il ciclo del TDD: rosso, verde, refactoring, in giri di pochi minuti.</figcaption>
+      </figure>
+      <ol>
+        <li>scegli il pezzo di codice da scrivere;</li>
+        <li>scrivi un test per quel pezzo;</li>
+        <li>esegui il test: fallisce, perché il codice non esiste ancora (<strong>rosso</strong>);</li>
+        <li>scrivi il minimo di codice per far passare il test (<strong>verde</strong>);</li>
+        <li>esegui tutti i test per assicurarti che passino ancora;</li>
+        <li>fai <strong>refactoring</strong>: togli le duplicazioni e migliora il codice;</li>
+        <li>ripeti per il pezzo successivo.</li>
+      </ol>
+      <p>Ogni giro deve essere breve; un’ora di lavoro di solito contiene molti cicli.</p>
+      <h3>Vantaggi del TDD</h3>
+      <ul>
+        <li>lo sviluppatore deve capire il risultato atteso, e come testarlo, prima di scrivere codice;</li>
+        <li>un componente è finito solo quando il test passa e il codice è stato rifattorizzato;</li>
+        <li>dato che la suite gira a ogni refactoring, il riscontro su ciò che funziona ancora è costante;</li>
+        <li>i test di unità fanno da documentazione sempre aggiornata;</li>
+        <li>ogni difetto trovato riceve un test che lo riproduce, il che riduce il tempo di debugging e ne impedisce il ritorno;</li>
+        <li>lo sviluppatore può cambiare il progetto e rifattorizzare in sicurezza, il che rende il software più facile da mantenere;</li>
+        <li>dato che gran parte del test avviene durante lo sviluppo, il test prima della consegna si accorcia.</li>
+      </ul>
+      <h3>Dove il TDD lascia dubbi</h3>
+      <p>Il punto di partenza sono le storie utente, che descrivono comportamenti. Con il solo TDD, lo sviluppatore resta con delle domande: quando testare? Cosa testare? Come sapere se una specifica è rispettata? Il codice porta valore al business? Qui entra in gioco il BDD.</p>
+      <h3>Miti sul TDD</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Mito</th><th scope="col">Chiarimento</th></tr></thead>
+          <tbody>
+            <tr><td>Il TDD è solo test e automazione dei test.</td><td>Il TDD è un modo di sviluppare, con l’approccio test-first.</td></tr>
+            <tr><td>Il TDD non prevede progettazione.</td><td>Prevede analisi e progettazione basate sui requisiti; il progetto emerge durante lo sviluppo.</td></tr>
+            <tr><td>Il TDD è solo per i test di unità.</td><td>Si può usare anche ai livelli di integrazione e di sistema.</td></tr>
+            <tr><td>Il TDD serve solo nei progetti agili.</td><td>È diventato popolare con XP, ma si può usare anche nei progetti tradizionali.</td></tr>
+            <tr><td>Il TDD è uno strumento.</td><td>È una metodologia. Gli strumenti di automazione rendono solo facile eseguire tutta la suite a ogni modifica.</td></tr>
+            <tr><td>Il TDD significa consegnare i test di accettazione agli sviluppatori.</td><td>Non significa questo.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="atdd-it" aria-labelledby="h-atdd-it">
+      <h2 id="h-atdd-it">ATDD: prima l’accettazione</h2>
+      <p>Lo sviluppo guidato dai test di accettazione (ATDD) definisce criteri e test di accettazione quando si creano le storie utente, all’inizio dello sviluppo. Il focus è sulla comunicazione e sulla comprensione comune tra clienti, sviluppatori e tester. <sup><a href="#ref-9-it">[9]</a></sup></p>
+      <p>Le pratiche centrali sono:</p>
+      <ul>
+        <li>discutere scenari del mondo reale per costruire una comprensione comune del dominio;</li>
+        <li>usare questi scenari per arrivare ai criteri di accettazione;</li>
+        <li>automatizzare i test di accettazione;</li>
+        <li>concentrare lo sviluppo sul far passare questi test;</li>
+        <li>usare i test come specifica viva, che facilita i cambiamenti.</li>
+      </ul>
+      <p>Così i requisiti sono senza ambiguità e senza lacune funzionali, tutti vedono i casi speciali previsti dagli sviluppatori, e i test di accettazione guidano lo sviluppo.</p>
+    </section>
+
+    <section id="tdd-bdd-it" aria-labelledby="h-tdd-bdd-it">
+      <h2 id="h-tdd-bdd-it">Dal TDD al BDD</h2>
+      <p>Dan North notò che i programmatori che praticavano il TDD si scontravano sempre con gli stessi dubbi: da dove cominciare, cosa testare e cosa no, quanto testare in una volta, come chiamare i test e come capire perché un test fallisce. La sua risposta fu cambiare il lessico: pensare in termini di <strong>comportamento</strong>, non di test. <sup><a href="#ref-3-it">[3]</a></sup></p>
+      <blockquote class="pull">
+        <p>Ho trovato il passaggio dal pensare in termini di test al pensare in termini di comportamento così profondo che ho cominciato a chiamare il TDD BDD, sviluppo guidato dal comportamento.</p>
+        <p><cite>Dan North, “Introducing BDD”, 2006</cite> <sup><a href="#ref-3-it">[3]</a></sup></p>
+      </blockquote>
+      <p>Il TDD si occupa di <em>come</em> funzionerà qualcosa; il BDD, del <em>perché</em> lo stiamo costruendo. Le risposte del BDD ai dubbi del TDD sono:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Domanda</th><th scope="col">Risposta del BDD</th></tr></thead>
+          <tbody>
+            <tr><td>Da dove cominciare?</td><td>Dall’esterno verso l’interno</td></tr>
+            <tr><td>Cosa testare?</td><td>Le storie utente</td></tr>
+            <tr><td>Cosa non testare?</td><td>Tutto il resto</td></tr>
+            <tr><td>Quanto testare in una volta?</td><td>Pochissimo, con focus</td></tr>
+            <tr><td>Come chiamare i test?</td><td>Con una frase, secondo un modello</td></tr>
+            <tr><td>Come capire perché un test fallisce?</td><td>Dalla documentazione che il test stesso è</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>Il modello di storia</h3>
+      <pre class="code" lang="it"><code><span class="k">Come</span> [ruolo]
+<span class="k">Voglio</span> [funzionalità]
+<span class="k">Affinché</span> [beneficio]</code></pre>
+      <p>Cioè: quando la <em>funzionalità</em> viene eseguita, chi ottiene il <em>beneficio</em> è la persona nel <em>ruolo</em>.</p>
+      <h3>Il modello di esempio</h3>
+      <pre class="code" lang="it"><code><span class="s">Dato</span> un contesto iniziale,
+<span class="s">Quando</span> avviene un evento,
+<span class="s">Allora</span> garantisci alcuni risultati.</code></pre>
+      <p>Partendo da un contesto, quando avviene un evento, sappiamo quali risultati <em>devono</em> esserci. Martin Fowler descrive questo formato come un modo di rappresentare i test che viene dalla specifica tramite esempi. <sup><a href="#ref-16-it">[16]</a></sup></p>
+      <h3>Esempio: il bancomat di Dan North</h3>
+      <pre class="code" lang="it"><code><span class="k">Storia:</span> Il cliente preleva contanti
+  <span class="k">Come</span> cliente,
+  <span class="k">Voglio</span> prelevare contanti al bancomat,
+  <span class="k">Affinché</span> non debba fare la fila in banca.
+
+<span class="k">Scenario 1:</span> Il conto è in attivo
+  <span class="s">Dato</span> che il conto è in attivo
+  <span class="s">E</span> la carta è valida
+  <span class="s">E</span> il bancomat contiene contanti
+  <span class="s">Quando</span> il cliente chiede contanti
+  <span class="s">Allora</span> il conto viene addebitato
+  <span class="s">E</span> i contanti vengono erogati
+  <span class="s">E</span> la carta viene restituita
+
+<span class="k">Scenario 2:</span> Il conto ha superato il limite di fido
+  <span class="s">Dato</span> che il conto è in rosso oltre il fido
+  <span class="s">E</span> la carta è valida
+  <span class="s">Quando</span> il cliente chiede contanti
+  <span class="s">Allora</span> viene mostrato un messaggio di rifiuto
+  <span class="s">E</span> i contanti non vengono erogati
+  <span class="s">E</span> la carta viene restituita</code></pre>
+      <p>L’evento è lo stesso nei due scenari, ma il contesto cambia, e quindi cambiano i risultati. <sup><a href="#ref-3-it">[3]</a></sup></p>
+      <h3>TDD × BDD</h3>
+      <ul>
+        <li>Il <strong>TDD</strong> descrive come funziona il software.</li>
+        <li>Il <strong>BDD</strong> descrive come l’utente usa il software, promuove collaborazione e comunicazione, dà rilievo agli esempi di comportamento e punta a specifiche eseguibili ricavate da quegli esempi.</li>
+      </ul>
+      <aside class="recap" aria-label="Da ricordare">
+        <h3>Da ricordare</h3>
+        <ul>
+          <li>Il BDD è TDD con un lessico di comportamento invece che di test.</li>
+          <li>Storia: Come / Voglio / Affinché.</li>
+          <li>Esempio: Dato / Quando / Allora. Lo stesso evento in un altro contesto dà un altro risultato.</li>
+        </ul>
+      </aside>
+    </section>
+
+    <section id="ciclo-it" aria-labelledby="h-ciclo-it">
+      <h2 id="h-ciclo-it">Il ciclo dall’esterno all’interno</h2>
+      <p>Il ciclo di sviluppo del BDD parte dall’esterno, dal comportamento che l’utente vede, e scende fino alle unità di codice. Steve Freeman e Nat Pryce lo chiamano doppio ciclo: un ciclo esterno di accettazione racchiude più cicli interni di TDD. <sup><a href="#ref-17-it">[17]</a></sup></p>
+      <figure>
+        <img src="rc_images/BDDDuploCiclo-it.svg" alt="Doppio ciclo. A sinistra, passo 1: scrivi uno scenario di accettazione in linguaggio di business, che fallisce. Al centro, il ciclo interno di TDD, rosso, verde e refactoring, ripetuto nei passi da 2 a 4 finché lo scenario passa. A destra, passo 5: lo scenario passa. Una freccia tratteggiata torna in alto al passo 6, lo scenario successivo." width="1000" height="550" loading="lazy">
+        <figcaption>Lo scenario di accettazione traina il lavoro; il TDD costruisce ogni pezzo.</figcaption>
+      </figure>
+      <ol>
+        <li>scrivi un esempio di alto livello, di valore per il business (con Cucumber, per esempio), che diventa rosso;</li>
+        <li>scrivi un esempio di basso livello, di unità, per il primo passo dell’implementazione, anch’esso rosso;</li>
+        <li>implementa il codice minimo per far passare quell’esempio: verde;</li>
+        <li>scrivi il successivo esempio di basso livello che avvicina il passo 1 al successo;</li>
+        <li>ripeti i passi 3 e 4 finché l’esempio di alto livello diventa verde.</li>
+      </ol>
+      <p>Lo stato rosso o verde funziona come un <strong>permesso</strong>:</p>
+      <ul>
+        <li>con i test di basso livello <strong>verdi</strong>, puoi scrivere nuovi esempi o rifattorizzare, ma senza aggiungere funzionalità durante il refactoring;</li>
+        <li>con i test <strong>rossi</strong>, puoi modificare il codice solo per farli passare. Resisti alla tentazione di anticipare il test successivo, che ancora non esiste, o di creare funzioni che il cliente non ha chiesto.</li>
+      </ul>
+    </section>
+
+    <section id="sbe-it" aria-labelledby="h-sbe-it">
+      <h2 id="h-sbe-it">Specifica tramite esempi</h2>
+      <p>Gojko Adzic, autore di <em>Specification by Example</em>, la definisce come un insieme di pattern di processo che facilitano il cambiamento nei prodotti software, per garantire che si consegni il prodotto giusto in modo efficiente. Invece di affermazioni astratte, requisiti e test funzionali vengono catturati con <strong>esempi realistici</strong>, definiti in collaborazione. <sup><a href="#ref-6-it">[6]</a></sup></p>
+      <p>Si basa su un <strong>linguaggio ubiquo</strong>, concetto di Eric Evans: un lessico preciso e condiviso, creato da un team multidisciplinare e usato da tutti, nei requisiti, nel codice e nei test. <sup><a href="#ref-12-it">[12]</a></sup> Gli esempi alimentano direttamente test automatizzati che riflettono il dominio di business, ed è per questo che la SbE si occupa insieme di costruire il prodotto giusto e di costruirlo bene.</p>
+      <h3>Perché gli esempi</h3>
+      <p>Gli esempi sono più facili da capire e più difficili da fraintendere. Diventano requisiti eseguibili, che si possono testare senza traduzione e restano in una documentazione viva. Il focus passa al <strong>prevenire</strong> i difetti, e non solo a rilevarli.</p>
+      <p><strong>Vantaggi:</strong> più qualità, meno sprechi, meno rischio di difetti in produzione, impegno più mirato, cambiamenti più sicuri e maggiore coinvolgimento del business.</p>
+      <p><strong>Quando usarla:</strong> funziona bene in business od organizzazioni complessi, anche su sistemi legacy. Funziona male per problemi puramente tecnici e per prodotti centrati sull’interfaccia grafica.</p>
+      <h3>Esempi come test di accettazione</h3>
+      <ul>
+        <li>una stessa illustrazione fa da requisito dettagliato e da test;</li>
+        <li>l’avanzamento del progetto si misura in comportamenti: ogni test verifica un comportamento, e un test che passa significa che quel comportamento è pronto. Se il progetto richiede 100 comportamenti e 60 passano, è al 60%;</li>
+        <li>i tester passano dal trovare difetti al prevenirli, partecipando al disegno della soluzione;</li>
+        <li>l’automazione mostra subito l’impatto di un cambio di requisito.</li>
+      </ul>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Ruolo</th><th scope="col">Cosa guadagna dalla SbE</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Analista di business</th><td>Requisiti senza ambiguità e senza lacune; gli sviluppatori leggono davvero le specifiche.</td></tr>
+            <tr><th scope="row">Sviluppatore</th><td>Capisce meglio cosa sta costruendo; l’avanzamento si misura con le specifiche che passano.</td></tr>
+            <tr><th scope="row">Tester</th><td>Capisce meglio cosa testa, partecipa dall’inizio e lavora sulla prevenzione dei difetti.</td></tr>
+            <tr><th scope="row">Tutti</th><td>Tempo risparmiato trovando gli errori presto e un prodotto di qualità fin dall’inizio.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>I sei pattern di processo</h3>
+      <figure>
+        <img src="rc_images/BDDEspecificacao-it.svg" alt="Sei passi in cerchio attorno alla Specifica tramite esempi, collegati da frecce: 1, specificare insieme, con i Tre Amigos e un linguaggio comune; 2, illustrare con esempi concreti Dato, Quando, Allora; 3, rifinire; 4, automatizzare con uno strato sottile; 5, validare spesso, a ogni modifica; 6, documentazione viva, che riporta al passo 1." width="1000" height="580" loading="lazy">
+        <figcaption>I pattern di processo della Specifica tramite esempi, secondo Gojko Adzic.</figcaption>
+      </figure>
+      <h3>1. Specificare in collaborazione: i Tre Amigos</h3>
+      <p>L’obiettivo è che i diversi ruoli condividano comprensione e lessico, che ognuno contribuisca con la propria prospettiva e che la responsabilità delle funzionalità sia condivisa. Succede in un workshop di specifica noto come riunione dei <strong>Tre Amigos</strong>: business (analista o PO), sviluppo e test. <sup><a href="#ref-10-it">[10]</a></sup></p>
+      <figure>
+        <img src="rc_images/BDDTresAmigos-it.svg" alt="A sinistra, tre persone, business, sviluppo e test, riunite in un workshop di specifica. Una freccia porta alla mappatura degli esempi, a destra: un cartoncino giallo con la storia prelevare contanti al bancomat, due cartoncini blu con le regole, saldo sufficiente e carta valida, cartoncini verdi con gli esempi di ogni regola e un cartoncino rosso con la domanda e se il bancomat è senza banconote." width="1000" height="515" loading="lazy">
+        <figcaption>I Tre Amigos organizzano la conversazione con la mappatura degli esempi, tecnica proposta da Matt Wynne.</figcaption>
+      </figure>
+      <p>Nella riunione, il business presenta requisiti e test della nuova funzionalità; i tre discutono e rivedono le specifiche; sviluppo e test segnalano ciò che manca. Tutti usano il linguaggio del dominio (con un glossario, se serve), cercano differenze e conflitti, evitano i dettagli di implementazione e arrivano a un consenso sul fatto che la funzionalità sia specificata abbastanza. La <strong>mappatura degli esempi</strong> aiuta a dare forma alla conversazione, con cartoncini per la storia, le regole, gli esempi e le domande aperte. <sup><a href="#ref-11-it">[11]</a></sup></p>
+      <h3>2. Illustrare con esempi</h3>
+      <pre class="code" lang="it"><code><span class="s">Dato</span> &lt;una precondizione&gt;
+<span class="s">E</span> &lt;altre precondizioni&gt;         <span class="c"># facoltativo</span>
+<span class="s">Quando</span> &lt;avviene un’azione o un evento&gt;
+<span class="s">Allora</span> &lt;una postcondizione&gt;
+<span class="s">E</span> &lt;altre postcondizioni&gt;        <span class="c"># facoltativo</span></code></pre>
+      <p>Ogni esempio descrive un comportamento del sistema ed è anche un criterio di accettazione. Il team discute gli esempi finché concorda che coprono il comportamento atteso.</p>
+      <h3>3. Rifinire la specifica</h3>
+      <ul>
+        <li>sii preciso; se un esempio diventa complesso, dividilo;</li>
+        <li>usa la prospettiva del business ed evita i dettagli tecnici;</li>
+        <li>considera condizioni positive e negative, valori limite e casi estremi;</li>
+        <li>mantieni il lessico del dominio;</li>
+        <li>discuti gli esempi con il cliente e tieni solo quelli che gli interessano, senza cercare di coprire tutte le combinazioni;</li>
+        <li>specifica regole di business aggiuntive, come calcoli complessi e trasformazioni di dati;</li>
+        <li>includi scenari non funzionali, come prestazioni e usabilità, quando ha senso.</li>
+      </ul>
+      <h3>4. Automatizzare gli esempi</h3>
+      <p>Lo strato di automazione deve essere molto sottile: solo collegare la specifica al sistema sotto test. Concentrati sulla specifica, non sullo script; mostra chiaramente il legame tra input e output.</p>
+      <h3>5. Validare spesso</h3>
+      <p>Inserisci la validazione degli esempi nella pipeline, a ogni modifica. I principi sono testare presto, testare bene e testare spesso. Un comportamento è pronto solo quando il suo test passa.</p>
+      <h3>6. Documentazione viva</h3>
+      <p>Mantieni le specifiche brevi e semplici, organizzale, falle evolvere con il lavoro e rendile accessibili a tutto il team. Dato che si eseguono come test, non diventano mai obsolete senza che qualcuno se ne accorga.</p>
+    </section>
+
+    <section id="anti-it" aria-labelledby="h-anti-it">
+      <h2 id="h-anti-it">Anti-pattern</h2>
+      <p>Gli anti-pattern sono pratiche ricorrenti che sembrano ragionevoli ma creano problemi. Nella Specifica tramite esempi, i più comuni sono: <sup><a href="#ref-6-it">[6]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Anti-pattern</th><th scope="col">Problemi</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Mancanza di collaborazione</th><td>Molte supposizioni; costruire e testare la cosa sbagliata; non sapere quando il codice è finito.</td></tr>
+            <tr><th scope="row">Esempi troppo dettagliati o centrati sull’interfaccia</th><td>Test difficili da mantenere; specifiche difficili da capire; il business perde interesse.</td></tr>
+            <tr><th scope="row">Sottovalutare l’impegno</th><td>Il team pensa di aver fallito e si scoraggia presto.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Per evitarli, riunitevi per specificare con esempi, ripulite e migliorate gli esempi, scrivete il codice che li soddisfa, automatizzateli e ripetete per ogni storia. In pratica significa:</p>
+      <ul>
+        <li><strong>Collaborare:</strong> business, sviluppo e test contribuiscono con le proprie prospettive; il processo vale più dei test stessi.</li>
+        <li><strong>Concentrarsi sul “cosa”:</strong> non cercare di coprire tutti i casi, mantieni gli esempi semplici e comprensibili agli utenti e tieni gli strumenti fuori dai workshop.</li>
+        <li><strong>Concentrarsi sul business:</strong> scrivi le specifiche al livello dell’intento di business, coinvolgi il business nella creazione e nella revisione e nascondi i dettagli nello strato di automazione.</li>
+        <li><strong>Essere preparati:</strong> i benefici non sono immediati, l’adozione è impegnativa e richiede tempo e investimenti, e l’automazione ha un costo.</li>
+      </ul>
+    </section>
+
+    <section id="gherkin-it" aria-labelledby="h-gherkin-it">
+      <h2 id="h-gherkin-it">Gherkin</h2>
+      <p>Gherkin è il linguaggio usato per scrivere funzionalità, scenari e passi. Lo scopo è scrivere <strong>requisiti concreti</strong>. Confronta: <sup><a href="#ref-13-it">[13]</a></sup></p>
+      <ul>
+        <li><em>“Ai clienti deve essere impedito di inserire dati della carta non validi.”</em></li>
+        <li><em>“Se il cliente inserisce un numero di carta che non ha esattamente 16 cifre, all’invio il modulo deve essere mostrato di nuovo con un messaggio che indica il numero corretto di cifre.”</em></li>
+      </ul>
+      <p>La seconda frase non ha ambiguità, evita errori e si può testare. Gherkin esiste in decine di lingue, italiano compreso; basta indicare la lingua nella prima riga. <sup><a href="#ref-14-it">[14]</a></sup></p>
+      <figure>
+        <img src="rc_images/BDDGherkin-it.svg" alt="Un file .feature di esempio, in Gherkin con parole chiave in italiano, con note a destra. Riga della lingua; tag @prelievo; Funzionalità con nome e descrizione; Contesto con un passo comune a tutti gli scenari; uno Scenario con Dato, Quando, Allora ed E; e uno Schema dello scenario con segnaposto tra parentesi angolari, riempiti dalla tabella degli Esempi." width="1000" height="558" loading="lazy">
+        <figcaption>Anatomia di un file .feature, con le parole chiave in italiano.</figcaption>
+      </figure>
+      <h3>Parole chiave</h3>
+      <p>I file Gherkin sono testo semplice con estensione <code>.feature</code>. Ogni riga non vuota comincia con una parola chiave:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Italiano</th><th scope="col">Inglese</th><th scope="col">A cosa serve</th></tr></thead>
+          <tbody>
+            <tr><td><code>Funzionalità</code></td><td><code>Feature</code></td><td>Descrive una funzionalità e ne raggruppa gli scenari.</td></tr>
+            <tr><td><code>Regola</code></td><td><code>Rule</code></td><td>Raggruppa gli scenari di una stessa regola di business (da Gherkin 6).</td></tr>
+            <tr><td><code>Contesto</code></td><td><code>Background</code></td><td>Passi eseguiti prima di ogni scenario del file.</td></tr>
+            <tr><td><code>Scenario</code> o <code>Esempio</code></td><td><code>Scenario</code> o <code>Example</code></td><td>Un esempio concreto di comportamento.</td></tr>
+            <tr><td><code>Dato</code>, <code>Quando</code>, <code>Allora</code>, <code>E</code>, <code>Ma</code></td><td><code>Given</code>, <code>When</code>, <code>Then</code>, <code>And</code>, <code>But</code></td><td>I passi: contesto, azione, risultato e continuazioni.</td></tr>
+            <tr><td><code>Schema dello scenario</code></td><td><code>Scenario Outline</code></td><td>Un modello di scenario con segnaposto <code>&lt;così&gt;</code>.</td></tr>
+            <tr><td><code>Esempi</code></td><td><code>Examples</code></td><td>La tabella che riempie i segnaposto; ogni riga genera uno scenario.</td></tr>
+            <tr><td colspan="2"><code>"""</code> · <code>|</code> · <code>@</code> · <code>#</code></td><td>Testo su più righe, tabelle di dati, tag e commenti.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>Funzionalità</h3>
+      <p>Ha la parola chiave, un nome sulla stessa riga e una descrizione facoltativa (ma consigliata) nelle righe seguenti. Per convenzione, il file prende il nome della funzionalità in minuscolo, con trattini bassi: <code>prelievo_al_bancomat.feature</code>. Per individuare le funzionalità si può usare il modello di iniezione della funzionalità: <em>Per</em> &lt;raggiungere un obiettivo&gt;, <em>come</em> &lt;tipo di utente&gt;, <em>voglio</em> &lt;una funzionalità&gt;.</p>
+      <h3>Scenario</h3>
+      <p>Una funzionalità ha di solito da 5 a 20 scenari. Ognuno descrive un contesto (<strong>Dato</strong>), un’azione (<strong>Quando</strong>) e un risultato atteso (<strong>Allora</strong>); <strong>E</strong> e <strong>Ma</strong> aggiungono passi dello stesso tipo:</p>
+      <pre class="code" lang="it"><code><span class="k">Scenario:</span> Tentativo di prelievo con carta rubata
+  <span class="s">Dato</span> che ho 100 € sul conto
+  <span class="s">Ma</span> la mia carta non è valida
+  <span class="s">Quando</span> chiedo 50 €
+  <span class="s">Allora</span> la carta non deve essere restituita
+  <span class="s">E</span> devo essere invitato a contattare la banca</code></pre>
+      <p>Ogni scenario deve avere senso ed eseguirsi <strong>da solo</strong>, senza dipendere dal fatto che un altro sia stato eseguito prima. Così i test sono più semplici, se ne può eseguire solo una parte e, a seconda del sistema, eseguirli in parallelo.</p>
+      <h3>Schema dello scenario</h3>
+      <p>Quando più scenari cambiano solo nei valori, usa uno schema: i segnaposto vanno tra <code>&lt;</code> e <code>&gt;</code> e i valori arrivano dalla tabella degli esempi, dove ogni riga diventa uno scenario.</p>
+      <pre class="code" lang="it"><code><span class="c"># language: it</span>
+<span class="k">Funzionalità:</span> Somma
+  <span class="k">Schema dello scenario:</span> Sommare due numeri
+    <span class="s">Dato</span> l’input "<span class="p">&lt;input&gt;</span>"
+    <span class="s">Quando</span> la calcolatrice viene eseguita
+    <span class="s">Allora</span> l’output deve essere "<span class="p">&lt;output&gt;</span>"
+
+    <span class="k">Esempi:</span>
+      | input   | output |
+      | 2+2     | 4      |
+      | 98+1    | 99     |
+      | 255+390 | 645    |</code></pre>
+      <aside class="recap" aria-label="Da ricordare">
+        <h3>Da ricordare</h3>
+        <ul>
+          <li>Gherkin serve a scrivere requisiti concreti, senza ambiguità.</li>
+          <li>Funzionalità → Scenari → Passi (Dato, Quando, Allora).</li>
+          <li>Scenari indipendenti; schemi per far variare solo i dati.</li>
+        </ul>
+      </aside>
+    </section>
+
+    <section id="cucumber-it" aria-labelledby="h-cucumber-it">
+      <h2 id="h-cucumber-it">Cucumber e le definizioni dei passi</h2>
+      <p>Cucumber è uno strumento libero a riga di comando che legge i file <code>.feature</code> ed esegue gli scenari sul sistema. Riunisce in un unico posto specifica eseguibile, test automatizzato e documentazione viva. <sup><a href="#ref-15-it">[15]</a></sup></p>
+      <p>Un tipico test di accettazione in Cucumber mostra la gerarchia: i test di accettazione si riferiscono a <strong>funzionalità</strong>, le funzionalità sono spiegate da <strong>scenari</strong> e gli scenari sono fatti di <strong>passi</strong>.</p>
+      <pre class="code" lang="it"><code><span class="c"># language: it</span>
+<span class="k">Funzionalità:</span> Registrazione
+  La registrazione deve essere rapida e cordiale.
+
+  <span class="k">Scenario:</span> Registrazione riuscita
+    I nuovi utenti devono ricevere un’e-mail di conferma
+    ed essere salutati per nome.
+
+    <span class="s">Dato</span> che ho scelto di registrarmi
+    <span class="s">Quando</span> mi registro con dati validi
+    <span class="s">Allora</span> devo ricevere un’e-mail di conferma
+    <span class="s">E</span> devo vedere un messaggio di benvenuto personalizzato</code></pre>
+      <h3>Come funziona</h3>
+      <figure>
+        <img src="rc_images/BDDPassos-it.svg" alt="Tre colonne collegate da frecce. A sinistra, i passi Dato che ho 100 € sul conto, Quando chiedo 20 € e Allora ricevo 20 €. Al centro, le definizioni dei passi nel codice, ognuna con l’espressione che corrisponde al testo e un parametro {int}. A destra, il sistema sotto test, un bancomat. In basso: tutti i passi sono passati e lo scenario diventa verde." width="1000" height="508" loading="lazy">
+        <figcaption>Ogni passo corrisponde a una definizione di passo, che chiama il codice reale.</figcaption>
+      </figure>
+      <ul>
+        <li>ogni passo in Gherkin ha bisogno di una <strong>definizione di passo</strong>: un pezzo di codice con un’espressione associata;</li>
+        <li>quando esegue un passo, Cucumber cerca la definizione la cui espressione corrisponde al testo ed esegue il suo codice. La parola chiave (Dato, Quando, Allora) non entra nel confronto;</li>
+        <li>parametri come <code>{int}</code> o <code>{string}</code> catturano valori dal testo e li passano al codice;</li>
+        <li>se tutti i passi girano senza errori, lo scenario passa; alla fine, Cucumber riporta quanti scenari sono passati e cosa è fallito.</li>
+      </ul>
+      <p>Cucumber ha implementazioni per diverse piattaforme, come Java (Cucumber-JVM), JavaScript (Cucumber.js) e Ruby, e si integra con strumenti come Selenium e Spring.</p>
+    </section>
+
+    <section id="ferramentas-it" aria-labelledby="h-ferramentas-it">
+      <h2 id="h-ferramentas-it">Strumenti</h2>
+      <p>Un equivoco comune è pensare che il BDD sia uno strumento. Il BDD è un approccio di sviluppo; gli strumenti aiutano soltanto. Ci sono persino team che praticano la Specifica tramite esempi senza alcuno strumento. I più noti:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Piattaforma</th><th scope="col">Strumenti</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Varie</th><td>Cucumber (Ruby, Java, JavaScript e altre) <sup><a href="#ref-15-it">[15]</a></sup></td></tr>
+            <tr><th scope="row">.NET</th><td>Reqnroll, successore di SpecFlow <sup><a href="#ref-18-it">[18]</a></sup></td></tr>
+            <tr><th scope="row">Python</th><td>Behave <sup><a href="#ref-19-it">[19]</a></sup>, Lettuce</td></tr>
+            <tr><th scope="row">Java</th><td>JBehave, Concordion <sup><a href="#ref-20-it">[20]</a></sup></td></tr>
+            <tr><th scope="row">PHP</th><td>Behat <sup><a href="#ref-20-it">[20]</a></sup>, Kahlan</td></tr>
+            <tr><th scope="row">JavaScript</th><td>Cucumber.js, Jasmine, Yadda</td></tr>
+            <tr><th scope="row">Groovy</th><td>Spock</td></tr>
+            <tr><th scope="row">Interfaccia grafica</th><td>Squish GUI Tester</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>SpecFlow e Reqnroll</h3>
+      <p>Per anni SpecFlow è stato lo strumento BDD per .NET: usava Gherkin, generava una classe di test per funzionalità e un metodo per scenario, trasformava i tag in categorie di test e gli schemi di scenario in test per riga. Tricentis ha ritirato SpecFlow, e <strong>Reqnroll</strong> è nato come ripartenza open source del progetto, compatibile con esso e con una migrazione semplice. <sup><a href="#ref-18-it">[18]</a></sup></p>
+      <h3>Behave</h3>
+      <p>In Behave, per Python, i file stanno in una cartella <code>features</code>: i file <code>.feature</code> con gli scenari, una cartella <code>steps</code> con le definizioni dei passi in Python e, facoltativamente, un file di ambiente con codice da eseguire prima e dopo passi, scenari o funzionalità. <sup><a href="#ref-19-it">[19]</a></sup></p>
+      <h3>Concordion</h3>
+      <p>Concordion, per Java, automatizza la Specifica tramite esempi con specifiche scritte in linguaggio naturale, con paragrafi e tabelle, senza richiedere il formato Dato/Quando/Allora. <sup><a href="#ref-20-it">[20]</a></sup></p>
+    </section>
+
+    <section id="revisao-it" aria-labelledby="h-revisao-it">
+      <h2 id="h-revisao-it">Ripasso veloce</h2>
+      <p>Prova a rispondere prima di aprire ogni domanda.</p>
+      <div class="quiz">
+        <details><summary>1. Quali sono le due pratiche che formano il BDD?</summary><p>La Specifica tramite esempi, che definisce cosa costruire con esempi concreti, e il TDD, che costruisce il codice guidato da test scritti prima.</p></details>
+        <details><summary>2. Cosa succede in ogni fase del ciclo Rosso, Verde, Refactoring?</summary><p>Rosso: si scrive un test che fallisce. Verde: si scrive il codice minimo per passare. Refactoring: si migliora il codice senza cambiarne il comportamento, con tutti i test verdi.</p></details>
+        <details><summary>3. Qual è la differenza principale tra TDD e BDD?</summary><p>Il TDD descrive come funziona il software; il BDD descrive come l’utente usa il software e perché lo si costruisce, con un lessico di comportamento che tutti capiscono.</p></details>
+        <details><summary>4. Chi sono i Tre Amigos?</summary><p>Business (analista o product owner), sviluppo e test, che si riuniscono per specificare insieme la funzionalità prima di scrivere codice.</p></details>
+        <details><summary>5. Qual è il modello di una storia e quello di un esempio?</summary><p>Storia: Come [ruolo], voglio [funzionalità], affinché [beneficio]. Esempio: Dato [contesto], Quando [evento], Allora [risultato].</p></details>
+        <details><summary>6. Quando usare uno Schema dello scenario?</summary><p>Quando più scenari differiscono solo nei valori. I segnaposto tra &lt; e &gt; vengono riempiti dalla tabella degli Esempi, e ogni riga genera uno scenario.</p></details>
+        <details><summary>7. Come fa Cucumber a sapere quale codice eseguire per un passo?</summary><p>Cercando la definizione di passo la cui espressione corrisponde al testo del passo. Parametri come {int} passano i valori dal testo al codice.</p></details>
+        <details><summary>8. Il BDD è uno strumento?</summary><p>No. È un approccio di sviluppo. Cucumber, Reqnroll, Behave e altri aiutano solo ad automatizzare le specifiche.</p></details>
+      </div>
+      <a class="back" href="#top">↑ Torna all’inizio</a>
+    </section>
+
+    <section id="referencias-it" aria-labelledby="h-referencias-it">
+      <h2 id="h-referencias-it">Riferimenti</h2>
+      <ol class="refs">
+        <li id="ref-1-it"><strong>Giovani Perotto Mesquita</strong>, “Behavior Driven Development Tutorial”, GitHub Gist, testo originale di questo tutorial, <a href="https://gist.github.com/GiovaniPM/d115d35e2d4c0fe4062f8b6f98c84d82" rel="noopener">gist.github.com/GiovaniPM/d115d35e2d4c0fe4062f8b6f98c84d82</a>.</li>
+        <li id="ref-2-it"><strong>Tutorialspoint</strong>, “Behavior Driven Development Tutorial”, consultato il 25/09/2026, <a href="https://www.tutorialspoint.com/behavior_driven_development/index.htm" rel="noopener">tutorialspoint.com/behavior_driven_development</a>.</li>
+        <li id="ref-3-it"><strong>Dan North</strong>, “Introducing BDD”, 2006, <a href="https://dannorth.net/introducing-bdd/" rel="noopener">dannorth.net/introducing-bdd</a>.</li>
+        <li id="ref-4-it"><strong>Kent Beck</strong>, <em>Test-Driven Development: By Example</em>, Addison-Wesley, 2002.</li>
+        <li id="ref-5-it"><strong>Martin Fowler</strong>, “Test Driven Development”, <a href="https://martinfowler.com/bliki/TestDrivenDevelopment.html" rel="noopener">martinfowler.com/bliki/TestDrivenDevelopment.html</a>.</li>
+        <li id="ref-6-it"><strong>Gojko Adzic</strong>, <em>Specification by Example</em>, Manning, 2011, <a href="https://gojko.net/books/specification-by-example/" rel="noopener">gojko.net/books/specification-by-example</a>.</li>
+        <li id="ref-7-it"><strong>Manifesto per lo Sviluppo Agile di Software</strong>, 2001, <a href="https://agilemanifesto.org/iso/it/manifesto.html" rel="noopener">agilemanifesto.org/iso/it/manifesto.html</a>.</li>
+        <li id="ref-8-it"><strong>Agile Alliance</strong>, “Behavior Driven Development (BDD)”, glossario, <a href="https://www.agilealliance.org/glossary/bdd/" rel="noopener">agilealliance.org/glossary/bdd</a>.</li>
+        <li id="ref-9-it"><strong>Agile Alliance</strong>, “Acceptance Test Driven Development (ATDD)”, glossario, <a href="https://www.agilealliance.org/glossary/atdd/" rel="noopener">agilealliance.org/glossary/atdd</a>.</li>
+        <li id="ref-10-it"><strong>Agile Alliance</strong>, “Three Amigos”, glossario, <a href="https://www.agilealliance.org/glossary/three-amigos/" rel="noopener">agilealliance.org/glossary/three-amigos</a>.</li>
+        <li id="ref-11-it"><strong>Matt Wynne</strong>, “Introducing Example Mapping”, blog di Cucumber, <a href="https://cucumber.io/blog/bdd/example-mapping-introduction/" rel="noopener">cucumber.io/blog/bdd/example-mapping-introduction</a>.</li>
+        <li id="ref-12-it"><strong>Eric Evans</strong>, <em>Domain-Driven Design: Tackling Complexity in the Heart of Software</em>, Addison-Wesley, 2003.</li>
+        <li id="ref-13-it"><strong>Cucumber</strong>, “Gherkin Reference”, consultato il 25/09/2026, <a href="https://cucumber.io/docs/gherkin/reference/" rel="noopener">cucumber.io/docs/gherkin/reference</a>.</li>
+        <li id="ref-14-it"><strong>Cucumber</strong>, “Localisation” (lingue di Gherkin), consultato il 25/09/2026, <a href="https://cucumber.io/docs/gherkin/languages/" rel="noopener">cucumber.io/docs/gherkin/languages</a>.</li>
+        <li id="ref-15-it"><strong>Cucumber</strong>, “Step Definitions”, consultato il 25/09/2026, <a href="https://cucumber.io/docs/cucumber/step-definitions/" rel="noopener">cucumber.io/docs/cucumber/step-definitions</a>.</li>
+        <li id="ref-16-it"><strong>Martin Fowler</strong>, “GivenWhenThen”, <a href="https://martinfowler.com/bliki/GivenWhenThen.html" rel="noopener">martinfowler.com/bliki/GivenWhenThen.html</a>.</li>
+        <li id="ref-17-it"><strong>Steve Freeman e Nat Pryce</strong>, <em>Growing Object-Oriented Software, Guided by Tests</em>, Addison-Wesley, 2009.</li>
+        <li id="ref-18-it"><strong>Reqnroll</strong>, sito ufficiale, consultato il 25/09/2026, <a href="https://reqnroll.net/" rel="noopener">reqnroll.net</a>.</li>
+        <li id="ref-19-it"><strong>Behave</strong>, documentazione, consultato il 25/09/2026, <a href="https://behave.readthedocs.io/" rel="noopener">behave.readthedocs.io</a>.</li>
+        <li id="ref-20-it"><strong>Altri strumenti</strong>: Concordion, <a href="https://concordion.org/" rel="noopener">concordion.org</a>; JBehave, <a href="https://jbehave.org/" rel="noopener">jbehave.org</a>; Behat, <a href="https://docs.behat.org/" rel="noopener">docs.behat.org</a>.</li>
+      </ol>
+      <a class="back" href="#top">↑ Torna all’inizio</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span>Giovani Perotto Mesquita · Porto Alegre, RS</span>
+    <span><a href="projects.html" data-projects data-foot="0">Projetos</a> · <a href="resume.html" data-resume data-foot="1">Currículo</a> · <a href="contact.html" data-contact data-foot="2">Contato</a></span>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('.lang [role="tab"]'));
+    var titles = {"pt": "BDD · Giovani Perotto Mesquita", "en": "BDD · Giovani Perotto Mesquita", "it": "BDD · Giovani Perotto Mesquita"};
+    var foots = {"pt": ["Projetos", "Currículo", "Contato"], "en": ["Projects", "Resume", "Contact"], "it": ["Progetti", "Curriculum", "Contatti"]};
+    var langs = { pt: 'pt-BR', en: 'en', it: 'it' };
+    var bar = document.querySelector('.progress');
+    var article = document.querySelector('[role="tabpanel"]:not([hidden]) article');
+
+    function show(id, focus) {
+      tabs.forEach(function (t) {
+        var on = t.getAttribute('aria-controls') === id;
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+        if (on && focus) t.focus();
+      });
+      document.documentElement.lang = langs[id];
+      document.title = titles[id];
+      var suffix = id === 'pt' ? '' : '#' + id;
+      [['data-home', 'index.html'], ['data-about', 'about.html'], ['data-resume', 'resume.html'], ['data-projects', 'projects.html'], ['data-contact', 'contact.html']].forEach(function (p) {
+        document.querySelectorAll('[' + p[0] + ']').forEach(function (a) { a.href = p[1] + suffix; });
+      });
+      document.querySelectorAll('[data-foot]').forEach(function (a) { a.textContent = foots[id][+a.getAttribute('data-foot')]; });
+      article = document.querySelector('#' + id + ' article');
+      if (history.replaceState) history.replaceState(null, '', id === 'pt' ? location.pathname : '#' + id);
+      progress();
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () { show(t.getAttribute('aria-controls')); });
+      t.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (d) { e.preventDefault(); show(tabs[(i + d + tabs.length) % tabs.length].getAttribute('aria-controls'), true); }
+      });
+    });
+
+    // barra de progresso de leitura
+    function progress() {
+      if (!article) return;
+      var r = article.getBoundingClientRect();
+      var total = r.height - window.innerHeight;
+      var p = total > 0 ? Math.min(Math.max(-r.top / total, 0), 1) : 1;
+      bar.style.width = (p * 100) + '%';
+    }
+    window.addEventListener('scroll', progress, { passive: true });
+    window.addEventListener('resize', progress);
+
+    // destaca a seção atual no índice
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          var panel = e.target.closest('[role="tabpanel"]');
+          panel.querySelectorAll('.toc a').forEach(function (a) {
+            if (a.getAttribute('href') === '#' + e.target.id) a.setAttribute('aria-current', 'true');
+            else a.removeAttribute('aria-current');
+          });
+        });
+      }, { rootMargin: '-20% 0px -70% 0px' });
+      document.querySelectorAll('article section[id]').forEach(function (s) { io.observe(s); });
+    }
+
+    var h = (location.hash || '').replace('#', '');
+    var m = h.match(/^(?:.*-)?(en|it)$/);
+    if (m) {
+      show(m[1]);
+      if (h !== m[1]) { var el = document.getElementById(h); if (el) el.scrollIntoView(); if (history.replaceState) history.replaceState(null, '', '#' + h); }
+    } else progress();
+  })();
+</script>
+</body>
+</html>

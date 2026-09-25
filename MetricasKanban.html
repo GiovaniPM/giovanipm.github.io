@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Métricas Kanban · Giovani Perotto Mesquita</title>
+<meta name="description" content="Tutorial de métricas Kanban: WIP, idade do item, lead time, cycle time, throughput, diagrama de fluxo cumulativo, Lei de Little, percentis e SLE, eficiência de fluxo, bloqueios, descarte, qualidade e custo do atraso. Disponível em português, inglês e italiano.">
+<meta name="author" content="Giovani Perotto Mesquita">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Paleta alegre: roxo e magenta vibrantes, amarelo-girassol, verde-água e coral */
+    --bg: #FFF7EC;
+    --surface: #FFFFFF;
+    --ink: #2B1B3D;
+    --text: #3E3350;
+    --muted: #756986;
+    --line: #F1E2CF;
+    --accent: #0E8074;
+    --accent-soft: #E2F6F2;
+    --accent-strong: #5B2A86;
+    --navy: #5B2A86;
+    --navy-deep: #C2185B;
+    --on-navy: #FFFFFF;
+    --on-navy-muted: #FCE4F0;
+    --gold: #FFB703;
+    --gold-ink: #B35300;
+    --gold-soft: #FFF1C9;
+    --coral: #FF6B6B;
+    --sky: #3A86FF;
+    --mint: #2A9D8F;
+    --pink: #EF476F;
+    --sans: "Hanken Grotesk", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1A1328; --surface: #241A36; --ink: #F7F0FF; --text: #E2D8F0; --muted: #A898C0;
+      --line: #3A2D52; --accent: #5FD3C4; --accent-soft: #1D3A38; --accent-strong: #C9A7F5;
+      --navy: #3D1A5C; --navy-deep: #7A1240; --gold: #FFC94D; --gold-ink: #FFC94D; --gold-soft: #3A2E12;
+      --coral: #FF8A8A; --sky: #6FA8FF; --mint: #4CC3B3; --pink: #FF6F91;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 4px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 1.5rem; }
+
+  /* navegação */
+  .nav {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: saturate(160%) blur(10px); -webkit-backdrop-filter: saturate(160%) blur(10px);
+    border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px);
+  }
+  .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 58px; gap: 1rem; }
+  .brand { font-family: var(--serif); font-weight: 600; color: var(--accent-strong); text-decoration: none; font-size: 1.05rem; }
+  .nav ul { list-style: none; display: flex; gap: 1.4rem; margin: 0; padding: 0; }
+  .nav ul a { color: var(--muted); text-decoration: none; font-size: 0.93rem; font-weight: 500; }
+  .nav ul a:hover, .nav ul a[aria-current="page"] { color: var(--ink); }
+  .nav-right { display: flex; align-items: center; gap: 1rem; }
+  .lang { display: flex; gap: 0.2rem; }
+  .lang button { font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; color: var(--muted); background: none; padding: 0.2rem 0.45rem; border-radius: 6px; border: 1px solid transparent; }
+  .lang button:hover { color: var(--ink); }
+  .lang button[aria-selected="true"] { color: var(--accent-strong); border-color: var(--line); background: var(--surface); }
+  [hidden] { display: none !important; }
+  .progress { position: absolute; left: 0; bottom: -1px; height: 3px; width: 0; background: linear-gradient(90deg, var(--coral), var(--gold), var(--mint)); }
+
+  /* abertura */
+  .hero-band {
+    background:
+      radial-gradient(900px 420px at 85% -10%, rgba(255,255,255,.07), transparent 60%),
+      linear-gradient(160deg, var(--navy) 0%, var(--navy-deep) 100%);
+    border-top: 4px solid var(--gold); color: var(--on-navy);
+  }
+  .hero { padding: 3.5rem 0 3.5rem; max-width: 820px; }
+  .crumb { margin: 0 0 1.4rem; font-size: 0.92rem; }
+  .crumb a { color: var(--on-navy-muted); text-decoration: none; }
+  .crumb a:hover { color: var(--gold); }
+  .eyebrow { color: var(--gold); font-weight: 600; font-size: 1rem; margin: 0 0 0.7rem; }
+  h1 { font-family: var(--serif); font-weight: 600; color: var(--on-navy); font-size: clamp(2.3rem, 5.5vw, 3.8rem); line-height: 1.05; letter-spacing: -0.025em; margin: 0; }
+  .dek { font-family: var(--serif); font-style: italic; font-size: clamp(1.1rem, 2.2vw, 1.35rem); color: var(--on-navy-muted); margin: 1.1rem 0 1.6rem; max-width: 58ch; }
+  .byline { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; font-size: 0.92rem; color: var(--on-navy-muted); }
+  .byline strong { color: var(--on-navy); font-weight: 600; }
+  .byline .credit { margin-left: auto; font-style: italic; }
+
+  /* layout do artigo */
+  .layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 3rem; padding: 3rem 0 4rem; align-items: start; }
+  .toc { position: sticky; top: 82px; font-size: 0.92rem; max-height: calc(100vh - 100px); overflow-y: auto; }
+  .toc h2 { font-family: var(--sans); font-size: 0.85rem; font-weight: 600; color: var(--muted); margin: 0 0 0.7rem; border: 0; padding: 0; }
+  .toc ol { list-style: none; margin: 0; padding: 0; counter-reset: toc; border-left: 2px solid var(--line); }
+  .toc li { counter-increment: toc; }
+  .toc a { display: block; padding: 0.3rem 0 0.3rem 1rem; margin-left: -2px; border-left: 2px solid transparent; color: var(--muted); text-decoration: none; line-height: 1.35; }
+  .toc a::before { content: counter(toc) ". "; color: var(--gold-ink); font-weight: 600; }
+  .toc a:hover { color: var(--ink); }
+  .toc a[aria-current="true"] { color: var(--accent-strong); border-left-color: var(--gold); font-weight: 600; }
+
+  article { background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: var(--radius); padding: 3rem clamp(1.25rem, 4vw, 3.5rem); min-width: 0; }
+  article section + section { margin-top: 3.2rem; }
+  article h2 { font-family: var(--serif); font-weight: 600; color: var(--ink); font-size: clamp(1.5rem, 2.8vw, 1.9rem); letter-spacing: -0.015em; line-height: 1.2; margin: 0 0 1.1rem; padding-left: 0.9rem; border-left: 3px solid var(--gold); }
+  article h3 { font-family: var(--sans); font-size: 1.1rem; font-weight: 600; color: var(--ink); margin: 2rem 0 0.8rem; }
+  article p, article li { font-family: var(--serif); font-size: 1.12rem; line-height: 1.7; color: var(--text); }
+  article p { margin: 0 0 1.1rem; max-width: 68ch; }
+  article ul, article ol { margin: 0 0 1.1rem; padding-left: 1.4rem; max-width: 68ch; }
+  article li { margin-bottom: 0.3rem; }
+  article strong { color: var(--ink); }
+  sup a { font-family: var(--sans); font-size: 0.72rem; font-weight: 700; text-decoration: none; padding: 0 0.15em; }
+
+  figure { margin: 2rem 0; }
+  figure img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: #FFF7EC; }
+  figcaption { margin-top: 0.6rem; font-size: 0.9rem; color: var(--muted); text-align: center; font-family: var(--sans); line-height: 1.5; }
+
+  blockquote { margin: 1.5rem 0; padding: 1.2rem 1.5rem; background: var(--accent-soft); border-left: 3px solid var(--gold); border-radius: 0 10px 10px 0; }
+  blockquote p { font-size: 1.05rem; margin: 0 0 0.8rem; }
+  blockquote p:last-child { margin-bottom: 0; }
+  blockquote.pull p { font-size: clamp(1.15rem, 2.3vw, 1.35rem); font-style: italic; line-height: 1.45; color: var(--ink); }
+  blockquote cite { font-family: var(--sans); font-size: 0.88rem; font-style: normal; color: var(--muted); }
+
+  /* tabelas */
+  .table-wrap { overflow-x: auto; margin: 1.5rem 0; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-family: var(--sans); font-size: 0.95rem; }
+  th, td { text-align: left; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.5; }
+  thead th { background: var(--gold-soft); color: var(--ink); font-weight: 600; }
+  tbody th { color: var(--ink); font-weight: 600; }
+  tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
+  td code, th code { font-size: 0.9em; }
+
+  /* mitos */
+  .myths { list-style: none; padding: 0; margin: 1.5rem 0; max-width: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
+  .myths li { margin: 0; padding: 1rem 1.2rem; border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: 10px; }
+  .myths li:nth-child(4n+2) { border-top-color: var(--sky); }
+  .myths li:nth-child(4n+3) { border-top-color: var(--mint); }
+  .myths li:nth-child(4n+4) { border-top-color: var(--gold); }
+  .myths h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+  .myths p { margin: 0; font-size: 1rem; line-height: 1.6; }
+
+  /* para fixar */
+  .recap { margin: 1.8rem 0 0; padding: 1.1rem 1.4rem; background: var(--gold-soft); border-left: 4px solid var(--mint); border-radius: 0 10px 10px 0; }
+  .recap h3 { margin: 0 0 0.5rem; font-size: 0.85rem; letter-spacing: .05em; text-transform: uppercase; color: var(--gold-ink); }
+  .recap ul { margin: 0; padding-left: 1.2rem; }
+  .recap li { font-family: var(--sans); font-size: 0.98rem; line-height: 1.55; margin-bottom: 0.25rem; }
+
+  /* revisão rápida */
+  .quiz { display: grid; gap: 0.7rem; margin: 1.5rem 0; }
+  .quiz details { border: 1px solid var(--line); border-left: 4px solid var(--sky); border-radius: 0 10px 10px 0; padding: 0.8rem 1.1rem; }
+  .quiz details:nth-child(3n+2) { border-left-color: var(--pink); }
+  .quiz details:nth-child(3n+3) { border-left-color: var(--mint); }
+  .quiz summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); line-height: 1.45; }
+  .quiz details[open] summary { margin-bottom: 0.5rem; }
+  .quiz p { margin: 0; font-size: 1.02rem; }
+
+  .refs { font-family: var(--sans); padding-left: 1.4rem; margin: 0; }
+  .refs li { font-family: var(--sans); font-size: 0.92rem; line-height: 1.55; margin-bottom: 0.7rem; word-break: break-word; }
+  .refs li:target { background: var(--gold-soft); border-radius: 6px; }
+
+  .back { display: inline-block; margin-top: 1rem; font-family: var(--sans); font-size: 0.85rem; text-decoration: none; }
+
+  footer { background: var(--navy-deep); color: var(--on-navy-muted); border-top: 3px solid var(--gold); padding: 1.5rem 0 calc(1.5rem + env(safe-area-inset-bottom, 0px)); font-size: 0.88rem; }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1.5rem; }
+  footer a { color: var(--on-navy); text-decoration: none; }
+  footer a:hover { color: var(--gold); }
+
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+    .toc { position: static; max-height: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.2rem 1.4rem; }
+  }
+  @media (max-width: 760px) {
+    .myths { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .nav ul { display: none; }
+    .hero { padding: 2.5rem 0; }
+    .wrap { padding: 0 1rem; }
+    article p, article li { font-size: 1.05rem; }
+    th, td { padding: 0.6rem 0.7rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  @media print {
+    .nav, .toc, footer, .back, .crumb { display: none !important; }
+    body { background: #fff; }
+    .hero-band { background: none; color: #111; border: 0; }
+    .hero-band h1 { color: #5B2A86; }
+    .dek, .byline, .byline strong { color: #333; }
+    .layout { display: block; padding: 0; }
+    article { border: 0; padding: 0; }
+    .table-wrap { overflow: visible; }
+    figure, blockquote, .myths li, .recap, .quiz details, tr { break-inside: avoid; }
+  }
+
+  /* blocos de código (Gherkin) */
+  pre.code { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: #2B1B3D; color: #F7F0FF; border-radius: 10px; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.92rem; line-height: 1.6; tab-size: 2; }
+  pre.code code { font-family: inherit; white-space: pre; }
+  pre.code .k { color: #FFB703; font-weight: 700; }
+  pre.code .s { color: #5FD3C4; font-weight: 700; }
+  pre.code .c { color: #A898C0; }
+  pre.code .p { color: #C9A7F5; }
+  article code { font-family: Consolas, "Courier New", monospace; font-size: 0.92em; }
+  article :not(pre) > code { background: var(--accent-soft); color: var(--ink); padding: 0.05em 0.35em; border-radius: 4px; }
+
+  /* fórmulas */
+  pre.formula { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.95rem; line-height: 1.5; }
+
+  /* glossário */
+  dl.glossary { margin: 1.2rem 0; display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  dl.glossary dt, dl.glossary dd { margin: 0; padding: 0.65rem 0.9rem; border-bottom: 1px solid var(--line); font-family: var(--sans); font-size: 0.95rem; line-height: 1.5; }
+  dl.glossary dt { font-weight: 600; color: var(--ink); background: color-mix(in srgb, var(--gold-soft) 60%, var(--surface)); }
+  dl.glossary dd { color: var(--text); }
+  dl.glossary dt:nth-last-of-type(1), dl.glossary dd:last-of-type { border-bottom: 0; }
+  @media (max-width: 720px) { dl.glossary { grid-template-columns: 1fr; } dl.glossary dt { border-bottom: 0; padding-bottom: 0.2rem; } }
+</style>
+</head>
+<body id="top">
+
+<nav class="nav" aria-label="Navegação do site">
+  <div class="wrap">
+    <a class="brand" href="index.html" data-home>Giovani Perotto Mesquita</a>
+    <div class="nav-right">
+      <ul>
+        <li><a href="index.html" data-home>Home</a></li>
+        <li><a href="about.html" data-about>About</a></li>
+        <li><a href="resume.html" data-resume>Resume</a></li>
+        <li><a href="projects.html" data-projects aria-current="page">Projects</a></li>
+        <li><a href="contact.html" data-contact>Contact</a></li>
+      </ul>
+      <div class="lang" role="tablist" aria-label="Idioma / Language / Lingua">
+        <button type="button" role="tab" id="tab-pt" aria-controls="pt" aria-selected="true" lang="pt-BR">PT</button>
+        <button type="button" role="tab" id="tab-en" aria-controls="en" aria-selected="false" lang="en" tabindex="-1">EN</button>
+        <button type="button" role="tab" id="tab-it" aria-controls="it" aria-selected="false" lang="it" tabindex="-1">IT</button>
+      </div>
+    </div>
+  </div>
+  <div class="progress" aria-hidden="true"></div>
+</nav>
+
+<!-- ===================== PT ===================== -->
+<div id="pt" role="tabpanel" aria-labelledby="tab-pt" lang="pt-BR">
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projetos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Métricas Kanban</h1>
+      <p class="dek">Como medir e melhorar o fluxo de trabalho: WIP, lead time, cycle time, throughput, a Lei de Little, percentis, eficiência de fluxo e custo do atraso, com fórmulas e exemplos.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado em <time datetime="2026-09-25">25/09/2026</time></span>
+        <span class="credit">Revisado e formatado usando Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-pt">
+    <h2 id="toc-pt">Índice</h2>
+    <ol>
+      <li><a href="#kanban-pt">Kanban em poucas palavras</a></li>
+      <li><a href="#quadro-pt">O quadro e os pontos de medição</a></li>
+      <li><a href="#wip-pt">WIP e idade do item</a></li>
+      <li><a href="#tempos-pt">Lead time, cycle time e companhia</a></li>
+      <li><a href="#throughput-pt">Throughput</a></li>
+      <li><a href="#cfd-pt">Diagrama de fluxo cumulativo</a></li>
+      <li><a href="#little-pt">Lei de Little</a></li>
+      <li><a href="#percentis-pt">Previsibilidade com percentis</a></li>
+      <li><a href="#eficiencia-pt">Eficiência, bloqueios e descarte</a></li>
+      <li><a href="#qualidade-pt">Qualidade e pessoas</a></li>
+      <li><a href="#custo-pt">Custo do atraso</a></li>
+      <li><a href="#resumo-pt">Resumo das métricas</a></li>
+      <li><a href="#revisao-pt">Revisão rápida</a></li>
+      <li><a href="#referencias-pt">Referências</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="kanban-pt" aria-labelledby="h-kanban-pt">
+      <h2 id="h-kanban-pt">Kanban em poucas palavras</h2>
+      <ul>
+        <li><strong>Origem:</strong> o Kanban nasceu na Toyota, como parte do Sistema Toyota de Produção criado por Taiichi Ohno. No fim dos anos 1940, a Toyota estudou os supermercados, que repõem as prateleiras conforme o consumo; em 1953, aplicou essa lógica na fábrica. A palavra japonesa <em>kanban</em> significa “quadro de sinalização” ou “cartão visual”. <sup><a href="#ref-1-pt">[1]</a></sup> <sup><a href="#ref-3-pt">[3]</a></sup> <sup><a href="#ref-4-pt">[4]</a></sup></li>
+        <li><strong>Propósito inicial:</strong> aumentar a eficiência e reduzir o desperdício. Os primeiros cartões sinalizavam a necessidade de repor estoque: a produção era puxada pela demanda.</li>
+        <li><strong>Expansão:</strong> o método se espalhou para outros setores. Em 2010, David J. Anderson publicou <em>Kanban</em>, que adaptou a ideia ao trabalho do conhecimento, como software e projetos. <sup><a href="#ref-5-pt">[5]</a></sup> <sup><a href="#ref-6-pt">[6]</a></sup></li>
+        <li><strong>Princípios:</strong> visualizar o fluxo de trabalho, limitar o trabalho em andamento (WIP), gerenciar o fluxo ativamente e melhorar continuamente.</li>
+      </ul>
+      <p>Hoje o Kanban é uma das abordagens ágeis mais usadas. E, como toda abordagem voltada ao fluxo, depende de <strong>métricas</strong> para saber se o fluxo está melhorando. O Kanban Guide, de John Coleman e Daniel Vacanti, define quatro medidas de fluxo obrigatórias: <strong>WIP</strong>, <strong>throughput</strong>, <strong>idade do item</strong> (<em>work item age</em>) e <strong>tempo de ciclo</strong>. As demais métricas deste tutorial complementam essas quatro. <sup><a href="#ref-2-pt">[2]</a></sup></p>
+    </section>
+
+    <section id="quadro-pt" aria-labelledby="h-quadro-pt">
+      <h2 id="h-quadro-pt">O quadro e os pontos de medição</h2>
+      <p>Antes de medir, é preciso combinar onde cada medida começa e termina. O quadro abaixo, baseado no exemplo do texto original, divide o trabalho em duas partes:</p>
+      <ul>
+        <li><strong>Upstream</strong> (descoberta): requisições, backlog e análise. Aqui as ideias ainda são opções; podem ser refinadas ou descartadas.</li>
+        <li><strong>Downstream</strong> (entrega): do “a fazer” até o “concluído”. Aqui o time já se comprometeu a entregar.</li>
+      </ul>
+      <figure>
+        <img src="rc_images/KanbanQuadro.svg" alt="Quadro Kanban com dez colunas: requisições, backlog, análise e a fazer, no upstream; implementação, esperando, teste, homologação e deploy, em andamento, com limite de WIP de 6; e concluído. Acima, réguas mostram o planejamento, do início até a coluna a fazer; o lead time, do ponto de compromisso ao ponto de entrega; o cycle time, do início da implementação até a entrega; o time to market, de ponta a ponta; e o tempo bloqueado, na coluna esperando, onde há um cartão bloqueado." width="1000" height="565" loading="lazy">
+        <figcaption>Cada métrica de tempo mede um trecho diferente do mesmo quadro.</figcaption>
+      </figure>
+      <p>Dois marcos organizam as medidas: o <strong>ponto de compromisso</strong>, quando o item entra no “a fazer” e o time se compromete com ele, e o <strong>ponto de entrega</strong>, quando o item fica pronto. Cada equipe pode definir esses pontos de um jeito; o importante é defini-los explicitamente e manter a definição.</p>
+    </section>
+
+    <section id="wip-pt" aria-labelledby="h-wip-pt">
+      <h2 id="h-wip-pt">WIP e idade do item</h2>
+      <h3>Trabalho em andamento (WIP)</h3>
+      <pre class="formula">WIP = número de itens iniciados e ainda não concluídos</pre>
+      <p>O WIP mostra quantas tarefas estão em andamento ao mesmo tempo. <strong>Limitar o WIP</strong> é a prática central do Kanban: evita sobrecarga, reduz a troca de contexto e, como mostra a Lei de Little, reduz o tempo de ciclo. No quadro de exemplo, as colunas de andamento aceitam no máximo seis itens; quando o limite é atingido, o time termina algo antes de puxar um item novo. <sup><a href="#ref-2-pt">[2]</a></sup></p>
+      <h3>Idade do item (work item age)</h3>
+      <pre class="formula">Idade do item = data de hoje − data de início do trabalho</pre>
+      <p>O texto original não traz esta métrica, mas ela é uma das quatro medidas obrigatórias do Kanban Guide. Enquanto o tempo de ciclo só existe depois que o item termina, a idade é medida <em>enquanto</em> ele está em andamento. Um item com idade maior que o tempo de ciclo habitual é um sinal precoce de problema: é a hora de agir, antes que ele atrase de vez. <sup><a href="#ref-2-pt">[2]</a></sup></p>
+    </section>
+
+    <section id="tempos-pt" aria-labelledby="h-tempos-pt">
+      <h2 id="h-tempos-pt">Lead time, cycle time e companhia</h2>
+      <p>As métricas de tempo medem trechos diferentes da vida de um item. A figura acompanha um único cartão durante 14 dias.</p>
+      <figure>
+        <img src="rc_images/KanbanVidaCartao.svg" alt="Linha do tempo de um cartão ao longo de 14 dias. Dia 0, pedido criado; dia 2, comprometido; dia 4, o trabalho começa; dia 12, concluído; dia 14, lançado. A barra alterna trabalho ativo, espera e um bloqueio dos dias 6 a 8. Réguas mostram time to market de 14 dias, lead time de 10, cycle time de 8 e 2 dias bloqueado. Só 3 dos 8 dias de ciclo são de trabalho ativo: eficiência de fluxo de 37,5%." width="1000" height="475" loading="lazy">
+        <figcaption>O mesmo cartão, medido de quatro formas.</figcaption>
+      </figure>
+      <h3>Lead time</h3>
+      <pre class="formula">Lead time = data de conclusão − data de compromisso (ou do pedido)</pre>
+      <p>O tempo total que o cliente espera, desde o compromisso até a conclusão. Ajuda a identificar e resolver gargalos. No exemplo, 12 − 2 = 10 dias. <sup><a href="#ref-11-pt">[11]</a></sup></p>
+      <h3>Cycle time</h3>
+      <pre class="formula">Cycle time = data de conclusão − data de início do trabalho</pre>
+      <p>O tempo desde que o item começa a ser trabalhado até ficar pronto. Mede a eficiência do processo e orienta os ajustes. No exemplo, 12 − 4 = 8 dias.</p>
+      <p>Atenção aos nomes: a literatura não é uniforme. Alguns autores medem o lead time a partir do pedido, e não do compromisso; o Kanban Guide usa um só termo, <em>cycle time</em>, do início ao fim, e deixa cada equipe definir onde fica o início. O que importa é registrar a definição e usá-la sempre igual. <sup><a href="#ref-2-pt">[2]</a></sup></p>
+      <h3>Time to market</h3>
+      <pre class="formula">Time to market = data de lançamento − data de início do projeto (ou da ideia)</pre>
+      <p>O tempo desde a ideia até a entrega ao cliente, incluindo o upstream e a espera pelo lançamento. É a visão do negócio; útil sobretudo em produtos voltados ao cliente. No exemplo, 14 dias.</p>
+      <h3>Tempo bloqueado</h3>
+      <pre class="formula">Tempo bloqueado = data de desbloqueio − data de bloqueio</pre>
+      <p>Quanto tempo o item ficou parado por um impedimento. Registrar os motivos dos bloqueios revela os problemas recorrentes que atrasam o trabalho. No exemplo, 2 dias.</p>
+    </section>
+
+    <section id="throughput-pt" aria-labelledby="h-throughput-pt">
+      <h2 id="h-throughput-pt">Throughput</h2>
+      <pre class="formula">Throughput = total de itens concluídos ÷ período de tempo</pre>
+      <p>Conta quantos itens o time conclui por dia, semana ou mês, e dá uma visão direta da capacidade de entrega. O Kanban Guide recomenda contar <em>itens</em>, não pontos ou horas estimadas. <sup><a href="#ref-2-pt">[2]</a></sup> <sup><a href="#ref-12-pt">[12]</a></sup></p>
+      <figure>
+        <img src="rc_images/KanbanThroughput.svg" alt="Gráfico de barras com o throughput de dez semanas: 6, 8, 5, 9, 7, 4, 8, 10, 7 e 8 itens concluídos, com média de 7,2 por semana marcada por uma linha tracejada." width="1000" height="490" loading="lazy">
+        <figcaption>O throughput varia de semana para semana; a média sozinha não conta a história toda.</figcaption>
+      </figure>
+      <p>Para prever quando um conjunto de itens ficará pronto, é melhor usar a distribuição histórica do throughput, por exemplo numa simulação de Monte Carlo, do que dividir o total pela média. <sup><a href="#ref-7-pt">[7]</a></sup></p>
+    </section>
+
+    <section id="cfd-pt" aria-labelledby="h-cfd-pt">
+      <h2 id="h-cfd-pt">Diagrama de fluxo cumulativo</h2>
+      <p>O texto original termina com um diagrama de fluxo cumulativo (CFD), que reúne várias métricas num só gráfico. Cada faixa mostra quantos itens passaram por uma etapa até cada dia. <sup><a href="#ref-10-pt">[10]</a></sup></p>
+      <figure>
+        <img src="rc_images/KanbanCFD.svg" alt="Diagrama de fluxo cumulativo de 15 dias com três faixas empilhadas: a fazer, em andamento e concluído. Uma seta vertical no dia 8 mostra o WIP, a distância entre as linhas de em andamento e concluído, de 4 itens. Uma seta horizontal mostra o tempo de ciclo aproximado, de 3 dias. Uma linha tracejada sobre a faixa de concluído indica que a sua inclinação é o throughput." width="1000" height="510" loading="lazy">
+        <figcaption>No CFD, a distância vertical é o WIP, a horizontal é o tempo de ciclo aproximado e a inclinação é o throughput.</figcaption>
+      </figure>
+      <ul>
+        <li><strong>Leitura vertical:</strong> a espessura de uma faixa num dia é o número de itens naquela etapa, ou seja, o WIP da etapa.</li>
+        <li><strong>Leitura horizontal:</strong> a distância entre a entrada numa etapa e a saída do fluxo é uma aproximação do tempo de ciclo médio.</li>
+        <li><strong>Inclinação:</strong> a inclinação da faixa de concluído é o throughput.</li>
+        <li><strong>Sinais:</strong> faixas que alargam indicam acúmulo; faixas paralelas, fluxo estável; uma faixa plana indica que nada está saindo daquela etapa.</li>
+      </ul>
+    </section>
+
+    <section id="little-pt" aria-labelledby="h-little-pt">
+      <h2 id="h-little-pt">Lei de Little</h2>
+      <pre class="formula">WIP médio = throughput × tempo de ciclo médio
+Tempo de ciclo médio = WIP médio ÷ throughput</pre>
+      <p>Demonstrada por John Little em 1961, a lei relaciona o tamanho da fila, o ritmo de saída e o tempo de permanência num sistema. <sup><a href="#ref-8-pt">[8]</a></sup> <sup><a href="#ref-9-pt">[9]</a></sup> Ela explica por que limitar o WIP funciona: com o mesmo throughput, menos itens em andamento significam itens terminando mais rápido.</p>
+      <figure>
+        <img src="rc_images/KanbanLittle.svg" alt="No alto, a fórmula da Lei de Little: tempo de ciclo médio igual a WIP médio dividido pelo throughput. Time A tem 12 itens em andamento e entrega 3 por dia: tempo de ciclo de 4 dias. Time B tem 6 itens em andamento e entrega os mesmos 3 por dia: tempo de ciclo de 2 dias." width="1000" height="490" loading="lazy">
+        <figcaption>Metade do WIP, metade do tempo de ciclo, com o mesmo throughput.</figcaption>
+      </figure>
+      <p>Um cuidado: a lei vale para <strong>médias de longo prazo</strong> num sistema <strong>estável</strong>, em que o que entra é, em média, o que sai, e os itens que começam terminam. Ela explica o comportamento do sistema, mas não serve para prever a data de um item específico; para isso, use os percentis da próxima seção. <sup><a href="#ref-7-pt">[7]</a></sup></p>
+    </section>
+
+    <section id="percentis-pt" aria-labelledby="h-percentis-pt">
+      <h2 id="h-percentis-pt">Previsibilidade com percentis</h2>
+      <p>O tempo de ciclo quase nunca segue uma curva simétrica: a maioria dos itens termina rápido, mas alguns demoram muito, por bloqueios e dependências. Essa <strong>cauda longa</strong> faz a média enganar. <sup><a href="#ref-7-pt">[7]</a></sup></p>
+      <figure>
+        <img src="rc_images/KanbanHistograma.svg" alt="Histograma do tempo de ciclo de 76 itens, de 1 a 20 dias, com pico entre 4 e 5 dias e uma cauda longa à direita, causada por bloqueios e dependências. Linhas marcam os percentis: 50% em até 5 dias, 85% em até 10 dias e 95% em até 14 dias, além da média. Um quadro destaca a expectativa de nível de serviço: 85% dos itens terminam em até 10 dias." width="1000" height="496" loading="lazy">
+        <figcaption>Os percentis respondem à pergunta que o cliente realmente faz: “até quando fica pronto?”.</figcaption>
+      </figure>
+      <p>Em vez da média, use <strong>percentis</strong>: “85% dos itens terminam em até 10 dias” é uma promessa que o time consegue cumprir e o cliente consegue usar. O Kanban Guide chama isso de <strong>expectativa de nível de serviço</strong> (SLE): o tempo de ciclo esperado para um item, com uma probabilidade. Combinada com a idade do item, a SLE mostra na hora quais itens estão em risco. <sup><a href="#ref-2-pt">[2]</a></sup></p>
+    </section>
+
+    <section id="eficiencia-pt" aria-labelledby="h-eficiencia-pt">
+      <h2 id="h-eficiencia-pt">Eficiência, bloqueios e descarte</h2>
+      <h3>Eficiência de fluxo</h3>
+      <pre class="formula">Eficiência de fluxo (%) = tempo de trabalho ativo ÷ tempo total no processo × 100</pre>
+      <ul>
+        <li><strong>Tempo de trabalho ativo:</strong> o tempo em que alguém está de fato trabalhando no item.</li>
+        <li><strong>Tempo total:</strong> todo o tempo no processo, incluindo esperas e bloqueios.</li>
+      </ul>
+      <p>No cartão do exemplo, foram 3 dias de trabalho ativo num ciclo de 8: eficiência de 37,5%. Os outros 5 dias foram espera e bloqueio. É comum a maior parte do tempo ser espera, e é justamente aí que está a maior oportunidade de melhoria: reduzir filas costuma render mais do que trabalhar mais rápido. <sup><a href="#ref-15-pt">[15]</a></sup></p>
+      <h3>Taxa de bloqueio</h3>
+      <pre class="formula">Itens bloqueados = n
+Taxa de bloqueio (%) = itens bloqueados ÷ itens processados × 100</pre>
+      <p>Dependências e bloqueios interrompem o fluxo e introduzem muita variação, o que aparece como a cauda longa no histograma do tempo de ciclo. Acompanhar a taxa, junto com o tempo bloqueado e os motivos, mostra onde atacar.</p>
+      <h3>Taxa de descarte</h3>
+      <pre class="formula">Itens descartados = n
+Taxa de descarte (%) = itens descartados ÷ itens processados × 100</pre>
+      <p>Mede quantas opções são descartadas no upstream, <strong>antes</strong> do ponto de compromisso. Diferente do que parece, descartar não é ruim: um upstream saudável filtra as ideias fracas cedo, quando é barato, em vez de deixá-las ocupar o downstream.</p>
+    </section>
+
+    <section id="qualidade-pt" aria-labelledby="h-qualidade-pt">
+      <h2 id="h-qualidade-pt">Qualidade e pessoas</h2>
+      <h3>Taxa de defeitos</h3>
+      <pre class="formula">Taxa de defeitos = número de defeitos ÷ total de unidades entregues</pre>
+      <p>Monitora os defeitos por unidade de trabalho. É essencial para garantir que a velocidade não esteja sendo comprada com qualidade: um throughput alto com muitos defeitos só empurra trabalho para depois.</p>
+      <h3>Satisfação do cliente</h3>
+      <pre class="formula">Satisfação do cliente = soma das notas de satisfação ÷ número de respondentes</pre>
+      <p>Medida por pesquisas ou retorno direto, mostra se o que é entregue atende ao cliente. Além da média das notas (CSAT), muitas empresas usam o <strong>Net Promoter Score</strong> (NPS), baseado na pergunta “de 0 a 10, quanto você nos recomendaria?”. <sup><a href="#ref-16-pt">[16]</a></sup></p>
+      <h3>Engajamento dos colaboradores</h3>
+      <pre class="formula">Engajamento = soma das notas de engajamento ÷ número de colaboradores</pre>
+      <p>Avalia o engajamento e o moral do time, que afetam diretamente a produtividade e a qualidade. Pode ser medido por pesquisas periódicas e curtas. <sup><a href="#ref-17-pt">[17]</a></sup></p>
+    </section>
+
+    <section id="custo-pt" aria-labelledby="h-custo-pt">
+      <h2 id="h-custo-pt">Custo do atraso</h2>
+      <pre class="formula">Custo do atraso (CoD) = valor que se deixa de ganhar por unidade de tempo de atraso
+Custo total do atraso = CoD × tempo de atraso
+CD3 = CoD ÷ duração do trabalho</pre>
+      <p>O custo do atraso traduz o tempo em dinheiro: quanto se perde a cada semana em que um item não está pronto. Don Reinertsen o chama da “única coisa” que vale a pena quantificar no desenvolvimento de produtos. <sup><a href="#ref-13-pt">[13]</a></sup> <sup><a href="#ref-14-pt">[14]</a></sup></p>
+      <figure>
+        <img src="rc_images/KanbanCustoAtraso.svg" alt="À esquerda, duas curvas de valor acumulado de um item que gera R$ 10 mil por semana: lançado na semana 4 e lançado na semana 8. A área entre elas é o valor perdido, R$ 40 mil. À direita, três itens ordenados por CD3, o custo do atraso dividido pela duração: B, com R$ 6 mil por semana e 1 semana, CD3 de 6; A, com R$ 10 mil por semana e 4 semanas, CD3 de 2,5; C, com R$ 20 mil por semana e 10 semanas, CD3 de 2." width="1000" height="485" loading="lazy">
+        <figcaption>O atraso de 4 semanas custa R$ 40 mil; o CD3 ordena os itens pelo valor por semana de trabalho.</figcaption>
+      </figure>
+      <p>O texto original apresenta o custo do atraso como “valor do trabalho não realizado ÷ tempo de atraso”; a forma mais usada é a acima, em que o CoD já é uma taxa por unidade de tempo e o custo total é essa taxa multiplicada pelo atraso. Para priorizar, divide-se o CoD pela duração (CD3): o item B, pequeno e valioso, vem antes do item C, que vale mais por semana, mas ocupa o time por muito mais tempo. Essa é a lógica do <strong>WSJF</strong> (<em>weighted shortest job first</em>). <sup><a href="#ref-14-pt">[14]</a></sup></p>
+    </section>
+
+    <section id="resumo-pt" aria-labelledby="h-resumo-pt">
+      <h2 id="h-resumo-pt">Resumo das métricas</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Métrica</th><th scope="col">Fórmula</th><th scope="col">Responde a</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">WIP</th><td>itens iniciados e não concluídos</td><td>Quanto trabalho está aberto agora?</td></tr>
+            <tr><th scope="row">Idade do item</th><td>hoje − início</td><td>Qual item em andamento está em risco?</td></tr>
+            <tr><th scope="row">Lead time</th><td>conclusão − compromisso</td><td>Quanto tempo o cliente espera?</td></tr>
+            <tr><th scope="row">Cycle time</th><td>conclusão − início do trabalho</td><td>Quanto tempo o processo leva?</td></tr>
+            <tr><th scope="row">Throughput</th><td>itens concluídos ÷ período</td><td>Quanto o time entrega?</td></tr>
+            <tr><th scope="row">Tempo bloqueado</th><td>desbloqueio − bloqueio</td><td>Quanto tempo se perde parado?</td></tr>
+            <tr><th scope="row">Time to market</th><td>lançamento − início</td><td>Quanto tempo da ideia ao mercado?</td></tr>
+            <tr><th scope="row">Eficiência de fluxo</th><td>trabalho ativo ÷ tempo total</td><td>Quanto do tempo é trabalho de verdade?</td></tr>
+            <tr><th scope="row">Taxa de bloqueio</th><td>bloqueados ÷ processados</td><td>Com que frequência o fluxo para?</td></tr>
+            <tr><th scope="row">Taxa de descarte</th><td>descartados ÷ processados</td><td>O upstream filtra bem as opções?</td></tr>
+            <tr><th scope="row">Taxa de defeitos</th><td>defeitos ÷ unidades</td><td>A qualidade acompanha a velocidade?</td></tr>
+            <tr><th scope="row">Satisfação do cliente</th><td>média das notas</td><td>O cliente está satisfeito?</td></tr>
+            <tr><th scope="row">Engajamento</th><td>média das notas</td><td>O time está engajado?</td></tr>
+            <tr><th scope="row">Custo do atraso</th><td>valor perdido por unidade de tempo</td><td>O que fazer primeiro?</td></tr>
+            <tr><th scope="row">Lei de Little</th><td>WIP = throughput × tempo de ciclo</td><td>Como WIP e tempo se relacionam?</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <aside class="recap" aria-label="Para fixar">
+        <h3>Para fixar</h3>
+        <ul>
+          <li>As quatro medidas de fluxo: WIP, throughput, idade do item e tempo de ciclo.</li>
+          <li>Menos WIP, com o mesmo throughput, significa entregas mais rápidas (Lei de Little).</li>
+          <li>Para prever, use percentis e o histórico, não médias.</li>
+        </ul>
+      </aside>
+    </section>
+
+    <section id="revisao-pt" aria-labelledby="h-revisao-pt">
+      <h2 id="h-revisao-pt">Revisão rápida</h2>
+      <p>Tente responder antes de abrir cada pergunta.</p>
+      <div class="quiz">
+        <details><summary>1. Qual a diferença entre lead time e cycle time?</summary><p>O lead time conta a partir do compromisso (ou do pedido) e mede quanto o cliente espera; o cycle time conta a partir do início do trabalho e mede quanto o processo leva. O lead time é sempre maior ou igual ao cycle time.</p></details>
+        <details><summary>2. Quais são as quatro medidas de fluxo obrigatórias do Kanban Guide?</summary><p>WIP, throughput, idade do item (work item age) e tempo de ciclo.</p></details>
+        <details><summary>3. Um time tem, em média, 15 itens em andamento e conclui 5 por semana. Qual é o tempo de ciclo médio?</summary><p>Pela Lei de Little, 15 ÷ 5 = 3 semanas.</p></details>
+        <details><summary>4. E se o time reduzir o WIP para 10, mantendo o throughput?</summary><p>O tempo de ciclo médio cai para 10 ÷ 5 = 2 semanas.</p></details>
+        <details><summary>5. Por que usar percentis em vez da média do tempo de ciclo?</summary><p>Porque a distribuição tem cauda longa: a média esconde os itens que demoram muito. Um percentil, como “85% em até 10 dias”, é uma promessa que se pode cumprir.</p></details>
+        <details><summary>6. Um item levou 10 dias no processo e teve 2 dias de trabalho ativo. Qual a eficiência de fluxo?</summary><p>2 ÷ 10 × 100 = 20%. Os outros 80% do tempo foram espera ou bloqueio.</p></details>
+        <details><summary>7. No CFD, o que indicam a distância vertical, a horizontal e a inclinação?</summary><p>A distância vertical é o WIP; a horizontal, o tempo de ciclo aproximado; a inclinação da faixa de concluído, o throughput.</p></details>
+        <details><summary>8. Dois itens: X custa R$ 8 mil por semana de atraso e leva 2 semanas; Y custa R$ 12 mil por semana e leva 6. Qual fazer primeiro?</summary><p>X: CD3 = 8 ÷ 2 = 4; Y: CD3 = 12 ÷ 6 = 2. Faça X primeiro.</p></details>
+      </div>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="referencias-pt" aria-labelledby="h-referencias-pt">
+      <h2 id="h-referencias-pt">Referências</h2>
+      <ol class="refs">
+        <li id="ref-1-pt"><strong>Giovani Perotto Mesquita</strong>, “Kanban em Métricas”, GitHub, texto original deste tutorial, <a href="https://github.com/GiovaniPM/MyCourses/blob/master/Kanban/Metricas.md" rel="noopener">github.com/GiovaniPM/MyCourses/blob/master/Kanban/Metricas.md</a>.</li>
+        <li id="ref-2-pt"><strong>John Coleman e Daniel Vacanti</strong>, <em>The Kanban Guide</em>, Kanban Guides, acesso em 25/09/2026, <a href="https://kanbanguides.org/english/" rel="noopener">kanbanguides.org/english</a>.</li>
+        <li id="ref-3-pt"><strong>Wikipedia</strong> (em inglês), “Kanban”, acesso em 25/09/2026, <a href="https://en.wikipedia.org/wiki/Kanban" rel="noopener">en.wikipedia.org/wiki/Kanban</a>.</li>
+        <li id="ref-4-pt"><strong>Taiichi Ohno</strong>, <em>Toyota Production System: Beyond Large-Scale Production</em>, Productivity Press, 1988.</li>
+        <li id="ref-5-pt"><strong>David J. Anderson</strong>, <em>Kanban: Successful Evolutionary Change for Your Technology Business</em>, Blue Hole Press, 2010.</li>
+        <li id="ref-6-pt"><strong>Wikipedia</strong> (em inglês), “Kanban (development)”, acesso em 25/09/2026, <a href="https://en.wikipedia.org/wiki/Kanban_(development)" rel="noopener">en.wikipedia.org/wiki/Kanban_(development)</a>.</li>
+        <li id="ref-7-pt"><strong>Daniel S. Vacanti</strong>, <em>Actionable Agile Metrics for Predictability</em>, 2015.</li>
+        <li id="ref-8-pt"><strong>John D. C. Little</strong>, “A Proof for the Queuing Formula: L = λW”, <em>Operations Research</em>, v. 9, n. 3, 1961.</li>
+        <li id="ref-9-pt"><strong>Wikipedia</strong> (em inglês), “Little’s law”, acesso em 25/09/2026, <a href="https://en.wikipedia.org/wiki/Little%27s_law" rel="noopener">en.wikipedia.org/wiki/Little’s_law</a>.</li>
+        <li id="ref-10-pt"><strong>Wikipedia</strong> (em inglês), “Cumulative flow diagram”, acesso em 25/09/2026, <a href="https://en.wikipedia.org/wiki/Cumulative_flow_diagram" rel="noopener">en.wikipedia.org/wiki/Cumulative_flow_diagram</a>.</li>
+        <li id="ref-11-pt"><strong>Wikipedia</strong> (em inglês), “Lead time”, acesso em 25/09/2026, <a href="https://en.wikipedia.org/wiki/Lead_time" rel="noopener">en.wikipedia.org/wiki/Lead_time</a>.</li>
+        <li id="ref-12-pt"><strong>Wikipedia</strong> (em inglês), “Throughput (business)”, acesso em 25/09/2026, <a href="https://en.wikipedia.org/wiki/Throughput_(business)" rel="noopener">en.wikipedia.org/wiki/Throughput_(business)</a>.</li>
+        <li id="ref-13-pt"><strong>Donald G. Reinertsen</strong>, <em>The Principles of Product Development Flow</em>, Celeritas Publishing, 2009.</li>
+        <li id="ref-14-pt"><strong>Wikipedia</strong> (em inglês), “Cost of delay”, acesso em 25/09/2026, <a href="https://en.wikipedia.org/wiki/Cost_of_delay" rel="noopener">en.wikipedia.org/wiki/Cost_of_delay</a>.</li>
+        <li id="ref-15-pt"><strong>Niklas Modig e Pär Åhlström</strong>, <em>This Is Lean: Resolving the Efficiency Paradox</em>, Rheologica, 2012.</li>
+        <li id="ref-16-pt"><strong>Wikipedia</strong> (em inglês), “Net promoter score”, acesso em 25/09/2026, <a href="https://en.wikipedia.org/wiki/Net_promoter_score" rel="noopener">en.wikipedia.org/wiki/Net_promoter_score</a>.</li>
+        <li id="ref-17-pt"><strong>Wikipedia</strong> (em inglês), “Employee engagement”, acesso em 25/09/2026, <a href="https://en.wikipedia.org/wiki/Employee_engagement" rel="noopener">en.wikipedia.org/wiki/Employee_engagement</a>.</li>
+      </ol>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== EN ===================== -->
+<div id="en" role="tabpanel" aria-labelledby="tab-en" lang="en" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projects</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Kanban metrics</h1>
+      <p class="dek">How to measure and improve the flow of work: WIP, lead time, cycle time, throughput, Little’s Law, percentiles, flow efficiency and cost of delay, with formulas and examples.</p>
+      <div class="byline">
+        <span>By <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Published on <time datetime="2026-09-25">25 September 2026</time></span>
+        <span class="credit">Reviewed and formatted using Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-en">
+    <h2 id="toc-en">Contents</h2>
+    <ol>
+      <li><a href="#kanban-en">Kanban in a nutshell</a></li>
+      <li><a href="#quadro-en">The board and its measuring points</a></li>
+      <li><a href="#wip-en">WIP and work item age</a></li>
+      <li><a href="#tempos-en">Lead time, cycle time and friends</a></li>
+      <li><a href="#throughput-en">Throughput</a></li>
+      <li><a href="#cfd-en">Cumulative flow diagram</a></li>
+      <li><a href="#little-en">Little’s Law</a></li>
+      <li><a href="#percentis-en">Predictability with percentiles</a></li>
+      <li><a href="#eficiencia-en">Efficiency, blockers and discards</a></li>
+      <li><a href="#qualidade-en">Quality and people</a></li>
+      <li><a href="#custo-en">Cost of delay</a></li>
+      <li><a href="#resumo-en">Metrics summary</a></li>
+      <li><a href="#revisao-en">Quick review</a></li>
+      <li><a href="#referencias-en">References</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="kanban-en" aria-labelledby="h-kanban-en">
+      <h2 id="h-kanban-en">Kanban in a nutshell</h2>
+      <ul>
+        <li><strong>Origin:</strong> Kanban was born at Toyota, as part of the Toyota Production System created by Taiichi Ohno. In the late 1940s, Toyota studied supermarkets, which restock shelves according to consumption; in 1953, it applied that logic to the factory. The Japanese word <em>kanban</em> means “signboard” or “visual card”. <sup><a href="#ref-1-en">[1]</a></sup> <sup><a href="#ref-3-en">[3]</a></sup> <sup><a href="#ref-4-en">[4]</a></sup></li>
+        <li><strong>Initial purpose:</strong> to increase efficiency and reduce waste. The first cards signaled the need to restock: production was pulled by demand.</li>
+        <li><strong>Expansion:</strong> the method spread to other industries. In 2010, David J. Anderson published <em>Kanban</em>, which adapted the idea to knowledge work, such as software and projects. <sup><a href="#ref-5-en">[5]</a></sup> <sup><a href="#ref-6-en">[6]</a></sup></li>
+        <li><strong>Principles:</strong> visualize the workflow, limit work in progress (WIP), actively manage flow and improve continuously.</li>
+      </ul>
+      <p>Today Kanban is one of the most widely used agile approaches. And, like any flow-based approach, it depends on <strong>metrics</strong> to know whether flow is improving. The Kanban Guide, by John Coleman and Daniel Vacanti, defines four mandatory flow measures: <strong>WIP</strong>, <strong>throughput</strong>, <strong>work item age</strong> and <strong>cycle time</strong>. The other metrics in this tutorial complement those four. <sup><a href="#ref-2-en">[2]</a></sup></p>
+    </section>
+
+    <section id="quadro-en" aria-labelledby="h-quadro-en">
+      <h2 id="h-quadro-en">The board and its measuring points</h2>
+      <p>Before measuring, you need to agree on where each measure starts and ends. The board below, based on the original text’s example, splits the work into two parts:</p>
+      <ul>
+        <li><strong>Upstream</strong> (discovery): requests, backlog and analysis. Here ideas are still options; they can be refined or discarded.</li>
+        <li><strong>Downstream</strong> (delivery): from “to do” to “done”. Here the team has committed to deliver.</li>
+      </ul>
+      <figure>
+        <img src="rc_images/KanbanQuadro-en.svg" alt="Kanban board with ten columns: requests, backlog, analysis and to do, upstream; development, waiting, test, acceptance and deploy, in progress, with a WIP limit of 6; and done. Above, rulers show planning, from the start to the to-do column; lead time, from the commitment point to the delivery point; cycle time, from the start of development to delivery; time to market, end to end; and blocked time, in the waiting column, where there is a blocked card." width="1000" height="565" loading="lazy">
+        <figcaption>Each time metric measures a different stretch of the same board.</figcaption>
+      </figure>
+      <p>Two milestones organize the measures: the <strong>commitment point</strong>, when the item enters “to do” and the team commits to it, and the <strong>delivery point</strong>, when the item is done. Each team may set these points differently; what matters is to define them explicitly and stick to the definition.</p>
+    </section>
+
+    <section id="wip-en" aria-labelledby="h-wip-en">
+      <h2 id="h-wip-en">WIP and work item age</h2>
+      <h3>Work in progress (WIP)</h3>
+      <pre class="formula">WIP = number of items started and not yet finished</pre>
+      <p>WIP shows how many tasks are in progress at the same time. <strong>Limiting WIP</strong> is Kanban’s central practice: it prevents overload, reduces context switching and, as Little’s Law shows, reduces cycle time. On the example board, the in-progress columns accept at most six items; when the limit is reached, the team finishes something before pulling a new item. <sup><a href="#ref-2-en">[2]</a></sup></p>
+      <h3>Work item age</h3>
+      <pre class="formula">Work item age = today’s date − work start date</pre>
+      <p>The original text does not include this metric, but it is one of the four mandatory measures in the Kanban Guide. Cycle time only exists once an item is finished; age is measured <em>while</em> it is in progress. An item older than the usual cycle time is an early warning: the time to act is now, before it is truly late. <sup><a href="#ref-2-en">[2]</a></sup></p>
+    </section>
+
+    <section id="tempos-en" aria-labelledby="h-tempos-en">
+      <h2 id="h-tempos-en">Lead time, cycle time and friends</h2>
+      <p>Time metrics measure different stretches of an item’s life. The figure follows a single card over 14 days.</p>
+      <figure>
+        <img src="rc_images/KanbanVidaCartao-en.svg" alt="Timeline of a card over 14 days. Day 0, request created; day 2, committed; day 4, work starts; day 12, done; day 14, released. The bar alternates active work, waiting and a block from day 6 to 8. Rulers show a time to market of 14 days, lead time of 10, cycle time of 8 and 2 days blocked. Only 3 of the 8 cycle days are active work: a flow efficiency of 37.5%." width="1000" height="475" loading="lazy">
+        <figcaption>The same card, measured four ways.</figcaption>
+      </figure>
+      <h3>Lead time</h3>
+      <pre class="formula">Lead time = completion date − commitment (or request) date</pre>
+      <p>The total time the customer waits, from commitment to completion. It helps find and fix bottlenecks. In the example, 12 − 2 = 10 days. <sup><a href="#ref-11-en">[11]</a></sup></p>
+      <h3>Cycle time</h3>
+      <pre class="formula">Cycle time = completion date − work start date</pre>
+      <p>The time from when work starts on the item until it is done. It measures process efficiency and guides adjustments. In the example, 12 − 4 = 8 days.</p>
+      <p>Watch the names: the literature is not consistent. Some authors measure lead time from the request rather than the commitment; the Kanban Guide uses a single term, <em>cycle time</em>, from start to finish, and lets each team decide where the start is. What matters is to record the definition and use it consistently. <sup><a href="#ref-2-en">[2]</a></sup></p>
+      <h3>Time to market</h3>
+      <pre class="formula">Time to market = release date − project (or idea) start date</pre>
+      <p>The time from the idea to delivery to the customer, including upstream and the wait for release. It is the business view; especially useful for customer-facing products. In the example, 14 days.</p>
+      <h3>Blocked time</h3>
+      <pre class="formula">Blocked time = unblock date − block date</pre>
+      <p>How long the item was stopped by an impediment. Recording the reasons for blocks reveals the recurring problems that delay work. In the example, 2 days.</p>
+    </section>
+
+    <section id="throughput-en" aria-labelledby="h-throughput-en">
+      <h2 id="h-throughput-en">Throughput</h2>
+      <pre class="formula">Throughput = total items finished ÷ time period</pre>
+      <p>It counts how many items the team finishes per day, week or month, and gives a direct view of delivery capacity. The Kanban Guide recommends counting <em>items</em>, not estimated points or hours. <sup><a href="#ref-2-en">[2]</a></sup> <sup><a href="#ref-12-en">[12]</a></sup></p>
+      <figure>
+        <img src="rc_images/KanbanThroughput-en.svg" alt="Bar chart of throughput over ten weeks: 6, 8, 5, 9, 7, 4, 8, 10, 7 and 8 items finished, with a mean of 7.2 per week marked by a dashed line." width="1000" height="490" loading="lazy">
+        <figcaption>Throughput varies from week to week; the mean alone does not tell the whole story.</figcaption>
+      </figure>
+      <p>To forecast when a set of items will be done, it is better to use the historical distribution of throughput, for example in a Monte Carlo simulation, than to divide the total by the mean. <sup><a href="#ref-7-en">[7]</a></sup></p>
+    </section>
+
+    <section id="cfd-en" aria-labelledby="h-cfd-en">
+      <h2 id="h-cfd-en">Cumulative flow diagram</h2>
+      <p>The original text ends with a cumulative flow diagram (CFD), which brings several metrics together in one chart. Each band shows how many items had passed through a stage by each day. <sup><a href="#ref-10-en">[10]</a></sup></p>
+      <figure>
+        <img src="rc_images/KanbanCFD-en.svg" alt="Cumulative flow diagram over 15 days with three stacked bands: to do, in progress and done. A vertical arrow on day 8 shows WIP, the distance between the in-progress and done lines, of 4 items. A horizontal arrow shows the approximate cycle time, 3 days. A dashed line over the done band indicates that its slope is the throughput." width="1000" height="510" loading="lazy">
+        <figcaption>In a CFD, vertical distance is WIP, horizontal distance is approximate cycle time and slope is throughput.</figcaption>
+      </figure>
+      <ul>
+        <li><strong>Vertical reading:</strong> a band’s thickness on a given day is the number of items in that stage, that is, the stage’s WIP.</li>
+        <li><strong>Horizontal reading:</strong> the distance between entering a stage and leaving the flow approximates the average cycle time.</li>
+        <li><strong>Slope:</strong> the slope of the done band is the throughput.</li>
+        <li><strong>Signals:</strong> widening bands mean work piling up; parallel bands, stable flow; a flat band means nothing is leaving that stage.</li>
+      </ul>
+    </section>
+
+    <section id="little-en" aria-labelledby="h-little-en">
+      <h2 id="h-little-en">Little’s Law</h2>
+      <pre class="formula">Average WIP = throughput × average cycle time
+Average cycle time = average WIP ÷ throughput</pre>
+      <p>Proved by John Little in 1961, the law relates queue size, exit rate and time spent in a system. <sup><a href="#ref-8-en">[8]</a></sup> <sup><a href="#ref-9-en">[9]</a></sup> It explains why limiting WIP works: with the same throughput, fewer items in progress means items finishing faster.</p>
+      <figure>
+        <img src="rc_images/KanbanLittle-en.svg" alt="At the top, Little’s Law: average cycle time equals average WIP divided by throughput. Team A has 12 items in progress and delivers 3 per day: a cycle time of 4 days. Team B has 6 items in progress and delivers the same 3 per day: a cycle time of 2 days." width="1000" height="490" loading="lazy">
+        <figcaption>Half the WIP, half the cycle time, with the same throughput.</figcaption>
+      </figure>
+      <p>One caveat: the law holds for <strong>long-term averages</strong> in a <strong>stable</strong> system, where what comes in is, on average, what goes out, and items that start get finished. It explains the system’s behavior, but it does not forecast the date of a specific item; for that, use the percentiles in the next section. <sup><a href="#ref-7-en">[7]</a></sup></p>
+    </section>
+
+    <section id="percentis-en" aria-labelledby="h-percentis-en">
+      <h2 id="h-percentis-en">Predictability with percentiles</h2>
+      <p>Cycle time almost never follows a symmetric curve: most items finish quickly, but some take very long, because of blockers and dependencies. That <strong>long tail</strong> makes the average misleading. <sup><a href="#ref-7-en">[7]</a></sup></p>
+      <figure>
+        <img src="rc_images/KanbanHistograma-en.svg" alt="Histogram of the cycle time of 76 items, from 1 to 20 days, peaking at 4 to 5 days with a long right tail caused by blockers and dependencies. Lines mark the percentiles: 50% within 5 days, 85% within 10 days and 95% within 14 days, plus the mean. A box highlights the service level expectation: 85% of items finish within 10 days." width="1000" height="496" loading="lazy">
+        <figcaption>Percentiles answer the question the customer actually asks: “by when will it be done?”.</figcaption>
+      </figure>
+      <p>Instead of the average, use <strong>percentiles</strong>: “85% of items finish within 10 days” is a promise the team can keep and the customer can use. The Kanban Guide calls this the <strong>service level expectation</strong> (SLE): the expected cycle time for an item, with a probability. Combined with work item age, the SLE shows right away which items are at risk. <sup><a href="#ref-2-en">[2]</a></sup></p>
+    </section>
+
+    <section id="eficiencia-en" aria-labelledby="h-eficiencia-en">
+      <h2 id="h-eficiencia-en">Efficiency, blockers and discards</h2>
+      <h3>Flow efficiency</h3>
+      <pre class="formula">Flow efficiency (%) = active work time ÷ total time in process × 100</pre>
+      <ul>
+        <li><strong>Active work time:</strong> the time someone is actually working on the item.</li>
+        <li><strong>Total time:</strong> all the time in the process, including waiting and blocks.</li>
+      </ul>
+      <p>In the example card, there were 3 days of active work in an 8-day cycle: an efficiency of 37.5%. The other 5 days were waiting and blocked time. It is common for most of the time to be waiting, and that is exactly where the biggest improvement opportunity lies: reducing queues usually pays off more than working faster. <sup><a href="#ref-15-en">[15]</a></sup></p>
+      <h3>Blocker rate</h3>
+      <pre class="formula">Blocked items = n
+Blocker rate (%) = blocked items ÷ items processed × 100</pre>
+      <p>Dependencies and blockers stop the flow and introduce a lot of variation, which shows up as the long tail in the cycle time histogram. Tracking the rate, together with blocked time and the reasons, shows where to act.</p>
+      <h3>Discard rate</h3>
+      <pre class="formula">Discarded items = n
+Discard rate (%) = discarded items ÷ items processed × 100</pre>
+      <p>It measures how many options are discarded upstream, <strong>before</strong> the commitment point. Contrary to appearances, discarding is not bad: a healthy upstream filters out weak ideas early, when it is cheap, instead of letting them take up downstream capacity.</p>
+    </section>
+
+    <section id="qualidade-en" aria-labelledby="h-qualidade-en">
+      <h2 id="h-qualidade-en">Quality and people</h2>
+      <h3>Defect rate</h3>
+      <pre class="formula">Defect rate = number of defects ÷ total units delivered</pre>
+      <p>It tracks defects per unit of work. It is essential to make sure speed is not being bought with quality: high throughput with many defects just pushes work to later.</p>
+      <h3>Customer satisfaction</h3>
+      <pre class="formula">Customer satisfaction = sum of satisfaction scores ÷ number of respondents</pre>
+      <p>Measured through surveys or direct feedback, it shows whether what is delivered meets customer needs. Besides the average score (CSAT), many companies use the <strong>Net Promoter Score</strong> (NPS), based on the question “from 0 to 10, how likely are you to recommend us?”. <sup><a href="#ref-16-en">[16]</a></sup></p>
+      <h3>Employee engagement</h3>
+      <pre class="formula">Engagement = sum of engagement scores ÷ number of employees</pre>
+      <p>It assesses the team’s engagement and morale, which directly affect productivity and quality. It can be measured with short, periodic surveys. <sup><a href="#ref-17-en">[17]</a></sup></p>
+    </section>
+
+    <section id="custo-en" aria-labelledby="h-custo-en">
+      <h2 id="h-custo-en">Cost of delay</h2>
+      <pre class="formula">Cost of delay (CoD) = value not earned per unit of delay time
+Total delay cost = CoD × delay time
+CD3 = CoD ÷ duration of the work</pre>
+      <p>Cost of delay turns time into money: how much is lost each week an item is not done. Don Reinertsen calls it the “one thing” worth quantifying in product development. <sup><a href="#ref-13-en">[13]</a></sup> <sup><a href="#ref-14-en">[14]</a></sup></p>
+      <figure>
+        <img src="rc_images/KanbanCustoAtraso-en.svg" alt="On the left, two cumulative value curves for an item that earns $10k per week: released in week 4 and released in week 8. The area between them is the value lost, $40k. On the right, three items sorted by CD3, cost of delay divided by duration: B, with $6k per week and 1 week, CD3 of 6; A, with $10k per week and 4 weeks, CD3 of 2.5; C, with $20k per week and 10 weeks, CD3 of 2." width="1000" height="485" loading="lazy">
+        <figcaption>A 4-week delay costs $40k; CD3 ranks the items by value per week of work.</figcaption>
+      </figure>
+      <p>The original text presents cost of delay as “value of unrealized work ÷ delay time”; the more common form is the one above, where CoD is already a rate per unit of time and the total cost is that rate multiplied by the delay. To prioritize, divide CoD by duration (CD3): item B, small and valuable, comes before item C, which is worth more per week but ties up the team for much longer. This is the logic of <strong>WSJF</strong> (weighted shortest job first). <sup><a href="#ref-14-en">[14]</a></sup></p>
+    </section>
+
+    <section id="resumo-en" aria-labelledby="h-resumo-en">
+      <h2 id="h-resumo-en">Metrics summary</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Metric</th><th scope="col">Formula</th><th scope="col">Answers</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">WIP</th><td>items started and not finished</td><td>How much work is open right now?</td></tr>
+            <tr><th scope="row">Work item age</th><td>today − start</td><td>Which item in progress is at risk?</td></tr>
+            <tr><th scope="row">Lead time</th><td>completion − commitment</td><td>How long does the customer wait?</td></tr>
+            <tr><th scope="row">Cycle time</th><td>completion − work start</td><td>How long does the process take?</td></tr>
+            <tr><th scope="row">Throughput</th><td>items finished ÷ period</td><td>How much does the team deliver?</td></tr>
+            <tr><th scope="row">Blocked time</th><td>unblock − block</td><td>How much time is lost standing still?</td></tr>
+            <tr><th scope="row">Time to market</th><td>release − start</td><td>How long from idea to market?</td></tr>
+            <tr><th scope="row">Flow efficiency</th><td>active work ÷ total time</td><td>How much of the time is real work?</td></tr>
+            <tr><th scope="row">Blocker rate</th><td>blocked ÷ processed</td><td>How often does the flow stop?</td></tr>
+            <tr><th scope="row">Discard rate</th><td>discarded ÷ processed</td><td>Does upstream filter options well?</td></tr>
+            <tr><th scope="row">Defect rate</th><td>defects ÷ units</td><td>Does quality keep up with speed?</td></tr>
+            <tr><th scope="row">Customer satisfaction</th><td>average score</td><td>Is the customer satisfied?</td></tr>
+            <tr><th scope="row">Engagement</th><td>average score</td><td>Is the team engaged?</td></tr>
+            <tr><th scope="row">Cost of delay</th><td>value lost per unit of time</td><td>What should be done first?</td></tr>
+            <tr><th scope="row">Little’s Law</th><td>WIP = throughput × cycle time</td><td>How do WIP and time relate?</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <aside class="recap" aria-label="Key points">
+        <h3>Key points</h3>
+        <ul>
+          <li>The four flow measures: WIP, throughput, work item age and cycle time.</li>
+          <li>Less WIP, with the same throughput, means faster delivery (Little’s Law).</li>
+          <li>To forecast, use percentiles and history, not averages.</li>
+        </ul>
+      </aside>
+    </section>
+
+    <section id="revisao-en" aria-labelledby="h-revisao-en">
+      <h2 id="h-revisao-en">Quick review</h2>
+      <p>Try to answer before opening each question.</p>
+      <div class="quiz">
+        <details><summary>1. What is the difference between lead time and cycle time?</summary><p>Lead time counts from commitment (or the request) and measures how long the customer waits; cycle time counts from the start of work and measures how long the process takes. Lead time is always greater than or equal to cycle time.</p></details>
+        <details><summary>2. What are the four mandatory flow measures in the Kanban Guide?</summary><p>WIP, throughput, work item age and cycle time.</p></details>
+        <details><summary>3. A team has, on average, 15 items in progress and finishes 5 per week. What is the average cycle time?</summary><p>By Little’s Law, 15 ÷ 5 = 3 weeks.</p></details>
+        <details><summary>4. And if the team cuts WIP to 10, keeping the same throughput?</summary><p>Average cycle time drops to 10 ÷ 5 = 2 weeks.</p></details>
+        <details><summary>5. Why use percentiles instead of the average cycle time?</summary><p>Because the distribution has a long tail: the average hides the items that take very long. A percentile, such as “85% within 10 days”, is a promise that can be kept.</p></details>
+        <details><summary>6. An item spent 10 days in the process and had 2 days of active work. What is its flow efficiency?</summary><p>2 ÷ 10 × 100 = 20%. The other 80% of the time was waiting or blocked.</p></details>
+        <details><summary>7. In a CFD, what do the vertical distance, the horizontal distance and the slope indicate?</summary><p>Vertical distance is WIP; horizontal distance, approximate cycle time; the slope of the done band, throughput.</p></details>
+        <details><summary>8. Two items: X costs $8k per week of delay and takes 2 weeks; Y costs $12k per week and takes 6. Which goes first?</summary><p>X: CD3 = 8 ÷ 2 = 4; Y: CD3 = 12 ÷ 6 = 2. Do X first.</p></details>
+      </div>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="referencias-en" aria-labelledby="h-referencias-en">
+      <h2 id="h-referencias-en">References</h2>
+      <ol class="refs">
+        <li id="ref-1-en"><strong>Giovani Perotto Mesquita</strong>, “Kanban em Métricas”, GitHub, original text of this tutorial, <a href="https://github.com/GiovaniPM/MyCourses/blob/master/Kanban/Metricas.md" rel="noopener">github.com/GiovaniPM/MyCourses/blob/master/Kanban/Metricas.md</a>.</li>
+        <li id="ref-2-en"><strong>John Coleman and Daniel Vacanti</strong>, <em>The Kanban Guide</em>, Kanban Guides, accessed 25 September 2026, <a href="https://kanbanguides.org/english/" rel="noopener">kanbanguides.org/english</a>.</li>
+        <li id="ref-3-en"><strong>Wikipedia</strong>, “Kanban”, accessed 25 September 2026, <a href="https://en.wikipedia.org/wiki/Kanban" rel="noopener">en.wikipedia.org/wiki/Kanban</a>.</li>
+        <li id="ref-4-en"><strong>Taiichi Ohno</strong>, <em>Toyota Production System: Beyond Large-Scale Production</em>, Productivity Press, 1988.</li>
+        <li id="ref-5-en"><strong>David J. Anderson</strong>, <em>Kanban: Successful Evolutionary Change for Your Technology Business</em>, Blue Hole Press, 2010.</li>
+        <li id="ref-6-en"><strong>Wikipedia</strong>, “Kanban (development)”, accessed 25 September 2026, <a href="https://en.wikipedia.org/wiki/Kanban_(development)" rel="noopener">en.wikipedia.org/wiki/Kanban_(development)</a>.</li>
+        <li id="ref-7-en"><strong>Daniel S. Vacanti</strong>, <em>Actionable Agile Metrics for Predictability</em>, 2015.</li>
+        <li id="ref-8-en"><strong>John D. C. Little</strong>, “A Proof for the Queuing Formula: L = λW”, <em>Operations Research</em>, vol. 9, no. 3, 1961.</li>
+        <li id="ref-9-en"><strong>Wikipedia</strong>, “Little’s law”, accessed 25 September 2026, <a href="https://en.wikipedia.org/wiki/Little%27s_law" rel="noopener">en.wikipedia.org/wiki/Little’s_law</a>.</li>
+        <li id="ref-10-en"><strong>Wikipedia</strong>, “Cumulative flow diagram”, accessed 25 September 2026, <a href="https://en.wikipedia.org/wiki/Cumulative_flow_diagram" rel="noopener">en.wikipedia.org/wiki/Cumulative_flow_diagram</a>.</li>
+        <li id="ref-11-en"><strong>Wikipedia</strong>, “Lead time”, accessed 25 September 2026, <a href="https://en.wikipedia.org/wiki/Lead_time" rel="noopener">en.wikipedia.org/wiki/Lead_time</a>.</li>
+        <li id="ref-12-en"><strong>Wikipedia</strong>, “Throughput (business)”, accessed 25 September 2026, <a href="https://en.wikipedia.org/wiki/Throughput_(business)" rel="noopener">en.wikipedia.org/wiki/Throughput_(business)</a>.</li>
+        <li id="ref-13-en"><strong>Donald G. Reinertsen</strong>, <em>The Principles of Product Development Flow</em>, Celeritas Publishing, 2009.</li>
+        <li id="ref-14-en"><strong>Wikipedia</strong>, “Cost of delay”, accessed 25 September 2026, <a href="https://en.wikipedia.org/wiki/Cost_of_delay" rel="noopener">en.wikipedia.org/wiki/Cost_of_delay</a>.</li>
+        <li id="ref-15-en"><strong>Niklas Modig and Pär Åhlström</strong>, <em>This Is Lean: Resolving the Efficiency Paradox</em>, Rheologica, 2012.</li>
+        <li id="ref-16-en"><strong>Wikipedia</strong>, “Net promoter score”, accessed 25 September 2026, <a href="https://en.wikipedia.org/wiki/Net_promoter_score" rel="noopener">en.wikipedia.org/wiki/Net_promoter_score</a>.</li>
+        <li id="ref-17-en"><strong>Wikipedia</strong>, “Employee engagement”, accessed 25 September 2026, <a href="https://en.wikipedia.org/wiki/Employee_engagement" rel="noopener">en.wikipedia.org/wiki/Employee_engagement</a>.</li>
+      </ol>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== IT ===================== -->
+<div id="it" role="tabpanel" aria-labelledby="tab-it" lang="it" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Progetti</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Metriche Kanban</h1>
+      <p class="dek">Come misurare e migliorare il flusso di lavoro: WIP, lead time, cycle time, throughput, legge di Little, percentili, efficienza del flusso e costo del ritardo, con formule ed esempi.</p>
+      <div class="byline">
+        <span>Di <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Pubblicato il <time datetime="2026-09-25">25/09/2026</time></span>
+        <span class="credit">Rivisto e impaginato con Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-it">
+    <h2 id="toc-it">Indice</h2>
+    <ol>
+      <li><a href="#kanban-it">Il Kanban in breve</a></li>
+      <li><a href="#quadro-it">La board e i punti di misura</a></li>
+      <li><a href="#wip-it">WIP ed età dell’elemento</a></li>
+      <li><a href="#tempos-it">Lead time, cycle time e dintorni</a></li>
+      <li><a href="#throughput-it">Throughput</a></li>
+      <li><a href="#cfd-it">Diagramma di flusso cumulativo</a></li>
+      <li><a href="#little-it">Legge di Little</a></li>
+      <li><a href="#percentis-it">Prevedibilità con i percentili</a></li>
+      <li><a href="#eficiencia-it">Efficienza, blocchi e scarti</a></li>
+      <li><a href="#qualidade-it">Qualità e persone</a></li>
+      <li><a href="#custo-it">Costo del ritardo</a></li>
+      <li><a href="#resumo-it">Riepilogo delle metriche</a></li>
+      <li><a href="#revisao-it">Ripasso veloce</a></li>
+      <li><a href="#referencias-it">Riferimenti</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="kanban-it" aria-labelledby="h-kanban-it">
+      <h2 id="h-kanban-it">Il Kanban in breve</h2>
+      <ul>
+        <li><strong>Origine:</strong> il Kanban è nato in Toyota, come parte del Toyota Production System creato da Taiichi Ohno. Alla fine degli anni Quaranta la Toyota studiò i supermercati, che riforniscono gli scaffali in base ai consumi; nel 1953 applicò questa logica in fabbrica. La parola giapponese <em>kanban</em> significa “insegna” o “cartellino visivo”. <sup><a href="#ref-1-it">[1]</a></sup> <sup><a href="#ref-3-it">[3]</a></sup> <sup><a href="#ref-4-it">[4]</a></sup></li>
+        <li><strong>Scopo iniziale:</strong> aumentare l’efficienza e ridurre gli sprechi. I primi cartellini segnalavano la necessità di rifornire le scorte: la produzione era tirata dalla domanda.</li>
+        <li><strong>Diffusione:</strong> il metodo si è esteso ad altri settori. Nel 2010 David J. Anderson ha pubblicato <em>Kanban</em>, che ha adattato l’idea al lavoro della conoscenza, come software e progetti. <sup><a href="#ref-5-it">[5]</a></sup> <sup><a href="#ref-6-it">[6]</a></sup></li>
+        <li><strong>Principi:</strong> visualizzare il flusso di lavoro, limitare il lavoro in corso (WIP), gestire attivamente il flusso e migliorare di continuo.</li>
+      </ul>
+      <p>Oggi il Kanban è uno degli approcci agili più diffusi. E, come ogni approccio basato sul flusso, dipende dalle <strong>metriche</strong> per sapere se il flusso migliora. La Kanban Guide, di John Coleman e Daniel Vacanti, definisce quattro misure di flusso obbligatorie: <strong>WIP</strong>, <strong>throughput</strong>, <strong>età dell’elemento</strong> (<em>work item age</em>) e <strong>cycle time</strong>. Le altre metriche di questo tutorial completano queste quattro. <sup><a href="#ref-2-it">[2]</a></sup></p>
+    </section>
+
+    <section id="quadro-it" aria-labelledby="h-quadro-it">
+      <h2 id="h-quadro-it">La board e i punti di misura</h2>
+      <p>Prima di misurare bisogna concordare dove inizia e dove finisce ogni misura. La board qui sotto, basata sull’esempio del testo originale, divide il lavoro in due parti:</p>
+      <ul>
+        <li><strong>Upstream</strong> (scoperta): richieste, backlog e analisi. Qui le idee sono ancora opzioni; possono essere affinate o scartate.</li>
+        <li><strong>Downstream</strong> (consegna): da “da fare” a “fatto”. Qui il team si è già impegnato a consegnare.</li>
+      </ul>
+      <figure>
+        <img src="rc_images/KanbanQuadro-it.svg" alt="Board Kanban con dieci colonne: richieste, backlog, analisi e da fare, nell’upstream; sviluppo, in attesa, test, collaudo e deploy, in corso, con limite di WIP di 6; e fatto. Sopra, dei righelli mostrano la pianificazione, dall’inizio alla colonna da fare; il lead time, dal punto di impegno al punto di consegna; il cycle time, dall’inizio dello sviluppo alla consegna; il time to market, da un capo all’altro; e il tempo bloccato, nella colonna in attesa, dove c’è una scheda bloccata." width="1000" height="565" loading="lazy">
+        <figcaption>Ogni metrica di tempo misura un tratto diverso della stessa board.</figcaption>
+      </figure>
+      <p>Due traguardi organizzano le misure: il <strong>punto di impegno</strong>, quando l’elemento entra in “da fare” e il team se ne assume l’impegno, e il <strong>punto di consegna</strong>, quando l’elemento è pronto. Ogni team può fissare questi punti a modo suo; l’importante è definirli in modo esplicito e mantenere la definizione.</p>
+    </section>
+
+    <section id="wip-it" aria-labelledby="h-wip-it">
+      <h2 id="h-wip-it">WIP ed età dell’elemento</h2>
+      <h3>Lavoro in corso (WIP)</h3>
+      <pre class="formula">WIP = numero di elementi iniziati e non ancora finiti</pre>
+      <p>Il WIP mostra quante attività sono in corso contemporaneamente. <strong>Limitare il WIP</strong> è la pratica centrale del Kanban: evita il sovraccarico, riduce i cambi di contesto e, come mostra la legge di Little, riduce il cycle time. Nella board di esempio le colonne in corso accettano al massimo sei elementi; raggiunto il limite, il team finisce qualcosa prima di prenderne uno nuovo. <sup><a href="#ref-2-it">[2]</a></sup></p>
+      <h3>Età dell’elemento (work item age)</h3>
+      <pre class="formula">Età dell’elemento = data di oggi − data di inizio del lavoro</pre>
+      <p>Il testo originale non riporta questa metrica, ma è una delle quattro misure obbligatorie della Kanban Guide. Il cycle time esiste solo quando l’elemento è finito; l’età si misura <em>mentre</em> è in corso. Un elemento più vecchio del cycle time abituale è un segnale precoce: è il momento di agire, prima che sia davvero in ritardo. <sup><a href="#ref-2-it">[2]</a></sup></p>
+    </section>
+
+    <section id="tempos-it" aria-labelledby="h-tempos-it">
+      <h2 id="h-tempos-it">Lead time, cycle time e dintorni</h2>
+      <p>Le metriche di tempo misurano tratti diversi della vita di un elemento. La figura segue una sola scheda per 14 giorni.</p>
+      <figure>
+        <img src="rc_images/KanbanVidaCartao-it.svg" alt="Linea del tempo di una scheda in 14 giorni. Giorno 0, richiesta creata; giorno 2, impegnata; giorno 4, inizia il lavoro; giorno 12, fatta; giorno 14, rilasciata. La barra alterna lavoro attivo, attesa e un blocco dal giorno 6 all’8. Dei righelli mostrano un time to market di 14 giorni, lead time di 10, cycle time di 8 e 2 giorni di blocco. Solo 3 degli 8 giorni di ciclo sono di lavoro attivo: efficienza del flusso del 37,5%." width="1000" height="475" loading="lazy">
+        <figcaption>La stessa scheda, misurata in quattro modi.</figcaption>
+      </figure>
+      <h3>Lead time</h3>
+      <pre class="formula">Lead time = data di completamento − data di impegno (o della richiesta)</pre>
+      <p>Il tempo totale di attesa del cliente, dall’impegno al completamento. Aiuta a individuare e risolvere i colli di bottiglia. Nell’esempio, 12 − 2 = 10 giorni. <sup><a href="#ref-11-it">[11]</a></sup></p>
+      <h3>Cycle time</h3>
+      <pre class="formula">Cycle time = data di completamento − data di inizio del lavoro</pre>
+      <p>Il tempo da quando si inizia a lavorare sull’elemento a quando è pronto. Misura l’efficienza del processo e orienta gli aggiustamenti. Nell’esempio, 12 − 4 = 8 giorni.</p>
+      <p>Attenzione ai nomi: la letteratura non è uniforme. Alcuni autori misurano il lead time dalla richiesta e non dall’impegno; la Kanban Guide usa un solo termine, <em>cycle time</em>, dall’inizio alla fine, e lascia a ogni team decidere dove sta l’inizio. Ciò che conta è registrare la definizione e usarla sempre allo stesso modo. <sup><a href="#ref-2-it">[2]</a></sup></p>
+      <h3>Time to market</h3>
+      <pre class="formula">Time to market = data di rilascio − data di inizio del progetto (o dell’idea)</pre>
+      <p>Il tempo dall’idea alla consegna al cliente, compreso l’upstream e l’attesa del rilascio. È la visione del business; utile soprattutto per i prodotti rivolti al cliente. Nell’esempio, 14 giorni.</p>
+      <h3>Tempo bloccato</h3>
+      <pre class="formula">Tempo bloccato = data di sblocco − data di blocco</pre>
+      <p>Quanto tempo l’elemento è rimasto fermo per un impedimento. Registrare i motivi dei blocchi rivela i problemi ricorrenti che rallentano il lavoro. Nell’esempio, 2 giorni.</p>
+    </section>
+
+    <section id="throughput-it" aria-labelledby="h-throughput-it">
+      <h2 id="h-throughput-it">Throughput</h2>
+      <pre class="formula">Throughput = totale elementi completati ÷ periodo di tempo</pre>
+      <p>Conta quanti elementi il team completa al giorno, alla settimana o al mese, e dà una visione diretta della capacità di consegna. La Kanban Guide raccomanda di contare gli <em>elementi</em>, non i punti o le ore stimate. <sup><a href="#ref-2-it">[2]</a></sup> <sup><a href="#ref-12-it">[12]</a></sup></p>
+      <figure>
+        <img src="rc_images/KanbanThroughput-it.svg" alt="Grafico a barre del throughput di dieci settimane: 6, 8, 5, 9, 7, 4, 8, 10, 7 e 8 elementi completati, con una media di 7,2 a settimana indicata da una linea tratteggiata." width="1000" height="490" loading="lazy">
+        <figcaption>Il throughput varia di settimana in settimana; la media da sola non racconta tutto.</figcaption>
+      </figure>
+      <p>Per prevedere quando un insieme di elementi sarà pronto è meglio usare la distribuzione storica del throughput, per esempio in una simulazione Monte Carlo, che dividere il totale per la media. <sup><a href="#ref-7-it">[7]</a></sup></p>
+    </section>
+
+    <section id="cfd-it" aria-labelledby="h-cfd-it">
+      <h2 id="h-cfd-it">Diagramma di flusso cumulativo</h2>
+      <p>Il testo originale si chiude con un diagramma di flusso cumulativo (CFD), che riunisce più metriche in un solo grafico. Ogni fascia mostra quanti elementi sono passati per una fase fino a ogni giorno. <sup><a href="#ref-10-it">[10]</a></sup></p>
+      <figure>
+        <img src="rc_images/KanbanCFD-it.svg" alt="Diagramma di flusso cumulativo di 15 giorni con tre fasce sovrapposte: da fare, in corso e fatto. Una freccia verticale al giorno 8 mostra il WIP, la distanza tra le linee di in corso e fatto, di 4 elementi. Una freccia orizzontale mostra il cycle time approssimato, di 3 giorni. Una linea tratteggiata sulla fascia fatto indica che la sua pendenza è il throughput." width="1000" height="510" loading="lazy">
+        <figcaption>Nel CFD la distanza verticale è il WIP, quella orizzontale il cycle time approssimato e la pendenza il throughput.</figcaption>
+      </figure>
+      <ul>
+        <li><strong>Lettura verticale:</strong> lo spessore di una fascia in un giorno è il numero di elementi in quella fase, cioè il WIP della fase.</li>
+        <li><strong>Lettura orizzontale:</strong> la distanza tra l’ingresso in una fase e l’uscita dal flusso approssima il cycle time medio.</li>
+        <li><strong>Pendenza:</strong> la pendenza della fascia fatto è il throughput.</li>
+        <li><strong>Segnali:</strong> fasce che si allargano indicano lavoro accumulato; fasce parallele, flusso stabile; una fascia piatta indica che nulla esce da quella fase.</li>
+      </ul>
+    </section>
+
+    <section id="little-it" aria-labelledby="h-little-it">
+      <h2 id="h-little-it">Legge di Little</h2>
+      <pre class="formula">WIP medio = throughput × cycle time medio
+Cycle time medio = WIP medio ÷ throughput</pre>
+      <p>Dimostrata da John Little nel 1961, la legge mette in relazione la dimensione della coda, il ritmo di uscita e il tempo di permanenza in un sistema. <sup><a href="#ref-8-it">[8]</a></sup> <sup><a href="#ref-9-it">[9]</a></sup> Spiega perché limitare il WIP funziona: a parità di throughput, meno elementi in corso significano elementi che finiscono prima.</p>
+      <figure>
+        <img src="rc_images/KanbanLittle-it.svg" alt="In alto, la legge di Little: cycle time medio uguale al WIP medio diviso per il throughput. Il team A ha 12 elementi in corso e ne consegna 3 al giorno: cycle time di 4 giorni. Il team B ha 6 elementi in corso e ne consegna gli stessi 3 al giorno: cycle time di 2 giorni." width="1000" height="490" loading="lazy">
+        <figcaption>Metà WIP, metà cycle time, con lo stesso throughput.</figcaption>
+      </figure>
+      <p>Una cautela: la legge vale per <strong>medie di lungo periodo</strong> in un sistema <strong>stabile</strong>, dove ciò che entra è, in media, ciò che esce, e gli elementi iniziati vengono finiti. Spiega il comportamento del sistema, ma non prevede la data di un singolo elemento; per quello si usano i percentili della prossima sezione. <sup><a href="#ref-7-it">[7]</a></sup></p>
+    </section>
+
+    <section id="percentis-it" aria-labelledby="h-percentis-it">
+      <h2 id="h-percentis-it">Prevedibilità con i percentili</h2>
+      <p>Il cycle time quasi mai segue una curva simmetrica: la maggior parte degli elementi finisce in fretta, ma alcuni richiedono moltissimo, per blocchi e dipendenze. Questa <strong>coda lunga</strong> rende ingannevole la media. <sup><a href="#ref-7-it">[7]</a></sup></p>
+      <figure>
+        <img src="rc_images/KanbanHistograma-it.svg" alt="Istogramma del cycle time di 76 elementi, da 1 a 20 giorni, con il picco tra 4 e 5 giorni e una lunga coda a destra dovuta a blocchi e dipendenze. Delle linee segnano i percentili: 50% entro 5 giorni, 85% entro 10 giorni e 95% entro 14 giorni, oltre alla media. Un riquadro evidenzia l’aspettativa di livello di servizio: l’85% degli elementi finisce entro 10 giorni." width="1000" height="496" loading="lazy">
+        <figcaption>I percentili rispondono alla domanda che il cliente fa davvero: “entro quando sarà pronto?”.</figcaption>
+      </figure>
+      <p>Invece della media, usa i <strong>percentili</strong>: “l’85% degli elementi finisce entro 10 giorni” è una promessa che il team può mantenere e il cliente può usare. La Kanban Guide la chiama <strong>aspettativa di livello di servizio</strong> (SLE): il cycle time atteso per un elemento, con una probabilità. Combinata con l’età dell’elemento, la SLE mostra subito quali elementi sono a rischio. <sup><a href="#ref-2-it">[2]</a></sup></p>
+    </section>
+
+    <section id="eficiencia-it" aria-labelledby="h-eficiencia-it">
+      <h2 id="h-eficiencia-it">Efficienza, blocchi e scarti</h2>
+      <h3>Efficienza del flusso</h3>
+      <pre class="formula">Efficienza del flusso (%) = tempo di lavoro attivo ÷ tempo totale nel processo × 100</pre>
+      <ul>
+        <li><strong>Tempo di lavoro attivo:</strong> il tempo in cui qualcuno lavora davvero sull’elemento.</li>
+        <li><strong>Tempo totale:</strong> tutto il tempo nel processo, attese e blocchi compresi.</li>
+      </ul>
+      <p>Nella scheda di esempio ci sono stati 3 giorni di lavoro attivo su un ciclo di 8: efficienza del 37,5%. Gli altri 5 giorni sono stati attesa e blocco. È normale che la maggior parte del tempo sia attesa, ed è proprio lì la più grande opportunità di miglioramento: ridurre le code di solito rende più che lavorare più in fretta. <sup><a href="#ref-15-it">[15]</a></sup></p>
+      <h3>Tasso di blocco</h3>
+      <pre class="formula">Elementi bloccati = n
+Tasso di blocco (%) = elementi bloccati ÷ elementi elaborati × 100</pre>
+      <p>Dipendenze e blocchi interrompono il flusso e introducono molta variabilità, che si vede come coda lunga nell’istogramma del cycle time. Seguire il tasso, insieme al tempo bloccato e ai motivi, mostra dove intervenire.</p>
+      <h3>Tasso di scarto</h3>
+      <pre class="formula">Elementi scartati = n
+Tasso di scarto (%) = elementi scartati ÷ elementi elaborati × 100</pre>
+      <p>Misura quante opzioni vengono scartate nell’upstream, <strong>prima</strong> del punto di impegno. Contrariamente alle apparenze, scartare non è un male: un upstream sano filtra presto le idee deboli, quando costa poco, invece di lasciarle occupare il downstream.</p>
+    </section>
+
+    <section id="qualidade-it" aria-labelledby="h-qualidade-it">
+      <h2 id="h-qualidade-it">Qualità e persone</h2>
+      <h3>Tasso di difetti</h3>
+      <pre class="formula">Tasso di difetti = numero di difetti ÷ totale unità consegnate</pre>
+      <p>Controlla i difetti per unità di lavoro. È essenziale per assicurarsi che la velocità non venga pagata con la qualità: un throughput alto con molti difetti sposta solo il lavoro più avanti.</p>
+      <h3>Soddisfazione del cliente</h3>
+      <pre class="formula">Soddisfazione del cliente = somma dei punteggi di soddisfazione ÷ numero di rispondenti</pre>
+      <p>Misurata con sondaggi o feedback diretti, mostra se ciò che viene consegnato soddisfa il cliente. Oltre alla media dei punteggi (CSAT), molte aziende usano il <strong>Net Promoter Score</strong> (NPS), basato sulla domanda “da 0 a 10, quanto ci raccomanderesti?”. <sup><a href="#ref-16-it">[16]</a></sup></p>
+      <h3>Coinvolgimento dei collaboratori</h3>
+      <pre class="formula">Coinvolgimento = somma dei punteggi di coinvolgimento ÷ numero di collaboratori</pre>
+      <p>Valuta il coinvolgimento e il morale del team, che influiscono direttamente su produttività e qualità. Si può misurare con sondaggi brevi e periodici. <sup><a href="#ref-17-it">[17]</a></sup></p>
+    </section>
+
+    <section id="custo-it" aria-labelledby="h-custo-it">
+      <h2 id="h-custo-it">Costo del ritardo</h2>
+      <pre class="formula">Costo del ritardo (CoD) = valore non guadagnato per unità di tempo di ritardo
+Costo totale del ritardo = CoD × tempo di ritardo
+CD3 = CoD ÷ durata del lavoro</pre>
+      <p>Il costo del ritardo traduce il tempo in denaro: quanto si perde per ogni settimana in cui un elemento non è pronto. Don Reinertsen lo definisce “l’unica cosa” che valga la pena quantificare nello sviluppo prodotto. <sup><a href="#ref-13-it">[13]</a></sup> <sup><a href="#ref-14-it">[14]</a></sup></p>
+      <figure>
+        <img src="rc_images/KanbanCustoAtraso-it.svg" alt="A sinistra, due curve di valore cumulato di un elemento che genera 10 mila € a settimana: rilasciato alla settimana 4 e alla settimana 8. L’area tra le due è il valore perso, 40 mila €. A destra, tre elementi ordinati per CD3, costo del ritardo diviso per la durata: B, con 6 mila € a settimana e 1 settimana, CD3 di 6; A, con 10 mila € a settimana e 4 settimane, CD3 di 2,5; C, con 20 mila € a settimana e 10 settimane, CD3 di 2." width="1000" height="485" loading="lazy">
+        <figcaption>Un ritardo di 4 settimane costa 40 mila €; il CD3 ordina gli elementi per valore per settimana di lavoro.</figcaption>
+      </figure>
+      <p>Il testo originale presenta il costo del ritardo come “valore del lavoro non realizzato ÷ tempo di ritardo”; la forma più usata è quella sopra, in cui il CoD è già un tasso per unità di tempo e il costo totale è quel tasso moltiplicato per il ritardo. Per dare le priorità si divide il CoD per la durata (CD3): l’elemento B, piccolo e prezioso, viene prima dell’elemento C, che vale di più a settimana ma impegna il team molto più a lungo. È la logica del <strong>WSJF</strong> (<em>weighted shortest job first</em>). <sup><a href="#ref-14-it">[14]</a></sup></p>
+    </section>
+
+    <section id="resumo-it" aria-labelledby="h-resumo-it">
+      <h2 id="h-resumo-it">Riepilogo delle metriche</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Metrica</th><th scope="col">Formula</th><th scope="col">Risponde a</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">WIP</th><td>elementi iniziati e non finiti</td><td>Quanto lavoro è aperto adesso?</td></tr>
+            <tr><th scope="row">Età dell’elemento</th><td>oggi − inizio</td><td>Quale elemento in corso è a rischio?</td></tr>
+            <tr><th scope="row">Lead time</th><td>completamento − impegno</td><td>Quanto aspetta il cliente?</td></tr>
+            <tr><th scope="row">Cycle time</th><td>completamento − inizio del lavoro</td><td>Quanto dura il processo?</td></tr>
+            <tr><th scope="row">Throughput</th><td>elementi completati ÷ periodo</td><td>Quanto consegna il team?</td></tr>
+            <tr><th scope="row">Tempo bloccato</th><td>sblocco − blocco</td><td>Quanto tempo si perde da fermi?</td></tr>
+            <tr><th scope="row">Time to market</th><td>rilascio − inizio</td><td>Quanto dall’idea al mercato?</td></tr>
+            <tr><th scope="row">Efficienza del flusso</th><td>lavoro attivo ÷ tempo totale</td><td>Quanto del tempo è lavoro vero?</td></tr>
+            <tr><th scope="row">Tasso di blocco</th><td>bloccati ÷ elaborati</td><td>Quanto spesso si ferma il flusso?</td></tr>
+            <tr><th scope="row">Tasso di scarto</th><td>scartati ÷ elaborati</td><td>L’upstream filtra bene le opzioni?</td></tr>
+            <tr><th scope="row">Tasso di difetti</th><td>difetti ÷ unità</td><td>La qualità tiene il passo della velocità?</td></tr>
+            <tr><th scope="row">Soddisfazione del cliente</th><td>media dei punteggi</td><td>Il cliente è soddisfatto?</td></tr>
+            <tr><th scope="row">Coinvolgimento</th><td>media dei punteggi</td><td>Il team è coinvolto?</td></tr>
+            <tr><th scope="row">Costo del ritardo</th><td>valore perso per unità di tempo</td><td>Cosa fare per primo?</td></tr>
+            <tr><th scope="row">Legge di Little</th><td>WIP = throughput × cycle time</td><td>Come si legano WIP e tempo?</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <aside class="recap" aria-label="Da ricordare">
+        <h3>Da ricordare</h3>
+        <ul>
+          <li>Le quattro misure di flusso: WIP, throughput, età dell’elemento e cycle time.</li>
+          <li>Meno WIP, a parità di throughput, significa consegne più rapide (legge di Little).</li>
+          <li>Per prevedere usa percentili e storico, non le medie.</li>
+        </ul>
+      </aside>
+    </section>
+
+    <section id="revisao-it" aria-labelledby="h-revisao-it">
+      <h2 id="h-revisao-it">Ripasso veloce</h2>
+      <p>Prova a rispondere prima di aprire ogni domanda.</p>
+      <div class="quiz">
+        <details><summary>1. Qual è la differenza tra lead time e cycle time?</summary><p>Il lead time parte dall’impegno (o dalla richiesta) e misura quanto aspetta il cliente; il cycle time parte dall’inizio del lavoro e misura quanto dura il processo. Il lead time è sempre maggiore o uguale al cycle time.</p></details>
+        <details><summary>2. Quali sono le quattro misure di flusso obbligatorie della Kanban Guide?</summary><p>WIP, throughput, età dell’elemento (work item age) e cycle time.</p></details>
+        <details><summary>3. Un team ha in media 15 elementi in corso e ne completa 5 a settimana. Qual è il cycle time medio?</summary><p>Per la legge di Little, 15 ÷ 5 = 3 settimane.</p></details>
+        <details><summary>4. E se il team riduce il WIP a 10, mantenendo il throughput?</summary><p>Il cycle time medio scende a 10 ÷ 5 = 2 settimane.</p></details>
+        <details><summary>5. Perché usare i percentili invece della media del cycle time?</summary><p>Perché la distribuzione ha una coda lunga: la media nasconde gli elementi che richiedono moltissimo. Un percentile, come “85% entro 10 giorni”, è una promessa che si può mantenere.</p></details>
+        <details><summary>6. Un elemento è rimasto 10 giorni nel processo con 2 giorni di lavoro attivo. Qual è l’efficienza del flusso?</summary><p>2 ÷ 10 × 100 = 20%. L’altro 80% del tempo è stato attesa o blocco.</p></details>
+        <details><summary>7. Nel CFD, cosa indicano la distanza verticale, quella orizzontale e la pendenza?</summary><p>La distanza verticale è il WIP; quella orizzontale, il cycle time approssimato; la pendenza della fascia fatto, il throughput.</p></details>
+        <details><summary>8. Due elementi: X costa 8 mila € per settimana di ritardo e richiede 2 settimane; Y costa 12 mila € a settimana e ne richiede 6. Quale fare per primo?</summary><p>X: CD3 = 8 ÷ 2 = 4; Y: CD3 = 12 ÷ 6 = 2. Fai prima X.</p></details>
+      </div>
+      <a class="back" href="#top">↑ Torna all’inizio</a>
+    </section>
+
+    <section id="referencias-it" aria-labelledby="h-referencias-it">
+      <h2 id="h-referencias-it">Riferimenti</h2>
+      <ol class="refs">
+        <li id="ref-1-it"><strong>Giovani Perotto Mesquita</strong>, “Kanban em Métricas”, GitHub, testo originale di questo tutorial, <a href="https://github.com/GiovaniPM/MyCourses/blob/master/Kanban/Metricas.md" rel="noopener">github.com/GiovaniPM/MyCourses/blob/master/Kanban/Metricas.md</a>.</li>
+        <li id="ref-2-it"><strong>John Coleman e Daniel Vacanti</strong>, <em>The Kanban Guide</em>, Kanban Guides, consultato il 25/09/2026, <a href="https://kanbanguides.org/english/" rel="noopener">kanbanguides.org/english</a>.</li>
+        <li id="ref-3-it"><strong>Wikipedia</strong> (in inglese), “Kanban”, consultato il 25/09/2026, <a href="https://en.wikipedia.org/wiki/Kanban" rel="noopener">en.wikipedia.org/wiki/Kanban</a>.</li>
+        <li id="ref-4-it"><strong>Taiichi Ohno</strong>, <em>Toyota Production System: Beyond Large-Scale Production</em>, Productivity Press, 1988.</li>
+        <li id="ref-5-it"><strong>David J. Anderson</strong>, <em>Kanban: Successful Evolutionary Change for Your Technology Business</em>, Blue Hole Press, 2010.</li>
+        <li id="ref-6-it"><strong>Wikipedia</strong> (in inglese), “Kanban (development)”, consultato il 25/09/2026, <a href="https://en.wikipedia.org/wiki/Kanban_(development)" rel="noopener">en.wikipedia.org/wiki/Kanban_(development)</a>.</li>
+        <li id="ref-7-it"><strong>Daniel S. Vacanti</strong>, <em>Actionable Agile Metrics for Predictability</em>, 2015.</li>
+        <li id="ref-8-it"><strong>John D. C. Little</strong>, “A Proof for the Queuing Formula: L = λW”, <em>Operations Research</em>, vol. 9, n. 3, 1961.</li>
+        <li id="ref-9-it"><strong>Wikipedia</strong> (in inglese), “Little’s law”, consultato il 25/09/2026, <a href="https://en.wikipedia.org/wiki/Little%27s_law" rel="noopener">en.wikipedia.org/wiki/Little’s_law</a>.</li>
+        <li id="ref-10-it"><strong>Wikipedia</strong> (in inglese), “Cumulative flow diagram”, consultato il 25/09/2026, <a href="https://en.wikipedia.org/wiki/Cumulative_flow_diagram" rel="noopener">en.wikipedia.org/wiki/Cumulative_flow_diagram</a>.</li>
+        <li id="ref-11-it"><strong>Wikipedia</strong> (in inglese), “Lead time”, consultato il 25/09/2026, <a href="https://en.wikipedia.org/wiki/Lead_time" rel="noopener">en.wikipedia.org/wiki/Lead_time</a>.</li>
+        <li id="ref-12-it"><strong>Wikipedia</strong> (in inglese), “Throughput (business)”, consultato il 25/09/2026, <a href="https://en.wikipedia.org/wiki/Throughput_(business)" rel="noopener">en.wikipedia.org/wiki/Throughput_(business)</a>.</li>
+        <li id="ref-13-it"><strong>Donald G. Reinertsen</strong>, <em>The Principles of Product Development Flow</em>, Celeritas Publishing, 2009.</li>
+        <li id="ref-14-it"><strong>Wikipedia</strong> (in inglese), “Cost of delay”, consultato il 25/09/2026, <a href="https://en.wikipedia.org/wiki/Cost_of_delay" rel="noopener">en.wikipedia.org/wiki/Cost_of_delay</a>.</li>
+        <li id="ref-15-it"><strong>Niklas Modig e Pär Åhlström</strong>, <em>This Is Lean: Resolving the Efficiency Paradox</em>, Rheologica, 2012.</li>
+        <li id="ref-16-it"><strong>Wikipedia</strong> (in inglese), “Net promoter score”, consultato il 25/09/2026, <a href="https://en.wikipedia.org/wiki/Net_promoter_score" rel="noopener">en.wikipedia.org/wiki/Net_promoter_score</a>.</li>
+        <li id="ref-17-it"><strong>Wikipedia</strong> (in inglese), “Employee engagement”, consultato il 25/09/2026, <a href="https://en.wikipedia.org/wiki/Employee_engagement" rel="noopener">en.wikipedia.org/wiki/Employee_engagement</a>.</li>
+      </ol>
+      <a class="back" href="#top">↑ Torna all’inizio</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span>Giovani Perotto Mesquita · Porto Alegre, RS</span>
+    <span><a href="projects.html" data-projects data-foot="0">Projetos</a> · <a href="resume.html" data-resume data-foot="1">Currículo</a> · <a href="contact.html" data-contact data-foot="2">Contato</a></span>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('.lang [role="tab"]'));
+    var titles = {"pt": "Métricas Kanban · Giovani Perotto Mesquita", "en": "Kanban metrics · Giovani Perotto Mesquita", "it": "Metriche Kanban · Giovani Perotto Mesquita"};
+    var foots = {"pt": ["Projetos", "Currículo", "Contato"], "en": ["Projects", "Resume", "Contact"], "it": ["Progetti", "Curriculum", "Contatti"]};
+    var langs = { pt: 'pt-BR', en: 'en', it: 'it' };
+    var bar = document.querySelector('.progress');
+    var article = document.querySelector('[role="tabpanel"]:not([hidden]) article');
+
+    function show(id, focus) {
+      tabs.forEach(function (t) {
+        var on = t.getAttribute('aria-controls') === id;
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+        if (on && focus) t.focus();
+      });
+      document.documentElement.lang = langs[id];
+      document.title = titles[id];
+      var suffix = id === 'pt' ? '' : '#' + id;
+      [['data-home', 'index.html'], ['data-about', 'about.html'], ['data-resume', 'resume.html'], ['data-projects', 'projects.html'], ['data-contact', 'contact.html']].forEach(function (p) {
+        document.querySelectorAll('[' + p[0] + ']').forEach(function (a) { a.href = p[1] + suffix; });
+      });
+      document.querySelectorAll('[data-foot]').forEach(function (a) { a.textContent = foots[id][+a.getAttribute('data-foot')]; });
+      article = document.querySelector('#' + id + ' article');
+      if (history.replaceState) history.replaceState(null, '', id === 'pt' ? location.pathname : '#' + id);
+      progress();
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () { show(t.getAttribute('aria-controls')); });
+      t.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (d) { e.preventDefault(); show(tabs[(i + d + tabs.length) % tabs.length].getAttribute('aria-controls'), true); }
+      });
+    });
+
+    // barra de progresso de leitura
+    function progress() {
+      if (!article) return;
+      var r = article.getBoundingClientRect();
+      var total = r.height - window.innerHeight;
+      var p = total > 0 ? Math.min(Math.max(-r.top / total, 0), 1) : 1;
+      bar.style.width = (p * 100) + '%';
+    }
+    window.addEventListener('scroll', progress, { passive: true });
+    window.addEventListener('resize', progress);
+
+    // destaca a seção atual no índice
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          var panel = e.target.closest('[role="tabpanel"]');
+          panel.querySelectorAll('.toc a').forEach(function (a) {
+            if (a.getAttribute('href') === '#' + e.target.id) a.setAttribute('aria-current', 'true');
+            else a.removeAttribute('aria-current');
+          });
+        });
+      }, { rootMargin: '-20% 0px -70% 0px' });
+      document.querySelectorAll('article section[id]').forEach(function (s) { io.observe(s); });
+    }
+
+    var h = (location.hash || '').replace('#', '');
+    var m = h.match(/^(?:.*-)?(en|it)$/);
+    if (m) {
+      show(m[1]);
+      if (h !== m[1]) { var el = document.getElementById(h); if (el) el.scrollIntoView(); if (history.replaceState) history.replaceState(null, '', '#' + h); }
+    } else progress();
+  })();
+</script>
+</body>
+</html>
