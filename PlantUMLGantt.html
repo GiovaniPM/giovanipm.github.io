@@ -1,0 +1,1764 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gantt com PlantUML · Giovani Perotto Mesquita</title>
+<meta name="description" content="Tutorial de gráficos de Gantt com PlantUML: estrutura do arquivo, configuração do projeto, calendário, tarefas, dependências, marcos, recursos, estilo e um exemplo completo, com figuras geradas pelo próprio PlantUML. Disponível em português, inglês e italiano.">
+<meta name="author" content="Giovani Perotto Mesquita">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Paleta alegre: roxo e magenta vibrantes, amarelo-girassol, verde-água e coral */
+    --bg: #FFF7EC;
+    --surface: #FFFFFF;
+    --ink: #2B1B3D;
+    --text: #3E3350;
+    --muted: #756986;
+    --line: #F1E2CF;
+    --accent: #0E8074;
+    --accent-soft: #E2F6F2;
+    --accent-strong: #5B2A86;
+    --navy: #5B2A86;
+    --navy-deep: #C2185B;
+    --on-navy: #FFFFFF;
+    --on-navy-muted: #FCE4F0;
+    --gold: #FFB703;
+    --gold-ink: #B35300;
+    --gold-soft: #FFF1C9;
+    --coral: #FF6B6B;
+    --sky: #3A86FF;
+    --mint: #2A9D8F;
+    --pink: #EF476F;
+    --sans: "Hanken Grotesk", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1A1328; --surface: #241A36; --ink: #F7F0FF; --text: #E2D8F0; --muted: #A898C0;
+      --line: #3A2D52; --accent: #5FD3C4; --accent-soft: #1D3A38; --accent-strong: #C9A7F5;
+      --navy: #3D1A5C; --navy-deep: #7A1240; --gold: #FFC94D; --gold-ink: #FFC94D; --gold-soft: #3A2E12;
+      --coral: #FF8A8A; --sky: #6FA8FF; --mint: #4CC3B3; --pink: #FF6F91;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 4px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 1.5rem; }
+
+  /* navegação */
+  .nav {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: saturate(160%) blur(10px); -webkit-backdrop-filter: saturate(160%) blur(10px);
+    border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px);
+  }
+  .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 58px; gap: 1rem; }
+  .brand { font-family: var(--serif); font-weight: 600; color: var(--accent-strong); text-decoration: none; font-size: 1.05rem; }
+  .nav ul { list-style: none; display: flex; gap: 1.4rem; margin: 0; padding: 0; }
+  .nav ul a { color: var(--muted); text-decoration: none; font-size: 0.93rem; font-weight: 500; }
+  .nav ul a:hover, .nav ul a[aria-current="page"] { color: var(--ink); }
+  .nav-right { display: flex; align-items: center; gap: 1rem; }
+  .lang { display: flex; gap: 0.2rem; }
+  .lang button { font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; color: var(--muted); background: none; padding: 0.2rem 0.45rem; border-radius: 6px; border: 1px solid transparent; }
+  .lang button:hover { color: var(--ink); }
+  .lang button[aria-selected="true"] { color: var(--accent-strong); border-color: var(--line); background: var(--surface); }
+  [hidden] { display: none !important; }
+  .progress { position: absolute; left: 0; bottom: -1px; height: 3px; width: 0; background: linear-gradient(90deg, var(--coral), var(--gold), var(--mint)); }
+
+  /* abertura */
+  .hero-band {
+    background:
+      radial-gradient(900px 420px at 85% -10%, rgba(255,255,255,.07), transparent 60%),
+      linear-gradient(160deg, var(--navy) 0%, var(--navy-deep) 100%);
+    border-top: 4px solid var(--gold); color: var(--on-navy);
+  }
+  .hero { padding: 3.5rem 0 3.5rem; max-width: 820px; }
+  .crumb { margin: 0 0 1.4rem; font-size: 0.92rem; }
+  .crumb a { color: var(--on-navy-muted); text-decoration: none; }
+  .crumb a:hover { color: var(--gold); }
+  .eyebrow { color: var(--gold); font-weight: 600; font-size: 1rem; margin: 0 0 0.7rem; }
+  h1 { font-family: var(--serif); font-weight: 600; color: var(--on-navy); font-size: clamp(2.3rem, 5.5vw, 3.8rem); line-height: 1.05; letter-spacing: -0.025em; margin: 0; }
+  .dek { font-family: var(--serif); font-style: italic; font-size: clamp(1.1rem, 2.2vw, 1.35rem); color: var(--on-navy-muted); margin: 1.1rem 0 1.6rem; max-width: 58ch; }
+  .byline { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; font-size: 0.92rem; color: var(--on-navy-muted); }
+  .byline strong { color: var(--on-navy); font-weight: 600; }
+  .byline .credit { margin-left: auto; font-style: italic; }
+
+  /* layout do artigo */
+  .layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 3rem; padding: 3rem 0 4rem; align-items: start; }
+  .toc { position: sticky; top: 82px; font-size: 0.92rem; max-height: calc(100vh - 100px); overflow-y: auto; }
+  .toc h2 { font-family: var(--sans); font-size: 0.85rem; font-weight: 600; color: var(--muted); margin: 0 0 0.7rem; border: 0; padding: 0; }
+  .toc ol { list-style: none; margin: 0; padding: 0; counter-reset: toc; border-left: 2px solid var(--line); }
+  .toc li { counter-increment: toc; }
+  .toc a { display: block; padding: 0.3rem 0 0.3rem 1rem; margin-left: -2px; border-left: 2px solid transparent; color: var(--muted); text-decoration: none; line-height: 1.35; }
+  .toc a::before { content: counter(toc) ". "; color: var(--gold-ink); font-weight: 600; }
+  .toc a:hover { color: var(--ink); }
+  .toc a[aria-current="true"] { color: var(--accent-strong); border-left-color: var(--gold); font-weight: 600; }
+
+  article { background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: var(--radius); padding: 3rem clamp(1.25rem, 4vw, 3.5rem); min-width: 0; }
+  article section + section { margin-top: 3.2rem; }
+  article h2 { font-family: var(--serif); font-weight: 600; color: var(--ink); font-size: clamp(1.5rem, 2.8vw, 1.9rem); letter-spacing: -0.015em; line-height: 1.2; margin: 0 0 1.1rem; padding-left: 0.9rem; border-left: 3px solid var(--gold); }
+  article h3 { font-family: var(--sans); font-size: 1.1rem; font-weight: 600; color: var(--ink); margin: 2rem 0 0.8rem; }
+  article p, article li { font-family: var(--serif); font-size: 1.12rem; line-height: 1.7; color: var(--text); }
+  article p { margin: 0 0 1.1rem; max-width: 68ch; }
+  article ul, article ol { margin: 0 0 1.1rem; padding-left: 1.4rem; max-width: 68ch; }
+  article li { margin-bottom: 0.3rem; }
+  article strong { color: var(--ink); }
+  sup a { font-family: var(--sans); font-size: 0.72rem; font-weight: 700; text-decoration: none; padding: 0 0.15em; }
+
+  figure { margin: 2rem 0; }
+  figure img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: #FFF7EC; }
+  figcaption { margin-top: 0.6rem; font-size: 0.9rem; color: var(--muted); text-align: center; font-family: var(--sans); line-height: 1.5; }
+
+  blockquote { margin: 1.5rem 0; padding: 1.2rem 1.5rem; background: var(--accent-soft); border-left: 3px solid var(--gold); border-radius: 0 10px 10px 0; }
+  blockquote p { font-size: 1.05rem; margin: 0 0 0.8rem; }
+  blockquote p:last-child { margin-bottom: 0; }
+  blockquote.pull p { font-size: clamp(1.15rem, 2.3vw, 1.35rem); font-style: italic; line-height: 1.45; color: var(--ink); }
+  blockquote cite { font-family: var(--sans); font-size: 0.88rem; font-style: normal; color: var(--muted); }
+
+  /* tabelas */
+  .table-wrap { overflow-x: auto; margin: 1.5rem 0; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-family: var(--sans); font-size: 0.95rem; }
+  th, td { text-align: left; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.5; }
+  thead th { background: var(--gold-soft); color: var(--ink); font-weight: 600; }
+  tbody th { color: var(--ink); font-weight: 600; }
+  tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
+  td code, th code { font-size: 0.9em; }
+
+  /* mitos */
+  .myths { list-style: none; padding: 0; margin: 1.5rem 0; max-width: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
+  .myths li { margin: 0; padding: 1rem 1.2rem; border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: 10px; }
+  .myths li:nth-child(4n+2) { border-top-color: var(--sky); }
+  .myths li:nth-child(4n+3) { border-top-color: var(--mint); }
+  .myths li:nth-child(4n+4) { border-top-color: var(--gold); }
+  .myths h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+  .myths p { margin: 0; font-size: 1rem; line-height: 1.6; }
+
+  /* para fixar */
+  .recap { margin: 1.8rem 0 0; padding: 1.1rem 1.4rem; background: var(--gold-soft); border-left: 4px solid var(--mint); border-radius: 0 10px 10px 0; }
+  .recap h3 { margin: 0 0 0.5rem; font-size: 0.85rem; letter-spacing: .05em; text-transform: uppercase; color: var(--gold-ink); }
+  .recap ul { margin: 0; padding-left: 1.2rem; }
+  .recap li { font-family: var(--sans); font-size: 0.98rem; line-height: 1.55; margin-bottom: 0.25rem; }
+
+  /* revisão rápida */
+  .quiz { display: grid; gap: 0.7rem; margin: 1.5rem 0; }
+  .quiz details { border: 1px solid var(--line); border-left: 4px solid var(--sky); border-radius: 0 10px 10px 0; padding: 0.8rem 1.1rem; }
+  .quiz details:nth-child(3n+2) { border-left-color: var(--pink); }
+  .quiz details:nth-child(3n+3) { border-left-color: var(--mint); }
+  .quiz summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); line-height: 1.45; }
+  .quiz details[open] summary { margin-bottom: 0.5rem; }
+  .quiz p { margin: 0; font-size: 1.02rem; }
+
+  .refs { font-family: var(--sans); padding-left: 1.4rem; margin: 0; }
+  .refs li { font-family: var(--sans); font-size: 0.92rem; line-height: 1.55; margin-bottom: 0.7rem; word-break: break-word; }
+  .refs li:target { background: var(--gold-soft); border-radius: 6px; }
+
+  .back { display: inline-block; margin-top: 1rem; font-family: var(--sans); font-size: 0.85rem; text-decoration: none; }
+
+  footer { background: var(--navy-deep); color: var(--on-navy-muted); border-top: 3px solid var(--gold); padding: 1.5rem 0 calc(1.5rem + env(safe-area-inset-bottom, 0px)); font-size: 0.88rem; }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1.5rem; }
+  footer a { color: var(--on-navy); text-decoration: none; }
+  footer a:hover { color: var(--gold); }
+
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+    .toc { position: static; max-height: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.2rem 1.4rem; }
+  }
+  @media (max-width: 760px) {
+    .myths { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .nav ul { display: none; }
+    .hero { padding: 2.5rem 0; }
+    .wrap { padding: 0 1rem; }
+    article p, article li { font-size: 1.05rem; }
+    th, td { padding: 0.6rem 0.7rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  @media print {
+    .nav, .toc, footer, .back, .crumb { display: none !important; }
+    body { background: #fff; }
+    .hero-band { background: none; color: #111; border: 0; }
+    .hero-band h1 { color: #5B2A86; }
+    .dek, .byline, .byline strong { color: #333; }
+    .layout { display: block; padding: 0; }
+    article { border: 0; padding: 0; }
+    .table-wrap { overflow: visible; }
+    figure, blockquote, .myths li, .recap, .quiz details, tr { break-inside: avoid; }
+  }
+
+  /* blocos de código (Gherkin) */
+  pre.code { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: #2B1B3D; color: #F7F0FF; border-radius: 10px; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.92rem; line-height: 1.6; tab-size: 2; }
+  pre.code code { font-family: inherit; white-space: pre; }
+  pre.code .k { color: #FFB703; font-weight: 700; }
+  pre.code .s { color: #5FD3C4; font-weight: 700; }
+  pre.code .c { color: #A898C0; }
+  pre.code .p { color: #C9A7F5; }
+  article code { font-family: Consolas, "Courier New", monospace; font-size: 0.92em; }
+  article :not(pre) > code { background: var(--accent-soft); color: var(--ink); padding: 0.05em 0.35em; border-radius: 4px; }
+
+  /* fórmulas */
+  pre.formula { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.95rem; line-height: 1.5; }
+
+  /* glossário */
+  dl.glossary { margin: 1.2rem 0; display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  dl.glossary dt, dl.glossary dd { margin: 0; padding: 0.65rem 0.9rem; border-bottom: 1px solid var(--line); font-family: var(--sans); font-size: 0.95rem; line-height: 1.5; }
+  dl.glossary dt { font-weight: 600; color: var(--ink); background: color-mix(in srgb, var(--gold-soft) 60%, var(--surface)); }
+  dl.glossary dd { color: var(--text); }
+  dl.glossary dt:nth-last-of-type(1), dl.glossary dd:last-of-type { border-bottom: 0; }
+  @media (max-width: 720px) { dl.glossary { grid-template-columns: 1fr; } dl.glossary dt { border-bottom: 0; padding-bottom: 0.2rem; } }
+
+  /* figuras geradas pelo PlantUML e código recolhível */
+  figure.puml img { width: auto; max-width: 100%; margin: 0 auto; background: #FFFFFF; padding: 12px; }
+  details.codebox { margin: 1rem 0 1.5rem; border: 1px solid var(--line); border-radius: 10px; padding: 0.6rem 1rem; }
+  details.codebox summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); }
+  details.codebox pre.code { max-height: 480px; overflow: auto; }
+</style>
+</head>
+<body id="top">
+
+<nav class="nav" aria-label="Navegação do site">
+  <div class="wrap">
+    <a class="brand" href="index.html" data-home>Giovani Perotto Mesquita</a>
+    <div class="nav-right">
+      <ul>
+        <li><a href="index.html" data-home>Home</a></li>
+        <li><a href="about.html" data-about>About</a></li>
+        <li><a href="resume.html" data-resume>Resume</a></li>
+        <li><a href="projects.html" data-projects aria-current="page">Projects</a></li>
+        <li><a href="contact.html" data-contact>Contact</a></li>
+      </ul>
+      <div class="lang" role="tablist" aria-label="Idioma / Language / Lingua">
+        <button type="button" role="tab" id="tab-pt" aria-controls="pt" aria-selected="true" lang="pt-BR">PT</button>
+        <button type="button" role="tab" id="tab-en" aria-controls="en" aria-selected="false" lang="en" tabindex="-1">EN</button>
+        <button type="button" role="tab" id="tab-it" aria-controls="it" aria-selected="false" lang="it" tabindex="-1">IT</button>
+      </div>
+    </div>
+  </div>
+  <div class="progress" aria-hidden="true"></div>
+</nav>
+
+<!-- ===================== PT ===================== -->
+<div id="pt" role="tabpanel" aria-labelledby="tab-pt" lang="pt-BR">
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projetos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Gráficos de Gantt com PlantUML</h1>
+      <p class="dek">Como descrever um cronograma em texto e deixar o PlantUML desenhar o gráfico: projeto, calendário, tarefas, dependências, marcos, recursos e estilo, com exemplos testados.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado em <time datetime="2026-09-25">25/09/2026</time></span>
+        <span class="credit">Revisado e formatado usando Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-pt">
+    <h2 id="toc-pt">Índice</h2>
+    <ol>
+      <li><a href="#intro-pt">Gantt e PlantUML</a></li>
+      <li><a href="#estrutura-pt">Estrutura de um arquivo</a></li>
+      <li><a href="#projeto-pt">Configurando o projeto</a></li>
+      <li><a href="#calendario-pt">Calendário</a></li>
+      <li><a href="#tarefas-pt">Tarefas</a></li>
+      <li><a href="#fluxos-pt">Dependências e marcos</a></li>
+      <li><a href="#recursos-pt">Recursos e separadores</a></li>
+      <li><a href="#estilo-pt">Estilo e sprites</a></li>
+      <li><a href="#exemplo-pt">Exemplo completo</a></li>
+      <li><a href="#referencia-pt">Referência rápida</a></li>
+      <li><a href="#revisao-pt">Revisão rápida</a></li>
+      <li><a href="#referencias-pt">Referências</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="intro-pt" aria-labelledby="h-intro-pt">
+      <h2 id="h-intro-pt">Gantt e PlantUML</h2>
+      <p>O <strong>gráfico de Gantt</strong> é um gráfico de barras que mostra o cronograma de um projeto: cada tarefa é uma barra no eixo do tempo, com início, duração e dependências. Foi popularizado por Henry Gantt por volta de 1910 a 1915, embora o polonês Karol Adamiecki tenha criado uma ferramenta parecida, o harmonograma, em 1896. <sup><a href="#ref-4-pt">[4]</a></sup></p>
+      <p>O <strong>PlantUML</strong> é uma ferramenta de código aberto que desenha diagramas a partir de texto. Em vez de arrastar barras num programa, você escreve o cronograma numa linguagem quase natural, em inglês, e o PlantUML calcula as datas e gera a imagem. <sup><a href="#ref-2-pt">[2]</a></sup> <sup><a href="#ref-3-pt">[3]</a></sup> <sup><a href="#ref-5-pt">[5]</a></sup></p>
+      <figure>
+        <img src="rc_images/PlantUMLFluxo.svg" alt="À esquerda, um arquivo de texto com o código de um gráfico de Gantt: início do projeto, uma tarefa de 5 dias, outra de 8 dias encadeada com then e um marco. Uma seta leva ao PlantUML, que roda em Java, e outra à imagem gerada, com barras, uma dependência e um marco. Abaixo, três formas de usar: extensão do VS Code, servidor on-line e linha de comando." width="1000" height="470" loading="lazy">
+        <figcaption>O cronograma vira texto versionável, e o PlantUML cuida do desenho.</figcaption>
+      </figure>
+      <p>A vantagem é tratar o cronograma como código: ele cabe no controle de versão, pode ser comparado entre versões e se recalcula sozinho quando uma duração muda.</p>
+      <h3>O que é preciso</h3>
+      <ul>
+        <li><strong>Java</strong>, para rodar o PlantUML, que é distribuído como um arquivo <code>plantuml.jar</code>. <sup><a href="#ref-6-pt">[6]</a></sup> <sup><a href="#ref-16-pt">[16]</a></sup></li>
+        <li>Um lugar para escrever e ver o resultado: a extensão PlantUML do VS Code, o servidor on-line do próprio PlantUML ou a linha de comando (<code>java -jar plantuml.jar projeto.puml</code>). <sup><a href="#ref-7-pt">[7]</a></sup></li>
+        <li>O texto original também lista o <strong>Graphviz</strong>, que o PlantUML usa para desenhar vários tipos de diagrama UML, e a sintaxe <strong>Creole</strong>, que formata textos dentro dos diagramas. <sup><a href="#ref-8-pt">[8]</a></sup> <sup><a href="#ref-9-pt">[9]</a></sup></li>
+      </ul>
+      <p>Todos os exemplos deste tutorial foram testados no PlantUML 1.2026.8. O texto original foi escrito para a versão 1.2020.23; as diferenças encontradas estão indicadas ao longo do texto. <sup><a href="#ref-1-pt">[1]</a></sup></p>
+    </section>
+
+    <section id="estrutura-pt" aria-labelledby="h-estrutura-pt">
+      <h2 id="h-estrutura-pt">Estrutura de um arquivo</h2>
+      <p>Todo gráfico de Gantt fica entre <code>@startgantt</code> e <code>@endgantt</code>. Cada linha é uma frase no formato sujeito, verbo e complemento, e os nomes de tarefas e marcos vão entre colchetes. <sup><a href="#ref-2-pt">[2]</a></sup></p>
+      <pre class="code"><code><span class="k">@startgantt</span>
+<span class="c">' comentário de uma linha</span>
+<span class="c">/' comentário de
+   várias linhas '/</span>
+<span class="k">project starts</span> 2026-10-05
+<span class="s">[Levantamento]</span> <span class="k">requires</span> 5 days
+<span class="k">@endgantt</span></code></pre>
+      <p>Comentários começam com aspa simples (<code>'</code>) ou ficam entre <code>/'</code> e <code>'/</code>; não aparecem no desenho. A figura abaixo mostra de onde vem cada parte de um gráfico.</p>
+      <figure>
+        <img src="rc_images/PlantUMLAnatomia.svg" alt="Um gráfico de Gantt desenhado com marcadores numerados de 1 a 14 e, à direita, a lista do comando que gera cada parte: título, primeiro dia do projeto, dias fechados, hoje, dias destacados, separador de fase, tarefa, dependência, progresso, marco, recurso, legenda, rodapé e legenda da figura." width="1000" height="474" loading="lazy">
+        <figcaption>Os 14 elementos mais comuns de um gráfico e o comando que produz cada um.</figcaption>
+      </figure>
+    </section>
+
+    <section id="projeto-pt" aria-labelledby="h-projeto-pt">
+      <h2 id="h-projeto-pt">Configurando o projeto</h2>
+      <p>Estes comandos definem o gráfico como um todo. Vários deles, como <code>title</code>, <code>footer</code>, <code>caption</code>, <code>legend</code> e <code>scale</code>, são comuns a todos os diagramas do PlantUML. <sup><a href="#ref-10-pt">[10]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Comando</th><th scope="col">Exemplo</th><th scope="col">Para que serve</th></tr></thead>
+          <tbody>
+            <tr><td><code>title</code></td><td><code>title Meu primeiro\nprojeto</code></td><td>Título acima do gráfico; <code>\n</code> quebra a linha.</td></tr>
+            <tr><td><code>footer</code></td><td><code>footer Giovani\n18/01/2021</code></td><td>Rodapé, abaixo do gráfico.</td></tr>
+            <tr><td><code>caption</code></td><td><code>caption figura 1</code></td><td>Legenda da figura, útil ao exportar para um documento.</td></tr>
+            <tr><td><code>legend … endlegend</code></td><td><code>legend right</code> … <code>endlegend</code></td><td>Caixa de legenda (<code>left</code>, <code>right</code>, <code>top</code>, <code>bottom</code> ou <code>center</code>).</td></tr>
+            <tr><td><code>scale</code></td><td><code>scale 1.5</code> · <code>scale 2/3</code> · <code>scale max 1024 width</code></td><td>Aumenta ou reduz a imagem, por fator, fração ou tamanho máximo.</td></tr>
+            <tr><td><code>hide footbox</code></td><td><code>hide footbox</code></td><td>Esconde a régua de datas de baixo; a de cima continua.</td></tr>
+            <tr><td><code>printscale</code></td><td><code>printscale weekly</code></td><td>Compacta a linha do tempo: <code>daily</code> (padrão), <code>weekly</code>, <code>monthly</code>, <code>quarterly</code> ou <code>yearly</code>.</td></tr>
+            <tr><td><code>project starts</code></td><td><code>project starts 2026-10-05</code></td><td>Primeiro dia do projeto; tarefas sem data começam nele.</td></tr>
+            <tr><td><code>today is</code></td><td><code>today is 14 days after start and is colored in Yellow</code></td><td>Destaca o dia de hoje, por data ou por número de dias desde o início.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Duas observações de versão:</p>
+      <ul>
+        <li>O texto original cita <code>printscale diary</code>; o valor correto é <code>daily</code>. As escalas <code>quarterly</code> e <code>yearly</code>, e o comando <code>zoom</code>, vieram depois. <sup><a href="#ref-2-pt">[2]</a></sup></li>
+        <li>As versões recentes acrescentam à esquerda uma tabela com início, fim e duração de cada tarefa. Para escondê-la, use <code>hide column start</code>, <code>hide column end</code> e <code>hide column duration</code>, como nos exemplos deste tutorial.</li>
+      </ul>
+      <p>O comando <code>language</code> muda o idioma do calendário, com o código ISO 639. Nos testes, funcionou em alemão (<code>de</code>), mas o português e o italiano ainda saem em inglês; por isso as figuras reais deste tutorial mostram meses e dias em inglês.</p>
+    </section>
+
+    <section id="calendario-pt" aria-labelledby="h-calendario-pt">
+      <h2 id="h-calendario-pt">Calendário</h2>
+      <p>O calendário diz quais dias contam como dias de trabalho e quais merecem destaque.</p>
+      <pre class="code"><code><span class="k">saturday are closed</span>
+<span class="k">sunday are closed</span>
+2026-10-12 <span class="k">is closed</span>                      <span class="c">' feriado</span>
+2026-10-12 <span class="k">is colored in</span> Salmon
+2026-10-19 <span class="k">to</span> 2026-10-23 <span class="k">are colored in</span> LightYellow
+<span class="k">today is</span> 2026-10-14 <span class="k">and is colored in</span> #FFB703
+<span class="s">[Desenvolvimento]</span> <span class="k">requires</span> 10 days
+<span class="s">[Desenvolvimento]</span> <span class="k">pauses on</span> 2026-10-15
+<span class="s">[Documentação]</span> <span class="k">starts</span> 2026-10-07
+<span class="s">[Documentação]</span> <span class="k">ends</span> 2026-10-16</code></pre>
+      <figure class="puml">
+        <img src="rc_images/PlantUMLCalendario.svg" alt="Gráfico gerado pelo PlantUML em outubro de 2026, com fins de semana fechados em rosa claro, o feriado de 12 de outubro em salmão, o dia 14 marcado como hoje em dourado e a semana de 19 a 23 destacada em amarelo claro. A tarefa Desenvolvimento, de 10 dias, pula o fim de semana, o feriado e a pausa do dia 15, e termina no dia 20. A tarefa Documentação vai de 7 a 16 de outubro." width="487" height="172" loading="lazy">
+        <figcaption>Resultado real: dias fechados, feriado, hoje, dias destacados e uma pausa.</figcaption>
+      </figure>
+      <ul>
+        <li><strong>Dias fechados</strong> (<code>are closed</code>, <code>is closed</code>) não contam para ninguém: uma tarefa de 10 dias se estende por cima deles. Com <code>is opened</code>, um dia fechado volta a ser útil, como um sábado de trabalho.</li>
+        <li><strong>Pausa</strong> (<code>pauses on</code>) vale só para uma tarefa. A diferença é semântica: o dia fechado indica que <em>o projeto</em> não trabalha naquela data; a pausa indica que <em>aquela tarefa</em> foi suspensa. O texto original escreve <code>pause on</code> na sintaxe, mas a forma aceita é <code>pauses on</code>, como no próprio exemplo dele.</li>
+        <li><strong>Dias coloridos</strong> (<code>is colored in</code>, <code>are colored in</code>) só destacam visualmente, sem mudar a contagem. Com <code>are named</code>, um intervalo recebe um nome, como <code>[Férias]</code>.</li>
+      </ul>
+      <p>As cores aceitam os nomes de cores do CSS, como <code>LightYellow</code> e <code>Salmon</code>, ou códigos hexadecimais, como <code>#FFB703</code>. <sup><a href="#ref-15-pt">[15]</a></sup></p>
+    </section>
+
+    <section id="tarefas-pt" aria-labelledby="h-tarefas-pt">
+      <h2 id="h-tarefas-pt">Tarefas</h2>
+      <p>Uma tarefa é criada ao ser citada pela primeira vez. Há dois jeitos de definir quando ela acontece:</p>
+      <ul>
+        <li><strong>Dinâmica:</strong> só com a duração (<code>[Protótipo] requires 8 days</code>). O PlantUML a posiciona a partir do início do projeto e das dependências.</li>
+        <li><strong>Fixa:</strong> com datas de início e fim (<code>[Treinamento] starts 2026-10-19</code> e <code>[Treinamento] ends 2026-11-13</code>).</li>
+      </ul>
+      <p>O texto original usa o verbo <code>lasts</code>, que continua funcionando; a documentação atual prefere <code>requires</code>, que expressa o esforço necessário. <sup><a href="#ref-2-pt">[2]</a></sup></p>
+      <pre class="code"><code><span class="k">project starts</span> 2026-10-05
+<span class="k">saturday are closed</span>
+<span class="k">sunday are closed</span>
+<span class="s">[Levantamento]</span> <span class="k">requires</span> 5 days
+<span class="k">then</span> <span class="s">[Protótipo]</span> <span class="k">requires</span> 8 days
+<span class="k">then</span> <span class="s">[Testes]</span> <span class="k">requires</span> 4 days
+<span class="s">[Entrega]</span> <span class="k">happens at</span> <span class="s">[Testes]</span>'s end</code></pre>
+      <figure class="puml">
+        <img src="rc_images/PlantUMLPrimeiro.svg" alt="Gráfico gerado pelo PlantUML em outubro de 2026: Levantamento de 5 a 9, Protótipo de 12 a 21 e Testes de 22 a 27, cada uma começando quando a anterior termina, com setas entre elas, fins de semana em rosa claro e o marco Entrega, um losango, no fim dos testes." width="648" height="228" loading="lazy">
+        <figcaption>Resultado real: três tarefas encadeadas e um marco. O PlantUML pula os fins de semana sozinho.</figcaption>
+      </figure>
+      <h3>Outras propriedades da tarefa</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Comando</th><th scope="col">Para que serve</th></tr></thead>
+          <tbody>
+            <tr><td><code>[T] is colored in Red/Red</code></td><td>Cor da barra: a primeira é o preenchimento e a segunda, a borda.</td></tr>
+            <tr><td><code>[T] is 70% completed</code></td><td>Progresso: a parte concluída aparece preenchida.</td></tr>
+            <tr><td><code>[T] is deleted</code></td><td>Mostra a tarefa como removida do cronograma.</td></tr>
+            <tr><td><code>[T] links to [[http://plantuml.com]]</code></td><td>Transforma a barra num link, útil em SVG.</td></tr>
+            <tr><td><code>note bottom</code> … <code>end note</code></td><td>Nota abaixo da última tarefa declarada.</td></tr>
+            <tr><td><code>[Nome longo] as [T1]</code></td><td>Apelido curto para usar no resto do código.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="fluxos-pt" aria-labelledby="h-fluxos-pt">
+      <h2 id="h-fluxos-pt">Dependências e marcos</h2>
+      <p>O ponto forte do PlantUML é posicionar tarefas pelas relações entre elas. Mudou uma duração, o cronograma inteiro se recalcula.</p>
+      <figure>
+        <img src="rc_images/PlantUMLPosicao.svg" alt="Sete linhas de código à esquerda, cada uma ligada à barra que produz numa linha do tempo à direita: A, sem data, começa no início do projeto; B tem datas fixas; C começa quando A termina; D vem logo depois de C com then; E começa 2 dias depois do fim de A; o marco M acontece no fim de D; e F é exibida na mesma linha de A." width="1000" height="510" loading="lazy">
+        <figcaption>Sete formas de dizer quando uma tarefa acontece; todas testadas.</figcaption>
+      </figure>
+      <ul>
+        <li><code>[B] starts at [A]'s end</code>: B começa quando A termina. Com <code>with red bold link</code>, a seta ganha cor e estilo (<code>bold</code>, <code>dashed</code> ou <code>dotted</code>).</li>
+        <li><code>then [B] requires 3 days</code>: atalho para “logo depois da tarefa anterior”.</li>
+        <li><code>[A] -> [B]</code>: outra forma curta de ligar duas tarefas.</li>
+        <li><code>[B] starts 2 days after [A]'s end</code>: com folga entre as duas.</li>
+        <li><code>[M] happens at [A]'s end</code>: um <strong>marco</strong>, um ponto no tempo, sem duração. Também pode ter data fixa: <code>[M] happens 2026-10-30</code>.</li>
+        <li><code>[B] displays on same row as [A]</code>: desenha B na mesma linha de A, para economizar espaço.</li>
+      </ul>
+      <aside class="recap" aria-label="Para fixar">
+        <h3>Para fixar</h3>
+        <ul>
+          <li>Tarefas dinâmicas (<code>requires</code>) se ajustam sozinhas; tarefas fixas (<code>starts</code>/<code>ends</code>) não.</li>
+          <li>Dependências: <code>starts at [X]'s end</code>, <code>then</code> ou <code>-&gt;</code>.</li>
+          <li>Marco é ponto (<code>happens at</code>); tarefa é barra (<code>requires</code>).</li>
+        </ul>
+      </aside>
+    </section>
+
+    <section id="recursos-pt" aria-labelledby="h-recursos-pt">
+      <h2 id="h-recursos-pt">Recursos e separadores</h2>
+      <p>Para dizer quem faz cada tarefa, use chaves com o nome e, se quiser, a porcentagem de dedicação. Abaixo do gráfico, o PlantUML mostra a carga de cada pessoa por dia.</p>
+      <pre class="code"><code><span class="k">-- Fase 1 --</span>
+<span class="s">[Análise]</span> on {Ana} <span class="k">requires</span> 5 days
+<span class="s">[Análise]</span> <span class="k">is</span> 100% <span class="k">completed</span>
+<span class="k">-- Fase 2 --</span>
+<span class="s">[Código]</span> on {Bruno} <span class="k">requires</span> 8 days
+<span class="s">[Código]</span> <span class="k">starts at</span> <span class="s">[Análise]</span>'s end
+<span class="s">[Código]</span> <span class="k">is</span> 40% <span class="k">completed</span>
+<span class="s">[Testes]</span> on {Ana:50%} {Bruno:50%} <span class="k">requires</span> 4 days
+<span class="k">note bottom</span>
+  Ana e Bruno dividem
+  o tempo dos testes
+<span class="k">end note</span>
+<span class="s">[Testes]</span> <span class="k">starts at</span> <span class="s">[Código]</span>'s end <span class="k">with red bold link</span>
+<span class="s">[Pronto]</span> <span class="k">happens at</span> <span class="s">[Testes]</span>'s end</code></pre>
+      <figure class="puml">
+        <img src="rc_images/PlantUMLRecursos.svg" alt="Gráfico gerado pelo PlantUML com duas fases separadas por linhas horizontais. Na fase 1, Análise, de Ana, concluída. Na fase 2, Código, de Bruno, 40% concluída, e Testes, de Ana e Bruno a 50% cada, ligada ao código por uma seta vermelha, com uma nota abaixo. O marco Pronto fica no fim dos testes. Abaixo, as linhas de Ana e Bruno mostram a carga por dia: 100 ou 50." width="835" height="465" loading="lazy">
+        <figcaption>Resultado real: separadores de fase, progresso, recursos com dedicação parcial, nota e seta colorida.</figcaption>
+      </figure>
+      <ul>
+        <li><strong>Separadores</strong> (<code>-- Nome --</code>) dividem o gráfico em fases, setores ou grupos.</li>
+        <li><strong>Recursos</strong> (<code>on {Ana:50%}</code>) mostram a alocação; com <code>hide resources names</code>, os nomes somem das barras, e com <code>{Ana} is off on 2026-10-20</code> a pessoa fica indisponível num dia.</li>
+        <li>A <strong>nota</strong> fica abaixo da tarefa declarada logo antes dela.</li>
+      </ul>
+    </section>
+
+    <section id="estilo-pt" aria-labelledby="h-estilo-pt">
+      <h2 id="h-estilo-pt">Estilo e sprites</h2>
+      <p>A aparência é definida num bloco <code>&lt;style&gt;</code>, parecido com CSS, ou com comandos <code>skinparam</code>. O bloco de estilo é a forma mais nova e recomendada. <sup><a href="#ref-11-pt">[11]</a></sup> <sup><a href="#ref-12-pt">[12]</a></sup></p>
+      <pre class="code"><code><span class="k">&lt;style&gt;</span>
+ganttDiagram {
+  task      { FontName Arial; FontSize 12; BackGroundColor #EFE3FA; LineColor #5B2A86 }
+  milestone { FontSize 12; BackGroundColor #FFB703; LineColor #2B1B3D }
+  note      { FontSize 11; BackGroundColor #FFF1C9; LineColor #B35300 }
+}
+footer { HorizontalAlignment right }
+title  { FontSize 20; HorizontalAlignment center }
+<span class="k">&lt;/style&gt;</span>
+<span class="k">skinparam</span> footerFontColor blue</code></pre>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Elemento</th><th scope="col">Propriedades mais usadas</th></tr></thead>
+          <tbody>
+            <tr><td><code>task</code></td><td><code>FontName</code>, <code>FontColor</code>, <code>FontSize</code>, <code>FontStyle</code>, <code>BackGroundColor</code>, <code>LineColor</code></td></tr>
+            <tr><td><code>milestone</code></td><td><code>FontColor</code>, <code>FontSize</code>, <code>FontStyle</code>, <code>BackGroundColor</code>, <code>LineColor</code></td></tr>
+            <tr><td><code>note</code></td><td><code>FontColor</code>, <code>FontSize</code>, <code>LineColor</code>, <code>BackGroundColor</code></td></tr>
+            <tr><td><code>title</code></td><td><code>FontColor</code>, <code>FontSize</code>, <code>FontStyle</code>, <code>HorizontalAlignment</code></td></tr>
+            <tr><td><code>footer</code>, <code>legend</code>, <code>caption</code></td><td><code>HorizontalAlignment</code>, <code>FontSize</code>, <code>BackGroundColor</code>, <code>Margin</code>, <code>Padding</code></td></tr>
+            <tr><td><code>skinparam</code></td><td><code>footerFontColor</code>, <code>footerFontSize</code>, <code>titleBackgroundColor</code>, <code>titleBorderColor</code>, <code>titleBorderRoundCorner</code>, <code>titleBorderThickness</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><code>FontStyle</code> aceita <code>bold</code>, <code>italic</code>, <code>monospaced</code>, <code>stroked</code> e <code>underlined</code>.</p>
+      <h3>Sprites e ícones</h3>
+      <p>Um <strong>sprite</strong> é uma pequena imagem codificada em texto, declarada com <code>sprite $nome [15x15/8z] …</code> e usada com <code>&lt;$nome&gt;</code>. Os ícones do conjunto Open Iconic vêm prontos, com a forma <code>&lt;&amp;check&gt;</code>. <sup><a href="#ref-13-pt">[13]</a></sup> <sup><a href="#ref-14-pt">[14]</a></sup></p>
+    </section>
+
+    <section id="exemplo-pt" aria-labelledby="h-exemplo-pt">
+      <h2 id="h-exemplo-pt">Exemplo completo</h2>
+      <p>O texto original termina com um exemplo que junta quase tudo. Abaixo, o resultado gerado pelo PlantUML atual a partir do código do autor, com as três linhas <code>hide column</code> acrescentadas.</p>
+      <figure class="puml">
+        <img src="rc_images/PlantUMLExemplo.svg" alt="Gráfico de Gantt completo gerado pelo PlantUML para o projeto Entrega SDS 001, de janeiro a fevereiro de 2021. Três fases e uma área de marcos; tarefas em vermelho com progresso parcial, ligadas por setas vermelhas; Treinamento em azul com datas fixas; marcos DevEnd, ReadyDeploy e PDEnd na mesma linha; fins de semana fechados, a semana de 4 a 8 de janeiro em coral, 1º de janeiro em azul claro e o dia 15 marcado como hoje em amarelo. Abaixo, a carga diária de Alice, Giovani, Davi, Camila e Maria, uma legenda, a legenda da figura e o rodapé." width="1458" height="1063" loading="lazy">
+        <figcaption>O exemplo do autor renderizado no PlantUML 1.2026.8.</figcaption>
+      </figure>
+      <details class="codebox">
+        <summary>Ver o código completo</summary>
+        <pre class="code"><code>@startgantt
+hide column start
+hide column end
+hide column duration
+&lt;style&gt;
+
+  ganttDiagram {
+
+  	task {
+  		FontName Courrier
+  		FontColor black
+  		FontSize 12
+  		FontStyle bold
+  		BackGroundColor Blue
+  		LineColor blue
+  	}
+
+  	milestone {
+  		FontColor blue
+  		FontSize 12
+  		FontStyle italic
+  		BackGroundColor gold
+  		LineColor red
+  	}
+
+  	note {
+  		FontColor DarkGreen
+  		FontSize 10
+  		LineColor lightgreen
+        BackGroundColor orange\yellow
+  	}
+
+  }
+
+  footer {
+    HorizontalAlignment right
+  }
+
+  title {
+    FontColor black
+    FontSize 40
+    FontStyle italic
+    HorizontalAlignment center
+  }
+
+&lt;/style&gt;
+
+skinparam footerFontColor blue
+skinparam footerFontSize 10
+skinparam footerFontStyle italic
+'skinparam titleBackgroundColor Aqua-CadetBlue
+'skinparam titleBorderColor blue
+'skinparam titleBorderRoundCorner 15
+'skinparam titleBorderThickness 2
+
+' sprites
+sprite $printer [15x15/8z] NOtH3W0W208HxFz_kMAhj7lHWpa1XC716sz0Pq4MVPEWfBHIuxP3L6kbTcizR8tAhzaqFvXwvFfPEqm0
+
+' Initialization
+caption figure 1
+title Projeto&lt;$printer&gt;\nEntrega SDS 001 &lt;&amp;check&gt;
+footer Giovani Perotto Mesquita\n18/01/2011 - 13:01
+scale 1.5
+hide footbox
+'printscale weekly
+project starts the 2021/01/01
+
+' Day watching
+'today is 2021/01/20 and is colored in Yellow
+today is 14 days after start and is colored in Yellow
+
+' Close Days
+saturday are closed
+sunday are closed
+2021/01/01 is closed
+2021/01/01 is colored in lightblue
+2021/01/04 to 2021/01/08 are colored in coral
+
+' Tasks and separators
+-- Phase One --
+[Prototype design] on {Alice} lasts 13 days
+  [Prototype design] links to [[http://plantuml.com]]
+'note bottom
+'  memo1 ...
+'  memo2 ...
+'  explanations1 ...
+'  explanations2 ...
+'  &lt;img:http://plantuml.com/logo3.png&gt;
+'end note
+[Config prototype] on {Giovani} lasts 7 days
+'note bottom
+'  WiFi &lt;&amp;wifi&gt;
+'  |= |= table |= header |
+'  | a | table | row |
+'  |&lt;#FF8080&gt; red |&lt;#80FF80&gt; green |&lt;#8080FF&gt; blue |
+'  &lt;#yellow&gt;| b | table | row |
+'end note
+-- Phase Two --
+[QA prototype] on {Davi} lasts 9 days
+[Test prototype] on {Camila:50}{Giovani:50} lasts 6 days
+-- Phase Three --
+[Deploy] lasts 1 day
+'note bottom
+'  Example of Tree
+'  |_ First line
+'  |_ **Bom(Model)**
+'    |_ prop1
+'    |_ prop2
+'    |_ prop3
+'  |_ Last line
+'end note
+[PD audict] lasts 10 days
+[Trainning] on {Camila:50}{Maria:50} starts 2021/01/18
+  [Trainning] ends 2021/02/12
+  legend right
+    This is a legend
+  endlegend
+-- Milestones --
+
+' Tasks flow
+[Config prototype] starts at [Prototype design]'s end with red bold link
+[QA prototype] starts at [Prototype design]'s end with red bold link
+[Test prototype] starts at [Config prototype]'s end with red bold link
+  [Test prototype] starts at [QA prototype]'s end with red bold link
+  [Test prototype] pauses on monday
+[Deploy] starts at [Test prototype]'s end with red bold link
+[PD audict] starts at [Deploy]'s end with red bold link
+
+' Tasks progress
+[Prototype design] is 70% completed
+[Config prototype] is 0% completed
+[QA prototype] is 23% completed
+[Test prototype] is 0% completed
+[Deploy] is 0% completed
+[PD audict] is 0% completed
+[Trainning] is 20% completed
+
+' Milestones
+[DevEnd] happens at [Prototype design]'s end
+  [DevEnd] happens at [QA prototype]'s end
+[ReadyDeploy] happens at [Test prototype]'s end
+  [ReadyDeploy] displays on same row as [DevEnd]
+[PDEnd] happens at [PD audict]'s end
+[PDEnd] displays on same row as [ReadyDeploy]
+
+' Colors
+[Prototype design] is colored in Red/Red
+[Config prototype] is colored in Red/Red
+[QA prototype] is colored in Red/Red
+[Test prototype] is colored in Red/Red
+[Deploy] is colored in Red/Red
+[PD audict] is colored in Red/Red
+[DevEnd] is colored in White/Black
+[ReadyDeploy] is colored in Gray/Black
+@endgantt</code></pre>
+      </details>
+      <p>No código, o bloco de estilo define fontes e cores; <code>sprite</code> e <code>&lt;&amp;check&gt;</code> colocam ícones no título; o calendário fecha os fins de semana e o dia 1º de janeiro; as tarefas usam recursos, dependências com setas vermelhas, pausa às segundas e progresso; e os marcos ficam na mesma linha com <code>displays on same row as</code>.</p>
+    </section>
+
+    <section id="referencia-pt" aria-labelledby="h-referencia-pt">
+      <h2 id="h-referencia-pt">Referência rápida</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Quero…</th><th scope="col">Comando</th></tr></thead>
+          <tbody>
+            <tr><td>começar o projeto</td><td><code>project starts 2026-10-05</code></td></tr>
+            <tr><td>fechar fins de semana</td><td><code>saturday are closed</code> · <code>sunday are closed</code></td></tr>
+            <tr><td>fechar ou reabrir um dia</td><td><code>2026-10-12 is closed</code> · <code>2026-10-17 is opened</code></td></tr>
+            <tr><td>destacar dias</td><td><code>2026-10-19 to 2026-10-23 are colored in LightYellow</code></td></tr>
+            <tr><td>marcar hoje</td><td><code>today is 2026-10-14 and is colored in Gold</code></td></tr>
+            <tr><td>criar uma tarefa</td><td><code>[T] requires 5 days</code></td></tr>
+            <tr><td>fixar datas</td><td><code>[T] starts 2026-10-19</code> · <code>[T] ends 2026-11-13</code></td></tr>
+            <tr><td>encadear</td><td><code>[B] starts at [A]'s end</code> · <code>then [B] …</code> · <code>[A] -&gt; [B]</code></td></tr>
+            <tr><td>criar um marco</td><td><code>[M] happens at [T]'s end</code></td></tr>
+            <tr><td>indicar progresso</td><td><code>[T] is 40% completed</code></td></tr>
+            <tr><td>alocar pessoas</td><td><code>[T] on {Ana:50%} {Bruno} requires 4 days</code></td></tr>
+            <tr><td>pausar uma tarefa</td><td><code>[T] pauses on monday</code></td></tr>
+            <tr><td>separar fases</td><td><code>-- Fase 2 --</code></td></tr>
+            <tr><td>mudar a escala</td><td><code>printscale weekly</code></td></tr>
+            <tr><td>esconder a tabela lateral</td><td><code>hide column start</code> · <code>hide column end</code> · <code>hide column duration</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="revisao-pt" aria-labelledby="h-revisao-pt">
+      <h2 id="h-revisao-pt">Revisão rápida</h2>
+      <p>Tente responder antes de abrir cada pergunta.</p>
+      <div class="quiz">
+        <details><summary>1. Entre quais marcadores fica o código de um gráfico de Gantt?</summary><p><code>@startgantt</code> e <code>@endgantt</code>.</p></details>
+        <details><summary>2. Qual a diferença entre uma tarefa dinâmica e uma fixa?</summary><p>A dinâmica só tem duração (<code>requires</code>) e é posicionada pelo PlantUML a partir do início do projeto e das dependências; a fixa tem datas de início e fim (<code>starts</code>/<code>ends</code>).</p></details>
+        <details><summary>3. Qual a diferença entre um dia fechado e uma pausa?</summary><p>O dia fechado vale para o projeto inteiro (<code>is closed</code>); a pausa vale só para uma tarefa (<code>pauses on</code>).</p></details>
+        <details><summary>4. Como fazer a tarefa B começar logo depois da tarefa A?</summary><p><code>[B] starts at [A]'s end</code>, ou declarar B logo depois de A com <code>then [B] requires …</code>, ou <code>[A] -&gt; [B]</code>.</p></details>
+        <details><summary>5. Como representar um marco?</summary><p>Com <code>happens</code>: <code>[Entrega] happens at [Testes]'s end</code> ou <code>[Entrega] happens 2026-10-30</code>. Ele aparece como um losango, sem duração.</p></details>
+        <details><summary>6. Como dizer que Ana e Bruno dividem uma tarefa de 4 dias?</summary><p><code>[Testes] on {Ana:50%} {Bruno:50%} requires 4 days</code>.</p></details>
+        <details><summary>7. Qual valor de <code>printscale</code> mostra um dia por coluna?</summary><p><code>daily</code>, que é o padrão; o texto original escreve “diary”, que não é aceito.</p></details>
+        <details><summary>8. O que acontece com uma tarefa de 5 dias que começa numa sexta, com fins de semana fechados?</summary><p>Ela pula sábado e domingo e termina na quinta seguinte: os dias fechados não contam.</p></details>
+      </div>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="referencias-pt" aria-labelledby="h-referencias-pt">
+      <h2 id="h-referencias-pt">Referências</h2>
+      <ol class="refs">
+        <li id="ref-1-pt"><strong>Giovani Perotto Mesquita</strong>, “Building Gant diagrams with PlantUML”, GitHub, texto original deste tutorial, <a href="https://github.com/GiovaniPM/MyCourses/blob/master/PlantUML/Course%20Gant.md" rel="noopener">github.com/GiovaniPM/MyCourses/blob/master/PlantUML/Course Gant.md</a>.</li>
+        <li id="ref-2-pt"><strong>PlantUML</strong>, “Gantt Diagram”, acesso em 25/09/2026, <a href="https://plantuml.com/gantt-diagram" rel="noopener">plantuml.com/gantt-diagram</a>.</li>
+        <li id="ref-3-pt"><strong>PlantUML</strong>, site oficial, acesso em 25/09/2026, <a href="https://plantuml.com/" rel="noopener">plantuml.com</a>.</li>
+        <li id="ref-4-pt"><strong>Wikipedia</strong> (em inglês), “Gantt chart”, acesso em 25/09/2026, <a href="https://en.wikipedia.org/wiki/Gantt_chart" rel="noopener">en.wikipedia.org/wiki/Gantt_chart</a>.</li>
+        <li id="ref-5-pt"><strong>Wikipedia</strong> (em inglês), “PlantUML”, acesso em 25/09/2026, <a href="https://en.wikipedia.org/wiki/PlantUML" rel="noopener">en.wikipedia.org/wiki/PlantUML</a>.</li>
+        <li id="ref-6-pt"><strong>PlantUML</strong>, “Download”, acesso em 25/09/2026, <a href="https://plantuml.com/download" rel="noopener">plantuml.com/download</a>.</li>
+        <li id="ref-7-pt"><strong>Visual Studio Marketplace</strong>, “PlantUML” (jebbs), acesso em 25/09/2026, <a href="https://marketplace.visualstudio.com/items?itemName=jebbs.plantuml" rel="noopener">marketplace.visualstudio.com/items?itemName=jebbs.plantuml</a>.</li>
+        <li id="ref-8-pt"><strong>Graphviz</strong>, site oficial, acesso em 25/09/2026, <a href="https://graphviz.org/" rel="noopener">graphviz.org</a>.</li>
+        <li id="ref-9-pt"><strong>PlantUML</strong>, “Creole”, acesso em 25/09/2026, <a href="https://plantuml.com/creole" rel="noopener">plantuml.com/creole</a>.</li>
+        <li id="ref-10-pt"><strong>PlantUML</strong>, “Common commands”, acesso em 25/09/2026, <a href="https://plantuml.com/commons" rel="noopener">plantuml.com/commons</a>.</li>
+        <li id="ref-11-pt"><strong>PlantUML</strong>, “Skinparam”, acesso em 25/09/2026, <a href="https://plantuml.com/skinparam" rel="noopener">plantuml.com/skinparam</a>.</li>
+        <li id="ref-12-pt"><strong>PlantUML</strong>, “Style (evolution)”, acesso em 25/09/2026, <a href="https://plantuml.com/style-evolution" rel="noopener">plantuml.com/style-evolution</a>.</li>
+        <li id="ref-13-pt"><strong>PlantUML</strong>, “Sprite”, acesso em 25/09/2026, <a href="https://plantuml.com/sprite" rel="noopener">plantuml.com/sprite</a>.</li>
+        <li id="ref-14-pt"><strong>PlantUML</strong>, “Open Iconic”, acesso em 25/09/2026, <a href="https://plantuml.com/openiconic" rel="noopener">plantuml.com/openiconic</a>.</li>
+        <li id="ref-15-pt"><strong>W3C</strong>, <em>CSS Color Module Level 4</em>, “Named colors”, acesso em 25/09/2026, <a href="https://www.w3.org/TR/css-color-4/#named-colors" rel="noopener">w3.org/TR/css-color-4/#named-colors</a>.</li>
+        <li id="ref-16-pt"><strong>PlantUML</strong>, repositório no GitHub, acesso em 25/09/2026, <a href="https://github.com/plantuml/plantuml" rel="noopener">github.com/plantuml/plantuml</a>.</li>
+      </ol>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== EN ===================== -->
+<div id="en" role="tabpanel" aria-labelledby="tab-en" lang="en" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projects</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Gantt charts with PlantUML</h1>
+      <p class="dek">How to describe a schedule in text and let PlantUML draw the chart: project, calendar, tasks, dependencies, milestones, resources and style, with tested examples.</p>
+      <div class="byline">
+        <span>By <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Published on <time datetime="2026-09-25">25 September 2026</time></span>
+        <span class="credit">Reviewed and formatted using Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-en">
+    <h2 id="toc-en">Contents</h2>
+    <ol>
+      <li><a href="#intro-en">Gantt and PlantUML</a></li>
+      <li><a href="#estrutura-en">Structure of a file</a></li>
+      <li><a href="#projeto-en">Setting up the project</a></li>
+      <li><a href="#calendario-en">Calendar</a></li>
+      <li><a href="#tarefas-en">Tasks</a></li>
+      <li><a href="#fluxos-en">Dependencies and milestones</a></li>
+      <li><a href="#recursos-en">Resources and separators</a></li>
+      <li><a href="#estilo-en">Style and sprites</a></li>
+      <li><a href="#exemplo-en">Complete example</a></li>
+      <li><a href="#referencia-en">Quick reference</a></li>
+      <li><a href="#revisao-en">Quick review</a></li>
+      <li><a href="#referencias-en">References</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="intro-en" aria-labelledby="h-intro-en">
+      <h2 id="h-intro-en">Gantt and PlantUML</h2>
+      <p>A <strong>Gantt chart</strong> is a bar chart that shows a project schedule: each task is a bar on the time axis, with start, duration and dependencies. It was popularized by Henry Gantt around 1910–1915, although the Pole Karol Adamiecki created a similar tool, the harmonogram, in 1896. <sup><a href="#ref-4-en">[4]</a></sup></p>
+      <p><strong>PlantUML</strong> is an open-source tool that draws diagrams from text. Instead of dragging bars around in a program, you write the schedule in an almost natural English language, and PlantUML calculates the dates and generates the image. <sup><a href="#ref-2-en">[2]</a></sup> <sup><a href="#ref-3-en">[3]</a></sup> <sup><a href="#ref-5-en">[5]</a></sup></p>
+      <figure>
+        <img src="rc_images/PlantUMLFluxo-en.svg" alt="On the left, a text file with the code of a Gantt chart: project start, a 5-day task, an 8-day task chained with then and a milestone. An arrow leads to PlantUML, which runs on Java, and another to the generated image, with bars, a dependency and a milestone. Below, three ways to use it: VS Code extension, online server and command line." width="1000" height="470" loading="lazy">
+        <figcaption>The schedule becomes version-controlled text, and PlantUML takes care of the drawing.</figcaption>
+      </figure>
+      <p>The advantage is treating the schedule as code: it fits in version control, can be compared between versions and recalculates itself when a duration changes.</p>
+      <h3>What you need</h3>
+      <ul>
+        <li><strong>Java</strong>, to run PlantUML, which is distributed as a <code>plantuml.jar</code> file. <sup><a href="#ref-6-en">[6]</a></sup> <sup><a href="#ref-16-en">[16]</a></sup></li>
+        <li>A place to write and see the result: the PlantUML extension for VS Code, PlantUML’s own online server or the command line (<code>java -jar plantuml.jar project.puml</code>). <sup><a href="#ref-7-en">[7]</a></sup></li>
+        <li>The original text also lists <strong>Graphviz</strong>, which PlantUML uses to draw several kinds of UML diagram, and the <strong>Creole</strong> syntax, which formats text inside diagrams. <sup><a href="#ref-8-en">[8]</a></sup> <sup><a href="#ref-9-en">[9]</a></sup></li>
+      </ul>
+      <p>Every example in this tutorial was tested on PlantUML 1.2026.8. The original text was written for version 1.2020.23; the differences found are pointed out along the way. <sup><a href="#ref-1-en">[1]</a></sup></p>
+    </section>
+
+    <section id="estrutura-en" aria-labelledby="h-estrutura-en">
+      <h2 id="h-estrutura-en">Structure of a file</h2>
+      <p>Every Gantt chart goes between <code>@startgantt</code> and <code>@endgantt</code>. Each line is a sentence in subject, verb and complement form, and task and milestone names go in square brackets. <sup><a href="#ref-2-en">[2]</a></sup></p>
+      <pre class="code"><code><span class="k">@startgantt</span>
+<span class="c">' single-line comment</span>
+<span class="c">/' multi-line
+   comment '/</span>
+<span class="k">project starts</span> 2026-10-05
+<span class="s">[Requirements]</span> <span class="k">requires</span> 5 days
+<span class="k">@endgantt</span></code></pre>
+      <p>Comments start with a single quote (<code>'</code>) or go between <code>/'</code> and <code>'/</code>; they do not appear in the drawing. The figure below shows where each part of a chart comes from.</p>
+      <figure>
+        <img src="rc_images/PlantUMLAnatomia-en.svg" alt="A Gantt chart drawn with markers numbered 1 to 14 and, on the right, the list of the command that produces each part: title, first project day, closed days, today, highlighted days, phase separator, task, dependency, progress, milestone, resource, legend, footer and caption." width="1000" height="474" loading="lazy">
+        <figcaption>The 14 most common elements of a chart and the command that produces each one.</figcaption>
+      </figure>
+    </section>
+
+    <section id="projeto-en" aria-labelledby="h-projeto-en">
+      <h2 id="h-projeto-en">Setting up the project</h2>
+      <p>These commands define the chart as a whole. Several of them, such as <code>title</code>, <code>footer</code>, <code>caption</code>, <code>legend</code> and <code>scale</code>, are common to all PlantUML diagrams. <sup><a href="#ref-10-en">[10]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Command</th><th scope="col">Example</th><th scope="col">What it is for</th></tr></thead>
+          <tbody>
+            <tr><td><code>title</code></td><td><code>title My first\nproject</code></td><td>Title above the chart; <code>\n</code> breaks the line.</td></tr>
+            <tr><td><code>footer</code></td><td><code>footer Giovani\n2021-01-18</code></td><td>Footer, below the chart.</td></tr>
+            <tr><td><code>caption</code></td><td><code>caption figure 1</code></td><td>Figure caption, useful when exporting to a document.</td></tr>
+            <tr><td><code>legend … endlegend</code></td><td><code>legend right</code> … <code>endlegend</code></td><td>Legend box (<code>left</code>, <code>right</code>, <code>top</code>, <code>bottom</code> or <code>center</code>).</td></tr>
+            <tr><td><code>scale</code></td><td><code>scale 1.5</code> · <code>scale 2/3</code> · <code>scale max 1024 width</code></td><td>Enlarges or shrinks the image, by factor, fraction or maximum size.</td></tr>
+            <tr><td><code>hide footbox</code></td><td><code>hide footbox</code></td><td>Hides the bottom date ruler; the top one stays.</td></tr>
+            <tr><td><code>printscale</code></td><td><code>printscale weekly</code></td><td>Condenses the timeline: <code>daily</code> (default), <code>weekly</code>, <code>monthly</code>, <code>quarterly</code> or <code>yearly</code>.</td></tr>
+            <tr><td><code>project starts</code></td><td><code>project starts 2026-10-05</code></td><td>First day of the project; tasks without dates start on it.</td></tr>
+            <tr><td><code>today is</code></td><td><code>today is 14 days after start and is colored in Yellow</code></td><td>Highlights today, by date or by number of days since the start.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Two version notes:</p>
+      <ul>
+        <li>The original text mentions <code>printscale diary</code>; the correct value is <code>daily</code>. The <code>quarterly</code> and <code>yearly</code> scales, and the <code>zoom</code> command, came later. <sup><a href="#ref-2-en">[2]</a></sup></li>
+        <li>Recent versions add a table on the left with each task’s start, end and duration. To hide it, use <code>hide column start</code>, <code>hide column end</code> and <code>hide column duration</code>, as in this tutorial’s examples.</li>
+      </ul>
+      <p>The <code>language</code> command changes the calendar language, using the ISO 639 code. In the tests it worked in German (<code>de</code>), but Portuguese and Italian still come out in English; that is why this tutorial’s real figures show months and days in English.</p>
+    </section>
+
+    <section id="calendario-en" aria-labelledby="h-calendario-en">
+      <h2 id="h-calendario-en">Calendar</h2>
+      <p>The calendar says which days count as working days and which deserve highlighting.</p>
+      <pre class="code"><code><span class="k">saturday are closed</span>
+<span class="k">sunday are closed</span>
+2026-10-12 <span class="k">is closed</span>                      <span class="c">' holiday</span>
+2026-10-12 <span class="k">is colored in</span> Salmon
+2026-10-19 <span class="k">to</span> 2026-10-23 <span class="k">are colored in</span> LightYellow
+<span class="k">today is</span> 2026-10-14 <span class="k">and is colored in</span> #FFB703
+<span class="s">[Development]</span> <span class="k">requires</span> 10 days
+<span class="s">[Development]</span> <span class="k">pauses on</span> 2026-10-15
+<span class="s">[Documentation]</span> <span class="k">starts</span> 2026-10-07
+<span class="s">[Documentation]</span> <span class="k">ends</span> 2026-10-16</code></pre>
+      <figure class="puml">
+        <img src="rc_images/PlantUMLCalendario-en.svg" alt="Chart generated by PlantUML in October 2026, with weekends closed in light pink, the October 12 holiday in salmon, day 14 marked as today in gold and the week of 19 to 23 highlighted in light yellow. The 10-day Development task skips the weekend, the holiday and the pause on the 15th, and ends on the 20th. The Documentation task runs from October 7 to 16." width="487" height="172" loading="lazy">
+        <figcaption>Real output: closed days, a holiday, today, highlighted days and a pause.</figcaption>
+      </figure>
+      <ul>
+        <li><strong>Closed days</strong> (<code>are closed</code>, <code>is closed</code>) do not count for anyone: a 10-day task stretches over them. With <code>is opened</code>, a closed day becomes a working day again, such as a working Saturday.</li>
+        <li><strong>Pause</strong> (<code>pauses on</code>) applies to one task only. The difference is semantic: a closed day means <em>the project</em> does not work that day; a pause means <em>that task</em> was suspended. The original text writes <code>pause on</code> in the syntax, but the accepted form is <code>pauses on</code>, as in its own example.</li>
+        <li><strong>Colored days</strong> (<code>is colored in</code>, <code>are colored in</code>) only highlight visually, without changing the count. With <code>are named</code>, a range gets a name, such as <code>[Vacation]</code>.</li>
+      </ul>
+      <p>Colors accept CSS color names, such as <code>LightYellow</code> and <code>Salmon</code>, or hexadecimal codes, such as <code>#FFB703</code>. <sup><a href="#ref-15-en">[15]</a></sup></p>
+    </section>
+
+    <section id="tarefas-en" aria-labelledby="h-tarefas-en">
+      <h2 id="h-tarefas-en">Tasks</h2>
+      <p>A task is created the first time it is mentioned. There are two ways to set when it happens:</p>
+      <ul>
+        <li><strong>Dynamic:</strong> duration only (<code>[Prototype] requires 8 days</code>). PlantUML places it from the project start and the dependencies.</li>
+        <li><strong>Fixed:</strong> with start and end dates (<code>[Training] starts 2026-10-19</code> and <code>[Training] ends 2026-11-13</code>).</li>
+      </ul>
+      <p>The original text uses the verb <code>lasts</code>, which still works; the current documentation prefers <code>requires</code>, which expresses the effort needed. <sup><a href="#ref-2-en">[2]</a></sup></p>
+      <pre class="code"><code><span class="k">project starts</span> 2026-10-05
+<span class="k">saturday are closed</span>
+<span class="k">sunday are closed</span>
+<span class="s">[Requirements]</span> <span class="k">requires</span> 5 days
+<span class="k">then</span> <span class="s">[Prototype]</span> <span class="k">requires</span> 8 days
+<span class="k">then</span> <span class="s">[Testing]</span> <span class="k">requires</span> 4 days
+<span class="s">[Delivery]</span> <span class="k">happens at</span> <span class="s">[Testing]</span>'s end</code></pre>
+      <figure class="puml">
+        <img src="rc_images/PlantUMLPrimeiro-en.svg" alt="Chart generated by PlantUML in October 2026: Requirements from 5 to 9, Prototype from 12 to 21 and Testing from 22 to 27, each starting when the previous one ends, with arrows between them, weekends in light pink and the Delivery milestone, a diamond, at the end of testing." width="649" height="228" loading="lazy">
+        <figcaption>Real output: three chained tasks and a milestone. PlantUML skips weekends on its own.</figcaption>
+      </figure>
+      <h3>Other task properties</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Command</th><th scope="col">What it is for</th></tr></thead>
+          <tbody>
+            <tr><td><code>[T] is colored in Red/Red</code></td><td>Bar color: the first is the fill and the second, the border.</td></tr>
+            <tr><td><code>[T] is 70% completed</code></td><td>Progress: the completed part is shown filled.</td></tr>
+            <tr><td><code>[T] is deleted</code></td><td>Shows the task as removed from the schedule.</td></tr>
+            <tr><td><code>[T] links to [[http://plantuml.com]]</code></td><td>Turns the bar into a link, useful in SVG.</td></tr>
+            <tr><td><code>note bottom</code> … <code>end note</code></td><td>Note below the last task declared.</td></tr>
+            <tr><td><code>[Long name] as [T1]</code></td><td>Short alias to use in the rest of the code.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="fluxos-en" aria-labelledby="h-fluxos-en">
+      <h2 id="h-fluxos-en">Dependencies and milestones</h2>
+      <p>PlantUML’s strength is placing tasks through their relations. Change one duration and the whole schedule recalculates.</p>
+      <figure>
+        <img src="rc_images/PlantUMLPosicao-en.svg" alt="Seven lines of code on the left, each linked to the bar it produces on a timeline on the right: A, with no date, starts at the project start; B has fixed dates; C starts when A ends; D comes right after C with then; E starts 2 days after A ends; milestone M happens at D’s end; and F is shown on the same row as A." width="1000" height="510" loading="lazy">
+        <figcaption>Seven ways to say when a task happens; all tested.</figcaption>
+      </figure>
+      <ul>
+        <li><code>[B] starts at [A]'s end</code>: B starts when A ends. With <code>with red bold link</code>, the arrow gets a color and a style (<code>bold</code>, <code>dashed</code> or <code>dotted</code>).</li>
+        <li><code>then [B] requires 3 days</code>: shortcut for “right after the previous task”.</li>
+        <li><code>[A] -> [B]</code>: another short way to link two tasks.</li>
+        <li><code>[B] starts 2 days after [A]'s end</code>: with a gap between the two.</li>
+        <li><code>[M] happens at [A]'s end</code>: a <strong>milestone</strong>, a point in time with no duration. It can also have a fixed date: <code>[M] happens 2026-10-30</code>.</li>
+        <li><code>[B] displays on same row as [A]</code>: draws B on the same row as A, to save space.</li>
+      </ul>
+      <aside class="recap" aria-label="Key points">
+        <h3>Key points</h3>
+        <ul>
+          <li>Dynamic tasks (<code>requires</code>) adjust by themselves; fixed tasks (<code>starts</code>/<code>ends</code>) do not.</li>
+          <li>Dependencies: <code>starts at [X]'s end</code>, <code>then</code> or <code>-&gt;</code>.</li>
+          <li>A milestone is a point (<code>happens at</code>); a task is a bar (<code>requires</code>).</li>
+        </ul>
+      </aside>
+    </section>
+
+    <section id="recursos-en" aria-labelledby="h-recursos-en">
+      <h2 id="h-recursos-en">Resources and separators</h2>
+      <p>To say who does each task, use curly braces with the name and, optionally, the allocation percentage. Below the chart, PlantUML shows each person’s load per day.</p>
+      <pre class="code"><code><span class="k">-- Phase 1 --</span>
+<span class="s">[Analysis]</span> on {Ana} <span class="k">requires</span> 5 days
+<span class="s">[Analysis]</span> <span class="k">is</span> 100% <span class="k">completed</span>
+<span class="k">-- Phase 2 --</span>
+<span class="s">[Coding]</span> on {Bruno} <span class="k">requires</span> 8 days
+<span class="s">[Coding]</span> <span class="k">starts at</span> <span class="s">[Analysis]</span>'s end
+<span class="s">[Coding]</span> <span class="k">is</span> 40% <span class="k">completed</span>
+<span class="s">[Testing]</span> on {Ana:50%} {Bruno:50%} <span class="k">requires</span> 4 days
+<span class="k">note bottom</span>
+  Ana and Bruno split
+  the testing time
+<span class="k">end note</span>
+<span class="s">[Testing]</span> <span class="k">starts at</span> <span class="s">[Coding]</span>'s end <span class="k">with red bold link</span>
+<span class="s">[Done]</span> <span class="k">happens at</span> <span class="s">[Testing]</span>'s end</code></pre>
+      <figure class="puml">
+        <img src="rc_images/PlantUMLRecursos-en.svg" alt="Chart generated by PlantUML with two phases separated by horizontal lines. In phase 1, Analysis, by Ana, completed. In phase 2, Coding, by Bruno, 40% completed, and Testing, by Ana and Bruno at 50% each, linked to coding by a red arrow, with a note below. The Done milestone is at the end of testing. Below, Ana’s and Bruno’s rows show their load per day: 100 or 50." width="841" height="465" loading="lazy">
+        <figcaption>Real output: phase separators, progress, part-time resources, a note and a colored arrow.</figcaption>
+      </figure>
+      <ul>
+        <li><strong>Separators</strong> (<code>-- Name --</code>) split the chart into phases, departments or groups.</li>
+        <li><strong>Resources</strong> (<code>on {Ana:50%}</code>) show allocation; with <code>hide resources names</code>, names disappear from the bars, and with <code>{Ana} is off on 2026-10-20</code> the person is unavailable on a given day.</li>
+        <li>A <strong>note</strong> goes below the task declared right before it.</li>
+      </ul>
+    </section>
+
+    <section id="estilo-en" aria-labelledby="h-estilo-en">
+      <h2 id="h-estilo-en">Style and sprites</h2>
+      <p>Appearance is defined in a <code>&lt;style&gt;</code> block, similar to CSS, or with <code>skinparam</code> commands. The style block is the newer, recommended way. <sup><a href="#ref-11-en">[11]</a></sup> <sup><a href="#ref-12-en">[12]</a></sup></p>
+      <pre class="code"><code><span class="k">&lt;style&gt;</span>
+ganttDiagram {
+  task      { FontName Arial; FontSize 12; BackGroundColor #EFE3FA; LineColor #5B2A86 }
+  milestone { FontSize 12; BackGroundColor #FFB703; LineColor #2B1B3D }
+  note      { FontSize 11; BackGroundColor #FFF1C9; LineColor #B35300 }
+}
+footer { HorizontalAlignment right }
+title  { FontSize 20; HorizontalAlignment center }
+<span class="k">&lt;/style&gt;</span>
+<span class="k">skinparam</span> footerFontColor blue</code></pre>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Element</th><th scope="col">Most used properties</th></tr></thead>
+          <tbody>
+            <tr><td><code>task</code></td><td><code>FontName</code>, <code>FontColor</code>, <code>FontSize</code>, <code>FontStyle</code>, <code>BackGroundColor</code>, <code>LineColor</code></td></tr>
+            <tr><td><code>milestone</code></td><td><code>FontColor</code>, <code>FontSize</code>, <code>FontStyle</code>, <code>BackGroundColor</code>, <code>LineColor</code></td></tr>
+            <tr><td><code>note</code></td><td><code>FontColor</code>, <code>FontSize</code>, <code>LineColor</code>, <code>BackGroundColor</code></td></tr>
+            <tr><td><code>title</code></td><td><code>FontColor</code>, <code>FontSize</code>, <code>FontStyle</code>, <code>HorizontalAlignment</code></td></tr>
+            <tr><td><code>footer</code>, <code>legend</code>, <code>caption</code></td><td><code>HorizontalAlignment</code>, <code>FontSize</code>, <code>BackGroundColor</code>, <code>Margin</code>, <code>Padding</code></td></tr>
+            <tr><td><code>skinparam</code></td><td><code>footerFontColor</code>, <code>footerFontSize</code>, <code>titleBackgroundColor</code>, <code>titleBorderColor</code>, <code>titleBorderRoundCorner</code>, <code>titleBorderThickness</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><code>FontStyle</code> accepts <code>bold</code>, <code>italic</code>, <code>monospaced</code>, <code>stroked</code> and <code>underlined</code>.</p>
+      <h3>Sprites and icons</h3>
+      <p>A <strong>sprite</strong> is a small image encoded as text, declared with <code>sprite $name [15x15/8z] …</code> and used with <code>&lt;$name&gt;</code>. Icons from the Open Iconic set come ready to use, in the form <code>&lt;&amp;check&gt;</code>. <sup><a href="#ref-13-en">[13]</a></sup> <sup><a href="#ref-14-en">[14]</a></sup></p>
+    </section>
+
+    <section id="exemplo-en" aria-labelledby="h-exemplo-en">
+      <h2 id="h-exemplo-en">Complete example</h2>
+      <p>The original text ends with an example that brings almost everything together. Below is the output generated by the current PlantUML from the author’s code, with the three <code>hide column</code> lines added.</p>
+      <figure class="puml">
+        <img src="rc_images/PlantUMLExemplo.svg" alt="Complete Gantt chart generated by PlantUML for the Entrega SDS 001 project, from January to February 2021. Three phases and a milestone area; red tasks with partial progress, linked by red arrows; Training in blue with fixed dates; the DevEnd, ReadyDeploy and PDEnd milestones on the same row; closed weekends, the week of January 4 to 8 in coral, January 1 in light blue and day 15 marked as today in yellow. Below, the daily load of Alice, Giovani, Davi, Camila and Maria, a legend, the caption and the footer." width="1458" height="1063" loading="lazy">
+        <figcaption>The author’s example rendered on PlantUML 1.2026.8.</figcaption>
+      </figure>
+      <details class="codebox">
+        <summary>Show the complete code</summary>
+        <pre class="code"><code>@startgantt
+hide column start
+hide column end
+hide column duration
+&lt;style&gt;
+
+  ganttDiagram {
+
+  	task {
+  		FontName Courrier
+  		FontColor black
+  		FontSize 12
+  		FontStyle bold
+  		BackGroundColor Blue
+  		LineColor blue
+  	}
+
+  	milestone {
+  		FontColor blue
+  		FontSize 12
+  		FontStyle italic
+  		BackGroundColor gold
+  		LineColor red
+  	}
+
+  	note {
+  		FontColor DarkGreen
+  		FontSize 10
+  		LineColor lightgreen
+        BackGroundColor orange\yellow
+  	}
+
+  }
+
+  footer {
+    HorizontalAlignment right
+  }
+
+  title {
+    FontColor black
+    FontSize 40
+    FontStyle italic
+    HorizontalAlignment center
+  }
+
+&lt;/style&gt;
+
+skinparam footerFontColor blue
+skinparam footerFontSize 10
+skinparam footerFontStyle italic
+'skinparam titleBackgroundColor Aqua-CadetBlue
+'skinparam titleBorderColor blue
+'skinparam titleBorderRoundCorner 15
+'skinparam titleBorderThickness 2
+
+' sprites
+sprite $printer [15x15/8z] NOtH3W0W208HxFz_kMAhj7lHWpa1XC716sz0Pq4MVPEWfBHIuxP3L6kbTcizR8tAhzaqFvXwvFfPEqm0
+
+' Initialization
+caption figure 1
+title Projeto&lt;$printer&gt;\nEntrega SDS 001 &lt;&amp;check&gt;
+footer Giovani Perotto Mesquita\n18/01/2011 - 13:01
+scale 1.5
+hide footbox
+'printscale weekly
+project starts the 2021/01/01
+
+' Day watching
+'today is 2021/01/20 and is colored in Yellow
+today is 14 days after start and is colored in Yellow
+
+' Close Days
+saturday are closed
+sunday are closed
+2021/01/01 is closed
+2021/01/01 is colored in lightblue
+2021/01/04 to 2021/01/08 are colored in coral
+
+' Tasks and separators
+-- Phase One --
+[Prototype design] on {Alice} lasts 13 days
+  [Prototype design] links to [[http://plantuml.com]]
+'note bottom
+'  memo1 ...
+'  memo2 ...
+'  explanations1 ...
+'  explanations2 ...
+'  &lt;img:http://plantuml.com/logo3.png&gt;
+'end note
+[Config prototype] on {Giovani} lasts 7 days
+'note bottom
+'  WiFi &lt;&amp;wifi&gt;
+'  |= |= table |= header |
+'  | a | table | row |
+'  |&lt;#FF8080&gt; red |&lt;#80FF80&gt; green |&lt;#8080FF&gt; blue |
+'  &lt;#yellow&gt;| b | table | row |
+'end note
+-- Phase Two --
+[QA prototype] on {Davi} lasts 9 days
+[Test prototype] on {Camila:50}{Giovani:50} lasts 6 days
+-- Phase Three --
+[Deploy] lasts 1 day
+'note bottom
+'  Example of Tree
+'  |_ First line
+'  |_ **Bom(Model)**
+'    |_ prop1
+'    |_ prop2
+'    |_ prop3
+'  |_ Last line
+'end note
+[PD audict] lasts 10 days
+[Trainning] on {Camila:50}{Maria:50} starts 2021/01/18
+  [Trainning] ends 2021/02/12
+  legend right
+    This is a legend
+  endlegend
+-- Milestones --
+
+' Tasks flow
+[Config prototype] starts at [Prototype design]'s end with red bold link
+[QA prototype] starts at [Prototype design]'s end with red bold link
+[Test prototype] starts at [Config prototype]'s end with red bold link
+  [Test prototype] starts at [QA prototype]'s end with red bold link
+  [Test prototype] pauses on monday
+[Deploy] starts at [Test prototype]'s end with red bold link
+[PD audict] starts at [Deploy]'s end with red bold link
+
+' Tasks progress
+[Prototype design] is 70% completed
+[Config prototype] is 0% completed
+[QA prototype] is 23% completed
+[Test prototype] is 0% completed
+[Deploy] is 0% completed
+[PD audict] is 0% completed
+[Trainning] is 20% completed
+
+' Milestones
+[DevEnd] happens at [Prototype design]'s end
+  [DevEnd] happens at [QA prototype]'s end
+[ReadyDeploy] happens at [Test prototype]'s end
+  [ReadyDeploy] displays on same row as [DevEnd]
+[PDEnd] happens at [PD audict]'s end
+[PDEnd] displays on same row as [ReadyDeploy]
+
+' Colors
+[Prototype design] is colored in Red/Red
+[Config prototype] is colored in Red/Red
+[QA prototype] is colored in Red/Red
+[Test prototype] is colored in Red/Red
+[Deploy] is colored in Red/Red
+[PD audict] is colored in Red/Red
+[DevEnd] is colored in White/Black
+[ReadyDeploy] is colored in Gray/Black
+@endgantt</code></pre>
+      </details>
+      <p>In the code, the style block sets fonts and colors; <code>sprite</code> and <code>&lt;&amp;check&gt;</code> put icons in the title; the calendar closes weekends and January 1; the tasks use resources, dependencies with red arrows, a pause on Mondays and progress; and the milestones share a row with <code>displays on same row as</code>.</p>
+    </section>
+
+    <section id="referencia-en" aria-labelledby="h-referencia-en">
+      <h2 id="h-referencia-en">Quick reference</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">I want to…</th><th scope="col">Command</th></tr></thead>
+          <tbody>
+            <tr><td>start the project</td><td><code>project starts 2026-10-05</code></td></tr>
+            <tr><td>close weekends</td><td><code>saturday are closed</code> · <code>sunday are closed</code></td></tr>
+            <tr><td>close or reopen a day</td><td><code>2026-10-12 is closed</code> · <code>2026-10-17 is opened</code></td></tr>
+            <tr><td>highlight days</td><td><code>2026-10-19 to 2026-10-23 are colored in LightYellow</code></td></tr>
+            <tr><td>mark today</td><td><code>today is 2026-10-14 and is colored in Gold</code></td></tr>
+            <tr><td>create a task</td><td><code>[T] requires 5 days</code></td></tr>
+            <tr><td>fix dates</td><td><code>[T] starts 2026-10-19</code> · <code>[T] ends 2026-11-13</code></td></tr>
+            <tr><td>chain tasks</td><td><code>[B] starts at [A]'s end</code> · <code>then [B] …</code> · <code>[A] -&gt; [B]</code></td></tr>
+            <tr><td>create a milestone</td><td><code>[M] happens at [T]'s end</code></td></tr>
+            <tr><td>show progress</td><td><code>[T] is 40% completed</code></td></tr>
+            <tr><td>assign people</td><td><code>[T] on {Ana:50%} {Bruno} requires 4 days</code></td></tr>
+            <tr><td>pause a task</td><td><code>[T] pauses on monday</code></td></tr>
+            <tr><td>separate phases</td><td><code>-- Phase 2 --</code></td></tr>
+            <tr><td>change the scale</td><td><code>printscale weekly</code></td></tr>
+            <tr><td>hide the side table</td><td><code>hide column start</code> · <code>hide column end</code> · <code>hide column duration</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="revisao-en" aria-labelledby="h-revisao-en">
+      <h2 id="h-revisao-en">Quick review</h2>
+      <p>Try to answer before opening each question.</p>
+      <div class="quiz">
+        <details><summary>1. Between which markers does the code of a Gantt chart go?</summary><p><code>@startgantt</code> and <code>@endgantt</code>.</p></details>
+        <details><summary>2. What is the difference between a dynamic and a fixed task?</summary><p>A dynamic task has only a duration (<code>requires</code>) and is placed by PlantUML from the project start and the dependencies; a fixed task has start and end dates (<code>starts</code>/<code>ends</code>).</p></details>
+        <details><summary>3. What is the difference between a closed day and a pause?</summary><p>A closed day applies to the whole project (<code>is closed</code>); a pause applies to one task only (<code>pauses on</code>).</p></details>
+        <details><summary>4. How do you make task B start right after task A?</summary><p><code>[B] starts at [A]'s end</code>, or declare B right after A with <code>then [B] requires …</code>, or <code>[A] -&gt; [B]</code>.</p></details>
+        <details><summary>5. How do you represent a milestone?</summary><p>With <code>happens</code>: <code>[Delivery] happens at [Testing]'s end</code> or <code>[Delivery] happens 2026-10-30</code>. It appears as a diamond, with no duration.</p></details>
+        <details><summary>6. How do you say that Ana and Bruno share a 4-day task?</summary><p><code>[Testing] on {Ana:50%} {Bruno:50%} requires 4 days</code>.</p></details>
+        <details><summary>7. Which <code>printscale</code> value shows one day per column?</summary><p><code>daily</code>, the default; the original text writes “diary”, which is not accepted.</p></details>
+        <details><summary>8. What happens to a 5-day task that starts on a Friday, with weekends closed?</summary><p>It skips Saturday and Sunday and ends the following Thursday: closed days do not count.</p></details>
+      </div>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="referencias-en" aria-labelledby="h-referencias-en">
+      <h2 id="h-referencias-en">References</h2>
+      <ol class="refs">
+        <li id="ref-1-en"><strong>Giovani Perotto Mesquita</strong>, “Building Gant diagrams with PlantUML”, GitHub, original text of this tutorial, <a href="https://github.com/GiovaniPM/MyCourses/blob/master/PlantUML/Course%20Gant.md" rel="noopener">github.com/GiovaniPM/MyCourses/blob/master/PlantUML/Course Gant.md</a>.</li>
+        <li id="ref-2-en"><strong>PlantUML</strong>, “Gantt Diagram”, accessed 25 September 2026, <a href="https://plantuml.com/gantt-diagram" rel="noopener">plantuml.com/gantt-diagram</a>.</li>
+        <li id="ref-3-en"><strong>PlantUML</strong>, official website, accessed 25 September 2026, <a href="https://plantuml.com/" rel="noopener">plantuml.com</a>.</li>
+        <li id="ref-4-en"><strong>Wikipedia</strong>, “Gantt chart”, accessed 25 September 2026, <a href="https://en.wikipedia.org/wiki/Gantt_chart" rel="noopener">en.wikipedia.org/wiki/Gantt_chart</a>.</li>
+        <li id="ref-5-en"><strong>Wikipedia</strong>, “PlantUML”, accessed 25 September 2026, <a href="https://en.wikipedia.org/wiki/PlantUML" rel="noopener">en.wikipedia.org/wiki/PlantUML</a>.</li>
+        <li id="ref-6-en"><strong>PlantUML</strong>, “Download”, accessed 25 September 2026, <a href="https://plantuml.com/download" rel="noopener">plantuml.com/download</a>.</li>
+        <li id="ref-7-en"><strong>Visual Studio Marketplace</strong>, “PlantUML” (jebbs), accessed 25 September 2026, <a href="https://marketplace.visualstudio.com/items?itemName=jebbs.plantuml" rel="noopener">marketplace.visualstudio.com/items?itemName=jebbs.plantuml</a>.</li>
+        <li id="ref-8-en"><strong>Graphviz</strong>, official website, accessed 25 September 2026, <a href="https://graphviz.org/" rel="noopener">graphviz.org</a>.</li>
+        <li id="ref-9-en"><strong>PlantUML</strong>, “Creole”, accessed 25 September 2026, <a href="https://plantuml.com/creole" rel="noopener">plantuml.com/creole</a>.</li>
+        <li id="ref-10-en"><strong>PlantUML</strong>, “Common commands”, accessed 25 September 2026, <a href="https://plantuml.com/commons" rel="noopener">plantuml.com/commons</a>.</li>
+        <li id="ref-11-en"><strong>PlantUML</strong>, “Skinparam”, accessed 25 September 2026, <a href="https://plantuml.com/skinparam" rel="noopener">plantuml.com/skinparam</a>.</li>
+        <li id="ref-12-en"><strong>PlantUML</strong>, “Style (evolution)”, accessed 25 September 2026, <a href="https://plantuml.com/style-evolution" rel="noopener">plantuml.com/style-evolution</a>.</li>
+        <li id="ref-13-en"><strong>PlantUML</strong>, “Sprite”, accessed 25 September 2026, <a href="https://plantuml.com/sprite" rel="noopener">plantuml.com/sprite</a>.</li>
+        <li id="ref-14-en"><strong>PlantUML</strong>, “Open Iconic”, accessed 25 September 2026, <a href="https://plantuml.com/openiconic" rel="noopener">plantuml.com/openiconic</a>.</li>
+        <li id="ref-15-en"><strong>W3C</strong>, <em>CSS Color Module Level 4</em>, “Named colors”, accessed 25 September 2026, <a href="https://www.w3.org/TR/css-color-4/#named-colors" rel="noopener">w3.org/TR/css-color-4/#named-colors</a>.</li>
+        <li id="ref-16-en"><strong>PlantUML</strong>, GitHub repository, accessed 25 September 2026, <a href="https://github.com/plantuml/plantuml" rel="noopener">github.com/plantuml/plantuml</a>.</li>
+      </ol>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== IT ===================== -->
+<div id="it" role="tabpanel" aria-labelledby="tab-it" lang="it" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Progetti</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Diagrammi di Gantt con PlantUML</h1>
+      <p class="dek">Come descrivere un calendario di progetto in testo e lasciare che PlantUML disegni il diagramma: progetto, calendario, attività, dipendenze, milestone, risorse e stile, con esempi verificati.</p>
+      <div class="byline">
+        <span>Di <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Pubblicato il <time datetime="2026-09-25">25/09/2026</time></span>
+        <span class="credit">Rivisto e impaginato con Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-it">
+    <h2 id="toc-it">Indice</h2>
+    <ol>
+      <li><a href="#intro-it">Gantt e PlantUML</a></li>
+      <li><a href="#estrutura-it">Struttura di un file</a></li>
+      <li><a href="#projeto-it">Configurare il progetto</a></li>
+      <li><a href="#calendario-it">Calendario</a></li>
+      <li><a href="#tarefas-it">Attività</a></li>
+      <li><a href="#fluxos-it">Dipendenze e milestone</a></li>
+      <li><a href="#recursos-it">Risorse e separatori</a></li>
+      <li><a href="#estilo-it">Stile e sprite</a></li>
+      <li><a href="#exemplo-it">Esempio completo</a></li>
+      <li><a href="#referencia-it">Riferimento rapido</a></li>
+      <li><a href="#revisao-it">Ripasso veloce</a></li>
+      <li><a href="#referencias-it">Riferimenti</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="intro-it" aria-labelledby="h-intro-it">
+      <h2 id="h-intro-it">Gantt e PlantUML</h2>
+      <p>Il <strong>diagramma di Gantt</strong> è un grafico a barre che mostra il calendario di un progetto: ogni attività è una barra sull’asse del tempo, con inizio, durata e dipendenze. È stato reso popolare da Henry Gantt intorno al 1910–1915, anche se il polacco Karol Adamiecki aveva creato uno strumento simile, l’armonogramma, nel 1896. <sup><a href="#ref-4-it">[4]</a></sup></p>
+      <p><strong>PlantUML</strong> è uno strumento open source che disegna diagrammi a partire da testo. Invece di trascinare barre in un programma, scrivi il calendario in un linguaggio quasi naturale, in inglese, e PlantUML calcola le date e genera l’immagine. <sup><a href="#ref-2-it">[2]</a></sup> <sup><a href="#ref-3-it">[3]</a></sup> <sup><a href="#ref-5-it">[5]</a></sup></p>
+      <figure>
+        <img src="rc_images/PlantUMLFluxo-it.svg" alt="A sinistra, un file di testo con il codice di un diagramma di Gantt: inizio del progetto, un’attività di 5 giorni, una di 8 giorni concatenata con then e una milestone. Una freccia porta a PlantUML, che gira su Java, e un’altra all’immagine generata, con barre, una dipendenza e una milestone. Sotto, tre modi d’uso: estensione di VS Code, server online e riga di comando." width="1000" height="470" loading="lazy">
+        <figcaption>Il calendario diventa testo versionabile, e PlantUML si occupa del disegno.</figcaption>
+      </figure>
+      <p>Il vantaggio è trattare il calendario come codice: sta nel controllo di versione, si può confrontare tra versioni e si ricalcola da solo quando cambia una durata.</p>
+      <h3>Cosa serve</h3>
+      <ul>
+        <li><strong>Java</strong>, per eseguire PlantUML, distribuito come file <code>plantuml.jar</code>. <sup><a href="#ref-6-it">[6]</a></sup> <sup><a href="#ref-16-it">[16]</a></sup></li>
+        <li>Un posto dove scrivere e vedere il risultato: l’estensione PlantUML di VS Code, il server online di PlantUML o la riga di comando (<code>java -jar plantuml.jar progetto.puml</code>). <sup><a href="#ref-7-it">[7]</a></sup></li>
+        <li>Il testo originale elenca anche <strong>Graphviz</strong>, che PlantUML usa per disegnare diversi tipi di diagramma UML, e la sintassi <strong>Creole</strong>, che formatta il testo dentro i diagrammi. <sup><a href="#ref-8-it">[8]</a></sup> <sup><a href="#ref-9-it">[9]</a></sup></li>
+      </ul>
+      <p>Tutti gli esempi di questo tutorial sono stati verificati con PlantUML 1.2026.8. Il testo originale era stato scritto per la versione 1.2020.23; le differenze trovate sono indicate lungo il testo. <sup><a href="#ref-1-it">[1]</a></sup></p>
+    </section>
+
+    <section id="estrutura-it" aria-labelledby="h-estrutura-it">
+      <h2 id="h-estrutura-it">Struttura di un file</h2>
+      <p>Ogni diagramma di Gantt sta tra <code>@startgantt</code> e <code>@endgantt</code>. Ogni riga è una frase nella forma soggetto, verbo e complemento, e i nomi di attività e milestone vanno tra parentesi quadre. <sup><a href="#ref-2-it">[2]</a></sup></p>
+      <pre class="code"><code><span class="k">@startgantt</span>
+<span class="c">' commento su una riga</span>
+<span class="c">/' commento su
+   più righe '/</span>
+<span class="k">project starts</span> 2026-10-05
+<span class="s">[Raccolta requisiti]</span> <span class="k">requires</span> 5 days
+<span class="k">@endgantt</span></code></pre>
+      <p>I commenti iniziano con un apice (<code>'</code>) o stanno tra <code>/'</code> e <code>'/</code>; non compaiono nel disegno. La figura qui sotto mostra da dove viene ogni parte di un diagramma.</p>
+      <figure>
+        <img src="rc_images/PlantUMLAnatomia-it.svg" alt="Un diagramma di Gantt disegnato con indicatori numerati da 1 a 14 e, a destra, l’elenco del comando che genera ogni parte: titolo, primo giorno del progetto, giorni chiusi, oggi, giorni evidenziati, separatore di fase, attività, dipendenza, avanzamento, milestone, risorsa, legenda, piè di pagina e didascalia." width="1000" height="474" loading="lazy">
+        <figcaption>I 14 elementi più comuni di un diagramma e il comando che produce ciascuno.</figcaption>
+      </figure>
+    </section>
+
+    <section id="projeto-it" aria-labelledby="h-projeto-it">
+      <h2 id="h-projeto-it">Configurare il progetto</h2>
+      <p>Questi comandi definiscono il diagramma nel suo insieme. Diversi, come <code>title</code>, <code>footer</code>, <code>caption</code>, <code>legend</code> e <code>scale</code>, sono comuni a tutti i diagrammi di PlantUML. <sup><a href="#ref-10-it">[10]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Comando</th><th scope="col">Esempio</th><th scope="col">A cosa serve</th></tr></thead>
+          <tbody>
+            <tr><td><code>title</code></td><td><code>title Il mio primo\nprogetto</code></td><td>Titolo sopra il diagramma; <code>\n</code> va a capo.</td></tr>
+            <tr><td><code>footer</code></td><td><code>footer Giovani\n18/01/2021</code></td><td>Piè di pagina, sotto il diagramma.</td></tr>
+            <tr><td><code>caption</code></td><td><code>caption figura 1</code></td><td>Didascalia, utile quando si esporta in un documento.</td></tr>
+            <tr><td><code>legend … endlegend</code></td><td><code>legend right</code> … <code>endlegend</code></td><td>Riquadro di legenda (<code>left</code>, <code>right</code>, <code>top</code>, <code>bottom</code> o <code>center</code>).</td></tr>
+            <tr><td><code>scale</code></td><td><code>scale 1.5</code> · <code>scale 2/3</code> · <code>scale max 1024 width</code></td><td>Ingrandisce o riduce l’immagine, per fattore, frazione o dimensione massima.</td></tr>
+            <tr><td><code>hide footbox</code></td><td><code>hide footbox</code></td><td>Nasconde il righello delle date in basso; quello in alto resta.</td></tr>
+            <tr><td><code>printscale</code></td><td><code>printscale weekly</code></td><td>Compatta la linea del tempo: <code>daily</code> (predefinito), <code>weekly</code>, <code>monthly</code>, <code>quarterly</code> o <code>yearly</code>.</td></tr>
+            <tr><td><code>project starts</code></td><td><code>project starts 2026-10-05</code></td><td>Primo giorno del progetto; le attività senza data iniziano da lì.</td></tr>
+            <tr><td><code>today is</code></td><td><code>today is 14 days after start and is colored in Yellow</code></td><td>Evidenzia il giorno di oggi, per data o per numero di giorni dall’inizio.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Due note di versione:</p>
+      <ul>
+        <li>Il testo originale cita <code>printscale diary</code>; il valore corretto è <code>daily</code>. Le scale <code>quarterly</code> e <code>yearly</code>, e il comando <code>zoom</code>, sono arrivati dopo. <sup><a href="#ref-2-it">[2]</a></sup></li>
+        <li>Le versioni recenti aggiungono a sinistra una tabella con inizio, fine e durata di ogni attività. Per nasconderla usa <code>hide column start</code>, <code>hide column end</code> e <code>hide column duration</code>, come negli esempi di questo tutorial.</li>
+      </ul>
+      <p>Il comando <code>language</code> cambia la lingua del calendario, con il codice ISO 639. Nelle prove ha funzionato in tedesco (<code>de</code>), ma portoghese e italiano escono ancora in inglese; per questo le figure reali di questo tutorial mostrano mesi e giorni in inglese.</p>
+    </section>
+
+    <section id="calendario-it" aria-labelledby="h-calendario-it">
+      <h2 id="h-calendario-it">Calendario</h2>
+      <p>Il calendario dice quali giorni contano come lavorativi e quali meritano di essere evidenziati.</p>
+      <pre class="code"><code><span class="k">saturday are closed</span>
+<span class="k">sunday are closed</span>
+2026-10-12 <span class="k">is closed</span>                      <span class="c">' festivo</span>
+2026-10-12 <span class="k">is colored in</span> Salmon
+2026-10-19 <span class="k">to</span> 2026-10-23 <span class="k">are colored in</span> LightYellow
+<span class="k">today is</span> 2026-10-14 <span class="k">and is colored in</span> #FFB703
+<span class="s">[Sviluppo]</span> <span class="k">requires</span> 10 days
+<span class="s">[Sviluppo]</span> <span class="k">pauses on</span> 2026-10-15
+<span class="s">[Documentazione]</span> <span class="k">starts</span> 2026-10-07
+<span class="s">[Documentazione]</span> <span class="k">ends</span> 2026-10-16</code></pre>
+      <figure class="puml">
+        <img src="rc_images/PlantUMLCalendario-it.svg" alt="Diagramma generato da PlantUML a ottobre 2026, con i fine settimana chiusi in rosa chiaro, il festivo del 12 ottobre in salmone, il giorno 14 indicato come oggi in oro e la settimana dal 19 al 23 evidenziata in giallo chiaro. L’attività Sviluppo, di 10 giorni, salta il fine settimana, il festivo e la pausa del 15, e finisce il 20. L’attività Documentazione va dal 7 al 16 ottobre." width="487" height="172" loading="lazy">
+        <figcaption>Risultato reale: giorni chiusi, un festivo, oggi, giorni evidenziati e una pausa.</figcaption>
+      </figure>
+      <ul>
+        <li>I <strong>giorni chiusi</strong> (<code>are closed</code>, <code>is closed</code>) non contano per nessuno: un’attività di 10 giorni si allunga sopra di essi. Con <code>is opened</code> un giorno chiuso torna lavorativo, come un sabato di lavoro.</li>
+        <li>La <strong>pausa</strong> (<code>pauses on</code>) vale per una sola attività. La differenza è semantica: il giorno chiuso indica che <em>il progetto</em> non lavora in quella data; la pausa indica che <em>quell’attività</em> è sospesa. Il testo originale scrive <code>pause on</code> nella sintassi, ma la forma accettata è <code>pauses on</code>, come nel suo stesso esempio.</li>
+        <li>I <strong>giorni colorati</strong> (<code>is colored in</code>, <code>are colored in</code>) evidenziano solo visivamente, senza cambiare il conteggio. Con <code>are named</code> un intervallo riceve un nome, come <code>[Ferie]</code>.</li>
+      </ul>
+      <p>I colori accettano i nomi dei colori CSS, come <code>LightYellow</code> e <code>Salmon</code>, o codici esadecimali, come <code>#FFB703</code>. <sup><a href="#ref-15-it">[15]</a></sup></p>
+    </section>
+
+    <section id="tarefas-it" aria-labelledby="h-tarefas-it">
+      <h2 id="h-tarefas-it">Attività</h2>
+      <p>Un’attività viene creata la prima volta che la si nomina. Ci sono due modi di stabilire quando avviene:</p>
+      <ul>
+        <li><strong>Dinamica:</strong> solo con la durata (<code>[Prototipo] requires 8 days</code>). PlantUML la posiziona a partire dall’inizio del progetto e dalle dipendenze.</li>
+        <li><strong>Fissa:</strong> con date di inizio e fine (<code>[Formazione] starts 2026-10-19</code> e <code>[Formazione] ends 2026-11-13</code>).</li>
+      </ul>
+      <p>Il testo originale usa il verbo <code>lasts</code>, che funziona ancora; la documentazione attuale preferisce <code>requires</code>, che esprime l’impegno necessario. <sup><a href="#ref-2-it">[2]</a></sup></p>
+      <pre class="code"><code><span class="k">project starts</span> 2026-10-05
+<span class="k">saturday are closed</span>
+<span class="k">sunday are closed</span>
+<span class="s">[Raccolta requisiti]</span> <span class="k">requires</span> 5 days
+<span class="k">then</span> <span class="s">[Prototipo]</span> <span class="k">requires</span> 8 days
+<span class="k">then</span> <span class="s">[Test]</span> <span class="k">requires</span> 4 days
+<span class="s">[Consegna]</span> <span class="k">happens at</span> <span class="s">[Test]</span>'s end</code></pre>
+      <figure class="puml">
+        <img src="rc_images/PlantUMLPrimeiro-it.svg" alt="Diagramma generato da PlantUML a ottobre 2026: Raccolta requisiti dal 5 al 9, Prototipo dal 12 al 21 e Test dal 22 al 27, ognuna che inizia quando finisce la precedente, con frecce tra loro, i fine settimana in rosa chiaro e la milestone Consegna, un rombo, alla fine dei test." width="666" height="228" loading="lazy">
+        <figcaption>Risultato reale: tre attività concatenate e una milestone. PlantUML salta i fine settimana da solo.</figcaption>
+      </figure>
+      <h3>Altre proprietà dell’attività</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Comando</th><th scope="col">A cosa serve</th></tr></thead>
+          <tbody>
+            <tr><td><code>[T] is colored in Red/Red</code></td><td>Colore della barra: il primo è il riempimento e il secondo il bordo.</td></tr>
+            <tr><td><code>[T] is 70% completed</code></td><td>Avanzamento: la parte completata appare piena.</td></tr>
+            <tr><td><code>[T] is deleted</code></td><td>Mostra l’attività come rimossa dal calendario.</td></tr>
+            <tr><td><code>[T] links to [[http://plantuml.com]]</code></td><td>Trasforma la barra in un link, utile in SVG.</td></tr>
+            <tr><td><code>note bottom</code> … <code>end note</code></td><td>Nota sotto l’ultima attività dichiarata.</td></tr>
+            <tr><td><code>[Nome lungo] as [T1]</code></td><td>Alias breve da usare nel resto del codice.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="fluxos-it" aria-labelledby="h-fluxos-it">
+      <h2 id="h-fluxos-it">Dipendenze e milestone</h2>
+      <p>Il punto di forza di PlantUML è posizionare le attività in base alle loro relazioni. Cambia una durata e l’intero calendario si ricalcola.</p>
+      <figure>
+        <img src="rc_images/PlantUMLPosicao-it.svg" alt="Sette righe di codice a sinistra, ognuna collegata alla barra che produce su una linea del tempo a destra: A, senza data, inizia con il progetto; B ha date fisse; C inizia quando finisce A; D viene subito dopo C con then; E inizia 2 giorni dopo la fine di A; la milestone M avviene alla fine di D; e F è mostrata sulla stessa riga di A." width="1000" height="510" loading="lazy">
+        <figcaption>Sette modi per dire quando avviene un’attività; tutti verificati.</figcaption>
+      </figure>
+      <ul>
+        <li><code>[B] starts at [A]'s end</code>: B inizia quando finisce A. Con <code>with red bold link</code> la freccia prende un colore e uno stile (<code>bold</code>, <code>dashed</code> o <code>dotted</code>).</li>
+        <li><code>then [B] requires 3 days</code>: scorciatoia per “subito dopo l’attività precedente”.</li>
+        <li><code>[A] -> [B]</code>: un altro modo breve per collegare due attività.</li>
+        <li><code>[B] starts 2 days after [A]'s end</code>: con un margine tra le due.</li>
+        <li><code>[M] happens at [A]'s end</code>: una <strong>milestone</strong>, un punto nel tempo senza durata. Può anche avere una data fissa: <code>[M] happens 2026-10-30</code>.</li>
+        <li><code>[B] displays on same row as [A]</code>: disegna B sulla stessa riga di A, per risparmiare spazio.</li>
+      </ul>
+      <aside class="recap" aria-label="Da ricordare">
+        <h3>Da ricordare</h3>
+        <ul>
+          <li>Le attività dinamiche (<code>requires</code>) si adattano da sole; quelle fisse (<code>starts</code>/<code>ends</code>) no.</li>
+          <li>Dipendenze: <code>starts at [X]'s end</code>, <code>then</code> o <code>-&gt;</code>.</li>
+          <li>La milestone è un punto (<code>happens at</code>); l’attività è una barra (<code>requires</code>).</li>
+        </ul>
+      </aside>
+    </section>
+
+    <section id="recursos-it" aria-labelledby="h-recursos-it">
+      <h2 id="h-recursos-it">Risorse e separatori</h2>
+      <p>Per indicare chi svolge ogni attività usa le parentesi graffe con il nome e, se vuoi, la percentuale di impegno. Sotto il diagramma, PlantUML mostra il carico di ogni persona per giorno.</p>
+      <pre class="code"><code><span class="k">-- Fase 1 --</span>
+<span class="s">[Analisi]</span> on {Ana} <span class="k">requires</span> 5 days
+<span class="s">[Analisi]</span> <span class="k">is</span> 100% <span class="k">completed</span>
+<span class="k">-- Fase 2 --</span>
+<span class="s">[Codice]</span> on {Bruno} <span class="k">requires</span> 8 days
+<span class="s">[Codice]</span> <span class="k">starts at</span> <span class="s">[Analisi]</span>'s end
+<span class="s">[Codice]</span> <span class="k">is</span> 40% <span class="k">completed</span>
+<span class="s">[Test]</span> on {Ana:50%} {Bruno:50%} <span class="k">requires</span> 4 days
+<span class="k">note bottom</span>
+  Ana e Bruno si dividono
+  il tempo dei test
+<span class="k">end note</span>
+<span class="s">[Test]</span> <span class="k">starts at</span> <span class="s">[Codice]</span>'s end <span class="k">with red bold link</span>
+<span class="s">[Pronto]</span> <span class="k">happens at</span> <span class="s">[Test]</span>'s end</code></pre>
+      <figure class="puml">
+        <img src="rc_images/PlantUMLRecursos-it.svg" alt="Diagramma generato da PlantUML con due fasi separate da linee orizzontali. Nella fase 1, Analisi, di Ana, completata. Nella fase 2, Codice, di Bruno, completato al 40%, e Test, di Ana e Bruno al 50% ciascuno, collegato al codice da una freccia rossa, con una nota sotto. La milestone Pronto è alla fine dei test. Sotto, le righe di Ana e Bruno mostrano il carico per giorno: 100 o 50." width="817" height="465" loading="lazy">
+        <figcaption>Risultato reale: separatori di fase, avanzamento, risorse a tempo parziale, una nota e una freccia colorata.</figcaption>
+      </figure>
+      <ul>
+        <li>I <strong>separatori</strong> (<code>-- Nome --</code>) dividono il diagramma in fasi, reparti o gruppi.</li>
+        <li>Le <strong>risorse</strong> (<code>on {Ana:50%}</code>) mostrano l’allocazione; con <code>hide resources names</code> i nomi spariscono dalle barre, e con <code>{Ana} is off on 2026-10-20</code> la persona non è disponibile in un giorno.</li>
+        <li>La <strong>nota</strong> va sotto l’attività dichiarata subito prima.</li>
+      </ul>
+    </section>
+
+    <section id="estilo-it" aria-labelledby="h-estilo-it">
+      <h2 id="h-estilo-it">Stile e sprite</h2>
+      <p>L’aspetto si definisce in un blocco <code>&lt;style&gt;</code>, simile al CSS, o con i comandi <code>skinparam</code>. Il blocco di stile è il modo più recente e consigliato. <sup><a href="#ref-11-it">[11]</a></sup> <sup><a href="#ref-12-it">[12]</a></sup></p>
+      <pre class="code"><code><span class="k">&lt;style&gt;</span>
+ganttDiagram {
+  task      { FontName Arial; FontSize 12; BackGroundColor #EFE3FA; LineColor #5B2A86 }
+  milestone { FontSize 12; BackGroundColor #FFB703; LineColor #2B1B3D }
+  note      { FontSize 11; BackGroundColor #FFF1C9; LineColor #B35300 }
+}
+footer { HorizontalAlignment right }
+title  { FontSize 20; HorizontalAlignment center }
+<span class="k">&lt;/style&gt;</span>
+<span class="k">skinparam</span> footerFontColor blue</code></pre>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Elemento</th><th scope="col">Proprietà più usate</th></tr></thead>
+          <tbody>
+            <tr><td><code>task</code></td><td><code>FontName</code>, <code>FontColor</code>, <code>FontSize</code>, <code>FontStyle</code>, <code>BackGroundColor</code>, <code>LineColor</code></td></tr>
+            <tr><td><code>milestone</code></td><td><code>FontColor</code>, <code>FontSize</code>, <code>FontStyle</code>, <code>BackGroundColor</code>, <code>LineColor</code></td></tr>
+            <tr><td><code>note</code></td><td><code>FontColor</code>, <code>FontSize</code>, <code>LineColor</code>, <code>BackGroundColor</code></td></tr>
+            <tr><td><code>title</code></td><td><code>FontColor</code>, <code>FontSize</code>, <code>FontStyle</code>, <code>HorizontalAlignment</code></td></tr>
+            <tr><td><code>footer</code>, <code>legend</code>, <code>caption</code></td><td><code>HorizontalAlignment</code>, <code>FontSize</code>, <code>BackGroundColor</code>, <code>Margin</code>, <code>Padding</code></td></tr>
+            <tr><td><code>skinparam</code></td><td><code>footerFontColor</code>, <code>footerFontSize</code>, <code>titleBackgroundColor</code>, <code>titleBorderColor</code>, <code>titleBorderRoundCorner</code>, <code>titleBorderThickness</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><code>FontStyle</code> accetta <code>bold</code>, <code>italic</code>, <code>monospaced</code>, <code>stroked</code> e <code>underlined</code>.</p>
+      <h3>Sprite e icone</h3>
+      <p>Uno <strong>sprite</strong> è una piccola immagine codificata in testo, dichiarata con <code>sprite $nome [15x15/8z] …</code> e usata con <code>&lt;$nome&gt;</code>. Le icone del set Open Iconic sono già pronte, nella forma <code>&lt;&amp;check&gt;</code>. <sup><a href="#ref-13-it">[13]</a></sup> <sup><a href="#ref-14-it">[14]</a></sup></p>
+    </section>
+
+    <section id="exemplo-it" aria-labelledby="h-exemplo-it">
+      <h2 id="h-exemplo-it">Esempio completo</h2>
+      <p>Il testo originale si chiude con un esempio che riunisce quasi tutto. Qui sotto, il risultato generato dal PlantUML attuale a partire dal codice dell’autore, con le tre righe <code>hide column</code> aggiunte.</p>
+      <figure class="puml">
+        <img src="rc_images/PlantUMLExemplo.svg" alt="Diagramma di Gantt completo generato da PlantUML per il progetto Entrega SDS 001, da gennaio a febbraio 2021. Tre fasi e un’area di milestone; attività in rosso con avanzamento parziale, collegate da frecce rosse; Trainning in blu con date fisse; le milestone DevEnd, ReadyDeploy e PDEnd sulla stessa riga; fine settimana chiusi, la settimana dal 4 all’8 gennaio in corallo, il 1º gennaio in azzurro e il giorno 15 indicato come oggi in giallo. Sotto, il carico giornaliero di Alice, Giovani, Davi, Camila e Maria, una legenda, la didascalia e il piè di pagina." width="1458" height="1063" loading="lazy">
+        <figcaption>L’esempio dell’autore generato con PlantUML 1.2026.8.</figcaption>
+      </figure>
+      <details class="codebox">
+        <summary>Mostra il codice completo</summary>
+        <pre class="code"><code>@startgantt
+hide column start
+hide column end
+hide column duration
+&lt;style&gt;
+
+  ganttDiagram {
+
+  	task {
+  		FontName Courrier
+  		FontColor black
+  		FontSize 12
+  		FontStyle bold
+  		BackGroundColor Blue
+  		LineColor blue
+  	}
+
+  	milestone {
+  		FontColor blue
+  		FontSize 12
+  		FontStyle italic
+  		BackGroundColor gold
+  		LineColor red
+  	}
+
+  	note {
+  		FontColor DarkGreen
+  		FontSize 10
+  		LineColor lightgreen
+        BackGroundColor orange\yellow
+  	}
+
+  }
+
+  footer {
+    HorizontalAlignment right
+  }
+
+  title {
+    FontColor black
+    FontSize 40
+    FontStyle italic
+    HorizontalAlignment center
+  }
+
+&lt;/style&gt;
+
+skinparam footerFontColor blue
+skinparam footerFontSize 10
+skinparam footerFontStyle italic
+'skinparam titleBackgroundColor Aqua-CadetBlue
+'skinparam titleBorderColor blue
+'skinparam titleBorderRoundCorner 15
+'skinparam titleBorderThickness 2
+
+' sprites
+sprite $printer [15x15/8z] NOtH3W0W208HxFz_kMAhj7lHWpa1XC716sz0Pq4MVPEWfBHIuxP3L6kbTcizR8tAhzaqFvXwvFfPEqm0
+
+' Initialization
+caption figure 1
+title Projeto&lt;$printer&gt;\nEntrega SDS 001 &lt;&amp;check&gt;
+footer Giovani Perotto Mesquita\n18/01/2011 - 13:01
+scale 1.5
+hide footbox
+'printscale weekly
+project starts the 2021/01/01
+
+' Day watching
+'today is 2021/01/20 and is colored in Yellow
+today is 14 days after start and is colored in Yellow
+
+' Close Days
+saturday are closed
+sunday are closed
+2021/01/01 is closed
+2021/01/01 is colored in lightblue
+2021/01/04 to 2021/01/08 are colored in coral
+
+' Tasks and separators
+-- Phase One --
+[Prototype design] on {Alice} lasts 13 days
+  [Prototype design] links to [[http://plantuml.com]]
+'note bottom
+'  memo1 ...
+'  memo2 ...
+'  explanations1 ...
+'  explanations2 ...
+'  &lt;img:http://plantuml.com/logo3.png&gt;
+'end note
+[Config prototype] on {Giovani} lasts 7 days
+'note bottom
+'  WiFi &lt;&amp;wifi&gt;
+'  |= |= table |= header |
+'  | a | table | row |
+'  |&lt;#FF8080&gt; red |&lt;#80FF80&gt; green |&lt;#8080FF&gt; blue |
+'  &lt;#yellow&gt;| b | table | row |
+'end note
+-- Phase Two --
+[QA prototype] on {Davi} lasts 9 days
+[Test prototype] on {Camila:50}{Giovani:50} lasts 6 days
+-- Phase Three --
+[Deploy] lasts 1 day
+'note bottom
+'  Example of Tree
+'  |_ First line
+'  |_ **Bom(Model)**
+'    |_ prop1
+'    |_ prop2
+'    |_ prop3
+'  |_ Last line
+'end note
+[PD audict] lasts 10 days
+[Trainning] on {Camila:50}{Maria:50} starts 2021/01/18
+  [Trainning] ends 2021/02/12
+  legend right
+    This is a legend
+  endlegend
+-- Milestones --
+
+' Tasks flow
+[Config prototype] starts at [Prototype design]'s end with red bold link
+[QA prototype] starts at [Prototype design]'s end with red bold link
+[Test prototype] starts at [Config prototype]'s end with red bold link
+  [Test prototype] starts at [QA prototype]'s end with red bold link
+  [Test prototype] pauses on monday
+[Deploy] starts at [Test prototype]'s end with red bold link
+[PD audict] starts at [Deploy]'s end with red bold link
+
+' Tasks progress
+[Prototype design] is 70% completed
+[Config prototype] is 0% completed
+[QA prototype] is 23% completed
+[Test prototype] is 0% completed
+[Deploy] is 0% completed
+[PD audict] is 0% completed
+[Trainning] is 20% completed
+
+' Milestones
+[DevEnd] happens at [Prototype design]'s end
+  [DevEnd] happens at [QA prototype]'s end
+[ReadyDeploy] happens at [Test prototype]'s end
+  [ReadyDeploy] displays on same row as [DevEnd]
+[PDEnd] happens at [PD audict]'s end
+[PDEnd] displays on same row as [ReadyDeploy]
+
+' Colors
+[Prototype design] is colored in Red/Red
+[Config prototype] is colored in Red/Red
+[QA prototype] is colored in Red/Red
+[Test prototype] is colored in Red/Red
+[Deploy] is colored in Red/Red
+[PD audict] is colored in Red/Red
+[DevEnd] is colored in White/Black
+[ReadyDeploy] is colored in Gray/Black
+@endgantt</code></pre>
+      </details>
+      <p>Nel codice, il blocco di stile definisce font e colori; <code>sprite</code> e <code>&lt;&amp;check&gt;</code> mettono icone nel titolo; il calendario chiude i fine settimana e il 1º gennaio; le attività usano risorse, dipendenze con frecce rosse, una pausa il lunedì e l’avanzamento; e le milestone condividono una riga con <code>displays on same row as</code>.</p>
+    </section>
+
+    <section id="referencia-it" aria-labelledby="h-referencia-it">
+      <h2 id="h-referencia-it">Riferimento rapido</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Voglio…</th><th scope="col">Comando</th></tr></thead>
+          <tbody>
+            <tr><td>iniziare il progetto</td><td><code>project starts 2026-10-05</code></td></tr>
+            <tr><td>chiudere i fine settimana</td><td><code>saturday are closed</code> · <code>sunday are closed</code></td></tr>
+            <tr><td>chiudere o riaprire un giorno</td><td><code>2026-10-12 is closed</code> · <code>2026-10-17 is opened</code></td></tr>
+            <tr><td>evidenziare dei giorni</td><td><code>2026-10-19 to 2026-10-23 are colored in LightYellow</code></td></tr>
+            <tr><td>segnare oggi</td><td><code>today is 2026-10-14 and is colored in Gold</code></td></tr>
+            <tr><td>creare un’attività</td><td><code>[T] requires 5 days</code></td></tr>
+            <tr><td>fissare le date</td><td><code>[T] starts 2026-10-19</code> · <code>[T] ends 2026-11-13</code></td></tr>
+            <tr><td>concatenare</td><td><code>[B] starts at [A]'s end</code> · <code>then [B] …</code> · <code>[A] -&gt; [B]</code></td></tr>
+            <tr><td>creare una milestone</td><td><code>[M] happens at [T]'s end</code></td></tr>
+            <tr><td>indicare l’avanzamento</td><td><code>[T] is 40% completed</code></td></tr>
+            <tr><td>assegnare persone</td><td><code>[T] on {Ana:50%} {Bruno} requires 4 days</code></td></tr>
+            <tr><td>mettere in pausa un’attività</td><td><code>[T] pauses on monday</code></td></tr>
+            <tr><td>separare le fasi</td><td><code>-- Fase 2 --</code></td></tr>
+            <tr><td>cambiare la scala</td><td><code>printscale weekly</code></td></tr>
+            <tr><td>nascondere la tabella laterale</td><td><code>hide column start</code> · <code>hide column end</code> · <code>hide column duration</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="revisao-it" aria-labelledby="h-revisao-it">
+      <h2 id="h-revisao-it">Ripasso veloce</h2>
+      <p>Prova a rispondere prima di aprire ogni domanda.</p>
+      <div class="quiz">
+        <details><summary>1. Tra quali marcatori sta il codice di un diagramma di Gantt?</summary><p><code>@startgantt</code> e <code>@endgantt</code>.</p></details>
+        <details><summary>2. Qual è la differenza tra un’attività dinamica e una fissa?</summary><p>Quella dinamica ha solo la durata (<code>requires</code>) e viene posizionata da PlantUML a partire dall’inizio del progetto e dalle dipendenze; quella fissa ha date di inizio e fine (<code>starts</code>/<code>ends</code>).</p></details>
+        <details><summary>3. Qual è la differenza tra un giorno chiuso e una pausa?</summary><p>Il giorno chiuso vale per tutto il progetto (<code>is closed</code>); la pausa vale per una sola attività (<code>pauses on</code>).</p></details>
+        <details><summary>4. Come far iniziare l’attività B subito dopo l’attività A?</summary><p><code>[B] starts at [A]'s end</code>, oppure dichiarare B subito dopo A con <code>then [B] requires …</code>, oppure <code>[A] -&gt; [B]</code>.</p></details>
+        <details><summary>5. Come si rappresenta una milestone?</summary><p>Con <code>happens</code>: <code>[Consegna] happens at [Test]'s end</code> o <code>[Consegna] happens 2026-10-30</code>. Appare come un rombo, senza durata.</p></details>
+        <details><summary>6. Come dire che Ana e Bruno si dividono un’attività di 4 giorni?</summary><p><code>[Test] on {Ana:50%} {Bruno:50%} requires 4 days</code>.</p></details>
+        <details><summary>7. Quale valore di <code>printscale</code> mostra un giorno per colonna?</summary><p><code>daily</code>, il predefinito; il testo originale scrive “diary”, che non è accettato.</p></details>
+        <details><summary>8. Cosa succede a un’attività di 5 giorni che inizia di venerdì, con i fine settimana chiusi?</summary><p>Salta sabato e domenica e finisce il giovedì successivo: i giorni chiusi non contano.</p></details>
+      </div>
+      <a class="back" href="#top">↑ Torna all’inizio</a>
+    </section>
+
+    <section id="referencias-it" aria-labelledby="h-referencias-it">
+      <h2 id="h-referencias-it">Riferimenti</h2>
+      <ol class="refs">
+        <li id="ref-1-it"><strong>Giovani Perotto Mesquita</strong>, “Building Gant diagrams with PlantUML”, GitHub, testo originale di questo tutorial, <a href="https://github.com/GiovaniPM/MyCourses/blob/master/PlantUML/Course%20Gant.md" rel="noopener">github.com/GiovaniPM/MyCourses/blob/master/PlantUML/Course Gant.md</a>.</li>
+        <li id="ref-2-it"><strong>PlantUML</strong>, “Gantt Diagram”, consultato il 25/09/2026, <a href="https://plantuml.com/gantt-diagram" rel="noopener">plantuml.com/gantt-diagram</a>.</li>
+        <li id="ref-3-it"><strong>PlantUML</strong>, sito ufficiale, consultato il 25/09/2026, <a href="https://plantuml.com/" rel="noopener">plantuml.com</a>.</li>
+        <li id="ref-4-it"><strong>Wikipedia</strong> (in inglese), “Gantt chart”, consultato il 25/09/2026, <a href="https://en.wikipedia.org/wiki/Gantt_chart" rel="noopener">en.wikipedia.org/wiki/Gantt_chart</a>.</li>
+        <li id="ref-5-it"><strong>Wikipedia</strong> (in inglese), “PlantUML”, consultato il 25/09/2026, <a href="https://en.wikipedia.org/wiki/PlantUML" rel="noopener">en.wikipedia.org/wiki/PlantUML</a>.</li>
+        <li id="ref-6-it"><strong>PlantUML</strong>, “Download”, consultato il 25/09/2026, <a href="https://plantuml.com/download" rel="noopener">plantuml.com/download</a>.</li>
+        <li id="ref-7-it"><strong>Visual Studio Marketplace</strong>, “PlantUML” (jebbs), consultato il 25/09/2026, <a href="https://marketplace.visualstudio.com/items?itemName=jebbs.plantuml" rel="noopener">marketplace.visualstudio.com/items?itemName=jebbs.plantuml</a>.</li>
+        <li id="ref-8-it"><strong>Graphviz</strong>, sito ufficiale, consultato il 25/09/2026, <a href="https://graphviz.org/" rel="noopener">graphviz.org</a>.</li>
+        <li id="ref-9-it"><strong>PlantUML</strong>, “Creole”, consultato il 25/09/2026, <a href="https://plantuml.com/creole" rel="noopener">plantuml.com/creole</a>.</li>
+        <li id="ref-10-it"><strong>PlantUML</strong>, “Common commands”, consultato il 25/09/2026, <a href="https://plantuml.com/commons" rel="noopener">plantuml.com/commons</a>.</li>
+        <li id="ref-11-it"><strong>PlantUML</strong>, “Skinparam”, consultato il 25/09/2026, <a href="https://plantuml.com/skinparam" rel="noopener">plantuml.com/skinparam</a>.</li>
+        <li id="ref-12-it"><strong>PlantUML</strong>, “Style (evolution)”, consultato il 25/09/2026, <a href="https://plantuml.com/style-evolution" rel="noopener">plantuml.com/style-evolution</a>.</li>
+        <li id="ref-13-it"><strong>PlantUML</strong>, “Sprite”, consultato il 25/09/2026, <a href="https://plantuml.com/sprite" rel="noopener">plantuml.com/sprite</a>.</li>
+        <li id="ref-14-it"><strong>PlantUML</strong>, “Open Iconic”, consultato il 25/09/2026, <a href="https://plantuml.com/openiconic" rel="noopener">plantuml.com/openiconic</a>.</li>
+        <li id="ref-15-it"><strong>W3C</strong>, <em>CSS Color Module Level 4</em>, “Named colors”, consultato il 25/09/2026, <a href="https://www.w3.org/TR/css-color-4/#named-colors" rel="noopener">w3.org/TR/css-color-4/#named-colors</a>.</li>
+        <li id="ref-16-it"><strong>PlantUML</strong>, repository su GitHub, consultato il 25/09/2026, <a href="https://github.com/plantuml/plantuml" rel="noopener">github.com/plantuml/plantuml</a>.</li>
+      </ol>
+      <a class="back" href="#top">↑ Torna all’inizio</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span>Giovani Perotto Mesquita · Porto Alegre, RS</span>
+    <span><a href="projects.html" data-projects data-foot="0">Projetos</a> · <a href="resume.html" data-resume data-foot="1">Currículo</a> · <a href="contact.html" data-contact data-foot="2">Contato</a></span>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('.lang [role="tab"]'));
+    var titles = {"pt": "Gantt com PlantUML · Giovani Perotto Mesquita", "en": "Gantt with PlantUML · Giovani Perotto Mesquita", "it": "Gantt con PlantUML · Giovani Perotto Mesquita"};
+    var foots = {"pt": ["Projetos", "Currículo", "Contato"], "en": ["Projects", "Resume", "Contact"], "it": ["Progetti", "Curriculum", "Contatti"]};
+    var langs = { pt: 'pt-BR', en: 'en', it: 'it' };
+    var bar = document.querySelector('.progress');
+    var article = document.querySelector('[role="tabpanel"]:not([hidden]) article');
+
+    function show(id, focus) {
+      tabs.forEach(function (t) {
+        var on = t.getAttribute('aria-controls') === id;
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+        if (on && focus) t.focus();
+      });
+      document.documentElement.lang = langs[id];
+      document.title = titles[id];
+      var suffix = id === 'pt' ? '' : '#' + id;
+      [['data-home', 'index.html'], ['data-about', 'about.html'], ['data-resume', 'resume.html'], ['data-projects', 'projects.html'], ['data-contact', 'contact.html']].forEach(function (p) {
+        document.querySelectorAll('[' + p[0] + ']').forEach(function (a) { a.href = p[1] + suffix; });
+      });
+      document.querySelectorAll('[data-foot]').forEach(function (a) { a.textContent = foots[id][+a.getAttribute('data-foot')]; });
+      article = document.querySelector('#' + id + ' article');
+      if (history.replaceState) history.replaceState(null, '', id === 'pt' ? location.pathname : '#' + id);
+      progress();
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () { show(t.getAttribute('aria-controls')); });
+      t.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (d) { e.preventDefault(); show(tabs[(i + d + tabs.length) % tabs.length].getAttribute('aria-controls'), true); }
+      });
+    });
+
+    // barra de progresso de leitura
+    function progress() {
+      if (!article) return;
+      var r = article.getBoundingClientRect();
+      var total = r.height - window.innerHeight;
+      var p = total > 0 ? Math.min(Math.max(-r.top / total, 0), 1) : 1;
+      bar.style.width = (p * 100) + '%';
+    }
+    window.addEventListener('scroll', progress, { passive: true });
+    window.addEventListener('resize', progress);
+
+    // destaca a seção atual no índice
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          var panel = e.target.closest('[role="tabpanel"]');
+          panel.querySelectorAll('.toc a').forEach(function (a) {
+            if (a.getAttribute('href') === '#' + e.target.id) a.setAttribute('aria-current', 'true');
+            else a.removeAttribute('aria-current');
+          });
+        });
+      }, { rootMargin: '-20% 0px -70% 0px' });
+      document.querySelectorAll('article section[id]').forEach(function (s) { io.observe(s); });
+    }
+
+    var h = (location.hash || '').replace('#', '');
+    var m = h.match(/^(?:.*-)?(en|it)$/);
+    if (m) {
+      show(m[1]);
+      if (h !== m[1]) { var el = document.getElementById(h); if (el) el.scrollIntoView(); if (history.replaceState) history.replaceState(null, '', '#' + h); }
+    } else progress();
+  })();
+</script>
+</body>
+</html>
