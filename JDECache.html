@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cache no JD Edwards · Giovani Perotto Mesquita</title>
+<meta name="description" content="Cache no JD Edwards EnterpriseOne: parâmetros de Business Function, master business functions, APIs JDECACHE, criação e uso de um cache em BSFN C e o JDB Cache (F98613). Disponível em português, inglês e italiano.">
+<meta name="author" content="Giovani Perotto Mesquita">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Paleta alegre: roxo e magenta vibrantes, amarelo-girassol, verde-água e coral */
+    --bg: #FFF7EC;
+    --surface: #FFFFFF;
+    --ink: #2B1B3D;
+    --text: #3E3350;
+    --muted: #756986;
+    --line: #F1E2CF;
+    --accent: #0E8074;
+    --accent-soft: #E2F6F2;
+    --accent-strong: #5B2A86;
+    --navy: #5B2A86;
+    --navy-deep: #C2185B;
+    --on-navy: #FFFFFF;
+    --on-navy-muted: #FCE4F0;
+    --gold: #FFB703;
+    --gold-ink: #B35300;
+    --gold-soft: #FFF1C9;
+    --coral: #FF6B6B;
+    --sky: #3A86FF;
+    --mint: #2A9D8F;
+    --pink: #EF476F;
+    --sans: "Hanken Grotesk", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1A1328; --surface: #241A36; --ink: #F7F0FF; --text: #E2D8F0; --muted: #A898C0;
+      --line: #3A2D52; --accent: #5FD3C4; --accent-soft: #1D3A38; --accent-strong: #C9A7F5;
+      --navy: #3D1A5C; --navy-deep: #7A1240; --gold: #FFC94D; --gold-ink: #FFC94D; --gold-soft: #3A2E12;
+      --coral: #FF8A8A; --sky: #6FA8FF; --mint: #4CC3B3; --pink: #FF6F91;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 4px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 1.5rem; }
+
+  /* navegação */
+  .nav {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: saturate(160%) blur(10px); -webkit-backdrop-filter: saturate(160%) blur(10px);
+    border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px);
+  }
+  .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 58px; gap: 1rem; }
+  .brand { font-family: var(--serif); font-weight: 600; color: var(--accent-strong); text-decoration: none; font-size: 1.05rem; }
+  .nav ul { list-style: none; display: flex; gap: 1.4rem; margin: 0; padding: 0; }
+  .nav ul a { color: var(--muted); text-decoration: none; font-size: 0.93rem; font-weight: 500; }
+  .nav ul a:hover, .nav ul a[aria-current="page"] { color: var(--ink); }
+  .nav-right { display: flex; align-items: center; gap: 1rem; }
+  .lang { display: flex; gap: 0.2rem; }
+  .lang button { font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; color: var(--muted); background: none; padding: 0.2rem 0.45rem; border-radius: 6px; border: 1px solid transparent; }
+  .lang button:hover { color: var(--ink); }
+  .lang button[aria-selected="true"] { color: var(--accent-strong); border-color: var(--line); background: var(--surface); }
+  [hidden] { display: none !important; }
+  .progress { position: absolute; left: 0; bottom: -1px; height: 3px; width: 0; background: linear-gradient(90deg, var(--coral), var(--gold), var(--mint)); }
+
+  /* abertura */
+  .hero-band {
+    background:
+      radial-gradient(900px 420px at 85% -10%, rgba(255,255,255,.07), transparent 60%),
+      linear-gradient(160deg, var(--navy) 0%, var(--navy-deep) 100%);
+    border-top: 4px solid var(--gold); color: var(--on-navy);
+  }
+  .hero { padding: 3.5rem 0 3.5rem; max-width: 820px; }
+  .crumb { margin: 0 0 1.4rem; font-size: 0.92rem; }
+  .crumb a { color: var(--on-navy-muted); text-decoration: none; }
+  .crumb a:hover { color: var(--gold); }
+  .eyebrow { color: var(--gold); font-weight: 600; font-size: 1rem; margin: 0 0 0.7rem; }
+  h1 { font-family: var(--serif); font-weight: 600; color: var(--on-navy); font-size: clamp(2.3rem, 5.5vw, 3.8rem); line-height: 1.05; letter-spacing: -0.025em; margin: 0; }
+  .dek { font-family: var(--serif); font-style: italic; font-size: clamp(1.1rem, 2.2vw, 1.35rem); color: var(--on-navy-muted); margin: 1.1rem 0 1.6rem; max-width: 58ch; }
+  .byline { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; font-size: 0.92rem; color: var(--on-navy-muted); }
+  .byline strong { color: var(--on-navy); font-weight: 600; }
+  .byline .credit { margin-left: auto; font-style: italic; }
+
+  /* layout do artigo */
+  .layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 3rem; padding: 3rem 0 4rem; align-items: start; }
+  .toc { position: sticky; top: 82px; font-size: 0.92rem; max-height: calc(100vh - 100px); overflow-y: auto; }
+  .toc h2 { font-family: var(--sans); font-size: 0.85rem; font-weight: 600; color: var(--muted); margin: 0 0 0.7rem; border: 0; padding: 0; }
+  .toc ol { list-style: none; margin: 0; padding: 0; counter-reset: toc; border-left: 2px solid var(--line); }
+  .toc li { counter-increment: toc; }
+  .toc a { display: block; padding: 0.3rem 0 0.3rem 1rem; margin-left: -2px; border-left: 2px solid transparent; color: var(--muted); text-decoration: none; line-height: 1.35; }
+  .toc a::before { content: counter(toc) ". "; color: var(--gold-ink); font-weight: 600; }
+  .toc a:hover { color: var(--ink); }
+  .toc a[aria-current="true"] { color: var(--accent-strong); border-left-color: var(--gold); font-weight: 600; }
+
+  article { background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: var(--radius); padding: 3rem clamp(1.25rem, 4vw, 3.5rem); min-width: 0; }
+  article section + section { margin-top: 3.2rem; }
+  article h2 { font-family: var(--serif); font-weight: 600; color: var(--ink); font-size: clamp(1.5rem, 2.8vw, 1.9rem); letter-spacing: -0.015em; line-height: 1.2; margin: 0 0 1.1rem; padding-left: 0.9rem; border-left: 3px solid var(--gold); }
+  article h3 { font-family: var(--sans); font-size: 1.1rem; font-weight: 600; color: var(--ink); margin: 2rem 0 0.8rem; }
+  article p, article li { font-family: var(--serif); font-size: 1.12rem; line-height: 1.7; color: var(--text); }
+  article p { margin: 0 0 1.1rem; max-width: 68ch; }
+  article ul, article ol { margin: 0 0 1.1rem; padding-left: 1.4rem; max-width: 68ch; }
+  article li { margin-bottom: 0.3rem; }
+  article strong { color: var(--ink); }
+  sup a { font-family: var(--sans); font-size: 0.72rem; font-weight: 700; text-decoration: none; padding: 0 0.15em; }
+
+  figure { margin: 2rem 0; }
+  figure img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: #FFF7EC; }
+  figcaption { margin-top: 0.6rem; font-size: 0.9rem; color: var(--muted); text-align: center; font-family: var(--sans); line-height: 1.5; }
+
+  blockquote { margin: 1.5rem 0; padding: 1.2rem 1.5rem; background: var(--accent-soft); border-left: 3px solid var(--gold); border-radius: 0 10px 10px 0; }
+  blockquote p { font-size: 1.05rem; margin: 0 0 0.8rem; }
+  blockquote p:last-child { margin-bottom: 0; }
+  blockquote.pull p { font-size: clamp(1.15rem, 2.3vw, 1.35rem); font-style: italic; line-height: 1.45; color: var(--ink); }
+  blockquote cite { font-family: var(--sans); font-size: 0.88rem; font-style: normal; color: var(--muted); }
+
+  /* tabelas */
+  .table-wrap { overflow-x: auto; margin: 1.5rem 0; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-family: var(--sans); font-size: 0.95rem; }
+  th, td { text-align: left; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.5; }
+  thead th { background: var(--gold-soft); color: var(--ink); font-weight: 600; }
+  tbody th { color: var(--ink); font-weight: 600; }
+  tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
+  td code, th code { font-size: 0.9em; }
+
+  /* mitos */
+  .myths { list-style: none; padding: 0; margin: 1.5rem 0; max-width: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
+  .myths li { margin: 0; padding: 1rem 1.2rem; border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: 10px; }
+  .myths li:nth-child(4n+2) { border-top-color: var(--sky); }
+  .myths li:nth-child(4n+3) { border-top-color: var(--mint); }
+  .myths li:nth-child(4n+4) { border-top-color: var(--gold); }
+  .myths h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+  .myths p { margin: 0; font-size: 1rem; line-height: 1.6; }
+
+  /* para fixar */
+  .recap { margin: 1.8rem 0 0; padding: 1.1rem 1.4rem; background: var(--gold-soft); border-left: 4px solid var(--mint); border-radius: 0 10px 10px 0; }
+  .recap h3 { margin: 0 0 0.5rem; font-size: 0.85rem; letter-spacing: .05em; text-transform: uppercase; color: var(--gold-ink); }
+  .recap ul { margin: 0; padding-left: 1.2rem; }
+  .recap li { font-family: var(--sans); font-size: 0.98rem; line-height: 1.55; margin-bottom: 0.25rem; }
+
+  /* revisão rápida */
+  .quiz { display: grid; gap: 0.7rem; margin: 1.5rem 0; }
+  .quiz details { border: 1px solid var(--line); border-left: 4px solid var(--sky); border-radius: 0 10px 10px 0; padding: 0.8rem 1.1rem; }
+  .quiz details:nth-child(3n+2) { border-left-color: var(--pink); }
+  .quiz details:nth-child(3n+3) { border-left-color: var(--mint); }
+  .quiz summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); line-height: 1.45; }
+  .quiz details[open] summary { margin-bottom: 0.5rem; }
+  .quiz p { margin: 0; font-size: 1.02rem; }
+
+  .refs { font-family: var(--sans); padding-left: 1.4rem; margin: 0; }
+  .refs li { font-family: var(--sans); font-size: 0.92rem; line-height: 1.55; margin-bottom: 0.7rem; word-break: break-word; }
+  .refs li:target { background: var(--gold-soft); border-radius: 6px; }
+
+  .back { display: inline-block; margin-top: 1rem; font-family: var(--sans); font-size: 0.85rem; text-decoration: none; }
+
+  footer { background: var(--navy-deep); color: var(--on-navy-muted); border-top: 3px solid var(--gold); padding: 1.5rem 0 calc(1.5rem + env(safe-area-inset-bottom, 0px)); font-size: 0.88rem; }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1.5rem; }
+  footer a { color: var(--on-navy); text-decoration: none; }
+  footer a:hover { color: var(--gold); }
+
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+    .toc { position: static; max-height: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.2rem 1.4rem; }
+  }
+  @media (max-width: 760px) {
+    .myths { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .nav ul { display: none; }
+    .hero { padding: 2.5rem 0; }
+    .wrap { padding: 0 1rem; }
+    article p, article li { font-size: 1.05rem; }
+    th, td { padding: 0.6rem 0.7rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  @media print {
+    .nav, .toc, footer, .back, .crumb { display: none !important; }
+    body { background: #fff; }
+    .hero-band { background: none; color: #111; border: 0; }
+    .hero-band h1 { color: #5B2A86; }
+    .dek, .byline, .byline strong { color: #333; }
+    .layout { display: block; padding: 0; }
+    article { border: 0; padding: 0; }
+    .table-wrap { overflow: visible; }
+    figure, blockquote, .myths li, .recap, .quiz details, tr { break-inside: avoid; }
+  }
+
+  /* blocos de código (Gherkin) */
+  pre.code { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: #2B1B3D; color: #F7F0FF; border-radius: 10px; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.92rem; line-height: 1.6; tab-size: 2; }
+  pre.code code { font-family: inherit; white-space: pre; }
+  pre.code .k { color: #FFB703; font-weight: 700; }
+  pre.code .s { color: #5FD3C4; font-weight: 700; }
+  pre.code .c { color: #A898C0; }
+  pre.code .p { color: #C9A7F5; }
+  article code { font-family: Consolas, "Courier New", monospace; font-size: 0.92em; }
+  article :not(pre) > code { background: var(--accent-soft); color: var(--ink); padding: 0.05em 0.35em; border-radius: 4px; }
+
+  /* fórmulas */
+  pre.formula { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.95rem; line-height: 1.5; }
+
+  /* glossário */
+  dl.glossary { margin: 1.2rem 0; display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  dl.glossary dt, dl.glossary dd { margin: 0; padding: 0.65rem 0.9rem; border-bottom: 1px solid var(--line); font-family: var(--sans); font-size: 0.95rem; line-height: 1.5; }
+  dl.glossary dt { font-weight: 600; color: var(--ink); background: color-mix(in srgb, var(--gold-soft) 60%, var(--surface)); }
+  dl.glossary dd { color: var(--text); }
+  dl.glossary dt:nth-last-of-type(1), dl.glossary dd:last-of-type { border-bottom: 0; }
+  @media (max-width: 720px) { dl.glossary { grid-template-columns: 1fr; } dl.glossary dt { border-bottom: 0; padding-bottom: 0.2rem; } }
+
+  /* nota de atenção */
+  aside.note { margin: 1.2rem 0 1.5rem; padding: 0.8rem 1.1rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; }
+  aside.note p { margin: 0; }
+
+  /* capturas de tela do JD Edwards */
+  figure.shot img { width: auto; max-width: 100%; margin: 0 auto; background: #FFFFFF; }
+  article h4 { font-family: var(--sans); font-size: 1rem; font-weight: 600; color: var(--accent-strong); margin: 1.6rem 0 0.6rem; }
+  article td { font-family: var(--sans); }
+</style>
+</head>
+<body id="top">
+
+<nav class="nav" aria-label="Navegação do site">
+  <div class="wrap">
+    <a class="brand" href="index.html" data-home>Giovani Perotto Mesquita</a>
+    <div class="nav-right">
+      <ul>
+        <li><a href="index.html" data-home>Home</a></li>
+        <li><a href="about.html" data-about>About</a></li>
+        <li><a href="resume.html" data-resume>Resume</a></li>
+        <li><a href="projects.html" data-projects aria-current="page">Projects</a></li>
+        <li><a href="contact.html" data-contact>Contact</a></li>
+      </ul>
+      <div class="lang" role="tablist" aria-label="Idioma / Language / Lingua">
+        <button type="button" role="tab" id="tab-pt" aria-controls="pt" aria-selected="true" lang="pt-BR">PT</button>
+        <button type="button" role="tab" id="tab-en" aria-controls="en" aria-selected="false" lang="en" tabindex="-1">EN</button>
+        <button type="button" role="tab" id="tab-it" aria-controls="it" aria-selected="false" lang="it" tabindex="-1">IT</button>
+      </div>
+    </div>
+  </div>
+  <div class="progress" aria-hidden="true"></div>
+</nav>
+
+<!-- ===================== PT ===================== -->
+<div id="pt" role="tabpanel" aria-labelledby="tab-pt" lang="pt-BR">
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projetos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Cache no JD Edwards</h1>
+      <p class="dek">Conceitos de Business Function e cache no JDE, partes 1 a 3, e conceitos de cache no E1 – JDB Cache, partes 1 e 2, reunidos em uma única página.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado em <time datetime="2026-09-28">28/09/2026</time></span>
+        <span class="credit">Revisado e formatado usando Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-pt">
+    <h2 id="toc-pt">Índice</h2>
+    <ol>
+      <li><a href="#bsfn1-pt">Conceitos de Business Function e cache no JDE – Parte 1</a></li>
+      <li><a href="#bsfn2-pt">Conceitos de Business Function e cache no JDE – Parte 2</a></li>
+      <li><a href="#bsfn3-pt">Conceitos de Business Function e cache no JDE – Parte 3</a></li>
+      <li><a href="#jdb1-pt">Conceitos de cache no E1 – JDB Cache – Parte 1</a></li>
+      <li><a href="#jdb2-pt">Conceitos de cache no E1 – JDB Cache – Parte 2</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="bsfn1-pt" aria-labelledby="h-bsfn1-pt">
+      <h2 id="h-bsfn1-pt">Conceitos de Business Function e cache no JDE – Parte 1</h2>
+      <p>Usar o cache, ou caching, é um dos conceitos fundamentais das aplicações web, ou, digamos, de qualquer aplicação, seja na camada de banco de dados, na camada de aplicação ou na camada web. No JD Edwards, o caching é feito na camada de aplicação, por meio de código, e na camada web, por meio do Server Manager (HTML Server).</p>
+      <p>Podemos examinar o caching baseado em código, que normalmente é feito por meio de Business Function (BSFN).</p>
+      <p>Sempre usamos ou vemos alguns parâmetros de business function que o JDE usa para comunicar ou passar informações</p>
+      <h3>LPBHVRCOM</h3>
+      <ul>
+        <li>Ponteiro para uma estrutura de dados usada na comunicação com as business functions</li>
+        <li>Tem a capacidade de identificar a versão atual do software</li>
+        <li>Identifica o privilégio de acesso do usuário atual</li>
+        <li>Tem parâmetros que tratam a janela atual e os controles da janela</li>
+        <li>Pode identificar o controle atual que está com o foco</li>
+        <li>Identifica o momento atual do evento que está sendo processado</li>
+        <li>Tem o componente de ID para o identificador global de tempo de execução do job executado a partir do menu driver</li>
+        <li>Tem informações sobre as preferências do sistema</li>
+        <li>Tem informações sobre as preferências do usuário</li>
+        <li>Pode exibir o ID da mensagem de erro ou 0L</li>
+        <li>Define o flag como TRUE ao alterar o comportamento do banco de dados</li>
+        <li>Contém a chave de evento da mensagem de erro para as event rules</li>
+        <li>Tem informações sobre o handle de ambiente para ODBC</li>
+        <li>Contém ponteiros para a seção de RDA</li>
+        <li>Tem a lista encadeada de erros para programas batch</li>
+        <li>Armazena as informações de tempo de execução do formulário para FDA</li>
+        <li>Tem um flag que indica chamada de runtime ou chamada de business function</li>
+        <li>Armazena um flag que indica chamada remota ou objeto de chamada de terceiros</li>
+        <li>Tem as informações de endereço de subscription/publish da aplicação</li>
+        <li>Guarda o ID de processo lógico de quem chamou a API jdeLaunchUBEEx</li>
+        <li>Contém também uma área de uso futuro para novos itens</li>
+      </ul>
+      <h3>LPVOID</h3>
+      <ul>
+        <li>Ponteiro para uma estrutura de dados void, usada atualmente no processamento de erros</li>
+        <li>Será usado para segurança no futuro.</li>
+      </ul>
+      <p>Temos uma <strong>Master Business Function</strong> para a maioria dos processos que inserem dados em tabelas de transação. Cada master business function usa Begin Doc, Edit Line, Edit Doc e End Doc para inserir os registros nas tabelas.</p>
+      <p>Em termos simples, de leigo, abaixo está o uso de cada função, que é chamada em sequência para criar os registros.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Nome da função</th><th scope="col">Uso</th></tr></thead>
+          <tbody>
+            <tr><td>Begin Doc</td><td>Inicializa os caches de cabeçalho e de detalhe<br>Adiciona ou atualiza o cabeçalho</td></tr>
+            <tr><td>Edit Line</td><td>Adiciona registro ao cache de detalhe</td></tr>
+            <tr><td>Edit Doc</td><td>Lê o cache de cabeçalho<br>Atualiza o cache de cabeçalho</td></tr>
+            <tr><td>End Doc</td><td>Lê os registros dos caches de cabeçalho e de detalhe e grava nas tabelas</td></tr>
+            <tr><td>Clear Doc</td><td>Apaga o cache de cabeçalho<br>Lê o cache de detalhe<br>Apaga o cache de detalhe<br>Encerra o cache</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>O que é cache:</h3>
+      <p>Cache é uma memória que contém informações usadas recentemente e pode ser acessada de forma extremamente rápida para manipular dados ao criar ou atualizar uma transação em uma aplicação.</p>
+      <h3>Prós de usar cache:</h3>
+      <ul>
+        <li>O cache melhora o desempenho da aplicação em que é usado.</li>
+        <li>O cache reduz a carga nos servidores.</li>
+        <li>Com o cache, podemos armazenar dados de várias tabelas e acessá-los quando necessário.</li>
+        <li>O cache é útil no lugar de tabelas temporárias, reduzindo a carga nos servidores.</li>
+      </ul>
+      <h3>Contras de usar cache:</h3>
+      <ul>
+        <li>O cache tem limitação de capacidade de armazenamento.</li>
+        <li>Implementar cache exige conhecimento das APIs JDECACHE.</li>
+        <li>Solucionar problemas da memória cache é difícil.</li>
+      </ul>
+      <p>Algumas <strong>APIs de cache</strong> que usamos com frequência para criar o cache e usá-lo para armazenar e atualizar registros:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Propósito</th><th scope="col">Comando</th></tr></thead>
+          <tbody>
+            <tr><td>Conectar ao OneWorld</td><td>JDB_InitBhvr</td></tr>
+            <tr><td>Criar a definição da estrutura de dados do índice</td><td>Index.CacheKey[n].nOffset<br>Index.CacheKey[n].nSize<br>Index.CacheKey[n].idDataType</td></tr>
+            <tr><td>Inicializar o cache</td><td>jdeCacheInit</td></tr>
+            <tr><td>Adicionar um registro ao cache</td><td>jdeAddCache</td></tr>
+            <tr><td>Abrir um cursor no cache</td><td>jdeCacheOpenCursor</td></tr>
+            <tr><td>Qualquer manipulação do cache</td><td>Avançam o cursor:<br>👉 jdeCacheFetch<br>👉 jdeCacheFetchPosition<br>👉 jdeCacheResetCursor<br>Não avançam o cursor:<br>👉 jdeCacheUpdate<br>👉 jdeCacheDelete</td></tr>
+            <tr><td>Fechar o cursor</td><td>jdeCacheCloseCursor</td></tr>
+            <tr><td>Encerrar o cache</td><td>jdeCacheTerminate</td></tr>
+            <tr><td>Liberar o behavior</td><td>JDB_FreeBhvr</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="bsfn2-pt" aria-labelledby="h-bsfn2-pt">
+      <h2 id="h-bsfn2-pt">Conceitos de Business Function e cache no JDE – Parte 2</h2>
+      <p>No nosso último artigo (parte 1), demos uma visão geral dos parâmetros padrão de uma Business Function e do uso das master business functions; também falamos sobre as APIs de cache e o seu uso.</p>
+      <p>Neste artigo, vamos demonstrar o processo de criação de um cache usando as APIs de cache e, no próximo artigo, veremos como usar esta BSFN para inserir/atualizar/buscar os dados no/do cache.</p>
+      <p>Passos para criar um cache</p>
+      <h3>1. Criação da estrutura de dados</h3>
+      <p>Crie uma estrutura de dados (data structure) para a Business Function.</p>
+      <p>Alguns parâmetros são obrigatórios na estrutura de dados para construir um cache, e os demais dependem do requisito.</p>
+      <ul>
+        <li>Cachename – Obrigatório</li>
+        <li>ActionCode – Obrigatório</li>
+        <li>Cursor – Obrigatório</li>
+      </ul>
+      <figure class="shot">
+        <img src="rc_images/ej0lzbf7.bmp" alt="Estrutura de dados do cache" width="600" height="280" loading="lazy">
+      </figure>
+      <h3>2. Associar a estrutura de dados à BSFN em C</h3>
+      <figure class="shot">
+        <img src="rc_images/nr7xbz9b.bmp" alt="Associar a DS à BSFN" width="768" height="261" loading="lazy">
+      </figure>
+      <h3>3. Gerar o esqueleto da Business Function</h3>
+      <figure class="shot">
+        <img src="rc_images/a9wzpec0.bmp" alt="Criação da função" width="768" height="298" loading="lazy">
+      </figure>
+      <figure class="shot">
+        <img src="rc_images/jby2fxmt.bmp" alt="Protótipo da função" width="1273" height="491" loading="lazy">
+      </figure>
+      <h3>4. Criar a definição da estrutura de dados no arquivo .h</h3>
+      <figure class="shot">
+        <img src="rc_images/o1kxvqol.bmp" alt="Desenho da DS" width="768" height="404" loading="lazy">
+      </figure>
+      <figure class="shot">
+        <img src="rc_images/jgj3nt0m.bmp" alt="DS no .h" width="335" height="501" loading="lazy">
+      </figure>
+      <h3>5. Definir a estrutura do cache no .h</h3>
+      <figure class="shot">
+        <img src="rc_images/avk28gbz.bmp" alt="DS do cache" width="673" height="193" loading="lazy">
+      </figure>
+      <h3>6. Definir a estrutura da chave do cache no arquivo .h</h3>
+      <figure class="shot">
+        <img src="rc_images/zvpwa2hl.bmp" alt="Chave do cache" width="832" height="119" loading="lazy">
+      </figure>
+      <h3>7. Criar as instâncias do cache e da chave do cache no arquivo .c</h3>
+      <figure class="shot">
+        <img src="rc_images/idgw25eb.bmp" alt="Instâncias" width="768" height="250" loading="lazy">
+      </figure>
+      <h3>8. Declarar ponteiros e variáveis no arquivo .c</h3>
+      <figure class="shot">
+        <img src="rc_images/6plq3scq.bmp" alt="Ponteiros" width="600" height="335" loading="lazy">
+      </figure>
+      <h3>9. Inicializar o usuário</h3>
+      <figure class="shot">
+        <img src="rc_images/dcjf2pe9.bmp" alt="Inicializar o usuário" width="677" height="127" loading="lazy">
+      </figure>
+      <h3>10. Inicializar o cache</h3>
+      <p>O cache é inicializado com a API ‘jdeCacheInit’. Este é o passo mais importante para criar um cache.</p>
+      <p>‘jdeCacheInit’ inicializa um cache nomeado, associa o cache inicializado a um usuário e retorna um handle para o cache inicializado. Esta API contém quatro coisas:</p>
+      <ol>
+        <li>Cria um cache na memória.</li>
+        <li>Cria um índice que será usado para acessar os registros no cache.</li>
+        <li>Dá ao cache o nome passado nesta API.</li>
+        <li>Associa o cache a um handle de cache (HCACHE), que o usuário usará para referenciar o cache nas chamadas às APIs do JDE Cache.</li>
+      </ol>
+      <figure class="shot">
+        <img src="rc_images/2gjwkt4u.bmp" alt="Inicializar o cache" width="600" height="470" loading="lazy">
+      </figure>
+      <h3>11. Processamento do cache</h3>
+      <p>Na maior parte das vezes, o processamento do cache consiste em adicionar, atualizar, buscar e apagar no cache.</p>
+      <p>Alguns deles estão listados abaixo:</p>
+      <h4>Adicionar/atualizar no cache</h4>
+      <p>‘jdeCacheAdd’ adiciona um registro ao cache identificado pelo handle de cache hCache, obtido na chamada a ‘jdeCacheInit’.</p>
+      <p>‘jdeCacheUpdate’ atualiza, com os dados passados, o registro para o qual o HJDECURSOR passado aponta no momento.</p>
+      <figure class="shot">
+        <img src="rc_images/sbsb5k40.bmp" alt="Adicionar/atualizar no cache" width="768" height="435" loading="lazy">
+      </figure>
+      <h4>Busca única no cache</h4>
+      <p>‘jdeCacheFetchPosition’ recupera o registro que corresponde à chave informada. Esta API pode ser usada para posicionar o HJDECURSOR em um local específico dentro do conjunto de dados. Quando for feita uma chamada a jdeCacheFetch, ela começará a buscar a partir da próxima posição. Isso é útil para fazer buscas sequenciais a partir de um local específico do cache.</p>
+      <figure class="shot">
+        <img src="rc_images/t4tpy2gf.bmp" alt="Busca única no cache" width="768" height="287" loading="lazy">
+      </figure>
+      <h4>Busca múltipla no cache</h4>
+      <p>A busca múltipla é possível por meio da API ‘JdeCacheFetch’. ‘JdeCacheFetch’ avança o cursor para o próximo registro do conjunto de dados, em relação à posição atual do cursor, e recupera o registro. Esta passa a ser a nova posição associada ao HJDECURSOR. Esta API não procura um registro no cache, mas busca qualquer registro que esteja depois do registro para o qual o HJDECURSOR passado aponta no momento. A API é ideal para fazer buscas sequenciais</p>
+      <figure class="shot">
+        <img src="rc_images/3ci2vjt2.bmp" alt="Busca múltipla no cache" width="600" height="385" loading="lazy">
+      </figure>
+      <h4>Apagar do cache</h4>
+      <p>‘jdeCacheDelete’ é a API que apaga o registro apontado pelo cursor. Só é possível apagar um registro por vez.</p>
+      <figure class="shot">
+        <img src="rc_images/afu9mc5s.bmp" alt="Apagar do cache" width="768" height="277" loading="lazy">
+      </figure>
+      <h4>Encerrar o cache</h4>
+      <p>Quando todo o processamento termina, a memória alocada para o cache deve ser destruída. ‘jdeCacheTerminateAll’ destrói todos os caches com o mesmo nome daquele com o hCache informado. Os caches são removidos fisicamente da memória.</p>
+      <figure class="shot">
+        <img src="rc_images/s1qxvfe8.bmp" alt="Encerrar o cache" width="572" height="260" loading="lazy">
+      </figure>
+      <p>O código de exemplo (abaixo) para criar o cache é dado como referência.</p>
+    </section>
+
+    <section id="bsfn3-pt" aria-labelledby="h-bsfn3-pt">
+      <h2 id="h-bsfn3-pt">Conceitos de Business Function e cache no JDE – Parte 3</h2>
+      <p>No nosso último artigo (parte 2), demonstramos passo a passo o processo de criação da business function de cache usando as APIs de cache e explicamos o propósito das APIs de cache.</p>
+      <p>Neste artigo, veremos como usar a business function de cache em um objeto do JDE, como os valores serão armazenados no cache e como podemos manipulá-los.</p>
+      <p>Passos para usar a business function</p>
+      <h3>1. Criar a aplicação para passar ou recuperar os valores, conforme abaixo</h3>
+      <figure class="shot">
+        <img src="rc_images/0mplafhi.bmp" alt="Formulário" width="574" height="301" loading="lazy">
+      </figure>
+      <p>Valores do Action Code:</p>
+      <ol>
+        <li>Adicionar/atualizar</li>
+        <li>Buscar pela chave</li>
+        <li>Apagar do cache</li>
+      </ol>
+      <h3>2. No botão Add Record, chamar a BSFN em C para adicionar os registros ao cache</h3>
+      <figure class="shot">
+        <img src="rc_images/8drx92cw.bmp" alt="Adicionar" width="600" height="360" loading="lazy">
+      </figure>
+      <h3>3. No botão Update Record, chamar a BSFN em C para atualizar os registros no cache</h3>
+      <figure class="shot">
+        <img src="rc_images/2pn6zl49.bmp" alt="Atualizar" width="600" height="324" loading="lazy">
+      </figure>
+      <h3>4. No botão Fetch Record, chamar a BSFN em C para buscar os registros no cache</h3>
+      <figure class="shot">
+        <img src="rc_images/j3smdgc5.bmp" alt="Buscar" width="600" height="358" loading="lazy">
+      </figure>
+      <h3>5. No botão Delete Record, chamar a BSFN em C para adicionar os registros do cache</h3>
+      <figure class="shot">
+        <img src="rc_images/3d7isns2.bmp" alt="Apagar" width="600" height="321" loading="lazy">
+      </figure>
+      <h3>6. Executar a aplicação no web client, digitar os valores para inserir o registro no cache e pressionar o botão Add Record</h3>
+      <figure class="shot">
+        <img src="rc_images/jvj2l6rd.bmp" alt="Cache 1" width="600" height="395" loading="lazy">
+      </figure>
+      <p>Podemos ver que os valores foram adicionados ao cache depois que a API jdeCacheAdd é chamada na BSFN em C</p>
+      <figure class="shot">
+        <img src="rc_images/zko0oi6b.bmp" alt="Cache 2" width="600" height="329" loading="lazy">
+      </figure>
+      <h3>7. Digitar valores diferentes nos controles do formulário e pressionar novamente o botão Add Record para adicionar mais um registro ao cache</h3>
+      <figure class="shot">
+        <img src="rc_images/km5eqe6h.bmp" alt="Cache 1" width="600" height="402" loading="lazy">
+      </figure>
+      <p>Podemos ver que os valores foram adicionados ao cache depois que a API jdeCacheAdd é chamada na BSFN em C</p>
+      <figure class="shot">
+        <img src="rc_images/rfuf4bqx.bmp" alt="Cache 2" width="768" height="407" loading="lazy">
+      </figure>
+      <h3>8. Digitar um valor diferente no controle do formulário para atualizar o primeiro registro do cache</h3>
+      <figure class="shot">
+        <img src="rc_images/cs7m54me.bmp" alt="Cache 1" width="600" height="377" loading="lazy">
+      </figure>
+      <p>Neste caso, primeiro acontece uma busca no cache para verificar se o registro existe no cache; se o registro estiver lá, ele será atualizado no cache depois que a API jdeCacheUpdate for chamada na BSFN em C.</p>
+      <figure class="shot">
+        <img src="rc_images/dazv4f1b.bmp" alt="Cache 2" width="768" height="412" loading="lazy">
+      </figure>
+      <h3>9. Digitar o valor da chave para buscar o registro no cache</h3>
+      <figure class="shot">
+        <img src="rc_images/ko9srhs9.bmp" alt="Cache 1" width="600" height="347" loading="lazy">
+      </figure>
+      <p>Também neste cenário, primeiro é feita uma busca para verificar a existência do registro e, se ele existir, os valores são atribuídos aos parâmetros da BSFN depois que a API jdeCacheFetchPosition retorna sucesso.</p>
+      <figure class="shot">
+        <img src="rc_images/sviihitd.bmp" alt="Cache 2" width="1004" height="549" loading="lazy">
+      </figure>
+      <p>Os valores do primeiro registro foram exibidos na aplicação depois de pressionar o botão Fetch Record</p>
+      <figure class="shot">
+        <img src="rc_images/46xptb9n.bmp" alt="Cache 3" width="600" height="379" loading="lazy">
+      </figure>
+      <h3>10. Digitar os valores da chave para apagar o registro do cache</h3>
+      <figure class="shot">
+        <img src="rc_images/v7mbtanh.bmp" alt="Cache 1" width="600" height="378" loading="lazy">
+      </figure>
+      <p>Também neste cenário, primeiro é feita uma busca para verificar a existência do registro e, se ele existir, os valores são apagados depois que a API jdeCacheDelete retorna sucesso.</p>
+      <figure class="shot">
+        <img src="rc_images/q0wtoun8.bmp" alt="Cache 2" width="994" height="540" loading="lazy">
+      </figure>
+      <h3>11. Ao tentar apagar novamente o mesmo registro do cache, é retornado um erro, porque o registro não está presente</h3>
+      <figure class="shot">
+        <img src="rc_images/iizlgczn.bmp" alt="Cache 1" width="1002" height="542" loading="lazy">
+      </figure>
+      <p>Da mesma forma, podemos chamar a BSFN em C para buscar os registros sequenciais do cache e destruir o cache.</p>
+    </section>
+
+    <section id="jdb1-pt" aria-labelledby="h-jdb1-pt">
+      <h2 id="h-jdb1-pt">Conceitos de cache no E1 – JDB Cache – Parte 1</h2>
+      <p>Nos artigos anteriores, compartilhamos os conceitos do cache do JDE e a sua criação. O JDE tem dois tipos de cache; o que explicamos nos posts recentes é conhecido como <strong>User Cache</strong> ou <strong>JDECACHE</strong>.</p>
+      <p>Este artigo fala sobre o segundo tipo de cache que o JDE oferece aos seus usuários, chamado <strong>JDB F98613/ DB Cache</strong>.</p>
+      <p>Como sabemos, armazenar dados do banco de dados na memória do programa, em vez de buscá-los no banco, é conhecido como <strong>caching</strong>. Isso ajuda a eliminar o overhead do banco de dados.</p>
+      <p>O JDB Cache não é uma memória compartilhada acessada por todos os processos; é memória heap local de cada processo. Cada processo tem a sua <strong>própria cópia</strong> do DB cache.</p>
+      <p>O JDB cache é um recurso de mecanismo de <strong>caching automático de tabelas</strong> do EnterpriseOne.</p>
+      <p>Quando o processo termina, o JDB cache também <strong>vai embora</strong> com o processo, para o lixo (bit bucket).</p>
+      <p>O JDB Cache pode ser implementado por meio de <strong>código C em Business Function ou de Event Rules</strong> do JDE.</p>
+      <p>Não há <strong>replicação nem sincronização</strong> entre as instâncias do JDB cache.</p>
+      <p>Implementar o JDB cache pode ajudar a <strong>melhorar o desempenho</strong> do processo, desde que seja feito após uma análise completa.</p>
+      <p>O JDB cache é memória heap local do processo e está limitado a um <strong>total de 2GB</strong> em sistemas operacionais de 32 bits.</p>
+      <p>No próximo artigo, veremos como podemos <strong>implementar</strong> e quais são as <strong>condições</strong> para usar o JDB Cache no EnterpriseOne.</p>
+      <p>Referência:</p>
+      <ul>
+        <li>JDB cache in EnterpriseOne</li>
+        <li>JDEdwards EnterpriseOne Applications Task Force</li>
+      </ul>
+    </section>
+
+    <section id="jdb2-pt" aria-labelledby="h-jdb2-pt">
+      <h2 id="h-jdb2-pt">Conceitos de cache no E1 – JDB Cache – Parte 2</h2>
+      <p>No último artigo (parte 1), compartilhamos o conceito do JDB cache e as suas características. Neste artigo, veremos como podemos implementar o JDB cache e usá-lo de forma eficiente diante dos nossos problemas de desempenho.</p>
+      <h3>Como funciona</h3>
+      <p>Quando uma tabela está configurada para fazer parte do JDB cache, assim que um registro é buscado na tabela, ele também é armazenado no cache, e os Selects seguintes do mesmo registro são buscados no cache em vez de no banco de dados.</p>
+      <h3>Regras básicas</h3>
+      <ol>
+        <li>Deve existir uma entrada na F98613, que é a lista de tabelas de cache, para a tabela.</li>
+        <li>A tabela deve ser acessada usando a chave primária completa.</li>
+        <li>A tabela deve ser acessada pela API ‘JDB_FetchKeyed’ em Business Function C ou usando a operação de I/O de tabela ‘Fetch Single’ nas event rules do JDE.</li>
+        <li>APIs como JDB_SetSelection ou JDB_SetSequencing não devem ser chamadas ao usar o JDB cache.</li>
+        <li>Não há sincronização / replicação entre processos.</li>
+      </ol>
+      <figure class="shot">
+        <img src="rc_images/3dvb5c97.bmp" alt="F98613" width="768" height="289" loading="lazy">
+      </figure>
+      <h3>Funciona da seguinte maneira:</h3>
+      <figure>
+        <img src="rc_images/JDBCacheFluxo.svg" alt="Fluxo de atividades: a tabela está configurada na F98613? Se não, a JDB_addTableToDBCache() adicionou a tabela? Se não, buscar na tabela. A chave primária completa foi usada? Se não, buscar na tabela. O registro já está no cache? Sim: cache HIT, buscar no cache, nenhuma operação no banco de dados. Não: cache MISS, buscar na tabela e armazenar no cache." width="1000" height="1080" loading="lazy">
+      </figure>
+      <h3>Limitações</h3>
+      <ol>
+        <li>As tabelas devem ser estáticas.</li>
+        <li>Os mesmos registros devem ser buscados repetidamente.</li>
+        <li>Fazer cache de tabelas dinâmicas fará as aplicações falharem.</li>
+        <li>Consultas que retornam zero linha não serão armazenadas em cache.</li>
+        <li>Não é recomendado fazer cache de tabelas com milhões de registros.</li>
+      </ol>
+      <h3>Benefícios</h3>
+      <ol>
+        <li>Um recurso de mecanismo de caching automático de tabelas do EnterpriseOne.</li>
+        <li>Adequado para tabelas que permanecem constantes e estáticas.</li>
+        <li>Pode ajudar a aumentar o desempenho do processo.</li>
+        <li>Comandos Select redundantes sobre a mesma chave primária podem ser eliminados usando o JDB cache.</li>
+      </ol>
+      <p>Referência:</p>
+      <ul>
+        <li>JDB cache in EnterpriseOne</li>
+        <li>JDEdwards EnterpriseOne Applications Task Force</li>
+      </ul>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== EN ===================== -->
+<div id="en" role="tabpanel" aria-labelledby="tab-en" lang="en" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projects</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Caching in JD Edwards</h1>
+      <p class="dek">JDE Business Function and Cache Concepts, parts 1 to 3, and E1 Cache Concepts – JDB Cache, parts 1 and 2, gathered on a single page.</p>
+      <div class="byline">
+        <span>By <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Published on <time datetime="2026-09-28">28/09/2026</time></span>
+        <span class="credit">Reviewed and formatted using Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-en">
+    <h2 id="toc-en">Contents</h2>
+    <ol>
+      <li><a href="#bsfn1-en">JDE Business Function and Cache Concepts – Part 1</a></li>
+      <li><a href="#bsfn2-en">JDE Business Function and Cache Concepts – Part 2</a></li>
+      <li><a href="#bsfn3-en">JDE Business Function and Cache Concepts – Part 3</a></li>
+      <li><a href="#jdb1-en">E1 Cache Concepts – JDB Cache – Part 1</a></li>
+      <li><a href="#jdb2-en">E1 Cache Concepts – JDB Cache – Part 2</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="bsfn1-en" aria-labelledby="h-bsfn1-en">
+      <h2 id="h-bsfn1-en">JDE Business Function and Cache Concepts – Part 1</h2>
+      <p>Using the Cache or caching is one of the fundamental concepts for web applications or say any application. Be it Database tier, Application tier, or Web tier. In JD Edwards, Caching is done on the Application tier through code, and web tier through the Server manager (HTML Server).</p>
+      <p>We can go through the code based caching, which is typically done through Business Function (BSFN).</p>
+      <p>We always use or see the few business function parameters which JDE uses for communicating or passing information</p>
+      <h3>LPBHVRCOM</h3>
+      <ul>
+        <li>Pointer to a data structure used for communications with business functions</li>
+        <li>It has capability to identify the current software version</li>
+        <li>It will identify the current user’s access privilege</li>
+        <li>It has parameters which will handle the current window and controls in the window</li>
+        <li>It can identify the current control which has focus</li>
+        <li>It identifies the current timing of the event being processed</li>
+        <li>It has ID component for global run time Identifier for job running from menu driver</li>
+        <li>It has information about system preferences</li>
+        <li>It has information about user preferences</li>
+        <li>It can display error message ID or 0L</li>
+        <li>It will set the flag to TRUE when changing database behavior</li>
+        <li>It contains error message event key for event rules</li>
+        <li>It has information about environment handle for ODBC</li>
+        <li>It contains pointers for section of RDA</li>
+        <li>It has error linked list for batch programs</li>
+        <li>It stores form runtime information for FDA</li>
+        <li>It has flag which will indicate runtime call or business function call</li>
+        <li>It stores flag to indicate remote or 3rd party call object</li>
+        <li>It has subscription/publish Address Info of application</li>
+        <li>It holds the logic process ID of the caller of API jdeLaunchUBEEx</li>
+        <li>It contains future use area for new items as well</li>
+      </ul>
+      <h3>LPVOID</h3>
+      <ul>
+        <li>Pointer to a void data structure currently used for error processing</li>
+        <li>It will be used for security in the future.</li>
+      </ul>
+      <p>We have <strong>Master Business Function</strong> for most of the processes which inserts data in transaction tables. Each master business function uses Begin Doc, Edit Line, Edit Doc and End Doc to insert the records in the tables.</p>
+      <p>In simple layman term, below are the usage of each function which gets called in sequence to create the records.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Function Name</th><th scope="col">Usage</th></tr></thead>
+          <tbody>
+            <tr><td>Begin Doc</td><td>Initialize both Header and Detail Cache<br>Add or Update the Header</td></tr>
+            <tr><td>Edit Line</td><td>Add Detail Cache Record</td></tr>
+            <tr><td>Edit Doc</td><td>Read Header Cache<br>Update Header Cache</td></tr>
+            <tr><td>End Doc</td><td>Read the Records from Header and Detail Cache and write to tables</td></tr>
+            <tr><td>Clear Doc</td><td>Delete Header Cache<br>Read Detail Cache<br>Delete Detail Cache<br>Terminate Cache</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>What is Cache:</h3>
+      <p>Cache is a memory which has recently used information and can be accessed extremely fast for performing data manipulation while creating or updating a transaction in an application.</p>
+      <h3>Pros of Using Cache:</h3>
+      <ul>
+        <li>Cache improves the performance of application where it has been used.</li>
+        <li>Cache reduces the load on servers.</li>
+        <li>Using cache we can store data from multiple tables and access them as and when require.</li>
+        <li>Cache is useful in place of temporary tables by reducing load on the servers.</li>
+      </ul>
+      <h3>Cons Of Using Cache:</h3>
+      <ul>
+        <li>Cache has a limitation of storage capacity.</li>
+        <li>Implementing cache require knowledge of JDECACHE APIs.</li>
+        <li>Troubleshooting of cache memory is difficult.</li>
+      </ul>
+      <p>Few <strong>Cache APIs</strong> which we use commonly to create the cache and use it to store and update records:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Proposal</th><th scope="col">Command</th></tr></thead>
+          <tbody>
+            <tr><td>Connect to OneWorld</td><td>JDB_InitBhvr</td></tr>
+            <tr><td>Create Index Data Structure Definition</td><td>Index.CacheKey[n].nOffset<br>Index.CacheKey[n].nSize<br>Index.CacheKey[n].idDataType</td></tr>
+            <tr><td>Initialize the Cache</td><td>jdeCacheInit</td></tr>
+            <tr><td>Add a record to Cache</td><td>jdeAddCache</td></tr>
+            <tr><td>Open a cursor in Cache</td><td>jdeCacheOpenCursor</td></tr>
+            <tr><td>Any Cache manipulation</td><td>Cursor Advancing:<br>👉 jdeCacheFetch<br>👉 jdeCacheFetchPosition<br>👉 jdeCacheResetCursor<br>Non Cursor Advancing:<br>👉 jdeCacheUpdate<br>👉 jdeCacheDelete</td></tr>
+            <tr><td>Close the Cursor</td><td>jdeCacheCloseCursor</td></tr>
+            <tr><td>Terminate the Cache</td><td>jdeCacheTerminate</td></tr>
+            <tr><td>Free Behavior</td><td>JDB_FreeBhvr</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="bsfn2-en" aria-labelledby="h-bsfn2-en">
+      <h2 id="h-bsfn2-en">JDE Business Function and Cache Concepts – Part 2</h2>
+      <p>In our last article(part 1) we gave an overview of standard parameters of Business Function and usage of master business functions, also we spoke about cache APIs and its usage.</p>
+      <p>In this article we will demonstrate the process of cache creation using cache APIs and in our next article we will see how to use this BSFN to insert/update/fetch the data in/from cache.</p>
+      <p>Steps for Creating a Cache</p>
+      <h3>1. Data structure Creation</h3>
+      <p>Create a Datastructure for the Business Function.</p>
+      <p>Few parameters are compulsory in data structure to build a cache and other parameters are dependent on the requirement.</p>
+      <ul>
+        <li>Cachename – Mandatory</li>
+        <li>ActionCode – Mandatory</li>
+        <li>Cursor – Mandatory</li>
+      </ul>
+      <figure class="shot">
+        <img src="rc_images/ej0lzbf7.bmp" alt="Cache Data Structure" width="600" height="280" loading="lazy">
+      </figure>
+      <h3>2. Attach the Data structure to C BSFN</h3>
+      <figure class="shot">
+        <img src="rc_images/nr7xbz9b.bmp" alt="Attach DS to BSFN" width="768" height="261" loading="lazy">
+      </figure>
+      <h3>3. Generate the Skeleton for the Business function</h3>
+      <figure class="shot">
+        <img src="rc_images/a9wzpec0.bmp" alt="Function Creation" width="768" height="298" loading="lazy">
+      </figure>
+      <figure class="shot">
+        <img src="rc_images/jby2fxmt.bmp" alt="Function Prototype" width="1273" height="491" loading="lazy">
+      </figure>
+      <h3>4. Create Data structure definition in the .h file</h3>
+      <figure class="shot">
+        <img src="rc_images/o1kxvqol.bmp" alt="DS Design" width="768" height="404" loading="lazy">
+      </figure>
+      <figure class="shot">
+        <img src="rc_images/jgj3nt0m.bmp" alt="DS .h" width="335" height="501" loading="lazy">
+      </figure>
+      <h3>5. Define the Cache Structure in .h</h3>
+      <figure class="shot">
+        <img src="rc_images/avk28gbz.bmp" alt="Cache DS" width="673" height="193" loading="lazy">
+      </figure>
+      <h3>6. Define the Cache Key Structure in .h file</h3>
+      <figure class="shot">
+        <img src="rc_images/zvpwa2hl.bmp" alt="Cache Key" width="832" height="119" loading="lazy">
+      </figure>
+      <h3>7. Create Instances For Cache and Cache Key in .c file</h3>
+      <figure class="shot">
+        <img src="rc_images/idgw25eb.bmp" alt="Instances" width="768" height="250" loading="lazy">
+      </figure>
+      <h3>8. Declare pointers and Variables in .c file</h3>
+      <figure class="shot">
+        <img src="rc_images/6plq3scq.bmp" alt="Pointers" width="600" height="335" loading="lazy">
+      </figure>
+      <h3>9. Initialize User</h3>
+      <figure class="shot">
+        <img src="rc_images/dcjf2pe9.bmp" alt="Initialize User" width="677" height="127" loading="lazy">
+      </figure>
+      <h3>10. Initialize Cache</h3>
+      <p>The Cache is initialized using ‘jdeCacheInit’ API. This is the most important step for creating a cache.</p>
+      <p>‘jdeCacheInit’ initializes a named cache, associates the initialized cache with a user and returns a handle to the initialized cache. This API contains four things:</p>
+      <ol>
+        <li>Creates a cache in memory.</li>
+        <li>Creates an index that will be used to access records in the cache.</li>
+        <li>Names the cache with the name passed in this API.</li>
+        <li>Associates the cache with a cache handle (HCACHE) that the user will use to reference the cache in call to JDE Cache 1. APIs.</li>
+      </ol>
+      <figure class="shot">
+        <img src="rc_images/2gjwkt4u.bmp" alt="Initialize Cache" width="600" height="470" loading="lazy">
+      </figure>
+      <h3>11. Cache Processing</h3>
+      <p>Most of the time cache processing is consist of adding, updating, fetching and deleting the cache.</p>
+      <p>Some of them are listed below:</p>
+      <h4>Cache Add/Update</h4>
+      <p>‘jdeCacheAdd’ adds a record to the cache identified by the cache handle hCache that was obtained from the call to ‘jdeCacheInit’.</p>
+      <p>‘jdeCacheUpdate’ updates the record that is currently being pointed to by the passed HJDECURSOR with the passed data.</p>
+      <figure class="shot">
+        <img src="rc_images/sbsb5k40.bmp" alt="Cache Add/Update" width="768" height="435" loading="lazy">
+      </figure>
+      <h4>Cache Single Fetch</h4>
+      <p>‘jdeCacheFetchPosition’ retrieves the record that corresponds to the given key. This API can be used to position the HJDECURSOR to a specific location within the data set. When a call to jdeCacheFetch is made, it will start fetching from the next position. This is useful for making sequential fetches beginning at a specific location in the cache.</p>
+      <figure class="shot">
+        <img src="rc_images/t4tpy2gf.bmp" alt="Cache Fetch Single" width="768" height="287" loading="lazy">
+      </figure>
+      <h4>Cache Multiple Fetch</h4>
+      <p>Multiple fetch is possible through the  ‘JdeCacheFetch’ API. ‘JdeCacheFetch’ advances the cursor to the next record in the data set relative to the current cursor position and retrieves the record. This will now be the new position associated with HJDECURSOR. This API does not search for a record in the cache but fetches whatever record is after the record that is currently being pointed to the passed HJDECURSOR. The API is ideal for performing sequential fetches</p>
+      <figure class="shot">
+        <img src="rc_images/3ci2vjt2.bmp" alt="Cache Multiple Fetch" width="600" height="385" loading="lazy">
+      </figure>
+      <h4>Cache Delete</h4>
+      <p>‘jdeCacheDelete’ is the API that deletes the record that is pointed by the cursor. Only one record can be deleted at a time.</p>
+      <figure class="shot">
+        <img src="rc_images/afu9mc5s.bmp" alt="Cache Delete" width="768" height="277" loading="lazy">
+      </figure>
+      <h4>Cache Terminate</h4>
+      <p>Once all the processing is complete, the memory allocated for cache should be destroyed. ‘jdeCacheTerminateAll’ destroys all caches with the same name as the one with the given hCache. The caches are physically removed from memory.</p>
+      <figure class="shot">
+        <img src="rc_images/s1qxvfe8.bmp" alt="Cache Terminate" width="572" height="260" loading="lazy">
+      </figure>
+      <p>Sample code (below) for creating cache is given for reference.</p>
+    </section>
+
+    <section id="bsfn3-en" aria-labelledby="h-bsfn3-en">
+      <h2 id="h-bsfn3-en">JDE Business Function and Cache Concepts – Part 3</h2>
+      <p>In our last article (part 2) we demonstrated the process of cache creation business function (step by step) using cache APIs and explained the purpose of cache APIs.</p>
+      <p>In this article we will see how to use the cache business function in JDE object and how the values will get stored in cache and how can we manipulate the same.</p>
+      <p>Steps for using the business function</p>
+      <h3>1. Create the application to pass or retrieve the values as given below</h3>
+      <figure class="shot">
+        <img src="rc_images/0mplafhi.bmp" alt="Form" width="574" height="301" loading="lazy">
+      </figure>
+      <p>Action Code Values:</p>
+      <ol>
+        <li>Add/Update</li>
+        <li>Fetch based on key</li>
+        <li>Delete from cache</li>
+      </ol>
+      <h3>2. In Add Record Button Call the C BSFN to add the records in cache</h3>
+      <figure class="shot">
+        <img src="rc_images/8drx92cw.bmp" alt="Add" width="600" height="360" loading="lazy">
+      </figure>
+      <h3>3. In Update Record Button Call the C BSFN to update the records in cache</h3>
+      <figure class="shot">
+        <img src="rc_images/2pn6zl49.bmp" alt="Update" width="600" height="324" loading="lazy">
+      </figure>
+      <h3>4. In Fetch Record Button Call the C BSFN to fetch the records from cache</h3>
+      <figure class="shot">
+        <img src="rc_images/j3smdgc5.bmp" alt="Fetch" width="600" height="358" loading="lazy">
+      </figure>
+      <h3>5. In Delete Record Button Call the C BSFN to add the records from cache</h3>
+      <figure class="shot">
+        <img src="rc_images/3d7isns2.bmp" alt="Delete" width="600" height="321" loading="lazy">
+      </figure>
+      <h3>6. Run the application in web client and key in the values for inserting the record in cache and press the Add Record button</h3>
+      <figure class="shot">
+        <img src="rc_images/jvj2l6rd.bmp" alt="Cache 1" width="600" height="395" loading="lazy">
+      </figure>
+      <p>We can see the values have been added in cache after jdeCacheAdd API is called in the C BSFN</p>
+      <figure class="shot">
+        <img src="rc_images/zko0oi6b.bmp" alt="Cache 2" width="600" height="329" loading="lazy">
+      </figure>
+      <h3>7. Enter the different values in form control and press the Add Record Button again to add one more record in cache</h3>
+      <figure class="shot">
+        <img src="rc_images/km5eqe6h.bmp" alt="Cache 1" width="600" height="402" loading="lazy">
+      </figure>
+      <p>We can see the values have been added in cache after jdeCacheAdd API is called in the C BSFN</p>
+      <figure class="shot">
+        <img src="rc_images/rfuf4bqx.bmp" alt="Cache 2" width="768" height="407" loading="lazy">
+      </figure>
+      <h3>8. Enter the different value in the form control to update the first record of the cache</h3>
+      <figure class="shot">
+        <img src="rc_images/cs7m54me.bmp" alt="Cache 1" width="600" height="377" loading="lazy">
+      </figure>
+      <p>In this case first fetch from the cache will happen to check if the record exists in the cache, if the record is there then it will get updated in cache after jdeCacheUpdate API gets called in C BSFN.</p>
+      <figure class="shot">
+        <img src="rc_images/dazv4f1b.bmp" alt="Cache 2" width="768" height="412" loading="lazy">
+      </figure>
+      <h3>9. Enter the key value to fetch the record from the cache</h3>
+      <figure class="shot">
+        <img src="rc_images/ko9srhs9.bmp" alt="Cache 1" width="600" height="347" loading="lazy">
+      </figure>
+      <p>In this scenario also, first fetch will get performed to check the existence of the record and if exists then the values will get assign to the BSFN parameters after the jdeCacheFetchPosition API returns success.</p>
+      <figure class="shot">
+        <img src="rc_images/sviihitd.bmp" alt="Cache 2" width="1004" height="549" loading="lazy">
+      </figure>
+      <p>Values of the first record got dsiplayed in the application after pressing the Fecth Record Button</p>
+      <figure class="shot">
+        <img src="rc_images/46xptb9n.bmp" alt="Cache 3" width="600" height="379" loading="lazy">
+      </figure>
+      <h3>10. Enter the key values to Delete the record from cache</h3>
+      <figure class="shot">
+        <img src="rc_images/v7mbtanh.bmp" alt="Cache 1" width="600" height="378" loading="lazy">
+      </figure>
+      <p>In this scenario also, first fetch will get performed to check the existence of the record and if exists then the values will get deleted after the jdeCacheDelete API returns success.</p>
+      <figure class="shot">
+        <img src="rc_images/q0wtoun8.bmp" alt="Cache 2" width="994" height="540" loading="lazy">
+      </figure>
+      <h3>11. When we try to delete the same record in cache again it will return error because record is not present</h3>
+      <figure class="shot">
+        <img src="rc_images/iizlgczn.bmp" alt="Cache 1" width="1002" height="542" loading="lazy">
+      </figure>
+      <p>Similar way we can call the C BSFN to fetch the sequential records from cache and destroy the cache.</p>
+    </section>
+
+    <section id="jdb1-en" aria-labelledby="h-jdb1-en">
+      <h2 id="h-jdb1-en">E1 Cache Concepts – JDB Cache – Part 1</h2>
+      <p>In previous articles, have shared the JDE Cache concepts and its creation. JDE has two types of cache, the one we have explained in recent posts is known as <strong>User Cache</strong> or <strong>JDECACHE</strong>.</p>
+      <p>This article will speak about the second type of cache which JDE offers to its users which is called <strong>JDB F98613/ DB Cache</strong>.</p>
+      <p>As we know storing database data in program memory rather than fetching it from database is known as <strong>Caching</strong>. This helps in eliminating the overhead of database.</p>
+      <p>JDB Cache is not a shared memory accessed by all processes rather it is local heap memory to each process. Every process has its <strong>own copy</strong> of DB cache.</p>
+      <p>JDB cache is an <strong>automated table caching</strong> mechanism feature in EnterpriseOne.</p>
+      <p>When the process completes, JDB cache will also <strong>goes away</strong> with the process into the bit bucket.</p>
+      <p>JDB Cache can be implemented through <strong>C Code in Business Function or Event Rules</strong> of JDE.</p>
+      <p>There is no <strong>replication or synchronization</strong> across each of the JDB cache instances.</p>
+      <p>Implementing JDB cache can help in <strong>improving the performance</strong> of the process provided it is done after complete analysis.</p>
+      <p>JDB cache is local process heap memory and it is limited to a <strong>total of 2GB</strong> in 32-bit operating systems.</p>
+      <p>In next article we will see the how we can <strong>implement</strong> and what are the <strong>conditions</strong> to use the JDB Cache in EnterpriseOne.</p>
+      <p>Reference:</p>
+      <ul>
+        <li>JDB cache in EnterpriseOne</li>
+        <li>JDEdwards EnterpriseOne Applications Task Force</li>
+      </ul>
+    </section>
+
+    <section id="jdb2-en" aria-labelledby="h-jdb2-en">
+      <h2 id="h-jdb2-en">E1 Cache Concepts – JDB Cache – Part 2</h2>
+      <p>In last article (part 1), have shared about the concept of JDB cache and its features. In this article, we will see how we can implement the JDB cache and use it efficiently during our performance issues.</p>
+      <h3>How it works</h3>
+      <p>When a table is configured to be a part of JDB cache then , once a record is fetched from the table, it gets stored in cache also and then further Selects of the same record are fetched from cache rather than the database.</p>
+      <h3>Basic Rules</h3>
+      <ol>
+        <li>An entry should be there in F98613 for the table which is a list of cache tables.</li>
+        <li>Table must be accessed using full primary key.</li>
+        <li>Table must be accesses through API ‘JDB_FetchKeyed’ in C Business Function or using ‘Fetch Single’ table I/O operation 1. in JDE event rules.</li>
+        <li>APIs like JDB_SetSelection or JDB_SetSequencing must not be called when using the JDB cache.</li>
+        <li>There is no synchronization / replication across processes.</li>
+      </ol>
+      <figure class="shot">
+        <img src="rc_images/3dvb5c97.bmp" alt="F98613" width="768" height="289" loading="lazy">
+      </figure>
+      <h3>Works in below manner:</h3>
+      <figure>
+        <img src="rc_images/JDBCacheFluxo-en.svg" alt="Activity flow: Is table setup in F98613? If no, has JDB_addTableToDBCache() added the table? If no, fetch from table. Is full primary key used? If no, fetch from table. Is record already in cache? Yes: cache HIT, fetch from cache, no database operation. No: cache MISS, fetch from table and store in cache." width="1000" height="1080" loading="lazy">
+      </figure>
+      <h3>Limitations</h3>
+      <ol>
+        <li>Tables must be static.</li>
+        <li>Same records must be fetched repeatedly.</li>
+        <li>Caching tables which are dynamic will cause applications to break.</li>
+        <li>Queries which return zero row, will not be cached.</li>
+        <li>Caching table having millions of records is not suggested.</li>
+      </ol>
+      <h3>Benefits</h3>
+      <ol>
+        <li>An automated table caching mechanism feature in EnterpriseOne.</li>
+        <li>Suitable for table which remain constant and static.</li>
+        <li>It can help in increasing performance of the process.</li>
+        <li>Redundant Select statements on same primary key can be eliminated by using JDB cache.</li>
+      </ol>
+      <p>Reference:</p>
+      <ul>
+        <li>JDB cache in EnterpriseOne</li>
+        <li>JDEdwards EnterpriseOne Applications Task Force</li>
+      </ul>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== IT ===================== -->
+<div id="it" role="tabpanel" aria-labelledby="tab-it" lang="it" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Progetti</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>La cache in JD Edwards</h1>
+      <p class="dek">Concetti di Business Function e cache in JDE, parti da 1 a 3, e concetti di cache in E1 – JDB Cache, parti 1 e 2, riuniti in un’unica pagina.</p>
+      <div class="byline">
+        <span>Di <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Pubblicato il <time datetime="2026-09-28">28/09/2026</time></span>
+        <span class="credit">Rivisto e impaginato con Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-it">
+    <h2 id="toc-it">Indice</h2>
+    <ol>
+      <li><a href="#bsfn1-it">Concetti di Business Function e cache in JDE – Parte 1</a></li>
+      <li><a href="#bsfn2-it">Concetti di Business Function e cache in JDE – Parte 2</a></li>
+      <li><a href="#bsfn3-it">Concetti di Business Function e cache in JDE – Parte 3</a></li>
+      <li><a href="#jdb1-it">Concetti di cache in E1 – JDB Cache – Parte 1</a></li>
+      <li><a href="#jdb2-it">Concetti di cache in E1 – JDB Cache – Parte 2</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="bsfn1-it" aria-labelledby="h-bsfn1-it">
+      <h2 id="h-bsfn1-it">Concetti di Business Function e cache in JDE – Parte 1</h2>
+      <p>L’uso della cache, o caching, è uno dei concetti fondamentali delle applicazioni web, o diciamo di qualsiasi applicazione, che si tratti del livello database, del livello applicativo o del livello web. In JD Edwards il caching si fa nel livello applicativo, tramite codice, e nel livello web, tramite il Server Manager (HTML Server).</p>
+      <p>Possiamo esaminare il caching basato sul codice, che di solito si realizza tramite Business Function (BSFN).</p>
+      <p>Usiamo o vediamo sempre alcuni parametri delle business function che JDE usa per comunicare o passare informazioni</p>
+      <h3>LPBHVRCOM</h3>
+      <ul>
+        <li>Puntatore a una struttura dati usata per la comunicazione con le business function</li>
+        <li>Ha la capacità di identificare la versione corrente del software</li>
+        <li>Identifica il privilegio di accesso dell’utente corrente</li>
+        <li>Ha parametri che gestiscono la finestra corrente e i controlli della finestra</li>
+        <li>Può identificare il controllo corrente che ha il focus</li>
+        <li>Identifica il momento corrente dell’evento in elaborazione</li>
+        <li>Ha il componente ID per l’identificatore globale di run time del job eseguito dal menu driver</li>
+        <li>Ha informazioni sulle preferenze di sistema</li>
+        <li>Ha informazioni sulle preferenze dell’utente</li>
+        <li>Può mostrare l’ID del messaggio di errore o 0L</li>
+        <li>Imposta il flag a TRUE quando si cambia il comportamento del database</li>
+        <li>Contiene la chiave evento del messaggio di errore per le event rules</li>
+        <li>Ha informazioni sull’handle di ambiente per ODBC</li>
+        <li>Contiene puntatori per la sezione di RDA</li>
+        <li>Ha la lista concatenata degli errori per i programmi batch</li>
+        <li>Memorizza le informazioni di runtime del form per FDA</li>
+        <li>Ha un flag che indica una chiamata di runtime o una chiamata di business function</li>
+        <li>Memorizza un flag che indica una chiamata remota o un oggetto di chiamata di terze parti</li>
+        <li>Ha le informazioni di indirizzo subscription/publish dell’applicazione</li>
+        <li>Contiene l’ID del processo logico del chiamante dell’API jdeLaunchUBEEx</li>
+        <li>Contiene anche un’area per uso futuro per nuovi elementi</li>
+      </ul>
+      <h3>LPVOID</h3>
+      <ul>
+        <li>Puntatore a una struttura dati void, usata attualmente per l’elaborazione degli errori</li>
+        <li>Sarà usato per la sicurezza in futuro.</li>
+      </ul>
+      <p>Abbiamo una <strong>Master Business Function</strong> per la maggior parte dei processi che inseriscono dati nelle tabelle delle transazioni. Ogni master business function usa Begin Doc, Edit Line, Edit Doc ed End Doc per inserire i record nelle tabelle.</p>
+      <p>In termini semplici, da profano, ecco l’uso di ciascuna funzione, che viene chiamata in sequenza per creare i record.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Nome della funzione</th><th scope="col">Uso</th></tr></thead>
+          <tbody>
+            <tr><td>Begin Doc</td><td>Inizializza sia la cache di testata sia quella di dettaglio<br>Aggiunge o aggiorna la testata</td></tr>
+            <tr><td>Edit Line</td><td>Aggiunge un record alla cache di dettaglio</td></tr>
+            <tr><td>Edit Doc</td><td>Legge la cache di testata<br>Aggiorna la cache di testata</td></tr>
+            <tr><td>End Doc</td><td>Legge i record dalle cache di testata e di dettaglio e li scrive nelle tabelle</td></tr>
+            <tr><td>Clear Doc</td><td>Cancella la cache di testata<br>Legge la cache di dettaglio<br>Cancella la cache di dettaglio<br>Termina la cache</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>Che cos’è la cache:</h3>
+      <p>La cache è una memoria che contiene informazioni usate di recente e a cui si può accedere in modo estremamente rapido per manipolare i dati durante la creazione o l’aggiornamento di una transazione in un’applicazione.</p>
+      <h3>Pro dell’uso della cache:</h3>
+      <ul>
+        <li>La cache migliora le prestazioni dell’applicazione in cui è usata.</li>
+        <li>La cache riduce il carico sui server.</li>
+        <li>Con la cache possiamo memorizzare dati di più tabelle e accedervi quando serve.</li>
+        <li>La cache è utile al posto delle tabelle temporanee, riducendo il carico sui server.</li>
+      </ul>
+      <h3>Contro dell’uso della cache:</h3>
+      <ul>
+        <li>La cache ha un limite di capacità di memorizzazione.</li>
+        <li>Implementare la cache richiede la conoscenza delle API JDECACHE.</li>
+        <li>Risolvere i problemi della memoria cache è difficile.</li>
+      </ul>
+      <p>Alcune <strong>API della cache</strong> che usiamo comunemente per creare la cache e usarla per memorizzare e aggiornare i record:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Scopo</th><th scope="col">Comando</th></tr></thead>
+          <tbody>
+            <tr><td>Connettersi a OneWorld</td><td>JDB_InitBhvr</td></tr>
+            <tr><td>Creare la definizione della struttura dati dell’indice</td><td>Index.CacheKey[n].nOffset<br>Index.CacheKey[n].nSize<br>Index.CacheKey[n].idDataType</td></tr>
+            <tr><td>Inizializzare la cache</td><td>jdeCacheInit</td></tr>
+            <tr><td>Aggiungere un record alla cache</td><td>jdeAddCache</td></tr>
+            <tr><td>Aprire un cursore nella cache</td><td>jdeCacheOpenCursor</td></tr>
+            <tr><td>Qualsiasi manipolazione della cache</td><td>Fanno avanzare il cursore:<br>👉 jdeCacheFetch<br>👉 jdeCacheFetchPosition<br>👉 jdeCacheResetCursor<br>Non fanno avanzare il cursore:<br>👉 jdeCacheUpdate<br>👉 jdeCacheDelete</td></tr>
+            <tr><td>Chiudere il cursore</td><td>jdeCacheCloseCursor</td></tr>
+            <tr><td>Terminare la cache</td><td>jdeCacheTerminate</td></tr>
+            <tr><td>Liberare il behavior</td><td>JDB_FreeBhvr</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="bsfn2-it" aria-labelledby="h-bsfn2-it">
+      <h2 id="h-bsfn2-it">Concetti di Business Function e cache in JDE – Parte 2</h2>
+      <p>Nel nostro ultimo articolo (parte 1) abbiamo dato una panoramica dei parametri standard delle Business Function e dell’uso delle master business function; abbiamo anche parlato delle API della cache e del loro uso.</p>
+      <p>In questo articolo mostreremo il processo di creazione di una cache con le API della cache e, nel prossimo articolo, vedremo come usare questa BSFN per inserire/aggiornare/recuperare i dati nella/dalla cache.</p>
+      <p>Passi per creare una cache</p>
+      <h3>1. Creazione della struttura dati</h3>
+      <p>Crea una struttura dati (data structure) per la Business Function.</p>
+      <p>Alcuni parametri sono obbligatori nella struttura dati per costruire una cache, mentre gli altri dipendono dal requisito.</p>
+      <ul>
+        <li>Cachename – Obbligatorio</li>
+        <li>ActionCode – Obbligatorio</li>
+        <li>Cursor – Obbligatorio</li>
+      </ul>
+      <figure class="shot">
+        <img src="rc_images/ej0lzbf7.bmp" alt="Struttura dati della cache" width="600" height="280" loading="lazy">
+      </figure>
+      <h3>2. Collegare la struttura dati alla BSFN in C</h3>
+      <figure class="shot">
+        <img src="rc_images/nr7xbz9b.bmp" alt="Collegare la DS alla BSFN" width="768" height="261" loading="lazy">
+      </figure>
+      <h3>3. Generare lo scheletro della Business Function</h3>
+      <figure class="shot">
+        <img src="rc_images/a9wzpec0.bmp" alt="Creazione della funzione" width="768" height="298" loading="lazy">
+      </figure>
+      <figure class="shot">
+        <img src="rc_images/jby2fxmt.bmp" alt="Prototipo della funzione" width="1273" height="491" loading="lazy">
+      </figure>
+      <h3>4. Creare la definizione della struttura dati nel file .h</h3>
+      <figure class="shot">
+        <img src="rc_images/o1kxvqol.bmp" alt="Progetto della DS" width="768" height="404" loading="lazy">
+      </figure>
+      <figure class="shot">
+        <img src="rc_images/jgj3nt0m.bmp" alt="DS nel .h" width="335" height="501" loading="lazy">
+      </figure>
+      <h3>5. Definire la struttura della cache nel .h</h3>
+      <figure class="shot">
+        <img src="rc_images/avk28gbz.bmp" alt="DS della cache" width="673" height="193" loading="lazy">
+      </figure>
+      <h3>6. Definire la struttura della chiave della cache nel file .h</h3>
+      <figure class="shot">
+        <img src="rc_images/zvpwa2hl.bmp" alt="Chiave della cache" width="832" height="119" loading="lazy">
+      </figure>
+      <h3>7. Creare le istanze della cache e della chiave della cache nel file .c</h3>
+      <figure class="shot">
+        <img src="rc_images/idgw25eb.bmp" alt="Istanze" width="768" height="250" loading="lazy">
+      </figure>
+      <h3>8. Dichiarare puntatori e variabili nel file .c</h3>
+      <figure class="shot">
+        <img src="rc_images/6plq3scq.bmp" alt="Puntatori" width="600" height="335" loading="lazy">
+      </figure>
+      <h3>9. Inizializzare l’utente</h3>
+      <figure class="shot">
+        <img src="rc_images/dcjf2pe9.bmp" alt="Inizializzare l’utente" width="677" height="127" loading="lazy">
+      </figure>
+      <h3>10. Inizializzare la cache</h3>
+      <p>La cache si inizializza con l’API ‘jdeCacheInit’. È il passo più importante per creare una cache.</p>
+      <p>‘jdeCacheInit’ inizializza una cache con nome, associa la cache inizializzata a un utente e restituisce un handle alla cache inizializzata. Questa API contiene quattro cose:</p>
+      <ol>
+        <li>Crea una cache in memoria.</li>
+        <li>Crea un indice che sarà usato per accedere ai record nella cache.</li>
+        <li>Dà alla cache il nome passato in questa API.</li>
+        <li>Associa la cache a un handle di cache (HCACHE), che l’utente userà per riferirsi alla cache nelle chiamate alle API di JDE Cache.</li>
+      </ol>
+      <figure class="shot">
+        <img src="rc_images/2gjwkt4u.bmp" alt="Inizializzare la cache" width="600" height="470" loading="lazy">
+      </figure>
+      <h3>11. Elaborazione della cache</h3>
+      <p>Il più delle volte l’elaborazione della cache consiste nell’aggiungere, aggiornare, recuperare e cancellare nella cache.</p>
+      <p>Alcune sono elencate qui sotto:</p>
+      <h4>Aggiunta/aggiornamento nella cache</h4>
+      <p>‘jdeCacheAdd’ aggiunge un record alla cache identificata dall’handle di cache hCache, ottenuto dalla chiamata a ‘jdeCacheInit’.</p>
+      <p>‘jdeCacheUpdate’ aggiorna, con i dati passati, il record a cui punta in quel momento l’HJDECURSOR passato.</p>
+      <figure class="shot">
+        <img src="rc_images/sbsb5k40.bmp" alt="Aggiunta/aggiornamento nella cache" width="768" height="435" loading="lazy">
+      </figure>
+      <h4>Recupero singolo dalla cache</h4>
+      <p>‘jdeCacheFetchPosition’ recupera il record che corrisponde alla chiave data. Questa API si può usare per posizionare l’HJDECURSOR in un punto specifico dell’insieme di dati. Quando si chiama jdeCacheFetch, il recupero inizia dalla posizione successiva. È utile per fare recuperi sequenziali a partire da un punto specifico della cache.</p>
+      <figure class="shot">
+        <img src="rc_images/t4tpy2gf.bmp" alt="Recupero singolo dalla cache" width="768" height="287" loading="lazy">
+      </figure>
+      <h4>Recupero multiplo dalla cache</h4>
+      <p>Il recupero multiplo è possibile tramite l’API ‘JdeCacheFetch’. ‘JdeCacheFetch’ fa avanzare il cursore al record successivo dell’insieme di dati, rispetto alla posizione corrente del cursore, e recupera il record. Questa diventa la nuova posizione associata all’HJDECURSOR. Questa API non cerca un record nella cache, ma recupera qualunque record si trovi dopo quello a cui punta in quel momento l’HJDECURSOR passato. L’API è ideale per fare recuperi sequenziali</p>
+      <figure class="shot">
+        <img src="rc_images/3ci2vjt2.bmp" alt="Recupero multiplo dalla cache" width="600" height="385" loading="lazy">
+      </figure>
+      <h4>Cancellazione dalla cache</h4>
+      <p>‘jdeCacheDelete’ è l’API che cancella il record puntato dal cursore. Si può cancellare un solo record alla volta.</p>
+      <figure class="shot">
+        <img src="rc_images/afu9mc5s.bmp" alt="Cancellazione dalla cache" width="768" height="277" loading="lazy">
+      </figure>
+      <h4>Terminazione della cache</h4>
+      <p>Quando tutta l’elaborazione è finita, la memoria allocata per la cache deve essere distrutta. ‘jdeCacheTerminateAll’ distrugge tutte le cache con lo stesso nome di quella con l’hCache dato. Le cache vengono rimosse fisicamente dalla memoria.</p>
+      <figure class="shot">
+        <img src="rc_images/s1qxvfe8.bmp" alt="Terminazione della cache" width="572" height="260" loading="lazy">
+      </figure>
+      <p>Il codice di esempio (qui sotto) per creare la cache è fornito come riferimento.</p>
+    </section>
+
+    <section id="bsfn3-it" aria-labelledby="h-bsfn3-it">
+      <h2 id="h-bsfn3-it">Concetti di Business Function e cache in JDE – Parte 3</h2>
+      <p>Nel nostro ultimo articolo (parte 2) abbiamo mostrato passo per passo il processo di creazione della business function di cache con le API della cache e abbiamo spiegato lo scopo delle API della cache.</p>
+      <p>In questo articolo vedremo come usare la business function di cache in un oggetto JDE, come i valori vengono memorizzati nella cache e come possiamo manipolarli.</p>
+      <p>Passi per usare la business function</p>
+      <h3>1. Creare l’applicazione per passare o recuperare i valori, come indicato sotto</h3>
+      <figure class="shot">
+        <img src="rc_images/0mplafhi.bmp" alt="Form" width="574" height="301" loading="lazy">
+      </figure>
+      <p>Valori dell’Action Code:</p>
+      <ol>
+        <li>Aggiungi/aggiorna</li>
+        <li>Recupera in base alla chiave</li>
+        <li>Cancella dalla cache</li>
+      </ol>
+      <h3>2. Nel pulsante Add Record, chiamare la BSFN in C per aggiungere i record alla cache</h3>
+      <figure class="shot">
+        <img src="rc_images/8drx92cw.bmp" alt="Aggiungi" width="600" height="360" loading="lazy">
+      </figure>
+      <h3>3. Nel pulsante Update Record, chiamare la BSFN in C per aggiornare i record nella cache</h3>
+      <figure class="shot">
+        <img src="rc_images/2pn6zl49.bmp" alt="Aggiorna" width="600" height="324" loading="lazy">
+      </figure>
+      <h3>4. Nel pulsante Fetch Record, chiamare la BSFN in C per recuperare i record dalla cache</h3>
+      <figure class="shot">
+        <img src="rc_images/j3smdgc5.bmp" alt="Recupera" width="600" height="358" loading="lazy">
+      </figure>
+      <h3>5. Nel pulsante Delete Record, chiamare la BSFN in C per aggiungere i record dalla cache</h3>
+      <figure class="shot">
+        <img src="rc_images/3d7isns2.bmp" alt="Cancella" width="600" height="321" loading="lazy">
+      </figure>
+      <h3>6. Eseguire l’applicazione nel web client, digitare i valori per inserire il record nella cache e premere il pulsante Add Record</h3>
+      <figure class="shot">
+        <img src="rc_images/jvj2l6rd.bmp" alt="Cache 1" width="600" height="395" loading="lazy">
+      </figure>
+      <p>Possiamo vedere che i valori sono stati aggiunti alla cache dopo la chiamata all’API jdeCacheAdd nella BSFN in C</p>
+      <figure class="shot">
+        <img src="rc_images/zko0oi6b.bmp" alt="Cache 2" width="600" height="329" loading="lazy">
+      </figure>
+      <h3>7. Inserire valori diversi nei controlli del form e premere di nuovo il pulsante Add Record per aggiungere un altro record alla cache</h3>
+      <figure class="shot">
+        <img src="rc_images/km5eqe6h.bmp" alt="Cache 1" width="600" height="402" loading="lazy">
+      </figure>
+      <p>Possiamo vedere che i valori sono stati aggiunti alla cache dopo la chiamata all’API jdeCacheAdd nella BSFN in C</p>
+      <figure class="shot">
+        <img src="rc_images/rfuf4bqx.bmp" alt="Cache 2" width="768" height="407" loading="lazy">
+      </figure>
+      <h3>8. Inserire un valore diverso nel controllo del form per aggiornare il primo record della cache</h3>
+      <figure class="shot">
+        <img src="rc_images/cs7m54me.bmp" alt="Cache 1" width="600" height="377" loading="lazy">
+      </figure>
+      <p>In questo caso avviene prima un recupero dalla cache per verificare se il record esiste nella cache; se il record c’è, viene aggiornato nella cache dopo la chiamata all’API jdeCacheUpdate nella BSFN in C.</p>
+      <figure class="shot">
+        <img src="rc_images/dazv4f1b.bmp" alt="Cache 2" width="768" height="412" loading="lazy">
+      </figure>
+      <h3>9. Inserire il valore della chiave per recuperare il record dalla cache</h3>
+      <figure class="shot">
+        <img src="rc_images/ko9srhs9.bmp" alt="Cache 1" width="600" height="347" loading="lazy">
+      </figure>
+      <p>Anche in questo scenario viene eseguito prima un recupero per verificare l’esistenza del record e, se esiste, i valori vengono assegnati ai parametri della BSFN dopo che l’API jdeCacheFetchPosition restituisce successo.</p>
+      <figure class="shot">
+        <img src="rc_images/sviihitd.bmp" alt="Cache 2" width="1004" height="549" loading="lazy">
+      </figure>
+      <p>I valori del primo record sono stati mostrati nell’applicazione dopo aver premuto il pulsante Fetch Record</p>
+      <figure class="shot">
+        <img src="rc_images/46xptb9n.bmp" alt="Cache 3" width="600" height="379" loading="lazy">
+      </figure>
+      <h3>10. Inserire i valori della chiave per cancellare il record dalla cache</h3>
+      <figure class="shot">
+        <img src="rc_images/v7mbtanh.bmp" alt="Cache 1" width="600" height="378" loading="lazy">
+      </figure>
+      <p>Anche in questo scenario viene eseguito prima un recupero per verificare l’esistenza del record e, se esiste, i valori vengono cancellati dopo che l’API jdeCacheDelete restituisce successo.</p>
+      <figure class="shot">
+        <img src="rc_images/q0wtoun8.bmp" alt="Cache 2" width="994" height="540" loading="lazy">
+      </figure>
+      <h3>11. Se proviamo a cancellare di nuovo lo stesso record nella cache, viene restituito un errore, perché il record non è presente</h3>
+      <figure class="shot">
+        <img src="rc_images/iizlgczn.bmp" alt="Cache 1" width="1002" height="542" loading="lazy">
+      </figure>
+      <p>Allo stesso modo possiamo chiamare la BSFN in C per recuperare i record sequenziali dalla cache e distruggere la cache.</p>
+    </section>
+
+    <section id="jdb1-it" aria-labelledby="h-jdb1-it">
+      <h2 id="h-jdb1-it">Concetti di cache in E1 – JDB Cache – Parte 1</h2>
+      <p>Negli articoli precedenti abbiamo condiviso i concetti della cache di JDE e la sua creazione. JDE ha due tipi di cache; quello che abbiamo spiegato nei post recenti è noto come <strong>User Cache</strong> o <strong>JDECACHE</strong>.</p>
+      <p>Questo articolo parla del secondo tipo di cache che JDE offre ai suoi utenti, chiamato <strong>JDB F98613/ DB Cache</strong>.</p>
+      <p>Come sappiamo, memorizzare i dati del database nella memoria del programma invece di recuperarli dal database è noto come <strong>caching</strong>. Questo aiuta a eliminare l’overhead del database.</p>
+      <p>La JDB Cache non è una memoria condivisa a cui accedono tutti i processi, ma memoria heap locale di ciascun processo. Ogni processo ha la sua <strong>propria copia</strong> della DB cache.</p>
+      <p>La JDB cache è una funzionalità di <strong>caching automatico delle tabelle</strong> di EnterpriseOne.</p>
+      <p>Quando il processo termina, anche la JDB cache <strong>se ne va</strong> con il processo, nel cestino (bit bucket).</p>
+      <p>La JDB Cache si può implementare tramite <strong>codice C in Business Function o Event Rules</strong> di JDE.</p>
+      <p>Non c’è <strong>replica né sincronizzazione</strong> tra le istanze della JDB cache.</p>
+      <p>Implementare la JDB cache può aiutare a <strong>migliorare le prestazioni</strong> del processo, purché lo si faccia dopo un’analisi completa.</p>
+      <p>La JDB cache è memoria heap locale del processo ed è limitata a un <strong>totale di 2GB</strong> nei sistemi operativi a 32 bit.</p>
+      <p>Nel prossimo articolo vedremo come possiamo <strong>implementare</strong> la JDB Cache in EnterpriseOne e quali sono le <strong>condizioni</strong> per usarla.</p>
+      <p>Riferimento:</p>
+      <ul>
+        <li>JDB cache in EnterpriseOne</li>
+        <li>JDEdwards EnterpriseOne Applications Task Force</li>
+      </ul>
+    </section>
+
+    <section id="jdb2-it" aria-labelledby="h-jdb2-it">
+      <h2 id="h-jdb2-it">Concetti di cache in E1 – JDB Cache – Parte 2</h2>
+      <p>Nell’ultimo articolo (parte 1) abbiamo condiviso il concetto della JDB cache e le sue caratteristiche. In questo articolo vedremo come implementare la JDB cache e usarla in modo efficiente di fronte ai nostri problemi di prestazioni.</p>
+      <h3>Come funziona</h3>
+      <p>Quando una tabella è configurata per far parte della JDB cache, una volta che un record viene recuperato dalla tabella, viene memorizzato anche nella cache, e le Select successive dello stesso record vengono recuperate dalla cache invece che dal database.</p>
+      <h3>Regole di base</h3>
+      <ol>
+        <li>Deve esserci una voce in F98613, che è l’elenco delle tabelle in cache, per la tabella.</li>
+        <li>Si deve accedere alla tabella usando la chiave primaria completa.</li>
+        <li>Si deve accedere alla tabella tramite l’API ‘JDB_FetchKeyed’ in una Business Function C o usando l’operazione di I/O di tabella ‘Fetch Single’ nelle event rules di JDE.</li>
+        <li>API come JDB_SetSelection o JDB_SetSequencing non devono essere chiamate quando si usa la JDB cache.</li>
+        <li>Non c’è sincronizzazione / replica tra i processi.</li>
+      </ol>
+      <figure class="shot">
+        <img src="rc_images/3dvb5c97.bmp" alt="F98613" width="768" height="289" loading="lazy">
+      </figure>
+      <h3>Funziona nel modo seguente:</h3>
+      <figure>
+        <img src="rc_images/JDBCacheFluxo-it.svg" alt="Flusso di attività: la tabella è configurata in F98613? Se no, JDB_addTableToDBCache() ha aggiunto la tabella? Se no, recupera dalla tabella. È usata la chiave primaria completa? Se no, recupera dalla tabella. Il record è già nella cache? Sì: cache HIT, recupera dalla cache, nessuna operazione sul database. No: cache MISS, recupera dalla tabella e memorizza nella cache." width="1000" height="1080" loading="lazy">
+      </figure>
+      <h3>Limiti</h3>
+      <ol>
+        <li>Le tabelle devono essere statiche.</li>
+        <li>Gli stessi record devono essere recuperati ripetutamente.</li>
+        <li>Mettere in cache tabelle dinamiche farà andare in errore le applicazioni.</li>
+        <li>Le query che restituiscono zero righe non vengono messe in cache.</li>
+        <li>Non è consigliato mettere in cache tabelle con milioni di record.</li>
+      </ol>
+      <h3>Vantaggi</h3>
+      <ol>
+        <li>Una funzionalità di caching automatico delle tabelle di EnterpriseOne.</li>
+        <li>Adatta a tabelle che restano costanti e statiche.</li>
+        <li>Può aiutare ad aumentare le prestazioni del processo.</li>
+        <li>Le istruzioni Select ridondanti sulla stessa chiave primaria si possono eliminare usando la JDB cache.</li>
+      </ol>
+      <p>Riferimento:</p>
+      <ul>
+        <li>JDB cache in EnterpriseOne</li>
+        <li>JDEdwards EnterpriseOne Applications Task Force</li>
+      </ul>
+      <a class="back" href="#top">↑ Torna su</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span>Giovani Perotto Mesquita · Porto Alegre, RS</span>
+    <span><a href="projects.html" data-projects data-foot="0">Projetos</a> · <a href="resume.html" data-resume data-foot="1">Currículo</a> · <a href="contact.html" data-contact data-foot="2">Contato</a></span>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('.lang [role="tab"]'));
+    var titles = {"pt": "Cache no JD Edwards · Giovani Perotto Mesquita", "en": "Caching in JD Edwards · Giovani Perotto Mesquita", "it": "La cache in JD Edwards · Giovani Perotto Mesquita"};
+    var foots = {"pt": ["Projetos", "Currículo", "Contato"], "en": ["Projects", "Resume", "Contact"], "it": ["Progetti", "Curriculum", "Contatti"]};
+    var langs = { pt: 'pt-BR', en: 'en', it: 'it' };
+    var bar = document.querySelector('.progress');
+    var article = document.querySelector('[role="tabpanel"]:not([hidden]) article');
+
+    function show(id, focus) {
+      tabs.forEach(function (t) {
+        var on = t.getAttribute('aria-controls') === id;
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+        if (on && focus) t.focus();
+      });
+      document.documentElement.lang = langs[id];
+      document.title = titles[id];
+      var suffix = id === 'pt' ? '' : '#' + id;
+      [['data-home', 'index.html'], ['data-about', 'about.html'], ['data-resume', 'resume.html'], ['data-projects', 'projects.html'], ['data-contact', 'contact.html']].forEach(function (p) {
+        document.querySelectorAll('[' + p[0] + ']').forEach(function (a) { a.href = p[1] + suffix; });
+      });
+      document.querySelectorAll('[data-foot]').forEach(function (a) { a.textContent = foots[id][+a.getAttribute('data-foot')]; });
+      article = document.querySelector('#' + id + ' article');
+      if (history.replaceState) history.replaceState(null, '', id === 'pt' ? location.pathname : '#' + id);
+      progress();
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () { show(t.getAttribute('aria-controls')); });
+      t.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (d) { e.preventDefault(); show(tabs[(i + d + tabs.length) % tabs.length].getAttribute('aria-controls'), true); }
+      });
+    });
+
+    // barra de progresso de leitura
+    function progress() {
+      if (!article) return;
+      var r = article.getBoundingClientRect();
+      var total = r.height - window.innerHeight;
+      var p = total > 0 ? Math.min(Math.max(-r.top / total, 0), 1) : 1;
+      bar.style.width = (p * 100) + '%';
+    }
+    window.addEventListener('scroll', progress, { passive: true });
+    window.addEventListener('resize', progress);
+
+    // destaca a seção atual no índice
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          var panel = e.target.closest('[role="tabpanel"]');
+          panel.querySelectorAll('.toc a').forEach(function (a) {
+            if (a.getAttribute('href') === '#' + e.target.id) a.setAttribute('aria-current', 'true');
+            else a.removeAttribute('aria-current');
+          });
+        });
+      }, { rootMargin: '-20% 0px -70% 0px' });
+      document.querySelectorAll('article section[id]').forEach(function (s) { io.observe(s); });
+    }
+
+    var h = (location.hash || '').replace('#', '');
+    var m = h.match(/^(?:.*-)?(en|it)$/);
+    if (m) {
+      show(m[1]);
+      if (h !== m[1]) { var el = document.getElementById(h); if (el) el.scrollIntoView(); if (history.replaceState) history.replaceState(null, '', '#' + h); }
+    } else progress();
+  })();
+</script>
+</body>
+</html>
