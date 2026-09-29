@@ -1,0 +1,2041 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TheBrain: um cérebro digital para os seus dados · Giovani Perotto Mesquita</title>
+<meta name="description" content="Tutorial de TheBrain: o que é, como surgiu, como instalar localmente (aplicativo, Docker e Kubernetes) ou na nuvem, primeiros passos e um banco de dados para classificar peças com a API REST. Disponível em português, inglês e italiano.">
+<meta name="author" content="Giovani Perotto Mesquita">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Paleta alegre: roxo e magenta vibrantes, amarelo-girassol, verde-água e coral */
+    --bg: #FFF7EC;
+    --surface: #FFFFFF;
+    --ink: #2B1B3D;
+    --text: #3E3350;
+    --muted: #756986;
+    --line: #F1E2CF;
+    --accent: #0E8074;
+    --accent-soft: #E2F6F2;
+    --accent-strong: #5B2A86;
+    --navy: #5B2A86;
+    --navy-deep: #C2185B;
+    --on-navy: #FFFFFF;
+    --on-navy-muted: #FCE4F0;
+    --gold: #FFB703;
+    --gold-ink: #B35300;
+    --gold-soft: #FFF1C9;
+    --coral: #FF6B6B;
+    --sky: #3A86FF;
+    --mint: #2A9D8F;
+    --pink: #EF476F;
+    --sans: "Hanken Grotesk", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1A1328; --surface: #241A36; --ink: #F7F0FF; --text: #E2D8F0; --muted: #A898C0;
+      --line: #3A2D52; --accent: #5FD3C4; --accent-soft: #1D3A38; --accent-strong: #C9A7F5;
+      --navy: #3D1A5C; --navy-deep: #7A1240; --gold: #FFC94D; --gold-ink: #FFC94D; --gold-soft: #3A2E12;
+      --coral: #FF8A8A; --sky: #6FA8FF; --mint: #4CC3B3; --pink: #FF6F91;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 4px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 1.5rem; }
+
+  /* navegação */
+  .nav {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: saturate(160%) blur(10px); -webkit-backdrop-filter: saturate(160%) blur(10px);
+    border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px);
+  }
+  .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 58px; gap: 1rem; }
+  .brand { font-family: var(--serif); font-weight: 600; color: var(--accent-strong); text-decoration: none; font-size: 1.05rem; }
+  .nav ul { list-style: none; display: flex; gap: 1.4rem; margin: 0; padding: 0; }
+  .nav ul a { color: var(--muted); text-decoration: none; font-size: 0.93rem; font-weight: 500; }
+  .nav ul a:hover, .nav ul a[aria-current="page"] { color: var(--ink); }
+  .nav-right { display: flex; align-items: center; gap: 1rem; }
+  .lang { display: flex; gap: 0.2rem; }
+  .lang button { font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; color: var(--muted); background: none; padding: 0.2rem 0.45rem; border-radius: 6px; border: 1px solid transparent; }
+  .lang button:hover { color: var(--ink); }
+  .lang button[aria-selected="true"] { color: var(--accent-strong); border-color: var(--line); background: var(--surface); }
+  [hidden] { display: none !important; }
+  .progress { position: absolute; left: 0; bottom: -1px; height: 3px; width: 0; background: linear-gradient(90deg, var(--coral), var(--gold), var(--mint)); }
+
+  /* abertura */
+  .hero-band {
+    background:
+      radial-gradient(900px 420px at 85% -10%, rgba(255,255,255,.07), transparent 60%),
+      linear-gradient(160deg, var(--navy) 0%, var(--navy-deep) 100%);
+    border-top: 4px solid var(--gold); color: var(--on-navy);
+  }
+  .hero { padding: 3.5rem 0 3.5rem; max-width: 820px; }
+  .crumb { margin: 0 0 1.4rem; font-size: 0.92rem; }
+  .crumb a { color: var(--on-navy-muted); text-decoration: none; }
+  .crumb a:hover { color: var(--gold); }
+  .eyebrow { color: var(--gold); font-weight: 600; font-size: 1rem; margin: 0 0 0.7rem; }
+  h1 { font-family: var(--serif); font-weight: 600; color: var(--on-navy); font-size: clamp(2.3rem, 5.5vw, 3.8rem); line-height: 1.05; letter-spacing: -0.025em; margin: 0; }
+  .dek { font-family: var(--serif); font-style: italic; font-size: clamp(1.1rem, 2.2vw, 1.35rem); color: var(--on-navy-muted); margin: 1.1rem 0 1.6rem; max-width: 58ch; }
+  .byline { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; font-size: 0.92rem; color: var(--on-navy-muted); }
+  .byline strong { color: var(--on-navy); font-weight: 600; }
+  .byline .credit { margin-left: auto; font-style: italic; }
+
+  /* layout do artigo */
+  .layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 3rem; padding: 3rem 0 4rem; align-items: start; }
+  .toc { position: sticky; top: 82px; font-size: 0.92rem; max-height: calc(100vh - 100px); overflow-y: auto; }
+  .toc h2 { font-family: var(--sans); font-size: 0.85rem; font-weight: 600; color: var(--muted); margin: 0 0 0.7rem; border: 0; padding: 0; }
+  .toc ol { list-style: none; margin: 0; padding: 0; counter-reset: toc; border-left: 2px solid var(--line); }
+  .toc li { counter-increment: toc; }
+  .toc a { display: block; padding: 0.3rem 0 0.3rem 1rem; margin-left: -2px; border-left: 2px solid transparent; color: var(--muted); text-decoration: none; line-height: 1.35; }
+  .toc a::before { content: counter(toc) ". "; color: var(--gold-ink); font-weight: 600; }
+  .toc a:hover { color: var(--ink); }
+  .toc a[aria-current="true"] { color: var(--accent-strong); border-left-color: var(--gold); font-weight: 600; }
+
+  article { background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: var(--radius); padding: 3rem clamp(1.25rem, 4vw, 3.5rem); min-width: 0; }
+  article section + section { margin-top: 3.2rem; }
+  article h2 { font-family: var(--serif); font-weight: 600; color: var(--ink); font-size: clamp(1.5rem, 2.8vw, 1.9rem); letter-spacing: -0.015em; line-height: 1.2; margin: 0 0 1.1rem; padding-left: 0.9rem; border-left: 3px solid var(--gold); }
+  article h3 { font-family: var(--sans); font-size: 1.1rem; font-weight: 600; color: var(--ink); margin: 2rem 0 0.8rem; }
+  article p, article li { font-family: var(--serif); font-size: 1.12rem; line-height: 1.7; color: var(--text); }
+  article p { margin: 0 0 1.1rem; max-width: 68ch; }
+  article ul, article ol { margin: 0 0 1.1rem; padding-left: 1.4rem; max-width: 68ch; }
+  article li { margin-bottom: 0.3rem; }
+  article strong { color: var(--ink); }
+  sup a { font-family: var(--sans); font-size: 0.72rem; font-weight: 700; text-decoration: none; padding: 0 0.15em; }
+
+  figure { margin: 2rem 0; }
+  figure img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: #FFF7EC; }
+  figcaption { margin-top: 0.6rem; font-size: 0.9rem; color: var(--muted); text-align: center; font-family: var(--sans); line-height: 1.5; }
+
+  blockquote { margin: 1.5rem 0; padding: 1.2rem 1.5rem; background: var(--accent-soft); border-left: 3px solid var(--gold); border-radius: 0 10px 10px 0; }
+  blockquote p { font-size: 1.05rem; margin: 0 0 0.8rem; }
+  blockquote p:last-child { margin-bottom: 0; }
+  blockquote.pull p { font-size: clamp(1.15rem, 2.3vw, 1.35rem); font-style: italic; line-height: 1.45; color: var(--ink); }
+  blockquote cite { font-family: var(--sans); font-size: 0.88rem; font-style: normal; color: var(--muted); }
+
+  /* tabelas */
+  .table-wrap { overflow-x: auto; margin: 1.5rem 0; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-family: var(--sans); font-size: 0.95rem; }
+  th, td { text-align: left; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.5; }
+  thead th { background: var(--gold-soft); color: var(--ink); font-weight: 600; }
+  tbody th { color: var(--ink); font-weight: 600; }
+  tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
+  td code, th code { font-size: 0.9em; }
+
+  /* mitos */
+  .myths { list-style: none; padding: 0; margin: 1.5rem 0; max-width: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
+  .myths li { margin: 0; padding: 1rem 1.2rem; border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: 10px; }
+  .myths li:nth-child(4n+2) { border-top-color: var(--sky); }
+  .myths li:nth-child(4n+3) { border-top-color: var(--mint); }
+  .myths li:nth-child(4n+4) { border-top-color: var(--gold); }
+  .myths h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+  .myths p { margin: 0; font-size: 1rem; line-height: 1.6; }
+
+  /* para fixar */
+  .recap { margin: 1.8rem 0 0; padding: 1.1rem 1.4rem; background: var(--gold-soft); border-left: 4px solid var(--mint); border-radius: 0 10px 10px 0; }
+  .recap h3 { margin: 0 0 0.5rem; font-size: 0.85rem; letter-spacing: .05em; text-transform: uppercase; color: var(--gold-ink); }
+  .recap ul { margin: 0; padding-left: 1.2rem; }
+  .recap li { font-family: var(--sans); font-size: 0.98rem; line-height: 1.55; margin-bottom: 0.25rem; }
+
+  /* revisão rápida */
+  .quiz { display: grid; gap: 0.7rem; margin: 1.5rem 0; }
+  .quiz details { border: 1px solid var(--line); border-left: 4px solid var(--sky); border-radius: 0 10px 10px 0; padding: 0.8rem 1.1rem; }
+  .quiz details:nth-child(3n+2) { border-left-color: var(--pink); }
+  .quiz details:nth-child(3n+3) { border-left-color: var(--mint); }
+  .quiz summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); line-height: 1.45; }
+  .quiz details[open] summary { margin-bottom: 0.5rem; }
+  .quiz p { margin: 0; font-size: 1.02rem; }
+
+  .refs { font-family: var(--sans); padding-left: 1.4rem; margin: 0; }
+  .refs li { font-family: var(--sans); font-size: 0.92rem; line-height: 1.55; margin-bottom: 0.7rem; word-break: break-word; }
+  .refs li:target { background: var(--gold-soft); border-radius: 6px; }
+
+  .back { display: inline-block; margin-top: 1rem; font-family: var(--sans); font-size: 0.85rem; text-decoration: none; }
+
+  footer { background: var(--navy-deep); color: var(--on-navy-muted); border-top: 3px solid var(--gold); padding: 1.5rem 0 calc(1.5rem + env(safe-area-inset-bottom, 0px)); font-size: 0.88rem; }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1.5rem; }
+  footer a { color: var(--on-navy); text-decoration: none; }
+  footer a:hover { color: var(--gold); }
+
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+    .toc { position: static; max-height: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.2rem 1.4rem; }
+  }
+  @media (max-width: 760px) {
+    .myths { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .nav ul { display: none; }
+    .hero { padding: 2.5rem 0; }
+    .wrap { padding: 0 1rem; }
+    article p, article li { font-size: 1.05rem; }
+    th, td { padding: 0.6rem 0.7rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  @media print {
+    .nav, .toc, footer, .back, .crumb { display: none !important; }
+    body { background: #fff; }
+    .hero-band { background: none; color: #111; border: 0; }
+    .hero-band h1 { color: #5B2A86; }
+    .dek, .byline, .byline strong { color: #333; }
+    .layout { display: block; padding: 0; }
+    article { border: 0; padding: 0; }
+    .table-wrap { overflow: visible; }
+    figure, blockquote, .myths li, .recap, .quiz details, tr { break-inside: avoid; }
+  }
+
+  /* blocos de código (Gherkin) */
+  pre.code { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: #2B1B3D; color: #F7F0FF; border-radius: 10px; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.92rem; line-height: 1.6; tab-size: 2; }
+  pre.code code { font-family: inherit; white-space: pre; }
+  pre.code .k { color: #FFB703; font-weight: 700; }
+  pre.code .s { color: #5FD3C4; font-weight: 700; }
+  pre.code .c { color: #A898C0; }
+  pre.code .p { color: #C9A7F5; }
+  article code { font-family: Consolas, "Courier New", monospace; font-size: 0.92em; }
+  article :not(pre) > code { background: var(--accent-soft); color: var(--ink); padding: 0.05em 0.35em; border-radius: 4px; }
+
+  /* fórmulas */
+  pre.formula { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.95rem; line-height: 1.5; }
+
+  /* glossário */
+  dl.glossary { margin: 1.2rem 0; display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  dl.glossary dt, dl.glossary dd { margin: 0; padding: 0.65rem 0.9rem; border-bottom: 1px solid var(--line); font-family: var(--sans); font-size: 0.95rem; line-height: 1.5; }
+  dl.glossary dt { font-weight: 600; color: var(--ink); background: color-mix(in srgb, var(--gold-soft) 60%, var(--surface)); }
+  dl.glossary dd { color: var(--text); }
+  dl.glossary dt:nth-last-of-type(1), dl.glossary dd:last-of-type { border-bottom: 0; }
+  @media (max-width: 720px) { dl.glossary { grid-template-columns: 1fr; } dl.glossary dt { border-bottom: 0; padding-bottom: 0.2rem; } }
+
+  /* nota de atenção */
+  aside.note { margin: 1.2rem 0 1.5rem; padding: 0.8rem 1.1rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; }
+  aside.note p { margin: 0; }
+</style>
+</head>
+<body id="top">
+
+<nav class="nav" aria-label="Navegação do site">
+  <div class="wrap">
+    <a class="brand" href="index.html" data-home>Giovani Perotto Mesquita</a>
+    <div class="nav-right">
+      <ul>
+        <li><a href="index.html" data-home>Home</a></li>
+        <li><a href="about.html" data-about>About</a></li>
+        <li><a href="resume.html" data-resume>Resume</a></li>
+        <li><a href="projects.html" data-projects aria-current="page">Projects</a></li>
+        <li><a href="contact.html" data-contact>Contact</a></li>
+      </ul>
+      <div class="lang" role="tablist" aria-label="Idioma / Language / Lingua">
+        <button type="button" role="tab" id="tab-pt" aria-controls="pt" aria-selected="true" lang="pt-BR">PT</button>
+        <button type="button" role="tab" id="tab-en" aria-controls="en" aria-selected="false" lang="en" tabindex="-1">EN</button>
+        <button type="button" role="tab" id="tab-it" aria-controls="it" aria-selected="false" lang="it" tabindex="-1">IT</button>
+      </div>
+    </div>
+  </div>
+  <div class="progress" aria-hidden="true"></div>
+</nav>
+
+<!-- ===================== PT ===================== -->
+<div id="pt" role="tabpanel" aria-labelledby="tab-pt" lang="pt-BR">
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projetos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>TheBrain: um cérebro digital para os seus dados</h1>
+      <p class="dek">O que é, de onde veio, como instalar no computador, no Docker, no Kubernetes ou na nuvem, e como montar, passo a passo, uma base para classificar peças.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado em <time datetime="2026-09-28">28/09/2026</time></span>
+        <span class="credit">Revisado e formatado usando Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-pt">
+    <h2 id="toc-pt">Índice</h2>
+    <ol>
+      <li><a href="#oque-pt">O que é?</a></li>
+      <li><a href="#historia-pt">Como surgiu?</a></li>
+      <li><a href="#instalar-pt">Como instalar?</a></li>
+      <li><a href="#docker-pt">Local: Docker</a></li>
+      <li><a href="#kubernetes-pt">Local: Kubernetes</a></li>
+      <li><a href="#remoto-pt">Remoto</a></li>
+      <li><a href="#passos-pt">Os primeiros passos</a></li>
+      <li><a href="#exemplo-pt">Montando um exemplo</a></li>
+      <li><a href="#pecas-pt">Banco de dados de peças</a></li>
+      <li><a href="#conclusoes-pt">Conclusões</a></li>
+      <li><a href="#referencias-pt">Referências</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="oque-pt" aria-labelledby="h-oque-pt">
+      <h2 id="h-oque-pt">O que é?</h2>
+      <p>O <strong>TheBrain</strong> é um software de mapas mentais e de gestão de conhecimento pessoal da TheBrain Technologies, de Los Angeles. Em vez de guardar informações em pastas, ele guarda <strong>pensamentos</strong> (<em>thoughts</em>) e as <strong>ligações</strong> entre eles, e mostra tudo numa interface gráfica dinâmica que mistura hierarquia e rede. <sup><a href="#ref-1-pt">[1]</a></sup> <sup><a href="#ref-2-pt">[2]</a></sup></p>
+      <p>Cada pensamento pode ter notas, arquivos, links da web e eventos de calendário. Quando você clica num pensamento, ele vai para o centro da tela e os vizinhos se reorganizam em volta. Esse arranjo se chama <strong>Plex</strong>: <sup><a href="#ref-2-pt">[2]</a></sup> <sup><a href="#ref-14-pt">[14]</a></sup></p>
+      <figure>
+        <img src="rc_images/TheBrainPlex.svg" alt="O pensamento ativo Parafusos está no centro. Acima, o pai Fixadores. Abaixo, os filhos Parafuso M8x30, Parafuso M6x20 e Parafuso M10x40. À esquerda, ligados por salto, ISO 4017 e Metalúrgica Alfa. À direita, os irmãos Porcas e Arruelas, que têm o mesmo pai." width="1000" height="560" loading="lazy">
+        <figcaption>Cada direção tem um significado: acima estão os pais, abaixo os filhos, ao lado os saltos e à direita os irmãos.</figcaption>
+      </figure>
+      <p>A diferença para um mapa mental comum é que um pensamento pode ter <strong>vários pais</strong>. “Parafuso M8x30” pode estar, ao mesmo tempo, em “Parafusos” e em “Kit de montagem da bomba”, sem cópia. Na prática, é um grafo de conhecimento que você desenha à mão ou por API. <sup><a href="#ref-2-pt">[2]</a></sup> <sup><a href="#ref-12-pt">[12]</a></sup></p>
+      <aside class="note">
+        <p><strong>Para quem vem de banco de dados:</strong> pense no TheBrain como um banco de grafos com interface visual. Os pensamentos são os nós, as ligações são as arestas e os tipos fazem o papel dos rótulos (<em>labels</em>). Ele não substitui um banco relacional, porque não tem SQL, transações nem restrições de integridade. Mas é muito bom para mapear relações que não cabem bem em tabelas.</p>
+      </aside>
+      <p>O vocabulário que vamos usar: <sup><a href="#ref-12-pt">[12]</a></sup> <sup><a href="#ref-14-pt">[14]</a></sup></p>
+      <dl class="glossary">
+        <dt>Cérebro (<em>brain</em>)</dt><dd>A base com todos os pensamentos. Todo cérebro tem um pensamento inicial (<em>home</em>).</dd>
+        <dt>Pensamento (<em>thought</em>)</dt><dd>O nó do grafo: tem nome e, opcionalmente, rótulo, tipo, tags, nota e anexos.</dd>
+        <dt>Ligação (<em>link</em>)</dt><dd>A relação entre dois pensamentos. Pode ter nome, cor e tipo.</dd>
+        <dt>Pai e filho</dt><dd>Ligação hierárquica. Um filho pode ter vários pais.</dd>
+        <dt>Salto (<em>jump</em>)</dt><dd>Ligação lateral, sem hierarquia: “está relacionado a”.</dd>
+        <dt>Irmãos (<em>siblings</em>)</dt><dd>Pensamentos com o mesmo pai. Não são uma ligação própria.</dd>
+        <dt>Tipo (<em>type</em>)</dt><dd>A classificação principal: o que o pensamento é. Cada pensamento tem no máximo um tipo.</dd>
+        <dt>Tag</dt><dd>Um marcador transversal, como “Crítica”. Um pensamento pode ter várias.</dd>
+        <dt>Plex</dt><dd>A visão em que o pensamento ativo fica no centro, cercado pelos vizinhos.</dd>
+      </dl>
+    </section>
+
+    <section id="historia-pt" aria-labelledby="h-historia-pt">
+      <h2 id="h-historia-pt">Como surgiu?</h2>
+      <p>A ideia nasceu em 1993, com Harlan Hugh, que sentia a necessidade de focar nas <em>conexões</em> entre as informações, e não nas separações. Em 1996 ele fundou a Natrificial Software Technologies, na Califórnia. A empresa depois passou a se chamar The Brain e, mais tarde, TheBrain Technologies, com sede em Los Angeles e Hugh ainda como CEO. <sup><a href="#ref-1-pt">[1]</a></sup> <sup><a href="#ref-4-pt">[4]</a></sup></p>
+      <blockquote class="pull">
+        <p>“A sua tela não deveria parecer um monte de botões bonitos. Deveria ser uma representação dinâmica, uma experiência, de tudo o que é importante para você.”</p>
+        <p><cite>Harlan Hugh, à revista Feed, em 1999 <sup><a href="#ref-1-pt">[1]</a></sup></cite></p>
+      </blockquote>
+      <p>Por muitos anos, o produto de uso pessoal se chamou <strong>PersonalBrain</strong>. A empresa também vendeu versões corporativas, como o TeamBrain e o BrainEKP, premiado em 2008. Com a versão 8, anunciada em 20 de novembro de 2013, o nome passou a ser só <strong>TheBrain</strong>, e a sincronização entre máquinas entrou num plano de serviço anual. <sup><a href="#ref-2-pt">[2]</a></sup> <sup><a href="#ref-3-pt">[3]</a></sup> <sup><a href="#ref-5-pt">[5]</a></sup></p>
+      <p>Em novembro de 2023 chegou a <strong>API REST</strong>, que permite ler e gravar pensamentos por programa. Em 2026, o <strong>TheBrain 15</strong> trouxe a IA Cerebro, novas visões (cartões, mapa mental e árvore) e o mesmo código na web, no Windows, no macOS, no iPhone/iPad e no Android. Trouxe também uma API local, servida pelo próprio aplicativo. O aplicativo completo passou a ser gratuito, e os planos pagos ficaram com a sincronização, a IA e a colaboração. <sup><a href="#ref-6-pt">[6]</a></sup> <sup><a href="#ref-7-pt">[7]</a></sup> <sup><a href="#ref-8-pt">[8]</a></sup> <sup><a href="#ref-10-pt">[10]</a></sup> <sup><a href="#ref-11-pt">[11]</a></sup></p>
+      <figure>
+        <img src="rc_images/TheBrainLinhaTempo.svg" alt="Linha do tempo: 1993, Harlan Hugh concebe a ideia de focar nas conexões entre as informações; 1996, fundação da Natrificial, que depois se tornou TheBrain Technologies; 2013, TheBrain 8 adota o nome TheBrain no lugar de PersonalBrain; 2023, lançamento da API REST; 2026, TheBrain 15, com IA Cerebro, cinco plataformas com o mesmo código, aplicativo gratuito e API local." width="1000" height="340" loading="lazy">
+        <figcaption>Três décadas separam a ideia de 1993 da versão 15, lançada em 2026.</figcaption>
+      </figure>
+    </section>
+
+    <section id="instalar-pt" aria-labelledby="h-instalar-pt">
+      <h2 id="h-instalar-pt">Como instalar?</h2>
+      <p>Há dois caminhos. No <strong>local</strong>, os cérebros ficam na sua máquina ou no seu cluster. No <strong>remoto</strong>, ficam na nuvem da TheBrain. Os dois se combinam: o desktop pode sincronizar com a nuvem, e a API funciona dos dois lados.</p>
+      <figure>
+        <img src="rc_images/TheBrainInstalacao.svg" alt="Mapa das opções de instalação. Local: aplicativo nativo para Windows, macOS e Linux; Docker, com o desktop acessível pelo navegador e um importador em contêiner; Kubernetes, com Deployment, volume persistente, Service e CronJob. Remoto: cliente web em app.thebrain.com; sincronização na nuvem, em plano pago; e API REST em api.bra.in." width="1000" height="480" loading="lazy">
+        <figcaption>As opções de instalação. Só o aplicativo nativo e a nuvem são oficiais; Docker e Kubernetes são montagens próprias.</figcaption>
+      </figure>
+      <h3>Local: o aplicativo nativo</h3>
+      <p>É o caminho oficial e o mais simples. Em <a href="https://www.thebrain.com/download" rel="noopener">thebrain.com/download</a> há instaladores para Windows (<code>.exe</code>, <code>.msi</code> ou <code>.zip</code>, a partir do Windows 10) e links para Mac, Linux e celular. Não é preciso conta nem cartão de crédito. <sup><a href="#ref-11-pt">[11]</a></sup></p>
+      <ol>
+        <li>Baixe o instalador da sua plataforma.</li>
+        <li>Instale e abra o TheBrain.</li>
+        <li>Crie um cérebro. Ele nasce com um pensamento inicial.</li>
+        <li>Se for usar a API local, abra <strong>Configurações › Usuário › API local</strong>. Lá ficam o endereço e a documentação. É preciso ter a versão 15.0.534 ou posterior. <sup><a href="#ref-10-pt">[10]</a></sup></li>
+      </ol>
+      <aside class="note">
+        <p><strong>Atenção ao Linux:</strong> o anúncio de abril de 2026 sobre a paridade entre plataformas cita cinco (web, Windows, macOS, iPhone/iPad e Android), mas a página de download também lista o Linux. Confira na página qual pacote Linux está disponível antes de planejar as opções com contêiner, que dependem dele. <sup><a href="#ref-8-pt">[8]</a></sup> <sup><a href="#ref-11-pt">[11]</a></sup></p>
+      </aside>
+    </section>
+
+    <section id="docker-pt" aria-labelledby="h-docker-pt">
+      <h2 id="h-docker-pt">Local: Docker</h2>
+      <p>A TheBrain não publica imagem Docker, e o TheBrain é um aplicativo de desktop, não um servidor. Mesmo assim, dá para conteinerizar duas coisas diferentes, e vale separar bem cada uma:</p>
+      <ul>
+        <li><strong>O próprio desktop</strong>, dentro de uma área de trabalho Linux acessível pelo navegador. Aqui uso a imagem <strong>webtop</strong>, da LinuxServer.io, que entrega um XFCE pelo KasmVNC na porta 3001, com HTTPS. <sup><a href="#ref-17-pt">[17]</a></sup></li>
+        <li><strong>A automação:</strong> um contêiner com um script que lê e grava no cérebro pela API. É a parte mais útil no dia a dia, e é a que usaremos no exemplo de peças.</li>
+      </ul>
+      <figure>
+        <img src="rc_images/TheBrainConteiner.svg" alt="À esquerda, o navegador do usuário acessa por HTTPS, na porta 3001, um contêiner webtop com KasmVNC e XFCE. Dentro dele rodam o TheBrain desktop e a sua API local. O contêiner guarda o aplicativo e os cérebros num volume /config. Um segundo contêiner, o importador em Python, lê o arquivo pecas.csv e grava pela API local ou pela API na nuvem, api.bra.in. Opcionalmente, o desktop sincroniza com a TheBrain Cloud. Tudo pode ser um Docker Compose ou um Pod do Kubernetes." width="1000" height="520" loading="lazy">
+        <figcaption>O desktop roda no contêiner webtop e guarda tudo em /config; o importador grava pela API local ou pela API na nuvem.</figcaption>
+      </figure>
+      <h3>O arquivo compose.yaml</h3>
+      <pre class="code"><code>services:
+  thebrain:
+    image: lscr.io/linuxserver/webtop:ubuntu-xfce
+    container_name: thebrain
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Sao_Paulo
+      - CUSTOM_USER=giovani
+      - PASSWORD=${WEBTOP_PASSWORD}
+    volumes:
+      - ./thebrain-config:/config
+    ports:
+      - "127.0.0.1:3001:3001"
+    shm_size: "1gb"
+    restart: unless-stopped
+
+  importador:
+    build: ./importador
+    profiles: ["ferramentas"]
+    environment:
+      - THEBRAIN_API_KEY
+      - THEBRAIN_BRAIN_ID
+      - THEBRAIN_API_URL=https://api.bra.in
+      - PECAS_CSV=/dados/pecas.csv
+    volumes:
+      - ./dados:/dados:ro</code></pre>
+      <ul>
+        <li><code>PUID</code> e <code>PGID</code> definem o dono dos arquivos em <code>./thebrain-config</code>; <code>TZ</code>, o fuso horário.</li>
+        <li><code>CUSTOM_USER</code> e <code>PASSWORD</code> ativam a autenticação básica. A senha vem de uma variável de ambiente, e não do arquivo.</li>
+        <li>A porta é publicada só em <code>127.0.0.1</code>. A documentação do webtop avisa que o terminal dele dá <code>sudo</code> sem senha e que ele não deve ir para a internet sem um proxy reverso com autenticação forte. <sup><a href="#ref-17-pt">[17]</a></sup></li>
+        <li><code>shm_size</code> aumenta a memória compartilhada, que o navegador interno usa.</li>
+        <li>O importador fica no perfil <code>ferramentas</code>: não sobe com o <code>up</code>, só quando é chamado. <sup><a href="#ref-18-pt">[18]</a></sup></li>
+      </ul>
+      <h3>Subindo e instalando o TheBrain</h3>
+      <p>O <code>read -rs</code> pede a senha sem mostrá-la e sem gravá-la no histórico do shell:</p>
+      <pre class="code"><code>read -rs WEBTOP_PASSWORD &amp;&amp; export WEBTOP_PASSWORD
+docker compose up -d thebrain</code></pre>
+      <p>Abra <code>https://localhost:3001</code>, aceite o certificado autoassinado e entre com o usuário e a senha. Na área de trabalho que aparece, baixe o pacote Linux em thebrain.com/download e instale-o.</p>
+      <p>Cuidado com a persistência: só <code>/config</code> sobrevive quando o contêiner é recriado. Se o pacote se extrai numa pasta, guarde a pasta dentro de <code>/config</code>. Se ele se instala no sistema, como um <code>.deb</code>, crie uma imagem derivada (o nome do arquivo abaixo é ilustrativo) e troque <code>image:</code> por <code>build:</code> no Compose:</p>
+      <pre class="code"><code>FROM lscr.io/linuxserver/webtop:ubuntu-xfce
+COPY thebrain-linux.deb /tmp/
+RUN apt-get update \
+ &amp;&amp; apt-get install -y /tmp/thebrain-linux.deb \
+ &amp;&amp; rm -rf /tmp/thebrain-linux.deb /var/lib/apt/lists/*</code></pre>
+      <h3>O importador</h3>
+      <p>O importador é o script da seção de peças, numa imagem Python enxuta:</p>
+      <pre class="code"><code>FROM python:3.12-slim
+WORKDIR /app
+RUN pip install --no-cache-dir requests
+COPY importa_pecas.py .
+CMD ["python", "importa_pecas.py"]</code></pre>
+      <pre class="code"><code>read -rs THEBRAIN_API_KEY &amp;&amp; export THEBRAIN_API_KEY
+export THEBRAIN_BRAIN_ID=00000000-0000-0000-0000-000000000000
+docker compose run --rm importador</code></pre>
+      <p>Ele fala com a API na nuvem (<code>api.bra.in</code>), que funciona com qualquer cérebro sincronizado. Para usar a API local, troque <code>THEBRAIN_API_URL</code> pelo endereço que aparece em Configurações › Usuário › API local. Se ela só aceitar conexões do próprio computador, rode o script dentro da área de trabalho do webtop. <sup><a href="#ref-10-pt">[10]</a></sup> <sup><a href="#ref-12-pt">[12]</a></sup></p>
+    </section>
+
+    <section id="kubernetes-pt" aria-labelledby="h-kubernetes-pt">
+      <h2 id="h-kubernetes-pt">Local: Kubernetes</h2>
+      <p>No Kubernetes, a ideia é a mesma, traduzida em objetos: um <strong>Deployment</strong> com o webtop, um <strong>PersistentVolumeClaim</strong> para <code>/config</code>, um <strong>Service</strong> interno e um <strong>CronJob</strong> que roda o importador todas as noites. A senha e a chave da API ficam em <strong>Secrets</strong>. <sup><a href="#ref-19-pt">[19]</a></sup> <sup><a href="#ref-20-pt">[20]</a></sup> <sup><a href="#ref-21-pt">[21]</a></sup> <sup><a href="#ref-22-pt">[22]</a></sup></p>
+      <pre class="code"><code>apiVersion: v1
+kind: Namespace
+metadata:
+  name: thebrain
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: webtop
+  namespace: thebrain
+type: Opaque
+stringData:
+  PASSWORD: "CHANGE-ME"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: thebrain-api
+  namespace: thebrain
+type: Opaque
+stringData:
+  THEBRAIN_API_KEY: "CHANGE-ME"
+  THEBRAIN_BRAIN_ID: "00000000-0000-0000-0000-000000000000"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: thebrain-config
+  namespace: thebrain
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: thebrain
+  namespace: thebrain
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: {app: thebrain}
+  template:
+    metadata:
+      labels: {app: thebrain}
+    spec:
+      containers:
+        - name: webtop
+          image: lscr.io/linuxserver/webtop:ubuntu-xfce
+          env:
+            - {name: PUID, value: "1000"}
+            - {name: PGID, value: "1000"}
+            - {name: TZ, value: America/Sao_Paulo}
+            - {name: CUSTOM_USER, value: giovani}
+            - name: PASSWORD
+              valueFrom:
+                secretKeyRef: {name: webtop, key: PASSWORD}
+          ports:
+            - containerPort: 3001
+          resources:
+            requests: {cpu: 500m, memory: 2Gi}
+            limits: {memory: 4Gi}
+          volumeMounts:
+            - {name: config, mountPath: /config}
+            - {name: shm, mountPath: /dev/shm}
+      volumes:
+        - name: config
+          persistentVolumeClaim: {claimName: thebrain-config}
+        - name: shm
+          emptyDir: {medium: Memory, sizeLimit: 1Gi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: thebrain
+  namespace: thebrain
+spec:
+  selector: {app: thebrain}
+  ports:
+    - {port: 3001, targetPort: 3001}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: importa-pecas
+  namespace: thebrain
+spec:
+  schedule: "0 2 * * *"
+  timeZone: America/Sao_Paulo
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: importador
+              image: registry.exemplo.com/importador-thebrain:1.0
+              envFrom:
+                - secretRef: {name: thebrain-api}
+              env:
+                - {name: PECAS_CSV, value: /dados/pecas.csv}
+              volumeMounts:
+                - {name: dados, mountPath: /dados, readOnly: true}
+          volumes:
+            - name: dados
+              configMap: {name: pecas-csv}</code></pre>
+      <p>Três escolhas importam:</p>
+      <ul>
+        <li><strong><code>replicas: 1</code> com <code>strategy: Recreate</code>.</strong> O cérebro é um arquivo local do aplicativo, e não um banco com vários escritores. Duas réplicas no mesmo volume corromperiam os dados; o <code>Recreate</code> garante que o pod antigo pare antes de o novo subir. <sup><a href="#ref-19-pt">[19]</a></sup></li>
+        <li><strong><code>/dev/shm</code> como <code>emptyDir</code> em memória</strong> faz o papel do <code>shm_size</code> do Compose.</li>
+        <li><strong>O Service é <code>ClusterIP</code>:</strong> nada fica exposto. O acesso é por <code>port-forward</code> ou, se precisar, por um Ingress com autenticação. <sup><a href="#ref-23-pt">[23]</a></sup></li>
+      </ul>
+      <p>Para aplicar, carregar o CSV, abrir a área de trabalho e disparar uma importação sem esperar as 2h da manhã:</p>
+      <pre class="code"><code>kubectl apply -f thebrain.yaml
+kubectl -n thebrain create configmap pecas-csv --from-file=pecas.csv
+kubectl -n thebrain port-forward svc/thebrain 3001:3001
+kubectl -n thebrain create job importa-agora --from=cronjob/importa-pecas</code></pre>
+      <aside class="note">
+        <p><strong>Segredos:</strong> o exemplo usa <code>stringData</code> por clareza. Em produção, crie os Secrets com <code>kubectl create secret</code> ou com uma ferramenta como Sealed Secrets ou External Secrets, e não os coloque no Git. A imagem <code>registry.exemplo.com/importador-thebrain</code> é o Dockerfile da seção anterior, publicado no seu registro. <sup><a href="#ref-22-pt">[22]</a></sup></p>
+      </aside>
+    </section>
+
+    <section id="remoto-pt" aria-labelledby="h-remoto-pt">
+      <h2 id="h-remoto-pt">Remoto</h2>
+      <p>Sem instalar nada, entre em <a href="https://app.thebrain.com/login" rel="noopener">app.thebrain.com</a> e use o cliente web. Desde o TheBrain 15, ele tem o mesmo código e os mesmos recursos do desktop. Para ter o mesmo cérebro no computador, na web e no celular, é preciso um plano pago, que inclui a sincronização na nuvem. <sup><a href="#ref-9-pt">[9]</a></sup> <sup><a href="#ref-11-pt">[11]</a></sup></p>
+      <p>Para programar contra a nuvem:</p>
+      <ol>
+        <li>Gere uma chave em <a href="https://app.thebrain.com/api-keys" rel="noopener">app.thebrain.com/api-keys</a>.</li>
+        <li>Envie-a no cabeçalho <code>Authorization: Bearer &lt;chave&gt;</code>.</li>
+        <li>Consulte a documentação interativa em <a href="https://api.bra.in" rel="noopener">api.bra.in</a>: o botão <em>Authorize</em> recebe a chave, e o <em>Try it out</em> executa cada chamada. <sup><a href="#ref-12-pt">[12]</a></sup></li>
+      </ol>
+      <p>O primeiro teste é listar os seus cérebros:</p>
+      <pre class="code"><code>curl -s -H "Authorization: Bearer $THEBRAIN_API_KEY" \
+  https://api.bra.in/brains</code></pre>
+      <p>A resposta traz, para cada cérebro, o <code>id</code>, o <code>name</code> e o <code>homeThoughtId</code>, que é o pensamento inicial. Guarde o <code>id</code>: ele vai em todas as outras chamadas. <sup><a href="#ref-12-pt">[12]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col"></th><th scope="col">Local</th><th scope="col">Remoto</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Onde ficam os dados</th><td>No seu disco, volume ou PVC</td><td>Na nuvem da TheBrain</td></tr>
+            <tr><th scope="row">Custo</th><td>Aplicativo gratuito</td><td>Web gratuita; sincronização, IA e colaboração em planos pagos</td></tr>
+            <tr><th scope="row">Acesso</th><td>Uma máquina (ou o navegador, com webtop)</td><td>Qualquer navegador e celular</td></tr>
+            <tr><th scope="row">API</th><td>API local, com o desktop aberto</td><td><code>api.bra.in</code>, com chave</td></tr>
+            <tr><th scope="row">Melhor para</th><td>Dados sensíveis e uso individual</td><td>Equipes e vários dispositivos</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="passos-pt" aria-labelledby="h-passos-pt">
+      <h2 id="h-passos-pt">Os primeiros passos</h2>
+      <p><strong>1. Crie um cérebro.</strong> Todo cérebro nasce com um pensamento inicial, que é a raiz da navegação. Na API, ele aparece como <code>homeThoughtId</code>. <sup><a href="#ref-12-pt">[12]</a></sup></p>
+      <p><strong>2. Crie pensamentos pelos portões.</strong> Cada pensamento tem pequenos círculos nas bordas, os portões. Cada um cria um tipo de ligação: <sup><a href="#ref-14-pt">[14]</a></sup></p>
+      <figure>
+        <img src="rc_images/TheBrainPortoes.svg" alt="Um pensamento chamado Parafusos com quatro pequenos círculos, os portões. O de cima cria um pai; o de baixo cria um filho; os das laterais criam saltos. Os irmãos não têm portão: aparecem quando dois pensamentos têm o mesmo pai." width="1000" height="390" loading="lazy">
+        <figcaption>Clicar num portão cria um pensamento novo; arrastá-lo até outro pensamento liga os dois.</figcaption>
+      </figure>
+      <p><strong>3. Navegue.</strong> Clique num pensamento para torná-lo ativo: o Plex se refaz em volta dele. Para ir direto a um pensamento distante, use a busca pelo nome. <sup><a href="#ref-14-pt">[14]</a></sup> <sup><a href="#ref-15-pt">[15]</a></sup></p>
+      <p><strong>4. Enriqueça.</strong> Escreva notas (a API as lê e grava em Markdown), anexe arquivos, pastas e endereços da web, e use o rótulo para um dado curto, como um código. <sup><a href="#ref-12-pt">[12]</a></sup> <sup><a href="#ref-14-pt">[14]</a></sup></p>
+      <p><strong>5. Classifique.</strong> O <strong>tipo</strong> diz o que o pensamento é (Peça, Material) e pode definir cor e ícone; cada pensamento tem no máximo um. As <strong>tags</strong> são marcas transversais (Crítica, Obsoleta), e um pensamento pode ter várias. <sup><a href="#ref-12-pt">[12]</a></sup> <sup><a href="#ref-14-pt">[14]</a></sup></p>
+      <p><strong>6. Fixe o que usa sempre.</strong> Os pensamentos fixados (<em>pins</em>) ficam sempre à mão, seja qual for o pensamento ativo. <sup><a href="#ref-12-pt">[12]</a></sup></p>
+      <p><strong>7. Troque de visão.</strong> Além do Plex, o TheBrain 15 mostra o mesmo cérebro como cartões, mapa mental ou árvore, sem perder nenhuma ligação. <sup><a href="#ref-7-pt">[7]</a></sup></p>
+      <div class="recap">
+        <h3>Para fixar</h3>
+        <ul>
+          <li>Hierarquia é pai e filho; relação lateral é salto; irmãos surgem sozinhos.</li>
+          <li>Tipo é “o que é” (um só); tag é “como está” (várias).</li>
+          <li>Um pensamento pode ter vários pais: não duplique, ligue.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="exemplo-pt" aria-labelledby="h-exemplo-pt">
+      <h2 id="h-exemplo-pt">Montando um exemplo</h2>
+      <p>O problema: uma fábrica tem milhares de peças. Cada uma pertence a uma família (fixadores, rolamentos, vedações), é feita de um material, vem de um ou mais fornecedores e segue uma norma. As perguntas do dia a dia cruzam essas dimensões: “que peças usam aço inox?”, “o que compramos da Metalúrgica Alfa?”, “quais fixadores seguem a ISO 4017?”.</p>
+      <p>Num banco relacional, isso vira tabelas e chaves estrangeiras. No TheBrain, vira pensamentos e ligações. A correspondência é esta:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Banco relacional</th><th scope="col">TheBrain</th></tr></thead>
+          <tbody>
+            <tr><td>Linha de uma tabela</td><td>Pensamento</td></tr>
+            <tr><td>Tabela (entidade)</td><td>Tipo: Peça, Material, Fornecedor, Norma</td></tr>
+            <tr><td>Chave estrangeira N:1 (peça → material)</td><td>Salto entre a peça e o material</td></tr>
+            <tr><td>Tabela associativa N:N (peça ↔ fornecedor)</td><td>Vários saltos, sem tabela intermediária</td></tr>
+            <tr><td>Hierarquia recursiva (<code>categoria_pai_id</code>)</td><td>Ligações pai → filho, nativas, com vários pais possíveis</td></tr>
+            <tr><td>Coluna descritiva (estoque, especificação)</td><td>Nota ou rótulo</td></tr>
+            <tr><td>Consulta com <code>JOIN</code></td><td>Clicar no pensamento e ver os vizinhos, ou <code>GET …/graph</code> na API</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>E o que o TheBrain <strong>não</strong> faz: garantir integridade (nada impede um salto errado), controlar transações ou responder a consultas agregadas, como a soma do estoque por material. Por isso, a regra do exemplo é clara: o ERP continua sendo o dono dos dados, e o TheBrain é a camada de navegação e de conhecimento, recarregada a partir de um arquivo exportado.</p>
+      <div class="recap">
+        <h3>Para fixar</h3>
+        <ul>
+          <li>Relações N:N e hierarquias com vários pais são naturais no TheBrain.</li>
+          <li>Totais, integridade e transações continuam no banco relacional.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="pecas-pt" aria-labelledby="h-pecas-pt">
+      <h2 id="h-pecas-pt">Criando um banco de dados para classificação de peças</h2>
+      <h3>1. O modelo</h3>
+      <figure>
+        <img src="rc_images/TheBrainPecas.svg" alt="No topo, Catálogo de peças. Abaixo, as categorias Fixadores, Transmissão e Vedação. Fixadores tem as subcategorias Parafusos, Porcas e Arruelas; Transmissão tem Rolamentos; Vedação tem Anéis O-ring. Sob Parafusos está a peça Parafuso sextavado M8x30, código PAR-M8X30, ligada por saltos ao material Aço carbono, ao fornecedor Metalúrgica Alfa e à norma ISO 4017." width="1000" height="620" loading="lazy">
+        <figcaption>A árvore classifica a peça; os saltos a ligam a material, fornecedor e norma.</figcaption>
+      </figure>
+      <p>São cinco tipos: Categoria, Peça, Material, Fornecedor e Norma. A árvore <em>Catálogo › categoria › subcategoria › peça</em> classifica, e os saltos ligam cada peça ao material, ao fornecedor e à norma. Materiais, fornecedores e normas também ficam como filhos de três pensamentos-índice (Materiais, Fornecedores e Normas), presos ao pensamento inicial, para que você possa navegar a partir deles.</p>
+      <h3>2. Uma peça feita à mão</h3>
+      <p>Antes de automatizar, monte uma peça no aplicativo para sentir o modelo:</p>
+      <ol>
+        <li>No pensamento inicial, crie o filho “Catálogo de peças”; sob ele, “Fixadores”; e, sob este, “Parafusos”.</li>
+        <li>Sob “Parafusos”, crie “Parafuso sextavado M8x30” e ponha <code>PAR-M8X30</code> no rótulo.</li>
+        <li>Crie o tipo Peça e aplique-o ao pensamento.</li>
+        <li>Pelo portão lateral, crie os saltos para “Aço carbono”, “Metalúrgica Alfa” e “ISO 4017”.</li>
+        <li>Escreva a ficha técnica na nota.</li>
+      </ol>
+      <h3>3. Os dados de entrada</h3>
+      <p>O resto vem de uma exportação do ERP, aqui simplificada num CSV separado por ponto e vírgula. Os fornecedores são fictícios; as normas são reais: ISO 4017 (parafusos sextavados), ISO 4032 (porcas sextavadas), ISO 7089 (arruelas lisas), ISO 15 (dimensões de rolamentos radiais) e ISO 3601-1 (anéis O-ring).</p>
+      <pre class="code"><code>codigo;descricao;categoria;subcategoria;material;fornecedor;norma;estoque
+PAR-M8X30;Parafuso sextavado M8x30;Fixadores;Parafusos;Aço carbono;Metalúrgica Alfa;ISO 4017;1200
+PAR-M6X20;Parafuso sextavado M6x20;Fixadores;Parafusos;Aço inox A2-70;Metalúrgica Alfa;ISO 4017;850
+POR-M8;Porca sextavada M8;Fixadores;Porcas;Aço carbono;Metalúrgica Alfa;ISO 4032;3000
+ARR-8;Arruela lisa 8 mm;Fixadores;Arruelas;Aço carbono;Metalúrgica Alfa;ISO 7089;5000
+ROL-6204;Rolamento de esferas 6204-2RS;Transmissão;Rolamentos;Aço cromo;Rolamentos Beta;ISO 15;80
+VED-OR20;Anel O-ring 20x2 NBR 70;Vedação;Anéis O-ring;Borracha NBR;Vedações Gama;ISO 3601-1;400</code></pre>
+      <h3>4. O script de importação</h3>
+      <p>O script usa só a biblioteca <code>requests</code> e seis endpoints da API. Ele é <strong>idempotente</strong>: antes de criar um pensamento, procura-o pelo nome exato; antes de ligar dois, verifica se a ligação já existe. Pode rodar todas as noites sem duplicar nada. <sup><a href="#ref-12-pt">[12]</a></sup> <sup><a href="#ref-13-pt">[13]</a></sup></p>
+      <pre class="code"><code>"""Carrega pecas.csv num cérebro do TheBrain usando a API REST."""
+import csv
+import os
+
+import requests
+
+API = os.environ.get("THEBRAIN_API_URL", "https://api.bra.in").rstrip("/")
+BRAIN = os.environ["THEBRAIN_BRAIN_ID"]
+CSV = os.environ.get("PECAS_CSV", "pecas.csv")
+S = requests.Session()
+S.headers["Authorization"] = "Bearer " + os.environ["THEBRAIN_API_KEY"]
+
+NORMAL, TIPO = 1, 2            <span class="c"># kind</span>
+FILHO, PAI, SALTO = 1, 2, 3    <span class="c"># relation</span>
+PRIVADO = 1                    <span class="c"># acType</span>
+ids = {}
+
+
+def vazio(r):
+    return not r.ok or r.text.strip() in ("", "null")
+
+
+def buscar(nome):
+    if nome not in ids:
+        r = S.get(f"{API}/thoughts/{BRAIN}", params={"nameExact": nome})
+        ids[nome] = None if vazio(r) else r.json()["id"]
+    return ids[nome]
+
+
+def ligar(a, b, relacao):
+    if not vazio(S.get(f"{API}/links/{BRAIN}/{a}/{b}")):
+        return  <span class="c"># já estão ligados</span>
+    corpo = {"thoughtIdA": a, "thoughtIdB": b, "relation": relacao}
+    S.post(f"{API}/links/{BRAIN}", json=corpo).raise_for_status()
+
+
+def garantir(nome, origem=None, relacao=FILHO, tipo=None, rotulo=None, kind=NORMAL):
+    tid = buscar(nome)
+    if tid:
+        if origem:
+            ligar(origem, tid, relacao)
+        return tid
+    corpo = {"name": nome, "kind": kind, "acType": PRIVADO}
+    if origem:
+        corpo.update(sourceThoughtId=origem, relation=relacao)
+    if tipo:
+        corpo["typeId"] = tipo
+    if rotulo:
+        corpo["label"] = rotulo
+    r = S.post(f"{API}/thoughts/{BRAIN}", json=corpo)
+    r.raise_for_status()
+    ids[nome] = r.json()["id"]
+    return ids[nome]
+
+
+home = S.get(f"{API}/brains/{BRAIN}").json()["homeThoughtId"]
+tipos = {t: garantir(t, kind=TIPO)
+         for t in ("Peça", "Categoria", "Material", "Fornecedor", "Norma")}
+catalogo = garantir("Catálogo de peças", home)
+hubs = {h: garantir(h, home) for h in ("Materiais", "Fornecedores", "Normas")}
+jumps = (("material", "Material", "Materiais"),
+         ("fornecedor", "Fornecedor", "Fornecedores"),
+         ("norma", "Norma", "Normas"))
+
+with open(CSV, encoding="utf-8") as f:
+    for p in csv.DictReader(f, delimiter=";"):
+        cat = garantir(p["categoria"], catalogo, tipo=tipos["Categoria"])
+        sub = garantir(p["subcategoria"], cat, tipo=tipos["Categoria"])
+        peca = garantir(p["descricao"], sub, tipo=tipos["Peça"], rotulo=p["codigo"])
+        for coluna, tipo, hub in jumps:
+            alvo = garantir(p[coluna], hubs[hub], tipo=tipos[tipo])
+            ligar(peca, alvo, SALTO)
+        nota = ("| Campo | Valor |\n|---|---|\n"
+                f"| Código | {p['codigo']} |\n"
+                f"| Estoque | {p['estoque']} un. |\n")
+        S.post(f"{API}/notes/{BRAIN}/{peca}/update",
+               json={"markdown": nota}).raise_for_status()
+        print("ok:", p["codigo"], "-", p["descricao"])</code></pre>
+      <p>Os números do script vêm da especificação da API: <sup><a href="#ref-12-pt">[12]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Campo</th><th scope="col">Valores</th></tr></thead>
+          <tbody>
+            <tr><td><code>kind</code></td><td>1 normal · 2 tipo · 3 evento · 4 tag · 5 sistema</td></tr>
+            <tr><td><code>relation</code></td><td>1 filho · 2 pai · 3 salto · 4 irmão</td></tr>
+            <tr><td><code>acType</code></td><td>0 público · 1 privado</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>5. Rodando</h3>
+      <pre class="code"><code>python -m pip install requests
+read -rs THEBRAIN_API_KEY &amp;&amp; export THEBRAIN_API_KEY
+export THEBRAIN_BRAIN_ID=00000000-0000-0000-0000-000000000000
+python importa_pecas.py</code></pre>
+      <pre class="code"><code>ok: PAR-M8X30 - Parafuso sextavado M8x30
+ok: PAR-M6X20 - Parafuso sextavado M6x20
+ok: POR-M8 - Porca sextavada M8
+ok: ARR-8 - Arruela lisa 8 mm
+ok: ROL-6204 - Rolamento de esferas 6204-2RS
+ok: VED-OR20 - Anel O-ring 20x2 NBR 70</code></pre>
+      <aside class="note">
+        <p><strong>Como testei:</strong> sem uma chave real à mão, rodei o script contra um simulador local que imita os endpoints da especificação oficial (versão 1.0.5). Na primeira execução, ele criou 35 pensamentos, 48 ligações e 6 notas; na segunda, não criou nada novo. Antes de apontá-lo para um cérebro de verdade, rode-o num cérebro de teste.</p>
+      </aside>
+      <h3>6. Consultando</h3>
+      <p>No aplicativo, clique em “Aço carbono”: os saltos mostram todas as peças feitas dele. Clique em “Metalúrgica Alfa”: aparece tudo o que ela fornece. É o equivalente visual de um <code>JOIN</code>. Pela API, a busca por texto e a vizinhança de um pensamento fazem o mesmo papel:</p>
+      <pre class="code"><code>curl -s -H "Authorization: Bearer $THEBRAIN_API_KEY" \
+  "https://api.bra.in/search/$THEBRAIN_BRAIN_ID?queryText=M8&amp;maxResults=30"
+
+curl -s -H "Authorization: Bearer $THEBRAIN_API_KEY" \
+  "https://api.bra.in/thoughts/$THEBRAIN_BRAIN_ID/$MATERIAL_ID/graph"</code></pre>
+      <p>A resposta de <code>/graph</code> separa <code>parents</code>, <code>children</code>, <code>jumps</code>, <code>siblings</code>, <code>tags</code> e <code>links</code>. As peças que usam o material vêm em <code>jumps</code>. <sup><a href="#ref-12-pt">[12]</a></sup></p>
+      <h3>7. Próximos passos</h3>
+      <ul>
+        <li>Marque peças com as tags “Crítica” ou “Obsoleta”.</li>
+        <li>Crie kits: um pensamento “Kit de montagem da bomba” como pai adicional das peças que o compõem.</li>
+        <li>Anexe desenhos em PDF com <code>POST /attachments/{brainId}/{thoughtId}/file</code>.</li>
+        <li>Atualize nomes, rótulos e cores com <code>PATCH</code>, que segue o formato JSON Patch. <sup><a href="#ref-12-pt">[12]</a></sup> <sup><a href="#ref-24-pt">[24]</a></sup></li>
+      </ul>
+    </section>
+
+    <section id="conclusoes-pt" aria-labelledby="h-conclusoes-pt">
+      <h2 id="h-conclusoes-pt">Conclusões</h2>
+      <ul>
+        <li>O TheBrain é, no fundo, um <strong>grafo de conhecimento</strong> com uma interface muito boa para navegar. Ele brilha quando as relações importam mais que as colunas.</li>
+        <li><strong>Instalar é simples</strong> no desktop e na web. Docker e Kubernetes são possíveis, mas não oficiais: servem para hospedar o desktop num servidor e, principalmente, para automatizar a carga de dados pela API.</li>
+        <li>A <strong>API REST</strong>, na nuvem ou local, faz do TheBrain um destino de integração. O exemplo carrega uma base de peças a partir de um CSV, sem duplicar nada.</li>
+        <li>Ele <strong>não substitui</strong> o banco relacional nem o ERP: não tem integridade, transações nem agregações. Use-o como camada de navegação e documentação, alimentada pelo sistema que é dono dos dados.</li>
+        <li>Para tirar dúvidas, as melhores fontes são a documentação interativa da API, o guia do usuário e o fórum oficial. <sup><a href="#ref-12-pt">[12]</a></sup> <sup><a href="#ref-14-pt">[14]</a></sup> <sup><a href="#ref-16-pt">[16]</a></sup></li>
+      </ul>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="referencias-pt" aria-labelledby="h-referencias-pt">
+      <h2 id="h-referencias-pt">Referências</h2>
+      <ol class="refs">
+        <li id="ref-1-pt"><strong>TheBrain Technologies</strong>, “About TheBrain”, acesso em 28/09/2026, <a href="https://www.thebrain.com/about" rel="noopener">thebrain.com/about</a>.</li>
+        <li id="ref-2-pt"><strong>Wikipedia</strong> (em inglês), “TheBrain”, acesso em 28/09/2026, <a href="https://en.wikipedia.org/wiki/TheBrain" rel="noopener">en.wikipedia.org/wiki/TheBrain</a>.</li>
+        <li id="ref-3-pt"><strong>Wikipedia</strong> (em inglês), “TheBrain Technologies”, acesso em 28/09/2026, <a href="https://en.wikipedia.org/wiki/TheBrain_Technologies" rel="noopener">en.wikipedia.org/wiki/TheBrain_Technologies</a>.</li>
+        <li id="ref-4-pt"><strong>Computerworld</strong>, “Linking Your Thinking”, 31/01/2000, acesso em 28/09/2026, <a href="https://www.computerworld.com/article/1368716/linking-your-thinking.html" rel="noopener">computerworld.com/article/1368716/linking-your-thinking.html</a>.</li>
+        <li id="ref-5-pt"><strong>PRWeb</strong>, “TheBrain 8 Delivers Advanced Information Management with Powerful New Knowledge Visualization Features”, 20/11/2013, acesso em 28/09/2026, <a href="https://www.prweb.com/releases/thebrain_8_delivers_advanced_information_management_with_powerful_new_knowledge_visualization_features/prweb11352059.htm" rel="noopener">prweb.com/releases/thebrain_8_delivers_advanced_information_management_with_powerful_new_knowledge_visualization_features/prweb11352059.htm</a>.</li>
+        <li id="ref-6-pt"><strong>TheBrain Blog</strong>, “Introducing TheBrain API”, 01/11/2023, acesso em 28/09/2026, <a href="https://www.thebrain.com/blog/introducing-thebrain-api" rel="noopener">thebrain.com/blog/introducing-thebrain-api</a>.</li>
+        <li id="ref-7-pt"><strong>TheBrain Technologies</strong>, “TheBrain 15 — Beyond next-gen, with Cerebro AI”, acesso em 28/09/2026, <a href="https://www.thebrain.com/products/thebrain/thebrain15" rel="noopener">thebrain.com/products/thebrain/thebrain15</a>.</li>
+        <li id="ref-8-pt"><strong>TheBrain Blog</strong>, “TheBrain 15 Achieves True Cross-Platform Parity: One Codebase, Five Platforms, Full Feature Equality”, 24/04/2026, acesso em 28/09/2026, <a href="https://old.thebrain.com/blog/true-cross-platform-parity" rel="noopener">old.thebrain.com/blog/true-cross-platform-parity</a>.</li>
+        <li id="ref-9-pt"><strong>TheBrain Blog</strong>, “Unifying TheBrain: Version 15 Now Live on the Web”, acesso em 28/09/2026, <a href="https://www.thebrain.com/blog/unifying-thebrain" rel="noopener">thebrain.com/blog/unifying-thebrain</a>.</li>
+        <li id="ref-10-pt"><strong>TheBrain Blog</strong>, “TheBrain API: Now Fully Local and Unrestrained”, 28/04/2026, acesso em 28/09/2026, <a href="https://thebrain.com/blog/thebrain-api-local" rel="noopener">thebrain.com/blog/thebrain-api-local</a>.</li>
+        <li id="ref-11-pt"><strong>TheBrain Technologies</strong>, “Download TheBrain — Free, forever”, acesso em 28/09/2026, <a href="https://www.thebrain.com/download" rel="noopener">thebrain.com/download</a>.</li>
+        <li id="ref-12-pt"><strong>TheBrain Technologies</strong>, <em>TheBrain API</em>, documentação interativa, versão 1.0.5, acesso em 28/09/2026, <a href="https://api.bra.in" rel="noopener">api.bra.in</a>.</li>
+        <li id="ref-13-pt"><strong>TheBrainTech</strong>, “thebrain-api-quickstart-python”, GitHub, acesso em 28/09/2026, <a href="https://github.com/TheBrainTech/thebrain-api-quickstart-python" rel="noopener">github.com/TheBrainTech/thebrain-api-quickstart-python</a>.</li>
+        <li id="ref-14-pt"><strong>TheBrain Technologies</strong>, <em>TheBrain 14 User Guide</em> (PDF), acesso em 28/09/2026, <a href="https://assets.thebrain.com/documents/TheBrain14/TheBrain14-User-Guide-v01.pdf" rel="noopener">assets.thebrain.com/documents/TheBrain14/TheBrain14-User-Guide-v01.pdf</a>.</li>
+        <li id="ref-15-pt"><strong>TheBrain Technologies</strong>, “Tutorials”, acesso em 28/09/2026, <a href="https://www.thebrain.com/tutorials" rel="noopener">thebrain.com/tutorials</a>.</li>
+        <li id="ref-16-pt"><strong>TheBrain Forums</strong>, fórum oficial, acesso em 28/09/2026, <a href="https://forums.thebrain.com/" rel="noopener">forums.thebrain.com</a>.</li>
+        <li id="ref-17-pt"><strong>LinuxServer.io</strong>, “webtop”, acesso em 28/09/2026, <a href="https://docs.linuxserver.io/images/docker-webtop/" rel="noopener">docs.linuxserver.io/images/docker-webtop</a>.</li>
+        <li id="ref-18-pt"><strong>Docker</strong>, “Compose file reference”, acesso em 28/09/2026, <a href="https://docs.docker.com/reference/compose-file/" rel="noopener">docs.docker.com/reference/compose-file</a>.</li>
+        <li id="ref-19-pt"><strong>Kubernetes</strong>, “Deployments”, acesso em 28/09/2026, <a href="https://kubernetes.io/docs/concepts/workloads/controllers/deployment/" rel="noopener">kubernetes.io/docs/concepts/workloads/controllers/deployment</a>.</li>
+        <li id="ref-20-pt"><strong>Kubernetes</strong>, “Persistent Volumes”, acesso em 28/09/2026, <a href="https://kubernetes.io/docs/concepts/storage/persistent-volumes/" rel="noopener">kubernetes.io/docs/concepts/storage/persistent-volumes</a>.</li>
+        <li id="ref-21-pt"><strong>Kubernetes</strong>, “CronJob”, acesso em 28/09/2026, <a href="https://kubernetes.io/docs/concepts/workloads/controllers/cron-job/" rel="noopener">kubernetes.io/docs/concepts/workloads/controllers/cron-job</a>.</li>
+        <li id="ref-22-pt"><strong>Kubernetes</strong>, “Secrets”, acesso em 28/09/2026, <a href="https://kubernetes.io/docs/concepts/configuration/secret/" rel="noopener">kubernetes.io/docs/concepts/configuration/secret</a>.</li>
+        <li id="ref-23-pt"><strong>Kubernetes</strong>, “Use Port Forwarding to Access Applications in a Cluster”, acesso em 28/09/2026, <a href="https://kubernetes.io/docs/tasks/access-application-cluster/port-forward-access-application-cluster/" rel="noopener">kubernetes.io/docs/tasks/access-application-cluster/port-forward-access-application-cluster</a>.</li>
+        <li id="ref-24-pt"><strong>IETF</strong>, RFC 6902, “JavaScript Object Notation (JSON) Patch”, 2013, acesso em 28/09/2026, <a href="https://www.rfc-editor.org/rfc/rfc6902" rel="noopener">rfc-editor.org/rfc/rfc6902</a>.</li>
+      </ol>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== EN ===================== -->
+<div id="en" role="tabpanel" aria-labelledby="tab-en" lang="en" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projects</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>TheBrain: a digital brain for your data</h1>
+      <p class="dek">What it is, where it came from, how to install it on your computer, in Docker, in Kubernetes or in the cloud, and how to build, step by step, a database to classify parts.</p>
+      <div class="byline">
+        <span>By <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Published on <time datetime="2026-09-28">28 September 2026</time></span>
+        <span class="credit">Reviewed and formatted using Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-en">
+    <h2 id="toc-en">Contents</h2>
+    <ol>
+      <li><a href="#oque-en">What is it?</a></li>
+      <li><a href="#historia-en">How did it start?</a></li>
+      <li><a href="#instalar-en">How to install it?</a></li>
+      <li><a href="#docker-en">Local: Docker</a></li>
+      <li><a href="#kubernetes-en">Local: Kubernetes</a></li>
+      <li><a href="#remoto-en">Remote</a></li>
+      <li><a href="#passos-en">First steps</a></li>
+      <li><a href="#exemplo-en">Building an example</a></li>
+      <li><a href="#pecas-en">A parts database</a></li>
+      <li><a href="#conclusoes-en">Conclusions</a></li>
+      <li><a href="#referencias-en">References</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="oque-en" aria-labelledby="h-oque-en">
+      <h2 id="h-oque-en">What is it?</h2>
+      <p><strong>TheBrain</strong> is mind-mapping and personal knowledge management software from TheBrain Technologies, based in Los Angeles. Instead of storing information in folders, it stores <strong>thoughts</strong> and the <strong>links</strong> between them, and shows everything in a dynamic graphical interface that blends hierarchy and network. <sup><a href="#ref-1-en">[1]</a></sup> <sup><a href="#ref-2-en">[2]</a></sup></p>
+      <p>Each thought can hold notes, files, web links and calendar events. When you click a thought, it moves to the center of the screen and its neighbors rearrange around it. This layout is called the <strong>Plex</strong>: <sup><a href="#ref-2-en">[2]</a></sup> <sup><a href="#ref-14-en">[14]</a></sup></p>
+      <figure>
+        <img src="rc_images/TheBrainPlex-en.svg" alt="The active thought Bolts is at the center. Above it, the parent Fasteners. Below, the children Bolt M8x30, Bolt M6x20 and Bolt M10x40. On the left, linked by jumps, ISO 4017 and Alfa Metalworks. On the right, the siblings Nuts and Washers, which share the same parent." width="1000" height="560" loading="lazy">
+        <figcaption>Each direction means something: parents above, children below, jumps to the side and siblings on the right.</figcaption>
+      </figure>
+      <p>What sets it apart from an ordinary mind map is that a thought can have <strong>several parents</strong>. “Bolt M8x30” can sit under “Bolts” and under “Pump assembly kit” at the same time, with no copy. In practice, it is a knowledge graph you draw by hand or through an API. <sup><a href="#ref-2-en">[2]</a></sup> <sup><a href="#ref-12-en">[12]</a></sup></p>
+      <aside class="note">
+        <p><strong>If you come from databases:</strong> think of TheBrain as a graph database with a visual interface. Thoughts are the nodes, links are the edges and types play the role of labels. It does not replace a relational database, since it has no SQL, transactions or integrity constraints. But it is very good at mapping relationships that do not fit well in tables.</p>
+      </aside>
+      <p>The vocabulary we will use: <sup><a href="#ref-12-en">[12]</a></sup> <sup><a href="#ref-14-en">[14]</a></sup></p>
+      <dl class="glossary">
+        <dt>Brain</dt><dd>The store holding all the thoughts. Every brain has a starting thought (<em>home</em>).</dd>
+        <dt>Thought</dt><dd>The graph node: it has a name and, optionally, a label, type, tags, note and attachments.</dd>
+        <dt>Link</dt><dd>The relationship between two thoughts. It can have a name, color and type.</dd>
+        <dt>Parent and child</dt><dd>A hierarchical link. A child can have several parents.</dd>
+        <dt>Jump</dt><dd>A lateral link with no hierarchy: “is related to”.</dd>
+        <dt>Siblings</dt><dd>Thoughts that share a parent. They are not a link of their own.</dd>
+        <dt>Type</dt><dd>The main classification: what the thought is. Each thought has at most one type.</dd>
+        <dt>Tag</dt><dd>A cross-cutting marker, such as “Critical”. A thought can have several.</dd>
+        <dt>Plex</dt><dd>The view with the active thought at the center, surrounded by its neighbors.</dd>
+      </dl>
+    </section>
+
+    <section id="historia-en" aria-labelledby="h-historia-en">
+      <h2 id="h-historia-en">How did it start?</h2>
+      <p>The idea was born in 1993 with Harlan Hugh, who felt the need to focus on the <em>connections</em> between pieces of information rather than on the separations. In 1996 he founded Natrificial Software Technologies in California. The company later became The Brain and then TheBrain Technologies, headquartered in Los Angeles, with Hugh still as CEO. <sup><a href="#ref-1-en">[1]</a></sup> <sup><a href="#ref-4-en">[4]</a></sup></p>
+      <blockquote class="pull">
+        <p>“Your screen should not look like a bunch of pretty buttons. Instead it should be a dynamic representation and experience of everything that’s important to you.”</p>
+        <p><cite>Harlan Hugh, to Feed Magazine, 1999 <sup><a href="#ref-1-en">[1]</a></sup></cite></p>
+      </blockquote>
+      <p>For many years, the personal product was called <strong>PersonalBrain</strong>. The company also sold enterprise versions, such as TeamBrain and BrainEKP, which won an award in 2008. With version 8, announced on November 20, 2013, the name became simply <strong>TheBrain</strong>, and syncing across machines moved into a yearly service plan. <sup><a href="#ref-2-en">[2]</a></sup> <sup><a href="#ref-3-en">[3]</a></sup> <sup><a href="#ref-5-en">[5]</a></sup></p>
+      <p>The <strong>REST API</strong> arrived in November 2023, letting programs read and write thoughts. In 2026, <strong>TheBrain 15</strong> brought Cerebro AI, new views (cards, mind map and tree) and the same code on the web, Windows, macOS, iPhone/iPad and Android. It also brought a local API, served by the app itself. The full app became free, and the paid plans kept syncing, AI and collaboration. <sup><a href="#ref-6-en">[6]</a></sup> <sup><a href="#ref-7-en">[7]</a></sup> <sup><a href="#ref-8-en">[8]</a></sup> <sup><a href="#ref-10-en">[10]</a></sup> <sup><a href="#ref-11-en">[11]</a></sup></p>
+      <figure>
+        <img src="rc_images/TheBrainLinhaTempo-en.svg" alt="Timeline: 1993, Harlan Hugh conceives the idea of focusing on the connections between pieces of information; 1996, Natrificial is founded, later becoming TheBrain Technologies; 2013, TheBrain 8 adopts the TheBrain name in place of PersonalBrain; 2023, the REST API is launched; 2026, TheBrain 15, with Cerebro AI, five platforms on one codebase, a free app and a local API." width="1000" height="340" loading="lazy">
+        <figcaption>Three decades separate the 1993 idea from version 15, released in 2026.</figcaption>
+      </figure>
+    </section>
+
+    <section id="instalar-en" aria-labelledby="h-instalar-en">
+      <h2 id="h-instalar-en">How to install it?</h2>
+      <p>There are two paths. With <strong>local</strong>, brains live on your machine or in your cluster. With <strong>remote</strong>, they live in TheBrain’s cloud. The two combine: the desktop can sync with the cloud, and the API works on both sides.</p>
+      <figure>
+        <img src="rc_images/TheBrainInstalacao-en.svg" alt="Map of the installation options. Local: native app for Windows, macOS and Linux; Docker, with the desktop reachable from a browser and an importer in a container; Kubernetes, with a Deployment, persistent volume, Service and CronJob. Remote: web client at app.thebrain.com; cloud sync, on a paid plan; and the REST API at api.bra.in." width="1000" height="480" loading="lazy">
+        <figcaption>The installation options. Only the native app and the cloud are official; Docker and Kubernetes are do-it-yourself setups.</figcaption>
+      </figure>
+      <h3>Local: the native app</h3>
+      <p>This is the official path and the simplest one. At <a href="https://www.thebrain.com/download" rel="noopener">thebrain.com/download</a> you will find installers for Windows (<code>.exe</code>, <code>.msi</code> or <code>.zip</code>, Windows 10 or later) and links for Mac, Linux and mobile. No account or credit card is needed. <sup><a href="#ref-11-en">[11]</a></sup></p>
+      <ol>
+        <li>Download the installer for your platform.</li>
+        <li>Install and open TheBrain.</li>
+        <li>Create a brain. It starts with a home thought.</li>
+        <li>If you will use the local API, open <strong>Settings › User › Local API</strong>. The address and the documentation are there. You need version 15.0.534 or later. <sup><a href="#ref-10-en">[10]</a></sup></li>
+      </ol>
+      <aside class="note">
+        <p><strong>A word on Linux:</strong> the April 2026 announcement on cross-platform parity names five platforms (web, Windows, macOS, iPhone/iPad and Android), but the download page also lists Linux. Check which Linux package is available before planning the container options, which depend on it. <sup><a href="#ref-8-en">[8]</a></sup> <sup><a href="#ref-11-en">[11]</a></sup></p>
+      </aside>
+    </section>
+
+    <section id="docker-en" aria-labelledby="h-docker-en">
+      <h2 id="h-docker-en">Local: Docker</h2>
+      <p>TheBrain Technologies does not publish a Docker image, and TheBrain is a desktop app, not a server. Even so, you can containerize two different things, and it pays to keep them apart:</p>
+      <ul>
+        <li><strong>The desktop itself</strong>, inside a Linux desktop reachable from the browser. Here I use the <strong>webtop</strong> image from LinuxServer.io, which serves XFCE through KasmVNC on port 3001, over HTTPS. <sup><a href="#ref-17-en">[17]</a></sup></li>
+        <li><strong>The automation:</strong> a container with a script that reads from and writes to the brain through the API. This is the most useful part day to day, and the one we will use in the parts example.</li>
+      </ul>
+      <figure>
+        <img src="rc_images/TheBrainConteiner-en.svg" alt="On the left, the user’s browser reaches, over HTTPS on port 3001, a webtop container with KasmVNC and XFCE. Inside it run TheBrain desktop and its local API. The container keeps the app and the brains in a /config volume. A second container, the Python importer, reads pecas.csv and writes through the local API or the cloud API, api.bra.in. Optionally, the desktop syncs with TheBrain Cloud. All of it can be a Docker Compose file or a Kubernetes Pod." width="1000" height="520" loading="lazy">
+        <figcaption>The desktop runs in the webtop container and keeps everything in /config; the importer writes through the local API or the cloud API.</figcaption>
+      </figure>
+      <h3>The compose.yaml file</h3>
+      <pre class="code"><code>services:
+  thebrain:
+    image: lscr.io/linuxserver/webtop:ubuntu-xfce
+    container_name: thebrain
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Sao_Paulo
+      - CUSTOM_USER=giovani
+      - PASSWORD=${WEBTOP_PASSWORD}
+    volumes:
+      - ./thebrain-config:/config
+    ports:
+      - "127.0.0.1:3001:3001"
+    shm_size: "1gb"
+    restart: unless-stopped
+
+  importador:
+    build: ./importador
+    profiles: ["ferramentas"]
+    environment:
+      - THEBRAIN_API_KEY
+      - THEBRAIN_BRAIN_ID
+      - THEBRAIN_API_URL=https://api.bra.in
+      - PECAS_CSV=/dados/pecas.csv
+    volumes:
+      - ./dados:/dados:ro</code></pre>
+      <ul>
+        <li><code>PUID</code> and <code>PGID</code> set the owner of the files in <code>./thebrain-config</code>; <code>TZ</code> sets the time zone.</li>
+        <li><code>CUSTOM_USER</code> and <code>PASSWORD</code> turn on basic authentication. The password comes from an environment variable, not from the file.</li>
+        <li>The port is published on <code>127.0.0.1</code> only. The webtop documentation warns that its terminal grants passwordless <code>sudo</code> and that it should not face the internet without a reverse proxy with strong authentication. <sup><a href="#ref-17-en">[17]</a></sup></li>
+        <li><code>shm_size</code> raises the shared memory that the built-in browser uses.</li>
+        <li>The importer lives in the <code>ferramentas</code> (“tools”) profile: it does not start with <code>up</code>, only when called. <sup><a href="#ref-18-en">[18]</a></sup></li>
+      </ul>
+      <h3>Starting it and installing TheBrain</h3>
+      <p><code>read -rs</code> asks for the password without echoing it or saving it in the shell history:</p>
+      <pre class="code"><code>read -rs WEBTOP_PASSWORD &amp;&amp; export WEBTOP_PASSWORD
+docker compose up -d thebrain</code></pre>
+      <p>Open <code>https://localhost:3001</code>, accept the self-signed certificate and sign in with the user and password. In the desktop that appears, download the Linux package from thebrain.com/download and install it.</p>
+      <p>Mind persistence: only <code>/config</code> survives when the container is recreated. If the package extracts into a folder, keep that folder inside <code>/config</code>. If it installs into the system, like a <code>.deb</code>, build a derived image (the file name below is illustrative) and replace <code>image:</code> with <code>build:</code> in the Compose file:</p>
+      <pre class="code"><code>FROM lscr.io/linuxserver/webtop:ubuntu-xfce
+COPY thebrain-linux.deb /tmp/
+RUN apt-get update \
+ &amp;&amp; apt-get install -y /tmp/thebrain-linux.deb \
+ &amp;&amp; rm -rf /tmp/thebrain-linux.deb /var/lib/apt/lists/*</code></pre>
+      <h3>The importer</h3>
+      <p>The importer is the script from the parts section, in a slim Python image:</p>
+      <pre class="code"><code>FROM python:3.12-slim
+WORKDIR /app
+RUN pip install --no-cache-dir requests
+COPY importa_pecas.py .
+CMD ["python", "importa_pecas.py"]</code></pre>
+      <pre class="code"><code>read -rs THEBRAIN_API_KEY &amp;&amp; export THEBRAIN_API_KEY
+export THEBRAIN_BRAIN_ID=00000000-0000-0000-0000-000000000000
+docker compose run --rm importador</code></pre>
+      <p>It talks to the cloud API (<code>api.bra.in</code>), which works with any synced brain. To use the local API instead, set <code>THEBRAIN_API_URL</code> to the address shown in Settings › User › Local API. If it only accepts connections from the same computer, run the script inside the webtop desktop. <sup><a href="#ref-10-en">[10]</a></sup> <sup><a href="#ref-12-en">[12]</a></sup></p>
+    </section>
+
+    <section id="kubernetes-en" aria-labelledby="h-kubernetes-en">
+      <h2 id="h-kubernetes-en">Local: Kubernetes</h2>
+      <p>In Kubernetes, the idea is the same, translated into objects: a <strong>Deployment</strong> with webtop, a <strong>PersistentVolumeClaim</strong> for <code>/config</code>, an internal <strong>Service</strong> and a <strong>CronJob</strong> that runs the importer every night. The password and the API key live in <strong>Secrets</strong>. <sup><a href="#ref-19-en">[19]</a></sup> <sup><a href="#ref-20-en">[20]</a></sup> <sup><a href="#ref-21-en">[21]</a></sup> <sup><a href="#ref-22-en">[22]</a></sup></p>
+      <pre class="code"><code>apiVersion: v1
+kind: Namespace
+metadata:
+  name: thebrain
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: webtop
+  namespace: thebrain
+type: Opaque
+stringData:
+  PASSWORD: "CHANGE-ME"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: thebrain-api
+  namespace: thebrain
+type: Opaque
+stringData:
+  THEBRAIN_API_KEY: "CHANGE-ME"
+  THEBRAIN_BRAIN_ID: "00000000-0000-0000-0000-000000000000"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: thebrain-config
+  namespace: thebrain
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: thebrain
+  namespace: thebrain
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: {app: thebrain}
+  template:
+    metadata:
+      labels: {app: thebrain}
+    spec:
+      containers:
+        - name: webtop
+          image: lscr.io/linuxserver/webtop:ubuntu-xfce
+          env:
+            - {name: PUID, value: "1000"}
+            - {name: PGID, value: "1000"}
+            - {name: TZ, value: America/Sao_Paulo}
+            - {name: CUSTOM_USER, value: giovani}
+            - name: PASSWORD
+              valueFrom:
+                secretKeyRef: {name: webtop, key: PASSWORD}
+          ports:
+            - containerPort: 3001
+          resources:
+            requests: {cpu: 500m, memory: 2Gi}
+            limits: {memory: 4Gi}
+          volumeMounts:
+            - {name: config, mountPath: /config}
+            - {name: shm, mountPath: /dev/shm}
+      volumes:
+        - name: config
+          persistentVolumeClaim: {claimName: thebrain-config}
+        - name: shm
+          emptyDir: {medium: Memory, sizeLimit: 1Gi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: thebrain
+  namespace: thebrain
+spec:
+  selector: {app: thebrain}
+  ports:
+    - {port: 3001, targetPort: 3001}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: importa-pecas
+  namespace: thebrain
+spec:
+  schedule: "0 2 * * *"
+  timeZone: America/Sao_Paulo
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: importador
+              image: registry.exemplo.com/importador-thebrain:1.0
+              envFrom:
+                - secretRef: {name: thebrain-api}
+              env:
+                - {name: PECAS_CSV, value: /dados/pecas.csv}
+              volumeMounts:
+                - {name: dados, mountPath: /dados, readOnly: true}
+          volumes:
+            - name: dados
+              configMap: {name: pecas-csv}</code></pre>
+      <p>Three choices matter:</p>
+      <ul>
+        <li><strong><code>replicas: 1</code> with <code>strategy: Recreate</code>.</strong> The brain is a local app file, not a database with many writers. Two replicas on the same volume would corrupt the data; <code>Recreate</code> makes sure the old pod stops before the new one starts. <sup><a href="#ref-19-en">[19]</a></sup></li>
+        <li><strong><code>/dev/shm</code> as an in-memory <code>emptyDir</code></strong> does the job of Compose’s <code>shm_size</code>.</li>
+        <li><strong>The Service is <code>ClusterIP</code>:</strong> nothing is exposed. Access goes through <code>port-forward</code> or, if needed, an Ingress with authentication. <sup><a href="#ref-23-en">[23]</a></sup></li>
+      </ul>
+      <p>To apply it, load the CSV, open the desktop and trigger an import without waiting for 2 a.m.:</p>
+      <pre class="code"><code>kubectl apply -f thebrain.yaml
+kubectl -n thebrain create configmap pecas-csv --from-file=pecas.csv
+kubectl -n thebrain port-forward svc/thebrain 3001:3001
+kubectl -n thebrain create job importa-agora --from=cronjob/importa-pecas</code></pre>
+      <aside class="note">
+        <p><strong>Secrets:</strong> the example uses <code>stringData</code> for clarity. In production, create Secrets with <code>kubectl create secret</code> or a tool such as Sealed Secrets or External Secrets, and keep them out of Git. The <code>registry.exemplo.com/importador-thebrain</code> image is the Dockerfile from the previous section, pushed to your registry. <sup><a href="#ref-22-en">[22]</a></sup></p>
+      </aside>
+    </section>
+
+    <section id="remoto-en" aria-labelledby="h-remoto-en">
+      <h2 id="h-remoto-en">Remote</h2>
+      <p>With nothing to install, go to <a href="https://app.thebrain.com/login" rel="noopener">app.thebrain.com</a> and use the web client. Since TheBrain 15, it runs the same code and has the same features as the desktop. To have the same brain on your computer, on the web and on your phone, you need a paid plan, which includes cloud sync. <sup><a href="#ref-9-en">[9]</a></sup> <sup><a href="#ref-11-en">[11]</a></sup></p>
+      <p>To program against the cloud:</p>
+      <ol>
+        <li>Generate a key at <a href="https://app.thebrain.com/api-keys" rel="noopener">app.thebrain.com/api-keys</a>.</li>
+        <li>Send it in the <code>Authorization: Bearer &lt;key&gt;</code> header.</li>
+        <li>Browse the interactive documentation at <a href="https://api.bra.in" rel="noopener">api.bra.in</a>: the <em>Authorize</em> button takes the key, and <em>Try it out</em> runs each call. <sup><a href="#ref-12-en">[12]</a></sup></li>
+      </ol>
+      <p>The first test is to list your brains:</p>
+      <pre class="code"><code>curl -s -H "Authorization: Bearer $THEBRAIN_API_KEY" \
+  https://api.bra.in/brains</code></pre>
+      <p>For each brain, the response gives the <code>id</code>, the <code>name</code> and the <code>homeThoughtId</code>, which is the home thought. Keep the <code>id</code>: every other call needs it. <sup><a href="#ref-12-en">[12]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col"></th><th scope="col">Local</th><th scope="col">Remote</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Where data lives</th><td>On your disk, volume or PVC</td><td>In TheBrain’s cloud</td></tr>
+            <tr><th scope="row">Cost</th><td>Free app</td><td>Free web; sync, AI and collaboration on paid plans</td></tr>
+            <tr><th scope="row">Access</th><td>One machine (or the browser, with webtop)</td><td>Any browser and phone</td></tr>
+            <tr><th scope="row">API</th><td>Local API, with the desktop open</td><td><code>api.bra.in</code>, with a key</td></tr>
+            <tr><th scope="row">Best for</th><td>Sensitive data and individual use</td><td>Teams and multiple devices</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="passos-en" aria-labelledby="h-passos-en">
+      <h2 id="h-passos-en">First steps</h2>
+      <p><strong>1. Create a brain.</strong> Every brain starts with a home thought, the root of navigation. In the API, it shows up as <code>homeThoughtId</code>. <sup><a href="#ref-12-en">[12]</a></sup></p>
+      <p><strong>2. Create thoughts through the gates.</strong> Each thought has small circles on its edges, the gates. Each one creates a kind of link: <sup><a href="#ref-14-en">[14]</a></sup></p>
+      <figure>
+        <img src="rc_images/TheBrainPortoes-en.svg" alt="A thought called Bolts with four small circles, the gates. The top one creates a parent; the bottom one creates a child; the side ones create jumps. Siblings have no gate: they appear when two thoughts share a parent." width="1000" height="390" loading="lazy">
+        <figcaption>Clicking a gate creates a new thought; dragging it onto another thought links the two.</figcaption>
+      </figure>
+      <p><strong>3. Navigate.</strong> Click a thought to make it active: the Plex rebuilds around it. To jump straight to a distant thought, search for it by name. <sup><a href="#ref-14-en">[14]</a></sup> <sup><a href="#ref-15-en">[15]</a></sup></p>
+      <p><strong>4. Enrich.</strong> Write notes (the API reads and writes them as Markdown), attach files, folders and web addresses, and use the label for a short piece of data, such as a code. <sup><a href="#ref-12-en">[12]</a></sup> <sup><a href="#ref-14-en">[14]</a></sup></p>
+      <p><strong>5. Classify.</strong> The <strong>type</strong> says what the thought is (Part, Material) and can set a color and icon; each thought has at most one. <strong>Tags</strong> are cross-cutting marks (Critical, Obsolete), and a thought can have several. <sup><a href="#ref-12-en">[12]</a></sup> <sup><a href="#ref-14-en">[14]</a></sup></p>
+      <p><strong>6. Pin what you use all the time.</strong> Pinned thoughts stay at hand, whatever the active thought is. <sup><a href="#ref-12-en">[12]</a></sup></p>
+      <p><strong>7. Switch views.</strong> Besides the Plex, TheBrain 15 shows the same brain as cards, a mind map or a tree, without losing a single link. <sup><a href="#ref-7-en">[7]</a></sup></p>
+      <div class="recap">
+        <h3>Key points</h3>
+        <ul>
+          <li>Hierarchy is parent and child; a lateral relationship is a jump; siblings appear on their own.</li>
+          <li>A type is “what it is” (only one); a tag is “what state it is in” (several).</li>
+          <li>A thought can have several parents: do not duplicate, link.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="exemplo-en" aria-labelledby="h-exemplo-en">
+      <h2 id="h-exemplo-en">Building an example</h2>
+      <p>The problem: a factory has thousands of parts. Each one belongs to a family (fasteners, bearings, seals), is made of a material, comes from one or more suppliers and follows a standard. Everyday questions cut across these dimensions: “which parts use stainless steel?”, “what do we buy from Alfa Metalworks?”, “which fasteners follow ISO 4017?”.</p>
+      <p>In a relational database, this becomes tables and foreign keys. In TheBrain, it becomes thoughts and links. This is how they map:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Relational database</th><th scope="col">TheBrain</th></tr></thead>
+          <tbody>
+            <tr><td>A table row</td><td>Thought</td></tr>
+            <tr><td>Table (entity)</td><td>Type: Part, Material, Supplier, Standard</td></tr>
+            <tr><td>N:1 foreign key (part → material)</td><td>Jump between the part and the material</td></tr>
+            <tr><td>N:N junction table (part ↔ supplier)</td><td>Several jumps, with no junction table</td></tr>
+            <tr><td>Recursive hierarchy (<code>parent_category_id</code>)</td><td>Native parent → child links, with multiple parents allowed</td></tr>
+            <tr><td>Descriptive column (stock, specification)</td><td>Note or label</td></tr>
+            <tr><td>Query with <code>JOIN</code></td><td>Click the thought and look at its neighbors, or <code>GET …/graph</code> in the API</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>And what TheBrain does <strong>not</strong> do: enforce integrity (nothing stops a wrong jump), handle transactions or answer aggregate queries, such as total stock per material. So the rule of the example is clear: the ERP remains the owner of the data, and TheBrain is the navigation and knowledge layer, reloaded from an exported file.</p>
+      <div class="recap">
+        <h3>Key points</h3>
+        <ul>
+          <li>N:N relationships and multi-parent hierarchies come naturally in TheBrain.</li>
+          <li>Totals, integrity and transactions stay in the relational database.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="pecas-en" aria-labelledby="h-pecas-en">
+      <h2 id="h-pecas-en">Creating a database to classify parts</h2>
+      <h3>1. The model</h3>
+      <figure>
+        <img src="rc_images/TheBrainPecas-en.svg" alt="At the top, Parts catalog. Below it, the categories Fasteners, Transmission and Sealing. Fasteners has the subcategories Bolts, Nuts and Washers; Transmission has Bearings; Sealing has O-rings. Under Bolts sits the part Hex bolt M8x30, code PAR-M8X30, linked by jumps to the material Carbon steel, the supplier Alfa Metalworks and the standard ISO 4017." width="1000" height="620" loading="lazy">
+        <figcaption>The tree classifies the part; jumps tie it to its material, supplier and standard.</figcaption>
+      </figure>
+      <p>There are five types: Category, Part, Material, Supplier and Standard. The <em>Catalog › category › subcategory › part</em> tree classifies, and jumps tie each part to its material, supplier and standard. Materials, suppliers and standards are also children of three index thoughts (Materials, Suppliers and Standards), attached to the home thought, so you can browse from them.</p>
+      <aside class="note">
+        <p><strong>About the names:</strong> the sample CSV and the script keep the Portuguese names of the original example (for instance, “Parafuso sextavado M8x30” is the hex bolt M8x30, and “Aço carbono” is carbon steel). The diagrams use English names.</p>
+      </aside>
+      <h3>2. One part by hand</h3>
+      <p>Before automating, build one part in the app to get a feel for the model:</p>
+      <ol>
+        <li>Under the home thought, create the child “Parts catalog”; under it, “Fasteners”; and under that, “Bolts”.</li>
+        <li>Under “Bolts”, create “Hex bolt M8x30” and put <code>PAR-M8X30</code> in the label.</li>
+        <li>Create the Part type and apply it to the thought.</li>
+        <li>Through the side gate, create jumps to “Carbon steel”, “Alfa Metalworks” and “ISO 4017”.</li>
+        <li>Write the data sheet in the note.</li>
+      </ol>
+      <h3>3. The input data</h3>
+      <p>The rest comes from an ERP export, simplified here into a semicolon-separated CSV. The suppliers are fictitious; the standards are real: ISO 4017 (hex head screws), ISO 4032 (hex nuts), ISO 7089 (plain washers), ISO 15 (radial bearing dimensions) and ISO 3601-1 (O-rings).</p>
+      <pre class="code"><code>codigo;descricao;categoria;subcategoria;material;fornecedor;norma;estoque
+PAR-M8X30;Parafuso sextavado M8x30;Fixadores;Parafusos;Aço carbono;Metalúrgica Alfa;ISO 4017;1200
+PAR-M6X20;Parafuso sextavado M6x20;Fixadores;Parafusos;Aço inox A2-70;Metalúrgica Alfa;ISO 4017;850
+POR-M8;Porca sextavada M8;Fixadores;Porcas;Aço carbono;Metalúrgica Alfa;ISO 4032;3000
+ARR-8;Arruela lisa 8 mm;Fixadores;Arruelas;Aço carbono;Metalúrgica Alfa;ISO 7089;5000
+ROL-6204;Rolamento de esferas 6204-2RS;Transmissão;Rolamentos;Aço cromo;Rolamentos Beta;ISO 15;80
+VED-OR20;Anel O-ring 20x2 NBR 70;Vedação;Anéis O-ring;Borracha NBR;Vedações Gama;ISO 3601-1;400</code></pre>
+      <h3>4. The import script</h3>
+      <p>The script uses only the <code>requests</code> library and six API endpoints. It is <strong>idempotent</strong>: before creating a thought, it looks it up by exact name; before linking two, it checks whether the link already exists. It can run every night without duplicating anything. <sup><a href="#ref-12-en">[12]</a></sup> <sup><a href="#ref-13-en">[13]</a></sup></p>
+      <pre class="code"><code>"""Carrega pecas.csv num cérebro do TheBrain usando a API REST."""
+import csv
+import os
+
+import requests
+
+API = os.environ.get("THEBRAIN_API_URL", "https://api.bra.in").rstrip("/")
+BRAIN = os.environ["THEBRAIN_BRAIN_ID"]
+CSV = os.environ.get("PECAS_CSV", "pecas.csv")
+S = requests.Session()
+S.headers["Authorization"] = "Bearer " + os.environ["THEBRAIN_API_KEY"]
+
+NORMAL, TIPO = 1, 2            <span class="c"># kind</span>
+FILHO, PAI, SALTO = 1, 2, 3    <span class="c"># relation</span>
+PRIVADO = 1                    <span class="c"># acType</span>
+ids = {}
+
+
+def vazio(r):
+    return not r.ok or r.text.strip() in ("", "null")
+
+
+def buscar(nome):
+    if nome not in ids:
+        r = S.get(f"{API}/thoughts/{BRAIN}", params={"nameExact": nome})
+        ids[nome] = None if vazio(r) else r.json()["id"]
+    return ids[nome]
+
+
+def ligar(a, b, relacao):
+    if not vazio(S.get(f"{API}/links/{BRAIN}/{a}/{b}")):
+        return  <span class="c"># já estão ligados</span>
+    corpo = {"thoughtIdA": a, "thoughtIdB": b, "relation": relacao}
+    S.post(f"{API}/links/{BRAIN}", json=corpo).raise_for_status()
+
+
+def garantir(nome, origem=None, relacao=FILHO, tipo=None, rotulo=None, kind=NORMAL):
+    tid = buscar(nome)
+    if tid:
+        if origem:
+            ligar(origem, tid, relacao)
+        return tid
+    corpo = {"name": nome, "kind": kind, "acType": PRIVADO}
+    if origem:
+        corpo.update(sourceThoughtId=origem, relation=relacao)
+    if tipo:
+        corpo["typeId"] = tipo
+    if rotulo:
+        corpo["label"] = rotulo
+    r = S.post(f"{API}/thoughts/{BRAIN}", json=corpo)
+    r.raise_for_status()
+    ids[nome] = r.json()["id"]
+    return ids[nome]
+
+
+home = S.get(f"{API}/brains/{BRAIN}").json()["homeThoughtId"]
+tipos = {t: garantir(t, kind=TIPO)
+         for t in ("Peça", "Categoria", "Material", "Fornecedor", "Norma")}
+catalogo = garantir("Catálogo de peças", home)
+hubs = {h: garantir(h, home) for h in ("Materiais", "Fornecedores", "Normas")}
+jumps = (("material", "Material", "Materiais"),
+         ("fornecedor", "Fornecedor", "Fornecedores"),
+         ("norma", "Norma", "Normas"))
+
+with open(CSV, encoding="utf-8") as f:
+    for p in csv.DictReader(f, delimiter=";"):
+        cat = garantir(p["categoria"], catalogo, tipo=tipos["Categoria"])
+        sub = garantir(p["subcategoria"], cat, tipo=tipos["Categoria"])
+        peca = garantir(p["descricao"], sub, tipo=tipos["Peça"], rotulo=p["codigo"])
+        for coluna, tipo, hub in jumps:
+            alvo = garantir(p[coluna], hubs[hub], tipo=tipos[tipo])
+            ligar(peca, alvo, SALTO)
+        nota = ("| Campo | Valor |\n|---|---|\n"
+                f"| Código | {p['codigo']} |\n"
+                f"| Estoque | {p['estoque']} un. |\n")
+        S.post(f"{API}/notes/{BRAIN}/{peca}/update",
+               json={"markdown": nota}).raise_for_status()
+        print("ok:", p["codigo"], "-", p["descricao"])</code></pre>
+      <p>The numbers in the script come from the API specification: <sup><a href="#ref-12-en">[12]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Field</th><th scope="col">Values</th></tr></thead>
+          <tbody>
+            <tr><td><code>kind</code></td><td>1 normal · 2 type · 3 event · 4 tag · 5 system</td></tr>
+            <tr><td><code>relation</code></td><td>1 child · 2 parent · 3 jump · 4 sibling</td></tr>
+            <tr><td><code>acType</code></td><td>0 public · 1 private</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>5. Running it</h3>
+      <pre class="code"><code>python -m pip install requests
+read -rs THEBRAIN_API_KEY &amp;&amp; export THEBRAIN_API_KEY
+export THEBRAIN_BRAIN_ID=00000000-0000-0000-0000-000000000000
+python importa_pecas.py</code></pre>
+      <pre class="code"><code>ok: PAR-M8X30 - Parafuso sextavado M8x30
+ok: PAR-M6X20 - Parafuso sextavado M6x20
+ok: POR-M8 - Porca sextavada M8
+ok: ARR-8 - Arruela lisa 8 mm
+ok: ROL-6204 - Rolamento de esferas 6204-2RS
+ok: VED-OR20 - Anel O-ring 20x2 NBR 70</code></pre>
+      <aside class="note">
+        <p><strong>How I tested it:</strong> without a real key at hand, I ran the script against a local simulator that mimics the endpoints of the official specification (version 1.0.5). On the first run it created 35 thoughts, 48 links and 6 notes; on the second, it created nothing new. Before pointing it at a real brain, run it against a test brain.</p>
+      </aside>
+      <h3>6. Querying</h3>
+      <p>In the app, click “Carbon steel”: the jumps show every part made of it. Click “Alfa Metalworks”: everything it supplies appears. It is the visual equivalent of a <code>JOIN</code>. Through the API, text search and a thought’s neighborhood play the same role:</p>
+      <pre class="code"><code>curl -s -H "Authorization: Bearer $THEBRAIN_API_KEY" \
+  "https://api.bra.in/search/$THEBRAIN_BRAIN_ID?queryText=M8&amp;maxResults=30"
+
+curl -s -H "Authorization: Bearer $THEBRAIN_API_KEY" \
+  "https://api.bra.in/thoughts/$THEBRAIN_BRAIN_ID/$MATERIAL_ID/graph"</code></pre>
+      <p>The <code>/graph</code> response separates <code>parents</code>, <code>children</code>, <code>jumps</code>, <code>siblings</code>, <code>tags</code> and <code>links</code>. The parts that use the material come in <code>jumps</code>. <sup><a href="#ref-12-en">[12]</a></sup></p>
+      <h3>7. Next steps</h3>
+      <ul>
+        <li>Mark parts with the tags “Critical” or “Obsolete”.</li>
+        <li>Create kits: a “Pump assembly kit” thought as an extra parent of the parts it contains.</li>
+        <li>Attach PDF drawings with <code>POST /attachments/{brainId}/{thoughtId}/file</code>.</li>
+        <li>Update names, labels and colors with <code>PATCH</code>, which follows the JSON Patch format. <sup><a href="#ref-12-en">[12]</a></sup> <sup><a href="#ref-24-en">[24]</a></sup></li>
+      </ul>
+    </section>
+
+    <section id="conclusoes-en" aria-labelledby="h-conclusoes-en">
+      <h2 id="h-conclusoes-en">Conclusions</h2>
+      <ul>
+        <li>At heart, TheBrain is a <strong>knowledge graph</strong> with a very good interface for browsing it. It shines when relationships matter more than columns.</li>
+        <li><strong>Installing is simple</strong> on the desktop and on the web. Docker and Kubernetes are possible but not official: they serve to host the desktop on a server and, above all, to automate data loading through the API.</li>
+        <li>The <strong>REST API</strong>, in the cloud or local, turns TheBrain into an integration target. The example loads a parts database from a CSV without duplicating anything.</li>
+        <li>It <strong>does not replace</strong> the relational database or the ERP: it has no integrity, transactions or aggregations. Use it as a navigation and documentation layer, fed by the system that owns the data.</li>
+        <li>For questions, the best sources are the interactive API documentation, the user guide and the official forum. <sup><a href="#ref-12-en">[12]</a></sup> <sup><a href="#ref-14-en">[14]</a></sup> <sup><a href="#ref-16-en">[16]</a></sup></li>
+      </ul>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="referencias-en" aria-labelledby="h-referencias-en">
+      <h2 id="h-referencias-en">References</h2>
+      <ol class="refs">
+        <li id="ref-1-en"><strong>TheBrain Technologies</strong>, “About TheBrain”, accessed 28 September 2026, <a href="https://www.thebrain.com/about" rel="noopener">thebrain.com/about</a>.</li>
+        <li id="ref-2-en"><strong>Wikipedia</strong>, “TheBrain”, accessed 28 September 2026, <a href="https://en.wikipedia.org/wiki/TheBrain" rel="noopener">en.wikipedia.org/wiki/TheBrain</a>.</li>
+        <li id="ref-3-en"><strong>Wikipedia</strong>, “TheBrain Technologies”, accessed 28 September 2026, <a href="https://en.wikipedia.org/wiki/TheBrain_Technologies" rel="noopener">en.wikipedia.org/wiki/TheBrain_Technologies</a>.</li>
+        <li id="ref-4-en"><strong>Computerworld</strong>, “Linking Your Thinking”, 31 January 2000, accessed 28 September 2026, <a href="https://www.computerworld.com/article/1368716/linking-your-thinking.html" rel="noopener">computerworld.com/article/1368716/linking-your-thinking.html</a>.</li>
+        <li id="ref-5-en"><strong>PRWeb</strong>, “TheBrain 8 Delivers Advanced Information Management with Powerful New Knowledge Visualization Features”, 20 November 2013, accessed 28 September 2026, <a href="https://www.prweb.com/releases/thebrain_8_delivers_advanced_information_management_with_powerful_new_knowledge_visualization_features/prweb11352059.htm" rel="noopener">prweb.com/releases/thebrain_8_delivers_advanced_information_management_with_powerful_new_knowledge_visualization_features/prweb11352059.htm</a>.</li>
+        <li id="ref-6-en"><strong>TheBrain Blog</strong>, “Introducing TheBrain API”, 1 November 2023, accessed 28 September 2026, <a href="https://www.thebrain.com/blog/introducing-thebrain-api" rel="noopener">thebrain.com/blog/introducing-thebrain-api</a>.</li>
+        <li id="ref-7-en"><strong>TheBrain Technologies</strong>, “TheBrain 15 — Beyond next-gen, with Cerebro AI”, accessed 28 September 2026, <a href="https://www.thebrain.com/products/thebrain/thebrain15" rel="noopener">thebrain.com/products/thebrain/thebrain15</a>.</li>
+        <li id="ref-8-en"><strong>TheBrain Blog</strong>, “TheBrain 15 Achieves True Cross-Platform Parity: One Codebase, Five Platforms, Full Feature Equality”, 24 April 2026, accessed 28 September 2026, <a href="https://old.thebrain.com/blog/true-cross-platform-parity" rel="noopener">old.thebrain.com/blog/true-cross-platform-parity</a>.</li>
+        <li id="ref-9-en"><strong>TheBrain Blog</strong>, “Unifying TheBrain: Version 15 Now Live on the Web”, accessed 28 September 2026, <a href="https://www.thebrain.com/blog/unifying-thebrain" rel="noopener">thebrain.com/blog/unifying-thebrain</a>.</li>
+        <li id="ref-10-en"><strong>TheBrain Blog</strong>, “TheBrain API: Now Fully Local and Unrestrained”, 28 April 2026, accessed 28 September 2026, <a href="https://thebrain.com/blog/thebrain-api-local" rel="noopener">thebrain.com/blog/thebrain-api-local</a>.</li>
+        <li id="ref-11-en"><strong>TheBrain Technologies</strong>, “Download TheBrain — Free, forever”, accessed 28 September 2026, <a href="https://www.thebrain.com/download" rel="noopener">thebrain.com/download</a>.</li>
+        <li id="ref-12-en"><strong>TheBrain Technologies</strong>, <em>TheBrain API</em>, interactive documentation, version 1.0.5, accessed 28 September 2026, <a href="https://api.bra.in" rel="noopener">api.bra.in</a>.</li>
+        <li id="ref-13-en"><strong>TheBrainTech</strong>, “thebrain-api-quickstart-python”, GitHub, accessed 28 September 2026, <a href="https://github.com/TheBrainTech/thebrain-api-quickstart-python" rel="noopener">github.com/TheBrainTech/thebrain-api-quickstart-python</a>.</li>
+        <li id="ref-14-en"><strong>TheBrain Technologies</strong>, <em>TheBrain 14 User Guide</em> (PDF), accessed 28 September 2026, <a href="https://assets.thebrain.com/documents/TheBrain14/TheBrain14-User-Guide-v01.pdf" rel="noopener">assets.thebrain.com/documents/TheBrain14/TheBrain14-User-Guide-v01.pdf</a>.</li>
+        <li id="ref-15-en"><strong>TheBrain Technologies</strong>, “Tutorials”, accessed 28 September 2026, <a href="https://www.thebrain.com/tutorials" rel="noopener">thebrain.com/tutorials</a>.</li>
+        <li id="ref-16-en"><strong>TheBrain Forums</strong>, official forum, accessed 28 September 2026, <a href="https://forums.thebrain.com/" rel="noopener">forums.thebrain.com</a>.</li>
+        <li id="ref-17-en"><strong>LinuxServer.io</strong>, “webtop”, accessed 28 September 2026, <a href="https://docs.linuxserver.io/images/docker-webtop/" rel="noopener">docs.linuxserver.io/images/docker-webtop</a>.</li>
+        <li id="ref-18-en"><strong>Docker</strong>, “Compose file reference”, accessed 28 September 2026, <a href="https://docs.docker.com/reference/compose-file/" rel="noopener">docs.docker.com/reference/compose-file</a>.</li>
+        <li id="ref-19-en"><strong>Kubernetes</strong>, “Deployments”, accessed 28 September 2026, <a href="https://kubernetes.io/docs/concepts/workloads/controllers/deployment/" rel="noopener">kubernetes.io/docs/concepts/workloads/controllers/deployment</a>.</li>
+        <li id="ref-20-en"><strong>Kubernetes</strong>, “Persistent Volumes”, accessed 28 September 2026, <a href="https://kubernetes.io/docs/concepts/storage/persistent-volumes/" rel="noopener">kubernetes.io/docs/concepts/storage/persistent-volumes</a>.</li>
+        <li id="ref-21-en"><strong>Kubernetes</strong>, “CronJob”, accessed 28 September 2026, <a href="https://kubernetes.io/docs/concepts/workloads/controllers/cron-job/" rel="noopener">kubernetes.io/docs/concepts/workloads/controllers/cron-job</a>.</li>
+        <li id="ref-22-en"><strong>Kubernetes</strong>, “Secrets”, accessed 28 September 2026, <a href="https://kubernetes.io/docs/concepts/configuration/secret/" rel="noopener">kubernetes.io/docs/concepts/configuration/secret</a>.</li>
+        <li id="ref-23-en"><strong>Kubernetes</strong>, “Use Port Forwarding to Access Applications in a Cluster”, accessed 28 September 2026, <a href="https://kubernetes.io/docs/tasks/access-application-cluster/port-forward-access-application-cluster/" rel="noopener">kubernetes.io/docs/tasks/access-application-cluster/port-forward-access-application-cluster</a>.</li>
+        <li id="ref-24-en"><strong>IETF</strong>, RFC 6902, “JavaScript Object Notation (JSON) Patch”, 2013, accessed 28 September 2026, <a href="https://www.rfc-editor.org/rfc/rfc6902" rel="noopener">rfc-editor.org/rfc/rfc6902</a>.</li>
+      </ol>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== IT ===================== -->
+<div id="it" role="tabpanel" aria-labelledby="tab-it" lang="it" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Progetti</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>TheBrain: un cervello digitale per i tuoi dati</h1>
+      <p class="dek">Che cos’è, da dove viene, come installarlo sul computer, in Docker, in Kubernetes o nel cloud, e come costruire, passo dopo passo, una base per classificare i pezzi.</p>
+      <div class="byline">
+        <span>Di <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Pubblicato il <time datetime="2026-09-28">28/09/2026</time></span>
+        <span class="credit">Rivisto e formattato usando Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-it">
+    <h2 id="toc-it">Indice</h2>
+    <ol>
+      <li><a href="#oque-it">Che cos’è?</a></li>
+      <li><a href="#historia-it">Come è nato?</a></li>
+      <li><a href="#instalar-it">Come installarlo?</a></li>
+      <li><a href="#docker-it">Locale: Docker</a></li>
+      <li><a href="#kubernetes-it">Locale: Kubernetes</a></li>
+      <li><a href="#remoto-it">Remoto</a></li>
+      <li><a href="#passos-it">I primi passi</a></li>
+      <li><a href="#exemplo-it">Costruire un esempio</a></li>
+      <li><a href="#pecas-it">Un database di pezzi</a></li>
+      <li><a href="#conclusoes-it">Conclusioni</a></li>
+      <li><a href="#referencias-it">Riferimenti</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="oque-it" aria-labelledby="h-oque-it">
+      <h2 id="h-oque-it">Che cos’è?</h2>
+      <p><strong>TheBrain</strong> è un software di mappe mentali e di gestione della conoscenza personale di TheBrain Technologies, con sede a Los Angeles. Invece di conservare le informazioni in cartelle, conserva <strong>pensieri</strong> (<em>thoughts</em>) e i <strong>collegamenti</strong> tra di essi, e mostra tutto in un’interfaccia grafica dinamica che unisce gerarchia e rete. <sup><a href="#ref-1-it">[1]</a></sup> <sup><a href="#ref-2-it">[2]</a></sup></p>
+      <p>Ogni pensiero può contenere note, file, link web ed eventi di calendario. Quando clicchi su un pensiero, questo si sposta al centro dello schermo e i vicini si riorganizzano intorno. Questa disposizione si chiama <strong>Plex</strong>: <sup><a href="#ref-2-it">[2]</a></sup> <sup><a href="#ref-14-it">[14]</a></sup></p>
+      <figure>
+        <img src="rc_images/TheBrainPlex-it.svg" alt="Il pensiero attivo Viti è al centro. Sopra, il genitore Elementi di fissaggio. Sotto, i figli Vite M8x30, Vite M6x20 e Vite M10x40. A sinistra, collegati da salti, ISO 4017 e Metallurgica Alfa. A destra, i fratelli Dadi e Rondelle, che hanno lo stesso genitore." width="1000" height="560" loading="lazy">
+        <figcaption>Ogni direzione ha un significato: sopra i genitori, sotto i figli, di lato i salti e a destra i fratelli.</figcaption>
+      </figure>
+      <p>La differenza rispetto a una normale mappa mentale è che un pensiero può avere <strong>più genitori</strong>. “Vite M8x30” può stare contemporaneamente sotto “Viti” e sotto “Kit di montaggio della pompa”, senza copie. In pratica è un grafo della conoscenza che disegni a mano o tramite API. <sup><a href="#ref-2-it">[2]</a></sup> <sup><a href="#ref-12-it">[12]</a></sup></p>
+      <aside class="note">
+        <p><strong>Per chi viene dai database:</strong> pensa a TheBrain come a un database a grafo con un’interfaccia visiva. I pensieri sono i nodi, i collegamenti sono gli archi e i tipi fanno la parte delle etichette (<em>labels</em>). Non sostituisce un database relazionale, perché non ha SQL, transazioni né vincoli di integrità. Ma è ottimo per mappare relazioni che non stanno bene nelle tabelle.</p>
+      </aside>
+      <p>Il vocabolario che useremo: <sup><a href="#ref-12-it">[12]</a></sup> <sup><a href="#ref-14-it">[14]</a></sup></p>
+      <dl class="glossary">
+        <dt>Cervello (<em>brain</em>)</dt><dd>La base che contiene tutti i pensieri. Ogni cervello ha un pensiero iniziale (<em>home</em>).</dd>
+        <dt>Pensiero (<em>thought</em>)</dt><dd>Il nodo del grafo: ha un nome e, facoltativamente, etichetta, tipo, tag, nota e allegati.</dd>
+        <dt>Collegamento (<em>link</em>)</dt><dd>La relazione tra due pensieri. Può avere nome, colore e tipo.</dd>
+        <dt>Genitore e figlio</dt><dd>Collegamento gerarchico. Un figlio può avere più genitori.</dd>
+        <dt>Salto (<em>jump</em>)</dt><dd>Collegamento laterale, senza gerarchia: “è correlato a”.</dd>
+        <dt>Fratelli (<em>siblings</em>)</dt><dd>Pensieri con lo stesso genitore. Non sono un collegamento a sé.</dd>
+        <dt>Tipo (<em>type</em>)</dt><dd>La classificazione principale: che cosa è il pensiero. Ogni pensiero ha al massimo un tipo.</dd>
+        <dt>Tag</dt><dd>Un contrassegno trasversale, come “Critico”. Un pensiero può averne diversi.</dd>
+        <dt>Plex</dt><dd>La vista con il pensiero attivo al centro, circondato dai vicini.</dd>
+      </dl>
+    </section>
+
+    <section id="historia-it" aria-labelledby="h-historia-it">
+      <h2 id="h-historia-it">Come è nato?</h2>
+      <p>L’idea nasce nel 1993 con Harlan Hugh, che sentiva il bisogno di concentrarsi sulle <em>connessioni</em> tra le informazioni, e non sulle separazioni. Nel 1996 fondò la Natrificial Software Technologies, in California. L’azienda prese poi il nome di The Brain e, più tardi, di TheBrain Technologies, con sede a Los Angeles e con Hugh ancora CEO. <sup><a href="#ref-1-it">[1]</a></sup> <sup><a href="#ref-4-it">[4]</a></sup></p>
+      <blockquote class="pull">
+        <p>“Il tuo schermo non dovrebbe sembrare un mucchio di bei pulsanti. Dovrebbe essere una rappresentazione dinamica, un’esperienza, di tutto ciò che è importante per te.”</p>
+        <p><cite>Harlan Hugh, alla rivista Feed, 1999 <sup><a href="#ref-1-it">[1]</a></sup></cite></p>
+      </blockquote>
+      <p>Per molti anni il prodotto per uso personale si è chiamato <strong>PersonalBrain</strong>. L’azienda ha venduto anche versioni aziendali, come TeamBrain e BrainEKP, premiato nel 2008. Con la versione 8, annunciata il 20 novembre 2013, il nome è diventato semplicemente <strong>TheBrain</strong>, e la sincronizzazione tra computer è entrata in un piano di servizio annuale. <sup><a href="#ref-2-it">[2]</a></sup> <sup><a href="#ref-3-it">[3]</a></sup> <sup><a href="#ref-5-it">[5]</a></sup></p>
+      <p>A novembre 2023 è arrivata l’<strong>API REST</strong>, che permette di leggere e scrivere pensieri da programma. Nel 2026 <strong>TheBrain 15</strong> ha portato l’IA Cerebro, nuove viste (schede, mappa mentale e albero) e lo stesso codice su web, Windows, macOS, iPhone/iPad e Android. Ha portato anche un’API locale, servita dall’app stessa. L’app completa è diventata gratuita, e i piani a pagamento hanno mantenuto sincronizzazione, IA e collaborazione. <sup><a href="#ref-6-it">[6]</a></sup> <sup><a href="#ref-7-it">[7]</a></sup> <sup><a href="#ref-8-it">[8]</a></sup> <sup><a href="#ref-10-it">[10]</a></sup> <sup><a href="#ref-11-it">[11]</a></sup></p>
+      <figure>
+        <img src="rc_images/TheBrainLinhaTempo-it.svg" alt="Cronologia: 1993, Harlan Hugh concepisce l’idea di concentrarsi sulle connessioni tra le informazioni; 1996, nasce Natrificial, poi diventata TheBrain Technologies; 2013, TheBrain 8 adotta il nome TheBrain al posto di PersonalBrain; 2023, lancio dell’API REST; 2026, TheBrain 15, con IA Cerebro, cinque piattaforme con lo stesso codice, app gratuita e API locale." width="1000" height="340" loading="lazy">
+        <figcaption>Tre decenni separano l’idea del 1993 dalla versione 15, uscita nel 2026.</figcaption>
+      </figure>
+    </section>
+
+    <section id="instalar-it" aria-labelledby="h-instalar-it">
+      <h2 id="h-instalar-it">Come installarlo?</h2>
+      <p>Ci sono due strade. In <strong>locale</strong>, i cervelli restano sulla tua macchina o nel tuo cluster. In <strong>remoto</strong>, restano nel cloud di TheBrain. Le due si combinano: il desktop può sincronizzarsi con il cloud, e l’API funziona da entrambe le parti.</p>
+      <figure>
+        <img src="rc_images/TheBrainInstalacao-it.svg" alt="Mappa delle opzioni di installazione. Locale: app nativa per Windows, macOS e Linux; Docker, con il desktop raggiungibile dal browser e un importatore in container; Kubernetes, con Deployment, volume persistente, Service e CronJob. Remoto: client web su app.thebrain.com; sincronizzazione cloud, con piano a pagamento; e API REST su api.bra.in." width="1000" height="480" loading="lazy">
+        <figcaption>Le opzioni di installazione. Solo l’app nativa e il cloud sono ufficiali; Docker e Kubernetes sono configurazioni fai da te.</figcaption>
+      </figure>
+      <h3>Locale: l’app nativa</h3>
+      <p>È la strada ufficiale e la più semplice. Su <a href="https://www.thebrain.com/download" rel="noopener">thebrain.com/download</a> ci sono gli installer per Windows (<code>.exe</code>, <code>.msi</code> o <code>.zip</code>, da Windows 10 in poi) e i link per Mac, Linux e dispositivi mobili. Non servono account né carta di credito. <sup><a href="#ref-11-it">[11]</a></sup></p>
+      <ol>
+        <li>Scarica l’installer della tua piattaforma.</li>
+        <li>Installa e apri TheBrain.</li>
+        <li>Crea un cervello. Nasce con un pensiero iniziale.</li>
+        <li>Se userai l’API locale, apri <strong>Impostazioni › Utente › API locale</strong>. Lì trovi l’indirizzo e la documentazione. Serve la versione 15.0.534 o successiva. <sup><a href="#ref-10-it">[10]</a></sup></li>
+      </ol>
+      <aside class="note">
+        <p><strong>Attenzione a Linux:</strong> l’annuncio di aprile 2026 sulla parità tra piattaforme ne cita cinque (web, Windows, macOS, iPhone/iPad e Android), ma la pagina di download elenca anche Linux. Verifica sulla pagina quale pacchetto Linux è disponibile prima di pianificare le opzioni con i container, che dipendono da esso. <sup><a href="#ref-8-it">[8]</a></sup> <sup><a href="#ref-11-it">[11]</a></sup></p>
+      </aside>
+    </section>
+
+    <section id="docker-it" aria-labelledby="h-docker-it">
+      <h2 id="h-docker-it">Locale: Docker</h2>
+      <p>TheBrain Technologies non pubblica un’immagine Docker, e TheBrain è un’app desktop, non un server. Anche così, si possono mettere in container due cose diverse, ed è bene tenerle separate:</p>
+      <ul>
+        <li><strong>Il desktop stesso</strong>, dentro un desktop Linux raggiungibile dal browser. Qui uso l’immagine <strong>webtop</strong> di LinuxServer.io, che offre XFCE tramite KasmVNC sulla porta 3001, in HTTPS. <sup><a href="#ref-17-it">[17]</a></sup></li>
+        <li><strong>L’automazione:</strong> un container con uno script che legge e scrive nel cervello tramite l’API. È la parte più utile nel lavoro quotidiano, ed è quella che useremo nell’esempio dei pezzi.</li>
+      </ul>
+      <figure>
+        <img src="rc_images/TheBrainConteiner-it.svg" alt="A sinistra, il browser dell’utente raggiunge in HTTPS, sulla porta 3001, un container webtop con KasmVNC e XFCE. Al suo interno girano TheBrain desktop e la sua API locale. Il container conserva l’app e i cervelli in un volume /config. Un secondo container, l’importatore in Python, legge pecas.csv e scrive tramite l’API locale o l’API cloud, api.bra.in. Facoltativamente, il desktop si sincronizza con TheBrain Cloud. Il tutto può essere un Docker Compose o un Pod di Kubernetes." width="1000" height="520" loading="lazy">
+        <figcaption>Il desktop gira nel container webtop e conserva tutto in /config; l’importatore scrive tramite l’API locale o l’API cloud.</figcaption>
+      </figure>
+      <h3>Il file compose.yaml</h3>
+      <pre class="code"><code>services:
+  thebrain:
+    image: lscr.io/linuxserver/webtop:ubuntu-xfce
+    container_name: thebrain
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Sao_Paulo
+      - CUSTOM_USER=giovani
+      - PASSWORD=${WEBTOP_PASSWORD}
+    volumes:
+      - ./thebrain-config:/config
+    ports:
+      - "127.0.0.1:3001:3001"
+    shm_size: "1gb"
+    restart: unless-stopped
+
+  importador:
+    build: ./importador
+    profiles: ["ferramentas"]
+    environment:
+      - THEBRAIN_API_KEY
+      - THEBRAIN_BRAIN_ID
+      - THEBRAIN_API_URL=https://api.bra.in
+      - PECAS_CSV=/dados/pecas.csv
+    volumes:
+      - ./dados:/dados:ro</code></pre>
+      <ul>
+        <li><code>PUID</code> e <code>PGID</code> definiscono il proprietario dei file in <code>./thebrain-config</code>; <code>TZ</code>, il fuso orario.</li>
+        <li><code>CUSTOM_USER</code> e <code>PASSWORD</code> attivano l’autenticazione di base. La password arriva da una variabile d’ambiente, non dal file.</li>
+        <li>La porta è pubblicata solo su <code>127.0.0.1</code>. La documentazione di webtop avverte che il suo terminale concede <code>sudo</code> senza password e che non va esposto su internet senza un reverse proxy con autenticazione forte. <sup><a href="#ref-17-it">[17]</a></sup></li>
+        <li><code>shm_size</code> aumenta la memoria condivisa, usata dal browser interno.</li>
+        <li>L’importatore sta nel profilo <code>ferramentas</code> (“strumenti”): non parte con <code>up</code>, solo quando viene chiamato. <sup><a href="#ref-18-it">[18]</a></sup></li>
+      </ul>
+      <h3>Avvio e installazione di TheBrain</h3>
+      <p><code>read -rs</code> chiede la password senza mostrarla e senza salvarla nella cronologia della shell:</p>
+      <pre class="code"><code>read -rs WEBTOP_PASSWORD &amp;&amp; export WEBTOP_PASSWORD
+docker compose up -d thebrain</code></pre>
+      <p>Apri <code>https://localhost:3001</code>, accetta il certificato autofirmato ed entra con utente e password. Nel desktop che compare, scarica il pacchetto Linux da thebrain.com/download e installalo.</p>
+      <p>Attenzione alla persistenza: solo <code>/config</code> sopravvive quando il container viene ricreato. Se il pacchetto si estrae in una cartella, tienila dentro <code>/config</code>. Se si installa nel sistema, come un <code>.deb</code>, crea un’immagine derivata (il nome del file qui sotto è indicativo) e sostituisci <code>image:</code> con <code>build:</code> nel Compose:</p>
+      <pre class="code"><code>FROM lscr.io/linuxserver/webtop:ubuntu-xfce
+COPY thebrain-linux.deb /tmp/
+RUN apt-get update \
+ &amp;&amp; apt-get install -y /tmp/thebrain-linux.deb \
+ &amp;&amp; rm -rf /tmp/thebrain-linux.deb /var/lib/apt/lists/*</code></pre>
+      <h3>L’importatore</h3>
+      <p>L’importatore è lo script della sezione sui pezzi, in un’immagine Python snella:</p>
+      <pre class="code"><code>FROM python:3.12-slim
+WORKDIR /app
+RUN pip install --no-cache-dir requests
+COPY importa_pecas.py .
+CMD ["python", "importa_pecas.py"]</code></pre>
+      <pre class="code"><code>read -rs THEBRAIN_API_KEY &amp;&amp; export THEBRAIN_API_KEY
+export THEBRAIN_BRAIN_ID=00000000-0000-0000-0000-000000000000
+docker compose run --rm importador</code></pre>
+      <p>Parla con l’API cloud (<code>api.bra.in</code>), che funziona con qualsiasi cervello sincronizzato. Per usare l’API locale, imposta <code>THEBRAIN_API_URL</code> sull’indirizzo mostrato in Impostazioni › Utente › API locale. Se accetta solo connessioni dallo stesso computer, esegui lo script dentro il desktop di webtop. <sup><a href="#ref-10-it">[10]</a></sup> <sup><a href="#ref-12-it">[12]</a></sup></p>
+    </section>
+
+    <section id="kubernetes-it" aria-labelledby="h-kubernetes-it">
+      <h2 id="h-kubernetes-it">Locale: Kubernetes</h2>
+      <p>In Kubernetes l’idea è la stessa, tradotta in oggetti: un <strong>Deployment</strong> con webtop, un <strong>PersistentVolumeClaim</strong> per <code>/config</code>, un <strong>Service</strong> interno e un <strong>CronJob</strong> che esegue l’importatore ogni notte. La password e la chiave dell’API stanno nei <strong>Secret</strong>. <sup><a href="#ref-19-it">[19]</a></sup> <sup><a href="#ref-20-it">[20]</a></sup> <sup><a href="#ref-21-it">[21]</a></sup> <sup><a href="#ref-22-it">[22]</a></sup></p>
+      <pre class="code"><code>apiVersion: v1
+kind: Namespace
+metadata:
+  name: thebrain
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: webtop
+  namespace: thebrain
+type: Opaque
+stringData:
+  PASSWORD: "CHANGE-ME"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: thebrain-api
+  namespace: thebrain
+type: Opaque
+stringData:
+  THEBRAIN_API_KEY: "CHANGE-ME"
+  THEBRAIN_BRAIN_ID: "00000000-0000-0000-0000-000000000000"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: thebrain-config
+  namespace: thebrain
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: thebrain
+  namespace: thebrain
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: {app: thebrain}
+  template:
+    metadata:
+      labels: {app: thebrain}
+    spec:
+      containers:
+        - name: webtop
+          image: lscr.io/linuxserver/webtop:ubuntu-xfce
+          env:
+            - {name: PUID, value: "1000"}
+            - {name: PGID, value: "1000"}
+            - {name: TZ, value: America/Sao_Paulo}
+            - {name: CUSTOM_USER, value: giovani}
+            - name: PASSWORD
+              valueFrom:
+                secretKeyRef: {name: webtop, key: PASSWORD}
+          ports:
+            - containerPort: 3001
+          resources:
+            requests: {cpu: 500m, memory: 2Gi}
+            limits: {memory: 4Gi}
+          volumeMounts:
+            - {name: config, mountPath: /config}
+            - {name: shm, mountPath: /dev/shm}
+      volumes:
+        - name: config
+          persistentVolumeClaim: {claimName: thebrain-config}
+        - name: shm
+          emptyDir: {medium: Memory, sizeLimit: 1Gi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: thebrain
+  namespace: thebrain
+spec:
+  selector: {app: thebrain}
+  ports:
+    - {port: 3001, targetPort: 3001}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: importa-pecas
+  namespace: thebrain
+spec:
+  schedule: "0 2 * * *"
+  timeZone: America/Sao_Paulo
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: importador
+              image: registry.exemplo.com/importador-thebrain:1.0
+              envFrom:
+                - secretRef: {name: thebrain-api}
+              env:
+                - {name: PECAS_CSV, value: /dados/pecas.csv}
+              volumeMounts:
+                - {name: dados, mountPath: /dados, readOnly: true}
+          volumes:
+            - name: dados
+              configMap: {name: pecas-csv}</code></pre>
+      <p>Tre scelte contano:</p>
+      <ul>
+        <li><strong><code>replicas: 1</code> con <code>strategy: Recreate</code>.</strong> Il cervello è un file locale dell’app, non un database con più scrittori. Due repliche sullo stesso volume corromperebbero i dati; <code>Recreate</code> garantisce che il pod vecchio si fermi prima che parta quello nuovo. <sup><a href="#ref-19-it">[19]</a></sup></li>
+        <li><strong><code>/dev/shm</code> come <code>emptyDir</code> in memoria</strong> fa le veci dello <code>shm_size</code> del Compose.</li>
+        <li><strong>Il Service è <code>ClusterIP</code>:</strong> niente è esposto. Si accede con <code>port-forward</code> o, se serve, con un Ingress con autenticazione. <sup><a href="#ref-23-it">[23]</a></sup></li>
+      </ul>
+      <p>Per applicare, caricare il CSV, aprire il desktop e lanciare un’importazione senza aspettare le 2 di notte:</p>
+      <pre class="code"><code>kubectl apply -f thebrain.yaml
+kubectl -n thebrain create configmap pecas-csv --from-file=pecas.csv
+kubectl -n thebrain port-forward svc/thebrain 3001:3001
+kubectl -n thebrain create job importa-agora --from=cronjob/importa-pecas</code></pre>
+      <aside class="note">
+        <p><strong>Secret:</strong> l’esempio usa <code>stringData</code> per chiarezza. In produzione, crea i Secret con <code>kubectl create secret</code> o con uno strumento come Sealed Secrets o External Secrets, e non metterli in Git. L’immagine <code>registry.exemplo.com/importador-thebrain</code> è il Dockerfile della sezione precedente, pubblicato nel tuo registry. <sup><a href="#ref-22-it">[22]</a></sup></p>
+      </aside>
+    </section>
+
+    <section id="remoto-it" aria-labelledby="h-remoto-it">
+      <h2 id="h-remoto-it">Remoto</h2>
+      <p>Senza installare nulla, vai su <a href="https://app.thebrain.com/login" rel="noopener">app.thebrain.com</a> e usa il client web. Da TheBrain 15 ha lo stesso codice e le stesse funzioni del desktop. Per avere lo stesso cervello sul computer, sul web e sul telefono serve un piano a pagamento, che include la sincronizzazione cloud. <sup><a href="#ref-9-it">[9]</a></sup> <sup><a href="#ref-11-it">[11]</a></sup></p>
+      <p>Per programmare contro il cloud:</p>
+      <ol>
+        <li>Genera una chiave su <a href="https://app.thebrain.com/api-keys" rel="noopener">app.thebrain.com/api-keys</a>.</li>
+        <li>Inviala nell’intestazione <code>Authorization: Bearer &lt;chiave&gt;</code>.</li>
+        <li>Consulta la documentazione interattiva su <a href="https://api.bra.in" rel="noopener">api.bra.in</a>: il pulsante <em>Authorize</em> riceve la chiave, e <em>Try it out</em> esegue ogni chiamata. <sup><a href="#ref-12-it">[12]</a></sup></li>
+      </ol>
+      <p>Il primo test è elencare i tuoi cervelli:</p>
+      <pre class="code"><code>curl -s -H "Authorization: Bearer $THEBRAIN_API_KEY" \
+  https://api.bra.in/brains</code></pre>
+      <p>Per ogni cervello, la risposta riporta l’<code>id</code>, il <code>name</code> e l’<code>homeThoughtId</code>, cioè il pensiero iniziale. Conserva l’<code>id</code>: serve in tutte le altre chiamate. <sup><a href="#ref-12-it">[12]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col"></th><th scope="col">Locale</th><th scope="col">Remoto</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Dove stanno i dati</th><td>Sul tuo disco, volume o PVC</td><td>Nel cloud di TheBrain</td></tr>
+            <tr><th scope="row">Costo</th><td>App gratuita</td><td>Web gratuito; sincronizzazione, IA e collaborazione nei piani a pagamento</td></tr>
+            <tr><th scope="row">Accesso</th><td>Una macchina (o il browser, con webtop)</td><td>Qualsiasi browser e telefono</td></tr>
+            <tr><th scope="row">API</th><td>API locale, con il desktop aperto</td><td><code>api.bra.in</code>, con chiave</td></tr>
+            <tr><th scope="row">Ideale per</th><td>Dati sensibili e uso individuale</td><td>Team e più dispositivi</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="passos-it" aria-labelledby="h-passos-it">
+      <h2 id="h-passos-it">I primi passi</h2>
+      <p><strong>1. Crea un cervello.</strong> Ogni cervello nasce con un pensiero iniziale, la radice della navigazione. Nell’API compare come <code>homeThoughtId</code>. <sup><a href="#ref-12-it">[12]</a></sup></p>
+      <p><strong>2. Crea pensieri dalle porte.</strong> Ogni pensiero ha piccoli cerchi sui bordi, le porte. Ognuna crea un tipo di collegamento: <sup><a href="#ref-14-it">[14]</a></sup></p>
+      <figure>
+        <img src="rc_images/TheBrainPortoes-it.svg" alt="Un pensiero chiamato Viti con quattro piccoli cerchi, le porte. Quella in alto crea un genitore; quella in basso crea un figlio; quelle laterali creano salti. I fratelli non hanno porta: compaiono quando due pensieri hanno lo stesso genitore." width="1000" height="390" loading="lazy">
+        <figcaption>Cliccare su una porta crea un nuovo pensiero; trascinarla su un altro pensiero collega i due.</figcaption>
+      </figure>
+      <p><strong>3. Naviga.</strong> Clicca su un pensiero per renderlo attivo: il Plex si ricostruisce intorno a lui. Per andare dritto a un pensiero lontano, cercalo per nome. <sup><a href="#ref-14-it">[14]</a></sup> <sup><a href="#ref-15-it">[15]</a></sup></p>
+      <p><strong>4. Arricchisci.</strong> Scrivi note (l’API le legge e le scrive in Markdown), allega file, cartelle e indirizzi web, e usa l’etichetta per un dato breve, come un codice. <sup><a href="#ref-12-it">[12]</a></sup> <sup><a href="#ref-14-it">[14]</a></sup></p>
+      <p><strong>5. Classifica.</strong> Il <strong>tipo</strong> dice che cosa è il pensiero (Pezzo, Materiale) e può definire colore e icona; ogni pensiero ne ha al massimo uno. I <strong>tag</strong> sono contrassegni trasversali (Critico, Obsoleto), e un pensiero può averne diversi. <sup><a href="#ref-12-it">[12]</a></sup> <sup><a href="#ref-14-it">[14]</a></sup></p>
+      <p><strong>6. Fissa ciò che usi sempre.</strong> I pensieri fissati (<em>pins</em>) restano sempre a portata di mano, qualunque sia il pensiero attivo. <sup><a href="#ref-12-it">[12]</a></sup></p>
+      <p><strong>7. Cambia vista.</strong> Oltre al Plex, TheBrain 15 mostra lo stesso cervello come schede, mappa mentale o albero, senza perdere nessun collegamento. <sup><a href="#ref-7-it">[7]</a></sup></p>
+      <div class="recap">
+        <h3>Da ricordare</h3>
+        <ul>
+          <li>La gerarchia è genitore e figlio; la relazione laterale è il salto; i fratelli compaiono da soli.</li>
+          <li>Il tipo è “che cosa è” (uno solo); il tag è “in che stato è” (diversi).</li>
+          <li>Un pensiero può avere più genitori: non duplicare, collega.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="exemplo-it" aria-labelledby="h-exemplo-it">
+      <h2 id="h-exemplo-it">Costruire un esempio</h2>
+      <p>Il problema: una fabbrica ha migliaia di pezzi. Ognuno appartiene a una famiglia (elementi di fissaggio, cuscinetti, tenute), è fatto di un materiale, arriva da uno o più fornitori e segue una norma. Le domande di tutti i giorni incrociano queste dimensioni: “quali pezzi usano acciaio inox?”, “che cosa compriamo dalla Metallurgica Alfa?”, “quali elementi di fissaggio seguono la ISO 4017?”.</p>
+      <p>In un database relazionale, questo diventa tabelle e chiavi esterne. In TheBrain, diventa pensieri e collegamenti. La corrispondenza è questa:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Database relazionale</th><th scope="col">TheBrain</th></tr></thead>
+          <tbody>
+            <tr><td>Riga di una tabella</td><td>Pensiero</td></tr>
+            <tr><td>Tabella (entità)</td><td>Tipo: Pezzo, Materiale, Fornitore, Norma</td></tr>
+            <tr><td>Chiave esterna N:1 (pezzo → materiale)</td><td>Salto tra il pezzo e il materiale</td></tr>
+            <tr><td>Tabella associativa N:N (pezzo ↔ fornitore)</td><td>Più salti, senza tabella intermedia</td></tr>
+            <tr><td>Gerarchia ricorsiva (<code>categoria_padre_id</code>)</td><td>Collegamenti genitore → figlio nativi, con più genitori possibili</td></tr>
+            <tr><td>Colonna descrittiva (scorte, specifica)</td><td>Nota o etichetta</td></tr>
+            <tr><td>Query con <code>JOIN</code></td><td>Cliccare sul pensiero e guardare i vicini, o <code>GET …/graph</code> nell’API</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>E ciò che TheBrain <strong>non</strong> fa: garantire l’integrità (niente impedisce un salto sbagliato), gestire le transazioni o rispondere a query aggregate, come la somma delle scorte per materiale. Perciò la regola dell’esempio è chiara: l’ERP resta il proprietario dei dati, e TheBrain è lo strato di navigazione e di conoscenza, ricaricato da un file esportato.</p>
+      <div class="recap">
+        <h3>Da ricordare</h3>
+        <ul>
+          <li>Le relazioni N:N e le gerarchie con più genitori sono naturali in TheBrain.</li>
+          <li>Totali, integrità e transazioni restano nel database relazionale.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="pecas-it" aria-labelledby="h-pecas-it">
+      <h2 id="h-pecas-it">Creare un database per classificare i pezzi</h2>
+      <h3>1. Il modello</h3>
+      <figure>
+        <img src="rc_images/TheBrainPecas-it.svg" alt="In alto, Catalogo dei pezzi. Sotto, le categorie Elementi di fissaggio, Trasmissione e Tenuta. Elementi di fissaggio ha le sottocategorie Viti, Dadi e Rondelle; Trasmissione ha Cuscinetti; Tenuta ha O-ring. Sotto Viti c’è il pezzo Vite a testa esagonale M8x30, codice PAR-M8X30, collegato da salti al materiale Acciaio al carbonio, al fornitore Metallurgica Alfa e alla norma ISO 4017." width="1000" height="620" loading="lazy">
+        <figcaption>L’albero classifica il pezzo; i salti lo legano a materiale, fornitore e norma.</figcaption>
+      </figure>
+      <p>Ci sono cinque tipi: Categoria, Pezzo, Materiale, Fornitore e Norma. L’albero <em>Catalogo › categoria › sottocategoria › pezzo</em> classifica, e i salti legano ogni pezzo al materiale, al fornitore e alla norma. Materiali, fornitori e norme sono anche figli di tre pensieri indice (Materiali, Fornitori e Norme), attaccati al pensiero iniziale, così puoi navigare anche a partire da loro.</p>
+      <aside class="note">
+        <p><strong>Sui nomi:</strong> il CSV di esempio e lo script mantengono i nomi in portoghese dell’esempio originale (per esempio, “Parafuso sextavado M8x30” è la vite a testa esagonale M8x30, e “Aço carbono” è l’acciaio al carbonio). I diagrammi usano i nomi in italiano.</p>
+      </aside>
+      <h3>2. Un pezzo fatto a mano</h3>
+      <p>Prima di automatizzare, costruisci un pezzo nell’app per prendere confidenza con il modello:</p>
+      <ol>
+        <li>Sotto il pensiero iniziale, crea il figlio “Catalogo dei pezzi”; sotto di esso, “Elementi di fissaggio”; e sotto questo, “Viti”.</li>
+        <li>Sotto “Viti”, crea “Vite a testa esagonale M8x30” e metti <code>PAR-M8X30</code> nell’etichetta.</li>
+        <li>Crea il tipo Pezzo e applicalo al pensiero.</li>
+        <li>Dalla porta laterale, crea i salti verso “Acciaio al carbonio”, “Metallurgica Alfa” e “ISO 4017”.</li>
+        <li>Scrivi la scheda tecnica nella nota.</li>
+      </ol>
+      <h3>3. I dati di input</h3>
+      <p>Il resto arriva da un’esportazione dell’ERP, qui semplificata in un CSV separato da punto e virgola. I fornitori sono fittizi; le norme sono reali: ISO 4017 (viti a testa esagonale), ISO 4032 (dadi esagonali), ISO 7089 (rondelle piane), ISO 15 (dimensioni dei cuscinetti radiali) e ISO 3601-1 (O-ring).</p>
+      <pre class="code"><code>codigo;descricao;categoria;subcategoria;material;fornecedor;norma;estoque
+PAR-M8X30;Parafuso sextavado M8x30;Fixadores;Parafusos;Aço carbono;Metalúrgica Alfa;ISO 4017;1200
+PAR-M6X20;Parafuso sextavado M6x20;Fixadores;Parafusos;Aço inox A2-70;Metalúrgica Alfa;ISO 4017;850
+POR-M8;Porca sextavada M8;Fixadores;Porcas;Aço carbono;Metalúrgica Alfa;ISO 4032;3000
+ARR-8;Arruela lisa 8 mm;Fixadores;Arruelas;Aço carbono;Metalúrgica Alfa;ISO 7089;5000
+ROL-6204;Rolamento de esferas 6204-2RS;Transmissão;Rolamentos;Aço cromo;Rolamentos Beta;ISO 15;80
+VED-OR20;Anel O-ring 20x2 NBR 70;Vedação;Anéis O-ring;Borracha NBR;Vedações Gama;ISO 3601-1;400</code></pre>
+      <h3>4. Lo script di importazione</h3>
+      <p>Lo script usa solo la libreria <code>requests</code> e sei endpoint dell’API. È <strong>idempotente</strong>: prima di creare un pensiero, lo cerca per nome esatto; prima di collegarne due, verifica se il collegamento esiste già. Può girare ogni notte senza duplicare nulla. <sup><a href="#ref-12-it">[12]</a></sup> <sup><a href="#ref-13-it">[13]</a></sup></p>
+      <pre class="code"><code>"""Carrega pecas.csv num cérebro do TheBrain usando a API REST."""
+import csv
+import os
+
+import requests
+
+API = os.environ.get("THEBRAIN_API_URL", "https://api.bra.in").rstrip("/")
+BRAIN = os.environ["THEBRAIN_BRAIN_ID"]
+CSV = os.environ.get("PECAS_CSV", "pecas.csv")
+S = requests.Session()
+S.headers["Authorization"] = "Bearer " + os.environ["THEBRAIN_API_KEY"]
+
+NORMAL, TIPO = 1, 2            <span class="c"># kind</span>
+FILHO, PAI, SALTO = 1, 2, 3    <span class="c"># relation</span>
+PRIVADO = 1                    <span class="c"># acType</span>
+ids = {}
+
+
+def vazio(r):
+    return not r.ok or r.text.strip() in ("", "null")
+
+
+def buscar(nome):
+    if nome not in ids:
+        r = S.get(f"{API}/thoughts/{BRAIN}", params={"nameExact": nome})
+        ids[nome] = None if vazio(r) else r.json()["id"]
+    return ids[nome]
+
+
+def ligar(a, b, relacao):
+    if not vazio(S.get(f"{API}/links/{BRAIN}/{a}/{b}")):
+        return  <span class="c"># já estão ligados</span>
+    corpo = {"thoughtIdA": a, "thoughtIdB": b, "relation": relacao}
+    S.post(f"{API}/links/{BRAIN}", json=corpo).raise_for_status()
+
+
+def garantir(nome, origem=None, relacao=FILHO, tipo=None, rotulo=None, kind=NORMAL):
+    tid = buscar(nome)
+    if tid:
+        if origem:
+            ligar(origem, tid, relacao)
+        return tid
+    corpo = {"name": nome, "kind": kind, "acType": PRIVADO}
+    if origem:
+        corpo.update(sourceThoughtId=origem, relation=relacao)
+    if tipo:
+        corpo["typeId"] = tipo
+    if rotulo:
+        corpo["label"] = rotulo
+    r = S.post(f"{API}/thoughts/{BRAIN}", json=corpo)
+    r.raise_for_status()
+    ids[nome] = r.json()["id"]
+    return ids[nome]
+
+
+home = S.get(f"{API}/brains/{BRAIN}").json()["homeThoughtId"]
+tipos = {t: garantir(t, kind=TIPO)
+         for t in ("Peça", "Categoria", "Material", "Fornecedor", "Norma")}
+catalogo = garantir("Catálogo de peças", home)
+hubs = {h: garantir(h, home) for h in ("Materiais", "Fornecedores", "Normas")}
+jumps = (("material", "Material", "Materiais"),
+         ("fornecedor", "Fornecedor", "Fornecedores"),
+         ("norma", "Norma", "Normas"))
+
+with open(CSV, encoding="utf-8") as f:
+    for p in csv.DictReader(f, delimiter=";"):
+        cat = garantir(p["categoria"], catalogo, tipo=tipos["Categoria"])
+        sub = garantir(p["subcategoria"], cat, tipo=tipos["Categoria"])
+        peca = garantir(p["descricao"], sub, tipo=tipos["Peça"], rotulo=p["codigo"])
+        for coluna, tipo, hub in jumps:
+            alvo = garantir(p[coluna], hubs[hub], tipo=tipos[tipo])
+            ligar(peca, alvo, SALTO)
+        nota = ("| Campo | Valor |\n|---|---|\n"
+                f"| Código | {p['codigo']} |\n"
+                f"| Estoque | {p['estoque']} un. |\n")
+        S.post(f"{API}/notes/{BRAIN}/{peca}/update",
+               json={"markdown": nota}).raise_for_status()
+        print("ok:", p["codigo"], "-", p["descricao"])</code></pre>
+      <p>I numeri dello script vengono dalla specifica dell’API: <sup><a href="#ref-12-it">[12]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Campo</th><th scope="col">Valori</th></tr></thead>
+          <tbody>
+            <tr><td><code>kind</code></td><td>1 normale · 2 tipo · 3 evento · 4 tag · 5 sistema</td></tr>
+            <tr><td><code>relation</code></td><td>1 figlio · 2 genitore · 3 salto · 4 fratello</td></tr>
+            <tr><td><code>acType</code></td><td>0 pubblico · 1 privato</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>5. Esecuzione</h3>
+      <pre class="code"><code>python -m pip install requests
+read -rs THEBRAIN_API_KEY &amp;&amp; export THEBRAIN_API_KEY
+export THEBRAIN_BRAIN_ID=00000000-0000-0000-0000-000000000000
+python importa_pecas.py</code></pre>
+      <pre class="code"><code>ok: PAR-M8X30 - Parafuso sextavado M8x30
+ok: PAR-M6X20 - Parafuso sextavado M6x20
+ok: POR-M8 - Porca sextavada M8
+ok: ARR-8 - Arruela lisa 8 mm
+ok: ROL-6204 - Rolamento de esferas 6204-2RS
+ok: VED-OR20 - Anel O-ring 20x2 NBR 70</code></pre>
+      <aside class="note">
+        <p><strong>Come l’ho testato:</strong> senza una chiave reale a disposizione, ho eseguito lo script contro un simulatore locale che imita gli endpoint della specifica ufficiale (versione 1.0.5). Alla prima esecuzione ha creato 35 pensieri, 48 collegamenti e 6 note; alla seconda, niente di nuovo. Prima di puntarlo a un cervello vero, provalo su un cervello di test.</p>
+      </aside>
+      <h3>6. Interrogare</h3>
+      <p>Nell’app, clicca su “Acciaio al carbonio”: i salti mostrano tutti i pezzi fatti con quel materiale. Clicca su “Metallurgica Alfa”: compare tutto ciò che fornisce. È l’equivalente visivo di una <code>JOIN</code>. Dall’API, la ricerca testuale e il vicinato di un pensiero svolgono lo stesso ruolo:</p>
+      <pre class="code"><code>curl -s -H "Authorization: Bearer $THEBRAIN_API_KEY" \
+  "https://api.bra.in/search/$THEBRAIN_BRAIN_ID?queryText=M8&amp;maxResults=30"
+
+curl -s -H "Authorization: Bearer $THEBRAIN_API_KEY" \
+  "https://api.bra.in/thoughts/$THEBRAIN_BRAIN_ID/$MATERIAL_ID/graph"</code></pre>
+      <p>La risposta di <code>/graph</code> separa <code>parents</code>, <code>children</code>, <code>jumps</code>, <code>siblings</code>, <code>tags</code> e <code>links</code>. I pezzi che usano il materiale arrivano in <code>jumps</code>. <sup><a href="#ref-12-it">[12]</a></sup></p>
+      <h3>7. Prossimi passi</h3>
+      <ul>
+        <li>Contrassegna i pezzi con i tag “Critico” o “Obsoleto”.</li>
+        <li>Crea kit: un pensiero “Kit di montaggio della pompa” come genitore aggiuntivo dei pezzi che lo compongono.</li>
+        <li>Allega disegni in PDF con <code>POST /attachments/{brainId}/{thoughtId}/file</code>.</li>
+        <li>Aggiorna nomi, etichette e colori con <code>PATCH</code>, che segue il formato JSON Patch. <sup><a href="#ref-12-it">[12]</a></sup> <sup><a href="#ref-24-it">[24]</a></sup></li>
+      </ul>
+    </section>
+
+    <section id="conclusoes-it" aria-labelledby="h-conclusoes-it">
+      <h2 id="h-conclusoes-it">Conclusioni</h2>
+      <ul>
+        <li>In fondo, TheBrain è un <strong>grafo della conoscenza</strong> con un’ottima interfaccia per navigarlo. Dà il meglio quando le relazioni contano più delle colonne.</li>
+        <li><strong>Installarlo è semplice</strong> sul desktop e sul web. Docker e Kubernetes sono possibili ma non ufficiali: servono a ospitare il desktop su un server e, soprattutto, ad automatizzare il caricamento dei dati tramite l’API.</li>
+        <li>L’<strong>API REST</strong>, nel cloud o locale, fa di TheBrain una destinazione di integrazione. L’esempio carica un database di pezzi da un CSV senza duplicare nulla.</li>
+        <li><strong>Non sostituisce</strong> il database relazionale né l’ERP: non ha integrità, transazioni né aggregazioni. Usalo come strato di navigazione e documentazione, alimentato dal sistema proprietario dei dati.</li>
+        <li>Per i dubbi, le fonti migliori sono la documentazione interattiva dell’API, la guida utente e il forum ufficiale. <sup><a href="#ref-12-it">[12]</a></sup> <sup><a href="#ref-14-it">[14]</a></sup> <sup><a href="#ref-16-it">[16]</a></sup></li>
+      </ul>
+      <a class="back" href="#top">↑ Torna all’inizio</a>
+    </section>
+
+    <section id="referencias-it" aria-labelledby="h-referencias-it">
+      <h2 id="h-referencias-it">Riferimenti</h2>
+      <ol class="refs">
+        <li id="ref-1-it"><strong>TheBrain Technologies</strong>, “About TheBrain”, consultato il 28/09/2026, <a href="https://www.thebrain.com/about" rel="noopener">thebrain.com/about</a>.</li>
+        <li id="ref-2-it"><strong>Wikipedia</strong> (in inglese), “TheBrain”, consultato il 28/09/2026, <a href="https://en.wikipedia.org/wiki/TheBrain" rel="noopener">en.wikipedia.org/wiki/TheBrain</a>.</li>
+        <li id="ref-3-it"><strong>Wikipedia</strong> (in inglese), “TheBrain Technologies”, consultato il 28/09/2026, <a href="https://en.wikipedia.org/wiki/TheBrain_Technologies" rel="noopener">en.wikipedia.org/wiki/TheBrain_Technologies</a>.</li>
+        <li id="ref-4-it"><strong>Computerworld</strong>, “Linking Your Thinking”, 31/01/2000, consultato il 28/09/2026, <a href="https://www.computerworld.com/article/1368716/linking-your-thinking.html" rel="noopener">computerworld.com/article/1368716/linking-your-thinking.html</a>.</li>
+        <li id="ref-5-it"><strong>PRWeb</strong>, “TheBrain 8 Delivers Advanced Information Management with Powerful New Knowledge Visualization Features”, 20/11/2013, consultato il 28/09/2026, <a href="https://www.prweb.com/releases/thebrain_8_delivers_advanced_information_management_with_powerful_new_knowledge_visualization_features/prweb11352059.htm" rel="noopener">prweb.com/releases/thebrain_8_delivers_advanced_information_management_with_powerful_new_knowledge_visualization_features/prweb11352059.htm</a>.</li>
+        <li id="ref-6-it"><strong>TheBrain Blog</strong>, “Introducing TheBrain API”, 01/11/2023, consultato il 28/09/2026, <a href="https://www.thebrain.com/blog/introducing-thebrain-api" rel="noopener">thebrain.com/blog/introducing-thebrain-api</a>.</li>
+        <li id="ref-7-it"><strong>TheBrain Technologies</strong>, “TheBrain 15 — Beyond next-gen, with Cerebro AI”, consultato il 28/09/2026, <a href="https://www.thebrain.com/products/thebrain/thebrain15" rel="noopener">thebrain.com/products/thebrain/thebrain15</a>.</li>
+        <li id="ref-8-it"><strong>TheBrain Blog</strong>, “TheBrain 15 Achieves True Cross-Platform Parity: One Codebase, Five Platforms, Full Feature Equality”, 24/04/2026, consultato il 28/09/2026, <a href="https://old.thebrain.com/blog/true-cross-platform-parity" rel="noopener">old.thebrain.com/blog/true-cross-platform-parity</a>.</li>
+        <li id="ref-9-it"><strong>TheBrain Blog</strong>, “Unifying TheBrain: Version 15 Now Live on the Web”, consultato il 28/09/2026, <a href="https://www.thebrain.com/blog/unifying-thebrain" rel="noopener">thebrain.com/blog/unifying-thebrain</a>.</li>
+        <li id="ref-10-it"><strong>TheBrain Blog</strong>, “TheBrain API: Now Fully Local and Unrestrained”, 28/04/2026, consultato il 28/09/2026, <a href="https://thebrain.com/blog/thebrain-api-local" rel="noopener">thebrain.com/blog/thebrain-api-local</a>.</li>
+        <li id="ref-11-it"><strong>TheBrain Technologies</strong>, “Download TheBrain — Free, forever”, consultato il 28/09/2026, <a href="https://www.thebrain.com/download" rel="noopener">thebrain.com/download</a>.</li>
+        <li id="ref-12-it"><strong>TheBrain Technologies</strong>, <em>TheBrain API</em>, documentazione interattiva, versione 1.0.5, consultato il 28/09/2026, <a href="https://api.bra.in" rel="noopener">api.bra.in</a>.</li>
+        <li id="ref-13-it"><strong>TheBrainTech</strong>, “thebrain-api-quickstart-python”, GitHub, consultato il 28/09/2026, <a href="https://github.com/TheBrainTech/thebrain-api-quickstart-python" rel="noopener">github.com/TheBrainTech/thebrain-api-quickstart-python</a>.</li>
+        <li id="ref-14-it"><strong>TheBrain Technologies</strong>, <em>TheBrain 14 User Guide</em> (PDF), consultato il 28/09/2026, <a href="https://assets.thebrain.com/documents/TheBrain14/TheBrain14-User-Guide-v01.pdf" rel="noopener">assets.thebrain.com/documents/TheBrain14/TheBrain14-User-Guide-v01.pdf</a>.</li>
+        <li id="ref-15-it"><strong>TheBrain Technologies</strong>, “Tutorials”, consultato il 28/09/2026, <a href="https://www.thebrain.com/tutorials" rel="noopener">thebrain.com/tutorials</a>.</li>
+        <li id="ref-16-it"><strong>TheBrain Forums</strong>, forum ufficiale, consultato il 28/09/2026, <a href="https://forums.thebrain.com/" rel="noopener">forums.thebrain.com</a>.</li>
+        <li id="ref-17-it"><strong>LinuxServer.io</strong>, “webtop”, consultato il 28/09/2026, <a href="https://docs.linuxserver.io/images/docker-webtop/" rel="noopener">docs.linuxserver.io/images/docker-webtop</a>.</li>
+        <li id="ref-18-it"><strong>Docker</strong>, “Compose file reference”, consultato il 28/09/2026, <a href="https://docs.docker.com/reference/compose-file/" rel="noopener">docs.docker.com/reference/compose-file</a>.</li>
+        <li id="ref-19-it"><strong>Kubernetes</strong>, “Deployments”, consultato il 28/09/2026, <a href="https://kubernetes.io/docs/concepts/workloads/controllers/deployment/" rel="noopener">kubernetes.io/docs/concepts/workloads/controllers/deployment</a>.</li>
+        <li id="ref-20-it"><strong>Kubernetes</strong>, “Persistent Volumes”, consultato il 28/09/2026, <a href="https://kubernetes.io/docs/concepts/storage/persistent-volumes/" rel="noopener">kubernetes.io/docs/concepts/storage/persistent-volumes</a>.</li>
+        <li id="ref-21-it"><strong>Kubernetes</strong>, “CronJob”, consultato il 28/09/2026, <a href="https://kubernetes.io/docs/concepts/workloads/controllers/cron-job/" rel="noopener">kubernetes.io/docs/concepts/workloads/controllers/cron-job</a>.</li>
+        <li id="ref-22-it"><strong>Kubernetes</strong>, “Secrets”, consultato il 28/09/2026, <a href="https://kubernetes.io/docs/concepts/configuration/secret/" rel="noopener">kubernetes.io/docs/concepts/configuration/secret</a>.</li>
+        <li id="ref-23-it"><strong>Kubernetes</strong>, “Use Port Forwarding to Access Applications in a Cluster”, consultato il 28/09/2026, <a href="https://kubernetes.io/docs/tasks/access-application-cluster/port-forward-access-application-cluster/" rel="noopener">kubernetes.io/docs/tasks/access-application-cluster/port-forward-access-application-cluster</a>.</li>
+        <li id="ref-24-it"><strong>IETF</strong>, RFC 6902, “JavaScript Object Notation (JSON) Patch”, 2013, consultato il 28/09/2026, <a href="https://www.rfc-editor.org/rfc/rfc6902" rel="noopener">rfc-editor.org/rfc/rfc6902</a>.</li>
+      </ol>
+      <a class="back" href="#top">↑ Torna all’inizio</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span>Giovani Perotto Mesquita · Porto Alegre, RS</span>
+    <span><a href="projects.html" data-projects data-foot="0">Projetos</a> · <a href="resume.html" data-resume data-foot="1">Currículo</a> · <a href="contact.html" data-contact data-foot="2">Contato</a></span>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('.lang [role="tab"]'));
+    var titles = {"pt": "TheBrain: um cérebro digital para os seus dados · Giovani Perotto Mesquita", "en": "TheBrain: a digital brain for your data · Giovani Perotto Mesquita", "it": "TheBrain: un cervello digitale per i tuoi dati · Giovani Perotto Mesquita"};
+    var foots = {"pt": ["Projetos", "Currículo", "Contato"], "en": ["Projects", "Resume", "Contact"], "it": ["Progetti", "Curriculum", "Contatti"]};
+    var langs = { pt: 'pt-BR', en: 'en', it: 'it' };
+    var bar = document.querySelector('.progress');
+    var article = document.querySelector('[role="tabpanel"]:not([hidden]) article');
+
+    function show(id, focus) {
+      tabs.forEach(function (t) {
+        var on = t.getAttribute('aria-controls') === id;
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+        if (on && focus) t.focus();
+      });
+      document.documentElement.lang = langs[id];
+      document.title = titles[id];
+      var suffix = id === 'pt' ? '' : '#' + id;
+      [['data-home', 'index.html'], ['data-about', 'about.html'], ['data-resume', 'resume.html'], ['data-projects', 'projects.html'], ['data-contact', 'contact.html']].forEach(function (p) {
+        document.querySelectorAll('[' + p[0] + ']').forEach(function (a) { a.href = p[1] + suffix; });
+      });
+      document.querySelectorAll('[data-foot]').forEach(function (a) { a.textContent = foots[id][+a.getAttribute('data-foot')]; });
+      article = document.querySelector('#' + id + ' article');
+      if (history.replaceState) history.replaceState(null, '', id === 'pt' ? location.pathname : '#' + id);
+      progress();
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () { show(t.getAttribute('aria-controls')); });
+      t.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (d) { e.preventDefault(); show(tabs[(i + d + tabs.length) % tabs.length].getAttribute('aria-controls'), true); }
+      });
+    });
+
+    // barra de progresso de leitura
+    function progress() {
+      if (!article) return;
+      var r = article.getBoundingClientRect();
+      var total = r.height - window.innerHeight;
+      var p = total > 0 ? Math.min(Math.max(-r.top / total, 0), 1) : 1;
+      bar.style.width = (p * 100) + '%';
+    }
+    window.addEventListener('scroll', progress, { passive: true });
+    window.addEventListener('resize', progress);
+
+    // destaca a seção atual no índice
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          var panel = e.target.closest('[role="tabpanel"]');
+          panel.querySelectorAll('.toc a').forEach(function (a) {
+            if (a.getAttribute('href') === '#' + e.target.id) a.setAttribute('aria-current', 'true');
+            else a.removeAttribute('aria-current');
+          });
+        });
+      }, { rootMargin: '-20% 0px -70% 0px' });
+      document.querySelectorAll('article section[id]').forEach(function (s) { io.observe(s); });
+    }
+
+    var h = (location.hash || '').replace('#', '');
+    var m = h.match(/^(?:.*-)?(en|it)$/);
+    if (m) {
+      show(m[1]);
+      if (h !== m[1]) { var el = document.getElementById(h); if (el) el.scrollIntoView(); if (history.replaceState) history.replaceState(null, '', '#' + h); }
+    } else progress();
+  })();
+</script>
+</body>
+</html>
