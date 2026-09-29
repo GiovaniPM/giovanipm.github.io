@@ -155,6 +155,11 @@
   .cta .actions .btn:hover { border-color: var(--accent); }
   .cta .btn.primary { background: var(--accent-strong); border-color: var(--accent-strong); color: var(--surface); }
 
+  /* comentários (giscus: guardados nas Discussions do repositório) */
+  section.comments { padding: 0 0 5rem; }
+  .comments-box { background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--accent-strong); border-radius: var(--radius); padding: 1.6rem clamp(1rem, 3vw, 2rem); min-height: 8rem; }
+  .comments-pending { margin: 0; color: var(--muted); }
+
   footer { background: var(--navy-deep); color: var(--on-navy-muted); border-top: 3px solid var(--gold); padding: 1.5rem 0 calc(1.5rem + env(safe-area-inset-bottom, 0px)); font-size: 0.88rem; }
   footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1.5rem; }
   footer a { color: var(--on-navy); text-decoration: none; }
@@ -524,6 +529,18 @@
 </main>
 </div>
 
+<!-- ===================== COMENTÁRIOS (comum aos três idiomas) ===================== -->
+<div class="wrap">
+  <section class="comments" id="comentarios" aria-labelledby="comments-title">
+    <h2 id="comments-title" data-i18n="title">Comentários</h2>
+    <p class="intro" data-i18n="intro">Deixe um comentário, uma pergunta ou uma sugestão. Os comentários são públicos e aparecem abaixo desta área; para comentar, entre com a sua conta do GitHub.</p>
+    <div class="comments-box">
+      <div class="giscus"></div>
+      <p class="comments-pending" data-i18n="pending" hidden>A área de comentários está sendo configurada. Volte em breve.</p>
+    </div>
+  </section>
+</div>
+
 <footer>
   <div class="wrap">
     <span>Giovani Perotto Mesquita · Porto Alegre, RS</span>
@@ -578,6 +595,53 @@
       }
     });
   });
+</script>
+<script>
+  // comentários com giscus: ficam nas Discussions do repositório e aparecem abaixo do formulário
+  (function () {
+    var GISCUS = {
+      repo: 'GiovaniPM/giovanipm.github.io',
+      repoId: 'MDEwOlJlcG9zaXRvcnkyMjE1MDgzMDg=',
+      category: 'Announcements',
+      categoryId: '' // preencher com o ID da categoria gerado em giscus.app
+    };
+    var text = {
+      pt: { title: 'Comentários', intro: 'Deixe um comentário, uma pergunta ou uma sugestão. Os comentários são públicos e aparecem abaixo desta área; para comentar, entre com a sua conta do GitHub.', pending: 'A área de comentários está sendo configurada. Volte em breve.' },
+      en: { title: 'Comments', intro: 'Leave a comment, a question or a suggestion. Comments are public and appear below this area; to comment, sign in with your GitHub account.', pending: 'The comments area is being set up. Please check back soon.' },
+      it: { title: 'Commenti', intro: 'Lascia un commento, una domanda o un suggerimento. I commenti sono pubblici e compaiono sotto quest’area; per commentare, accedi con il tuo account GitHub.', pending: 'L’area commenti è in fase di configurazione. Torna presto.' }
+    };
+    function current() { var l = document.documentElement.lang || 'pt'; return l.slice(0, 2) === 'pt' ? 'pt' : l.slice(0, 2); }
+    function apply() {
+      var id = current(), t = text[id] || text.pt;
+      document.querySelectorAll('.comments [data-i18n]').forEach(function (el) { el.textContent = t[el.getAttribute('data-i18n')]; });
+      var frame = document.querySelector('iframe.giscus-frame');
+      if (frame) frame.contentWindow.postMessage({ giscus: { setConfig: { lang: id } } }, 'https://giscus.app');
+    }
+    if (!GISCUS.categoryId) {
+      document.querySelector('.comments-pending').hidden = false;
+    } else {
+      var s = document.createElement('script');
+      s.src = 'https://giscus.app/client.js';
+      s.setAttribute('data-repo', GISCUS.repo);
+      s.setAttribute('data-repo-id', GISCUS.repoId);
+      s.setAttribute('data-category', GISCUS.category);
+      s.setAttribute('data-category-id', GISCUS.categoryId);
+      s.setAttribute('data-mapping', 'specific');
+      s.setAttribute('data-term', 'Comentários da página de contato');
+      s.setAttribute('data-strict', '1');
+      s.setAttribute('data-reactions-enabled', '1');
+      s.setAttribute('data-emit-metadata', '0');
+      s.setAttribute('data-input-position', 'top');
+      s.setAttribute('data-theme', 'preferred_color_scheme');
+      s.setAttribute('data-lang', current());
+      s.setAttribute('data-loading', 'lazy');
+      s.crossOrigin = 'anonymous';
+      s.async = true;
+      document.querySelector('.comments-box').appendChild(s);
+    }
+    new MutationObserver(apply).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
+    apply();
+  })();
 </script>
 <script>
   // seletor de idioma em combobox: abre a lista, sincroniza o botão e fecha
