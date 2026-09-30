@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Monitoria de negócios · Giovani Perotto Mesquita</title>
+<meta name="description" content="Monitoria de negócios: o que é, como difere da monitoria técnica, o ciclo e a arquitetura de referência, limites fixos e padrão histórico, indicadores por segmento e uma proposta de implantação pronta para usar. Disponível em português, inglês e italiano.">
+<meta name="author" content="Giovani Perotto Mesquita">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Paleta alegre: roxo e magenta vibrantes, amarelo-girassol, verde-água e coral */
+    --bg: #FFF7EC;
+    --surface: #FFFFFF;
+    --ink: #2B1B3D;
+    --text: #3E3350;
+    --muted: #756986;
+    --line: #F1E2CF;
+    --accent: #0E8074;
+    --accent-soft: #E2F6F2;
+    --accent-strong: #5B2A86;
+    --navy: #5B2A86;
+    --navy-deep: #C2185B;
+    --on-navy: #FFFFFF;
+    --on-navy-muted: #FCE4F0;
+    --gold: #FFB703;
+    --gold-ink: #B35300;
+    --gold-soft: #FFF1C9;
+    --coral: #FF6B6B;
+    --sky: #3A86FF;
+    --mint: #2A9D8F;
+    --pink: #EF476F;
+    --sans: "Hanken Grotesk", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1A1328; --surface: #241A36; --ink: #F7F0FF; --text: #E2D8F0; --muted: #A898C0;
+      --line: #3A2D52; --accent: #5FD3C4; --accent-soft: #1D3A38; --accent-strong: #C9A7F5;
+      --navy: #3D1A5C; --navy-deep: #7A1240; --gold: #FFC94D; --gold-ink: #FFC94D; --gold-soft: #3A2E12;
+      --coral: #FF8A8A; --sky: #6FA8FF; --mint: #4CC3B3; --pink: #FF6F91;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 4px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 1.5rem; }
+
+  /* navegação */
+  .nav {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: saturate(160%) blur(10px); -webkit-backdrop-filter: saturate(160%) blur(10px);
+    border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px);
+  }
+  .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 58px; gap: 1rem; }
+  .brand { font-family: var(--serif); font-weight: 600; color: var(--accent-strong); text-decoration: none; font-size: 1.05rem; }
+  .nav ul { list-style: none; display: flex; gap: 1.4rem; margin: 0; padding: 0; }
+  .nav ul a { color: var(--muted); text-decoration: none; font-size: 0.93rem; font-weight: 500; }
+  .nav ul a:hover, .nav ul a[aria-current="page"] { color: var(--ink); }
+  .nav-right { display: flex; align-items: center; gap: 1rem; }
+  .lang { position: relative; }
+  .lang button { font: inherit; cursor: pointer; }
+  .lang .flag { width: 18px; height: 12px; border-radius: 2px; flex: none; box-shadow: 0 0 0 1px rgba(0,0,0,.12); }
+  .lang-current { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.8rem; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 0.3rem 0.5rem 0.3rem 0.55rem; }
+  .lang-current:hover { border-color: var(--muted); }
+  .lang-now { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .lang .chev { width: 12px; height: 12px; color: var(--muted); transition: transform .15s ease; }
+  .lang-current[aria-expanded="true"] .chev { transform: rotate(180deg); }
+  .lang-list { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; min-width: 10.5rem; padding: 0.3rem; display: grid; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 12px 30px rgba(0,0,0,.18); }
+  .lang-list[hidden] { display: none; }
+  .lang-list [role="option"] { display: flex; align-items: center; gap: 0.6rem; width: 100%; text-align: left; font-size: 0.9rem; font-weight: 500; color: var(--ink); background: none; border: 0; border-radius: 6px; padding: 0.45rem 0.6rem; }
+  .lang-list [role="option"]:hover, .lang-list [role="option"]:focus-visible { background: color-mix(in srgb, var(--muted) 14%, transparent); }
+  .lang-list [role="option"][aria-selected="true"] { color: var(--accent-strong); font-weight: 600; }
+  .lang-list [role="option"][aria-selected="true"]::after { content: "✓"; margin-left: auto; }
+  @media (max-width: 480px) { .lang-now { font-size: 0; gap: 0; } }
+  [hidden] { display: none !important; }
+  .progress { position: absolute; left: 0; bottom: -1px; height: 3px; width: 0; background: linear-gradient(90deg, var(--coral), var(--gold), var(--mint)); }
+
+  /* abertura */
+  .hero-band {
+    background:
+      radial-gradient(900px 420px at 85% -10%, rgba(255,255,255,.07), transparent 60%),
+      linear-gradient(160deg, var(--navy) 0%, var(--navy-deep) 100%);
+    border-top: 4px solid var(--gold); color: var(--on-navy);
+  }
+  .hero { padding: 3.5rem 0 3.5rem; max-width: 820px; }
+  .crumb { margin: 0 0 1.4rem; font-size: 0.92rem; }
+  .crumb a { color: var(--on-navy-muted); text-decoration: none; }
+  .crumb a:hover { color: var(--gold); }
+  .eyebrow { color: var(--gold); font-weight: 600; font-size: 1rem; margin: 0 0 0.7rem; }
+  h1 { font-family: var(--serif); font-weight: 600; color: var(--on-navy); font-size: clamp(2.1rem, 5vw, 3.4rem); line-height: 1.08; letter-spacing: -0.025em; margin: 0; }
+  .dek { font-family: var(--serif); font-style: italic; font-size: clamp(1.1rem, 2.2vw, 1.35rem); color: var(--on-navy-muted); margin: 1.1rem 0 1.6rem; max-width: 58ch; }
+  .byline { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; font-size: 0.92rem; color: var(--on-navy-muted); }
+  .byline strong { color: var(--on-navy); font-weight: 600; }
+  .byline .credit { margin-left: auto; font-style: italic; }
+
+  /* layout do artigo */
+  .layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 3rem; padding: 3rem 0 4rem; align-items: start; }
+  .toc { position: sticky; top: 82px; font-size: 0.92rem; }
+  .toc h2 { font-family: var(--sans); font-size: 0.85rem; font-weight: 600; color: var(--muted); margin: 0 0 0.7rem; border: 0; padding: 0; }
+  .toc ol { list-style: none; margin: 0; padding: 0; counter-reset: toc; border-left: 2px solid var(--line); }
+  .toc li { counter-increment: toc; }
+  .toc a { display: block; padding: 0.35rem 0 0.35rem 1rem; margin-left: -2px; border-left: 2px solid transparent; color: var(--muted); text-decoration: none; line-height: 1.35; }
+  .toc a::before { content: counter(toc) ". "; color: var(--gold-ink); font-weight: 600; }
+  .toc a:hover { color: var(--ink); }
+  .toc a[aria-current="true"] { color: var(--accent-strong); border-left-color: var(--gold); font-weight: 600; }
+
+  article { background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: var(--radius); padding: 3rem clamp(1.25rem, 4vw, 3.5rem); min-width: 0; }
+  article section + section { margin-top: 3.2rem; }
+  article h2 { font-family: var(--serif); font-weight: 600; color: var(--ink); font-size: clamp(1.5rem, 2.8vw, 1.9rem); letter-spacing: -0.015em; line-height: 1.2; margin: 0 0 1.1rem; padding-left: 0.9rem; border-left: 3px solid var(--gold); }
+  article h3 { font-family: var(--sans); font-size: 1.1rem; font-weight: 600; color: var(--ink); margin: 2rem 0 0.8rem; }
+  article p, article li { font-family: var(--serif); font-size: 1.12rem; line-height: 1.7; color: var(--text); }
+  article p { margin: 0 0 1.1rem; max-width: 68ch; }
+  article strong { color: var(--ink); }
+  sup a { font-family: var(--sans); font-size: 0.72rem; font-weight: 700; text-decoration: none; padding: 0 0.15em; }
+
+  blockquote { margin: 1.5rem 0; padding: 1.2rem 1.5rem; background: var(--accent-soft); border-left: 3px solid var(--gold); border-radius: 0 10px 10px 0; }
+  blockquote p { font-size: 1.05rem; margin: 0 0 0.8rem; }
+  blockquote p:last-child { margin-bottom: 0; }
+
+  /* figuras */
+  figure { margin: 2rem 0; }
+  figure img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: #FFF7EC; }
+  figcaption { margin-top: 0.6rem; font-size: 0.9rem; color: var(--muted); text-align: center; font-family: var(--sans); line-height: 1.5; }
+
+  /* passo a passo */
+  .steps { counter-reset: step; list-style: none; padding: 0; margin: 1.5rem 0; }
+  .steps li { counter-increment: step; position: relative; padding: 1rem 0 1rem 3.6rem; margin: 0; border-top: 1px solid var(--line); }
+  .steps li:last-child { border-bottom: 1px solid var(--line); }
+  .steps li::before {
+    content: counter(step); position: absolute; left: 0; top: 0.95rem;
+    width: 2.3rem; height: 2.3rem; border-radius: 50%; display: grid; place-items: center;
+    background: var(--navy); color: #fff; font-family: var(--serif); font-weight: 600; font-size: 1.1rem;
+  }
+  .steps li:nth-child(6n+1)::before { background: var(--coral); }
+  .steps li:nth-child(6n+2)::before { background: var(--sky); }
+  .steps li:nth-child(6n+3)::before { background: var(--gold); color: #2B1B3D; }
+  .steps li:nth-child(6n+4)::before { background: var(--mint); }
+  .steps li:nth-child(6n+5)::before { background: var(--pink); }
+
+  /* fases da proposta */
+  .timeline { list-style: none; padding: 0; margin: 1.5rem 0; border-left: 2px solid var(--line); }
+  .timeline li { position: relative; padding: 0 0 1.3rem 1.4rem; margin: 0; }
+  .timeline li:last-child { padding-bottom: 0; }
+  .timeline li::before { content: ""; position: absolute; left: -7px; top: 0.55rem; width: 12px; height: 12px; border-radius: 50%; background: var(--gold); }
+  .timeline .when { display: block; font-family: var(--sans); font-weight: 700; font-size: 0.95rem; color: var(--accent-strong); }
+
+  /* tabelas */
+  .table-wrap { overflow-x: auto; margin: 1.5rem 0; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-family: var(--sans); font-size: 0.95rem; }
+  th, td { text-align: left; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  thead th { background: var(--gold-soft); color: var(--ink); font-weight: 600; white-space: nowrap; }
+  tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
+  td:first-child, tbody th { font-weight: 600; color: var(--ink); }
+  .sheet th[scope="row"] { width: 30%; background: color-mix(in srgb, var(--gold-soft) 45%, var(--surface)); }
+
+  .highlight { font-family: var(--sans); font-size: 1rem; padding: 1rem 1.2rem; border-radius: 10px; background: var(--gold-soft); color: var(--text); max-width: none; }
+  .highlight strong { color: var(--ink); }
+
+  /* cartões */
+  .cards { list-style: none; padding: 0; margin: 1rem 0 1.5rem; display: grid; gap: 0.8rem; }
+  .cards li { margin: 0; padding: 1rem 1.3rem; border: 1px solid var(--line); border-left: 4px solid var(--mint); border-radius: 0 10px 10px 0; background: var(--surface); font-size: 1.05rem; }
+  .cards.warn li { border-left-color: var(--pink); }
+
+  .refs { font-family: var(--sans); padding-left: 1.4rem; margin: 0; }
+  .refs li { font-family: var(--sans); font-size: 0.92rem; line-height: 1.55; margin-bottom: 0.7rem; word-break: break-word; }
+  .refs li:target { background: var(--gold-soft); border-radius: 6px; }
+
+  .back { display: inline-block; margin-top: 1rem; font-family: var(--sans); font-size: 0.85rem; text-decoration: none; }
+
+  footer { background: var(--navy-deep); color: var(--on-navy-muted); border-top: 3px solid var(--gold); padding: 1.5rem 0 calc(1.5rem + env(safe-area-inset-bottom, 0px)); font-size: 0.88rem; }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1.5rem; }
+  footer a { color: var(--on-navy); text-decoration: none; }
+  footer a:hover { color: var(--gold); }
+
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+    .toc { position: static; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.2rem 1.4rem; }
+  }
+  @media (max-width: 720px) {
+    .nav ul { display: none; }
+    .hero { padding: 2.5rem 0; }
+    article p, article li { font-size: 1.05rem; }
+    th, td { padding: 0.6rem 0.7rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  @media print {
+    .nav, .toc, footer, .back, .crumb { display: none !important; }
+    body { background: #fff; }
+    .hero-band { background: none; color: #111; border: 0; }
+    .hero-band h1 { color: #5B2A86; }
+    .dek, .byline, .byline strong { color: #333; }
+    .layout { display: block; padding: 0; }
+    article { border: 0; padding: 0; }
+    .table-wrap { overflow: visible; }
+    figure, blockquote, .steps li, .cards li, .timeline li, tr { break-inside: avoid; }
+  }
+</style>
+</head>
+<body id="top">
+
+<nav class="nav" aria-label="Navegação do site">
+  <div class="wrap">
+    <a class="brand" href="index.html" data-home>Giovani Perotto Mesquita</a>
+    <div class="nav-right">
+      <ul>
+        <li><a href="index.html" data-home>Início</a></li>
+        <li><a href="about.html" data-about>Sobre</a></li>
+        <li><a href="resume.html" data-resume>Currículo</a></li>
+        <li><a href="projects.html" data-projects aria-current="page">Projetos</a></li>
+        <li><a href="contact.html" data-contact>Contato</a></li>
+      </ul>
+      <div class="lang">
+        <button type="button" class="lang-current" aria-haspopup="listbox" aria-expanded="false" aria-controls="lang-list" data-label="Idioma / Language / Lingua" aria-label="Idioma / Language / Lingua: Português"><span class="lang-now"><svg class="flag" viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009C3B"/><path d="M10 1.6 18.4 7 10 12.4 1.6 7z" fill="#FEDF00"/><circle cx="10" cy="7" r="3.3" fill="#002776"/><path d="M6.8 6.3c2.1-.6 4.5-.2 6.4 1" stroke="#fff" stroke-width=".7" fill="none"/></svg>PT</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="lang-list" id="lang-list" role="listbox" aria-label="Idioma / Language / Lingua" hidden>
+          <button type="button" role="option" id="tab-pt" aria-controls="pt" aria-selected="true" lang="pt-BR" data-code="PT"><svg class="flag" viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009C3B"/><path d="M10 1.6 18.4 7 10 12.4 1.6 7z" fill="#FEDF00"/><circle cx="10" cy="7" r="3.3" fill="#002776"/><path d="M6.8 6.3c2.1-.6 4.5-.2 6.4 1" stroke="#fff" stroke-width=".7" fill="none"/></svg><span>Português</span></button>
+          <button type="button" role="option" id="tab-en" aria-controls="en" aria-selected="false" lang="en" tabindex="-1" data-code="EN"><svg class="flag" viewBox="0 0 19 10" aria-hidden="true"><rect width="19" height="10" fill="#B22234"/><rect y="0.769" width="19" height="0.769" fill="#fff"/><rect y="2.308" width="19" height="0.769" fill="#fff"/><rect y="3.846" width="19" height="0.769" fill="#fff"/><rect y="5.385" width="19" height="0.769" fill="#fff"/><rect y="6.923" width="19" height="0.769" fill="#fff"/><rect y="8.462" width="19" height="0.769" fill="#fff"/><rect width="7.6" height="5.385" fill="#3C3B6E"/></svg><span>English</span></button>
+          <button type="button" role="option" id="tab-it" aria-controls="it" aria-selected="false" lang="it" tabindex="-1" data-code="IT"><svg class="flag" viewBox="0 0 3 2" aria-hidden="true"><rect width="1" height="2" fill="#009246"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#CE2B37"/></svg><span>Italiano</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="progress" aria-hidden="true"></div>
+</nav>
+
+<!-- ===================== PT ===================== -->
+<div id="pt" role="tabpanel" aria-labelledby="tab-pt" lang="pt-BR">
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projetos</a></p>
+      <p class="eyebrow">Artigo</p>
+      <h1>Monitoria de negócios</h1>
+      <p class="dek">Quando a infraestrutura está toda verde e o negócio está parado: o que é a monitoria de negócios, como ela funciona e uma proposta para implantá-la.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado em <time datetime="2026-09-29">29/09/2026</time></span>
+        <span class="credit">Revisado e formatado usando Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-pt">
+    <h2 id="toc-pt">Índice</h2>
+    <ol>
+      <li><a href="#definicao-pt">O que é monitoria de negócios</a></li>
+      <li><a href="#problema-pt">Infraestrutura verde, negócio parado</a></li>
+      <li><a href="#ciclo-pt">O ciclo da monitoria</a></li>
+      <li><a href="#arquitetura-pt">Arquitetura de referência</a></li>
+      <li><a href="#deteccao-pt">Limite fixo ou padrão histórico</a></li>
+      <li><a href="#exemplos-pt">Indicadores por segmento</a></li>
+      <li><a href="#proposta-pt">Proposta de implantação</a></li>
+      <li><a href="#conclusoes-pt">Conclusões</a></li>
+      <li><a href="#referencias-pt">Referências</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="definicao-pt" aria-labelledby="h-definicao-pt">
+      <h2 id="h-definicao-pt">O que é monitoria de negócios</h2>
+      <p>Monitoria de negócios é o acompanhamento contínuo, de preferência em tempo real, dos indicadores e eventos que mostram se a operação da empresa está funcionando como deveria. O foco não está nos servidores, na CPU ou na memória, mas na saúde dos processos de negócio: pedidos, transações, propostas, faturamento, integrações com parceiros.</p>
+      <p>Em inglês, a prática aparece como <em lang="en">business monitoring</em> ou <em lang="en">business activity monitoring</em> (BAM): o acompanhamento dos processos enquanto eles ainda estão em andamento, a partir dos eventos gerados pelos sistemas operacionais. <sup><a href="#ref-1-pt">[1]</a></sup> Ela herda ideias do processamento de eventos complexos, que trata cada pedido, pagamento ou mensagem como um evento de negócio a ser correlacionado com os demais. <sup><a href="#ref-2-pt">[2]</a></sup></p>
+      <blockquote>
+        <p>O negócio está acontecendo agora como deveria? Se não, onde, desde quando e quem precisa agir?</p>
+      </blockquote>
+      <p>Na prática, a monitoria de negócios envolve cinco atividades:</p>
+      <ul class="cards">
+        <li><strong>Definir o que importa:</strong> os KPIs e eventos críticos, como volume de pedidos, taxa de aprovação de transações, tempo de liquidação, falhas em integrações com parceiros e receita por hora.</li>
+        <li><strong>Coletar dados das fontes:</strong> ERP, APIs, bancos de dados e logs de integração.</li>
+        <li><strong>Comparar com o esperado:</strong> limites, metas, SLAs e o padrão histórico. Por exemplo: “às 10h costumamos ter 500 transações; hoje foram 50”.</li>
+        <li><strong>Alertar e dar visibilidade:</strong> painéis e alertas por e-mail, Slack ou Teams, para que o negócio e a TI ajam rápido.</li>
+        <li><strong>Investigar a causa:</strong> descobrir se a queda veio de um parceiro, de uma API ou de uma regra de negócio.</li>
+      </ul>
+      <p class="highlight"><strong>Uma nota de vocabulário:</strong> em português, “monitoria” também é a atividade do monitor acadêmico. Em contexto corporativo, “monitoramento de negócios” é igualmente correto e evita a ambiguidade; neste texto, os dois termos são usados como sinônimos.</p>
+    </section>
+
+    <section id="problema-pt" aria-labelledby="h-problema-pt">
+      <h2 id="h-problema-pt">Infraestrutura verde, negócio parado</h2>
+      <p>A monitoria técnica responde se o sistema está no ar. O livro de <em lang="en">Site Reliability Engineering</em> do Google resume essa visão em quatro sinais de ouro: latência, tráfego, erros e saturação. <sup><a href="#ref-3-pt">[3]</a></sup> Métodos como o USE, de Brendan Gregg, e o RED, de Tom Wilkie, seguem a mesma linha, olhando para recursos e serviços. <sup><a href="#ref-4-pt">[4]</a></sup> <sup><a href="#ref-5-pt">[5]</a></sup></p>
+      <p>Tudo isso é necessário, mas não basta. É comum a infraestrutura estar toda verde enquanto o negócio está parado: a API responde em 200 milissegundos, só que responde “não”.</p>
+      <figure>
+        <img src="rc_images/MonitoriaCamadas.svg" alt="Dois painéis lado a lado. À esquerda, a monitoria técnica mostra tudo verde: API disponível 99,9%, tempo de resposta 200 ms, CPU 35% e erros HTTP 0,2%. À direita, a monitoria de negócios mostra tudo vermelho: 40% das propostas do parceiro X recusadas, 50 transações às 10h quando o esperado era cerca de 500, 37 pedidos parados no status 520 e receita da última hora em 38% do previsto." width="1000" height="470" loading="lazy">
+        <figcaption>Os mesmos 15 minutos vistos pelas duas monitorias: só a de negócios enxerga o problema.</figcaption>
+      </figure>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Aspecto</th><th scope="col">Monitoria técnica</th><th scope="col">Monitoria de negócios</th></tr></thead>
+          <tbody>
+            <tr><td>Pergunta</td><td>O sistema está no ar e rápido?</td><td>O negócio está acontecendo como esperado?</td></tr>
+            <tr><td>Métricas típicas</td><td>Latência, tráfego, erros, saturação, CPU, memória, disco</td><td>Pedidos por hora, taxa de aprovação, tempo de liquidação, receita, backlog por status</td></tr>
+            <tr><td>Unidade de análise</td><td>Servidor, serviço, endpoint</td><td>Processo, produto, parceiro, canal, loja</td></tr>
+            <tr><td>Quem olha</td><td>Infraestrutura, SRE, desenvolvimento</td><td>Áreas de negócio, operações, sustentação, gestão</td></tr>
+            <tr><td>Sinal de falha</td><td>Erro 5xx, timeout, recurso esgotado</td><td>Queda de volume, recusa anormal, fila parada, evento que não chegou</td></tr>
+            <tr><td>Exemplo</td><td>“A API está respondendo em 200 ms.”</td><td>“40% das propostas do parceiro X estão sendo recusadas desde ontem.”</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>As duas monitorias se complementam. A técnica costuma dizer <em>onde</em> está o defeito; a de negócios diz <em>se</em> o defeito importa e quanto ele custa. Quem só tem a primeira descobre o problema pelo cliente, pelo parceiro ou pelo fechamento do mês.</p>
+    </section>
+
+    <section id="ciclo-pt" aria-labelledby="h-ciclo-pt">
+      <h2 id="h-ciclo-pt">O ciclo da monitoria</h2>
+      <p>Monitoria de negócios não é um painel pendurado na parede. É um ciclo que se repete, e cada alerta ensina algo sobre o processo que está sendo monitorado.</p>
+      <figure>
+        <img src="rc_images/MonitoriaCiclo.svg" alt="Seis etapas dispostas em círculo em volta da monitoria de negócios, ligadas por setas no sentido horário: 1 definir KPIs, eventos e metas; 2 coletar dados do ERP, APIs, bancos e logs; 3 comparar com limites, SLAs e histórico; 4 alertar por painéis, e-mail, Slack e Teams; 5 investigar a causa e agir; 6 melhorar regras e processos, voltando à definição." width="1000" height="600" loading="lazy">
+        <figcaption>As seis etapas do ciclo: o aprendizado de cada incidente volta para a definição dos indicadores.</figcaption>
+      </figure>
+      <ol class="steps">
+        <li><strong>Definir.</strong> Parta das perguntas do negócio, não dos dados disponíveis. Para cada processo crítico, escolha poucos indicadores que mostrem volume, qualidade e tempo, e defina a meta e o dono de cada um.</li>
+        <li><strong>Coletar.</strong> Leve os dados das fontes para um lugar onde possam ser comparados: consultas agendadas no banco, eventos de integração, logs das APIs. Guarde o histórico, porque sem ele não há padrão para comparar.</li>
+        <li><strong>Comparar.</strong> Confronte o valor atual com uma referência: um limite fixo, um SLA acordado ou o padrão histórico para aquele dia e horário.</li>
+        <li><strong>Alertar.</strong> Mostre o estado em painéis e avise quem precisa agir, no canal que essa pessoa usa. Todo alerta deve pedir uma ação; se ninguém precisa fazer nada, ele não deveria ter sido enviado. <sup><a href="#ref-3-pt">[3]</a></sup></li>
+        <li><strong>Investigar.</strong> Cruze o alerta de negócio com a monitoria técnica e com os parceiros para achar a causa: um parceiro fora do ar, uma mudança de regra, uma integração travada.</li>
+        <li><strong>Melhorar.</strong> Depois de cada incidente, ajuste limites, crie os indicadores que faltaram e elimine os alertas que só geraram ruído.</li>
+      </ol>
+    </section>
+
+    <section id="arquitetura-pt" aria-labelledby="h-arquitetura-pt">
+      <h2 id="h-arquitetura-pt">Arquitetura de referência</h2>
+      <p>A arquitetura de uma solução de monitoria de negócios tem cinco camadas. Ela pode começar com scripts em Python, consultas SQL e um e-mail, e evoluir para ferramentas de mercado de painéis, observabilidade e integração, sem mudar a lógica.</p>
+      <figure>
+        <img src="rc_images/MonitoriaArquitetura.svg" alt="Fluxo da esquerda para a direita em cinco colunas. Fontes: ERP JDE, APIs de parceiros, bancos de dados e logs de integração. Coleta: conectores com SQL agendado, eventos e webhooks, guardando o histórico. Regras: motor de regras com limites fixos, SLAs, padrão histórico e ausência de eventos, classificando em verde, amarelo ou vermelho. Saídas: painel em tempo real, alertas por e-mail, Slack e Teams e chamados abertos automaticamente. Ação: o negócio decide e a TI corrige. Uma seta tracejada volta da ação para as regras: cada incidente ajusta regras, limites e donos." width="1000" height="540" loading="lazy">
+        <figcaption>Das fontes às pessoas: a seta tracejada é o que transforma a arquitetura em ciclo.</figcaption>
+      </figure>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Camada</th><th scope="col">Responsabilidade</th><th scope="col">Para começar</th><th scope="col">Para crescer</th></tr></thead>
+          <tbody>
+            <tr><td>Fontes</td><td>Os sistemas que registram o negócio</td><td>Leitura das tabelas do ERP e dos logs de integração</td><td>Eventos publicados pelos próprios sistemas</td></tr>
+            <tr><td>Coleta</td><td>Extrair, padronizar e guardar histórico</td><td>Scripts Python ou SQL agendados a cada 5 a 15 minutos</td><td>Filas, <em lang="en">streaming</em> e um banco de séries temporais</td></tr>
+            <tr><td>Regras</td><td>Comparar com o esperado e classificar</td><td>Limites fixos e regras de ausência de eventos</td><td>Padrão histórico por dia e horário, detecção de anomalias</td></tr>
+            <tr><td>Saídas</td><td>Dar visibilidade e avisar</td><td>E-mail e um painel simples</td><td>Slack ou Teams, abertura automática de chamados, escalonamento</td></tr>
+            <tr><td>Ação</td><td>Decidir e corrigir</td><td>Um dono por indicador e um roteiro por alerta</td><td>Plantão, análise pós-incidente, revisão mensal das regras</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Foi esse o caminho de uma ferramenta que desenvolvi em Python para dar visibilidade à operação dos parceiros de API de um banco: começar pequeno, com consultas e alertas simples sobre os processos que mais doíam, e crescer conforme cada incidente mostrava o que faltava medir.</p>
+    </section>
+
+    <section id="deteccao-pt" aria-labelledby="h-deteccao-pt">
+      <h2 id="h-deteccao-pt">Limite fixo ou padrão histórico</h2>
+      <p>A camada de regras é onde a monitoria de negócios ganha ou perde credibilidade. Uma regra mal calibrada gera alarmes falsos, as pessoas passam a ignorá-los e, no dia do problema real, ninguém olha. O inverso também acontece: uma regra frouxa demais deixa o problema passar.</p>
+      <figure>
+        <img src="rc_images/MonitoriaBaseline.svg" alt="Gráfico de linhas das transações por hora ao longo de um dia. Uma faixa verde mostra o volume esperado pelo histórico, mais ou menos 25%, baixo de madrugada e perto de 500 por hora entre 10h e 16h. O volume real acompanha a faixa até 9h e cai para 50 às 10h, onde há um alerta: o esperado era cerca de 500. Uma linha tracejada vermelha marca um limite fixo de 100 por hora: entre 0h e 6h o volume normal fica abaixo dela, gerando alarmes falsos." width="1000" height="560" loading="lazy">
+        <figcaption>O volume de negócio tem sazonalidade: comparar com o mesmo horário no histórico evita alarmes falsos e pega quedas que um limite fixo deixaria passar.</figcaption>
+      </figure>
+      <p>Há cinco tipos de regra, e uma boa monitoria combina vários:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Tipo de regra</th><th scope="col">Exemplo</th><th scope="col">Quando usar</th><th scope="col">Cuidado</th></tr></thead>
+          <tbody>
+            <tr><td>Limite fixo</td><td>Mais de 20 pedidos parados no mesmo status</td><td>Filas, backlogs, estoques mínimos</td><td>Ignora a sazonalidade do dia e da semana</td></tr>
+            <tr><td>SLA</td><td>Liquidação acima de 30 minutos</td><td>Prazos acordados com clientes e parceiros</td><td>Medir pelo evento de negócio, não pela chamada técnica</td></tr>
+            <tr><td>Proporção</td><td>Taxa de recusa acima de 15%</td><td>Aprovações, conversões, erros de validação</td><td>Com volume baixo, a taxa oscila muito; exija um volume mínimo</td></tr>
+            <tr><td>Padrão histórico</td><td>Volume fora da faixa do mesmo dia e horário nas últimas semanas</td><td>Transações, vendas, acessos</td><td>Feriados e campanhas distorcem o histórico</td></tr>
+            <tr><td>Ausência de evento</td><td>Nenhum pedido do parceiro X nos últimos 30 minutos em horário comercial</td><td>Integrações e arquivos que deveriam chegar</td><td>É o alerta mais valioso e o mais esquecido</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>O capítulo sobre alertas baseados em SLOs do <em lang="en">Site Reliability Workbook</em> propõe avaliar cada regra por quatro critérios que servem também para o negócio: precisão (quantos alertas eram problemas reais), sensibilidade (quantos problemas reais geraram alerta), tempo de detecção e tempo para o alerta se encerrar depois que o problema acaba. <sup><a href="#ref-6-pt">[6]</a></sup></p>
+    </section>
+
+    <section id="exemplos-pt" aria-labelledby="h-exemplos-pt">
+      <h2 id="h-exemplos-pt">Indicadores por segmento</h2>
+      <p>Os indicadores mudam de um negócio para outro, mas a lógica é a mesma: volume, qualidade e tempo de cada processo crítico, recortados pela dimensão que ajuda a achar a causa, como parceiro, loja ou canal.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Segmento</th><th scope="col">Indicadores</th><th scope="col">Exemplo de regra</th></tr></thead>
+          <tbody>
+            <tr><td>Banco ou fintech</td><td>Volume e taxa de erro das operações via API por parceiro, taxa de aprovação de propostas, tempo de liquidação, conciliação</td><td>Taxa de recusa do parceiro acima de duas vezes a média das últimas quatro semanas no mesmo horário</td></tr>
+            <tr><td>Varejo</td><td>Fluxo de clientes, conversão, ticket médio, ruptura de estoque e vendas por loja</td><td>Loja sem venda registrada há 45 minutos com a loja aberta</td></tr>
+            <tr><td>ERP (JD Edwards)</td><td>Pedidos travados em um status, lotes de integração não processados, falhas em interfaces EDI, <em lang="en">jobs</em> em erro</td><td>Pedidos de venda parados no mesmo status há mais de 2 horas</td></tr>
+            <tr><td>Comércio eletrônico</td><td>Carrinhos abandonados, pagamentos recusados por meio de pagamento, pedidos sem nota fiscal</td><td>Recusa de cartão acima de 10% em 15 minutos</td></tr>
+            <tr><td>Logística</td><td>Coletas e entregas no prazo, pedidos sem movimentação, devoluções</td><td>Pedido faturado sem coleta em 24 horas</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Para ligar os indicadores à estratégia e evitar medir só o que é fácil, vale olhar para o <em lang="en">Balanced Scorecard</em>, de Kaplan e Norton, que organiza as métricas em perspectivas financeira, de clientes, de processos internos e de aprendizado. <sup><a href="#ref-7-pt">[7]</a></sup> E para desenhar os painéis, os princípios de Stephen Few: tudo o que importa numa única tela, lido de relance, sem enfeites que disputem a atenção. <sup><a href="#ref-8-pt">[8]</a></sup></p>
+    </section>
+
+    <section id="proposta-pt" aria-labelledby="h-proposta-pt">
+      <h2 id="h-proposta-pt">Proposta de implantação</h2>
+      <p>Esta seção pode ser usada como base de uma proposta para implantar a monitoria de negócios numa empresa ou numa área. Os prazos são uma referência para um primeiro ciclo e devem ser ajustados ao tamanho do escopo.</p>
+
+      <h3>Objetivo</h3>
+      <p>Detectar problemas nos processos críticos do negócio antes que clientes, parceiros ou o fechamento do mês os revelem, e dar a cada problema um dono e uma ação.</p>
+
+      <h3>Escopo</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Dentro do escopo</th><th scope="col">Fora do escopo</th></tr></thead>
+          <tbody>
+            <tr><td>De três a cinco processos críticos no piloto, escolhidos com o negócio</td><td>Monitoria de infraestrutura, que continua com as ferramentas atuais</td></tr>
+            <tr><td>Coleta a partir do ERP, das APIs e dos logs de integração existentes</td><td>Mudanças nos sistemas de origem</td></tr>
+            <tr><td>Regras, painel, alertas e roteiros de ação</td><td>Relatórios gerenciais e análises históricas de BI</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Fases</h3>
+      <ol class="timeline">
+        <li><span class="when">Fase 0 · Diagnóstico · 2 semanas</span>Entrevistas com as áreas de negócio, levantamento dos incidentes dos últimos meses, escolha dos processos do piloto e inventário das fontes de dados.</li>
+        <li><span class="when">Fase 1 · Piloto · 4 a 6 semanas</span>Fichas dos indicadores, coleta, regras, painel e alertas para os processos escolhidos. Uma semana de alertas em modo silencioso para calibrar limites antes de avisar as pessoas.</li>
+        <li><span class="when">Fase 2 · Expansão · 6 a 8 semanas</span>Novos processos, padrão histórico por dia e horário, integração com o sistema de chamados e escalonamento.</li>
+        <li><span class="when">Fase 3 · Operação contínua</span>Revisão mensal de indicadores e regras, análise de cada incidente e relatório de resultados para os patrocinadores.</li>
+      </ol>
+
+      <h3>Entregáveis</h3>
+      <ul class="cards">
+        <li><strong>Catálogo de indicadores:</strong> uma ficha por indicador, no modelo abaixo.</li>
+        <li><strong>Coletores e regras:</strong> código versionado, documentado e agendado.</li>
+        <li><strong>Painel:</strong> uma visão por processo, com o estado atual e a tendência do dia.</li>
+        <li><strong>Alertas e roteiros:</strong> cada alerta com canal, severidade, dono e a primeira ação esperada.</li>
+        <li><strong>Relatório do piloto:</strong> incidentes detectados, tempo de detecção, alarmes falsos e recomendações.</li>
+      </ul>
+
+      <h3>Modelo de ficha de indicador</h3>
+      <div class="table-wrap">
+        <table class="sheet">
+          <tbody>
+            <tr><th scope="row">Indicador</th><td>Taxa de recusa de propostas do parceiro X</td></tr>
+            <tr><th scope="row">Pergunta de negócio</th><td>O parceiro está conseguindo contratar normalmente?</td></tr>
+            <tr><th scope="row">Fonte</th><td>Tabela de propostas e log da API de contratação</td></tr>
+            <tr><th scope="row">Fórmula</th><td>Propostas recusadas ÷ propostas recebidas, nos últimos 30 minutos</td></tr>
+            <tr><th scope="row">Frequência</th><td>A cada 5 minutos, das 8h às 20h</td></tr>
+            <tr><th scope="row">Regra de alerta</th><td>Acima de 2× a média das últimas 4 semanas no mesmo horário, com pelo menos 30 propostas</td></tr>
+            <tr><th scope="row">Severidade e canal</th><td>Alta · Teams do time de parceiros e e-mail do gerente da conta</td></tr>
+            <tr><th scope="row">Dono</th><td>Gerente de parcerias; apoio técnico da sustentação de APIs</td></tr>
+            <tr><th scope="row">Primeira ação</th><td>Verificar os motivos de recusa mais frequentes e contatar o parceiro</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Papéis</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Papel</th><th scope="col">Responsabilidade</th></tr></thead>
+          <tbody>
+            <tr><td>Patrocinador</td><td>Garante prioridade, acesso às áreas e decisão sobre o escopo</td></tr>
+            <tr><td>Dono do indicador (negócio)</td><td>Define a meta, recebe o alerta e decide a ação de negócio</td></tr>
+            <tr><td>Analista de monitoria</td><td>Desenha indicadores e regras, calibra limites e mantém o catálogo</td></tr>
+            <tr><td>TI e sustentação</td><td>Dá acesso às fontes, corrige falhas técnicas e mantém os coletores</td></tr>
+            <tr><td>Parceiros</td><td>Informam janelas de manutenção e apoiam a investigação</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Critérios de sucesso</h3>
+      <ul class="cards">
+        <li><strong>Detecção antecipada:</strong> a maior parte dos incidentes de negócio detectada pela monitoria antes do cliente ou do parceiro.</li>
+        <li><strong>Tempo de detecção:</strong> de horas ou dias para minutos nos processos do piloto.</li>
+        <li><strong>Alertas úteis:</strong> pelo menos 8 em cada 10 alertas levam a uma ação.</li>
+        <li><strong>Uso:</strong> as áreas de negócio consultam o painel no dia a dia, e não só quando alguém avisa.</li>
+      </ul>
+
+      <h3>Riscos e como mitigá-los</h3>
+      <ul class="cards warn">
+        <li><strong>Fadiga de alertas.</strong> Alarmes demais fazem as pessoas pararem de olhar. Comece com poucas regras, use o modo silencioso para calibrar e elimine o que não gera ação.</li>
+        <li><strong>Indicador sem dono.</strong> Um alerta que chega para todos não chega para ninguém. Nenhum indicador entra em produção sem dono e primeira ação definidos.</li>
+        <li><strong>Dados de má qualidade.</strong> Cadastros incompletos e horários inconsistentes geram alarmes falsos. Inclua a qualidade da coleta na própria monitoria.</li>
+        <li><strong>Painel sem ação.</strong> Um painel bonito que ninguém usa não é monitoria. Cada indicador precisa responder a uma pergunta de negócio.</li>
+        <li><strong>Depender de uma só pessoa.</strong> Documente regras e coletores, versione o código e distribua o conhecimento na equipe.</li>
+      </ul>
+    </section>
+
+    <section id="conclusoes-pt" aria-labelledby="h-conclusoes-pt">
+      <h2 id="h-conclusoes-pt">Conclusões</h2>
+      <p>A monitoria técnica diz se os sistemas estão funcionando; a monitoria de negócios diz se a empresa está funcionando. Sem a segunda, a infraestrutura pode estar toda verde enquanto propostas são recusadas, pedidos ficam parados e parceiros deixam de operar, e o problema só aparece quando alguém de fora reclama.</p>
+      <p>Implantá-la não exige começar com uma plataforma cara. Exige escolher os processos que mais importam, dar um dono e uma ação a cada indicador, comparar com o que é normal para aquele dia e horário e aprender com cada incidente. O resto, da ferramenta ao painel, pode crescer aos poucos.</p>
+      <p>O ganho vai além de detectar falhas mais cedo. Ao colocar negócio e TI olhando para os mesmos números, a monitoria de negócios cria uma linguagem comum sobre o que é a operação funcionando bem, e essa talvez seja a sua maior contribuição.</p>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="referencias-pt" aria-labelledby="h-referencias-pt">
+      <h2 id="h-referencias-pt">Referências</h2>
+      <ol class="refs">
+        <li id="ref-1-pt"><strong>Wikipedia</strong>, "Real-time business intelligence", seção "Business activity monitoring", acesso em 29/09/2026, <a href="https://en.wikipedia.org/wiki/Real-time_business_intelligence" rel="noopener">en.wikipedia.org/wiki/Real-time_business_intelligence</a>.</li>
+        <li id="ref-2-pt"><strong>Luckham, David</strong>, <em lang="en">The Power of Events: An Introduction to Complex Event Processing in Distributed Enterprise Systems</em>, Addison-Wesley, 2002.</li>
+        <li id="ref-3-pt"><strong>Beyer, Betsy; Jones, Chris; Petoff, Jennifer; Murphy, Niall Richard</strong> (orgs.), <em lang="en">Site Reliability Engineering: How Google Runs Production Systems</em>, O’Reilly, 2016, capítulo 6, "Monitoring Distributed Systems", <a href="https://sre.google/sre-book/monitoring-distributed-systems/" rel="noopener">sre.google/sre-book/monitoring-distributed-systems</a>.</li>
+        <li id="ref-4-pt"><strong>Gregg, Brendan</strong>, "The USE Method", acesso em 29/09/2026, <a href="https://www.brendangregg.com/usemethod.html" rel="noopener">brendangregg.com/usemethod.html</a>.</li>
+        <li id="ref-5-pt"><strong>Wilkie, Tom</strong>, "The RED Method: How to Instrument Your Services", Grafana Labs, 2018, <a href="https://grafana.com/blog/2018/08/02/the-red-method-how-to-instrument-your-services/" rel="noopener">grafana.com/blog</a>.</li>
+        <li id="ref-6-pt"><strong>Beyer, Betsy; Murphy, Niall Richard; Rensin, David K.; Kawahara, Kent; Thorne, Stephen</strong> (orgs.), <em lang="en">The Site Reliability Workbook</em>, O’Reilly, 2018, capítulo 5, "Alerting on SLOs", <a href="https://sre.google/workbook/alerting-on-slos/" rel="noopener">sre.google/workbook/alerting-on-slos</a>.</li>
+        <li id="ref-7-pt"><strong>Kaplan, Robert S.; Norton, David P.</strong>, <em lang="en">The Balanced Scorecard: Translating Strategy into Action</em>, Harvard Business School Press, 1996.</li>
+        <li id="ref-8-pt"><strong>Few, Stephen</strong>, <em lang="en">Information Dashboard Design: The Effective Visual Communication of Data</em>, O’Reilly, 2006.</li>
+      </ol>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== EN ===================== -->
+<div id="en" role="tabpanel" aria-labelledby="tab-en" lang="en" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projects</a></p>
+      <p class="eyebrow">Article</p>
+      <h1>Business monitoring</h1>
+      <p class="dek">When the infrastructure is all green and the business has stopped: what business monitoring is, how it works and a proposal for putting it in place.</p>
+      <div class="byline">
+        <span>By <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Published <time datetime="2026-09-29">29/09/2026</time></span>
+        <span class="credit">Reviewed and formatted using Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-en">
+    <h2 id="toc-en">Contents</h2>
+    <ol>
+      <li><a href="#definicao-en">What business monitoring is</a></li>
+      <li><a href="#problema-en">Green infrastructure, stalled business</a></li>
+      <li><a href="#ciclo-en">The monitoring cycle</a></li>
+      <li><a href="#arquitetura-en">Reference architecture</a></li>
+      <li><a href="#deteccao-en">Fixed threshold or historical pattern</a></li>
+      <li><a href="#exemplos-en">Indicators by industry</a></li>
+      <li><a href="#proposta-en">Implementation proposal</a></li>
+      <li><a href="#conclusoes-en">Conclusions</a></li>
+      <li><a href="#referencias-en">References</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="definicao-en" aria-labelledby="h-definicao-en">
+      <h2 id="h-definicao-en">What business monitoring is</h2>
+      <p>Business monitoring is the continuous tracking, ideally in real time, of the indicators and events that show whether the company’s operation is working as it should. The focus is not on servers, CPU or memory, but on the health of business processes: orders, transactions, proposals, billing, integrations with partners.</p>
+      <p>The practice is also known as business activity monitoring (BAM): following processes while they are still in progress, based on the events produced by operational systems. <sup><a href="#ref-1-en">[1]</a></sup> It inherits ideas from complex event processing, which treats every order, payment or message as a business event to be correlated with the others. <sup><a href="#ref-2-en">[2]</a></sup></p>
+      <blockquote>
+        <p>Is the business happening right now as it should? If not, where, since when, and who needs to act?</p>
+      </blockquote>
+      <p>In practice, business monitoring involves five activities:</p>
+      <ul class="cards">
+        <li><strong>Define what matters:</strong> the critical KPIs and events, such as order volume, transaction approval rate, settlement time, failures in partner integrations and revenue per hour.</li>
+        <li><strong>Collect data from the sources:</strong> the ERP, APIs, databases and integration logs.</li>
+        <li><strong>Compare against what is expected:</strong> thresholds, targets, SLAs and the historical pattern. For example: “at 10 am we usually see 500 transactions; today there were 50”.</li>
+        <li><strong>Alert and provide visibility:</strong> dashboards and alerts by email, Slack or Teams, so that business and IT can act quickly.</li>
+        <li><strong>Investigate the cause:</strong> find out whether the drop came from a partner, an API or a business rule.</li>
+      </ul>
+      <p class="highlight"><strong>A note on vocabulary:</strong> the Portuguese original uses “monitoria de negócios”. In Portuguese, “monitoria” also means academic tutoring, so “monitoramento de negócios” is an equally correct term that avoids the ambiguity. In English, “business monitoring” and “business activity monitoring” are used interchangeably.</p>
+    </section>
+
+    <section id="problema-en" aria-labelledby="h-problema-en">
+      <h2 id="h-problema-en">Green infrastructure, stalled business</h2>
+      <p>Technical monitoring answers whether the system is up. Google’s <em>Site Reliability Engineering</em> book sums up this view in four golden signals: latency, traffic, errors and saturation. <sup><a href="#ref-3-en">[3]</a></sup> Methods such as Brendan Gregg’s USE and Tom Wilkie’s RED follow the same line, looking at resources and services. <sup><a href="#ref-4-en">[4]</a></sup> <sup><a href="#ref-5-en">[5]</a></sup></p>
+      <p>All of this is necessary, but it is not enough. It is common for the infrastructure to be all green while the business has stopped: the API answers in 200 milliseconds, but it answers “no”.</p>
+      <figure>
+        <img src="rc_images/MonitoriaCamadas-en.svg" alt="Two panels side by side. On the left, technical monitoring shows all green: API availability 99.9%, response time 200 ms, CPU 35% and HTTP errors 0.2%. On the right, business monitoring shows all red: 40% of partner X proposals rejected, 50 transactions at 10 am when about 500 were expected, 37 orders stuck at status 520 and revenue in the last hour at 38% of forecast." width="1000" height="470" loading="lazy">
+        <figcaption>The same 15 minutes seen by both kinds of monitoring: only business monitoring sees the problem.</figcaption>
+      </figure>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Aspect</th><th scope="col">Technical monitoring</th><th scope="col">Business monitoring</th></tr></thead>
+          <tbody>
+            <tr><td>Question</td><td>Is the system up and fast?</td><td>Is the business happening as expected?</td></tr>
+            <tr><td>Typical metrics</td><td>Latency, traffic, errors, saturation, CPU, memory, disk</td><td>Orders per hour, approval rate, settlement time, revenue, backlog by status</td></tr>
+            <tr><td>Unit of analysis</td><td>Server, service, endpoint</td><td>Process, product, partner, channel, store</td></tr>
+            <tr><td>Who looks at it</td><td>Infrastructure, SRE, development</td><td>Business areas, operations, support, management</td></tr>
+            <tr><td>Failure signal</td><td>5xx error, timeout, exhausted resource</td><td>Volume drop, abnormal rejections, stalled queue, event that never arrived</td></tr>
+            <tr><td>Example</td><td>“The API is answering in 200 ms.”</td><td>“40% of partner X proposals have been rejected since yesterday.”</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>The two complement each other. Technical monitoring usually says <em>where</em> the defect is; business monitoring says <em>whether</em> the defect matters and how much it costs. Those who only have the first find out about problems from the customer, the partner or the month-end close.</p>
+    </section>
+
+    <section id="ciclo-en" aria-labelledby="h-ciclo-en">
+      <h2 id="h-ciclo-en">The monitoring cycle</h2>
+      <p>Business monitoring is not a dashboard hanging on the wall. It is a cycle that repeats, and every alert teaches something about the process being monitored.</p>
+      <figure>
+        <img src="rc_images/MonitoriaCiclo-en.svg" alt="Six steps arranged in a circle around business monitoring, linked by clockwise arrows: 1 define KPIs, events and targets; 2 collect data from the ERP, APIs, databases and logs; 3 compare against thresholds, SLAs and history; 4 alert through dashboards, email, Slack and Teams; 5 investigate the cause and act; 6 improve rules and processes, returning to the definition." width="1000" height="600" loading="lazy">
+        <figcaption>The six steps of the cycle: what each incident teaches flows back into the definition of the indicators.</figcaption>
+      </figure>
+      <ol class="steps">
+        <li><strong>Define.</strong> Start from the business questions, not from the data you happen to have. For each critical process, choose a few indicators that show volume, quality and time, and set the target and the owner of each one.</li>
+        <li><strong>Collect.</strong> Bring the data from the sources to a place where it can be compared: scheduled database queries, integration events, API logs. Keep the history, because without it there is no pattern to compare against.</li>
+        <li><strong>Compare.</strong> Check the current value against a reference: a fixed threshold, an agreed SLA or the historical pattern for that day and time.</li>
+        <li><strong>Alert.</strong> Show the status on dashboards and notify whoever needs to act, on the channel that person uses. Every alert should call for an action; if nobody needs to do anything, it should not have been sent. <sup><a href="#ref-3-en">[3]</a></sup></li>
+        <li><strong>Investigate.</strong> Cross the business alert with technical monitoring and with the partners to find the cause: a partner that is down, a rule change, a stuck integration.</li>
+        <li><strong>Improve.</strong> After each incident, adjust thresholds, create the indicators that were missing and remove the alerts that only produced noise.</li>
+      </ol>
+    </section>
+
+    <section id="arquitetura-en" aria-labelledby="h-arquitetura-en">
+      <h2 id="h-arquitetura-en">Reference architecture</h2>
+      <p>A business monitoring solution has five layers. It can start with Python scripts, SQL queries and an email, and grow into off-the-shelf dashboard, observability and integration tools without changing the logic.</p>
+      <figure>
+        <img src="rc_images/MonitoriaArquitetura-en.svg" alt="Left-to-right flow in five columns. Sources: JDE ERP, partner APIs, databases and integration logs. Collection: connectors with scheduled SQL, events and webhooks, storing history. Rules: a rules engine with fixed thresholds, SLAs, historical pattern and missing events, classifying as green, amber or red. Outputs: real-time dashboard, alerts by email, Slack and Teams, and auto-created tickets. Action: the business decides and IT fixes. A dashed arrow returns from action to rules: every incident tunes rules, thresholds and owners." width="1000" height="540" loading="lazy">
+        <figcaption>From sources to people: the dashed arrow is what turns the architecture into a cycle.</figcaption>
+      </figure>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Layer</th><th scope="col">Responsibility</th><th scope="col">To start</th><th scope="col">To grow</th></tr></thead>
+          <tbody>
+            <tr><td>Sources</td><td>The systems that record the business</td><td>Reading ERP tables and integration logs</td><td>Events published by the systems themselves</td></tr>
+            <tr><td>Collection</td><td>Extract, standardize and keep history</td><td>Python or SQL scripts scheduled every 5 to 15 minutes</td><td>Queues, streaming and a time-series database</td></tr>
+            <tr><td>Rules</td><td>Compare with what is expected and classify</td><td>Fixed thresholds and missing-event rules</td><td>Historical pattern by day and time, anomaly detection</td></tr>
+            <tr><td>Outputs</td><td>Provide visibility and notify</td><td>Email and a simple dashboard</td><td>Slack or Teams, automatic tickets, escalation</td></tr>
+            <tr><td>Action</td><td>Decide and fix</td><td>One owner per indicator and one runbook per alert</td><td>On-call rotation, post-incident reviews, monthly rule review</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>That was the path of a tool I built in Python to give visibility into the operation of a bank’s API partners: start small, with simple queries and alerts on the processes that hurt the most, and grow as each incident showed what was still missing.</p>
+    </section>
+
+    <section id="deteccao-en" aria-labelledby="h-deteccao-en">
+      <h2 id="h-deteccao-en">Fixed threshold or historical pattern</h2>
+      <p>The rules layer is where business monitoring gains or loses credibility. A badly calibrated rule produces false alarms, people start ignoring them and, on the day of the real problem, nobody looks. The opposite also happens: a rule that is too loose lets the problem through.</p>
+      <figure>
+        <img src="rc_images/MonitoriaBaseline-en.svg" alt="Line chart of hourly transactions over a day. A green band shows the volume expected from history, plus or minus 25%, low overnight and close to 500 per hour between 10:00 and 16:00. The actual volume follows the band until 9:00 and falls to 50 at 10:00, where an alert is raised: about 500 were expected. A dashed red line marks a fixed threshold of 100 per hour: between midnight and 6:00 the normal volume sits below it, causing false alarms." width="1000" height="560" loading="lazy">
+        <figcaption>Business volume is seasonal: comparing with the same time of day in the history avoids false alarms and catches drops a fixed threshold would miss.</figcaption>
+      </figure>
+      <p>There are five kinds of rule, and good monitoring combines several of them:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Kind of rule</th><th scope="col">Example</th><th scope="col">When to use it</th><th scope="col">Watch out</th></tr></thead>
+          <tbody>
+            <tr><td>Fixed threshold</td><td>More than 20 orders stuck at the same status</td><td>Queues, backlogs, minimum stock levels</td><td>Ignores daily and weekly seasonality</td></tr>
+            <tr><td>SLA</td><td>Settlement taking longer than 30 minutes</td><td>Deadlines agreed with customers and partners</td><td>Measure the business event, not the technical call</td></tr>
+            <tr><td>Ratio</td><td>Rejection rate above 15%</td><td>Approvals, conversions, validation errors</td><td>With low volume the rate swings a lot; require a minimum volume</td></tr>
+            <tr><td>Historical pattern</td><td>Volume outside the band for the same day and time over recent weeks</td><td>Transactions, sales, visits</td><td>Holidays and campaigns distort the history</td></tr>
+            <tr><td>Missing event</td><td>No orders from partner X in the last 30 minutes during business hours</td><td>Integrations and files that should arrive</td><td>The most valuable alert and the most often forgotten</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>The chapter on alerting on SLOs in <em>The Site Reliability Workbook</em> proposes judging each rule by four criteria that also work for the business: precision (how many alerts were real problems), recall (how many real problems raised an alert), detection time and reset time, the time the alert takes to clear after the problem ends. <sup><a href="#ref-6-en">[6]</a></sup></p>
+    </section>
+
+    <section id="exemplos-en" aria-labelledby="h-exemplos-en">
+      <h2 id="h-exemplos-en">Indicators by industry</h2>
+      <p>Indicators change from one business to another, but the logic is the same: volume, quality and time of each critical process, broken down by the dimension that helps find the cause, such as partner, store or channel.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Industry</th><th scope="col">Indicators</th><th scope="col">Example rule</th></tr></thead>
+          <tbody>
+            <tr><td>Bank or fintech</td><td>Volume and error rate of API operations per partner, proposal approval rate, settlement time, reconciliation</td><td>Partner rejection rate above twice the average of the last four weeks at the same time</td></tr>
+            <tr><td>Retail</td><td>Customer flow, conversion, average ticket, stockouts and sales per store</td><td>Store with no recorded sale for 45 minutes while open</td></tr>
+            <tr><td>ERP (JD Edwards)</td><td>Orders stuck at a status, unprocessed integration batches, EDI interface failures, jobs in error</td><td>Sales orders stuck at the same status for more than 2 hours</td></tr>
+            <tr><td>E-commerce</td><td>Abandoned carts, payments declined by payment method, orders without an invoice</td><td>Card declines above 10% within 15 minutes</td></tr>
+            <tr><td>Logistics</td><td>On-time pickups and deliveries, orders with no movement, returns</td><td>Invoiced order not picked up within 24 hours</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>To link indicators to strategy and avoid measuring only what is easy, look at Kaplan and Norton’s Balanced Scorecard, which organizes metrics into financial, customer, internal process and learning perspectives. <sup><a href="#ref-7-en">[7]</a></sup> And to design the dashboards, Stephen Few’s principles: everything that matters on a single screen, read at a glance, with no decoration competing for attention. <sup><a href="#ref-8-en">[8]</a></sup></p>
+    </section>
+
+    <section id="proposta-en" aria-labelledby="h-proposta-en">
+      <h2 id="h-proposta-en">Implementation proposal</h2>
+      <p>This section can serve as the basis of a proposal to put business monitoring in place in a company or a department. The timelines are a reference for a first cycle and should be adjusted to the size of the scope.</p>
+
+      <h3>Objective</h3>
+      <p>Detect problems in the critical business processes before customers, partners or the month-end close reveal them, and give each problem an owner and an action.</p>
+
+      <h3>Scope</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">In scope</th><th scope="col">Out of scope</th></tr></thead>
+          <tbody>
+            <tr><td>Three to five critical processes in the pilot, chosen with the business</td><td>Infrastructure monitoring, which stays with the current tools</td></tr>
+            <tr><td>Collection from the existing ERP, APIs and integration logs</td><td>Changes to the source systems</td></tr>
+            <tr><td>Rules, dashboard, alerts and action runbooks</td><td>Management reports and historical BI analysis</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Phases</h3>
+      <ol class="timeline">
+        <li><span class="when">Phase 0 · Assessment · 2 weeks</span>Interviews with the business areas, review of recent incidents, choice of the pilot processes and inventory of the data sources.</li>
+        <li><span class="when">Phase 1 · Pilot · 4 to 6 weeks</span>Indicator sheets, collection, rules, dashboard and alerts for the chosen processes. One week of alerts in silent mode to calibrate thresholds before notifying people.</li>
+        <li><span class="when">Phase 2 · Expansion · 6 to 8 weeks</span>New processes, historical pattern by day and time, integration with the ticketing system and escalation.</li>
+        <li><span class="when">Phase 3 · Ongoing operation</span>Monthly review of indicators and rules, analysis of each incident and a results report for the sponsors.</li>
+      </ol>
+
+      <h3>Deliverables</h3>
+      <ul class="cards">
+        <li><strong>Indicator catalog:</strong> one sheet per indicator, following the template below.</li>
+        <li><strong>Collectors and rules:</strong> versioned, documented and scheduled code.</li>
+        <li><strong>Dashboard:</strong> one view per process, with the current status and the trend for the day.</li>
+        <li><strong>Alerts and runbooks:</strong> each alert with a channel, severity, owner and the first expected action.</li>
+        <li><strong>Pilot report:</strong> incidents detected, detection time, false alarms and recommendations.</li>
+      </ul>
+
+      <h3>Indicator sheet template</h3>
+      <div class="table-wrap">
+        <table class="sheet">
+          <tbody>
+            <tr><th scope="row">Indicator</th><td>Partner X proposal rejection rate</td></tr>
+            <tr><th scope="row">Business question</th><td>Is the partner able to sign up customers normally?</td></tr>
+            <tr><th scope="row">Source</th><td>Proposals table and the contracting API log</td></tr>
+            <tr><th scope="row">Formula</th><td>Rejected proposals ÷ received proposals, over the last 30 minutes</td></tr>
+            <tr><th scope="row">Frequency</th><td>Every 5 minutes, from 8 am to 8 pm</td></tr>
+            <tr><th scope="row">Alert rule</th><td>Above 2× the average of the last 4 weeks at the same time, with at least 30 proposals</td></tr>
+            <tr><th scope="row">Severity and channel</th><td>High · partner team’s Teams channel and the account manager’s email</td></tr>
+            <tr><th scope="row">Owner</th><td>Partnership manager; technical support from the API support team</td></tr>
+            <tr><th scope="row">First action</th><td>Check the most frequent rejection reasons and contact the partner</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Roles</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Role</th><th scope="col">Responsibility</th></tr></thead>
+          <tbody>
+            <tr><td>Sponsor</td><td>Secures priority, access to the business areas and decisions on scope</td></tr>
+            <tr><td>Indicator owner (business)</td><td>Sets the target, receives the alert and decides the business action</td></tr>
+            <tr><td>Monitoring analyst</td><td>Designs indicators and rules, calibrates thresholds and maintains the catalog</td></tr>
+            <tr><td>IT and support</td><td>Provides access to the sources, fixes technical failures and maintains the collectors</td></tr>
+            <tr><td>Partners</td><td>Announce maintenance windows and help with investigations</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Success criteria</h3>
+      <ul class="cards">
+        <li><strong>Early detection:</strong> most business incidents detected by monitoring before the customer or the partner.</li>
+        <li><strong>Detection time:</strong> from hours or days down to minutes for the pilot processes.</li>
+        <li><strong>Useful alerts:</strong> at least 8 out of 10 alerts lead to an action.</li>
+        <li><strong>Usage:</strong> the business areas check the dashboard day to day, not only when someone warns them.</li>
+      </ul>
+
+      <h3>Risks and how to mitigate them</h3>
+      <ul class="cards warn">
+        <li><strong>Alert fatigue.</strong> Too many alarms make people stop looking. Start with few rules, use silent mode to calibrate and remove whatever does not lead to action.</li>
+        <li><strong>Indicator without an owner.</strong> An alert that goes to everyone reaches no one. No indicator goes live without an owner and a first action.</li>
+        <li><strong>Poor data quality.</strong> Incomplete master data and inconsistent timestamps produce false alarms. Include the quality of the collection in the monitoring itself.</li>
+        <li><strong>Dashboard without action.</strong> A beautiful dashboard nobody uses is not monitoring. Every indicator must answer a business question.</li>
+        <li><strong>Depending on a single person.</strong> Document rules and collectors, version the code and spread the knowledge across the team.</li>
+      </ul>
+    </section>
+
+    <section id="conclusoes-en" aria-labelledby="h-conclusoes-en">
+      <h2 id="h-conclusoes-en">Conclusions</h2>
+      <p>Technical monitoring tells you whether the systems are working; business monitoring tells you whether the company is working. Without the second, the infrastructure can be all green while proposals are rejected, orders sit still and partners stop operating, and the problem only shows up when someone outside complains.</p>
+      <p>Putting it in place does not require starting with an expensive platform. It requires choosing the processes that matter most, giving each indicator an owner and an action, comparing with what is normal for that day and time, and learning from every incident. Everything else, from the tool to the dashboard, can grow step by step.</p>
+      <p>The gain goes beyond detecting failures earlier. By getting business and IT to look at the same numbers, business monitoring creates a shared language about what a well-running operation looks like, and that may be its greatest contribution.</p>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="referencias-en" aria-labelledby="h-referencias-en">
+      <h2 id="h-referencias-en">References</h2>
+      <ol class="refs">
+        <li id="ref-1-en"><strong>Wikipedia</strong>, "Real-time business intelligence", section "Business activity monitoring", accessed 29/09/2026, <a href="https://en.wikipedia.org/wiki/Real-time_business_intelligence" rel="noopener">en.wikipedia.org/wiki/Real-time_business_intelligence</a>.</li>
+        <li id="ref-2-en"><strong>Luckham, David</strong>, <em>The Power of Events: An Introduction to Complex Event Processing in Distributed Enterprise Systems</em>, Addison-Wesley, 2002.</li>
+        <li id="ref-3-en"><strong>Beyer, Betsy; Jones, Chris; Petoff, Jennifer; Murphy, Niall Richard</strong> (eds.), <em>Site Reliability Engineering: How Google Runs Production Systems</em>, O’Reilly, 2016, chapter 6, "Monitoring Distributed Systems", <a href="https://sre.google/sre-book/monitoring-distributed-systems/" rel="noopener">sre.google/sre-book/monitoring-distributed-systems</a>.</li>
+        <li id="ref-4-en"><strong>Gregg, Brendan</strong>, "The USE Method", accessed 29/09/2026, <a href="https://www.brendangregg.com/usemethod.html" rel="noopener">brendangregg.com/usemethod.html</a>.</li>
+        <li id="ref-5-en"><strong>Wilkie, Tom</strong>, "The RED Method: How to Instrument Your Services", Grafana Labs, 2018, <a href="https://grafana.com/blog/2018/08/02/the-red-method-how-to-instrument-your-services/" rel="noopener">grafana.com/blog</a>.</li>
+        <li id="ref-6-en"><strong>Beyer, Betsy; Murphy, Niall Richard; Rensin, David K.; Kawahara, Kent; Thorne, Stephen</strong> (eds.), <em>The Site Reliability Workbook</em>, O’Reilly, 2018, chapter 5, "Alerting on SLOs", <a href="https://sre.google/workbook/alerting-on-slos/" rel="noopener">sre.google/workbook/alerting-on-slos</a>.</li>
+        <li id="ref-7-en"><strong>Kaplan, Robert S.; Norton, David P.</strong>, <em>The Balanced Scorecard: Translating Strategy into Action</em>, Harvard Business School Press, 1996.</li>
+        <li id="ref-8-en"><strong>Few, Stephen</strong>, <em>Information Dashboard Design: The Effective Visual Communication of Data</em>, O’Reilly, 2006.</li>
+      </ol>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== IT ===================== -->
+<div id="it" role="tabpanel" aria-labelledby="tab-it" lang="it" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Progetti</a></p>
+      <p class="eyebrow">Articolo</p>
+      <h1>Monitoraggio del business</h1>
+      <p class="dek">Quando l’infrastruttura è tutta verde e il business è fermo: che cos’è il monitoraggio del business, come funziona e una proposta per introdurlo.</p>
+      <div class="byline">
+        <span>Di <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Pubblicato il <time datetime="2026-09-29">29/09/2026</time></span>
+        <span class="credit">Rivisto e formattato con Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-it">
+    <h2 id="toc-it">Indice</h2>
+    <ol>
+      <li><a href="#definicao-it">Che cos’è il monitoraggio del business</a></li>
+      <li><a href="#problema-it">Infrastruttura verde, business fermo</a></li>
+      <li><a href="#ciclo-it">Il ciclo del monitoraggio</a></li>
+      <li><a href="#arquitetura-it">Architettura di riferimento</a></li>
+      <li><a href="#deteccao-it">Soglia fissa o andamento storico</a></li>
+      <li><a href="#exemplos-it">Indicatori per settore</a></li>
+      <li><a href="#proposta-it">Proposta di implementazione</a></li>
+      <li><a href="#conclusoes-it">Conclusioni</a></li>
+      <li><a href="#referencias-it">Riferimenti</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="definicao-it" aria-labelledby="h-definicao-it">
+      <h2 id="h-definicao-it">Che cos’è il monitoraggio del business</h2>
+      <p>Il monitoraggio del business è il controllo continuo, possibilmente in tempo reale, degli indicatori e degli eventi che mostrano se l’operatività dell’azienda funziona come dovrebbe. Il centro dell’attenzione non sono i server, la CPU o la memoria, ma la salute dei processi di business: ordini, transazioni, proposte, fatturazione, integrazioni con i partner.</p>
+      <p>In inglese la pratica è nota come <em lang="en">business monitoring</em> o <em lang="en">business activity monitoring</em> (BAM): seguire i processi mentre sono ancora in corso, a partire dagli eventi generati dai sistemi operativi. <sup><a href="#ref-1-it">[1]</a></sup> Eredita idee dall’elaborazione di eventi complessi, che tratta ogni ordine, pagamento o messaggio come un evento di business da correlare con gli altri. <sup><a href="#ref-2-it">[2]</a></sup></p>
+      <blockquote>
+        <p>Il business sta funzionando adesso come dovrebbe? Se no, dove, da quando e chi deve intervenire?</p>
+      </blockquote>
+      <p>In pratica, il monitoraggio del business comprende cinque attività:</p>
+      <ul class="cards">
+        <li><strong>Definire ciò che conta:</strong> i KPI e gli eventi critici, come il volume degli ordini, il tasso di approvazione delle transazioni, il tempo di regolamento, i guasti nelle integrazioni con i partner e i ricavi orari.</li>
+        <li><strong>Raccogliere i dati dalle fonti:</strong> ERP, API, database e log di integrazione.</li>
+        <li><strong>Confrontare con l’atteso:</strong> soglie, obiettivi, SLA e andamento storico. Per esempio: “alle 10 di solito abbiamo 500 transazioni; oggi sono state 50”.</li>
+        <li><strong>Allertare e dare visibilità:</strong> cruscotti e allarmi via e-mail, Slack o Teams, perché business e IT possano agire in fretta.</li>
+        <li><strong>Indagare la causa:</strong> capire se il calo dipende da un partner, da un’API o da una regola di business.</li>
+      </ul>
+      <p class="highlight"><strong>Una nota sul lessico:</strong> l’originale portoghese usa “monitoria de negócios”. In portoghese “monitoria” indica anche il tutorato accademico, per cui “monitoramento de negócios” è un termine altrettanto corretto che evita l’ambiguità. In italiano si parla di monitoraggio del business o dei processi di business.</p>
+    </section>
+
+    <section id="problema-it" aria-labelledby="h-problema-it">
+      <h2 id="h-problema-it">Infrastruttura verde, business fermo</h2>
+      <p>Il monitoraggio tecnico risponde alla domanda se il sistema è attivo. Il libro <em lang="en">Site Reliability Engineering</em> di Google riassume questa visione in quattro segnali d’oro: latenza, traffico, errori e saturazione. <sup><a href="#ref-3-it">[3]</a></sup> Metodi come USE, di Brendan Gregg, e RED, di Tom Wilkie, seguono la stessa linea, guardando a risorse e servizi. <sup><a href="#ref-4-it">[4]</a></sup> <sup><a href="#ref-5-it">[5]</a></sup></p>
+      <p>Tutto questo è necessario, ma non basta. Capita spesso che l’infrastruttura sia tutta verde mentre il business è fermo: l’API risponde in 200 millisecondi, ma risponde “no”.</p>
+      <figure>
+        <img src="rc_images/MonitoriaCamadas-it.svg" alt="Due pannelli affiancati. A sinistra, il monitoraggio tecnico è tutto verde: API disponibile al 99,9%, tempo di risposta 200 ms, CPU al 35% ed errori HTTP allo 0,2%. A destra, il monitoraggio del business è tutto rosso: 40% delle proposte del partner X rifiutate, 50 transazioni alle 10 quando se ne attendevano circa 500, 37 ordini fermi allo stato 520 e ricavi dell’ultima ora al 38% del previsto." width="1000" height="470" loading="lazy">
+        <figcaption>Gli stessi 15 minuti visti dai due monitoraggi: solo quello del business vede il problema.</figcaption>
+      </figure>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Aspetto</th><th scope="col">Monitoraggio tecnico</th><th scope="col">Monitoraggio del business</th></tr></thead>
+          <tbody>
+            <tr><td>Domanda</td><td>Il sistema è attivo e veloce?</td><td>Il business sta andando come previsto?</td></tr>
+            <tr><td>Metriche tipiche</td><td>Latenza, traffico, errori, saturazione, CPU, memoria, disco</td><td>Ordini all’ora, tasso di approvazione, tempo di regolamento, ricavi, arretrato per stato</td></tr>
+            <tr><td>Unità di analisi</td><td>Server, servizio, endpoint</td><td>Processo, prodotto, partner, canale, negozio</td></tr>
+            <tr><td>Chi lo guarda</td><td>Infrastruttura, SRE, sviluppo</td><td>Aree di business, operations, supporto, direzione</td></tr>
+            <tr><td>Segnale di guasto</td><td>Errore 5xx, timeout, risorsa esaurita</td><td>Calo di volume, rifiuti anomali, coda ferma, evento mai arrivato</td></tr>
+            <tr><td>Esempio</td><td>“L’API risponde in 200 ms.”</td><td>“Il 40% delle proposte del partner X viene rifiutato da ieri.”</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>I due monitoraggi si completano. Quello tecnico di solito dice <em>dove</em> si trova il difetto; quello del business dice <em>se</em> il difetto conta e quanto costa. Chi ha solo il primo scopre i problemi dal cliente, dal partner o dalla chiusura di fine mese.</p>
+    </section>
+
+    <section id="ciclo-it" aria-labelledby="h-ciclo-it">
+      <h2 id="h-ciclo-it">Il ciclo del monitoraggio</h2>
+      <p>Il monitoraggio del business non è un cruscotto appeso al muro. È un ciclo che si ripete, e ogni allarme insegna qualcosa sul processo monitorato.</p>
+      <figure>
+        <img src="rc_images/MonitoriaCiclo-it.svg" alt="Sei fasi disposte in cerchio attorno al monitoraggio del business, collegate da frecce in senso orario: 1 definire KPI, eventi e obiettivi; 2 raccogliere dati da ERP, API, database e log; 3 confrontare con soglie, SLA e storico; 4 allertare tramite cruscotti, e-mail, Slack e Teams; 5 indagare la causa e agire; 6 migliorare regole e processi, tornando alla definizione." width="1000" height="600" loading="lazy">
+        <figcaption>Le sei fasi del ciclo: ciò che insegna ogni incidente torna nella definizione degli indicatori.</figcaption>
+      </figure>
+      <ol class="steps">
+        <li><strong>Definire.</strong> Partite dalle domande del business, non dai dati disponibili. Per ogni processo critico scegliete pochi indicatori che mostrino volume, qualità e tempo, e fissate l’obiettivo e il responsabile di ciascuno.</li>
+        <li><strong>Raccogliere.</strong> Portate i dati dalle fonti in un luogo dove si possano confrontare: query pianificate sul database, eventi di integrazione, log delle API. Conservate lo storico, perché senza di esso non c’è un andamento con cui confrontarsi.</li>
+        <li><strong>Confrontare.</strong> Mettete a confronto il valore attuale con un riferimento: una soglia fissa, uno SLA concordato o l’andamento storico per quel giorno e quell’ora.</li>
+        <li><strong>Allertare.</strong> Mostrate lo stato nei cruscotti e avvisate chi deve intervenire, sul canale che quella persona usa. Ogni allarme deve richiedere un’azione; se nessuno deve fare nulla, non avrebbe dovuto essere inviato. <sup><a href="#ref-3-it">[3]</a></sup></li>
+        <li><strong>Indagare.</strong> Incrociate l’allarme di business con il monitoraggio tecnico e con i partner per trovare la causa: un partner fuori servizio, una regola cambiata, un’integrazione bloccata.</li>
+        <li><strong>Migliorare.</strong> Dopo ogni incidente, regolate le soglie, create gli indicatori che mancavano ed eliminate gli allarmi che hanno prodotto solo rumore.</li>
+      </ol>
+    </section>
+
+    <section id="arquitetura-it" aria-labelledby="h-arquitetura-it">
+      <h2 id="h-arquitetura-it">Architettura di riferimento</h2>
+      <p>Una soluzione di monitoraggio del business ha cinque livelli. Può partire con script Python, query SQL e un’e-mail, ed evolvere verso strumenti di mercato per cruscotti, osservabilità e integrazione, senza cambiare la logica.</p>
+      <figure>
+        <img src="rc_images/MonitoriaArquitetura-it.svg" alt="Flusso da sinistra a destra in cinque colonne. Fonti: ERP JDE, API dei partner, database e log di integrazione. Raccolta: connettori con SQL pianificato, eventi e webhook, salvando lo storico. Regole: motore di regole con soglie fisse, SLA, andamento storico ed eventi mancanti, classificando in verde, giallo o rosso. Uscite: cruscotto in tempo reale, allarmi via e-mail, Slack e Teams e ticket aperti automaticamente. Azione: il business decide e l’IT corregge. Una freccia tratteggiata torna dall’azione alle regole: ogni incidente affina regole, soglie e responsabili." width="1000" height="540" loading="lazy">
+        <figcaption>Dalle fonti alle persone: la freccia tratteggiata è ciò che trasforma l’architettura in un ciclo.</figcaption>
+      </figure>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Livello</th><th scope="col">Responsabilità</th><th scope="col">Per iniziare</th><th scope="col">Per crescere</th></tr></thead>
+          <tbody>
+            <tr><td>Fonti</td><td>I sistemi che registrano il business</td><td>Lettura delle tabelle dell’ERP e dei log di integrazione</td><td>Eventi pubblicati dai sistemi stessi</td></tr>
+            <tr><td>Raccolta</td><td>Estrarre, uniformare e conservare lo storico</td><td>Script Python o SQL pianificati ogni 5–15 minuti</td><td>Code, streaming e un database di serie temporali</td></tr>
+            <tr><td>Regole</td><td>Confrontare con l’atteso e classificare</td><td>Soglie fisse e regole di eventi mancanti</td><td>Andamento storico per giorno e ora, rilevamento di anomalie</td></tr>
+            <tr><td>Uscite</td><td>Dare visibilità e avvisare</td><td>E-mail e un cruscotto semplice</td><td>Slack o Teams, apertura automatica di ticket, escalation</td></tr>
+            <tr><td>Azione</td><td>Decidere e correggere</td><td>Un responsabile per indicatore e una procedura per allarme</td><td>Reperibilità, analisi post-incidente, revisione mensile delle regole</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>È stato questo il percorso di uno strumento che ho sviluppato in Python per dare visibilità all’operatività dei partner API di una banca: partire in piccolo, con query e allarmi semplici sui processi più dolorosi, e crescere man mano che ogni incidente mostrava cosa mancava ancora da misurare.</p>
+    </section>
+
+    <section id="deteccao-it" aria-labelledby="h-deteccao-it">
+      <h2 id="h-deteccao-it">Soglia fissa o andamento storico</h2>
+      <p>Il livello delle regole è dove il monitoraggio del business guadagna o perde credibilità. Una regola tarata male genera falsi allarmi, le persone iniziano a ignorarli e, il giorno del problema vero, nessuno guarda. Succede anche il contrario: una regola troppo larga lascia passare il problema.</p>
+      <figure>
+        <img src="rc_images/MonitoriaBaseline-it.svg" alt="Grafico a linee delle transazioni orarie nell’arco di una giornata. Una fascia verde mostra il volume atteso dallo storico, più o meno 25%, basso di notte e vicino a 500 all’ora tra le 10 e le 16. Il volume reale segue la fascia fino alle 9 e crolla a 50 alle 10, dove scatta un allarme: ne erano attese circa 500. Una linea tratteggiata rossa indica una soglia fissa di 100 all’ora: tra mezzanotte e le 6 il volume normale resta sotto, generando falsi allarmi." width="1000" height="560" loading="lazy">
+        <figcaption>Il volume del business è stagionale: confrontarlo con la stessa ora nello storico evita falsi allarmi e coglie cali che una soglia fissa lascerebbe passare.</figcaption>
+      </figure>
+      <p>Esistono cinque tipi di regola, e un buon monitoraggio ne combina diversi:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Tipo di regola</th><th scope="col">Esempio</th><th scope="col">Quando usarla</th><th scope="col">Attenzione</th></tr></thead>
+          <tbody>
+            <tr><td>Soglia fissa</td><td>Più di 20 ordini fermi nello stesso stato</td><td>Code, arretrati, scorte minime</td><td>Ignora la stagionalità del giorno e della settimana</td></tr>
+            <tr><td>SLA</td><td>Regolamento oltre i 30 minuti</td><td>Scadenze concordate con clienti e partner</td><td>Misurare l’evento di business, non la chiamata tecnica</td></tr>
+            <tr><td>Rapporto</td><td>Tasso di rifiuto sopra il 15%</td><td>Approvazioni, conversioni, errori di validazione</td><td>Con volumi bassi il tasso oscilla molto; richiedete un volume minimo</td></tr>
+            <tr><td>Andamento storico</td><td>Volume fuori dalla fascia dello stesso giorno e ora nelle ultime settimane</td><td>Transazioni, vendite, accessi</td><td>Festività e campagne distorcono lo storico</td></tr>
+            <tr><td>Evento mancante</td><td>Nessun ordine dal partner X negli ultimi 30 minuti in orario lavorativo</td><td>Integrazioni e file che dovrebbero arrivare</td><td>È l’allarme più prezioso e il più dimenticato</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Il capitolo sugli allarmi basati sugli SLO del <em lang="en">Site Reliability Workbook</em> propone di valutare ogni regola secondo quattro criteri che valgono anche per il business: precisione (quanti allarmi erano problemi reali), sensibilità (quanti problemi reali hanno generato un allarme), tempo di rilevamento e tempo di rientro dell’allarme dopo la fine del problema. <sup><a href="#ref-6-it">[6]</a></sup></p>
+    </section>
+
+    <section id="exemplos-it" aria-labelledby="h-exemplos-it">
+      <h2 id="h-exemplos-it">Indicatori per settore</h2>
+      <p>Gli indicatori cambiano da un business all’altro, ma la logica è la stessa: volume, qualità e tempo di ogni processo critico, suddivisi per la dimensione che aiuta a trovare la causa, come partner, negozio o canale.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Settore</th><th scope="col">Indicatori</th><th scope="col">Esempio di regola</th></tr></thead>
+          <tbody>
+            <tr><td>Banca o fintech</td><td>Volume e tasso di errore delle operazioni via API per partner, tasso di approvazione delle proposte, tempo di regolamento, riconciliazione</td><td>Tasso di rifiuto del partner oltre il doppio della media delle ultime quattro settimane alla stessa ora</td></tr>
+            <tr><td>Commercio al dettaglio</td><td>Flusso di clienti, conversione, scontrino medio, rotture di stock e vendite per negozio</td><td>Negozio aperto senza vendite registrate da 45 minuti</td></tr>
+            <tr><td>ERP (JD Edwards)</td><td>Ordini bloccati in uno stato, lotti di integrazione non elaborati, guasti nelle interfacce EDI, job in errore</td><td>Ordini di vendita fermi nello stesso stato da più di 2 ore</td></tr>
+            <tr><td>E-commerce</td><td>Carrelli abbandonati, pagamenti rifiutati per metodo di pagamento, ordini senza fattura</td><td>Rifiuti di carta sopra il 10% in 15 minuti</td></tr>
+            <tr><td>Logistica</td><td>Ritiri e consegne puntuali, ordini senza movimentazione, resi</td><td>Ordine fatturato non ritirato entro 24 ore</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Per collegare gli indicatori alla strategia ed evitare di misurare solo ciò che è facile, conviene guardare alla <em lang="en">Balanced Scorecard</em> di Kaplan e Norton, che organizza le metriche nelle prospettive finanziaria, dei clienti, dei processi interni e dell’apprendimento. <sup><a href="#ref-7-it">[7]</a></sup> E per disegnare i cruscotti, i principi di Stephen Few: tutto ciò che conta in un’unica schermata, leggibile a colpo d’occhio, senza decorazioni che si contendano l’attenzione. <sup><a href="#ref-8-it">[8]</a></sup></p>
+    </section>
+
+    <section id="proposta-it" aria-labelledby="h-proposta-it">
+      <h2 id="h-proposta-it">Proposta di implementazione</h2>
+      <p>Questa sezione può servire come base per una proposta di introduzione del monitoraggio del business in un’azienda o in un reparto. I tempi sono un riferimento per un primo ciclo e vanno adattati all’ampiezza del perimetro.</p>
+
+      <h3>Obiettivo</h3>
+      <p>Rilevare i problemi nei processi critici del business prima che li rivelino i clienti, i partner o la chiusura di fine mese, e dare a ogni problema un responsabile e un’azione.</p>
+
+      <h3>Perimetro</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Nel perimetro</th><th scope="col">Fuori dal perimetro</th></tr></thead>
+          <tbody>
+            <tr><td>Da tre a cinque processi critici nel pilota, scelti con il business</td><td>Monitoraggio dell’infrastruttura, che resta sugli strumenti attuali</td></tr>
+            <tr><td>Raccolta da ERP, API e log di integrazione esistenti</td><td>Modifiche ai sistemi di origine</td></tr>
+            <tr><td>Regole, cruscotto, allarmi e procedure di intervento</td><td>Report direzionali e analisi storiche di BI</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Fasi</h3>
+      <ol class="timeline">
+        <li><span class="when">Fase 0 · Diagnosi · 2 settimane</span>Interviste con le aree di business, analisi degli incidenti degli ultimi mesi, scelta dei processi del pilota e inventario delle fonti dati.</li>
+        <li><span class="when">Fase 1 · Pilota · 4–6 settimane</span>Schede degli indicatori, raccolta, regole, cruscotto e allarmi per i processi scelti. Una settimana di allarmi in modalità silenziosa per tarare le soglie prima di avvisare le persone.</li>
+        <li><span class="when">Fase 2 · Estensione · 6–8 settimane</span>Nuovi processi, andamento storico per giorno e ora, integrazione con il sistema di ticketing ed escalation.</li>
+        <li><span class="when">Fase 3 · Operatività continua</span>Revisione mensile di indicatori e regole, analisi di ogni incidente e report dei risultati per gli sponsor.</li>
+      </ol>
+
+      <h3>Deliverable</h3>
+      <ul class="cards">
+        <li><strong>Catalogo degli indicatori:</strong> una scheda per indicatore, secondo il modello qui sotto.</li>
+        <li><strong>Collettori e regole:</strong> codice versionato, documentato e pianificato.</li>
+        <li><strong>Cruscotto:</strong> una vista per processo, con lo stato attuale e l’andamento della giornata.</li>
+        <li><strong>Allarmi e procedure:</strong> ogni allarme con canale, gravità, responsabile e prima azione prevista.</li>
+        <li><strong>Report del pilota:</strong> incidenti rilevati, tempo di rilevamento, falsi allarmi e raccomandazioni.</li>
+      </ul>
+
+      <h3>Modello di scheda dell’indicatore</h3>
+      <div class="table-wrap">
+        <table class="sheet">
+          <tbody>
+            <tr><th scope="row">Indicatore</th><td>Tasso di rifiuto delle proposte del partner X</td></tr>
+            <tr><th scope="row">Domanda di business</th><td>Il partner riesce a sottoscrivere contratti normalmente?</td></tr>
+            <tr><th scope="row">Fonte</th><td>Tabella delle proposte e log dell’API di sottoscrizione</td></tr>
+            <tr><th scope="row">Formula</th><td>Proposte rifiutate ÷ proposte ricevute, negli ultimi 30 minuti</td></tr>
+            <tr><th scope="row">Frequenza</th><td>Ogni 5 minuti, dalle 8 alle 20</td></tr>
+            <tr><th scope="row">Regola di allarme</th><td>Oltre 2× la media delle ultime 4 settimane alla stessa ora, con almeno 30 proposte</td></tr>
+            <tr><th scope="row">Gravità e canale</th><td>Alta · canale Teams del team partner ed e-mail del responsabile del cliente</td></tr>
+            <tr><th scope="row">Responsabile</th><td>Responsabile delle partnership; supporto tecnico dal team di assistenza API</td></tr>
+            <tr><th scope="row">Prima azione</th><td>Verificare i motivi di rifiuto più frequenti e contattare il partner</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Ruoli</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Ruolo</th><th scope="col">Responsabilità</th></tr></thead>
+          <tbody>
+            <tr><td>Sponsor</td><td>Garantisce priorità, accesso alle aree e decisioni sul perimetro</td></tr>
+            <tr><td>Responsabile dell’indicatore (business)</td><td>Fissa l’obiettivo, riceve l’allarme e decide l’azione di business</td></tr>
+            <tr><td>Analista di monitoraggio</td><td>Progetta indicatori e regole, tara le soglie e mantiene il catalogo</td></tr>
+            <tr><td>IT e assistenza</td><td>Dà accesso alle fonti, corregge i guasti tecnici e mantiene i collettori</td></tr>
+            <tr><td>Partner</td><td>Comunicano le finestre di manutenzione e supportano le indagini</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Criteri di successo</h3>
+      <ul class="cards">
+        <li><strong>Rilevamento anticipato:</strong> la maggior parte degli incidenti di business rilevata dal monitoraggio prima del cliente o del partner.</li>
+        <li><strong>Tempo di rilevamento:</strong> da ore o giorni a minuti per i processi del pilota.</li>
+        <li><strong>Allarmi utili:</strong> almeno 8 allarmi su 10 portano a un’azione.</li>
+        <li><strong>Utilizzo:</strong> le aree di business consultano il cruscotto ogni giorno, non solo quando qualcuno le avvisa.</li>
+      </ul>
+
+      <h3>Rischi e come mitigarli</h3>
+      <ul class="cards warn">
+        <li><strong>Affaticamento da allarmi.</strong> Troppi allarmi fanno smettere di guardare. Iniziate con poche regole, usate la modalità silenziosa per tarare ed eliminate ciò che non porta ad azioni.</li>
+        <li><strong>Indicatore senza responsabile.</strong> Un allarme che arriva a tutti non arriva a nessuno. Nessun indicatore va in produzione senza responsabile e prima azione definiti.</li>
+        <li><strong>Dati di scarsa qualità.</strong> Anagrafiche incomplete e orari incoerenti generano falsi allarmi. Includete la qualità della raccolta nel monitoraggio stesso.</li>
+        <li><strong>Cruscotto senza azione.</strong> Un bel cruscotto che nessuno usa non è monitoraggio. Ogni indicatore deve rispondere a una domanda di business.</li>
+        <li><strong>Dipendere da una sola persona.</strong> Documentate regole e collettori, versionate il codice e distribuite la conoscenza nel team.</li>
+      </ul>
+    </section>
+
+    <section id="conclusoes-it" aria-labelledby="h-conclusoes-it">
+      <h2 id="h-conclusoes-it">Conclusioni</h2>
+      <p>Il monitoraggio tecnico dice se i sistemi funzionano; il monitoraggio del business dice se l’azienda funziona. Senza il secondo, l’infrastruttura può essere tutta verde mentre le proposte vengono rifiutate, gli ordini restano fermi e i partner smettono di operare, e il problema emerge solo quando qualcuno da fuori si lamenta.</p>
+      <p>Introdurlo non richiede di partire da una piattaforma costosa. Richiede di scegliere i processi che contano di più, dare a ogni indicatore un responsabile e un’azione, confrontare con ciò che è normale per quel giorno e quell’ora e imparare da ogni incidente. Il resto, dallo strumento al cruscotto, può crescere per gradi.</p>
+      <p>Il guadagno va oltre il rilevare prima i guasti. Mettendo business e IT davanti agli stessi numeri, il monitoraggio del business crea un linguaggio comune su che cosa significhi un’operatività che funziona bene, e forse è questo il suo contributo più grande.</p>
+      <a class="back" href="#top">↑ Torna all’inizio</a>
+    </section>
+
+    <section id="referencias-it" aria-labelledby="h-referencias-it">
+      <h2 id="h-referencias-it">Riferimenti</h2>
+      <ol class="refs">
+        <li id="ref-1-it"><strong>Wikipedia</strong>, "Real-time business intelligence", sezione "Business activity monitoring", consultato il 29/09/2026, <a href="https://en.wikipedia.org/wiki/Real-time_business_intelligence" rel="noopener">en.wikipedia.org/wiki/Real-time_business_intelligence</a>.</li>
+        <li id="ref-2-it"><strong>Luckham, David</strong>, <em lang="en">The Power of Events: An Introduction to Complex Event Processing in Distributed Enterprise Systems</em>, Addison-Wesley, 2002.</li>
+        <li id="ref-3-it"><strong>Beyer, Betsy; Jones, Chris; Petoff, Jennifer; Murphy, Niall Richard</strong> (a cura di), <em lang="en">Site Reliability Engineering: How Google Runs Production Systems</em>, O’Reilly, 2016, capitolo 6, "Monitoring Distributed Systems", <a href="https://sre.google/sre-book/monitoring-distributed-systems/" rel="noopener">sre.google/sre-book/monitoring-distributed-systems</a>.</li>
+        <li id="ref-4-it"><strong>Gregg, Brendan</strong>, "The USE Method", consultato il 29/09/2026, <a href="https://www.brendangregg.com/usemethod.html" rel="noopener">brendangregg.com/usemethod.html</a>.</li>
+        <li id="ref-5-it"><strong>Wilkie, Tom</strong>, "The RED Method: How to Instrument Your Services", Grafana Labs, 2018, <a href="https://grafana.com/blog/2018/08/02/the-red-method-how-to-instrument-your-services/" rel="noopener">grafana.com/blog</a>.</li>
+        <li id="ref-6-it"><strong>Beyer, Betsy; Murphy, Niall Richard; Rensin, David K.; Kawahara, Kent; Thorne, Stephen</strong> (a cura di), <em lang="en">The Site Reliability Workbook</em>, O’Reilly, 2018, capitolo 5, "Alerting on SLOs", <a href="https://sre.google/workbook/alerting-on-slos/" rel="noopener">sre.google/workbook/alerting-on-slos</a>.</li>
+        <li id="ref-7-it"><strong>Kaplan, Robert S.; Norton, David P.</strong>, <em lang="en">The Balanced Scorecard: Translating Strategy into Action</em>, Harvard Business School Press, 1996.</li>
+        <li id="ref-8-it"><strong>Few, Stephen</strong>, <em lang="en">Information Dashboard Design: The Effective Visual Communication of Data</em>, O’Reilly, 2006.</li>
+      </ol>
+      <a class="back" href="#top">↑ Torna all’inizio</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span>Giovani Perotto Mesquita · Porto Alegre, RS</span>
+    <span><a href="projects.html" data-projects data-foot="0">Projetos</a> · <a href="resume.html" data-resume data-foot="1">Currículo</a> · <a href="contact.html" data-contact data-foot="2">Contato</a></span>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('.lang [role="option"]'));
+    var titles = {"pt": "Monitoria de negócios · Giovani Perotto Mesquita", "en": "Business monitoring · Giovani Perotto Mesquita", "it": "Monitoraggio del business · Giovani Perotto Mesquita"};
+    var foots = {"pt": ["Projetos", "Currículo", "Contato"], "en": ["Projects", "Resume", "Contact"], "it": ["Progetti", "Curriculum", "Contatti"]};
+    var langs = { pt: 'pt-BR', en: 'en', it: 'it' };
+    var bar = document.querySelector('.progress');
+    var article = document.querySelector('[role="tabpanel"]:not([hidden]) article');
+
+    function show(id, focus) {
+      tabs.forEach(function (t) {
+        var on = t.getAttribute('aria-controls') === id;
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+        if (on && focus) t.focus();
+      });
+      document.documentElement.lang = langs[id];
+      document.title = titles[id];
+      var suffix = id === 'pt' ? '' : '#' + id;
+      [['data-home', 'index.html'], ['data-about', 'about.html'], ['data-resume', 'resume.html'], ['data-projects', 'projects.html'], ['data-contact', 'contact.html']].forEach(function (p) {
+        document.querySelectorAll('[' + p[0] + ']').forEach(function (a) { a.href = p[1] + suffix; });
+      });
+      document.querySelectorAll('[data-foot]').forEach(function (a) { a.textContent = foots[id][+a.getAttribute('data-foot')]; });
+      article = document.querySelector('#' + id + ' article');
+      if (history.replaceState) history.replaceState(null, '', id === 'pt' ? location.pathname : '#' + id);
+      progress();
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () { show(t.getAttribute('aria-controls')); });
+      t.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (d) { e.preventDefault(); show(tabs[(i + d + tabs.length) % tabs.length].getAttribute('aria-controls'), true); }
+      });
+    });
+
+    // barra de progresso de leitura
+    function progress() {
+      if (!article) return;
+      var r = article.getBoundingClientRect();
+      var total = r.height - window.innerHeight;
+      var p = total > 0 ? Math.min(Math.max(-r.top / total, 0), 1) : 1;
+      bar.style.width = (p * 100) + '%';
+    }
+    window.addEventListener('scroll', progress, { passive: true });
+    window.addEventListener('resize', progress);
+
+    // destaca a seção atual no índice
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          var panel = e.target.closest('[role="tabpanel"]');
+          panel.querySelectorAll('.toc a').forEach(function (a) {
+            if (a.getAttribute('href') === '#' + e.target.id) a.setAttribute('aria-current', 'true');
+            else a.removeAttribute('aria-current');
+          });
+        });
+      }, { rootMargin: '-20% 0px -70% 0px' });
+      document.querySelectorAll('article section[id]').forEach(function (s) { io.observe(s); });
+    }
+
+    var h = (location.hash || '').replace('#', '');
+    var m = h.match(/^(?:.*-)?(en|it)$/);
+    if (m) {
+      show(m[1]);
+      if (h !== m[1]) { var el = document.getElementById(h); if (el) el.scrollIntoView(); if (history.replaceState) history.replaceState(null, '', '#' + h); }
+    } else progress();
+  })();
+</script>
+<script>
+  // seletor de idioma em combobox: abre a lista, sincroniza o botão e fecha
+  (function () {
+    var box = document.querySelector('.lang'); if (!box) return;
+    var btn = box.querySelector('.lang-current'), list = box.querySelector('.lang-list'), now = btn.querySelector('.lang-now');
+    var opts = Array.prototype.slice.call(list.querySelectorAll('[role="option"]'));
+    var menu = {
+      pt: { index: 'Início', about: 'Sobre', resume: 'Currículo', projects: 'Projetos', contact: 'Contato' },
+      en: { index: 'Home', about: 'About', resume: 'Resume', projects: 'Projects', contact: 'Contact' },
+      it: { index: 'Home', about: 'Chi sono', resume: 'Curriculum', projects: 'Progetti', contact: 'Contatti' }
+    };
+    function translate(id) {
+      document.querySelectorAll('.nav ul a').forEach(function (l) {
+        var k = (l.getAttribute('href') || '').split('#')[0].replace('.html', '');
+        if (menu[id] && menu[id][k]) l.textContent = menu[id][k];
+      });
+      // links do menu para as páginas principais levam o idioma selecionado
+      var suf = id === 'pt' ? '' : '#' + id;
+      document.querySelectorAll('.nav a[href]').forEach(function (l) {
+        var m = l.getAttribute('href').match(/^(index|about|resume|projects|contact)\.html(#(pt|en|it))?$/);
+        if (m) l.setAttribute('href', m[1] + '.html' + suf);
+      });
+    }
+    function sync() {
+      var sel = opts.filter(function (o) { return o.getAttribute('aria-selected') === 'true'; })[0] || opts[0];
+      now.innerHTML = sel.querySelector('.flag').outerHTML + sel.getAttribute('data-code');
+      btn.setAttribute('aria-label', btn.getAttribute('data-label') + ': ' + sel.textContent.trim());
+      translate(sel.getAttribute('aria-controls'));
+      return sel;
+    }
+    function open() { list.hidden = false; btn.setAttribute('aria-expanded', 'true'); sync().focus(); }
+    function close(back) { list.hidden = true; btn.setAttribute('aria-expanded', 'false'); if (back) btn.focus(); }
+    btn.addEventListener('click', function () { if (list.hidden) open(); else close(); });
+    btn.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); open(); }
+      else if (e.key === 'Escape') close();
+    });
+    opts.forEach(function (o, i) {
+      o.addEventListener('click', function () { sync(); close(true); });
+      o.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0;
+        if (d) { e.preventDefault(); opts[(i + d + opts.length) % opts.length].focus(); }
+        else if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); opts[e.key === 'Home' ? 0 : opts.length - 1].focus(); }
+        else if (e.key === 'Escape') { e.preventDefault(); close(true); }
+        else if (e.key === 'Tab') close();
+      });
+    });
+    document.addEventListener('click', function (e) { if (!box.contains(e.target)) close(); });
+    new MutationObserver(sync).observe(list, { attributes: true, subtree: true, attributeFilter: ['aria-selected'] });
+    sync();
+  })();
+</script>
+</body>
+</html>
