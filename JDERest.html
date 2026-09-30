@@ -253,6 +253,7 @@
           <button type="button" role="option" id="tab-pt" aria-controls="pt" aria-selected="true" lang="pt-BR" data-code="PT"><svg class="flag" viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009C3B"/><path d="M10 1.6 18.4 7 10 12.4 1.6 7z" fill="#FEDF00"/><circle cx="10" cy="7" r="3.3" fill="#002776"/><path d="M6.8 6.3c2.1-.6 4.5-.2 6.4 1" stroke="#fff" stroke-width=".7" fill="none"/></svg><span>Português</span></button>
           <button type="button" role="option" id="tab-en" aria-controls="en" aria-selected="false" lang="en" tabindex="-1" data-code="EN"><svg class="flag" viewBox="0 0 19 10" aria-hidden="true"><rect width="19" height="10" fill="#B22234"/><rect y="0.769" width="19" height="0.769" fill="#fff"/><rect y="2.308" width="19" height="0.769" fill="#fff"/><rect y="3.846" width="19" height="0.769" fill="#fff"/><rect y="5.385" width="19" height="0.769" fill="#fff"/><rect y="6.923" width="19" height="0.769" fill="#fff"/><rect y="8.462" width="19" height="0.769" fill="#fff"/><rect width="7.6" height="5.385" fill="#3C3B6E"/></svg><span>English</span></button>
           <button type="button" role="option" id="tab-it" aria-controls="it" aria-selected="false" lang="it" tabindex="-1" data-code="IT"><svg class="flag" viewBox="0 0 3 2" aria-hidden="true"><rect width="1" height="2" fill="#009246"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#CE2B37"/></svg><span>Italiano</span></button>
+          <button type="button" role="option" id="tab-es" aria-controls="es" aria-selected="false" lang="es" tabindex="-1" data-code="ES"><svg class="flag" viewBox="0 0 750 500" aria-hidden="true"><rect width="750" height="500" fill="#AA151B"/><rect y="125" width="750" height="250" fill="#F1BF00"/></svg><span>Español</span></button>
         </div>
       </div>
     </div>
@@ -1148,6 +1149,301 @@
 </div>
 </div>
 
+<div id="es" role="tabpanel" aria-labelledby="tab-es" lang="es" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Proyectos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Usar REST en JD Edwards</h1>
+      <p class="dek">Del concepto a la primera llamada: infraestructura, arquitectura y configuración del AIS Server, con un ejemplo que crea una orden de compra y consulta su estado.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado el <time datetime="2026-09-29">29/09/2026</time></span>
+        <span class="credit">Revisado y maquetado con Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-es">
+    <h2 id="toc-es">Índice</h2>
+    <ol>
+      <li><a href="#conceito-es">Concepto</a></li>
+      <li><a href="#infra-es">Infraestructura necesaria</a></li>
+      <li><a href="#arquitetura-es">Arquitectura</a></li>
+      <li><a href="#funciona-es">Cómo funciona REST en JD Edwards</a></li>
+      <li><a href="#configurar-es">Cómo configurar</a></li>
+      <li><a href="#exemplo-es">Ejemplo: orden de compra paso a paso</a></li>
+      <li><a href="#conclusao-es">Conclusión</a></li>
+      <li><a href="#referencias-es">Referencias</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="conceito-es" aria-labelledby="h-conceito-es">
+      <h2 id="h-conceito-es">Concepto</h2>
+      <p><strong>REST</strong> (Representational State Transfer) es un estilo arquitectónico para servicios web: cada recurso tiene una dirección (URL), las operaciones usan los verbos HTTP (GET, POST, PUT, DELETE) y los datos viajan en un formato simple, casi siempre <strong>JSON</strong>. Cada llamada lleva todo lo que el servidor necesita para atenderla, y eso hace que las integraciones sean previsibles y fáciles de probar con herramientas comunes como Postman o curl.</p>
+      <p>En JD Edwards EnterpriseOne, la puerta REST es el <strong>AIS Server</strong> (Application Interface Services). Recibe pedidos HTTP con JSON y los traduce en acciones sobre JDE: abrir una aplicación y completar un formulario, leer una tabla o ejecutar una <strong>orquestación</strong>. El punto central es que el AIS no escribe directamente en la base de datos: ejecuta las mismas aplicaciones y business functions que usaría un usuario, con las mismas versiones, opciones de proceso y validaciones. <sup><a href="#ref-1-es">[1]</a></sup> <sup><a href="#ref-3-es">[3]</a></sup></p>
+      <p>Sobre el AIS corre el <strong>Orchestrator</strong>, que permite diseñar, sin código C, una secuencia de pasos (reglas, form requests, data requests, conectores) y publicarla como un único endpoint REST. Así es como Oracle recomienda hoy integrar JDE. <sup><a href="#ref-2-es">[2]</a></sup></p>
+      <dl class="glossary">
+        <dt>AIS Server</dt><dd>Servidor Java (sobre WebLogic o WebSphere) que expone JDE como servicios REST bajo la ruta <code>/jderest</code>.</dd>
+        <dt>Form request</dt><dd>Llamada que ejecuta un formulario de una aplicación (por ejemplo <code>P4310_W4310A</code>) como si fuera un usuario.</dd>
+        <dt>Data request</dt><dd>Consulta de lectura sobre una tabla o business view (por ejemplo <code>F4311</code>).</dd>
+        <dt>Orquestación</dt><dd>Secuencia de pasos publicada como endpoint, con entradas y salidas a las que tú les das nombre.</dd>
+        <dt>Orchestrator Studio</dt><dd>Herramienta web para crear, probar y compartir orquestaciones.</dd>
+        <dt>UDO</dt><dd>User Defined Object: objeto creado por los usuarios, como las orquestaciones, con su propio ciclo de aprobación y promoción.</dd>
+      </dl>
+      <aside class="note"><p><strong>Direcciones:</strong> JDE puede ser <strong>llamado</strong> vía REST (entrada, a través del AIS) y también puede <strong>llamar</strong> a API REST externas (salida, a través de los conectores del Orchestrator). Este artículo se centra en la entrada y muestra dónde encaja la salida.</p></aside>
+    </section>
+
+    <section id="infra-es" aria-labelledby="h-infra-es">
+      <h2 id="h-infra-es">Infraestructura necesaria</h2>
+      <p>REST en JDE no es un producto aparte: es una capa más sobre la instalación existente. Lo mínimo es lo siguiente: <sup><a href="#ref-1-es">[1]</a></sup> <sup><a href="#ref-5-es">[5]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Componente</th><th scope="col">Papel</th><th scope="col">Nota</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Tools Release 9.2</th><td>Base técnica que trae el AIS y el Orchestrator</td><td>Cuanto más reciente, más funciones ofrece (orchestrator v3, OAuth, conectores, Groovy).</td></tr>
+            <tr><th scope="row">Enterprise Server</th><td>Ejecuta business functions, MBF y UBE</td><td>Ya presente en cualquier instalación.</td></tr>
+            <tr><th scope="row">HTML Server (JAS)</th><td>Ejecuta las aplicaciones web conducidas por el AIS</td><td>En producción se recomienda un JAS dedicado al AIS, para aislar la carga.</td></tr>
+            <tr><th scope="row">AIS Server</th><td>Expone los servicios REST bajo <code>/jderest</code></td><td>Instancia Java administrada por el Server Manager, sobre WebLogic o WebSphere.</td></tr>
+            <tr><th scope="row">Server Manager</th><td>Instala, configura y monitorea las instancias</td><td>Consola central con agentes en cada servidor.</td></tr>
+            <tr><th scope="row">Orchestrator Studio</th><td>Diseño y prueba de las orquestaciones</td><td>Accesible desde el navegador; en las versiones recientes del Tools, integrado en EnterpriseOne.</td></tr>
+            <tr><th scope="row">Certificados TLS</th><td>HTTPS de punta a punta</td><td>Nunca exponer el AIS en HTTP simple fuera de la red interna.</td></tr>
+            <tr><th scope="row">API gateway / proxy inverso</th><td>Punto único de entrada, TLS, WAF, límites de tráfico</td><td>Opcional, pero recomendado cuando hay consumidores fuera de la red.</td></tr>
+            <tr><th scope="row">Usuario de servicio</th><td>Identidad técnica de las integraciones</td><td>Privilegio mínimo, un rol específico y contraseña guardada en un vault.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <aside class="note"><p><strong>Dimensionamiento:</strong> cada sesión AIS ocupa una sesión en el JAS. Un gran volumen de llamadas cortas exige un JAS dedicado, reutilizar el token y un pool de conexiones bien ajustado, no solo más memoria.</p></aside>
+    </section>
+
+    <section id="arquitetura-es" aria-labelledby="h-arquitetura-es">
+      <h2 id="h-arquitetura-es">Arquitectura</h2>
+      <p>La figura muestra el recorrido de una llamada. Los consumidores (un portal, una plataforma iPaaS, una app móvil) hablan HTTPS con el API gateway, que reenvía al AIS Server. El AIS dialoga con el HTML Server, que a su vez usa el protocolo interno <strong>JDENET</strong> para llegar al Enterprise Server, donde las business functions acceden a la base de datos. <sup><a href="#ref-5-es">[5]</a></sup></p>
+      <figure>
+        <img src="rc_images/JDERestArquitetura-es.svg" alt="Los consumidores llaman al API gateway vía HTTPS y JSON; el gateway reenvía al AIS Server, que expone tokenrequest, formservice, dataservice, orchestrator y otros y aloja el Orchestrator. El AIS habla con el HTML Server, que usa JDENET hasta el Enterprise Server y la base de datos. El Orchestrator llama a API externas mediante conectores. El Server Manager lo administra todo." width="1000" height="600" loading="lazy">
+        <figcaption>El AIS es la puerta REST; las reglas de negocio siguen en las aplicaciones y en las BSFN.</figcaption>
+      </figure>
+      <p>Tres decisiones de arquitectura marcan la diferencia:</p>
+      <ol>
+        <li><strong>Capa de entrada.</strong> Poner un API gateway (OCI API Gateway, Apigee, Kong, Azure APIM o un proxy inverso) delante del AIS centraliza TLS, autenticación externa, límites de tráfico y registro de accesos, y oculta la topología interna.</li>
+        <li><strong>Aislamiento.</strong> En producción, el AIS apunta a un HTML Server propio. Así un pico de integraciones no vuelve lentos a los usuarios interactivos.</li>
+        <li><strong>Alta disponibilidad.</strong> Dos o más instancias AIS detrás de un balanceador. Como el token ata la sesión a una instancia, el balanceador necesita afinidad (sticky session), o el cliente debe usar orquestaciones autenticadas en cada llamada.</li>
+      </ol>
+    </section>
+
+    <section id="funciona-es" aria-labelledby="h-funciona-es">
+      <h2 id="h-funciona-es">Cómo funciona REST en JD Edwards</h2>
+      <p>El AIS publica un conjunto de servicios. Los más usados están en la tabla; la lista completa está en la referencia de la API. <sup><a href="#ref-3-es">[3]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Servicio</th><th scope="col">Endpoint</th><th scope="col">Para qué sirve</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Token</th><td><code>POST /jderest/v2/tokenrequest</code></td><td>Autentica y abre una sesión; devuelve el token.</td></tr>
+            <tr><th scope="row">Logout</th><td><code>POST /jderest/v2/tokenrequest/logout</code></td><td>Cierra la sesión y libera el JAS.</td></tr>
+            <tr><th scope="row">Form service</th><td><code>POST /jderest/v2/formservice</code></td><td>Ejecuta un formulario: completa campos, presiona botones, lee la grilla.</td></tr>
+            <tr><th scope="row">Data service</th><td><code>POST /jderest/v2/dataservice</code></td><td>Consulta, cuenta o agrega una tabla o business view.</td></tr>
+            <tr><th scope="row">App stack</th><td><code>POST /jderest/v2/appstack</code></td><td>Navega entre formularios manteniendo el estado.</td></tr>
+            <tr><th scope="row">Opciones de proceso</th><td><code>POST /jderest/v2/poservice</code></td><td>Lee las opciones de proceso de una versión.</td></tr>
+            <tr><th scope="row">Orquestación</th><td><code>POST /jderest/v3/orchestrator/{nombre}</code></td><td>Ejecuta una orquestación publicada.</td></tr>
+            <tr><th scope="row">Discovery</th><td><code>GET /jderest/discover</code></td><td>Lista las orquestaciones que el usuario puede ejecutar.</td></tr>
+            <tr><th scope="row">Configuración</th><td><code>GET /jderest/v2/defaultconfig</code></td><td>Muestra la versión y las capacidades del AIS; excelente chequeo de salud.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>El ciclo de una llamada</h3>
+      <figure>
+        <img src="rc_images/JDERestFluxo-es.svg" alt="Diagrama de secuencia: el cliente le pide un token al AIS; el AIS valida el inicio de sesión en el HTML Server y devuelve el token; el cliente llama a la orquestación; el AIS ejecuta la form request o la data request en el HTML Server, que llama a BSFN y SQL en el Enterprise Server; el resultado vuelve como JSON; el cliente cierra la sesión." width="1000" height="640" loading="lazy">
+        <figcaption>Token, ejecución en las aplicaciones y respuesta en JSON.</figcaption>
+      </figure>
+      <h3>Autenticación</h3>
+      <ul>
+        <li><strong>Token AIS:</strong> el cliente llama a <code>/v2/tokenrequest</code> con usuario, contraseña, entorno y rol, y reutiliza el token en las llamadas siguientes: en el cuerpo (<code>"token"</code>) para los servicios v2 y en el encabezado <code>jde-AIS-Auth</code> para el orchestrator v3. Es el modelo más eficiente para muchas llamadas seguidas.</li>
+        <li><strong>HTTP Basic:</strong> si está habilitada en el AIS, una orquestación se puede llamar con <code>Authorization: Basic</code>; el AIS abre y cierra la sesión en cada llamada. Es simple y funciona con balanceadores sin afinidad, pero cuesta una sesión por llamada.</li>
+        <li><strong>OAuth 2.0:</strong> en las versiones recientes del Tools, el AIS acepta tokens emitidos por un proveedor de identidad externo, lo que evita guardar la contraseña de JDE en el consumidor. <sup><a href="#ref-1-es">[1]</a></sup></li>
+      </ul>
+      <h3>Respuestas y errores</h3>
+      <p>El AIS responde <code>200</code> con el JSON del servicio. Los errores más comunes son <code>400</code> (JSON inválido), <code>403</code> (no autorizado), <code>415</code> (falta <code>Content-Type: application/json</code>), <code>444</code> (token inválido o vencido) y <code>500</code> (error de procesamiento, con el cuerpo que trae el mensaje y, en las orquestaciones, el texto de error del paso). Los errores de negocio de JDE, como "proveedor inválido", llegan en el JSON y el cliente tiene que tratarlos. <sup><a href="#ref-4-es">[4]</a></sup></p>
+      <aside class="note"><p><strong>¿Por qué preferir las orquestaciones al formservice directo?</strong> Porque la orquestación ofrece un contrato estable (entradas con nombres de negocio), oculta los ID de control de las pantallas y se puede cambiar sin tocar al consumidor. El formservice directo es excelente para prototipar y probar. <sup><a href="#ref-8-es">[8]</a></sup></p></aside>
+    </section>
+
+    <section id="configurar-es" aria-labelledby="h-configurar-es">
+      <h2 id="h-configurar-es">Cómo configurar</h2>
+      <figure>
+        <img src="rc_images/JDERestConfig-es.svg" alt="Ocho pasos: requisitos previos; crear la instancia AIS en el Server Manager; vincular al HTML Server; ajustar la configuración; seguridad; Orchestrator Studio; probar; exponer con un API gateway." width="1000" height="520" loading="lazy">
+        <figcaption>Del servidor a la primera llamada, en ocho pasos.</figcaption>
+      </figure>
+      <ol>
+        <li><strong>Requisitos previos.</strong> Confirma el Tools Release y las versiones de JDK y WebLogic soportadas (Certifications en My Oracle Support) y consigue los certificados TLS para el host del AIS.</li>
+        <li><strong>Crear la instancia.</strong> En el Server Manager usa <em>Create/Register a Managed Instance</em>, elige <em>EnterpriseOne Application Interface Services (AIS) Server</em> e indica el servidor de aplicaciones, el puerto HTTPS y el componente de software del Tools. <sup><a href="#ref-1-es">[1]</a></sup></li>
+        <li><strong>Vincular al HTML Server.</strong> En la configuración de la instancia apunta al JAS (de preferencia dedicado), define el entorno y el rol predeterminados y verifica que el JAS reconozca al AIS (el Server Manager muestra el vínculo en ambos lados).</li>
+        <li><strong>Ajustar la configuración.</strong> Revisa el timeout de sesión, <em>Allowed Hosts</em> y CORS (para llamadas desde el navegador), <em>Keep JAS Sessions Open</em>, el tamaño máximo de la página de datos y la opción de autenticación Basic, si la vas a usar.</li>
+        <li><strong>Seguridad.</strong> Crea el usuario de servicio y un rol dedicado. En el Security Workbench (P00950) concede solo las aplicaciones y versiones necesarias y la ejecución de las orquestaciones (seguridad de UDO). Si usas OAuth, configura el proveedor de identidad.</li>
+        <li><strong>Orchestrator Studio.</strong> Crea las service requests y las orquestaciones, pruébalas en el propio Studio y compártelas; el administrador aprueba y publica. <sup><a href="#ref-2-es">[2]</a></sup></li>
+        <li><strong>Probar.</strong> Un <code>GET /jderest/v2/defaultconfig</code> responde sin autenticación y muestra la versión del AIS. Después pide un token y llama a una orquestación con Postman o curl. Los logs están en el Server Manager.</li>
+        <li><strong>Exponer.</strong> Publica a través del API gateway, con TLS, límites de tráfico, registro de accesos y alertas de disponibilidad.</li>
+      </ol>
+<pre class="code"><code><span class="c"># chequeo de salud (sin autenticación)</span>
+<span class="k">GET</span> https://ais.empresa.com:9443/jderest/v2/defaultconfig
+
+<span class="c"># respuesta resumida</span>
+{ <span class="s">"jasHost"</span>: "jas-ais.empresa.local", <span class="s">"aisVersion"</span>: "...",
+  <span class="s">"capabilityList"</span>: [ { <span class="s">"name"</span>: "orchestrator" }, { <span class="s">"name"</span>: "dataServiceAggregation" }, ... ] }</code></pre>
+      <div class="recap">
+        <h3>Checklist antes de producción</h3>
+        <ul>
+          <li>HTTPS en cada tramo y certificados con renovación planificada.</li>
+          <li>Usuario de servicio con privilegio mínimo y contraseña en un vault.</li>
+          <li>JAS dedicado al AIS y timeouts compatibles con el consumidor.</li>
+          <li>Orquestaciones promovidas como UDO (DV → PY → PD), nunca recreadas a mano.</li>
+          <li>Monitoreo: disponibilidad del <code>defaultconfig</code>, tiempo de respuesta y tasa de errores.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="exemplo-es" aria-labelledby="h-exemplo-es">
+      <h2 id="h-exemplo-es">Ejemplo: orden de compra paso a paso</h2>
+      <p>El escenario: un sistema de compras externo tiene que crear órdenes de compra (tipo <strong>OP</strong>) en JDE y después seguir el estado de cada línea. Vamos a crear dos orquestaciones: <code>ORCH_PO_Create</code> y <code>ORCH_PO_Status</code>. <sup><a href="#ref-6-es">[6]</a></sup></p>
+      <figure>
+        <img src="rc_images/JDERestPedido-es.svg" alt="Dos carriles. Crear la orden: el sistema de compras llama a ORCH_PO_Create, que ejecuta una form request sobre P4310_W4310A versión ZJDE0001 y escribe F4301 y F4311, devolviendo el número y el tipo de la orden. Consultar el estado: el sistema llama a ORCH_PO_Status, que ejecuta una data request sobre F4311 por DOCO y DCTO y devuelve, por línea, LTTR, NXTR y cantidades." width="1000" height="600" loading="lazy">
+        <figcaption>Una orquestación escribe a través de la aplicación; la otra solo lee.</figcaption>
+      </figure>
+
+      <h3>Paso 1. Preparar JDE</h3>
+      <ul>
+        <li>Elige la versión del <strong>P4310</strong> (Purchase Orders) que usará la integración, por ejemplo <code>ZJDE0001</code> o una copia propia, con las opciones de proceso correctas (tipo de orden OP, aprobación, impresión).</li>
+        <li>Concede esa versión y la ejecución de las dos orquestaciones al rol del usuario de servicio.</li>
+        <li>Crea la orden una vez a mano, con los mismos datos que enviará la integración, para confirmar que no haya errores de negocio.</li>
+      </ul>
+
+      <h3>Paso 2. Crear la form request en el Orchestrator Studio</h3>
+      <p>En el Studio crea una service request de tipo <strong>Form Request</strong> llamada <code>SR_PO_Create</code>, carga la aplicación <code>P4310</code>, formulario <code>W4310A</code> (Order Detail), versión <code>ZJDE0001</code>. El Studio lista los campos de la cabecera y las columnas de la grilla; selecciona los que reciben un valor y el orden de las acciones: <sup><a href="#ref-9-es">[9]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Orden</th><th scope="col">Campo del formulario</th><th scope="col">Entrada de la orquestación</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>Supplier (proveedor, AN8)</td><td><code>Supplier</code></td></tr>
+            <tr><td>2</td><td>Branch/Plant (sucursal, MCU)</td><td><code>BranchPlant</code></td></tr>
+            <tr><td>3</td><td>Reference (VR01)</td><td><code>ExternalRef</code></td></tr>
+            <tr><td>4</td><td>Grilla: Item Number (LITM)</td><td><code>Item</code></td></tr>
+            <tr><td>5</td><td>Grilla: Quantity Ordered (UORG)</td><td><code>Quantity</code></td></tr>
+            <tr><td>6</td><td>Grilla: Unit Cost (PRRC)</td><td><code>UnitCost</code></td></tr>
+            <tr><td>7</td><td>Botón OK</td><td>(acción)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>En <em>Returns</em> selecciona el número de orden (<code>DOCO</code>) y el tipo (<code>DCTO</code>). Si la versión limpia la pantalla después del OK, una alternativa robusta es escribir una referencia externa única en el campo <em>Reference</em> y buscar el número de orden con ella en una data request justo después; esa referencia también evita duplicados cuando el cliente repite la llamada.</p>
+      <aside class="note"><p><strong>Varias líneas:</strong> para órdenes con N artículos, declara la entrada como lista (array) y usa la opción de repetir las filas de la grilla para cada elemento. El ejemplo usa una línea para ser breve.</p></aside>
+
+      <h3>Paso 3. Crear la orquestación de creación</h3>
+      <p>Crea la orquestación <code>ORCH_PO_Create</code>, agrega el paso <code>SR_PO_Create</code>, mapea las entradas y da nombres de negocio a las salidas (<code>OrderNumber</code>, <code>OrderType</code>). Opcionalmente, antes de la form request, incluye una <strong>regla</strong> que rechace cantidades o costos menores o iguales a cero, para devolver un error claro sin abrir la aplicación. Prueba en el Studio y comparte para la aprobación.</p>
+
+      <h3>Paso 4. Llamar a la creación de la orden</h3>
+<pre class="code"><code><span class="c"># con autenticación Basic (si está habilitada en el AIS)</span>
+<span class="k">POST</span> https://ais.empresa.com:9443/jderest/v3/orchestrator/ORCH_PO_Create
+<span class="p">Authorization:</span> Basic &lt;base64 usuario:contraseña&gt;
+<span class="p">Content-Type:</span> application/json
+
+{ <span class="s">"Supplier"</span>: "4343", <span class="s">"BranchPlant"</span>: "30", <span class="s">"ExternalRef"</span>: "ACQ-2026-0917",
+  <span class="s">"Item"</span>: "1001", <span class="s">"Quantity"</span>: "10", <span class="s">"UnitCost"</span>: "12.50" }
+
+<span class="c"># respuesta 200</span>
+{ <span class="s">"OrderNumber"</span>: "4450", <span class="s">"OrderType"</span>: "OP" }</code></pre>
+      <p>Si el consumidor hace muchas llamadas, usa el modelo con token: pide el token una vez y envíalo en el encabezado <code>jde-AIS-Auth</code>.</p>
+<pre class="code"><code><span class="c"># 1. obtener el token</span>
+<span class="k">POST</span> https://ais.empresa.com:9443/jderest/v2/tokenrequest
+{ <span class="s">"username"</span>: "SVC_ACQ", <span class="s">"password"</span>: "********", <span class="s">"deviceName"</span>: "acq-int",
+  <span class="s">"environment"</span>: "JDV920", <span class="s">"role"</span>: "INTACQ" }
+
+<span class="c"># respuesta resumida: el token está en userInfo.token</span>
+{ <span class="s">"username"</span>: "SVC_ACQ", <span class="s">"environment"</span>: "JDV920",
+  <span class="s">"userInfo"</span>: { <span class="s">"token"</span>: "044Xy...==", ... } }
+
+<span class="c"># 2. llamar a la orquestación con el token</span>
+<span class="k">POST</span> https://ais.empresa.com:9443/jderest/v3/orchestrator/ORCH_PO_Create
+<span class="p">jde-AIS-Auth:</span> 044Xy...==
+<span class="p">jde-AIS-Auth-Device:</span> acq-int
+<span class="p">Content-Type:</span> application/json</code></pre>
+
+      <h3>Paso 5. Crear la consulta del estado</h3>
+      <p>El estado de una orden de compra está en cada línea de la <strong>F4311</strong> (Purchase Order Detail): el <strong>último estado</strong> (<code>LTTR</code>) dice qué ya pasó y el <strong>estado siguiente</strong> (<code>NXTR</code>) dice qué falta. Los códigos siguen las reglas de actividad del tipo de orden (P40204).</p>
+      <figure>
+        <img src="rc_images/JDERestStatus-es.svg" alt="Ciclo de ejemplo: 220 ingreso de la orden, 230 aprobación, 280 impresión y envío, 400 recepción, 999 cerrada, con la posibilidad de pasar a 980 cancelada. Campos útiles de la F4311: DOCO, DCTO, KCOO, LNID, LITM, UORG, UREC y AOPN." width="1000" height="560" loading="lazy">
+        <figcaption>Códigos ilustrativos; los de tu entorno vienen de las reglas de actividad.</figcaption>
+      </figure>
+      <p>En el Studio crea una service request de tipo <strong>Data Request</strong> llamada <code>SR_PO_Status</code> sobre la tabla <code>F4311</code>, con filtro <code>DOCO = OrderNumber</code> y <code>DCTO = OrderType</code> y retorno de <code>LNID</code>, <code>LITM</code>, <code>UORG</code>, <code>UREC</code>, <code>AOPN</code>, <code>LTTR</code> y <code>NXTR</code>. Inclúyela en la orquestación <code>ORCH_PO_Status</code> y da nombre a las salidas. Para probar antes de diseñar la orquestación, el mismo filtro se puede enviar directamente al data service:</p>
+<pre class="code"><code><span class="k">POST</span> https://ais.empresa.com:9443/jderest/v2/dataservice
+{ <span class="s">"token"</span>: "044Xy...==", <span class="s">"deviceName"</span>: "acq-int",
+  <span class="s">"targetName"</span>: "F4311", <span class="s">"targetType"</span>: "table", <span class="s">"dataServiceType"</span>: "BROWSE",
+  <span class="s">"returnControlIDs"</span>: "F4311.DOCO|F4311.DCTO|F4311.LNID|F4311.LITM|F4311.UORG|F4311.UREC|F4311.LTTR|F4311.NXTR",
+  <span class="s">"query"</span>: { <span class="s">"autoFind"</span>: true, <span class="s">"matchType"</span>: "MATCH_ALL", <span class="s">"condition"</span>: [
+    { <span class="s">"controlId"</span>: "F4311.DOCO", <span class="s">"operator"</span>: "EQUAL", <span class="s">"value"</span>: [ { <span class="s">"content"</span>: "4450", <span class="s">"specialValueId"</span>: "LITERAL" } ] },
+    { <span class="s">"controlId"</span>: "F4311.DCTO", <span class="s">"operator"</span>: "EQUAL", <span class="s">"value"</span>: [ { <span class="s">"content"</span>: "OP", <span class="s">"specialValueId"</span>: "LITERAL" } ] } ] } }</code></pre>
+
+      <h3>Paso 6. Consultar el estado</h3>
+<pre class="code"><code><span class="k">POST</span> https://ais.empresa.com:9443/jderest/v3/orchestrator/ORCH_PO_Status
+<span class="p">jde-AIS-Auth:</span> 044Xy...==
+<span class="p">Content-Type:</span> application/json
+
+{ <span class="s">"OrderNumber"</span>: "4450", <span class="s">"OrderType"</span>: "OP" }
+
+<span class="c"># respuesta 200 (salidas nombradas en la orquestación)</span>
+{ <span class="s">"Lines"</span>: [ { <span class="s">"Line"</span>: 1.000, <span class="s">"Item"</span>: "1001", <span class="s">"QtyOrdered"</span>: 10, <span class="s">"QtyReceived"</span>: 0,
+               <span class="s">"LastStatus"</span>: "280", <span class="s">"NextStatus"</span>: "400" } ] }
+
+<span class="c"># al final del trabajo, cerrar la sesión</span>
+<span class="k">POST</span> https://ais.empresa.com:9443/jderest/v2/tokenrequest/logout
+{ <span class="s">"token"</span>: "044Xy...==" }</code></pre>
+      <p>La lectura es directa: <code>LastStatus = 280</code> y <code>NextStatus = 400</code> significan, en este ejemplo, orden enviada al proveedor y a la espera de recepción. El sistema de compras puede consultar periódicamente (polling) o, mejor, ser avisado: una <strong>notificación</strong> del Orchestrator o un Real-Time Event puede llamar a la API del sistema de compras cuando cambia el estado.</p>
+
+      <h3>Paso 7. Tratar los errores</h3>
+      <ul>
+        <li><strong>Errores de negocio</strong> (proveedor inexistente, artículo no configurado en la sucursal) vuelven en el cuerpo de la respuesta; devuélvelos al usuario del sistema de compras sin reintentar.</li>
+        <li><strong>Errores técnicos</strong> (<code>444</code>, <code>500</code>, timeout) se pueden reintentar, pero solo después de verificar con la referencia externa si la orden ya se creó; eso es lo que garantiza la idempotencia.</li>
+        <li>Registra siempre la referencia externa, el número de orden y el tiempo de respuesta.</li>
+      </ul>
+    </section>
+
+    <section id="conclusao-es" aria-labelledby="h-conclusao-es">
+      <h2 id="h-conclusao-es">Conclusión</h2>
+      <p>REST cambió la forma de integrar JD Edwards. Con el AIS Server y el Orchestrator, una operación que antes exigía Business Services en Java o tablas Z y UBE programados se convierte en un endpoint JSON, diseñado sin código C y respetuoso de las reglas de negocio porque pasa por las propias aplicaciones.</p>
+      <p>El esfuerzo real está menos en la llamada y más en lo que la rodea: infraestructura aislada y segura, usuario de servicio con privilegio mínimo, contratos estables (orquestaciones en lugar de ID de pantalla), idempotencia y monitoreo. Resuelto eso, crear una orden de compra y seguir su estado es cuestión de dos orquestaciones y pocas líneas de JSON.</p>
+      <div class="recap">
+        <h3>Para recordar</h3>
+        <ul>
+          <li>El AIS Server es la puerta REST de JDE; el Orchestrator publica secuencias de pasos como endpoints.</li>
+          <li>Las form requests escriben a través de las aplicaciones; las data requests solo leen.</li>
+          <li>Token para muchas llamadas; Basic u OAuth para llamadas aisladas.</li>
+          <li>El estado de la orden de compra está en <code>LTTR</code> y <code>NXTR</code> de cada línea de la F4311.</li>
+          <li>Una referencia externa única evita órdenes duplicadas.</li>
+        </ul>
+      </div>
+      <p>Para comparar REST con las otras formas de integración de JDE, consulta también <a href="JDEIntegracao.html#es">La integración en JD Edwards</a>. <sup><a href="#ref-7-es">[7]</a></sup></p>
+      <a class="back" href="#top">↑ Volver al inicio</a>
+    </section>
+
+    <section id="referencias-es" aria-labelledby="h-referencias-es">
+      <h2 id="h-referencias-es">Referencias</h2>
+      <ol class="refs">
+        <li id="ref-1-es"><strong>Oracle</strong>, “JD Edwards EnterpriseOne Tools Application Interface Services Server Reference Guide”, consultado el 29/09/2026, <a href="https://docs.oracle.com/en/applications/jd-edwards/interoperability/9.2.x/eoiis/application-interface-services-server-reference-guide.pdf" rel="noopener">docs.oracle.com/en/applications/jd-edwards/interoperability/9.2.x/eoiis/application-interface-services-server-reference-guide.pdf</a>.</li>
+        <li id="ref-2-es"><strong>Oracle</strong>, “JD Edwards EnterpriseOne Tools Orchestrator Guide 9.2”, consultado el 29/09/2026, <a href="https://docs.oracle.com/en/applications/jd-edwards/cross-product/9.2/eotos/orchestrator-guide.pdf" rel="noopener">docs.oracle.com/en/applications/jd-edwards/cross-product/9.2/eotos/orchestrator-guide.pdf</a>.</li>
+        <li id="ref-3-es"><strong>Oracle</strong>, “REST API for JD Edwards EnterpriseOne AIS Server: REST Endpoints”, consultado el 29/09/2026, <a href="https://docs.oracle.com/en/applications/jd-edwards/cross-product/9.2/rest-api/rest-endpoints.html" rel="noopener">docs.oracle.com/en/applications/jd-edwards/cross-product/9.2/rest-api/rest-endpoints.html</a>.</li>
+        <li id="ref-4-es"><strong>Oracle</strong>, “REST API for JD Edwards EnterpriseOne AIS Server: Execute an Orchestration v3”, consultado el 29/09/2026, <a href="https://docs.oracle.com/en/applications/jd-edwards/cross-product/9.2/rest-api/op-v3-orchestrator-orchestration-post.html" rel="noopener">docs.oracle.com/en/applications/jd-edwards/cross-product/9.2/rest-api/op-v3-orchestrator-orchestration-post.html</a>.</li>
+        <li id="ref-5-es"><strong>Oracle</strong>, “JD Edwards EnterpriseOne Tools System Overview Guide 9.2”, consultado el 29/09/2026, <a href="https://docs.oracle.com/en/applications/jd-edwards/cross-product/9.2/eoihs/system-overview-guide.pdf" rel="noopener">docs.oracle.com/en/applications/jd-edwards/cross-product/9.2/eoihs/system-overview-guide.pdf</a>.</li>
+        <li id="ref-6-es"><strong>Oracle</strong>, “REST API for JD Edwards EnterpriseOne AIS Server: Query or Aggregate Tables and Views v2”, consultado el 29/09/2026, <a href="https://docs.oracle.com/en/applications/jd-edwards/cross-product/9.2/rest-api/op-v2-dataservice-post.html" rel="noopener">docs.oracle.com/en/applications/jd-edwards/cross-product/9.2/rest-api/op-v2-dataservice-post.html</a>.</li>
+        <li id="ref-7-es"><strong>Giovani Perotto Mesquita</strong>, “La integración en JD Edwards”, <a href="JDEIntegracao.html#es">giovanipm.github.io/JDEIntegracao.html</a>.</li>
+        <li id="ref-8-es"><strong>Oracle</strong>, “REST API for JD Edwards EnterpriseOne AIS Server: Execute a Form v2”, consultado el 29/09/2026, <a href="https://docs.oracle.com/en/applications/jd-edwards/cross-product/9.2/rest-api/op-v2-formservice-post.html" rel="noopener">docs.oracle.com/en/applications/jd-edwards/cross-product/9.2/rest-api/op-v2-formservice-post.html</a>.</li>
+        <li id="ref-9-es"><strong>Oracle</strong>, “Understanding the Orchestrator Studio and Orchestrations”, consultado el 29/09/2026, <a href="https://docs.oracle.com/en/applications/jd-edwards/cross-product/9.2/eotos/understanding-the-orchestrator-studio-and-orchestrations.html" rel="noopener">docs.oracle.com/en/applications/jd-edwards/cross-product/9.2/eotos/understanding-the-orchestrator-studio-and-orchestrations.html</a>.</li>
+      </ol>
+      <a class="back" href="#top">↑ Volver al inicio</a>
+    </section>
+  </article>
+</div>
+</div>
+
 <footer>
   <div class="wrap">
     <span>Giovani Perotto Mesquita · Porto Alegre, RS</span>
@@ -1158,9 +1454,9 @@
 <script>
   (function () {
     var tabs = Array.prototype.slice.call(document.querySelectorAll('.lang [role="option"]'));
-    var titles = {"pt": "Usando REST no JD Edwards · Giovani Perotto Mesquita", "en": "Using REST in JD Edwards · Giovani Perotto Mesquita", "it": "Usare REST in JD Edwards · Giovani Perotto Mesquita"};
-    var foots = {"pt": ["Projetos", "Currículo", "Contato"], "en": ["Projects", "Resume", "Contact"], "it": ["Progetti", "Curriculum", "Contatti"]};
-    var langs = { pt: 'pt-BR', en: 'en', it: 'it' };
+    var titles = {"pt": "Usando REST no JD Edwards · Giovani Perotto Mesquita", "en": "Using REST in JD Edwards · Giovani Perotto Mesquita", "it": "Usare REST in JD Edwards · Giovani Perotto Mesquita", "es": "Usar REST en JD Edwards · Giovani Perotto Mesquita"};
+    var foots = {"pt": ["Projetos", "Currículo", "Contato"], "en": ["Projects", "Resume", "Contact"], "it": ["Progetti", "Curriculum", "Contatti"], "es": ["Proyectos", "Currículum", "Contacto"]};
+    var langs = { pt: 'pt-BR', en: 'en', it: 'it', es: 'es' };
     var bar = document.querySelector('.progress');
     var article = document.querySelector('[role="tabpanel"]:not([hidden]) article');
 
@@ -1218,7 +1514,7 @@
     }
 
     var h = (location.hash || '').replace('#', '');
-    var m = h.match(/^(?:.*-)?(en|it)$/);
+    var m = h.match(/^(?:.*-)?(en|it|es)$/);
     if (m) {
       show(m[1]);
       if (h !== m[1]) { var el = document.getElementById(h); if (el) el.scrollIntoView(); if (history.replaceState) history.replaceState(null, '', '#' + h); }
@@ -1234,7 +1530,8 @@
     var menu = {
       pt: { index: 'Início', about: 'Sobre', resume: 'Currículo', projects: 'Projetos', contact: 'Contato' },
       en: { index: 'Home', about: 'About', resume: 'Resume', projects: 'Projects', contact: 'Contact' },
-      it: { index: 'Home', about: 'Chi sono', resume: 'Curriculum', projects: 'Progetti', contact: 'Contatti' }
+      it: { index: 'Home', about: 'Chi sono', resume: 'Curriculum', projects: 'Progetti', contact: 'Contatti' },
+      es: { index: 'Inicio', about: 'Sobre mí', resume: 'Currículum', projects: 'Proyectos', contact: 'Contacto' }
     };
     function translate(id) {
       document.querySelectorAll('.nav ul a').forEach(function (l) {
@@ -1244,7 +1541,7 @@
       // links do menu para as páginas principais levam o idioma selecionado
       var suf = id === 'pt' ? '' : '#' + id;
       document.querySelectorAll('.nav a[href]').forEach(function (l) {
-        var m = l.getAttribute('href').match(/^(index|about|resume|projects|contact)\.html(#(pt|en|it))?$/);
+        var m = l.getAttribute('href').match(/^(index|about|resume|projects|contact)\.html(#(pt|en|it|es))?$/);
         if (m) l.setAttribute('href', m[1] + '.html' + suf);
       });
     }
