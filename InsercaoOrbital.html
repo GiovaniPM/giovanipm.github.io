@@ -1,0 +1,1794 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Inserção orbital: como funciona o simulador · Giovani Perotto Mesquita</title>
+<meta name="description" content="Tutorial do simulador Inserção orbital: a tela, os conceitos de órbita, os comandos, a estratégia de captura em três queimas, a aerofrenagem, os objetos e planetas, a pontuação, o piloto automático e a física simulada, com diagramas. Disponível em português, inglês, italiano e espanhol.">
+<meta name="author" content="Giovani Perotto Mesquita">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Paleta alegre: roxo e magenta vibrantes, amarelo-girassol, verde-água e coral */
+    --bg: #FFF7EC;
+    --surface: #FFFFFF;
+    --ink: #2B1B3D;
+    --text: #3E3350;
+    --muted: #756986;
+    --line: #F1E2CF;
+    --accent: #0E8074;
+    --accent-soft: #E2F6F2;
+    --accent-strong: #5B2A86;
+    --navy: #5B2A86;
+    --navy-deep: #C2185B;
+    --on-navy: #FFFFFF;
+    --on-navy-muted: #FCE4F0;
+    --gold: #FFB703;
+    --gold-ink: #B35300;
+    --gold-soft: #FFF1C9;
+    --coral: #FF6B6B;
+    --sky: #3A86FF;
+    --mint: #2A9D8F;
+    --pink: #EF476F;
+    --sans: "Hanken Grotesk", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1A1328; --surface: #241A36; --ink: #F7F0FF; --text: #E2D8F0; --muted: #A898C0;
+      --line: #3A2D52; --accent: #5FD3C4; --accent-soft: #1D3A38; --accent-strong: #C9A7F5;
+      --navy: #3D1A5C; --navy-deep: #7A1240; --gold: #FFC94D; --gold-ink: #FFC94D; --gold-soft: #3A2E12;
+      --coral: #FF8A8A; --sky: #6FA8FF; --mint: #4CC3B3; --pink: #FF6F91;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 4px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 1.5rem; }
+
+  /* navegação */
+  .nav {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: saturate(160%) blur(10px); -webkit-backdrop-filter: saturate(160%) blur(10px);
+    border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px);
+  }
+  .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 58px; gap: 1rem; }
+  .brand { font-family: var(--serif); font-weight: 600; color: var(--accent-strong); text-decoration: none; font-size: 1.05rem; }
+  .nav ul { list-style: none; display: flex; gap: 1.4rem; margin: 0; padding: 0; }
+  .nav ul a { color: var(--muted); text-decoration: none; font-size: 0.93rem; font-weight: 500; }
+  .nav ul a:hover, .nav ul a[aria-current="page"] { color: var(--ink); }
+  .nav-right { display: flex; align-items: center; gap: 1rem; }
+  .lang { position: relative; }
+  .lang button { font: inherit; cursor: pointer; }
+  .lang .flag { width: 18px; height: 12px; border-radius: 2px; flex: none; box-shadow: 0 0 0 1px rgba(0,0,0,.12); }
+  .lang-current { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.8rem; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 0.3rem 0.5rem 0.3rem 0.55rem; }
+  .lang-current:hover { border-color: var(--muted); }
+  .lang-now { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .lang .chev { width: 12px; height: 12px; color: var(--muted); transition: transform .15s ease; }
+  .lang-current[aria-expanded="true"] .chev { transform: rotate(180deg); }
+  .lang-list { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; min-width: 10.5rem; padding: 0.3rem; display: grid; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 12px 30px rgba(0,0,0,.18); }
+  .lang-list[hidden] { display: none; }
+  .lang-list [role="option"] { display: flex; align-items: center; gap: 0.6rem; width: 100%; text-align: left; font-size: 0.9rem; font-weight: 500; color: var(--ink); background: none; border: 0; border-radius: 6px; padding: 0.45rem 0.6rem; }
+  .lang-list [role="option"]:hover, .lang-list [role="option"]:focus-visible { background: color-mix(in srgb, var(--muted) 14%, transparent); }
+  .lang-list [role="option"][aria-selected="true"] { color: var(--accent-strong); font-weight: 600; }
+  .lang-list [role="option"][aria-selected="true"]::after { content: "✓"; margin-left: auto; }
+  @media (max-width: 480px) { .lang-now { font-size: 0; gap: 0; } }
+  [hidden] { display: none !important; }
+  .progress { position: absolute; left: 0; bottom: -1px; height: 3px; width: 0; background: linear-gradient(90deg, var(--coral), var(--gold), var(--mint)); }
+
+  /* abertura */
+  .hero-band {
+    background:
+      radial-gradient(900px 420px at 85% -10%, rgba(255,255,255,.07), transparent 60%),
+      linear-gradient(160deg, var(--navy) 0%, var(--navy-deep) 100%);
+    border-top: 4px solid var(--gold); color: var(--on-navy);
+  }
+  .hero { padding: 3.5rem 0 3.5rem; max-width: 820px; }
+  .crumb { margin: 0 0 1.4rem; font-size: 0.92rem; }
+  .crumb a { color: var(--on-navy-muted); text-decoration: none; }
+  .crumb a:hover { color: var(--gold); }
+  .eyebrow { color: var(--gold); font-weight: 600; font-size: 1rem; margin: 0 0 0.7rem; }
+  h1 { font-family: var(--serif); font-weight: 600; color: var(--on-navy); font-size: clamp(2.3rem, 5.5vw, 3.8rem); line-height: 1.05; letter-spacing: -0.025em; margin: 0; }
+  .dek { font-family: var(--serif); font-style: italic; font-size: clamp(1.1rem, 2.2vw, 1.35rem); color: var(--on-navy-muted); margin: 1.1rem 0 1.6rem; max-width: 58ch; }
+  .byline { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; font-size: 0.92rem; color: var(--on-navy-muted); }
+  .byline strong { color: var(--on-navy); font-weight: 600; }
+  .byline .credit { margin-left: auto; font-style: italic; }
+
+  /* layout do artigo */
+  .layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 3rem; padding: 3rem 0 4rem; align-items: start; }
+  .toc { position: sticky; top: 82px; font-size: 0.92rem; max-height: calc(100vh - 100px); overflow-y: auto; }
+  .toc h2 { font-family: var(--sans); font-size: 0.85rem; font-weight: 600; color: var(--muted); margin: 0 0 0.7rem; border: 0; padding: 0; }
+  .toc ol { list-style: none; margin: 0; padding: 0; counter-reset: toc; border-left: 2px solid var(--line); }
+  .toc li { counter-increment: toc; }
+  .toc a { display: block; padding: 0.3rem 0 0.3rem 1rem; margin-left: -2px; border-left: 2px solid transparent; color: var(--muted); text-decoration: none; line-height: 1.35; }
+  .toc a::before { content: counter(toc) ". "; color: var(--gold-ink); font-weight: 600; }
+  .toc a:hover { color: var(--ink); }
+  .toc a[aria-current="true"] { color: var(--accent-strong); border-left-color: var(--gold); font-weight: 600; }
+
+  article { background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: var(--radius); padding: 3rem clamp(1.25rem, 4vw, 3.5rem); min-width: 0; }
+  article section + section { margin-top: 3.2rem; }
+  article h2 { font-family: var(--serif); font-weight: 600; color: var(--ink); font-size: clamp(1.5rem, 2.8vw, 1.9rem); letter-spacing: -0.015em; line-height: 1.2; margin: 0 0 1.1rem; padding-left: 0.9rem; border-left: 3px solid var(--gold); }
+  article h3 { font-family: var(--sans); font-size: 1.1rem; font-weight: 600; color: var(--ink); margin: 2rem 0 0.8rem; }
+  article p, article li { font-family: var(--serif); font-size: 1.12rem; line-height: 1.7; color: var(--text); }
+  article p { margin: 0 0 1.1rem; max-width: 68ch; }
+  article ul, article ol { margin: 0 0 1.1rem; padding-left: 1.4rem; max-width: 68ch; }
+  article li { margin-bottom: 0.3rem; }
+  article strong { color: var(--ink); }
+  sup a { font-family: var(--sans); font-size: 0.72rem; font-weight: 700; text-decoration: none; padding: 0 0.15em; }
+
+  figure { margin: 2rem 0; }
+  figure img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: #FFF7EC; }
+  figcaption { margin-top: 0.6rem; font-size: 0.9rem; color: var(--muted); text-align: center; font-family: var(--sans); line-height: 1.5; }
+
+  blockquote { margin: 1.5rem 0; padding: 1.2rem 1.5rem; background: var(--accent-soft); border-left: 3px solid var(--gold); border-radius: 0 10px 10px 0; }
+  blockquote p { font-size: 1.05rem; margin: 0 0 0.8rem; }
+  blockquote p:last-child { margin-bottom: 0; }
+  blockquote.pull p { font-size: clamp(1.15rem, 2.3vw, 1.35rem); font-style: italic; line-height: 1.45; color: var(--ink); }
+  blockquote cite { font-family: var(--sans); font-size: 0.88rem; font-style: normal; color: var(--muted); }
+
+  /* tabelas */
+  .table-wrap { overflow-x: auto; margin: 1.5rem 0; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-family: var(--sans); font-size: 0.95rem; }
+  th, td { text-align: left; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.5; }
+  thead th { background: var(--gold-soft); color: var(--ink); font-weight: 600; }
+  tbody th { color: var(--ink); font-weight: 600; }
+  tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
+  td code, th code { font-size: 0.9em; }
+
+  /* mitos */
+  .myths { list-style: none; padding: 0; margin: 1.5rem 0; max-width: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
+  .myths li { margin: 0; padding: 1rem 1.2rem; border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: 10px; }
+  .myths li:nth-child(4n+2) { border-top-color: var(--sky); }
+  .myths li:nth-child(4n+3) { border-top-color: var(--mint); }
+  .myths li:nth-child(4n+4) { border-top-color: var(--gold); }
+  .myths h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+  .myths p { margin: 0; font-size: 1rem; line-height: 1.6; }
+
+  /* para fixar */
+  .recap { margin: 1.8rem 0 0; padding: 1.1rem 1.4rem; background: var(--gold-soft); border-left: 4px solid var(--mint); border-radius: 0 10px 10px 0; }
+  .recap h3 { margin: 0 0 0.5rem; font-size: 0.85rem; letter-spacing: .05em; text-transform: uppercase; color: var(--gold-ink); }
+  .recap ul { margin: 0; padding-left: 1.2rem; }
+  .recap li { font-family: var(--sans); font-size: 0.98rem; line-height: 1.55; margin-bottom: 0.25rem; }
+
+  /* revisão rápida */
+  .quiz { display: grid; gap: 0.7rem; margin: 1.5rem 0; }
+  .quiz details { border: 1px solid var(--line); border-left: 4px solid var(--sky); border-radius: 0 10px 10px 0; padding: 0.8rem 1.1rem; }
+  .quiz details:nth-child(3n+2) { border-left-color: var(--pink); }
+  .quiz details:nth-child(3n+3) { border-left-color: var(--mint); }
+  .quiz summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); line-height: 1.45; }
+  .quiz details[open] summary { margin-bottom: 0.5rem; }
+  .quiz p { margin: 0; font-size: 1.02rem; }
+
+  .refs { font-family: var(--sans); padding-left: 1.4rem; margin: 0; }
+  .refs li { font-family: var(--sans); font-size: 0.92rem; line-height: 1.55; margin-bottom: 0.7rem; word-break: break-word; }
+  .refs li:target { background: var(--gold-soft); border-radius: 6px; }
+
+  .back { display: inline-block; margin-top: 1rem; font-family: var(--sans); font-size: 0.85rem; text-decoration: none; }
+
+  footer { background: var(--navy-deep); color: var(--on-navy-muted); border-top: 3px solid var(--gold); padding: 1.5rem 0 calc(1.5rem + env(safe-area-inset-bottom, 0px)); font-size: 0.88rem; }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1.5rem; }
+  footer a { color: var(--on-navy); text-decoration: none; }
+  footer a:hover { color: var(--gold); }
+
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+    .toc { position: static; max-height: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.2rem 1.4rem; }
+  }
+  @media (max-width: 760px) {
+    .myths { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .nav ul { display: none; }
+    .hero { padding: 2.5rem 0; }
+    .wrap { padding: 0 1rem; }
+    article p, article li { font-size: 1.05rem; }
+    th, td { padding: 0.6rem 0.7rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  @media print {
+    .nav, .toc, footer, .back, .crumb { display: none !important; }
+    body { background: #fff; }
+    .hero-band { background: none; color: #111; border: 0; }
+    .hero-band h1 { color: #5B2A86; }
+    .dek, .byline, .byline strong { color: #333; }
+    .layout { display: block; padding: 0; }
+    article { border: 0; padding: 0; }
+    .table-wrap { overflow: visible; }
+    figure, blockquote, .myths li, .recap, .quiz details, tr { break-inside: avoid; }
+  }
+
+  /* blocos de código (Gherkin) */
+  pre.code { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: #2B1B3D; color: #F7F0FF; border-radius: 10px; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.92rem; line-height: 1.6; tab-size: 2; }
+  pre.code code { font-family: inherit; white-space: pre; }
+  pre.code .k { color: #FFB703; font-weight: 700; }
+  pre.code .s { color: #5FD3C4; font-weight: 700; }
+  pre.code .c { color: #A898C0; }
+  pre.code .p { color: #C9A7F5; }
+  article code { font-family: Consolas, "Courier New", monospace; font-size: 0.92em; }
+  article :not(pre) > code { background: var(--accent-soft); color: var(--ink); padding: 0.05em 0.35em; border-radius: 4px; }
+
+  /* fórmulas */
+  pre.formula { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.95rem; line-height: 1.5; }
+
+  /* glossário */
+  dl.glossary { margin: 1.2rem 0; display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  dl.glossary dt, dl.glossary dd { margin: 0; padding: 0.65rem 0.9rem; border-bottom: 1px solid var(--line); font-family: var(--sans); font-size: 0.95rem; line-height: 1.5; }
+  dl.glossary dt { font-weight: 600; color: var(--ink); background: color-mix(in srgb, var(--gold-soft) 60%, var(--surface)); }
+  dl.glossary dd { color: var(--text); }
+  dl.glossary dt:nth-last-of-type(1), dl.glossary dd:last-of-type { border-bottom: 0; }
+  @media (max-width: 720px) { dl.glossary { grid-template-columns: 1fr; } dl.glossary dt { border-bottom: 0; padding-bottom: 0.2rem; } }
+
+  /* figuras geradas pelo PlantUML e código recolhível */
+  figure.puml img { width: auto; max-width: 100%; margin: 0 auto; background: #FFFFFF; padding: 12px; }
+  details.codebox { margin: 1rem 0 1.5rem; border: 1px solid var(--line); border-radius: 10px; padding: 0.6rem 1rem; }
+  details.codebox summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); }
+  details.codebox pre.code { max-height: 480px; overflow: auto; }
+
+  /* nota de atenção */
+  aside.note { margin: 1.2rem 0 1.5rem; padding: 0.8rem 1.1rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; }
+  aside.note p { margin: 0; }
+
+  /* link para o simulador e teclas */
+  .launch { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--sans); font-weight: 600; font-size: 1rem; background: var(--accent-strong); color: var(--surface); text-decoration: none; padding: 0.65rem 1.2rem; border-radius: 10px; }
+  .launch:hover { background: var(--navy-deep); color: #FFFFFF; }
+  kbd { font-family: var(--sans); font-size: 0.85em; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 0.05em 0.4em; white-space: nowrap; }
+</style>
+</head>
+<body id="top">
+
+<nav class="nav" aria-label="Navegação do site">
+  <div class="wrap">
+    <a class="brand" href="index.html" data-home>Giovani Perotto Mesquita</a>
+    <div class="nav-right">
+      <ul>
+        <li><a href="index.html" data-home>Início</a></li>
+        <li><a href="about.html" data-about>Sobre</a></li>
+        <li><a href="resume.html" data-resume>Currículo</a></li>
+        <li><a href="projects.html" data-projects aria-current="page">Projetos</a></li>
+        <li><a href="contact.html" data-contact>Contato</a></li>
+      </ul>
+      <div class="lang">
+        <button type="button" class="lang-current" aria-haspopup="listbox" aria-expanded="false" aria-controls="lang-list" data-label="Idioma / Language / Lingua" aria-label="Idioma / Language / Lingua: Português"><span class="lang-now"><svg class="flag" viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009C3B"/><path d="M10 1.6 18.4 7 10 12.4 1.6 7z" fill="#FEDF00"/><circle cx="10" cy="7" r="3.3" fill="#002776"/><path d="M6.8 6.3c2.1-.6 4.5-.2 6.4 1" stroke="#fff" stroke-width=".7" fill="none"/></svg>PT</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="lang-list" id="lang-list" role="listbox" aria-label="Idioma / Language / Lingua" hidden>
+          <button type="button" role="option" id="tab-pt" aria-controls="pt" aria-selected="true" lang="pt-BR" data-code="PT"><svg class="flag" viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009C3B"/><path d="M10 1.6 18.4 7 10 12.4 1.6 7z" fill="#FEDF00"/><circle cx="10" cy="7" r="3.3" fill="#002776"/><path d="M6.8 6.3c2.1-.6 4.5-.2 6.4 1" stroke="#fff" stroke-width=".7" fill="none"/></svg><span>Português</span></button>
+          <button type="button" role="option" id="tab-en" aria-controls="en" aria-selected="false" lang="en" tabindex="-1" data-code="EN"><svg class="flag" viewBox="0 0 19 10" aria-hidden="true"><rect width="19" height="10" fill="#B22234"/><rect y="0.769" width="19" height="0.769" fill="#fff"/><rect y="2.308" width="19" height="0.769" fill="#fff"/><rect y="3.846" width="19" height="0.769" fill="#fff"/><rect y="5.385" width="19" height="0.769" fill="#fff"/><rect y="6.923" width="19" height="0.769" fill="#fff"/><rect y="8.462" width="19" height="0.769" fill="#fff"/><rect width="7.6" height="5.385" fill="#3C3B6E"/></svg><span>English</span></button>
+          <button type="button" role="option" id="tab-it" aria-controls="it" aria-selected="false" lang="it" tabindex="-1" data-code="IT"><svg class="flag" viewBox="0 0 3 2" aria-hidden="true"><rect width="1" height="2" fill="#009246"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#CE2B37"/></svg><span>Italiano</span></button>
+          <button type="button" role="option" id="tab-es" aria-controls="es" aria-selected="false" lang="es" tabindex="-1" data-code="ES"><svg class="flag" viewBox="0 0 750 500" aria-hidden="true"><rect width="750" height="500" fill="#AA151B"/><rect y="125" width="750" height="250" fill="#F1BF00"/></svg><span>Español</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="progress" aria-hidden="true"></div>
+</nav>
+
+<!-- ===================== PT ===================== -->
+<div id="pt" role="tabpanel" aria-labelledby="tab-pt" lang="pt-BR">
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projetos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Inserção orbital: como funciona o simulador</h1>
+      <p class="dek">Um guia da página Inserção orbital: a tela, os comandos, a estratégia para capturar o objeto gastando pouco combustível, a aerofrenagem, a pontuação, o piloto automático e a física por trás de tudo.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado em <time datetime="2026-10-01">01/10/2026</time></span>
+        <span class="credit">Revisado e formatado usando Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-pt">
+    <h2 id="toc-pt">Índice</h2>
+    <ol>
+      <li><a href="#intro-pt">O que é o simulador</a></li>
+      <li><a href="#tela-pt">A tela em três áreas</a></li>
+      <li><a href="#conceitos-pt">Conceitos de órbita</a></li>
+      <li><a href="#missao-pt">Como começa uma missão</a></li>
+      <li><a href="#comandos-pt">Os comandos</a></li>
+      <li><a href="#estrategia-pt">Estratégia: capturar e ajustar</a></li>
+      <li><a href="#painel-pt">Lendo o painel</a></li>
+      <li><a href="#aerofrenagem-pt">Aerofrenagem</a></li>
+      <li><a href="#objetos-pt">Objetos e planetas</a></li>
+      <li><a href="#pontuacao-pt">Vitória, derrota e pontuação</a></li>
+      <li><a href="#piloto-pt">O piloto automático</a></li>
+      <li><a href="#bastidores-pt">A simulação por dentro</a></li>
+      <li><a href="#dicas-pt">Dicas e erros comuns</a></li>
+      <li><a href="#revisao-pt">Revisão rápida</a></li>
+      <li><a href="#referencias-pt">Referências</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="intro-pt" aria-labelledby="h-intro-pt">
+      <h2 id="h-intro-pt">O que é o simulador</h2>
+      <p><strong>Inserção orbital</strong> é a manobra que transforma uma passagem rápida por um planeta numa órbita estável ao redor dele. A nave chega rápido demais para ficar e precisa frear na hora e no lugar certos; se frear pouco, passa direto, e se frear errado, cai. <sup><a href="#ref-3-pt">[3]</a></sup> <sup><a href="#ref-2-pt">[2]</a></sup></p>
+      <p>A página <strong>Inserção orbital</strong> é um pequeno jogo de física que roda no navegador. Você escolhe um objeto, de uma sonda real a uma criatura de ficção científica, e um planeta do Sistema Solar, e precisa deixar o objeto numa órbita dentro de uma faixa de altitude gastando o mínimo de combustível. A trajetória é calculada de verdade, com a gravidade do planeta, e o mapa mostra a cada instante para onde o objeto vai. <sup><a href="#ref-1-pt">[1]</a></sup></p>
+      <p><a class="launch" href="Inser%C3%A7%C3%A3o%20orbital.html">Abrir o simulador <span aria-hidden="true">→</span></a></p>
+      <h3>O que você vai aprender</h3>
+      <ul>
+        <li>A ler a tela, a telemetria e as mensagens de ajuda.</li>
+        <li>O que significam periapse, apoapse, excentricidade e Δv.</li>
+        <li>Os quatro comandos do motor e a estratégia de três queimas.</li>
+        <li>Como usar a atmosfera como freio, com a aerofrenagem.</li>
+        <li>As diferenças entre os 14 objetos e os 7 planetas.</li>
+        <li>Como a pontuação é calculada e o que o piloto automático faz.</li>
+        <li>Como a física é simulada no código.</li>
+      </ul>
+      <aside class="note"><p>Não é preciso instalar nada: o simulador é um único arquivo HTML, com o desenho feito em <code>canvas</code>, e funciona no computador e no celular. Os recordes ficam guardados no próprio navegador. <sup><a href="#ref-21-pt">[21]</a></sup> <sup><a href="#ref-20-pt">[20]</a></sup></p></aside>
+    </section>
+
+    <section id="tela-pt" aria-labelledby="h-tela-pt">
+      <h2 id="h-tela-pt">A tela em três áreas</h2>
+      <figure>
+        <img src="rc_images/InsercaoTela.svg" alt="Esquema da tela do simulador com sete partes numeradas: a lista de objetos e os botões dos planetas no alto; o mapa com o planeta, a faixa-alvo verde e a trajetória prevista em laranja à esquerda; os botões do motor e de tempo embaixo do mapa; e, à direita, o painel com a telemetria, o combustível e as mensagens." width="1000" height="680" loading="lazy">
+        <figcaption>A tela do simulador: escolha da missão no alto, mapa à esquerda, painel de bordo à direita.</figcaption>
+      </figure>
+      <p>No alto ficam as escolhas da missão: a lista <strong>Objeto</strong>, agrupada em naves reais, corpos celestes e ficção científica, e um botão para cada planeta. Depois de vencer, o botão do planeta mostra as estrelas do seu melhor resultado com o objeto escolhido.</p>
+      <p>À esquerda está o <strong>mapa</strong>, sempre centrado no planeta. O círculo verde tracejado e a faixa clara em volta dele formam a <strong>faixa-alvo</strong>; o anel colado ao planeta é a atmosfera. A linha laranja é a <strong>trajetória prevista</strong>, o caminho que o objeto vai seguir se o motor ficar desligado. Ela fica vermelha quando atravessa a superfície ou, para objetos sem escudo, a atmosfera. A linha cinza é o rastro do caminho já percorrido, a régua no canto dá a escala, e o zoom se ajusta sozinho conforme o objeto se aproxima.</p>
+      <p>Embaixo do mapa ficam os quatro botões do motor, a velocidade do tempo, o piloto automático, a pausa e o reinício. À direita, o <strong>painel</strong> mostra o objeto e suas características, a missão, a telemetria, o combustível restante, o escudo térmico, quando houver, e uma caixa de mensagens que diz o que fazer a seguir.</p>
+    </section>
+
+    <section id="conceitos-pt" aria-labelledby="h-conceitos-pt">
+      <h2 id="h-conceitos-pt">Conceitos de órbita</h2>
+      <p>Com o motor desligado, um objeto perto de um planeta segue uma <strong>cônica</strong> com o centro do planeta num dos focos: um círculo, uma elipse, uma parábola ou uma hipérbole. Qual delas depende da velocidade e da altura em que o objeto está. <sup><a href="#ref-5-pt">[5]</a></sup> <sup><a href="#ref-6-pt">[6]</a></sup></p>
+      <figure>
+        <img src="rc_images/InsercaoOrbita.svg" alt="À esquerda, um planeta com atmosfera, a faixa-alvo verde e uma órbita elíptica laranja com a periapse, ponto mais baixo, e a apoapse, ponto mais alto. À direita, as quatro formas de trajetória conforme a excentricidade: círculo, elipse, parábola e hipérbole." width="1000" height="520" loading="lazy">
+        <figcaption>O vocabulário do painel: periapse, apoapse, faixa-alvo, atmosfera e excentricidade.</figcaption>
+      </figure>
+      <dl class="glossary">
+        <dt>Altitude</dt><dd>Distância até a superfície do planeta, e não até o centro.</dd>
+        <dt>Periapse (Pe)</dt><dd>O ponto mais baixo da trajetória. <sup><a href="#ref-4-pt">[4]</a></sup></dd>
+        <dt>Apoapse (Ap)</dt><dd>O ponto mais alto. Numa trajetória de escape ele não existe, e o painel mostra “escape”.</dd>
+        <dt>Excentricidade (e)</dt><dd>Quanto a órbita se afasta de um círculo: 0 é círculo, entre 0 e 1 é elipse, e de 1 para cima a trajetória é aberta e o objeto vai embora. <sup><a href="#ref-5-pt">[5]</a></sup></dd>
+        <dt>Trajetória de escape</dt><dd>A hipérbole: o objeto passa pelo planeta uma vez e segue para o espaço. É assim que toda missão começa. <sup><a href="#ref-6-pt">[6]</a></sup></dd>
+        <dt>Δv (delta-v)</dt><dd>A mudança de velocidade que o motor ainda consegue produzir. No jogo, é o combustível, medido em m/s. <sup><a href="#ref-7-pt">[7]</a></sup></dd>
+        <dt>Faixa-alvo</dt><dd>O intervalo de altitude em que a periapse e a apoapse precisam ficar.</dd>
+      </dl>
+      <p>A missão é vencida quando a periapse e a apoapse ficam dentro da faixa ao mesmo tempo. Não precisa ser um círculo perfeito: uma elipse pouco alongada, inteira dentro da faixa, também vale.</p>
+    </section>
+
+    <section id="missao-pt" aria-labelledby="h-missao-pt">
+      <h2 id="h-missao-pt">Como começa uma missão</h2>
+      <p>Toda missão começa com um <strong>briefing</strong>. O objeto chega ao planeta numa trajetória de escape, a cerca de cinco vezes o raio da órbita-alvo, já caindo em direção a ele. A janela informa a faixa-alvo e quanto Δv você tem. <em>Começar</em> entrega o controle a você; <em>Usar piloto automático</em> deixa o computador voar.</p>
+      <p>A chegada muda a cada tentativa: a direção é sorteada, e a periapse prevista fica entre metade e 1,7 vez a altitude-alvo, nunca abaixo da atmosfera. A velocidade de chegada “no infinito” (v∞), aquela que o objeto teria longe do planeta, depende do planeta e do objeto: um objeto interestelar chega 2,6 vezes mais rápido que uma sonda. <sup><a href="#ref-6-pt">[6]</a></sup></p>
+      <h3>Quanto combustível você recebe</h3>
+      <p>O jogo calcula o custo de uma inserção ideal em duas queimas: uma na periapse de chegada, que transforma a hipérbole numa elipse que toca a órbita-alvo, e outra no extremo oposto, que arredonda a órbita. É a mesma ideia da transferência de Hohmann. <sup><a href="#ref-9-pt">[9]</a></sup> O orçamento é esse custo multiplicado pelo fator de combustível do objeto, mais uma pequena folga:</p>
+      <pre class="formula">Δv disponível = Δv ideal × fator de combustível + 0,03 × velocidade circular na órbita-alvo</pre>
+      <p>Com fator 1,3, a sonda tem 30% de margem sobre o ideal. Objetos com fator abaixo de 1, como a cápsula de criossono, não têm combustível para fazer tudo com o motor e precisam da atmosfera. Quando o objeto tem escudo mas a aerofrenagem não serve no planeta escolhido, porque não há atmosfera ou porque a órbita-alvo fica longe demais dela, o jogo garante um fator mínimo de 1,1.</p>
+      <aside class="note"><p>O tempo também é ajustado a cada planeta: na velocidade ×1, uma volta na órbita-alvo dura cerca de 24 segundos reais, seja na Lua, seja em Júpiter.</p></aside>
+    </section>
+
+    <section id="comandos-pt" aria-labelledby="h-comandos-pt">
+      <h2 id="h-comandos-pt">Os comandos</h2>
+      <p>O motor só funciona enquanto o botão ou a tecla estiver pressionado. As direções não são as da tela: são medidas em relação ao movimento e ao planeta, como no painel de uma nave real. <sup><a href="#ref-15-pt">[15]</a></sup></p>
+      <figure>
+        <img src="rc_images/InsercaoComandos.svg" alt="Um objeto no alto da órbita, movendo-se para a direita, com quatro setas: Acelerar para a frente, Frear para trás, Para fora para longe do planeta e Para dentro em direção ao planeta. Ao lado, cartões com a tecla e o efeito de cada comando." width="1000" height="500" loading="lazy">
+        <figcaption>Acelerar e frear agem ao longo do movimento; para fora e para dentro, ao longo da linha até o planeta.</figcaption>
+      </figure>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Ação</th><th scope="col">Teclado</th><th scope="col">Botão</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Acelerar (prógrado)</th><td><kbd>↑</kbd> ou <kbd>W</kbd></td><td>Acelerar</td></tr>
+            <tr><th scope="row">Frear (retrógrado)</th><td><kbd>↓</kbd> ou <kbd>S</kbd></td><td>Frear</td></tr>
+            <tr><th scope="row">Para fora (radial)</th><td><kbd>→</kbd> ou <kbd>D</kbd></td><td>Para fora</td></tr>
+            <tr><th scope="row">Para dentro (radial)</th><td><kbd>←</kbd> ou <kbd>A</kbd></td><td>Para dentro</td></tr>
+            <tr><th scope="row">Pausar e continuar</th><td><kbd>Espaço</kbd></td><td>Pausar</td></tr>
+            <tr><th scope="row">Reiniciar a missão</th><td><kbd>R</kbd></td><td>Reiniciar</td></tr>
+            <tr><th scope="row">Velocidade do tempo</th><td><kbd>+</kbd> e <kbd>−</kbd></td><td>×½, ×1, ×2, ×4, ×8</td></tr>
+            <tr><th scope="row">Piloto automático</th><td><kbd>P</kbd></td><td>Piloto automático</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Duas teclas ao mesmo tempo combinam as direções, como frear e empurrar para fora juntos. Os comandos radiais não mudam o momento angular do objeto: servem principalmente para corrigir a periapse enquanto o objeto ainda está caindo em direção a ela, e gastam mais combustível que frear ou acelerar para o mesmo efeito.</p>
+      <p>Use ×½ para queimas curtas e precisas e ×4 ou ×8 para esperar o objeto chegar ao ponto certo. As teclas não respondem enquanto uma janela de mensagem estiver aberta.</p>
+    </section>
+
+    <section id="estrategia-pt" aria-labelledby="h-estrategia-pt">
+      <h2 id="h-estrategia-pt">Estratégia: capturar e ajustar</h2>
+      <p>A forma mais barata de colocar o objeto em órbita segue, quase sempre, três passos.</p>
+      <figure>
+        <img src="rc_images/InsercaoManobras.svg" alt="Três painéis: no primeiro, o objeto chega numa hipérbole e freia na periapse, ficando preso numa elipse alongada; no segundo, freia de novo na periapse e a apoapse desce até a faixa-alvo; no terceiro, acelera na apoapse e a periapse sobe até a faixa." width="1000" height="500" loading="lazy">
+        <figcaption>Frear embaixo para ser capturado, depois ajustar cada extremo queimando no extremo oposto.</figcaption>
+      </figure>
+      <ol>
+        <li><strong>Capturar.</strong> Espere o objeto chegar perto da periapse, marcada <em>Pe</em> no mapa, e freie. A hipérbole vira uma elipse, e a apoapse, marcada <em>Ap</em>, aparece no mapa.</li>
+        <li><strong>Baixar a apoapse.</strong> Ainda perto da periapse, ou na próxima passagem por ela, continue freando até a apoapse entrar na faixa-alvo.</li>
+        <li><strong>Corrigir a periapse.</strong> Vá até a apoapse e acelere se a periapse estiver abaixo da faixa, ou freie se estiver acima.</li>
+      </ol>
+      <p>Por que frear na periapse? É lá que o objeto está mais rápido, e uma mesma mudança de velocidade altera mais a energia da órbita quando a velocidade é alta. Esse é o <strong>efeito Oberth</strong>, e é por isso que as missões reais fazem a inserção orbital perto do ponto mais baixo da passagem. <sup><a href="#ref-8-pt">[8]</a></sup></p>
+      <p>A regra de ouro vale para qualquer órbita fechada: <strong>uma queima num extremo muda a altura do extremo oposto</strong>. Frear na periapse baixa a apoapse; acelerar na apoapse sobe a periapse. <sup><a href="#ref-9-pt">[9]</a></sup> <sup><a href="#ref-15-pt">[15]</a></sup></p>
+      <div class="recap">
+        <h3>Para fixar</h3>
+        <ul>
+          <li>Freie perto de Pe para ser capturado.</li>
+          <li>Para mudar Ap, queime em Pe; para mudar Pe, queime em Ap.</li>
+          <li>Prefira queimas curtas: veja a trajetória prevista mudar antes de continuar.</li>
+          <li>Solte os comandos quando Pe e Ap ficarem verdes no painel.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="painel-pt" aria-labelledby="h-painel-pt">
+      <h2 id="h-painel-pt">Lendo o painel</h2>
+      <p>A telemetria mostra a órbita atual, calculada a partir da posição e da velocidade do objeto a cada quadro.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Campo</th><th scope="col">O que mostra</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Altitude</th><td>Distância atual até a superfície.</td></tr>
+            <tr><th scope="row">Velocidade</th><td>Velocidade em relação ao planeta, em km/s.</td></tr>
+            <tr><th scope="row">Periapse</th><td>Altitude do ponto mais baixo. Fica verde dentro da faixa e vermelha abaixo do topo da atmosfera; mostra “abaixo da superfície” quando a trajetória bate no chão.</td></tr>
+            <tr><th scope="row">Apoapse</th><td>Altitude do ponto mais alto. Fica verde dentro da faixa e mostra “escape”, em vermelho, quando a trajetória é aberta.</td></tr>
+            <tr><th scope="row">Excentricidade</th><td>0 é círculo; 1 ou mais é escape.</td></tr>
+            <tr><th scope="row">Combustível (Δv restante)</th><td>Quanto Δv ainda sobra, em m/s, com uma barra.</td></tr>
+            <tr><th scope="row">Escudo térmico</th><td>Só para objetos com escudo: quanto dele ainda resta.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>A caixa de mensagens lê a situação e sugere o próximo passo. As mais comuns:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Mensagem</th><th scope="col">O que fazer</th></tr></thead>
+          <tbody>
+            <tr><td>“Trajetória de escape. Freie perto da periapse para ser capturado.”</td><td>Espere a periapse e freie (passo 1).</td></tr>
+            <tr><td>“Apoapse alta demais. Freie perto da periapse para baixá-la.”</td><td>Passo 2 da estratégia.</td></tr>
+            <tr><td>“Periapse baixa demais. Acelere perto da apoapse para subi-la.”</td><td>Passo 3 da estratégia.</td></tr>
+            <tr><td>“A órbita cruza a superfície” ou “cruza a atmosfera”.</td><td>Perigo: acelere na apoapse ou empurre para fora antes de chegar lá.</td></tr>
+            <tr><td>“Aerofrenagem em andamento: o escudo está esquentando.”</td><td>Só com escudo: acompanhe a barra do escudo.</td></tr>
+            <tr><td>“Na faixa. Desligue o motor para confirmar.”</td><td>Solte os comandos.</td></tr>
+            <tr><td>“Sem combustível. Torça para a órbita servir.”</td><td>Não há mais o que fazer com o motor.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="aerofrenagem-pt" aria-labelledby="h-aerofrenagem-pt">
+      <h2 id="h-aerofrenagem-pt">Aerofrenagem</h2>
+      <p>Dois objetos têm escudo térmico: a cápsula tripulada e a cápsula de criossono. Para eles, a atmosfera deixa de ser uma parede e vira um freio gratuito: cada passagem pelo ar tira velocidade sem gastar combustível. Missões reais a Vênus e a Marte usaram essa técnica para economizar propelente. <sup><a href="#ref-10-pt">[10]</a></sup></p>
+      <figure>
+        <img src="rc_images/InsercaoAerofrenagem.svg" alt="Planeta com atmosfera espessa e várias elipses cada vez menores, todas com a periapse dentro da atmosfera; por fim, uma aceleração na apoapse tira a periapse do ar. Ao lado, barras mostram o escudo térmico caindo de 100% para 70% e 45%." width="1000" height="500" loading="lazy">
+        <figcaption>Cada passagem pelo ar baixa a apoapse e gasta um pouco do escudo.</figcaption>
+      </figure>
+      <p>O jogo modela o ar com uma densidade que cresce exponencialmente conforme o objeto desce e vale zero no topo da atmosfera. Quanto mais fundo e mais rápido, mais forte a frenagem e maior o desgaste do escudo. Ele aguenta dissipar cerca de 1,4 vez o Δv da inserção ideal; se chegar a 0%, a missão termina.</p>
+      <p>A receita: baixe a periapse para dentro da atmosfera, um pouco abaixo do topo; deixe as passagens baixarem a apoapse até a faixa-alvo; e, então, acelere na apoapse para tirar a periapse do ar. Sem esse último passo, o objeto continua perdendo altura a cada volta.</p>
+      <aside class="note"><p>A aerofrenagem só faz sentido em Vênus, na Terra e em Marte. Mercúrio e a Lua não têm atmosfera, e em Júpiter e Saturno a órbita-alvo fica longe demais dela. Sem escudo, qualquer objeto que entre na atmosfera é perdido.</p></aside>
+    </section>
+
+    <section id="objetos-pt" aria-labelledby="h-objetos-pt">
+      <h2 id="h-objetos-pt">Objetos e planetas</h2>
+      <p>Cada objeto muda quatro números da missão: o <strong>empuxo</strong>, quanto o motor acelera; o <strong>combustível</strong>, o fator sobre o Δv ideal; a <strong>chegada</strong>, a velocidade com que ele aparece; e a <strong>largura da faixa-alvo</strong>. Alguns têm ainda uma regra especial. O painel resume esses números em etiquetas, como “Empuxo baixo” ou “Faixa estreita”.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Objeto</th><th scope="col">Empuxo</th><th scope="col">Combustível</th><th scope="col">Chegada</th><th scope="col">Particularidade</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Sonda robótica</th><td>médio</td><td>normal</td><td>normal</td><td>Equilibrada: a melhor para aprender.</td></tr>
+            <tr><th scope="row">Cápsula tripulada</th><td>médio</td><td>normal</td><td>normal</td><td>Escudo térmico.</td></tr>
+            <tr><th scope="row">Telescópio espacial</th><td>médio</td><td>normal</td><td>normal</td><td>Faixa estreita (55% da normal).</td></tr>
+            <tr><th scope="row">Módulo de estação espacial</th><td>baixo</td><td>normal</td><td>lenta</td><td>Pesado: comece as queimas cedo.</td></tr>
+            <tr><th scope="row">Vela solar</th><td>baixo</td><td>farto</td><td>lenta</td><td>Empuxo minúsculo e quase inesgotável. <sup><a href="#ref-19-pt">[19]</a></sup></td></tr>
+            <tr><th scope="row">Asteroide rebocado</th><td>baixo</td><td>farto</td><td>normal</td><td>Faixa larga.</td></tr>
+            <tr><th scope="row">Núcleo de cometa</th><td>médio</td><td>farto</td><td>normal</td><td>Faixa larga; jatos de gás aleatórios.</td></tr>
+            <tr><th scope="row">Pequena lua (tipo Fobos)</th><td>baixo</td><td>farto</td><td>lenta</td><td>Faixa larga. <sup><a href="#ref-18-pt">[18]</a></sup></td></tr>
+            <tr><th scope="row">Objeto interestelar (tipo ʻOumuamua)</th><td>alto</td><td>normal</td><td>rápida</td><td>Chega 2,6 vezes mais rápido. <sup><a href="#ref-17-pt">[17]</a></sup></td></tr>
+            <tr><th scope="row">Nave geracional</th><td>baixo</td><td>farto</td><td>lenta</td><td>Faixa larga.</td></tr>
+            <tr><th scope="row">Cargueiro de dobra</th><td>extremo</td><td>normal</td><td>rápida</td><td>Faixa estreita; use toques curtos em ×½.</td></tr>
+            <tr><th scope="row">Leviatã do vácuo</th><td>médio</td><td>escasso</td><td>normal</td><td>Regenera energia com o motor desligado.</td></tr>
+            <tr><th scope="row">Cápsula de criossono</th><td>médio</td><td>escasso</td><td>normal</td><td>Escudo térmico; faixa larga.</td></tr>
+            <tr><th scope="row">Esfera alienígena</th><td>alto</td><td>normal</td><td>rápida</td><td>Todos os comandos invertidos.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Os jatos do cometa ligam e desligam sozinhos, em direções sorteadas, e desviam a trajetória sem aviso. O leviatã recupera, com o motor desligado, 35% da energia total a cada volta na órbita-alvo. Com a cápsula de criossono, nos planetas com atmosfera, a aerofrenagem é obrigatória.</p>
+      <h3>Os planetas</h3>
+      <p>Cada planeta usa o raio e o parâmetro gravitacional (μ) reais, por isso a mesma manobra exige muito mais Δv em Júpiter do que na Lua. <sup><a href="#ref-14-pt">[14]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Planeta</th><th scope="col">Atmosfera até</th><th scope="col">Faixa-alvo</th><th scope="col">Chegada (v∞)</th><th scope="col">Observação</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Mercúrio</th><td>sem atmosfera</td><td>400 ± 60 km</td><td>4,0 km/s</td><td>Dá para passar raspando, só não encoste no chão.</td></tr>
+            <tr><th scope="row">Vênus</th><td>200 km</td><td>500 ± 70 km</td><td>3,2 km/s</td><td>Atmosfera densa e alta.</td></tr>
+            <tr><th scope="row">Terra</th><td>100 km</td><td>400 ± 60 km</td><td>3,0 km/s</td><td>Perto da altitude da Estação Espacial Internacional. <sup><a href="#ref-16-pt">[16]</a></sup></td></tr>
+            <tr><th scope="row">Lua</th><td>sem atmosfera</td><td>100 ± 20 km</td><td>0,8 km/s</td><td>Gravidade fraca: tudo devagar e com pouco Δv.</td></tr>
+            <tr><th scope="row">Marte</th><td>80 km</td><td>300 ± 50 km</td><td>2,6 km/s</td><td>Atmosfera fina, mas perigosa.</td></tr>
+            <tr><th scope="row">Júpiter</th><td>1.000 km</td><td>100.000 ± 12.000 km</td><td>6,0 km/s</td><td>Gravidade enorme: a frenagem é longa.</td></tr>
+            <tr><th scope="row">Saturno</th><td>800 km</td><td>150.000 ± 15.000 km</td><td>5,0 km/s</td><td>A faixa fica além dos anéis principais.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>A tolerância e a chegada da tabela são as da sonda; elas são multiplicadas pelos fatores de cada objeto.</p>
+    </section>
+
+    <section id="pontuacao-pt" aria-labelledby="h-pontuacao-pt">
+      <h2 id="h-pontuacao-pt">Vitória, derrota e pontuação</h2>
+      <figure>
+        <img src="rc_images/InsercaoEstados.svg" alt="Fluxo da missão: briefing, voo, órbita na faixa com o motor desligado por 1,2 segundo e vitória. Do voo saem quatro derrotas: colisão, entrada na atmosfera, escape para o espaço e escudo esgotado. Embaixo, a fórmula dos pontos e as regras das estrelas." width="1000" height="560" loading="lazy">
+        <figcaption>Uma maneira de vencer e quatro de perder.</figcaption>
+      </figure>
+      <p>A missão é vencida quando a periapse e a apoapse ficam dentro da faixa com o motor desligado por 1,2 segundo seguido. Há quatro maneiras de perder: bater na superfície; entrar na atmosfera sem escudo; passar pelo planeta sem frear o bastante e seguir para o espaço; e gastar todo o escudo térmico.</p>
+      <pre class="formula">precisão    = 1 − (|Pe − alvo| + |Ap − alvo|) ÷ (2 × tolerância)
+combustível = Δv restante ÷ Δv disponível
+pontos      = 1000 × (0,5 × precisão + 0,5 × mín(1; combustível ÷ 0,35))</pre>
+      <p>Metade da nota vem da precisão, em que uma órbita circular no centro da faixa vale 1, e metade da economia, em que guardar 35% do Δv já dá a nota máxima. As estrelas são três: uma por concluir, outra se sobraram pelo menos 15% do Δv e outra se a precisão passou de 50%.</p>
+      <p>O melhor resultado de cada combinação de objeto e planeta fica salvo no navegador e aparece no painel e nos botões dos planetas. Missões em que o piloto automático foi usado, mesmo por um instante, não contam como recorde. <sup><a href="#ref-20-pt">[20]</a></sup></p>
+    </section>
+
+    <section id="piloto-pt" aria-labelledby="h-piloto-pt">
+      <h2 id="h-piloto-pt">O piloto automático</h2>
+      <p>O piloto automático, no botão ou na tecla <kbd>P</kbd>, assume o controle e faz a inserção sozinho, com a mesma lógica deste tutorial. É uma boa forma de ver a estratégia funcionando antes de tentar no manual.</p>
+      <figure>
+        <img src="rc_images/InsercaoPiloto.svg" alt="Seis etapas do piloto automático: corrigir a rota de aproximação, aguardar o ponto de frenagem, frear para a captura, aerofrenagem opcional, ajustar nos extremos e desligar os motores na faixa. Ao lado, cartões sobre segurança, retomada do controle e recordes." width="1000" height="590" loading="lazy">
+        <figcaption>As etapas do piloto automático.</figcaption>
+      </figure>
+      <p>Enquanto o objeto ainda está longe, o piloto corrige a rota com queimas de lado até a periapse prevista cair na faixa. Depois calcula quando começar a frear, para que a queima fique centrada na periapse, e freia contra o movimento enquanto segura a periapse no lugar. Com a órbita fechada, faz os ajustes finos nos extremos: na periapse corrige a apoapse, e na apoapse corrige a periapse, sempre dosando o empuxo para não passar do ponto.</p>
+      <p>Com um objeto de escudo e pouco combustível para frear só no motor, ele escolhe a aerofrenagem: mira a periapse a 55% da altura da atmosfera, faz as passagens e tira a periapse do ar quando a próxima passagem já levaria a apoapse para a faixa. Se em algum momento a periapse ficar perigosa, subi-la passa a ser a prioridade.</p>
+      <p>Qualquer comando do motor devolve o controle a você. O piloto não faz milagre: se o combustível ou o escudo não bastarem, a missão falha do mesmo jeito.</p>
+    </section>
+
+    <section id="bastidores-pt" aria-labelledby="h-bastidores-pt">
+      <h2 id="h-bastidores-pt">A simulação por dentro</h2>
+      <p>Para quem quer entender o código: o simulador é um programa em JavaScript que, a cada quadro, avança a física, desenha o mapa num <code>canvas</code> e atualiza o painel. <sup><a href="#ref-21-pt">[21]</a></sup></p>
+      <h3>Gravidade e integração</h3>
+      <p>Além do motor, só existe uma força: a gravidade do planeta, <code>a = −μ·r / |r|³</code>, em que μ é o parâmetro gravitacional padrão, a constante gravitacional vezes a massa do planeta. <sup><a href="#ref-14-pt">[14]</a></sup> A posição e a velocidade avançam pelo método <strong>velocity Verlet</strong>, que conserva bem a energia em órbitas longas. <sup><a href="#ref-13-pt">[13]</a></sup> O passo é adaptativo: fica curto perto do planeta, onde tudo acontece rápido, e mais curto ainda dentro da atmosfera.</p>
+      <pre class="formula">v ← v + ½·h·(gravidade(x) + empuxo)
+x ← x + h·v
+v ← v + ½·h·(gravidade(x) + empuxo)
+
+h ≤ 0,002 · r / v    (0,0005 dentro da atmosfera)
+h ≤ T / 3000         (T = período da órbita-alvo)</pre>
+      <h3>Da posição à órbita</h3>
+      <p>Para desenhar a trajetória prevista e preencher o painel, o jogo converte posição e velocidade em elementos orbitais. O <strong>vetor excentricidade</strong> aponta para a periapse e tem o tamanho da excentricidade; o momento angular <code>h</code> dá o parâmetro <code>p</code> da cônica. <sup><a href="#ref-12-pt">[12]</a></sup></p>
+      <pre class="formula">e    = ((v² − μ/r)·r − (r·v)·v) / μ
+p    = h² / μ
+Pe   = p / (1 + e)        Ap = p / (1 − e)   (só se e &lt; 1)
+r(θ) = p / (1 + e·cos θ)</pre>
+      <p>A última fórmula desenha a trajetória prevista ponto a ponto, sem simular o futuro. A velocidade em cada altura segue a equação <strong>vis-viva</strong>, <code>v² = μ·(2/r − 1/a)</code>, que o jogo usa para calcular a chegada e o Δv ideal. <sup><a href="#ref-11-pt">[11]</a></sup></p>
+      <h3>Tempo e motor</h3>
+      <p>A escala de tempo faz uma volta na órbita-alvo durar cerca de 24 s em ×1, e o empuxo de referência entrega todo o Δv ideal em 8% de uma volta, cerca de 2 segundos; o fator de empuxo de cada objeto multiplica esse valor. Assim, o jogo tem o mesmo ritmo em todos os planetas, mesmo com gravidades muito diferentes.</p>
+    </section>
+
+    <section id="dicas-pt" aria-labelledby="h-dicas-pt">
+      <h2 id="h-dicas-pt">Dicas e erros comuns</h2>
+      <ul class="myths">
+        <li><h3>Comece a frear antes da periapse</h3><p>Queimas longas devem ficar centradas nela, metade antes e metade depois. Objetos de empuxo baixo, como a vela solar, precisam começar bem cedo.</p></li>
+        <li><h3>Olhe a linha, não o objeto</h3><p>A trajetória prevista muda enquanto você queima. Solte o botão quando ela ficar como você quer.</p></li>
+        <li><h3>Vermelho é aviso</h3><p>Trajetória vermelha atravessa o chão ou a atmosfera. Corrija antes de chegar à periapse, empurrando para fora ou acelerando na apoapse.</p></li>
+        <li><h3>Use o tempo a seu favor</h3><p>×4 ou ×8 para esperar, ×½ para ajustes finos, <kbd>Espaço</kbd> para pausar e pensar.</p></li>
+        <li><h3>Não persiga o círculo perfeito</h3><p>A vitória exige só que Pe e Ap fiquem na faixa. Cada m/s economizado vale ponto.</p></li>
+        <li><h3>Aprenda com o piloto</h3><p>Rode uma missão no automático, observe onde ele queima e tente bater a pontuação no manual.</p></li>
+      </ul>
+    </section>
+
+    <section id="revisao-pt" aria-labelledby="h-revisao-pt">
+      <h2 id="h-revisao-pt">Revisão rápida</h2>
+      <p>Tente responder antes de abrir cada pergunta.</p>
+      <div class="quiz">
+        <details><summary>1. Por que frear na periapse, e não em outro ponto?</summary><p>Porque lá o objeto está mais rápido, e o mesmo Δv muda mais a energia da órbita: é o efeito Oberth.</p></details>
+        <details><summary>2. A apoapse está alta demais. Onde queimar, e em que direção?</summary><p>Na periapse, freando.</p></details>
+        <details><summary>3. O que significa a apoapse mostrar “escape”?</summary><p>Que a trajetória é aberta (e ≥ 1): sem frear, o objeto passa pelo planeta e segue para o espaço.</p></details>
+        <details><summary>4. Quando a missão é considerada vencida?</summary><p>Quando a periapse e a apoapse estão dentro da faixa e o motor fica desligado por 1,2 segundo.</p></details>
+        <details><summary>5. Que objetos podem usar a aerofrenagem, e em que planetas ela serve?</summary><p>Os que têm escudo térmico, a cápsula tripulada e a cápsula de criossono, em Vênus, na Terra e em Marte.</p></details>
+        <details><summary>6. Sobraram 40% do Δv e a precisão foi 0,8. Quantos pontos e estrelas?</summary><p>1000 × (0,5 × 0,8 + 0,5 × 1) = 900 pontos e três estrelas.</p></details>
+        <details><summary>7. Por que o resultado do piloto automático não vira recorde?</summary><p>Porque o recorde mede a sua pilotagem; qualquer uso do piloto marca a missão.</p></details>
+        <details><summary>8. Que método numérico avança a física do jogo?</summary><p>O velocity Verlet, com passo de tempo adaptativo.</p></details>
+      </div>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="referencias-pt" aria-labelledby="h-referencias-pt">
+      <h2 id="h-referencias-pt">Referências</h2>
+      <ol class="refs">
+        <li id="ref-1-pt"><strong>Giovani Perotto Mesquita</strong>, “Inserção orbital”, simulador interativo, <a href="Inser%C3%A7%C3%A3o%20orbital.html">giovanipm.github.io/Inserção orbital.html</a>.</li>
+        <li id="ref-2-pt"><strong>NASA Science</strong> (em inglês), “Basics of Space Flight”, acesso em 01/10/2026, <a href="https://science.nasa.gov/learn/basics-of-space-flight/" rel="noopener">science.nasa.gov/learn/basics-of-space-flight</a>.</li>
+        <li id="ref-3-pt"><strong>Wikipedia</strong> (em inglês), “Orbit insertion”, acesso em 01/10/2026, <a href="https://en.wikipedia.org/wiki/Orbit_insertion" rel="noopener">en.wikipedia.org/wiki/Orbit_insertion</a>.</li>
+        <li id="ref-4-pt"><strong>Wikipedia</strong> (em inglês), “Apsis”, acesso em 01/10/2026, <a href="https://en.wikipedia.org/wiki/Apsis" rel="noopener">en.wikipedia.org/wiki/Apsis</a>.</li>
+        <li id="ref-5-pt"><strong>Wikipedia</strong> (em inglês), “Orbital eccentricity”, acesso em 01/10/2026, <a href="https://en.wikipedia.org/wiki/Orbital_eccentricity" rel="noopener">en.wikipedia.org/wiki/Orbital_eccentricity</a>.</li>
+        <li id="ref-6-pt"><strong>Wikipedia</strong> (em inglês), “Hyperbolic trajectory”, acesso em 01/10/2026, <a href="https://en.wikipedia.org/wiki/Hyperbolic_trajectory" rel="noopener">en.wikipedia.org/wiki/Hyperbolic_trajectory</a>.</li>
+        <li id="ref-7-pt"><strong>Wikipedia</strong> (em inglês), “Delta-v”, acesso em 01/10/2026, <a href="https://en.wikipedia.org/wiki/Delta-v" rel="noopener">en.wikipedia.org/wiki/Delta-v</a>.</li>
+        <li id="ref-8-pt"><strong>Wikipedia</strong> (em inglês), “Oberth effect”, acesso em 01/10/2026, <a href="https://en.wikipedia.org/wiki/Oberth_effect" rel="noopener">en.wikipedia.org/wiki/Oberth_effect</a>.</li>
+        <li id="ref-9-pt"><strong>Wikipedia</strong> (em inglês), “Hohmann transfer orbit”, acesso em 01/10/2026, <a href="https://en.wikipedia.org/wiki/Hohmann_transfer_orbit" rel="noopener">en.wikipedia.org/wiki/Hohmann_transfer_orbit</a>.</li>
+        <li id="ref-10-pt"><strong>Wikipedia</strong> (em inglês), “Aerobraking”, acesso em 01/10/2026, <a href="https://en.wikipedia.org/wiki/Aerobraking" rel="noopener">en.wikipedia.org/wiki/Aerobraking</a>.</li>
+        <li id="ref-11-pt"><strong>Wikipedia</strong> (em inglês), “Vis-viva equation”, acesso em 01/10/2026, <a href="https://en.wikipedia.org/wiki/Vis-viva_equation" rel="noopener">en.wikipedia.org/wiki/Vis-viva_equation</a>.</li>
+        <li id="ref-12-pt"><strong>Wikipedia</strong> (em inglês), “Eccentricity vector”, acesso em 01/10/2026, <a href="https://en.wikipedia.org/wiki/Eccentricity_vector" rel="noopener">en.wikipedia.org/wiki/Eccentricity_vector</a>.</li>
+        <li id="ref-13-pt"><strong>Wikipedia</strong> (em inglês), “Verlet integration”, acesso em 01/10/2026, <a href="https://en.wikipedia.org/wiki/Verlet_integration" rel="noopener">en.wikipedia.org/wiki/Verlet_integration</a>.</li>
+        <li id="ref-14-pt"><strong>Wikipedia</strong> (em inglês), “Standard gravitational parameter”, acesso em 01/10/2026, <a href="https://en.wikipedia.org/wiki/Standard_gravitational_parameter" rel="noopener">en.wikipedia.org/wiki/Standard_gravitational_parameter</a>.</li>
+        <li id="ref-15-pt"><strong>Wikipedia</strong> (em inglês), “Orbital maneuver”, acesso em 01/10/2026, <a href="https://en.wikipedia.org/wiki/Orbital_maneuver" rel="noopener">en.wikipedia.org/wiki/Orbital_maneuver</a>.</li>
+        <li id="ref-16-pt"><strong>Wikipedia</strong> (em inglês), “International Space Station”, acesso em 01/10/2026, <a href="https://en.wikipedia.org/wiki/International_Space_Station" rel="noopener">en.wikipedia.org/wiki/International_Space_Station</a>.</li>
+        <li id="ref-17-pt"><strong>Wikipedia</strong> (em inglês), “ʻOumuamua”, acesso em 01/10/2026, <a href="https://en.wikipedia.org/wiki/%CA%BBOumuamua" rel="noopener">en.wikipedia.org/wiki/ʻOumuamua</a>.</li>
+        <li id="ref-18-pt"><strong>Wikipedia</strong> (em inglês), “Phobos (moon)”, acesso em 01/10/2026, <a href="https://en.wikipedia.org/wiki/Phobos_(moon)" rel="noopener">en.wikipedia.org/wiki/Phobos_(moon)</a>.</li>
+        <li id="ref-19-pt"><strong>Wikipedia</strong> (em inglês), “Solar sail”, acesso em 01/10/2026, <a href="https://en.wikipedia.org/wiki/Solar_sail" rel="noopener">en.wikipedia.org/wiki/Solar_sail</a>.</li>
+        <li id="ref-20-pt"><strong>MDN Web Docs</strong> (em inglês), “Window: localStorage property”, acesso em 01/10/2026, <a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage" rel="noopener">developer.mozilla.org/en-US/docs/Web/API/Window/localStorage</a>.</li>
+        <li id="ref-21-pt"><strong>MDN Web Docs</strong> (em inglês), “Canvas API”, acesso em 01/10/2026, <a href="https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API" rel="noopener">developer.mozilla.org/en-US/docs/Web/API/Canvas_API</a>.</li>
+      </ol>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== EN ===================== -->
+<div id="en" role="tabpanel" aria-labelledby="tab-en" lang="en" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projects</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Orbital insertion: how the simulator works</h1>
+      <p class="dek">A guide to the Orbital insertion page: the screen, the controls, the strategy for capturing the object with little fuel, aerobraking, scoring, the autopilot and the physics behind it all.</p>
+      <div class="byline">
+        <span>By <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Published on <time datetime="2026-10-01">1 October 2026</time></span>
+        <span class="credit">Reviewed and formatted using Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-en">
+    <h2 id="toc-en">Contents</h2>
+    <ol>
+      <li><a href="#intro-en">What the simulator is</a></li>
+      <li><a href="#screen-en">The screen in three areas</a></li>
+      <li><a href="#concepts-en">Orbit concepts</a></li>
+      <li><a href="#mission-en">How a mission starts</a></li>
+      <li><a href="#controls-en">The controls</a></li>
+      <li><a href="#strategy-en">Strategy: capture and adjust</a></li>
+      <li><a href="#panel-en">Reading the panel</a></li>
+      <li><a href="#aerobraking-en">Aerobraking</a></li>
+      <li><a href="#objects-en">Objects and planets</a></li>
+      <li><a href="#scoring-en">Victory, defeat and scoring</a></li>
+      <li><a href="#autopilot-en">The autopilot</a></li>
+      <li><a href="#inside-en">Inside the simulation</a></li>
+      <li><a href="#tips-en">Tips and common mistakes</a></li>
+      <li><a href="#review-en">Quick review</a></li>
+      <li><a href="#references-en">References</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="intro-en" aria-labelledby="h-intro-en">
+      <h2 id="h-intro-en">What the simulator is</h2>
+      <p><strong>Orbital insertion</strong> is the maneuver that turns a fast flyby of a planet into a stable orbit around it. The spacecraft arrives too fast to stay and has to brake at the right time and place; brake too little and it flies past, brake wrongly and it crashes. <sup><a href="#ref-3-en">[3]</a></sup> <sup><a href="#ref-2-en">[2]</a></sup></p>
+      <p>The <strong>Orbital insertion</strong> page is a small physics game that runs in the browser. You pick an object, from a real probe to a science-fiction creature, and a planet of the Solar System, and you must leave the object in an orbit inside an altitude band while using as little fuel as possible. The trajectory is actually computed from the planet's gravity, and the map shows at every moment where the object is heading. <sup><a href="#ref-1-en">[1]</a></sup></p>
+      <p><a class="launch" href="Inser%C3%A7%C3%A3o%20orbital.html">Open the simulator <span aria-hidden="true">→</span></a></p>
+      <h3>What you will learn</h3>
+      <ul>
+        <li>How to read the screen, the telemetry and the help messages.</li>
+        <li>What periapsis, apoapsis, eccentricity and Δv mean.</li>
+        <li>The four engine commands and the three-burn strategy.</li>
+        <li>How to use the atmosphere as a brake, with aerobraking.</li>
+        <li>The differences between the 14 objects and the 7 planets.</li>
+        <li>How scoring works and what the autopilot does.</li>
+        <li>How the physics is simulated in the code.</li>
+      </ul>
+      <aside class="note"><p>The simulator's interface is in Portuguese. In this tutorial, the Portuguese label of each button appears in brackets, such as Brake (<em>Frear</em>). Nothing needs to be installed: the simulator is a single HTML file, drawn on a <code>canvas</code>, and it works on desktop and mobile. Records are stored in the browser itself. <sup><a href="#ref-21-en">[21]</a></sup> <sup><a href="#ref-20-en">[20]</a></sup></p></aside>
+    </section>
+
+    <section id="screen-en" aria-labelledby="h-screen-en">
+      <h2 id="h-screen-en">The screen in three areas</h2>
+      <figure>
+        <img src="rc_images/InsercaoTela-en.svg" alt="Diagram of the simulator screen with seven numbered parts: the object list and the planet buttons at the top; the map with the planet, the green target band and the orange predicted trajectory on the left; the engine and time buttons below the map; and, on the right, the panel with telemetry, fuel and messages." width="1000" height="680" loading="lazy">
+        <figcaption>The simulator screen: mission choice at the top, map on the left, flight panel on the right.</figcaption>
+      </figure>
+      <p>At the top are the mission choices: the <strong>Object</strong> list (<em>Objeto</em>), grouped into real spacecraft, celestial bodies and science fiction, and one button per planet. After a win, the planet button shows the stars of your best result with the chosen object.</p>
+      <p>On the left is the <strong>map</strong>, always centered on the planet. The dashed green circle and the light band around it form the <strong>target band</strong>; the ring hugging the planet is the atmosphere. The orange line is the <strong>predicted trajectory</strong>, the path the object will follow if the engine stays off. It turns red when it crosses the surface or, for objects without a shield, the atmosphere. The grey line is the trail already flown, the ruler in the corner gives the scale, and the zoom adjusts itself as the object gets closer.</p>
+      <p>Below the map are the four engine buttons, the time speed, the autopilot, pause and restart. On the right, the <strong>panel</strong> shows the object and its traits, the mission, the telemetry, the remaining fuel, the heat shield when there is one, and a message box that says what to do next.</p>
+    </section>
+
+    <section id="concepts-en" aria-labelledby="h-concepts-en">
+      <h2 id="h-concepts-en">Orbit concepts</h2>
+      <p>With the engine off, an object near a planet follows a <strong>conic section</strong> with the planet's center at one focus: a circle, an ellipse, a parabola or a hyperbola. Which one depends on the object's speed and height. <sup><a href="#ref-5-en">[5]</a></sup> <sup><a href="#ref-6-en">[6]</a></sup></p>
+      <figure>
+        <img src="rc_images/InsercaoOrbita-en.svg" alt="On the left, a planet with an atmosphere, the green target band and an orange elliptical orbit with the periapsis, the lowest point, and the apoapsis, the highest point. On the right, the four trajectory shapes by eccentricity: circle, ellipse, parabola and hyperbola." width="1000" height="520" loading="lazy">
+        <figcaption>The panel's vocabulary: periapsis, apoapsis, target band, atmosphere and eccentricity.</figcaption>
+      </figure>
+      <dl class="glossary">
+        <dt>Altitude</dt><dd>Distance to the planet's surface, not to its center.</dd>
+        <dt>Periapsis (Pe)</dt><dd>The lowest point of the trajectory (<em>Periapse</em>). <sup><a href="#ref-4-en">[4]</a></sup></dd>
+        <dt>Apoapsis (Ap)</dt><dd>The highest point (<em>Apoapse</em>). On an escape trajectory it does not exist, and the panel shows “escape”.</dd>
+        <dt>Eccentricity (e)</dt><dd>How far the orbit is from a circle: 0 is a circle, between 0 and 1 an ellipse, and from 1 upward the trajectory is open and the object leaves. <sup><a href="#ref-5-en">[5]</a></sup></dd>
+        <dt>Escape trajectory</dt><dd>The hyperbola: the object passes the planet once and heads off into space. Every mission starts this way. <sup><a href="#ref-6-en">[6]</a></sup></dd>
+        <dt>Δv (delta-v)</dt><dd>The change in speed the engine can still deliver. In the game, it is the fuel, measured in m/s. <sup><a href="#ref-7-en">[7]</a></sup></dd>
+        <dt>Target band</dt><dd>The altitude range in which both the periapsis and the apoapsis must lie (<em>faixa-alvo</em>).</dd>
+      </dl>
+      <p>The mission is won when the periapsis and the apoapsis are inside the band at the same time. It does not have to be a perfect circle: a slightly elongated ellipse that lies entirely inside the band also counts.</p>
+    </section>
+
+    <section id="mission-en" aria-labelledby="h-mission-en">
+      <h2 id="h-mission-en">How a mission starts</h2>
+      <p>Every mission starts with a <strong>briefing</strong>. The object reaches the planet on an escape trajectory, at about five times the radius of the target orbit, already falling toward it. The window states the target band and how much Δv you have. <em>Começar</em> (Start) hands control to you; <em>Usar piloto automático</em> (Use autopilot) lets the computer fly.</p>
+      <p>The arrival changes on every attempt: the direction is random, and the predicted periapsis lies between half and 1.7 times the target altitude, never below the atmosphere. The arrival speed “at infinity” (v∞), the speed the object would have far from the planet, depends on the planet and the object: an interstellar object arrives 2.6 times faster than a probe. <sup><a href="#ref-6-en">[6]</a></sup></p>
+      <h3>How much fuel you get</h3>
+      <p>The game computes the cost of an ideal two-burn insertion: one at the arrival periapsis, which turns the hyperbola into an ellipse that touches the target orbit, and another at the opposite end, which rounds off the orbit. It is the same idea as the Hohmann transfer. <sup><a href="#ref-9-en">[9]</a></sup> The budget is that cost times the object's fuel factor, plus a small margin:</p>
+      <pre class="formula">Δv available = ideal Δv × fuel factor + 0.03 × circular speed in the target orbit</pre>
+      <p>With a factor of 1.3, the probe has a 30% margin over the ideal. Objects with a factor below 1, such as the cryosleep pod, do not have the fuel to do everything with the engine and need the atmosphere. When the object has a shield but aerobraking is useless on the chosen planet, because there is no atmosphere or the target orbit is too far above it, the game guarantees a minimum factor of 1.1.</p>
+      <aside class="note"><p>Time is also scaled to each planet: at ×1 speed, one lap of the target orbit takes about 24 real seconds, whether at the Moon or at Jupiter.</p></aside>
+    </section>
+
+    <section id="controls-en" aria-labelledby="h-controls-en">
+      <h2 id="h-controls-en">The controls</h2>
+      <p>The engine only fires while the button or key is held down. The directions are not those of the screen: they are measured relative to the motion and to the planet, as on a real spacecraft's panel. <sup><a href="#ref-15-en">[15]</a></sup></p>
+      <figure>
+        <img src="rc_images/InsercaoComandos-en.svg" alt="An object at the top of its orbit, moving to the right, with four arrows: Speed up forward, Brake backward, Out away from the planet and In toward the planet. Beside it, cards with the key and the effect of each command." width="1000" height="500" loading="lazy">
+        <figcaption>Speeding up and braking act along the motion; out and in act along the line to the planet.</figcaption>
+      </figure>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Action</th><th scope="col">Keyboard</th><th scope="col">Button</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Speed up (prograde)</th><td><kbd>↑</kbd> or <kbd>W</kbd></td><td><em>Acelerar</em></td></tr>
+            <tr><th scope="row">Brake (retrograde)</th><td><kbd>↓</kbd> or <kbd>S</kbd></td><td><em>Frear</em></td></tr>
+            <tr><th scope="row">Out (radial)</th><td><kbd>→</kbd> or <kbd>D</kbd></td><td><em>Para fora</em></td></tr>
+            <tr><th scope="row">In (radial)</th><td><kbd>←</kbd> or <kbd>A</kbd></td><td><em>Para dentro</em></td></tr>
+            <tr><th scope="row">Pause and resume</th><td><kbd>Space</kbd></td><td><em>Pausar</em></td></tr>
+            <tr><th scope="row">Restart the mission</th><td><kbd>R</kbd></td><td><em>Reiniciar</em></td></tr>
+            <tr><th scope="row">Time speed</th><td><kbd>+</kbd> and <kbd>−</kbd></td><td>×½, ×1, ×2, ×4, ×8</td></tr>
+            <tr><th scope="row">Autopilot</th><td><kbd>P</kbd></td><td><em>Piloto automático</em></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Two keys at once combine their directions, such as braking and pushing out together. The radial commands do not change the object's angular momentum: they are mainly for correcting the periapsis while the object is still falling toward it, and they cost more fuel than braking or speeding up for the same effect.</p>
+      <p>Use ×½ for short, precise burns and ×4 or ×8 to wait for the object to reach the right point. Keys do not respond while a message window is open.</p>
+    </section>
+
+    <section id="strategy-en" aria-labelledby="h-strategy-en">
+      <h2 id="h-strategy-en">Strategy: capture and adjust</h2>
+      <p>The cheapest way to put the object in orbit almost always follows three steps.</p>
+      <figure>
+        <img src="rc_images/InsercaoManobras-en.svg" alt="Three panels: in the first, the object arrives on a hyperbola and brakes at periapsis, getting caught in an elongated ellipse; in the second, it brakes again at periapsis and the apoapsis drops to the target band; in the third, it speeds up at apoapsis and the periapsis rises to the band." width="1000" height="500" loading="lazy">
+        <figcaption>Brake low to get captured, then adjust each end by burning at the opposite end.</figcaption>
+      </figure>
+      <ol>
+        <li><strong>Capture.</strong> Wait for the object to approach the periapsis, marked <em>Pe</em> on the map, and brake. The hyperbola becomes an ellipse, and the apoapsis, marked <em>Ap</em>, appears on the map.</li>
+        <li><strong>Lower the apoapsis.</strong> Still near the periapsis, or on the next pass through it, keep braking until the apoapsis enters the target band.</li>
+        <li><strong>Fix the periapsis.</strong> Go to the apoapsis and speed up if the periapsis is below the band, or brake if it is above.</li>
+      </ol>
+      <p>Why brake at periapsis? That is where the object is fastest, and the same change in speed alters the orbit's energy more when the speed is high. This is the <strong>Oberth effect</strong>, and it is why real missions perform orbital insertion near the lowest point of the flyby. <sup><a href="#ref-8-en">[8]</a></sup></p>
+      <p>The golden rule holds for any closed orbit: <strong>a burn at one end changes the height of the opposite end</strong>. Braking at periapsis lowers the apoapsis; speeding up at apoapsis raises the periapsis. <sup><a href="#ref-9-en">[9]</a></sup> <sup><a href="#ref-15-en">[15]</a></sup></p>
+      <div class="recap">
+        <h3>Key points</h3>
+        <ul>
+          <li>Brake near Pe to get captured.</li>
+          <li>To change Ap, burn at Pe; to change Pe, burn at Ap.</li>
+          <li>Prefer short burns: watch the predicted trajectory change before going on.</li>
+          <li>Release the controls when Pe and Ap turn green on the panel.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="panel-en" aria-labelledby="h-panel-en">
+      <h2 id="h-panel-en">Reading the panel</h2>
+      <p>The telemetry shows the current orbit, computed from the object's position and velocity on every frame.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Field</th><th scope="col">What it shows</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Altitude (<em>Altitude</em>)</th><td>Current distance to the surface.</td></tr>
+            <tr><th scope="row">Speed (<em>Velocidade</em>)</th><td>Speed relative to the planet, in km/s.</td></tr>
+            <tr><th scope="row">Periapsis (<em>Periapse</em>)</th><td>Altitude of the lowest point. Green inside the band and red below the top of the atmosphere; it reads “below the surface” when the trajectory hits the ground.</td></tr>
+            <tr><th scope="row">Apoapsis (<em>Apoapse</em>)</th><td>Altitude of the highest point. Green inside the band, and “escape” in red when the trajectory is open.</td></tr>
+            <tr><th scope="row">Eccentricity (<em>Excentricidade</em>)</th><td>0 is a circle; 1 or more is escape.</td></tr>
+            <tr><th scope="row">Fuel (<em>Combustível</em>)</th><td>How much Δv is left, in m/s, with a bar.</td></tr>
+            <tr><th scope="row">Heat shield (<em>Escudo térmico</em>)</th><td>Only for objects with a shield: how much of it remains.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>The message box reads the situation and suggests the next step. The most common ones, translated from Portuguese:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Message</th><th scope="col">What to do</th></tr></thead>
+          <tbody>
+            <tr><td>“Escape trajectory. Brake near periapsis to be captured.”</td><td>Wait for the periapsis and brake (step 1).</td></tr>
+            <tr><td>“Apoapsis too high. Brake near periapsis to lower it.”</td><td>Step 2 of the strategy.</td></tr>
+            <tr><td>“Periapsis too low. Speed up near apoapsis to raise it.”</td><td>Step 3 of the strategy.</td></tr>
+            <tr><td>“The orbit crosses the surface” or “crosses the atmosphere”.</td><td>Danger: speed up at apoapsis or push out before getting there.</td></tr>
+            <tr><td>“Aerobraking in progress: the shield is heating up.”</td><td>Shield only: keep an eye on the shield bar.</td></tr>
+            <tr><td>“In the band. Shut down the engine to confirm.”</td><td>Release the controls.</td></tr>
+            <tr><td>“Out of fuel. Hope the orbit works.”</td><td>There is nothing more the engine can do.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="aerobraking-en" aria-labelledby="h-aerobraking-en">
+      <h2 id="h-aerobraking-en">Aerobraking</h2>
+      <p>Two objects have a heat shield: the crewed capsule and the cryosleep pod. For them, the atmosphere stops being a wall and becomes a free brake: each pass through the air takes away speed without burning fuel. Real missions to Venus and Mars have used this technique to save propellant. <sup><a href="#ref-10-en">[10]</a></sup></p>
+      <figure>
+        <img src="rc_images/InsercaoAerofrenagem-en.svg" alt="A planet with a thick atmosphere and several ever smaller ellipses, all with their periapsis inside the atmosphere; finally, a speed-up burn at apoapsis lifts the periapsis out of the air. Beside it, bars show the heat shield dropping from 100% to 70% and 45%." width="1000" height="500" loading="lazy">
+        <figcaption>Each pass through the air lowers the apoapsis and wears down a bit of the shield.</figcaption>
+      </figure>
+      <p>The game models the air with a density that grows exponentially as the object descends and is zero at the top of the atmosphere. The deeper and faster, the stronger the braking and the greater the wear on the shield. It can absorb about 1.4 times the Δv of the ideal insertion; if it reaches 0%, the mission ends.</p>
+      <p>The recipe: lower the periapsis into the atmosphere, a little below the top; let the passes lower the apoapsis to the target band; and then speed up at apoapsis to lift the periapsis out of the air. Without this last step, the object keeps losing height on every lap.</p>
+      <aside class="note"><p>Aerobraking only makes sense at Venus, Earth and Mars. Mercury and the Moon have no atmosphere, and at Jupiter and Saturn the target orbit is too far above it. Without a shield, any object that enters the atmosphere is lost.</p></aside>
+    </section>
+
+    <section id="objects-en" aria-labelledby="h-objects-en">
+      <h2 id="h-objects-en">Objects and planets</h2>
+      <p>Each object changes four numbers of the mission: <strong>thrust</strong>, how hard the engine accelerates; <strong>fuel</strong>, the factor over the ideal Δv; <strong>arrival</strong>, the speed at which it shows up; and the <strong>width of the target band</strong>. Some also have a special rule. The panel sums these numbers up in tags, such as “Empuxo baixo” (low thrust) or “Faixa estreita” (narrow band).</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Object</th><th scope="col">Thrust</th><th scope="col">Fuel</th><th scope="col">Arrival</th><th scope="col">Special trait</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Robotic probe (<em>Sonda robótica</em>)</th><td>medium</td><td>normal</td><td>normal</td><td>Balanced: the best one to learn with.</td></tr>
+            <tr><th scope="row">Crewed capsule (<em>Cápsula tripulada</em>)</th><td>medium</td><td>normal</td><td>normal</td><td>Heat shield.</td></tr>
+            <tr><th scope="row">Space telescope (<em>Telescópio espacial</em>)</th><td>medium</td><td>normal</td><td>normal</td><td>Narrow band (55% of normal).</td></tr>
+            <tr><th scope="row">Space station module (<em>Módulo de estação espacial</em>)</th><td>low</td><td>normal</td><td>slow</td><td>Heavy: start burns early.</td></tr>
+            <tr><th scope="row">Solar sail (<em>Vela solar</em>)</th><td>low</td><td>plentiful</td><td>slow</td><td>Tiny but almost endless thrust. <sup><a href="#ref-19-en">[19]</a></sup></td></tr>
+            <tr><th scope="row">Towed asteroid (<em>Asteroide rebocado</em>)</th><td>low</td><td>plentiful</td><td>normal</td><td>Wide band.</td></tr>
+            <tr><th scope="row">Comet nucleus (<em>Núcleo de cometa</em>)</th><td>medium</td><td>plentiful</td><td>normal</td><td>Wide band; random gas jets.</td></tr>
+            <tr><th scope="row">Small moon, Phobos-like (<em>Pequena lua</em>)</th><td>low</td><td>plentiful</td><td>slow</td><td>Wide band. <sup><a href="#ref-18-en">[18]</a></sup></td></tr>
+            <tr><th scope="row">Interstellar object, ʻOumuamua-like (<em>Objeto interestelar</em>)</th><td>high</td><td>normal</td><td>fast</td><td>Arrives 2.6 times faster. <sup><a href="#ref-17-en">[17]</a></sup></td></tr>
+            <tr><th scope="row">Generation ship (<em>Nave geracional</em>)</th><td>low</td><td>plentiful</td><td>slow</td><td>Wide band.</td></tr>
+            <tr><th scope="row">Warp freighter (<em>Cargueiro de dobra</em>)</th><td>extreme</td><td>normal</td><td>fast</td><td>Narrow band; use short taps at ×½.</td></tr>
+            <tr><th scope="row">Void leviathan (<em>Leviatã do vácuo</em>)</th><td>medium</td><td>scarce</td><td>normal</td><td>Regains energy with the engine off.</td></tr>
+            <tr><th scope="row">Cryosleep pod (<em>Cápsula de criossono</em>)</th><td>medium</td><td>scarce</td><td>normal</td><td>Heat shield; wide band.</td></tr>
+            <tr><th scope="row">Alien sphere (<em>Esfera alienígena</em>)</th><td>high</td><td>normal</td><td>fast</td><td>All controls reversed.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>The comet's jets switch on and off by themselves, in random directions, and push the trajectory off course without warning. With the engine off, the leviathan regains 35% of its total energy per lap of the target orbit. With the cryosleep pod, on planets with an atmosphere, aerobraking is mandatory.</p>
+      <h3>The planets</h3>
+      <p>Each planet uses its real radius and gravitational parameter (μ), so the same maneuver takes much more Δv at Jupiter than at the Moon. <sup><a href="#ref-14-en">[14]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Planet</th><th scope="col">Atmosphere up to</th><th scope="col">Target band</th><th scope="col">Arrival (v∞)</th><th scope="col">Note</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Mercury</th><td>no atmosphere</td><td>400 ± 60 km</td><td>4.0 km/s</td><td>You can skim it, just do not touch the ground.</td></tr>
+            <tr><th scope="row">Venus</th><td>200 km</td><td>500 ± 70 km</td><td>3.2 km/s</td><td>Dense, tall atmosphere.</td></tr>
+            <tr><th scope="row">Earth</th><td>100 km</td><td>400 ± 60 km</td><td>3.0 km/s</td><td>Close to the altitude of the International Space Station. <sup><a href="#ref-16-en">[16]</a></sup></td></tr>
+            <tr><th scope="row">Moon</th><td>no atmosphere</td><td>100 ± 20 km</td><td>0.8 km/s</td><td>Weak gravity: everything is slow and takes little Δv.</td></tr>
+            <tr><th scope="row">Mars</th><td>80 km</td><td>300 ± 50 km</td><td>2.6 km/s</td><td>Thin but dangerous atmosphere.</td></tr>
+            <tr><th scope="row">Jupiter</th><td>1,000 km</td><td>100,000 ± 12,000 km</td><td>6.0 km/s</td><td>Huge gravity: braking takes long.</td></tr>
+            <tr><th scope="row">Saturn</th><td>800 km</td><td>150,000 ± 15,000 km</td><td>5.0 km/s</td><td>The band lies beyond the main rings.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>The tolerance and arrival speed in the table are the probe's; they are multiplied by each object's factors.</p>
+    </section>
+
+    <section id="scoring-en" aria-labelledby="h-scoring-en">
+      <h2 id="h-scoring-en">Victory, defeat and scoring</h2>
+      <figure>
+        <img src="rc_images/InsercaoEstados-en.svg" alt="Mission flow: briefing, flight, orbit in the band with the engine off for 1.2 seconds, and victory. Four defeats branch off the flight: collision, atmospheric entry, escape into space and shield worn out. Below, the points formula and the star rules." width="1000" height="560" loading="lazy">
+        <figcaption>One way to win and four ways to lose.</figcaption>
+      </figure>
+      <p>The mission is won when the periapsis and the apoapsis are inside the band with the engine off for 1.2 seconds in a row. There are four ways to lose: hitting the surface; entering the atmosphere without a shield; passing the planet without braking enough and heading into space; and wearing out the whole heat shield.</p>
+      <pre class="formula">precision = 1 − (|Pe − target| + |Ap − target|) ÷ (2 × tolerance)
+fuel      = Δv left ÷ Δv available
+points    = 1000 × (0.5 × precision + 0.5 × min(1, fuel ÷ 0.35))</pre>
+      <p>Half the score comes from precision, where a circular orbit in the middle of the band is worth 1, and half from economy, where saving 35% of the Δv already earns full marks. There are three stars: one for finishing, one if at least 15% of the Δv is left and one if precision is above 50%.</p>
+      <p>The best result for each object and planet pair is saved in the browser and shown on the panel and on the planet buttons. Missions in which the autopilot was used, even for a moment, do not count as records. <sup><a href="#ref-20-en">[20]</a></sup></p>
+    </section>
+
+    <section id="autopilot-en" aria-labelledby="h-autopilot-en">
+      <h2 id="h-autopilot-en">The autopilot</h2>
+      <p>The autopilot, on its button or the <kbd>P</kbd> key, takes over and performs the insertion on its own, with the same logic as this tutorial. It is a good way to watch the strategy at work before trying it by hand.</p>
+      <figure>
+        <img src="rc_images/InsercaoPiloto-en.svg" alt="Six autopilot steps: correct the approach route, wait for the braking point, brake for capture, optional aerobraking, adjust at the ends and shut down the engines in the band. Beside them, cards on safety, taking back control and records." width="1000" height="590" loading="lazy">
+        <figcaption>The autopilot's steps.</figcaption>
+      </figure>
+      <p>While the object is still far away, the autopilot corrects the route with sideways burns until the predicted periapsis falls inside the band. Then it works out when to start braking, so that the burn is centered on periapsis, and brakes against the motion while holding the periapsis in place. Once the orbit is closed, it makes the fine adjustments at the ends: at periapsis it fixes the apoapsis, and at apoapsis it fixes the periapsis, always metering the thrust so as not to overshoot.</p>
+      <p>With a shielded object and too little fuel to brake with the engine alone, it chooses aerobraking: it aims the periapsis at 55% of the atmosphere's height, makes the passes and lifts the periapsis out of the air when the next pass would already bring the apoapsis into the band. If at any moment the periapsis becomes dangerous, raising it becomes the priority.</p>
+      <p>Any engine command hands control back to you. The autopilot works no miracles: if the fuel or the shield is not enough, the mission fails just the same.</p>
+    </section>
+
+    <section id="inside-en" aria-labelledby="h-inside-en">
+      <h2 id="h-inside-en">Inside the simulation</h2>
+      <p>For those who want to understand the code: the simulator is a JavaScript program that, on every frame, advances the physics, draws the map on a <code>canvas</code> and updates the panel. <sup><a href="#ref-21-en">[21]</a></sup></p>
+      <h3>Gravity and integration</h3>
+      <p>Besides the engine, there is only one force: the planet's gravity, <code>a = −μ·r / |r|³</code>, where μ is the standard gravitational parameter, the gravitational constant times the planet's mass. <sup><a href="#ref-14-en">[14]</a></sup> Position and velocity are advanced with the <strong>velocity Verlet</strong> method, which conserves energy well over long orbits. <sup><a href="#ref-13-en">[13]</a></sup> The step is adaptive: short near the planet, where everything happens fast, and shorter still inside the atmosphere.</p>
+      <pre class="formula">v ← v + ½·h·(gravity(x) + thrust)
+x ← x + h·v
+v ← v + ½·h·(gravity(x) + thrust)
+
+h ≤ 0.002 · r / v    (0.0005 inside the atmosphere)
+h ≤ T / 3000         (T = period of the target orbit)</pre>
+      <h3>From position to orbit</h3>
+      <p>To draw the predicted trajectory and fill in the panel, the game converts position and velocity into orbital elements. The <strong>eccentricity vector</strong> points to the periapsis and has the length of the eccentricity; the angular momentum <code>h</code> gives the conic's parameter <code>p</code>. <sup><a href="#ref-12-en">[12]</a></sup></p>
+      <pre class="formula">e    = ((v² − μ/r)·r − (r·v)·v) / μ
+p    = h² / μ
+Pe   = p / (1 + e)        Ap = p / (1 − e)   (only if e &lt; 1)
+r(θ) = p / (1 + e·cos θ)</pre>
+      <p>The last formula draws the predicted trajectory point by point, without simulating the future. The speed at each height follows the <strong>vis-viva</strong> equation, <code>v² = μ·(2/r − 1/a)</code>, which the game uses to work out the arrival and the ideal Δv. <sup><a href="#ref-11-en">[11]</a></sup></p>
+      <h3>Time and engine</h3>
+      <p>The time scale makes one lap of the target orbit last about 24 s at ×1, and the reference thrust delivers the whole ideal Δv in 8% of a lap, about 2 seconds; each object's thrust factor multiplies that value. This way the game keeps the same pace on every planet, even with very different gravities.</p>
+    </section>
+
+    <section id="tips-en" aria-labelledby="h-tips-en">
+      <h2 id="h-tips-en">Tips and common mistakes</h2>
+      <ul class="myths">
+        <li><h3>Start braking before periapsis</h3><p>Long burns should be centered on it, half before and half after. Low-thrust objects, such as the solar sail, need to start well ahead.</p></li>
+        <li><h3>Watch the line, not the object</h3><p>The predicted trajectory changes while you burn. Release the button when it looks the way you want.</p></li>
+        <li><h3>Red is a warning</h3><p>A red trajectory crosses the ground or the atmosphere. Fix it before reaching periapsis, by pushing out or speeding up at apoapsis.</p></li>
+        <li><h3>Make time work for you</h3><p>×4 or ×8 to wait, ×½ for fine adjustments, <kbd>Space</kbd> to pause and think.</p></li>
+        <li><h3>Do not chase the perfect circle</h3><p>Winning only requires Pe and Ap inside the band. Every m/s saved earns points.</p></li>
+        <li><h3>Learn from the autopilot</h3><p>Fly one mission on automatic, watch where it burns and try to beat its score by hand.</p></li>
+      </ul>
+    </section>
+
+    <section id="review-en" aria-labelledby="h-review-en">
+      <h2 id="h-review-en">Quick review</h2>
+      <p>Try to answer before opening each question.</p>
+      <div class="quiz">
+        <details><summary>1. Why brake at periapsis and not somewhere else?</summary><p>Because that is where the object is fastest, and the same Δv changes the orbit's energy more: it is the Oberth effect.</p></details>
+        <details><summary>2. The apoapsis is too high. Where should you burn, and in which direction?</summary><p>At periapsis, braking.</p></details>
+        <details><summary>3. What does it mean when the apoapsis reads “escape”?</summary><p>That the trajectory is open (e ≥ 1): without braking, the object will fly past the planet and into space.</p></details>
+        <details><summary>4. When is the mission considered won?</summary><p>When the periapsis and the apoapsis are inside the band and the engine stays off for 1.2 seconds.</p></details>
+        <details><summary>5. Which objects can aerobrake, and at which planets does it work?</summary><p>Those with a heat shield, the crewed capsule and the cryosleep pod, at Venus, Earth and Mars.</p></details>
+        <details><summary>6. 40% of the Δv is left and precision was 0.8. How many points and stars?</summary><p>1000 × (0.5 × 0.8 + 0.5 × 1) = 900 points and three stars.</p></details>
+        <details><summary>7. Why does an autopilot result not become a record?</summary><p>Because the record measures your own piloting; any use of the autopilot flags the mission.</p></details>
+        <details><summary>8. Which numerical method advances the game's physics?</summary><p>Velocity Verlet, with an adaptive time step.</p></details>
+      </div>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="references-en" aria-labelledby="h-references-en">
+      <h2 id="h-references-en">References</h2>
+      <ol class="refs">
+        <li id="ref-1-en"><strong>Giovani Perotto Mesquita</strong>, “Inserção orbital” (Orbital insertion), interactive simulator, <a href="Inser%C3%A7%C3%A3o%20orbital.html">giovanipm.github.io/Inserção orbital.html</a>.</li>
+        <li id="ref-2-en"><strong>NASA Science</strong>, “Basics of Space Flight”, accessed 1 October 2026, <a href="https://science.nasa.gov/learn/basics-of-space-flight/" rel="noopener">science.nasa.gov/learn/basics-of-space-flight</a>.</li>
+        <li id="ref-3-en"><strong>Wikipedia</strong>, “Orbit insertion”, accessed 1 October 2026, <a href="https://en.wikipedia.org/wiki/Orbit_insertion" rel="noopener">en.wikipedia.org/wiki/Orbit_insertion</a>.</li>
+        <li id="ref-4-en"><strong>Wikipedia</strong>, “Apsis”, accessed 1 October 2026, <a href="https://en.wikipedia.org/wiki/Apsis" rel="noopener">en.wikipedia.org/wiki/Apsis</a>.</li>
+        <li id="ref-5-en"><strong>Wikipedia</strong>, “Orbital eccentricity”, accessed 1 October 2026, <a href="https://en.wikipedia.org/wiki/Orbital_eccentricity" rel="noopener">en.wikipedia.org/wiki/Orbital_eccentricity</a>.</li>
+        <li id="ref-6-en"><strong>Wikipedia</strong>, “Hyperbolic trajectory”, accessed 1 October 2026, <a href="https://en.wikipedia.org/wiki/Hyperbolic_trajectory" rel="noopener">en.wikipedia.org/wiki/Hyperbolic_trajectory</a>.</li>
+        <li id="ref-7-en"><strong>Wikipedia</strong>, “Delta-v”, accessed 1 October 2026, <a href="https://en.wikipedia.org/wiki/Delta-v" rel="noopener">en.wikipedia.org/wiki/Delta-v</a>.</li>
+        <li id="ref-8-en"><strong>Wikipedia</strong>, “Oberth effect”, accessed 1 October 2026, <a href="https://en.wikipedia.org/wiki/Oberth_effect" rel="noopener">en.wikipedia.org/wiki/Oberth_effect</a>.</li>
+        <li id="ref-9-en"><strong>Wikipedia</strong>, “Hohmann transfer orbit”, accessed 1 October 2026, <a href="https://en.wikipedia.org/wiki/Hohmann_transfer_orbit" rel="noopener">en.wikipedia.org/wiki/Hohmann_transfer_orbit</a>.</li>
+        <li id="ref-10-en"><strong>Wikipedia</strong>, “Aerobraking”, accessed 1 October 2026, <a href="https://en.wikipedia.org/wiki/Aerobraking" rel="noopener">en.wikipedia.org/wiki/Aerobraking</a>.</li>
+        <li id="ref-11-en"><strong>Wikipedia</strong>, “Vis-viva equation”, accessed 1 October 2026, <a href="https://en.wikipedia.org/wiki/Vis-viva_equation" rel="noopener">en.wikipedia.org/wiki/Vis-viva_equation</a>.</li>
+        <li id="ref-12-en"><strong>Wikipedia</strong>, “Eccentricity vector”, accessed 1 October 2026, <a href="https://en.wikipedia.org/wiki/Eccentricity_vector" rel="noopener">en.wikipedia.org/wiki/Eccentricity_vector</a>.</li>
+        <li id="ref-13-en"><strong>Wikipedia</strong>, “Verlet integration”, accessed 1 October 2026, <a href="https://en.wikipedia.org/wiki/Verlet_integration" rel="noopener">en.wikipedia.org/wiki/Verlet_integration</a>.</li>
+        <li id="ref-14-en"><strong>Wikipedia</strong>, “Standard gravitational parameter”, accessed 1 October 2026, <a href="https://en.wikipedia.org/wiki/Standard_gravitational_parameter" rel="noopener">en.wikipedia.org/wiki/Standard_gravitational_parameter</a>.</li>
+        <li id="ref-15-en"><strong>Wikipedia</strong>, “Orbital maneuver”, accessed 1 October 2026, <a href="https://en.wikipedia.org/wiki/Orbital_maneuver" rel="noopener">en.wikipedia.org/wiki/Orbital_maneuver</a>.</li>
+        <li id="ref-16-en"><strong>Wikipedia</strong>, “International Space Station”, accessed 1 October 2026, <a href="https://en.wikipedia.org/wiki/International_Space_Station" rel="noopener">en.wikipedia.org/wiki/International_Space_Station</a>.</li>
+        <li id="ref-17-en"><strong>Wikipedia</strong>, “ʻOumuamua”, accessed 1 October 2026, <a href="https://en.wikipedia.org/wiki/%CA%BBOumuamua" rel="noopener">en.wikipedia.org/wiki/ʻOumuamua</a>.</li>
+        <li id="ref-18-en"><strong>Wikipedia</strong>, “Phobos (moon)”, accessed 1 October 2026, <a href="https://en.wikipedia.org/wiki/Phobos_(moon)" rel="noopener">en.wikipedia.org/wiki/Phobos_(moon)</a>.</li>
+        <li id="ref-19-en"><strong>Wikipedia</strong>, “Solar sail”, accessed 1 October 2026, <a href="https://en.wikipedia.org/wiki/Solar_sail" rel="noopener">en.wikipedia.org/wiki/Solar_sail</a>.</li>
+        <li id="ref-20-en"><strong>MDN Web Docs</strong>, “Window: localStorage property”, accessed 1 October 2026, <a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage" rel="noopener">developer.mozilla.org/en-US/docs/Web/API/Window/localStorage</a>.</li>
+        <li id="ref-21-en"><strong>MDN Web Docs</strong>, “Canvas API”, accessed 1 October 2026, <a href="https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API" rel="noopener">developer.mozilla.org/en-US/docs/Web/API/Canvas_API</a>.</li>
+      </ol>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== IT ===================== -->
+<div id="it" role="tabpanel" aria-labelledby="tab-it" lang="it" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Progetti</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Inserimento orbitale: come funziona il simulatore</h1>
+      <p class="dek">Una guida alla pagina Inserimento orbitale: lo schermo, i comandi, la strategia per catturare l'oggetto con poco carburante, l'aerofrenata, il punteggio, il pilota automatico e la fisica che sta dietro a tutto.</p>
+      <div class="byline">
+        <span>Di <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Pubblicato il <time datetime="2026-10-01">01/10/2026</time></span>
+        <span class="credit">Rivisto e impaginato con Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-it">
+    <h2 id="toc-it">Indice</h2>
+    <ol>
+      <li><a href="#intro-it">Che cos'è il simulatore</a></li>
+      <li><a href="#schermo-it">Lo schermo in tre aree</a></li>
+      <li><a href="#concetti-it">Concetti di orbita</a></li>
+      <li><a href="#missione-it">Come inizia una missione</a></li>
+      <li><a href="#comandi-it">I comandi</a></li>
+      <li><a href="#strategia-it">Strategia: catturare e regolare</a></li>
+      <li><a href="#pannello-it">Leggere il pannello</a></li>
+      <li><a href="#aerofrenata-it">Aerofrenata</a></li>
+      <li><a href="#oggetti-it">Oggetti e pianeti</a></li>
+      <li><a href="#punteggio-it">Vittoria, sconfitta e punteggio</a></li>
+      <li><a href="#pilota-it">Il pilota automatico</a></li>
+      <li><a href="#dentro-it">La simulazione dall'interno</a></li>
+      <li><a href="#consigli-it">Consigli ed errori comuni</a></li>
+      <li><a href="#ripasso-it">Ripasso veloce</a></li>
+      <li><a href="#riferimenti-it">Riferimenti</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="intro-it" aria-labelledby="h-intro-it">
+      <h2 id="h-intro-it">Che cos'è il simulatore</h2>
+      <p>L'<strong>inserimento orbitale</strong> è la manovra che trasforma un rapido passaggio vicino a un pianeta in un'orbita stabile attorno a esso. Il veicolo arriva troppo veloce per restare e deve frenare nel momento e nel punto giusti; se frena poco, tira dritto, e se frena male, precipita. <sup><a href="#ref-3-it">[3]</a></sup> <sup><a href="#ref-2-it">[2]</a></sup></p>
+      <p>La pagina <strong>Inserimento orbitale</strong> è un piccolo gioco di fisica che gira nel browser. Scegli un oggetto, da una sonda reale a una creatura di fantascienza, e un pianeta del Sistema Solare, e devi lasciare l'oggetto in un'orbita dentro una fascia di altitudine consumando il minimo di carburante. La traiettoria è calcolata davvero, con la gravità del pianeta, e la mappa mostra in ogni istante dove sta andando l'oggetto. <sup><a href="#ref-1-it">[1]</a></sup></p>
+      <p><a class="launch" href="Inser%C3%A7%C3%A3o%20orbital.html">Apri il simulatore <span aria-hidden="true">→</span></a></p>
+      <h3>Che cosa imparerai</h3>
+      <ul>
+        <li>A leggere lo schermo, la telemetria e i messaggi di aiuto.</li>
+        <li>Che cosa significano periasse, apoasse, eccentricità e Δv.</li>
+        <li>I quattro comandi del motore e la strategia delle tre accensioni.</li>
+        <li>Come usare l'atmosfera come freno, con l'aerofrenata.</li>
+        <li>Le differenze tra i 14 oggetti e i 7 pianeti.</li>
+        <li>Come si calcola il punteggio e che cosa fa il pilota automatico.</li>
+        <li>Come la fisica è simulata nel codice.</li>
+      </ul>
+      <aside class="note"><p>L'interfaccia del simulatore è in portoghese. In questo tutorial, l'etichetta portoghese di ogni pulsante compare tra parentesi, come Frena (<em>Frear</em>). Non serve installare nulla: il simulatore è un unico file HTML, disegnato su un <code>canvas</code>, e funziona su computer e cellulare. I record restano salvati nel browser stesso. <sup><a href="#ref-21-it">[21]</a></sup> <sup><a href="#ref-20-it">[20]</a></sup></p></aside>
+    </section>
+
+    <section id="schermo-it" aria-labelledby="h-schermo-it">
+      <h2 id="h-schermo-it">Lo schermo in tre aree</h2>
+      <figure>
+        <img src="rc_images/InsercaoTela-it.svg" alt="Schema dello schermo del simulatore con sette parti numerate: l'elenco degli oggetti e i pulsanti dei pianeti in alto; la mappa con il pianeta, la fascia obiettivo verde e la traiettoria prevista arancione a sinistra; i pulsanti del motore e del tempo sotto la mappa; e, a destra, il pannello con telemetria, carburante e messaggi." width="1000" height="680" loading="lazy">
+        <figcaption>Lo schermo del simulatore: scelta della missione in alto, mappa a sinistra, pannello di bordo a destra.</figcaption>
+      </figure>
+      <p>In alto ci sono le scelte della missione: l'elenco <strong>Oggetto</strong> (<em>Objeto</em>), diviso in veicoli reali, corpi celesti e fantascienza, e un pulsante per ogni pianeta. Dopo una vittoria, il pulsante del pianeta mostra le stelle del tuo miglior risultato con l'oggetto scelto.</p>
+      <p>A sinistra c'è la <strong>mappa</strong>, sempre centrata sul pianeta. Il cerchio verde tratteggiato e la fascia chiara attorno formano la <strong>fascia obiettivo</strong>; l'anello attaccato al pianeta è l'atmosfera. La linea arancione è la <strong>traiettoria prevista</strong>, il percorso che l'oggetto seguirà se il motore resta spento. Diventa rossa quando attraversa la superficie o, per gli oggetti senza scudo, l'atmosfera. La linea grigia è la scia del percorso già fatto, il righello nell'angolo dà la scala, e lo zoom si regola da solo man mano che l'oggetto si avvicina.</p>
+      <p>Sotto la mappa ci sono i quattro pulsanti del motore, la velocità del tempo, il pilota automatico, la pausa e il riavvio. A destra, il <strong>pannello</strong> mostra l'oggetto e le sue caratteristiche, la missione, la telemetria, il carburante rimasto, lo scudo termico quando c'è, e un riquadro di messaggi che dice cosa fare dopo.</p>
+    </section>
+
+    <section id="concetti-it" aria-labelledby="h-concetti-it">
+      <h2 id="h-concetti-it">Concetti di orbita</h2>
+      <p>A motore spento, un oggetto vicino a un pianeta segue una <strong>conica</strong> con il centro del pianeta in uno dei fuochi: un cerchio, un'ellisse, una parabola o un'iperbole. Quale delle quattro dipende dalla velocità e dall'altezza dell'oggetto. <sup><a href="#ref-5-it">[5]</a></sup> <sup><a href="#ref-6-it">[6]</a></sup></p>
+      <figure>
+        <img src="rc_images/InsercaoOrbita-it.svg" alt="A sinistra, un pianeta con atmosfera, la fascia obiettivo verde e un'orbita ellittica arancione con il periasse, il punto più basso, e l'apoasse, il punto più alto. A destra, le quattro forme di traiettoria secondo l'eccentricità: cerchio, ellisse, parabola e iperbole." width="1000" height="520" loading="lazy">
+        <figcaption>Il vocabolario del pannello: periasse, apoasse, fascia obiettivo, atmosfera ed eccentricità.</figcaption>
+      </figure>
+      <dl class="glossary">
+        <dt>Altitudine</dt><dd>Distanza dalla superficie del pianeta, non dal centro.</dd>
+        <dt>Periasse (Pe)</dt><dd>Il punto più basso della traiettoria (<em>Periapse</em>). <sup><a href="#ref-4-it">[4]</a></sup></dd>
+        <dt>Apoasse (Ap)</dt><dd>Il punto più alto (<em>Apoapse</em>). In una traiettoria di fuga non esiste, e il pannello mostra “escape”.</dd>
+        <dt>Eccentricità (e)</dt><dd>Quanto l'orbita si discosta da un cerchio: 0 è un cerchio, tra 0 e 1 un'ellisse, e da 1 in su la traiettoria è aperta e l'oggetto se ne va. <sup><a href="#ref-5-it">[5]</a></sup></dd>
+        <dt>Traiettoria di fuga</dt><dd>L'iperbole: l'oggetto passa vicino al pianeta una volta e prosegue nello spazio. Ogni missione inizia così. <sup><a href="#ref-6-it">[6]</a></sup></dd>
+        <dt>Δv (delta-v)</dt><dd>La variazione di velocità che il motore può ancora produrre. Nel gioco è il carburante, misurato in m/s. <sup><a href="#ref-7-it">[7]</a></sup></dd>
+        <dt>Fascia obiettivo</dt><dd>L'intervallo di altitudine in cui periasse e apoasse devono restare (<em>faixa-alvo</em>).</dd>
+      </dl>
+      <p>La missione è vinta quando periasse e apoasse sono dentro la fascia nello stesso momento. Non serve un cerchio perfetto: anche un'ellisse poco allungata, tutta dentro la fascia, va bene.</p>
+    </section>
+
+    <section id="missione-it" aria-labelledby="h-missione-it">
+      <h2 id="h-missione-it">Come inizia una missione</h2>
+      <p>Ogni missione inizia con un <strong>briefing</strong>. L'oggetto arriva al pianeta su una traiettoria di fuga, a circa cinque volte il raggio dell'orbita obiettivo, già in caduta verso di esso. La finestra indica la fascia obiettivo e quanto Δv hai. <em>Começar</em> (Inizia) ti dà il controllo; <em>Usar piloto automático</em> (Usa il pilota automatico) lascia volare il computer.</p>
+      <p>L'arrivo cambia a ogni tentativo: la direzione è casuale, e il periasse previsto sta tra la metà e 1,7 volte l'altitudine obiettivo, mai sotto l'atmosfera. La velocità di arrivo “all'infinito” (v∞), quella che l'oggetto avrebbe lontano dal pianeta, dipende dal pianeta e dall'oggetto: un oggetto interstellare arriva 2,6 volte più veloce di una sonda. <sup><a href="#ref-6-it">[6]</a></sup></p>
+      <h3>Quanto carburante ricevi</h3>
+      <p>Il gioco calcola il costo di un inserimento ideale in due accensioni: una al periasse di arrivo, che trasforma l'iperbole in un'ellisse che tocca l'orbita obiettivo, e un'altra all'estremo opposto, che arrotonda l'orbita. È la stessa idea del trasferimento di Hohmann. <sup><a href="#ref-9-it">[9]</a></sup> Il budget è quel costo moltiplicato per il fattore di carburante dell'oggetto, più un piccolo margine:</p>
+      <pre class="formula">Δv disponibile = Δv ideale × fattore di carburante + 0,03 × velocità circolare nell'orbita obiettivo</pre>
+      <p>Con un fattore di 1,3, la sonda ha un margine del 30% sull'ideale. Gli oggetti con fattore inferiore a 1, come la capsula di crioibernazione, non hanno carburante per fare tutto col motore e hanno bisogno dell'atmosfera. Quando l'oggetto ha lo scudo ma l'aerofrenata non serve sul pianeta scelto, perché non c'è atmosfera o perché l'orbita obiettivo è troppo lontana da essa, il gioco garantisce un fattore minimo di 1,1.</p>
+      <aside class="note"><p>Anche il tempo è adattato a ogni pianeta: alla velocità ×1, un giro dell'orbita obiettivo dura circa 24 secondi reali, sia sulla Luna sia su Giove.</p></aside>
+    </section>
+
+    <section id="comandi-it" aria-labelledby="h-comandi-it">
+      <h2 id="h-comandi-it">I comandi</h2>
+      <p>Il motore funziona solo finché il pulsante o il tasto resta premuto. Le direzioni non sono quelle dello schermo: si misurano rispetto al moto e al pianeta, come sul pannello di un veicolo vero. <sup><a href="#ref-15-it">[15]</a></sup></p>
+      <figure>
+        <img src="rc_images/InsercaoComandos-it.svg" alt="Un oggetto in cima all'orbita, in moto verso destra, con quattro frecce: Accelera in avanti, Frena all'indietro, Fuori lontano dal pianeta e Dentro verso il pianeta. Accanto, schede con il tasto e l'effetto di ogni comando." width="1000" height="500" loading="lazy">
+        <figcaption>Accelerare e frenare agiscono lungo il moto; fuori e dentro lungo la linea verso il pianeta.</figcaption>
+      </figure>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Azione</th><th scope="col">Tastiera</th><th scope="col">Pulsante</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Accelera (progrado)</th><td><kbd>↑</kbd> o <kbd>W</kbd></td><td><em>Acelerar</em></td></tr>
+            <tr><th scope="row">Frena (retrogrado)</th><td><kbd>↓</kbd> o <kbd>S</kbd></td><td><em>Frear</em></td></tr>
+            <tr><th scope="row">Fuori (radiale)</th><td><kbd>→</kbd> o <kbd>D</kbd></td><td><em>Para fora</em></td></tr>
+            <tr><th scope="row">Dentro (radiale)</th><td><kbd>←</kbd> o <kbd>A</kbd></td><td><em>Para dentro</em></td></tr>
+            <tr><th scope="row">Pausa e ripresa</th><td><kbd>Spazio</kbd></td><td><em>Pausar</em></td></tr>
+            <tr><th scope="row">Riavvia la missione</th><td><kbd>R</kbd></td><td><em>Reiniciar</em></td></tr>
+            <tr><th scope="row">Velocità del tempo</th><td><kbd>+</kbd> e <kbd>−</kbd></td><td>×½, ×1, ×2, ×4, ×8</td></tr>
+            <tr><th scope="row">Pilota automatico</th><td><kbd>P</kbd></td><td><em>Piloto automático</em></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Due tasti insieme combinano le direzioni, come frenare e spingere fuori contemporaneamente. I comandi radiali non cambiano il momento angolare dell'oggetto: servono soprattutto a correggere il periasse mentre l'oggetto sta ancora cadendo verso di esso, e consumano più carburante di frenare o accelerare per lo stesso effetto.</p>
+      <p>Usa ×½ per accensioni brevi e precise e ×4 o ×8 per aspettare che l'oggetto arrivi al punto giusto. I tasti non rispondono finché è aperta una finestra di messaggio.</p>
+    </section>
+
+    <section id="strategia-it" aria-labelledby="h-strategia-it">
+      <h2 id="h-strategia-it">Strategia: catturare e regolare</h2>
+      <p>Il modo più economico di mettere l'oggetto in orbita segue quasi sempre tre passi.</p>
+      <figure>
+        <img src="rc_images/InsercaoManobras-it.svg" alt="Tre pannelli: nel primo, l'oggetto arriva su un'iperbole e frena al periasse, restando preso in un'ellisse allungata; nel secondo, frena di nuovo al periasse e l'apoasse scende fino alla fascia obiettivo; nel terzo, accelera all'apoasse e il periasse sale fino alla fascia." width="1000" height="500" loading="lazy">
+        <figcaption>Frenare in basso per farsi catturare, poi regolare ogni estremo accendendo all'estremo opposto.</figcaption>
+      </figure>
+      <ol>
+        <li><strong>Catturare.</strong> Aspetta che l'oggetto si avvicini al periasse, segnato <em>Pe</em> sulla mappa, e frena. L'iperbole diventa un'ellisse, e l'apoasse, segnato <em>Ap</em>, compare sulla mappa.</li>
+        <li><strong>Abbassare l'apoasse.</strong> Ancora vicino al periasse, o al passaggio successivo, continua a frenare finché l'apoasse entra nella fascia obiettivo.</li>
+        <li><strong>Correggere il periasse.</strong> Vai all'apoasse e accelera se il periasse è sotto la fascia, oppure frena se è sopra.</li>
+      </ol>
+      <p>Perché frenare al periasse? È lì che l'oggetto è più veloce, e la stessa variazione di velocità cambia di più l'energia dell'orbita quando la velocità è alta. È l'<strong>effetto Oberth</strong>, ed è per questo che le missioni reali eseguono l'inserimento orbitale vicino al punto più basso del passaggio. <sup><a href="#ref-8-it">[8]</a></sup></p>
+      <p>La regola d'oro vale per qualsiasi orbita chiusa: <strong>un'accensione a un estremo cambia l'altezza dell'estremo opposto</strong>. Frenare al periasse abbassa l'apoasse; accelerare all'apoasse alza il periasse. <sup><a href="#ref-9-it">[9]</a></sup> <sup><a href="#ref-15-it">[15]</a></sup></p>
+      <div class="recap">
+        <h3>Da ricordare</h3>
+        <ul>
+          <li>Frena vicino a Pe per farti catturare.</li>
+          <li>Per cambiare Ap, accendi in Pe; per cambiare Pe, accendi in Ap.</li>
+          <li>Preferisci accensioni brevi: guarda la traiettoria prevista cambiare prima di continuare.</li>
+          <li>Rilascia i comandi quando Pe e Ap diventano verdi nel pannello.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="pannello-it" aria-labelledby="h-pannello-it">
+      <h2 id="h-pannello-it">Leggere il pannello</h2>
+      <p>La telemetria mostra l'orbita attuale, calcolata dalla posizione e dalla velocità dell'oggetto a ogni fotogramma.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Campo</th><th scope="col">Che cosa mostra</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Altitudine (<em>Altitude</em>)</th><td>Distanza attuale dalla superficie.</td></tr>
+            <tr><th scope="row">Velocità (<em>Velocidade</em>)</th><td>Velocità rispetto al pianeta, in km/s.</td></tr>
+            <tr><th scope="row">Periasse (<em>Periapse</em>)</th><td>Altitudine del punto più basso. Verde dentro la fascia e rossa sotto la cima dell'atmosfera; indica “abaixo da superfície” (sotto la superficie) quando la traiettoria colpisce il suolo.</td></tr>
+            <tr><th scope="row">Apoasse (<em>Apoapse</em>)</th><td>Altitudine del punto più alto. Verde dentro la fascia, e “escape” (fuga) in rosso quando la traiettoria è aperta.</td></tr>
+            <tr><th scope="row">Eccentricità (<em>Excentricidade</em>)</th><td>0 è un cerchio; 1 o più è fuga.</td></tr>
+            <tr><th scope="row">Carburante (<em>Combustível</em>)</th><td>Quanto Δv resta, in m/s, con una barra.</td></tr>
+            <tr><th scope="row">Scudo termico (<em>Escudo térmico</em>)</th><td>Solo per oggetti con scudo: quanto ne rimane.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Il riquadro dei messaggi legge la situazione e suggerisce il passo successivo. I più comuni, tradotti dal portoghese:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Messaggio</th><th scope="col">Che cosa fare</th></tr></thead>
+          <tbody>
+            <tr><td>“Traiettoria di fuga. Frena vicino al periasse per essere catturato.”</td><td>Aspetta il periasse e frena (passo 1).</td></tr>
+            <tr><td>“Apoasse troppo alto. Frena vicino al periasse per abbassarlo.”</td><td>Passo 2 della strategia.</td></tr>
+            <tr><td>“Periasse troppo basso. Accelera vicino all'apoasse per alzarlo.”</td><td>Passo 3 della strategia.</td></tr>
+            <tr><td>“L'orbita attraversa la superficie” o “attraversa l'atmosfera”.</td><td>Pericolo: accelera all'apoasse o spingi fuori prima di arrivarci.</td></tr>
+            <tr><td>“Aerofrenata in corso: lo scudo si sta scaldando.”</td><td>Solo con scudo: tieni d'occhio la barra dello scudo.</td></tr>
+            <tr><td>“Nella fascia. Spegni il motore per confermare.”</td><td>Rilascia i comandi.</td></tr>
+            <tr><td>“Senza carburante. Speriamo che l'orbita vada bene.”</td><td>Il motore non può fare più nulla.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="aerofrenata-it" aria-labelledby="h-aerofrenata-it">
+      <h2 id="h-aerofrenata-it">Aerofrenata</h2>
+      <p>Due oggetti hanno lo scudo termico: la capsula con equipaggio e la capsula di crioibernazione. Per loro l'atmosfera smette di essere un muro e diventa un freno gratuito: ogni passaggio nell'aria toglie velocità senza consumare carburante. Missioni reali verso Venere e Marte hanno usato questa tecnica per risparmiare propellente. <sup><a href="#ref-10-it">[10]</a></sup></p>
+      <figure>
+        <img src="rc_images/InsercaoAerofrenagem-it.svg" alt="Un pianeta con un'atmosfera spessa e diverse ellissi sempre più piccole, tutte con il periasse dentro l'atmosfera; infine, un'accelerazione all'apoasse porta il periasse fuori dall'aria. Accanto, barre mostrano lo scudo termico che scende dal 100% al 70% e al 45%." width="1000" height="500" loading="lazy">
+        <figcaption>Ogni passaggio nell'aria abbassa l'apoasse e consuma un po' di scudo.</figcaption>
+      </figure>
+      <p>Il gioco modella l'aria con una densità che cresce in modo esponenziale man mano che l'oggetto scende e vale zero in cima all'atmosfera. Più in basso e più veloce, più forte la frenata e maggiore l'usura dello scudo. Lo scudo regge circa 1,4 volte il Δv dell'inserimento ideale; se arriva allo 0%, la missione finisce.</p>
+      <p>La ricetta: porta il periasse dentro l'atmosfera, poco sotto la cima; lascia che i passaggi abbassino l'apoasse fino alla fascia obiettivo; poi accelera all'apoasse per portare il periasse fuori dall'aria. Senza quest'ultimo passo, l'oggetto continua a perdere quota a ogni giro.</p>
+      <aside class="note"><p>L'aerofrenata ha senso solo su Venere, Terra e Marte. Mercurio e la Luna non hanno atmosfera, e su Giove e Saturno l'orbita obiettivo è troppo lontana da essa. Senza scudo, qualsiasi oggetto che entra nell'atmosfera è perduto.</p></aside>
+    </section>
+
+    <section id="oggetti-it" aria-labelledby="h-oggetti-it">
+      <h2 id="h-oggetti-it">Oggetti e pianeti</h2>
+      <p>Ogni oggetto cambia quattro numeri della missione: la <strong>spinta</strong>, quanto accelera il motore; il <strong>carburante</strong>, il fattore sul Δv ideale; l'<strong>arrivo</strong>, la velocità con cui compare; e la <strong>larghezza della fascia obiettivo</strong>. Alcuni hanno anche una regola speciale. Il pannello riassume questi numeri in etichette, come “Empuxo baixo” (spinta bassa) o “Faixa estreita” (fascia stretta).</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Oggetto</th><th scope="col">Spinta</th><th scope="col">Carburante</th><th scope="col">Arrivo</th><th scope="col">Particolarità</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Sonda robotica (<em>Sonda robótica</em>)</th><td>media</td><td>normale</td><td>normale</td><td>Equilibrata: la migliore per imparare.</td></tr>
+            <tr><th scope="row">Capsula con equipaggio (<em>Cápsula tripulada</em>)</th><td>media</td><td>normale</td><td>normale</td><td>Scudo termico.</td></tr>
+            <tr><th scope="row">Telescopio spaziale (<em>Telescópio espacial</em>)</th><td>media</td><td>normale</td><td>normale</td><td>Fascia stretta (55% della normale).</td></tr>
+            <tr><th scope="row">Modulo di stazione spaziale (<em>Módulo de estação espacial</em>)</th><td>bassa</td><td>normale</td><td>lento</td><td>Pesante: inizia presto le accensioni.</td></tr>
+            <tr><th scope="row">Vela solare (<em>Vela solar</em>)</th><td>bassa</td><td>abbondante</td><td>lento</td><td>Spinta minuscola ma quasi inesauribile. <sup><a href="#ref-19-it">[19]</a></sup></td></tr>
+            <tr><th scope="row">Asteroide rimorchiato (<em>Asteroide rebocado</em>)</th><td>bassa</td><td>abbondante</td><td>normale</td><td>Fascia larga.</td></tr>
+            <tr><th scope="row">Nucleo di cometa (<em>Núcleo de cometa</em>)</th><td>media</td><td>abbondante</td><td>normale</td><td>Fascia larga; getti di gas casuali.</td></tr>
+            <tr><th scope="row">Piccola luna, tipo Phobos (<em>Pequena lua</em>)</th><td>bassa</td><td>abbondante</td><td>lento</td><td>Fascia larga. <sup><a href="#ref-18-it">[18]</a></sup></td></tr>
+            <tr><th scope="row">Oggetto interstellare, tipo ʻOumuamua (<em>Objeto interestelar</em>)</th><td>alta</td><td>normale</td><td>veloce</td><td>Arriva 2,6 volte più veloce. <sup><a href="#ref-17-it">[17]</a></sup></td></tr>
+            <tr><th scope="row">Nave generazionale (<em>Nave geracional</em>)</th><td>bassa</td><td>abbondante</td><td>lento</td><td>Fascia larga.</td></tr>
+            <tr><th scope="row">Cargo a curvatura (<em>Cargueiro de dobra</em>)</th><td>estrema</td><td>normale</td><td>veloce</td><td>Fascia stretta; usa tocchi brevi a ×½.</td></tr>
+            <tr><th scope="row">Leviatano del vuoto (<em>Leviatã do vácuo</em>)</th><td>media</td><td>scarso</td><td>normale</td><td>Recupera energia a motore spento.</td></tr>
+            <tr><th scope="row">Capsula di crioibernazione (<em>Cápsula de criossono</em>)</th><td>media</td><td>scarso</td><td>normale</td><td>Scudo termico; fascia larga.</td></tr>
+            <tr><th scope="row">Sfera aliena (<em>Esfera alienígena</em>)</th><td>alta</td><td>normale</td><td>veloce</td><td>Tutti i comandi invertiti.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>I getti della cometa si accendono e si spengono da soli, in direzioni casuali, e deviano la traiettoria senza preavviso. A motore spento, il leviatano recupera il 35% dell'energia totale a ogni giro dell'orbita obiettivo. Con la capsula di crioibernazione, sui pianeti con atmosfera, l'aerofrenata è obbligatoria.</p>
+      <h3>I pianeti</h3>
+      <p>Ogni pianeta usa il raggio e il parametro gravitazionale (μ) reali, quindi la stessa manovra richiede molto più Δv su Giove che sulla Luna. <sup><a href="#ref-14-it">[14]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Pianeta</th><th scope="col">Atmosfera fino a</th><th scope="col">Fascia obiettivo</th><th scope="col">Arrivo (v∞)</th><th scope="col">Nota</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Mercurio</th><td>senza atmosfera</td><td>400 ± 60 km</td><td>4,0 km/s</td><td>Puoi passare radente, basta non toccare il suolo.</td></tr>
+            <tr><th scope="row">Venere</th><td>200 km</td><td>500 ± 70 km</td><td>3,2 km/s</td><td>Atmosfera densa e alta.</td></tr>
+            <tr><th scope="row">Terra</th><td>100 km</td><td>400 ± 60 km</td><td>3,0 km/s</td><td>Vicino all'altitudine della Stazione Spaziale Internazionale. <sup><a href="#ref-16-it">[16]</a></sup></td></tr>
+            <tr><th scope="row">Luna</th><td>senza atmosfera</td><td>100 ± 20 km</td><td>0,8 km/s</td><td>Gravità debole: tutto è lento e serve poco Δv.</td></tr>
+            <tr><th scope="row">Marte</th><td>80 km</td><td>300 ± 50 km</td><td>2,6 km/s</td><td>Atmosfera sottile ma pericolosa.</td></tr>
+            <tr><th scope="row">Giove</th><td>1.000 km</td><td>100.000 ± 12.000 km</td><td>6,0 km/s</td><td>Gravità enorme: la frenata è lunga.</td></tr>
+            <tr><th scope="row">Saturno</th><td>800 km</td><td>150.000 ± 15.000 km</td><td>5,0 km/s</td><td>La fascia è oltre gli anelli principali.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>La tolleranza e la velocità di arrivo della tabella sono quelle della sonda; vengono moltiplicate per i fattori di ogni oggetto.</p>
+    </section>
+
+    <section id="punteggio-it" aria-labelledby="h-punteggio-it">
+      <h2 id="h-punteggio-it">Vittoria, sconfitta e punteggio</h2>
+      <figure>
+        <img src="rc_images/InsercaoEstados-it.svg" alt="Flusso della missione: briefing, volo, orbita nella fascia con il motore spento per 1,2 secondi e vittoria. Dal volo partono quattro sconfitte: collisione, ingresso in atmosfera, fuga nello spazio e scudo esaurito. Sotto, la formula dei punti e le regole delle stelle." width="1000" height="560" loading="lazy">
+        <figcaption>Un modo per vincere e quattro per perdere.</figcaption>
+      </figure>
+      <p>La missione è vinta quando periasse e apoasse sono dentro la fascia con il motore spento per 1,2 secondi di fila. Ci sono quattro modi di perdere: colpire la superficie; entrare nell'atmosfera senza scudo; passare vicino al pianeta senza frenare abbastanza e proseguire nello spazio; ed esaurire tutto lo scudo termico.</p>
+      <pre class="formula">precisione = 1 − (|Pe − obiettivo| + |Ap − obiettivo|) ÷ (2 × tolleranza)
+carburante = Δv rimasto ÷ Δv disponibile
+punti      = 1000 × (0,5 × precisione + 0,5 × min(1; carburante ÷ 0,35))</pre>
+      <p>Metà del voto viene dalla precisione, dove un'orbita circolare al centro della fascia vale 1, e metà dal risparmio, dove conservare il 35% del Δv dà già il massimo. Le stelle sono tre: una per aver concluso, una se avanza almeno il 15% del Δv e una se la precisione supera il 50%.</p>
+      <p>Il miglior risultato di ogni coppia oggetto e pianeta resta salvato nel browser e compare nel pannello e sui pulsanti dei pianeti. Le missioni in cui è stato usato il pilota automatico, anche solo per un attimo, non valgono come record. <sup><a href="#ref-20-it">[20]</a></sup></p>
+    </section>
+
+    <section id="pilota-it" aria-labelledby="h-pilota-it">
+      <h2 id="h-pilota-it">Il pilota automatico</h2>
+      <p>Il pilota automatico, con il suo pulsante o il tasto <kbd>P</kbd>, prende il controllo e fa l'inserimento da solo, con la stessa logica di questo tutorial. È un buon modo per vedere la strategia all'opera prima di provare a mano.</p>
+      <figure>
+        <img src="rc_images/InsercaoPiloto-it.svg" alt="Sei fasi del pilota automatico: correggere la rotta di avvicinamento, attendere il punto di frenata, frenare per la cattura, aerofrenata opzionale, regolare agli estremi e spegnere i motori nella fascia. Accanto, schede su sicurezza, ripresa del controllo e record." width="1000" height="590" loading="lazy">
+        <figcaption>Le fasi del pilota automatico.</figcaption>
+      </figure>
+      <p>Finché l'oggetto è ancora lontano, il pilota corregge la rotta con accensioni laterali finché il periasse previsto cade nella fascia. Poi calcola quando iniziare a frenare, in modo che l'accensione sia centrata sul periasse, e frena contro il moto tenendo fermo il periasse. Con l'orbita chiusa, fa le regolazioni fini agli estremi: al periasse corregge l'apoasse e all'apoasse corregge il periasse, dosando sempre la spinta per non andare oltre.</p>
+      <p>Con un oggetto dotato di scudo e troppo poco carburante per frenare solo col motore, sceglie l'aerofrenata: punta il periasse al 55% dell'altezza dell'atmosfera, esegue i passaggi e porta il periasse fuori dall'aria quando il passaggio successivo porterebbe già l'apoasse nella fascia. Se in qualsiasi momento il periasse diventa pericoloso, alzarlo diventa la priorità.</p>
+      <p>Qualsiasi comando del motore ti restituisce il controllo. Il pilota non fa miracoli: se il carburante o lo scudo non bastano, la missione fallisce lo stesso.</p>
+    </section>
+
+    <section id="dentro-it" aria-labelledby="h-dentro-it">
+      <h2 id="h-dentro-it">La simulazione dall'interno</h2>
+      <p>Per chi vuole capire il codice: il simulatore è un programma JavaScript che, a ogni fotogramma, fa avanzare la fisica, disegna la mappa su un <code>canvas</code> e aggiorna il pannello. <sup><a href="#ref-21-it">[21]</a></sup></p>
+      <h3>Gravità e integrazione</h3>
+      <p>Oltre al motore c'è una sola forza: la gravità del pianeta, <code>a = −μ·r / |r|³</code>, dove μ è il parametro gravitazionale standard, la costante gravitazionale per la massa del pianeta. <sup><a href="#ref-14-it">[14]</a></sup> Posizione e velocità avanzano con il metodo <strong>velocity Verlet</strong>, che conserva bene l'energia nelle orbite lunghe. <sup><a href="#ref-13-it">[13]</a></sup> Il passo è adattivo: corto vicino al pianeta, dove tutto succede in fretta, e ancora più corto dentro l'atmosfera.</p>
+      <pre class="formula">v ← v + ½·h·(gravità(x) + spinta)
+x ← x + h·v
+v ← v + ½·h·(gravità(x) + spinta)
+
+h ≤ 0,002 · r / v    (0,0005 dentro l'atmosfera)
+h ≤ T / 3000         (T = periodo dell'orbita obiettivo)</pre>
+      <h3>Dalla posizione all'orbita</h3>
+      <p>Per disegnare la traiettoria prevista e riempire il pannello, il gioco converte posizione e velocità in elementi orbitali. Il <strong>vettore eccentricità</strong> punta verso il periasse e ha la lunghezza dell'eccentricità; il momento angolare <code>h</code> dà il parametro <code>p</code> della conica. <sup><a href="#ref-12-it">[12]</a></sup></p>
+      <pre class="formula">e    = ((v² − μ/r)·r − (r·v)·v) / μ
+p    = h² / μ
+Pe   = p / (1 + e)        Ap = p / (1 − e)   (solo se e &lt; 1)
+r(θ) = p / (1 + e·cos θ)</pre>
+      <p>L'ultima formula disegna la traiettoria prevista punto per punto, senza simulare il futuro. La velocità a ogni altezza segue l'equazione <strong>vis-viva</strong>, <code>v² = μ·(2/r − 1/a)</code>, che il gioco usa per calcolare l'arrivo e il Δv ideale. <sup><a href="#ref-11-it">[11]</a></sup></p>
+      <h3>Tempo e motore</h3>
+      <p>La scala dei tempi fa durare un giro dell'orbita obiettivo circa 24 s a ×1, e la spinta di riferimento fornisce tutto il Δv ideale nell'8% di un giro, circa 2 secondi; il fattore di spinta di ogni oggetto moltiplica questo valore. Così il gioco mantiene lo stesso ritmo su tutti i pianeti, anche con gravità molto diverse.</p>
+    </section>
+
+    <section id="consigli-it" aria-labelledby="h-consigli-it">
+      <h2 id="h-consigli-it">Consigli ed errori comuni</h2>
+      <ul class="myths">
+        <li><h3>Inizia a frenare prima del periasse</h3><p>Le accensioni lunghe vanno centrate su di esso, metà prima e metà dopo. Gli oggetti a bassa spinta, come la vela solare, devono iniziare molto prima.</p></li>
+        <li><h3>Guarda la linea, non l'oggetto</h3><p>La traiettoria prevista cambia mentre accendi. Rilascia il pulsante quando ha la forma che vuoi.</p></li>
+        <li><h3>Il rosso è un avviso</h3><p>Una traiettoria rossa attraversa il suolo o l'atmosfera. Correggila prima di arrivare al periasse, spingendo fuori o accelerando all'apoasse.</p></li>
+        <li><h3>Usa il tempo a tuo favore</h3><p>×4 o ×8 per aspettare, ×½ per le regolazioni fini, <kbd>Spazio</kbd> per fermarti a pensare.</p></li>
+        <li><h3>Non inseguire il cerchio perfetto</h3><p>Per vincere basta che Pe e Ap restino nella fascia. Ogni m/s risparmiato vale punti.</p></li>
+        <li><h3>Impara dal pilota</h3><p>Fai una missione in automatico, osserva dove accende e prova a battere il suo punteggio a mano.</p></li>
+      </ul>
+    </section>
+
+    <section id="ripasso-it" aria-labelledby="h-ripasso-it">
+      <h2 id="h-ripasso-it">Ripasso veloce</h2>
+      <p>Prova a rispondere prima di aprire ogni domanda.</p>
+      <div class="quiz">
+        <details><summary>1. Perché frenare al periasse e non in un altro punto?</summary><p>Perché lì l'oggetto è più veloce, e lo stesso Δv cambia di più l'energia dell'orbita: è l'effetto Oberth.</p></details>
+        <details><summary>2. L'apoasse è troppo alto. Dove accendere, e in che direzione?</summary><p>Al periasse, frenando.</p></details>
+        <details><summary>3. Che cosa significa se l'apoasse indica “escape”?</summary><p>Che la traiettoria è aperta (e ≥ 1): senza frenare, l'oggetto passerà vicino al pianeta e proseguirà nello spazio.</p></details>
+        <details><summary>4. Quando la missione è considerata vinta?</summary><p>Quando periasse e apoasse sono dentro la fascia e il motore resta spento per 1,2 secondi.</p></details>
+        <details><summary>5. Quali oggetti possono usare l'aerofrenata, e su quali pianeti funziona?</summary><p>Quelli con scudo termico, la capsula con equipaggio e la capsula di crioibernazione, su Venere, Terra e Marte.</p></details>
+        <details><summary>6. È avanzato il 40% del Δv e la precisione è stata 0,8. Quanti punti e stelle?</summary><p>1000 × (0,5 × 0,8 + 0,5 × 1) = 900 punti e tre stelle.</p></details>
+        <details><summary>7. Perché il risultato del pilota automatico non diventa record?</summary><p>Perché il record misura il tuo pilotaggio; qualsiasi uso del pilota segna la missione.</p></details>
+        <details><summary>8. Quale metodo numerico fa avanzare la fisica del gioco?</summary><p>Il velocity Verlet, con passo temporale adattivo.</p></details>
+      </div>
+      <a class="back" href="#top">↑ Torna all'inizio</a>
+    </section>
+
+    <section id="riferimenti-it" aria-labelledby="h-riferimenti-it">
+      <h2 id="h-riferimenti-it">Riferimenti</h2>
+      <ol class="refs">
+        <li id="ref-1-it"><strong>Giovani Perotto Mesquita</strong>, “Inserção orbital” (Inserimento orbitale), simulatore interattivo, <a href="Inser%C3%A7%C3%A3o%20orbital.html">giovanipm.github.io/Inserção orbital.html</a>.</li>
+        <li id="ref-2-it"><strong>NASA Science</strong> (in inglese), “Basics of Space Flight”, consultato il 01/10/2026, <a href="https://science.nasa.gov/learn/basics-of-space-flight/" rel="noopener">science.nasa.gov/learn/basics-of-space-flight</a>.</li>
+        <li id="ref-3-it"><strong>Wikipedia</strong> (in inglese), “Orbit insertion”, consultato il 01/10/2026, <a href="https://en.wikipedia.org/wiki/Orbit_insertion" rel="noopener">en.wikipedia.org/wiki/Orbit_insertion</a>.</li>
+        <li id="ref-4-it"><strong>Wikipedia</strong> (in inglese), “Apsis”, consultato il 01/10/2026, <a href="https://en.wikipedia.org/wiki/Apsis" rel="noopener">en.wikipedia.org/wiki/Apsis</a>.</li>
+        <li id="ref-5-it"><strong>Wikipedia</strong> (in inglese), “Orbital eccentricity”, consultato il 01/10/2026, <a href="https://en.wikipedia.org/wiki/Orbital_eccentricity" rel="noopener">en.wikipedia.org/wiki/Orbital_eccentricity</a>.</li>
+        <li id="ref-6-it"><strong>Wikipedia</strong> (in inglese), “Hyperbolic trajectory”, consultato il 01/10/2026, <a href="https://en.wikipedia.org/wiki/Hyperbolic_trajectory" rel="noopener">en.wikipedia.org/wiki/Hyperbolic_trajectory</a>.</li>
+        <li id="ref-7-it"><strong>Wikipedia</strong> (in inglese), “Delta-v”, consultato il 01/10/2026, <a href="https://en.wikipedia.org/wiki/Delta-v" rel="noopener">en.wikipedia.org/wiki/Delta-v</a>.</li>
+        <li id="ref-8-it"><strong>Wikipedia</strong> (in inglese), “Oberth effect”, consultato il 01/10/2026, <a href="https://en.wikipedia.org/wiki/Oberth_effect" rel="noopener">en.wikipedia.org/wiki/Oberth_effect</a>.</li>
+        <li id="ref-9-it"><strong>Wikipedia</strong> (in inglese), “Hohmann transfer orbit”, consultato il 01/10/2026, <a href="https://en.wikipedia.org/wiki/Hohmann_transfer_orbit" rel="noopener">en.wikipedia.org/wiki/Hohmann_transfer_orbit</a>.</li>
+        <li id="ref-10-it"><strong>Wikipedia</strong> (in inglese), “Aerobraking”, consultato il 01/10/2026, <a href="https://en.wikipedia.org/wiki/Aerobraking" rel="noopener">en.wikipedia.org/wiki/Aerobraking</a>.</li>
+        <li id="ref-11-it"><strong>Wikipedia</strong> (in inglese), “Vis-viva equation”, consultato il 01/10/2026, <a href="https://en.wikipedia.org/wiki/Vis-viva_equation" rel="noopener">en.wikipedia.org/wiki/Vis-viva_equation</a>.</li>
+        <li id="ref-12-it"><strong>Wikipedia</strong> (in inglese), “Eccentricity vector”, consultato il 01/10/2026, <a href="https://en.wikipedia.org/wiki/Eccentricity_vector" rel="noopener">en.wikipedia.org/wiki/Eccentricity_vector</a>.</li>
+        <li id="ref-13-it"><strong>Wikipedia</strong> (in inglese), “Verlet integration”, consultato il 01/10/2026, <a href="https://en.wikipedia.org/wiki/Verlet_integration" rel="noopener">en.wikipedia.org/wiki/Verlet_integration</a>.</li>
+        <li id="ref-14-it"><strong>Wikipedia</strong> (in inglese), “Standard gravitational parameter”, consultato il 01/10/2026, <a href="https://en.wikipedia.org/wiki/Standard_gravitational_parameter" rel="noopener">en.wikipedia.org/wiki/Standard_gravitational_parameter</a>.</li>
+        <li id="ref-15-it"><strong>Wikipedia</strong> (in inglese), “Orbital maneuver”, consultato il 01/10/2026, <a href="https://en.wikipedia.org/wiki/Orbital_maneuver" rel="noopener">en.wikipedia.org/wiki/Orbital_maneuver</a>.</li>
+        <li id="ref-16-it"><strong>Wikipedia</strong> (in inglese), “International Space Station”, consultato il 01/10/2026, <a href="https://en.wikipedia.org/wiki/International_Space_Station" rel="noopener">en.wikipedia.org/wiki/International_Space_Station</a>.</li>
+        <li id="ref-17-it"><strong>Wikipedia</strong> (in inglese), “ʻOumuamua”, consultato il 01/10/2026, <a href="https://en.wikipedia.org/wiki/%CA%BBOumuamua" rel="noopener">en.wikipedia.org/wiki/ʻOumuamua</a>.</li>
+        <li id="ref-18-it"><strong>Wikipedia</strong> (in inglese), “Phobos (moon)”, consultato il 01/10/2026, <a href="https://en.wikipedia.org/wiki/Phobos_(moon)" rel="noopener">en.wikipedia.org/wiki/Phobos_(moon)</a>.</li>
+        <li id="ref-19-it"><strong>Wikipedia</strong> (in inglese), “Solar sail”, consultato il 01/10/2026, <a href="https://en.wikipedia.org/wiki/Solar_sail" rel="noopener">en.wikipedia.org/wiki/Solar_sail</a>.</li>
+        <li id="ref-20-it"><strong>MDN Web Docs</strong> (in inglese), “Window: localStorage property”, consultato il 01/10/2026, <a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage" rel="noopener">developer.mozilla.org/en-US/docs/Web/API/Window/localStorage</a>.</li>
+        <li id="ref-21-it"><strong>MDN Web Docs</strong> (in inglese), “Canvas API”, consultato il 01/10/2026, <a href="https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API" rel="noopener">developer.mozilla.org/en-US/docs/Web/API/Canvas_API</a>.</li>
+      </ol>
+      <a class="back" href="#top">↑ Torna all'inizio</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== ES ===================== -->
+<div id="es" role="tabpanel" aria-labelledby="tab-es" lang="es" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Proyectos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Inserción orbital: cómo funciona el simulador</h1>
+      <p class="dek">Una guía de la página Inserción orbital: la pantalla, los mandos, la estrategia para capturar el objeto gastando poco combustible, el aerofrenado, la puntuación, el piloto automático y la física detrás de todo.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado el <time datetime="2026-10-01">01/10/2026</time></span>
+        <span class="credit">Revisado y maquetado con Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-es">
+    <h2 id="toc-es">Índice</h2>
+    <ol>
+      <li><a href="#intro-es">Qué es el simulador</a></li>
+      <li><a href="#pantalla-es">La pantalla en tres áreas</a></li>
+      <li><a href="#conceptos-es">Conceptos de órbita</a></li>
+      <li><a href="#mision-es">Cómo empieza una misión</a></li>
+      <li><a href="#mandos-es">Los mandos</a></li>
+      <li><a href="#estrategia-es">Estrategia: capturar y ajustar</a></li>
+      <li><a href="#panel-es">Leer el panel</a></li>
+      <li><a href="#aerofrenado-es">Aerofrenado</a></li>
+      <li><a href="#objetos-es">Objetos y planetas</a></li>
+      <li><a href="#puntuacion-es">Victoria, derrota y puntuación</a></li>
+      <li><a href="#piloto-es">El piloto automático</a></li>
+      <li><a href="#dentro-es">La simulación por dentro</a></li>
+      <li><a href="#consejos-es">Consejos y errores comunes</a></li>
+      <li><a href="#repaso-es">Repaso rápido</a></li>
+      <li><a href="#referencias-es">Referencias</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="intro-es" aria-labelledby="h-intro-es">
+      <h2 id="h-intro-es">Qué es el simulador</h2>
+      <p>La <strong>inserción orbital</strong> es la maniobra que convierte un paso rápido junto a un planeta en una órbita estable a su alrededor. La nave llega demasiado rápido para quedarse y tiene que frenar en el momento y el lugar justos; si frena poco, pasa de largo, y si frena mal, se estrella. <sup><a href="#ref-3-es">[3]</a></sup> <sup><a href="#ref-2-es">[2]</a></sup></p>
+      <p>La página <strong>Inserción orbital</strong> es un pequeño juego de física que funciona en el navegador. Eliges un objeto, desde una sonda real hasta una criatura de ciencia ficción, y un planeta del Sistema Solar, y tienes que dejar el objeto en una órbita dentro de una franja de altitud gastando el mínimo de combustible. La trayectoria se calcula de verdad, con la gravedad del planeta, y el mapa muestra en todo momento hacia dónde va el objeto. <sup><a href="#ref-1-es">[1]</a></sup></p>
+      <p><a class="launch" href="Inser%C3%A7%C3%A3o%20orbital.html">Abrir el simulador <span aria-hidden="true">→</span></a></p>
+      <h3>Qué vas a aprender</h3>
+      <ul>
+        <li>A leer la pantalla, la telemetría y los mensajes de ayuda.</li>
+        <li>Qué significan periapsis, apoapsis, excentricidad y Δv.</li>
+        <li>Los cuatro mandos del motor y la estrategia de tres encendidos.</li>
+        <li>Cómo usar la atmósfera como freno, con el aerofrenado.</li>
+        <li>Las diferencias entre los 14 objetos y los 7 planetas.</li>
+        <li>Cómo se calcula la puntuación y qué hace el piloto automático.</li>
+        <li>Cómo se simula la física en el código.</li>
+      </ul>
+      <aside class="note"><p>La interfaz del simulador está en portugués. En este tutorial, la etiqueta portuguesa de cada botón aparece entre paréntesis, como Frenar (<em>Frear</em>). No hace falta instalar nada: el simulador es un único archivo HTML, dibujado en un <code>canvas</code>, y funciona en el ordenador y en el móvil. Los récords se guardan en el propio navegador. <sup><a href="#ref-21-es">[21]</a></sup> <sup><a href="#ref-20-es">[20]</a></sup></p></aside>
+    </section>
+
+    <section id="pantalla-es" aria-labelledby="h-pantalla-es">
+      <h2 id="h-pantalla-es">La pantalla en tres áreas</h2>
+      <figure>
+        <img src="rc_images/InsercaoTela-es.svg" alt="Esquema de la pantalla del simulador con siete partes numeradas: la lista de objetos y los botones de los planetas arriba; el mapa con el planeta, la franja objetivo verde y la trayectoria prevista naranja a la izquierda; los botones del motor y del tiempo debajo del mapa; y, a la derecha, el panel con la telemetría, el combustible y los mensajes." width="1000" height="680" loading="lazy">
+        <figcaption>La pantalla del simulador: elección de la misión arriba, mapa a la izquierda, panel de a bordo a la derecha.</figcaption>
+      </figure>
+      <p>Arriba están las elecciones de la misión: la lista <strong>Objeto</strong> (<em>Objeto</em>), agrupada en naves reales, cuerpos celestes y ciencia ficción, y un botón por planeta. Tras una victoria, el botón del planeta muestra las estrellas de tu mejor resultado con el objeto elegido.</p>
+      <p>A la izquierda está el <strong>mapa</strong>, siempre centrado en el planeta. El círculo verde punteado y la franja clara a su alrededor forman la <strong>franja objetivo</strong>; el anillo pegado al planeta es la atmósfera. La línea naranja es la <strong>trayectoria prevista</strong>, el camino que seguirá el objeto si el motor sigue apagado. Se vuelve roja cuando atraviesa la superficie o, para los objetos sin escudo, la atmósfera. La línea gris es el rastro del camino ya recorrido, la regla de la esquina da la escala, y el zoom se ajusta solo a medida que el objeto se acerca.</p>
+      <p>Debajo del mapa están los cuatro botones del motor, la velocidad del tiempo, el piloto automático, la pausa y el reinicio. A la derecha, el <strong>panel</strong> muestra el objeto y sus características, la misión, la telemetría, el combustible restante, el escudo térmico cuando lo hay, y un cuadro de mensajes que dice qué hacer a continuación.</p>
+    </section>
+
+    <section id="conceptos-es" aria-labelledby="h-conceptos-es">
+      <h2 id="h-conceptos-es">Conceptos de órbita</h2>
+      <p>Con el motor apagado, un objeto cerca de un planeta sigue una <strong>cónica</strong> con el centro del planeta en uno de sus focos: un círculo, una elipse, una parábola o una hipérbola. Cuál de ellas depende de la velocidad y de la altura del objeto. <sup><a href="#ref-5-es">[5]</a></sup> <sup><a href="#ref-6-es">[6]</a></sup></p>
+      <figure>
+        <img src="rc_images/InsercaoOrbita-es.svg" alt="A la izquierda, un planeta con atmósfera, la franja objetivo verde y una órbita elíptica naranja con la periapsis, punto más bajo, y la apoapsis, punto más alto. A la derecha, las cuatro formas de trayectoria según la excentricidad: círculo, elipse, parábola e hipérbola." width="1000" height="520" loading="lazy">
+        <figcaption>El vocabulario del panel: periapsis, apoapsis, franja objetivo, atmósfera y excentricidad.</figcaption>
+      </figure>
+      <dl class="glossary">
+        <dt>Altitud</dt><dd>Distancia a la superficie del planeta, no a su centro.</dd>
+        <dt>Periapsis (Pe)</dt><dd>El punto más bajo de la trayectoria (<em>Periapse</em>). <sup><a href="#ref-4-es">[4]</a></sup></dd>
+        <dt>Apoapsis (Ap)</dt><dd>El punto más alto (<em>Apoapse</em>). En una trayectoria de escape no existe, y el panel muestra “escape”.</dd>
+        <dt>Excentricidad (e)</dt><dd>Cuánto se aleja la órbita de un círculo: 0 es un círculo, entre 0 y 1 una elipse, y de 1 en adelante la trayectoria es abierta y el objeto se va. <sup><a href="#ref-5-es">[5]</a></sup></dd>
+        <dt>Trayectoria de escape</dt><dd>La hipérbola: el objeto pasa junto al planeta una vez y sigue hacia el espacio. Así empieza toda misión. <sup><a href="#ref-6-es">[6]</a></sup></dd>
+        <dt>Δv (delta-v)</dt><dd>El cambio de velocidad que el motor todavía puede producir. En el juego es el combustible, medido en m/s. <sup><a href="#ref-7-es">[7]</a></sup></dd>
+        <dt>Franja objetivo</dt><dd>El intervalo de altitud en el que deben quedar la periapsis y la apoapsis (<em>faixa-alvo</em>).</dd>
+      </dl>
+      <p>La misión se gana cuando la periapsis y la apoapsis están dentro de la franja al mismo tiempo. No hace falta un círculo perfecto: una elipse poco alargada, toda dentro de la franja, también vale.</p>
+    </section>
+
+    <section id="mision-es" aria-labelledby="h-mision-es">
+      <h2 id="h-mision-es">Cómo empieza una misión</h2>
+      <p>Toda misión empieza con un <strong>briefing</strong>. El objeto llega al planeta en una trayectoria de escape, a unas cinco veces el radio de la órbita objetivo, ya cayendo hacia él. La ventana indica la franja objetivo y cuánto Δv tienes. <em>Começar</em> (Empezar) te da el control; <em>Usar piloto automático</em> deja volar al ordenador.</p>
+      <p>La llegada cambia en cada intento: la dirección se sortea, y la periapsis prevista queda entre la mitad y 1,7 veces la altitud objetivo, nunca por debajo de la atmósfera. La velocidad de llegada “en el infinito” (v∞), la que tendría el objeto lejos del planeta, depende del planeta y del objeto: un objeto interestelar llega 2,6 veces más rápido que una sonda. <sup><a href="#ref-6-es">[6]</a></sup></p>
+      <h3>Cuánto combustible recibes</h3>
+      <p>El juego calcula el coste de una inserción ideal en dos encendidos: uno en la periapsis de llegada, que convierte la hipérbola en una elipse que toca la órbita objetivo, y otro en el extremo opuesto, que redondea la órbita. Es la misma idea de la transferencia de Hohmann. <sup><a href="#ref-9-es">[9]</a></sup> El presupuesto es ese coste multiplicado por el factor de combustible del objeto, más un pequeño margen:</p>
+      <pre class="formula">Δv disponible = Δv ideal × factor de combustible + 0,03 × velocidad circular en la órbita objetivo</pre>
+      <p>Con un factor de 1,3, la sonda tiene un 30% de margen sobre el ideal. Los objetos con factor inferior a 1, como la cápsula de criosueño, no tienen combustible para hacerlo todo con el motor y necesitan la atmósfera. Cuando el objeto tiene escudo pero el aerofrenado no sirve en el planeta elegido, porque no hay atmósfera o porque la órbita objetivo está demasiado lejos de ella, el juego garantiza un factor mínimo de 1,1.</p>
+      <aside class="note"><p>El tiempo también se ajusta a cada planeta: a velocidad ×1, una vuelta a la órbita objetivo dura unos 24 segundos reales, ya sea en la Luna o en Júpiter.</p></aside>
+    </section>
+
+    <section id="mandos-es" aria-labelledby="h-mandos-es">
+      <h2 id="h-mandos-es">Los mandos</h2>
+      <p>El motor solo funciona mientras el botón o la tecla está pulsado. Las direcciones no son las de la pantalla: se miden respecto al movimiento y al planeta, como en el panel de una nave real. <sup><a href="#ref-15-es">[15]</a></sup></p>
+      <figure>
+        <img src="rc_images/InsercaoComandos-es.svg" alt="Un objeto en lo alto de su órbita, moviéndose hacia la derecha, con cuatro flechas: Acelerar hacia adelante, Frenar hacia atrás, Hacia fuera lejos del planeta y Hacia dentro hacia el planeta. Al lado, tarjetas con la tecla y el efecto de cada mando." width="1000" height="500" loading="lazy">
+        <figcaption>Acelerar y frenar actúan a lo largo del movimiento; hacia fuera y hacia dentro, a lo largo de la línea al planeta.</figcaption>
+      </figure>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Acción</th><th scope="col">Teclado</th><th scope="col">Botón</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Acelerar (prógrado)</th><td><kbd>↑</kbd> o <kbd>W</kbd></td><td><em>Acelerar</em></td></tr>
+            <tr><th scope="row">Frenar (retrógrado)</th><td><kbd>↓</kbd> o <kbd>S</kbd></td><td><em>Frear</em></td></tr>
+            <tr><th scope="row">Hacia fuera (radial)</th><td><kbd>→</kbd> o <kbd>D</kbd></td><td><em>Para fora</em></td></tr>
+            <tr><th scope="row">Hacia dentro (radial)</th><td><kbd>←</kbd> o <kbd>A</kbd></td><td><em>Para dentro</em></td></tr>
+            <tr><th scope="row">Pausar y seguir</th><td><kbd>Espacio</kbd></td><td><em>Pausar</em></td></tr>
+            <tr><th scope="row">Reiniciar la misión</th><td><kbd>R</kbd></td><td><em>Reiniciar</em></td></tr>
+            <tr><th scope="row">Velocidad del tiempo</th><td><kbd>+</kbd> y <kbd>−</kbd></td><td>×½, ×1, ×2, ×4, ×8</td></tr>
+            <tr><th scope="row">Piloto automático</th><td><kbd>P</kbd></td><td><em>Piloto automático</em></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Dos teclas a la vez combinan sus direcciones, como frenar y empujar hacia fuera al mismo tiempo. Los mandos radiales no cambian el momento angular del objeto: sirven sobre todo para corregir la periapsis mientras el objeto todavía cae hacia ella, y gastan más combustible que frenar o acelerar para el mismo efecto.</p>
+      <p>Usa ×½ para encendidos cortos y precisos y ×4 u ×8 para esperar a que el objeto llegue al punto justo. Las teclas no responden mientras haya una ventana de mensaje abierta.</p>
+    </section>
+
+    <section id="estrategia-es" aria-labelledby="h-estrategia-es">
+      <h2 id="h-estrategia-es">Estrategia: capturar y ajustar</h2>
+      <p>La forma más barata de poner el objeto en órbita sigue, casi siempre, tres pasos.</p>
+      <figure>
+        <img src="rc_images/InsercaoManobras-es.svg" alt="Tres paneles: en el primero, el objeto llega en una hipérbola y frena en la periapsis, quedando atrapado en una elipse alargada; en el segundo, frena otra vez en la periapsis y la apoapsis baja hasta la franja objetivo; en el tercero, acelera en la apoapsis y la periapsis sube hasta la franja." width="1000" height="500" loading="lazy">
+        <figcaption>Frenar abajo para ser capturado y luego ajustar cada extremo encendiendo en el extremo opuesto.</figcaption>
+      </figure>
+      <ol>
+        <li><strong>Capturar.</strong> Espera a que el objeto se acerque a la periapsis, marcada <em>Pe</em> en el mapa, y frena. La hipérbola se vuelve una elipse, y la apoapsis, marcada <em>Ap</em>, aparece en el mapa.</li>
+        <li><strong>Bajar la apoapsis.</strong> Todavía cerca de la periapsis, o en la siguiente pasada, sigue frenando hasta que la apoapsis entre en la franja objetivo.</li>
+        <li><strong>Corregir la periapsis.</strong> Ve hasta la apoapsis y acelera si la periapsis está por debajo de la franja, o frena si está por encima.</li>
+      </ol>
+      <p>¿Por qué frenar en la periapsis? Allí el objeto va más rápido, y un mismo cambio de velocidad altera más la energía de la órbita cuando la velocidad es alta. Es el <strong>efecto Oberth</strong>, y por eso las misiones reales hacen la inserción orbital cerca del punto más bajo del paso. <sup><a href="#ref-8-es">[8]</a></sup></p>
+      <p>La regla de oro vale para cualquier órbita cerrada: <strong>un encendido en un extremo cambia la altura del extremo opuesto</strong>. Frenar en la periapsis baja la apoapsis; acelerar en la apoapsis sube la periapsis. <sup><a href="#ref-9-es">[9]</a></sup> <sup><a href="#ref-15-es">[15]</a></sup></p>
+      <div class="recap">
+        <h3>Para recordar</h3>
+        <ul>
+          <li>Frena cerca de Pe para ser capturado.</li>
+          <li>Para cambiar Ap, enciende en Pe; para cambiar Pe, enciende en Ap.</li>
+          <li>Prefiere encendidos cortos: mira cómo cambia la trayectoria prevista antes de seguir.</li>
+          <li>Suelta los mandos cuando Pe y Ap se pongan en verde en el panel.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="panel-es" aria-labelledby="h-panel-es">
+      <h2 id="h-panel-es">Leer el panel</h2>
+      <p>La telemetría muestra la órbita actual, calculada a partir de la posición y la velocidad del objeto en cada fotograma.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Campo</th><th scope="col">Qué muestra</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Altitud (<em>Altitude</em>)</th><td>Distancia actual a la superficie.</td></tr>
+            <tr><th scope="row">Velocidad (<em>Velocidade</em>)</th><td>Velocidad respecto al planeta, en km/s.</td></tr>
+            <tr><th scope="row">Periapsis (<em>Periapse</em>)</th><td>Altitud del punto más bajo. Verde dentro de la franja y roja por debajo de la cima de la atmósfera; muestra “abaixo da superfície” (bajo la superficie) cuando la trayectoria choca con el suelo.</td></tr>
+            <tr><th scope="row">Apoapsis (<em>Apoapse</em>)</th><td>Altitud del punto más alto. Verde dentro de la franja, y “escape” en rojo cuando la trayectoria es abierta.</td></tr>
+            <tr><th scope="row">Excentricidad (<em>Excentricidade</em>)</th><td>0 es un círculo; 1 o más es escape.</td></tr>
+            <tr><th scope="row">Combustible (<em>Combustível</em>)</th><td>Cuánto Δv queda, en m/s, con una barra.</td></tr>
+            <tr><th scope="row">Escudo térmico (<em>Escudo térmico</em>)</th><td>Solo para objetos con escudo: cuánto queda de él.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>El cuadro de mensajes lee la situación y sugiere el siguiente paso. Los más comunes, traducidos del portugués:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Mensaje</th><th scope="col">Qué hacer</th></tr></thead>
+          <tbody>
+            <tr><td>“Trayectoria de escape. Frene cerca de la periapsis para ser capturado.”</td><td>Espera la periapsis y frena (paso 1).</td></tr>
+            <tr><td>“Apoapsis demasiado alta. Frene cerca de la periapsis para bajarla.”</td><td>Paso 2 de la estrategia.</td></tr>
+            <tr><td>“Periapsis demasiado baja. Acelere cerca de la apoapsis para subirla.”</td><td>Paso 3 de la estrategia.</td></tr>
+            <tr><td>“La órbita cruza la superficie” o “cruza la atmósfera”.</td><td>Peligro: acelera en la apoapsis o empuja hacia fuera antes de llegar.</td></tr>
+            <tr><td>“Aerofrenado en curso: el escudo se está calentando.”</td><td>Solo con escudo: vigila la barra del escudo.</td></tr>
+            <tr><td>“En la franja. Apague el motor para confirmar.”</td><td>Suelta los mandos.</td></tr>
+            <tr><td>“Sin combustible. Crucemos los dedos para que la órbita sirva.”</td><td>El motor ya no puede hacer nada.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="aerofrenado-es" aria-labelledby="h-aerofrenado-es">
+      <h2 id="h-aerofrenado-es">Aerofrenado</h2>
+      <p>Dos objetos tienen escudo térmico: la cápsula tripulada y la cápsula de criosueño. Para ellos, la atmósfera deja de ser un muro y se convierte en un freno gratuito: cada pasada por el aire quita velocidad sin gastar combustible. Misiones reales a Venus y a Marte usaron esta técnica para ahorrar propelente. <sup><a href="#ref-10-es">[10]</a></sup></p>
+      <figure>
+        <img src="rc_images/InsercaoAerofrenagem-es.svg" alt="Un planeta con una atmósfera espesa y varias elipses cada vez más pequeñas, todas con la periapsis dentro de la atmósfera; al final, una aceleración en la apoapsis saca la periapsis del aire. Al lado, barras muestran el escudo térmico bajando del 100% al 70% y al 45%." width="1000" height="500" loading="lazy">
+        <figcaption>Cada pasada por el aire baja la apoapsis y desgasta un poco el escudo.</figcaption>
+      </figure>
+      <p>El juego modela el aire con una densidad que crece de forma exponencial a medida que el objeto baja y vale cero en la cima de la atmósfera. Cuanto más hondo y más rápido, más fuerte el frenado y mayor el desgaste del escudo. Este aguanta disipar unas 1,4 veces el Δv de la inserción ideal; si llega al 0%, la misión termina.</p>
+      <p>La receta: baja la periapsis dentro de la atmósfera, un poco por debajo de la cima; deja que las pasadas bajen la apoapsis hasta la franja objetivo; y entonces acelera en la apoapsis para sacar la periapsis del aire. Sin este último paso, el objeto sigue perdiendo altura en cada vuelta.</p>
+      <aside class="note"><p>El aerofrenado solo tiene sentido en Venus, la Tierra y Marte. Mercurio y la Luna no tienen atmósfera, y en Júpiter y Saturno la órbita objetivo queda demasiado lejos de ella. Sin escudo, cualquier objeto que entre en la atmósfera se pierde.</p></aside>
+    </section>
+
+    <section id="objetos-es" aria-labelledby="h-objetos-es">
+      <h2 id="h-objetos-es">Objetos y planetas</h2>
+      <p>Cada objeto cambia cuatro números de la misión: el <strong>empuje</strong>, cuánto acelera el motor; el <strong>combustible</strong>, el factor sobre el Δv ideal; la <strong>llegada</strong>, la velocidad con la que aparece; y la <strong>anchura de la franja objetivo</strong>. Algunos tienen además una regla especial. El panel resume estos números en etiquetas, como “Empuxo baixo” (empuje bajo) o “Faixa estreita” (franja estrecha).</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Objeto</th><th scope="col">Empuje</th><th scope="col">Combustible</th><th scope="col">Llegada</th><th scope="col">Particularidad</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Sonda robótica (<em>Sonda robótica</em>)</th><td>medio</td><td>normal</td><td>normal</td><td>Equilibrada: la mejor para aprender.</td></tr>
+            <tr><th scope="row">Cápsula tripulada (<em>Cápsula tripulada</em>)</th><td>medio</td><td>normal</td><td>normal</td><td>Escudo térmico.</td></tr>
+            <tr><th scope="row">Telescopio espacial (<em>Telescópio espacial</em>)</th><td>medio</td><td>normal</td><td>normal</td><td>Franja estrecha (55% de la normal).</td></tr>
+            <tr><th scope="row">Módulo de estación espacial (<em>Módulo de estação espacial</em>)</th><td>bajo</td><td>normal</td><td>lenta</td><td>Pesado: empieza pronto los encendidos.</td></tr>
+            <tr><th scope="row">Vela solar (<em>Vela solar</em>)</th><td>bajo</td><td>abundante</td><td>lenta</td><td>Empuje diminuto pero casi inagotable. <sup><a href="#ref-19-es">[19]</a></sup></td></tr>
+            <tr><th scope="row">Asteroide remolcado (<em>Asteroide rebocado</em>)</th><td>bajo</td><td>abundante</td><td>normal</td><td>Franja ancha.</td></tr>
+            <tr><th scope="row">Núcleo de cometa (<em>Núcleo de cometa</em>)</th><td>medio</td><td>abundante</td><td>normal</td><td>Franja ancha; chorros de gas aleatorios.</td></tr>
+            <tr><th scope="row">Pequeña luna, tipo Fobos (<em>Pequena lua</em>)</th><td>bajo</td><td>abundante</td><td>lenta</td><td>Franja ancha. <sup><a href="#ref-18-es">[18]</a></sup></td></tr>
+            <tr><th scope="row">Objeto interestelar, tipo ʻOumuamua (<em>Objeto interestelar</em>)</th><td>alto</td><td>normal</td><td>rápida</td><td>Llega 2,6 veces más rápido. <sup><a href="#ref-17-es">[17]</a></sup></td></tr>
+            <tr><th scope="row">Nave generacional (<em>Nave geracional</em>)</th><td>bajo</td><td>abundante</td><td>lenta</td><td>Franja ancha.</td></tr>
+            <tr><th scope="row">Carguero de curvatura (<em>Cargueiro de dobra</em>)</th><td>extremo</td><td>normal</td><td>rápida</td><td>Franja estrecha; usa toques cortos en ×½.</td></tr>
+            <tr><th scope="row">Leviatán del vacío (<em>Leviatã do vácuo</em>)</th><td>medio</td><td>escaso</td><td>normal</td><td>Recupera energía con el motor apagado.</td></tr>
+            <tr><th scope="row">Cápsula de criosueño (<em>Cápsula de criossono</em>)</th><td>medio</td><td>escaso</td><td>normal</td><td>Escudo térmico; franja ancha.</td></tr>
+            <tr><th scope="row">Esfera alienígena (<em>Esfera alienígena</em>)</th><td>alto</td><td>normal</td><td>rápida</td><td>Todos los mandos invertidos.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Los chorros del cometa se encienden y se apagan solos, en direcciones sorteadas, y desvían la trayectoria sin aviso. Con el motor apagado, el leviatán recupera el 35% de su energía total en cada vuelta a la órbita objetivo. Con la cápsula de criosueño, en los planetas con atmósfera, el aerofrenado es obligatorio.</p>
+      <h3>Los planetas</h3>
+      <p>Cada planeta usa su radio y su parámetro gravitacional (μ) reales, por eso la misma maniobra exige mucho más Δv en Júpiter que en la Luna. <sup><a href="#ref-14-es">[14]</a></sup></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Planeta</th><th scope="col">Atmósfera hasta</th><th scope="col">Franja objetivo</th><th scope="col">Llegada (v∞)</th><th scope="col">Nota</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Mercurio</th><td>sin atmósfera</td><td>400 ± 60 km</td><td>4,0 km/s</td><td>Se puede pasar rozando, solo no toques el suelo.</td></tr>
+            <tr><th scope="row">Venus</th><td>200 km</td><td>500 ± 70 km</td><td>3,2 km/s</td><td>Atmósfera densa y alta.</td></tr>
+            <tr><th scope="row">Tierra</th><td>100 km</td><td>400 ± 60 km</td><td>3,0 km/s</td><td>Cerca de la altitud de la Estación Espacial Internacional. <sup><a href="#ref-16-es">[16]</a></sup></td></tr>
+            <tr><th scope="row">Luna</th><td>sin atmósfera</td><td>100 ± 20 km</td><td>0,8 km/s</td><td>Gravedad débil: todo es lento y con poco Δv.</td></tr>
+            <tr><th scope="row">Marte</th><td>80 km</td><td>300 ± 50 km</td><td>2,6 km/s</td><td>Atmósfera fina, pero peligrosa.</td></tr>
+            <tr><th scope="row">Júpiter</th><td>1.000 km</td><td>100.000 ± 12.000 km</td><td>6,0 km/s</td><td>Gravedad enorme: el frenado es largo.</td></tr>
+            <tr><th scope="row">Saturno</th><td>800 km</td><td>150.000 ± 15.000 km</td><td>5,0 km/s</td><td>La franja queda más allá de los anillos principales.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>La tolerancia y la llegada de la tabla son las de la sonda; se multiplican por los factores de cada objeto.</p>
+    </section>
+
+    <section id="puntuacion-es" aria-labelledby="h-puntuacion-es">
+      <h2 id="h-puntuacion-es">Victoria, derrota y puntuación</h2>
+      <figure>
+        <img src="rc_images/InsercaoEstados-es.svg" alt="Flujo de la misión: briefing, vuelo, órbita en la franja con el motor apagado durante 1,2 segundos y victoria. Del vuelo salen cuatro derrotas: colisión, entrada en la atmósfera, escape al espacio y escudo agotado. Abajo, la fórmula de los puntos y las reglas de las estrellas." width="1000" height="560" loading="lazy">
+        <figcaption>Una manera de ganar y cuatro de perder.</figcaption>
+      </figure>
+      <p>La misión se gana cuando la periapsis y la apoapsis están dentro de la franja con el motor apagado durante 1,2 segundos seguidos. Hay cuatro maneras de perder: chocar con la superficie; entrar en la atmósfera sin escudo; pasar junto al planeta sin frenar lo suficiente y seguir hacia el espacio; y agotar todo el escudo térmico.</p>
+      <pre class="formula">precisión   = 1 − (|Pe − objetivo| + |Ap − objetivo|) ÷ (2 × tolerancia)
+combustible = Δv restante ÷ Δv disponible
+puntos      = 1000 × (0,5 × precisión + 0,5 × mín(1; combustible ÷ 0,35))</pre>
+      <p>La mitad de la nota viene de la precisión, en la que una órbita circular en el centro de la franja vale 1, y la mitad del ahorro, en el que guardar el 35% del Δv ya da la nota máxima. Las estrellas son tres: una por completar, otra si sobró al menos el 15% del Δv y otra si la precisión pasó del 50%.</p>
+      <p>El mejor resultado de cada combinación de objeto y planeta queda guardado en el navegador y aparece en el panel y en los botones de los planetas. Las misiones en las que se usó el piloto automático, aunque sea un instante, no cuentan como récord. <sup><a href="#ref-20-es">[20]</a></sup></p>
+    </section>
+
+    <section id="piloto-es" aria-labelledby="h-piloto-es">
+      <h2 id="h-piloto-es">El piloto automático</h2>
+      <p>El piloto automático, en su botón o en la tecla <kbd>P</kbd>, toma el control y hace la inserción solo, con la misma lógica de este tutorial. Es una buena forma de ver la estrategia en acción antes de intentarlo en manual.</p>
+      <figure>
+        <img src="rc_images/InsercaoPiloto-es.svg" alt="Seis etapas del piloto automático: corregir la ruta de aproximación, esperar el punto de frenado, frenar para la captura, aerofrenado opcional, ajustar en los extremos y apagar los motores en la franja. Al lado, tarjetas sobre seguridad, recuperación del control y récords." width="1000" height="590" loading="lazy">
+        <figcaption>Las etapas del piloto automático.</figcaption>
+      </figure>
+      <p>Mientras el objeto todavía está lejos, el piloto corrige la ruta con encendidos laterales hasta que la periapsis prevista caiga en la franja. Después calcula cuándo empezar a frenar, para que el encendido quede centrado en la periapsis, y frena contra el movimiento mientras sujeta la periapsis en su sitio. Con la órbita cerrada, hace los ajustes finos en los extremos: en la periapsis corrige la apoapsis y en la apoapsis corrige la periapsis, dosificando siempre el empuje para no pasarse.</p>
+      <p>Con un objeto con escudo y poco combustible para frenar solo con el motor, elige el aerofrenado: apunta la periapsis al 55% de la altura de la atmósfera, hace las pasadas y saca la periapsis del aire cuando la siguiente pasada ya llevaría la apoapsis a la franja. Si en algún momento la periapsis se vuelve peligrosa, subirla pasa a ser la prioridad.</p>
+      <p>Cualquier mando del motor te devuelve el control. El piloto no hace milagros: si el combustible o el escudo no alcanzan, la misión fracasa igual.</p>
+    </section>
+
+    <section id="dentro-es" aria-labelledby="h-dentro-es">
+      <h2 id="h-dentro-es">La simulación por dentro</h2>
+      <p>Para quien quiera entender el código: el simulador es un programa en JavaScript que, en cada fotograma, avanza la física, dibuja el mapa en un <code>canvas</code> y actualiza el panel. <sup><a href="#ref-21-es">[21]</a></sup></p>
+      <h3>Gravedad e integración</h3>
+      <p>Además del motor, solo hay una fuerza: la gravedad del planeta, <code>a = −μ·r / |r|³</code>, donde μ es el parámetro gravitacional estándar, la constante gravitacional por la masa del planeta. <sup><a href="#ref-14-es">[14]</a></sup> La posición y la velocidad avanzan con el método <strong>velocity Verlet</strong>, que conserva bien la energía en órbitas largas. <sup><a href="#ref-13-es">[13]</a></sup> El paso es adaptativo: corto cerca del planeta, donde todo pasa rápido, y más corto aún dentro de la atmósfera.</p>
+      <pre class="formula">v ← v + ½·h·(gravedad(x) + empuje)
+x ← x + h·v
+v ← v + ½·h·(gravedad(x) + empuje)
+
+h ≤ 0,002 · r / v    (0,0005 dentro de la atmósfera)
+h ≤ T / 3000         (T = período de la órbita objetivo)</pre>
+      <h3>De la posición a la órbita</h3>
+      <p>Para dibujar la trayectoria prevista y rellenar el panel, el juego convierte posición y velocidad en elementos orbitales. El <strong>vector excentricidad</strong> apunta a la periapsis y tiene la longitud de la excentricidad; el momento angular <code>h</code> da el parámetro <code>p</code> de la cónica. <sup><a href="#ref-12-es">[12]</a></sup></p>
+      <pre class="formula">e    = ((v² − μ/r)·r − (r·v)·v) / μ
+p    = h² / μ
+Pe   = p / (1 + e)        Ap = p / (1 − e)   (solo si e &lt; 1)
+r(θ) = p / (1 + e·cos θ)</pre>
+      <p>La última fórmula dibuja la trayectoria prevista punto a punto, sin simular el futuro. La velocidad a cada altura sigue la ecuación <strong>vis-viva</strong>, <code>v² = μ·(2/r − 1/a)</code>, que el juego usa para calcular la llegada y el Δv ideal. <sup><a href="#ref-11-es">[11]</a></sup></p>
+      <h3>Tiempo y motor</h3>
+      <p>La escala de tiempo hace que una vuelta a la órbita objetivo dure unos 24 s en ×1, y el empuje de referencia entrega todo el Δv ideal en el 8% de una vuelta, unos 2 segundos; el factor de empuje de cada objeto multiplica ese valor. Así, el juego mantiene el mismo ritmo en todos los planetas, incluso con gravedades muy distintas.</p>
+    </section>
+
+    <section id="consejos-es" aria-labelledby="h-consejos-es">
+      <h2 id="h-consejos-es">Consejos y errores comunes</h2>
+      <ul class="myths">
+        <li><h3>Empieza a frenar antes de la periapsis</h3><p>Los encendidos largos deben quedar centrados en ella, mitad antes y mitad después. Los objetos de empuje bajo, como la vela solar, tienen que empezar mucho antes.</p></li>
+        <li><h3>Mira la línea, no el objeto</h3><p>La trayectoria prevista cambia mientras enciendes. Suelta el botón cuando quede como quieres.</p></li>
+        <li><h3>El rojo es un aviso</h3><p>Una trayectoria roja atraviesa el suelo o la atmósfera. Corrígela antes de llegar a la periapsis, empujando hacia fuera o acelerando en la apoapsis.</p></li>
+        <li><h3>Usa el tiempo a tu favor</h3><p>×4 u ×8 para esperar, ×½ para los ajustes finos, <kbd>Espacio</kbd> para pausar y pensar.</p></li>
+        <li><h3>No persigas el círculo perfecto</h3><p>Para ganar basta con que Pe y Ap queden en la franja. Cada m/s ahorrado suma puntos.</p></li>
+        <li><h3>Aprende del piloto</h3><p>Haz una misión en automático, observa dónde enciende e intenta superar su puntuación en manual.</p></li>
+      </ul>
+    </section>
+
+    <section id="repaso-es" aria-labelledby="h-repaso-es">
+      <h2 id="h-repaso-es">Repaso rápido</h2>
+      <p>Intenta responder antes de abrir cada pregunta.</p>
+      <div class="quiz">
+        <details><summary>1. ¿Por qué frenar en la periapsis y no en otro punto?</summary><p>Porque allí el objeto va más rápido, y el mismo Δv cambia más la energía de la órbita: es el efecto Oberth.</p></details>
+        <details><summary>2. La apoapsis está demasiado alta. ¿Dónde encender, y en qué dirección?</summary><p>En la periapsis, frenando.</p></details>
+        <details><summary>3. ¿Qué significa que la apoapsis muestre “escape”?</summary><p>Que la trayectoria es abierta (e ≥ 1): sin frenar, el objeto pasará junto al planeta y seguirá hacia el espacio.</p></details>
+        <details><summary>4. ¿Cuándo se considera ganada la misión?</summary><p>Cuando la periapsis y la apoapsis están dentro de la franja y el motor permanece apagado durante 1,2 segundos.</p></details>
+        <details><summary>5. ¿Qué objetos pueden aerofrenar, y en qué planetas sirve?</summary><p>Los que tienen escudo térmico, la cápsula tripulada y la cápsula de criosueño, en Venus, la Tierra y Marte.</p></details>
+        <details><summary>6. Sobró el 40% del Δv y la precisión fue 0,8. ¿Cuántos puntos y estrellas?</summary><p>1000 × (0,5 × 0,8 + 0,5 × 1) = 900 puntos y tres estrellas.</p></details>
+        <details><summary>7. ¿Por qué el resultado del piloto automático no se convierte en récord?</summary><p>Porque el récord mide tu pilotaje; cualquier uso del piloto marca la misión.</p></details>
+        <details><summary>8. ¿Qué método numérico avanza la física del juego?</summary><p>El velocity Verlet, con paso de tiempo adaptativo.</p></details>
+      </div>
+      <a class="back" href="#top">↑ Volver al inicio</a>
+    </section>
+
+    <section id="referencias-es" aria-labelledby="h-referencias-es">
+      <h2 id="h-referencias-es">Referencias</h2>
+      <ol class="refs">
+        <li id="ref-1-es"><strong>Giovani Perotto Mesquita</strong>, “Inserção orbital” (Inserción orbital), simulador interactivo, <a href="Inser%C3%A7%C3%A3o%20orbital.html">giovanipm.github.io/Inserção orbital.html</a>.</li>
+        <li id="ref-2-es"><strong>NASA Science</strong> (en inglés), “Basics of Space Flight”, consultado el 01/10/2026, <a href="https://science.nasa.gov/learn/basics-of-space-flight/" rel="noopener">science.nasa.gov/learn/basics-of-space-flight</a>.</li>
+        <li id="ref-3-es"><strong>Wikipedia</strong> (en inglés), “Orbit insertion”, consultado el 01/10/2026, <a href="https://en.wikipedia.org/wiki/Orbit_insertion" rel="noopener">en.wikipedia.org/wiki/Orbit_insertion</a>.</li>
+        <li id="ref-4-es"><strong>Wikipedia</strong> (en inglés), “Apsis”, consultado el 01/10/2026, <a href="https://en.wikipedia.org/wiki/Apsis" rel="noopener">en.wikipedia.org/wiki/Apsis</a>.</li>
+        <li id="ref-5-es"><strong>Wikipedia</strong> (en inglés), “Orbital eccentricity”, consultado el 01/10/2026, <a href="https://en.wikipedia.org/wiki/Orbital_eccentricity" rel="noopener">en.wikipedia.org/wiki/Orbital_eccentricity</a>.</li>
+        <li id="ref-6-es"><strong>Wikipedia</strong> (en inglés), “Hyperbolic trajectory”, consultado el 01/10/2026, <a href="https://en.wikipedia.org/wiki/Hyperbolic_trajectory" rel="noopener">en.wikipedia.org/wiki/Hyperbolic_trajectory</a>.</li>
+        <li id="ref-7-es"><strong>Wikipedia</strong> (en inglés), “Delta-v”, consultado el 01/10/2026, <a href="https://en.wikipedia.org/wiki/Delta-v" rel="noopener">en.wikipedia.org/wiki/Delta-v</a>.</li>
+        <li id="ref-8-es"><strong>Wikipedia</strong> (en inglés), “Oberth effect”, consultado el 01/10/2026, <a href="https://en.wikipedia.org/wiki/Oberth_effect" rel="noopener">en.wikipedia.org/wiki/Oberth_effect</a>.</li>
+        <li id="ref-9-es"><strong>Wikipedia</strong> (en inglés), “Hohmann transfer orbit”, consultado el 01/10/2026, <a href="https://en.wikipedia.org/wiki/Hohmann_transfer_orbit" rel="noopener">en.wikipedia.org/wiki/Hohmann_transfer_orbit</a>.</li>
+        <li id="ref-10-es"><strong>Wikipedia</strong> (en inglés), “Aerobraking”, consultado el 01/10/2026, <a href="https://en.wikipedia.org/wiki/Aerobraking" rel="noopener">en.wikipedia.org/wiki/Aerobraking</a>.</li>
+        <li id="ref-11-es"><strong>Wikipedia</strong> (en inglés), “Vis-viva equation”, consultado el 01/10/2026, <a href="https://en.wikipedia.org/wiki/Vis-viva_equation" rel="noopener">en.wikipedia.org/wiki/Vis-viva_equation</a>.</li>
+        <li id="ref-12-es"><strong>Wikipedia</strong> (en inglés), “Eccentricity vector”, consultado el 01/10/2026, <a href="https://en.wikipedia.org/wiki/Eccentricity_vector" rel="noopener">en.wikipedia.org/wiki/Eccentricity_vector</a>.</li>
+        <li id="ref-13-es"><strong>Wikipedia</strong> (en inglés), “Verlet integration”, consultado el 01/10/2026, <a href="https://en.wikipedia.org/wiki/Verlet_integration" rel="noopener">en.wikipedia.org/wiki/Verlet_integration</a>.</li>
+        <li id="ref-14-es"><strong>Wikipedia</strong> (en inglés), “Standard gravitational parameter”, consultado el 01/10/2026, <a href="https://en.wikipedia.org/wiki/Standard_gravitational_parameter" rel="noopener">en.wikipedia.org/wiki/Standard_gravitational_parameter</a>.</li>
+        <li id="ref-15-es"><strong>Wikipedia</strong> (en inglés), “Orbital maneuver”, consultado el 01/10/2026, <a href="https://en.wikipedia.org/wiki/Orbital_maneuver" rel="noopener">en.wikipedia.org/wiki/Orbital_maneuver</a>.</li>
+        <li id="ref-16-es"><strong>Wikipedia</strong> (en inglés), “International Space Station”, consultado el 01/10/2026, <a href="https://en.wikipedia.org/wiki/International_Space_Station" rel="noopener">en.wikipedia.org/wiki/International_Space_Station</a>.</li>
+        <li id="ref-17-es"><strong>Wikipedia</strong> (en inglés), “ʻOumuamua”, consultado el 01/10/2026, <a href="https://en.wikipedia.org/wiki/%CA%BBOumuamua" rel="noopener">en.wikipedia.org/wiki/ʻOumuamua</a>.</li>
+        <li id="ref-18-es"><strong>Wikipedia</strong> (en inglés), “Phobos (moon)”, consultado el 01/10/2026, <a href="https://en.wikipedia.org/wiki/Phobos_(moon)" rel="noopener">en.wikipedia.org/wiki/Phobos_(moon)</a>.</li>
+        <li id="ref-19-es"><strong>Wikipedia</strong> (en inglés), “Solar sail”, consultado el 01/10/2026, <a href="https://en.wikipedia.org/wiki/Solar_sail" rel="noopener">en.wikipedia.org/wiki/Solar_sail</a>.</li>
+        <li id="ref-20-es"><strong>MDN Web Docs</strong> (en inglés), “Window: localStorage property”, consultado el 01/10/2026, <a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage" rel="noopener">developer.mozilla.org/en-US/docs/Web/API/Window/localStorage</a>.</li>
+        <li id="ref-21-es"><strong>MDN Web Docs</strong> (en inglés), “Canvas API”, consultado el 01/10/2026, <a href="https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API" rel="noopener">developer.mozilla.org/en-US/docs/Web/API/Canvas_API</a>.</li>
+      </ol>
+      <a class="back" href="#top">↑ Volver al inicio</a>
+    </section>
+  </article>
+</div>
+</div>
+
+
+<footer>
+  <div class="wrap">
+    <span>Giovani Perotto Mesquita · Porto Alegre, RS</span>
+    <span><a href="projects.html" data-projects data-foot="0">Projetos</a> · <a href="resume.html" data-resume data-foot="1">Currículo</a> · <a href="contact.html" data-contact data-foot="2">Contato</a></span>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('.lang [role="option"]'));
+    var titles = {"pt": "Inserção orbital: como funciona o simulador · Giovani Perotto Mesquita", "en": "Orbital insertion: how the simulator works · Giovani Perotto Mesquita", "it": "Inserimento orbitale: come funziona il simulatore · Giovani Perotto Mesquita", "es": "Inserción orbital: cómo funciona el simulador · Giovani Perotto Mesquita"};
+    var foots = {"pt": ["Projetos", "Currículo", "Contato"], "en": ["Projects", "Resume", "Contact"], "it": ["Progetti", "Curriculum", "Contatti"], "es": ["Proyectos", "Currículum", "Contacto"]};
+    var langs = { pt: 'pt-BR', en: 'en', it: 'it', es: 'es' };
+    var bar = document.querySelector('.progress');
+    var article = document.querySelector('[role="tabpanel"]:not([hidden]) article');
+
+    function show(id, focus) {
+      tabs.forEach(function (t) {
+        var on = t.getAttribute('aria-controls') === id;
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+        if (on && focus) t.focus();
+      });
+      document.documentElement.lang = langs[id];
+      document.title = titles[id];
+      var suffix = id === 'pt' ? '' : '#' + id;
+      [['data-home', 'index.html'], ['data-about', 'about.html'], ['data-resume', 'resume.html'], ['data-projects', 'projects.html'], ['data-contact', 'contact.html']].forEach(function (p) {
+        document.querySelectorAll('[' + p[0] + ']').forEach(function (a) { a.href = p[1] + suffix; });
+      });
+      document.querySelectorAll('[data-foot]').forEach(function (a) { a.textContent = foots[id][+a.getAttribute('data-foot')]; });
+      article = document.querySelector('#' + id + ' article');
+      if (history.replaceState) history.replaceState(null, '', id === 'pt' ? location.pathname : '#' + id);
+      progress();
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () { show(t.getAttribute('aria-controls')); });
+      t.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (d) { e.preventDefault(); show(tabs[(i + d + tabs.length) % tabs.length].getAttribute('aria-controls'), true); }
+      });
+    });
+
+    // barra de progresso de leitura
+    function progress() {
+      if (!article) return;
+      var r = article.getBoundingClientRect();
+      var total = r.height - window.innerHeight;
+      var p = total > 0 ? Math.min(Math.max(-r.top / total, 0), 1) : 1;
+      bar.style.width = (p * 100) + '%';
+    }
+    window.addEventListener('scroll', progress, { passive: true });
+    window.addEventListener('resize', progress);
+
+    // destaca a seção atual no índice
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          var panel = e.target.closest('[role="tabpanel"]');
+          panel.querySelectorAll('.toc a').forEach(function (a) {
+            if (a.getAttribute('href') === '#' + e.target.id) a.setAttribute('aria-current', 'true');
+            else a.removeAttribute('aria-current');
+          });
+        });
+      }, { rootMargin: '-20% 0px -70% 0px' });
+      document.querySelectorAll('article section[id]').forEach(function (s) { io.observe(s); });
+    }
+
+    var h = (location.hash || '').replace('#', '');
+    var m = h.match(/^(?:.*-)?(en|it|es)$/);
+    if (m) {
+      show(m[1]);
+      if (h !== m[1]) { var el = document.getElementById(h); if (el) el.scrollIntoView(); if (history.replaceState) history.replaceState(null, '', '#' + h); }
+    } else progress();
+  })();
+</script>
+<script>
+  // seletor de idioma em combobox: abre a lista, sincroniza o botão e fecha
+  (function () {
+    var box = document.querySelector('.lang'); if (!box) return;
+    var btn = box.querySelector('.lang-current'), list = box.querySelector('.lang-list'), now = btn.querySelector('.lang-now');
+    var opts = Array.prototype.slice.call(list.querySelectorAll('[role="option"]'));
+    var menu = {
+      pt: { index: 'Início', about: 'Sobre', resume: 'Currículo', projects: 'Projetos', contact: 'Contato' },
+      en: { index: 'Home', about: 'About', resume: 'Resume', projects: 'Projects', contact: 'Contact' },
+      it: { index: 'Home', about: 'Chi sono', resume: 'Curriculum', projects: 'Progetti', contact: 'Contatti' },
+      es: { index: 'Inicio', about: 'Sobre mí', resume: 'Currículum', projects: 'Proyectos', contact: 'Contacto' }
+    };
+    function translate(id) {
+      document.querySelectorAll('.nav ul a').forEach(function (l) {
+        var k = (l.getAttribute('href') || '').split('#')[0].replace('.html', '');
+        if (menu[id] && menu[id][k]) l.textContent = menu[id][k];
+      });
+      // links do menu para as páginas principais levam o idioma selecionado
+      var suf = id === 'pt' ? '' : '#' + id;
+      document.querySelectorAll('.nav a[href]').forEach(function (l) {
+        var m = l.getAttribute('href').match(/^(index|about|resume|projects|contact)\.html(#(pt|en|it|es))?$/);
+        if (m) l.setAttribute('href', m[1] + '.html' + suf);
+      });
+    }
+    function sync() {
+      var sel = opts.filter(function (o) { return o.getAttribute('aria-selected') === 'true'; })[0] || opts[0];
+      now.innerHTML = sel.querySelector('.flag').outerHTML + sel.getAttribute('data-code');
+      btn.setAttribute('aria-label', btn.getAttribute('data-label') + ': ' + sel.textContent.trim());
+      translate(sel.getAttribute('aria-controls'));
+      return sel;
+    }
+    function open() { list.hidden = false; btn.setAttribute('aria-expanded', 'true'); sync().focus(); }
+    function close(back) { list.hidden = true; btn.setAttribute('aria-expanded', 'false'); if (back) btn.focus(); }
+    btn.addEventListener('click', function () { if (list.hidden) open(); else close(); });
+    btn.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); open(); }
+      else if (e.key === 'Escape') close();
+    });
+    opts.forEach(function (o, i) {
+      o.addEventListener('click', function () { sync(); close(true); });
+      o.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0;
+        if (d) { e.preventDefault(); opts[(i + d + opts.length) % opts.length].focus(); }
+        else if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); opts[e.key === 'Home' ? 0 : opts.length - 1].focus(); }
+        else if (e.key === 'Escape') { e.preventDefault(); close(true); }
+        else if (e.key === 'Tab') close();
+      });
+    });
+    document.addEventListener('click', function (e) { if (!box.contains(e.target)) close(); });
+    new MutationObserver(sync).observe(list, { attributes: true, subtree: true, attributeFilter: ['aria-selected'] });
+    sync();
+  })();
+</script>
+</body>
+</html>
