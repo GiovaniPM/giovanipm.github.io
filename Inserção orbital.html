@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Inserção orbital</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E9EDF6; --panel:#F6F7FB; --ink:#1A2247; --muted:#56608A; --line:rgba(26,34,71,.14);
+  --traj:#B86E00; --target:#11806A; --danger:#C2382B; --space:#DCE2EF; --star:rgba(26,34,71,.22);
+  --btn:#E1E6F2; --btn-on:#1A2247; --btn-on-ink:#F6F7FB;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1733; --panel:#141E40; --ink:#E9E7F2; --muted:#98A1C6; --line:rgba(233,231,242,.13);
+    --traj:#F4B942; --target:#6FD3BE; --danger:#FF7466; --space:#0B1230; --star:rgba(233,231,242,.55);
+    --btn:#1E2A55; --btn-on:#F4B942; --btn-on-ink:#0F1733;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1733; --panel:#141E40; --ink:#E9E7F2; --muted:#98A1C6; --line:rgba(233,231,242,.13);
+  --traj:#F4B942; --target:#6FD3BE; --danger:#FF7466; --space:#0B1230; --star:rgba(233,231,242,.55);
+  --btn:#1E2A55; --btn-on:#F4B942; --btn-on-ink:#0F1733;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+  font-family:"Archivo",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:15px;line-height:1.45}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:2px solid var(--traj);outline-offset:2px}
+
+.app{display:grid;grid-template-columns:minmax(0,1fr) 330px;grid-template-rows:auto minmax(0,1fr);height:100%}
+header{grid-column:1/-1;display:flex;align-items:center;gap:28px;padding:14px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+h1{margin:0;font-size:1.5rem;font-weight:800;font-stretch:125%;letter-spacing:-.01em;line-height:1.05}
+.sub{margin:2px 0 0;color:var(--muted);font-size:.86rem}
+.planets{display:flex;gap:6px;overflow-x:auto;max-width:100%;padding:2px}
+.pbtn{display:flex;align-items:center;gap:7px;padding:6px 12px 6px 7px;border-radius:999px;border:1px solid var(--line);background:transparent;white-space:nowrap;font-size:.88rem;font-weight:500}
+.pbtn .dot{width:16px;height:16px;border-radius:50%}
+.pbtn .st{color:var(--traj);font-size:.72rem;letter-spacing:.05em}
+.pbtn[aria-pressed="true"]{background:var(--btn-on);color:var(--btn-on-ink);border-color:transparent}
+.pbtn[aria-pressed="true"] .st{color:inherit}
+
+.stage{position:relative;min-height:0;background:var(--space);overflow:hidden}
+canvas{position:absolute;inset:0;display:block;touch-action:none}
+.toolbar{position:absolute;left:12px;right:12px;bottom:12px;display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap;pointer-events:none}
+.group{display:flex;gap:6px;flex-wrap:wrap;pointer-events:auto}
+.burn,.tbtn{border:1px solid var(--line);background:var(--btn);border-radius:10px;padding:9px 13px;font-weight:600;font-size:.86rem;user-select:none;-webkit-user-select:none;touch-action:none}
+.burn kbd{font:inherit;font-weight:500;color:var(--muted);margin-left:4px}
+.burn.on{background:var(--btn-on);color:var(--btn-on-ink)}
+.burn.on kbd{color:inherit}
+.tbtn[aria-pressed="true"]{background:var(--btn-on);color:var(--btn-on-ink)}
+.warp{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--btn)}
+.warp button{border:0;background:transparent;padding:9px 10px;font-size:.84rem;font-weight:600;font-variant-numeric:tabular-nums}
+.warp button[aria-pressed="true"]{background:var(--btn-on);color:var(--btn-on-ink)}
+
+.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:color-mix(in srgb,var(--space) 55%,transparent)}
+.overlay[hidden]{display:none}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px 26px;max-width:430px;width:100%}
+.card h2{margin:0 0 6px;font-size:1.4rem;font-stretch:115%;font-weight:800}
+.card p{margin:8px 0 0;color:var(--muted)}
+.card .stars{font-size:1.7rem;color:var(--traj);letter-spacing:.12em}
+.ovBtns{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap}
+.ovBtns button{border-radius:10px;padding:10px 16px;font-weight:700;border:1px solid var(--line);background:var(--btn)}
+.ovBtns button.primary{background:var(--btn-on);color:var(--btn-on-ink);border-color:transparent}
+
+aside{border-left:1px solid var(--line);background:var(--panel);padding:20px 22px;overflow-y:auto}
+aside h2{margin:0;font-size:1.25rem;font-stretch:112%;font-weight:800}
+.mission{margin:6px 0 0;color:var(--muted);font-size:.9rem}
+.objpick{display:flex;flex-direction:column;gap:3px;min-width:220px}
+.objpick label{font-size:.78rem;color:var(--muted)}
+.objpick select{font:inherit;font-weight:600;font-size:.9rem;color:var(--ink);background:var(--btn);border:1px solid var(--line);border-radius:10px;padding:7px 10px;max-width:100%}
+.objpick select:focus-visible{outline:2px solid var(--traj);outline-offset:2px}
+.objinfo{display:flex;gap:12px;align-items:flex-start;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.objinfo canvas{position:static;flex:none;width:56px;height:56px;border-radius:12px;background:var(--space)}
+.objinfo h3{margin:0;font-size:1rem;font-weight:700}
+.objinfo .grp{font-size:.78rem;color:var(--muted)}
+.objinfo p{margin:4px 0 0;font-size:.86rem;color:var(--muted)}
+.traits{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.traits span{font-size:.76rem;padding:2px 8px;border-radius:999px;border:1px solid var(--line)}
+.traits span.x{border-color:var(--traj);color:var(--traj)}
+.bar i.heat{background:var(--danger)}
+.tele{display:grid;grid-template-columns:1fr auto;gap:7px 12px;margin:20px 0 0;padding:16px 0 0;border-top:1px solid var(--line)}
+.tele dt{color:var(--muted);font-size:.88rem}
+.tele dd{margin:0;text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.tele dd.ok{color:var(--target)}
+.tele dd.bad{color:var(--danger)}
+.dv{margin-top:18px}
+.dv .row{display:flex;justify-content:space-between;font-size:.88rem}
+.dv .row span:first-child{color:var(--muted)}
+.dv .row span:last-child{font-weight:600;font-variant-numeric:tabular-nums}
+.bar{height:8px;border-radius:4px;background:var(--btn);margin-top:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--traj);width:100%}
+.status{margin-top:18px;padding:12px 14px;border-radius:10px;background:var(--btn);font-size:.9rem;min-height:3.2em}
+.best{margin-top:14px;font-size:.86rem;color:var(--muted)}
+.help{margin-top:20px;padding-top:14px;border-top:1px solid var(--line);font-size:.84rem;color:var(--muted)}
+.help p{margin:0 0 8px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend i{width:16px;height:3px;border-radius:2px;display:inline-block}
+
+@media (max-width:860px){
+  html,body{height:auto}
+  .app{grid-template-columns:1fr;grid-template-rows:auto auto auto;height:auto}
+  .stage{height:68vh;min-height:420px}
+  aside{border-left:0;border-top:1px solid var(--line)}
+  header{gap:12px}
+  .burn,.tbtn{padding:9px 10px;font-size:.8rem}
+  .burn kbd{display:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <h1>Inserção orbital</h1>
+      <p class="sub">Escolha um objeto e um planeta, e coloque-o em órbita gastando o mínimo de combustível.</p>
+    </div>
+    <div class="objpick">
+      <label for="objSel">Objeto</label>
+      <select id="objSel"></select>
+    </div>
+    <nav class="planets" id="planets" aria-label="Escolha o planeta"></nav>
+  </header>
+
+  <main class="stage" id="stage">
+    <canvas id="cv" role="img" aria-label="Simulação da trajetória do objeto ao redor do planeta"></canvas>
+    <div class="toolbar">
+      <div class="group">
+        <button class="burn" data-k="retro">Frear<kbd>↓</kbd></button>
+        <button class="burn" data-k="pro">Acelerar<kbd>↑</kbd></button>
+        <button class="burn" data-k="in">Para dentro<kbd>←</kbd></button>
+        <button class="burn" data-k="out">Para fora<kbd>→</kbd></button>
+      </div>
+      <div class="group">
+        <div class="warp" id="warp" role="group" aria-label="Velocidade do tempo"></div>
+        <button class="tbtn" id="autoBtn" aria-pressed="false">Piloto automático</button>
+        <button class="tbtn" id="pauseBtn">Pausar</button>
+        <button class="tbtn" id="restartBtn">Reiniciar</button>
+      </div>
+    </div>
+    <div class="overlay" id="overlay" hidden>
+      <div class="card" role="dialog" aria-modal="true" aria-labelledby="ovTitle">
+        <h2 id="ovTitle"></h2>
+        <div class="stars" id="ovStars"></div>
+        <p id="ovBody"></p>
+        <div class="ovBtns" id="ovBtns"></div>
+      </div>
+    </div>
+  </main>
+
+  <aside>
+    <div class="objinfo">
+      <canvas id="objIcon" width="112" height="112" aria-hidden="true"></canvas>
+      <div>
+        <div class="grp" id="objGrp"></div>
+        <h3 id="objName"></h3>
+        <p id="objDesc"></p>
+        <div class="traits" id="objTraits"></div>
+      </div>
+    </div>
+    <h2 id="missionTitle">Missão</h2>
+    <p class="mission" id="missionTxt"></p>
+    <dl class="tele">
+      <dt>Altitude</dt><dd id="tAlt">–</dd>
+      <dt>Velocidade</dt><dd id="tVel">–</dd>
+      <dt>Periapse (ponto mais baixo)</dt><dd id="tPer">–</dd>
+      <dt>Apoapse (ponto mais alto)</dt><dd id="tApo">–</dd>
+      <dt>Excentricidade</dt><dd id="tEcc">–</dd>
+    </dl>
+    <div class="dv">
+      <div class="row"><span>Combustível (Δv restante)</span><span id="dvTxt">–</span></div>
+      <div class="bar"><i id="dvBar"></i></div>
+    </div>
+    <div class="dv" id="heatWrap" hidden>
+      <div class="row"><span>Escudo térmico</span><span id="heatTxt">–</span></div>
+      <div class="bar"><i id="heatBar" class="heat"></i></div>
+    </div>
+    <div class="status" id="status" aria-live="polite"></div>
+    <div class="best" id="bestTxt"></div>
+    <div class="help">
+      <p>Segure os botões (ou as setas do teclado) para ligar o motor. Espaço pausa, R reinicia, + e − mudam a velocidade do tempo.</p>
+      <p>O piloto automático (tecla P) assume os comandos e faz a inserção sozinho. Tocar em qualquer comando devolve o controle para você. Resultados com piloto automático não contam como recorde.</p>
+      <p>Frear perto da periapse é o jeito mais barato de capturar o objeto. Com escudo térmico, dá para frear passando pela atmosfera. Depois, ajuste: queimar num extremo da órbita muda a altura do extremo oposto.</p>
+      <div class="legend">
+        <span><i style="background:var(--traj)"></i>Trajetória prevista</span>
+        <span><i style="background:var(--target)"></i>Faixa-alvo</span>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script>
+(() => {
+const PLANETS = [
+  {nome:'Mercúrio', mu:2.2032e13,  R:2.4397e6, atm:0,      alvo:400e3,    tol:60e3,    vinf:4000, cor:['#C9C0B6','#6E665F'], nota:'Sem atmosfera: dá para passar raspando, só não encoste no chão.'},
+  {nome:'Vênus',    mu:3.24859e14, R:6.0518e6, atm:200e3,  alvo:500e3,    tol:70e3,    vinf:3200, cor:['#F3DDA6','#B98E45'], nota:'A atmosfera densa vai até cerca de 200 km. Entrar nela é fim de missão.'},
+  {nome:'Terra',    mu:3.986004e14,R:6.371e6,  atm:100e3,  alvo:400e3,    tol:60e3,    vinf:3000, cor:['#8DC0F0','#2E5E9A'], nota:'A faixa-alvo fica perto da altitude da Estação Espacial Internacional.'},
+  {nome:'Lua',      mu:4.9048e12,  R:1.7374e6, atm:0,      alvo:100e3,    tol:20e3,    vinf:800,  cor:['#D8D8D4','#7C7C78'], nota:'Gravidade fraca: tudo acontece devagar e com pouco Δv.'},
+  {nome:'Marte',    mu:4.282837e13,R:3.3895e6, atm:80e3,   alvo:300e3,    tol:50e3,    vinf:2600, cor:['#E39A6B','#8E3F22'], nota:'Atmosfera fina, mas ainda perigosa abaixo de 80 km.'},
+  {nome:'Júpiter',  mu:1.26687e17, R:6.9911e7, atm:1000e3, alvo:100000e3, tol:12000e3, vinf:6000, cor:['#E8C9A0','#9C6B45'], nota:'Gravidade enorme: tudo chega muito rápido e a frenagem é longa.'},
+  {nome:'Saturno',  mu:3.7931e16,  R:5.8232e7, atm:800e3,  alvo:150000e3, tol:15000e3, vinf:5000, cor:['#F0DDAA','#A88A50'], nota:'A faixa-alvo fica além dos anéis principais.', aneis:true},
+];
+const OBJECTS = [
+  {id:'sonda', grupo:'Naves reais', nome:'Sonda robótica', forma:'sonda', desc:'Equilibrada e confiável. Boa para aprender.', empuxo:1, comb:1.3, vinf:1, tol:1},
+  {id:'capsula', grupo:'Naves reais', nome:'Cápsula tripulada', forma:'capsula', desc:'Pouco combustível, mas tem escudo térmico: dá para frear raspando na atmosfera.', empuxo:1.2, comb:1.0, vinf:1, tol:1, escudo:true},
+  {id:'telescopio', grupo:'Naves reais', nome:'Telescópio espacial', forma:'telescopio', desc:'Precisa de uma órbita bem exata: a faixa-alvo é estreita.', empuxo:0.7, comb:1.35, vinf:0.9, tol:0.55},
+  {id:'estacao', grupo:'Naves reais', nome:'Módulo de estação espacial', forma:'estacao', desc:'Pesado e lento de manobrar. Comece as queimas cedo.', empuxo:0.4, comb:1.3, vinf:0.7, tol:1},
+  {id:'vela', grupo:'Naves reais', nome:'Vela solar', forma:'vela', desc:'Empuxo minúsculo, mas quase inesgotável: é a luz do Sol que empurra a vela.', empuxo:0.22, comb:2.6, vinf:0.7, tol:1},
+  {id:'asteroide', grupo:'Corpos celestes', nome:'Asteroide rebocado', forma:'asteroide', desc:'Uma rocha de algumas centenas de metros empurrada por um rebocador iônico.', empuxo:0.3, comb:1.5, vinf:0.9, tol:1.2},
+  {id:'cometa', grupo:'Corpos celestes', nome:'Núcleo de cometa', forma:'cometa', desc:'Jatos de gás aleatórios empurram o cometa para lá e para cá. Corrija o tempo todo.', empuxo:0.8, comb:1.5, vinf:1.1, tol:1.2, jatos:0.015},
+  {id:'luinha', grupo:'Corpos celestes', nome:'Pequena lua (tipo Fobos)', forma:'lua', desc:'Uma lua de rocha porosa, capturada com motores de massa cravados na superfície.', empuxo:0.35, comb:1.45, vinf:0.6, tol:1.3},
+  {id:'interestelar', grupo:'Corpos celestes', nome:'Objeto interestelar (tipo ʻOumuamua)', forma:'charuto', desc:'Vem de fora do Sistema Solar, girando e rápido demais. Missão difícil.', empuxo:1.6, comb:1.3, vinf:2.6, tol:1},
+  {id:'geracional', grupo:'Ficção científica', nome:'Nave geracional', forma:'cilindro', desc:'Um cilindro de quilômetros que gira para simular gravidade. Muito combustível, pouco empuxo.', empuxo:0.45, comb:1.7, vinf:0.8, tol:1.3},
+  {id:'dobra', grupo:'Ficção científica', nome:'Cargueiro de dobra', forma:'cargueiro', desc:'Motores absurdamente fortes. O difícil é dar toques curtos (use o tempo em ×½).', empuxo:5, comb:1.2, vinf:1.8, tol:0.8},
+  {id:'leviata', grupo:'Ficção científica', nome:'Leviatã do vácuo', forma:'leviata', desc:'Uma criatura que nada no espaço. Tem pouca energia, mas ela se regenera com o motor desligado.', empuxo:0.7, comb:0.75, vinf:1, tol:1, regen:0.35},
+  {id:'criossono', grupo:'Ficção científica', nome:'Cápsula de criossono à deriva', forma:'capsula', desc:'Antiga e quase sem combustível, mas com escudo. Nos planetas com atmosfera, a aerofrenagem é obrigatória.', empuxo:0.8, comb:0.62, vinf:1, tol:1.2, escudo:true},
+  {id:'esfera', grupo:'Ficção científica', nome:'Esfera alienígena', forma:'esfera', desc:'Tecnologia desconhecida: todos os comandos funcionam ao contrário.', empuxo:1.5, comb:1.35, vinf:1.4, tol:1, invertido:true},
+];
+function traitsOf(o){
+  const t = [
+    'Empuxo ' + (o.empuxo < 0.5 ? 'baixo' : o.empuxo < 1.3 ? 'médio' : o.empuxo < 3 ? 'alto' : 'extremo'),
+    'Combustível ' + (o.comb < 0.9 ? 'escasso' : o.comb < 1.45 ? 'normal' : 'farto'),
+    'Chegada ' + (o.vinf < 0.85 ? 'lenta' : o.vinf < 1.3 ? 'normal' : 'rápida'),
+  ].map(x => [x, false]);
+  if (o.tol < 0.9) t.push(['Faixa estreita', true]);
+  if (o.tol > 1.1) t.push(['Faixa larga', false]);
+  if (o.escudo) t.push(['Escudo térmico', true]);
+  if (o.jatos) t.push(['Jatos de gás', true]);
+  if (o.regen) t.push(['Regenera energia', true]);
+  if (o.invertido) t.push(['Comandos invertidos', true]);
+  return t;
+}
+const KEY = 'insercao-orbital-v2';
+const $ = id => document.getElementById(id);
+const cv = $('cv'), ctx = cv.getContext('2d'), stage = $('stage');
+
+let best = {};
+try { best = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch(e) { best = {}; }
+const saveBest = () => { try { localStorage.setItem(KEY, JSON.stringify(best)); } catch(e) {} };
+
+let colors = {};
+function readColors(){
+  const cs = getComputedStyle(document.documentElement);
+  ['traj','target','danger','ink','muted','star','space','line'].forEach(k => colors[k] = cs.getPropertyValue('--'+k).trim());
+}
+readColors();
+try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readColors); } catch(e) {}
+
+let W=0, H=0, stars=[];
+function resize(){
+  const r = stage.getBoundingClientRect();
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  W = r.width; H = r.height;
+  cv.width = Math.round(W*dpr); cv.height = Math.round(H*dpr);
+  cv.style.width = W+'px'; cv.style.height = H+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  stars = Array.from({length: Math.round(W*H/4500)}, () => ({x:Math.random()*W, y:Math.random()*H, s:Math.random()*1.3+.3}));
+}
+new ResizeObserver(resize).observe(stage);
+resize();
+
+// ---------- formatação ----------
+const nf0 = new Intl.NumberFormat('pt-BR',{maximumFractionDigits:0});
+const nf2 = new Intl.NumberFormat('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const nf3 = new Intl.NumberFormat('pt-BR',{minimumFractionDigits:3,maximumFractionDigits:3});
+const km = m => nf0.format(m/1000) + ' km';
+const kms = v => nf2.format(v/1000) + ' km/s';
+const ms = v => nf0.format(v) + ' m/s';
+const starStr = n => '★'.repeat(n) + '☆'.repeat(3-n);
+
+// ---------- estado ----------
+let O = OBJECTS[0], P, S, current = 2, warp = 1, paused = false, viewR = 1;
+const keys = {pro:false, retro:false, in:false, out:false};
+const WARPS = [0.5,1,2,4,8];
+
+function setup(idx){
+  current = idx; P = PLANETS[idx];
+  const mu = P.mu, rt = P.R + P.alvo;
+  const minAlt = P.atm + 0.3*P.alvo;
+  const alt = Math.max(minAlt, P.alvo*(0.5 + Math.random()*1.2));
+  const rp = P.R + alt, vinf = P.vinf*O.vinf;
+  const vp = Math.sqrt(vinf*vinf + 2*mu/rp), h = rp*vp;
+  const r0 = 5*rt;
+  const v0 = Math.sqrt(vinf*vinf + 2*mu/r0), vt = h/r0, vr = -Math.sqrt(Math.max(0, v0*v0 - vt*vt));
+  const ang = Math.random()*Math.PI*2, ux = Math.cos(ang), uy = Math.sin(ang);
+  S = {x:r0*ux, y:r0*uy, vx:vr*ux - vt*uy, vy:vr*uy + vt*ux, r0, rt, used:0, trail:[], stable:0, phase:'briefing', burning:false,
+       tol:P.tol*O.tol, heat:0, auto:false, autoUsed:false, apCap:false, apLabel:'', lastDir:null, jetOn:false, jetTimer:1, jetAng:0, inAtm:false,
+       rock: Array.from({length:9}, (_,i) => { const a = i/9*Math.PI*2; return [Math.cos(a)*(5+Math.random()*3), Math.sin(a)*(5+Math.random()*3)]; })};
+  const vpe = Math.sqrt(2*mu*rt/(rp*(rp+rt))), dv1 = vp - vpe;
+  const vae = Math.sqrt(2*mu*rp/(rt*(rp+rt))), vc = Math.sqrt(mu/rt), dv2 = Math.abs(vc - vae);
+  S.ideal = dv1 + dv2;
+  const aeroInutil = P.atm === 0 || P.alvo > P.R;
+  const comb = (O.escudo && aeroInutil) ? Math.max(O.comb, 1.1) : O.comb;
+  S.budget = S.ideal*comb + 0.03*vc;
+  S.T = 2*Math.PI*Math.sqrt(rt*rt*rt/mu);
+  S.timeScale = S.T/24;            // órbita-alvo dura ~24 s reais em ×1
+  S.thrustBase = S.ideal/(0.08*S.T);
+  S.thrust = S.thrustBase*O.empuxo;  // aceleração do motor deste objeto
+  viewR = r0*1.25; paused = false; updatePause();
+  renderPlanetButtons();
+  $('missionTitle').textContent = 'Missão: ' + P.nome;
+  $('missionTxt').textContent = `Deixe o objeto numa órbita inteira entre ${km(P.alvo-S.tol)} e ${km(P.alvo+S.tol)} de altitude. ${P.nota}`;
+  renderObjInfo();
+  updateAutoBtn();
+  const b = best[bestKey()];
+  $('bestTxt').textContent = b ? `Seu melhor com ${O.nome} em ${P.nome}: ${b.pts} pontos, ${starStr(b.stars)}` : `Ainda sem resultado com ${O.nome} em ${P.nome}.`;
+  $('heatWrap').hidden = !O.escudo;
+  let extra = '';
+  if (O.escudo && !aeroInutil) extra = ' O escudo térmico deixa você frear passando pela atmosfera, mas ele se desgasta a cada passagem.';
+  else if (O.escudo) extra = (P.atm === 0 ? ' Aqui não há atmosfera' : ' A órbita-alvo fica longe demais da atmosfera') + ', então o escudo ajuda pouco; você recebeu combustível extra.';
+  if (O.invertido) extra += ' Atenção: os comandos estão invertidos.';
+  if (O.jatos) extra += ' Os jatos de gás vão desviar sua trajetória sem aviso.';
+  if (O.regen) extra += ' A energia volta aos poucos quando o motor está desligado.';
+  showOverlay({
+    title: 'Missão: ' + P.nome,
+    body: `${O.nome} chega a ${P.nome} em trajetória de escape. Coloque o objeto numa órbita entre ${km(P.alvo-S.tol)} e ${km(P.alvo+S.tol)} de altitude. Você tem ${ms(S.budget)} de Δv.${extra}`,
+    buttons: [
+      {label:'Começar', primary:true, act:() => { S.phase='voo'; hideOverlay(); }},
+      {label:'Usar piloto automático', act:() => { S.phase='voo'; hideOverlay(); apStart(); }}
+    ]
+  });
+}
+
+function elements(){ return elementsOf(S.x, S.y, S.vx, S.vy); }
+function elementsOf(x, y, vx, vy){
+  const mu = P.mu;
+  const r = Math.hypot(x,y), v2 = vx*vx + vy*vy, rv = x*vx + y*vy;
+  const h = x*vy - y*vx;
+  const ex = ((v2 - mu/r)*x - rv*vx)/mu, ey = ((v2 - mu/r)*y - rv*vy)/mu;
+  const e = Math.hypot(ex,ey), p = h*h/mu;
+  return {r, v:Math.sqrt(v2), rv, e, p, w:Math.atan2(ey,ex), rp:p/(1+e), ra: e<1 ? p/(1-e) : Infinity};
+}
+
+function thrustDir(){
+  if (S.phase !== 'voo' || !(keys.pro||keys.retro||keys.in||keys.out)) return null;
+  const v = Math.hypot(S.vx,S.vy) || 1, r = Math.hypot(S.x,S.y);
+  const pv = [S.vx/v, S.vy/v], ru = [S.x/r, S.y/r];
+  let a = (keys.pro?1:0) - (keys.retro?1:0), b = (keys.out?1:0) - (keys.in?1:0);
+  if (O.invertido) { a = -a; b = -b; }
+  const dx = a*pv[0] + b*ru[0], dy = a*pv[1] + b*ru[1], n = Math.hypot(dx,dy);
+  return n > 1e-9 ? [dx/n, dy/n] : null;
+}
+
+function simulate(dtSim){
+  const mu = P.mu;
+  let rem = dtSim, n = 0;
+  S.burning = false;
+  while (rem > 0 && n < 8000) {
+    const r = Math.hypot(S.x,S.y), v = Math.hypot(S.vx,S.vy) || 1;
+    const alt0 = r - P.R, inAtm = P.atm > 0 && alt0 < P.atm;
+    const h = Math.min(rem, (inAtm ? 0.0005 : 0.002)*r/v, S.T/3000);
+    let tx = 0, ty = 0, fired = false;
+    let d, thr = 1;
+    if (S.auto) { const c = apCommand(h); S.apLabel = c.label; d = c.dir; thr = c.thr; }
+    else d = thrustDir();
+    const left = S.budget - S.used;
+    if (d && thr > 0 && left > 0) {
+      let acc = S.thrust*thr; S.lastDir = d;
+      if (acc*h > left) acc = left/h;
+      tx = d[0]*acc; ty = d[1]*acc; S.used += acc*h; S.burning = fired = true;
+    }
+    if (!fired && O.regen) S.used = Math.max(0, S.used - O.regen*S.budget*h/S.T);
+    if (S.jetOn) { const ja = O.jatos*S.thrustBase; tx += Math.cos(S.jetAng)*ja; ty += Math.sin(S.jetAng)*ja; }
+    if (inAtm && O.escudo) {
+      const Hs = P.atm/5, f = Math.max(0, Math.exp(-alt0/Hs) - Math.exp(-P.atm/Hs));
+      const ad = 3*S.thrustBase*f*(v/Math.sqrt(P.mu/S.rt));
+      tx -= S.vx/v*ad; ty -= S.vy/v*ad;
+      S.heat += ad*h/(S.ideal*1.4);
+      if (S.heat >= 1) return fail('Escudo esgotado', `O escudo térmico se desgastou por completo na atmosfera de ${P.nome}. Passagens mais altas freiam menos, mas aquecem menos também.`);
+    }
+    S.inAtm = inAtm;
+    // velocity Verlet
+    let k = -mu/(r*r*r);
+    S.vx += 0.5*h*(k*S.x + tx); S.vy += 0.5*h*(k*S.y + ty);
+    S.x += h*S.vx; S.y += h*S.vy;
+    const r2 = Math.hypot(S.x,S.y); k = -mu/(r2*r2*r2);
+    S.vx += 0.5*h*(k*S.x + tx); S.vy += 0.5*h*(k*S.y + ty);
+    rem -= h; n++;
+    if (r2 < P.R) return fail('Colisão', `${O.nome} atingiu a superfície de ${P.nome}. Frear tarde demais ou com a periapse baixa leva a isso.`);
+    if (!O.escudo && P.atm > 0 && r2 < P.R + P.atm) return fail('Entrada na atmosfera', `${O.nome} mergulhou na atmosfera de ${P.nome} abaixo de ${km(P.atm)} e se perdeu. Só objetos com escudo térmico aguentam isso.`);
+  }
+  const el = elements();
+  if (el.e >= 1 && el.r > S.r0*1.3 && el.rv > 0)
+    return fail('Escapou para o espaço', `${O.nome} passou por ${P.nome} sem frear o suficiente e seguiu para o espaço profundo.`);
+}
+
+// ---------- piloto automático ----------
+const AERO_ALT = 0.55;
+function updateAutoBtn(){
+  const b = $('autoBtn'); const on = !!(S && S.auto);
+  b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  b.textContent = on ? 'Desligar piloto' : 'Piloto automático';
+}
+function apStart(){
+  if (S.phase !== 'voo') return;
+  S.auto = true; S.autoUsed = true; S.apCap = false; releaseKeys();
+  const mu = P.mu, rt = S.rt, vc = Math.sqrt(mu/rt);
+  const rpA = P.R + AERO_ALT*P.atm;
+  S.apReserve = (vc - Math.sqrt(2*mu*rpA/(rt*(rpA+rt))))*1.4 + 0.02*vc;
+  const el = elements();
+  const vAtRt = Math.sqrt(Math.max(0, el.v*el.v - 2*mu/el.r + 2*mu/rt));
+  const need = Math.max(0, vAtRt - vc)*1.15;
+  const leftNow = S.budget - S.used;
+  S.apAero = !!(O.escudo && P.atm > 0 && leftNow < need + 0.05*vc && leftNow > S.apReserve*1.3);
+  updateAutoBtn();
+}
+function apStop(){ if (S && S.auto) { S.auto = false; updateAutoBtn(); } }
+
+function apCommand(hStep){
+  const mu = P.mu, rt = S.rt, el = elements();
+  const {x, y, vx, vy} = S, r = el.r;
+  const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+  const cmd = (dir, thr, label) => ({dir, thr: clamp(thr, 0, 1), label});
+  const coast = label => ({dir:null, thr:0, label});
+  const hsg = (x*vy - y*vx) >= 0 ? 1 : -1;
+  const ur = [x/r, y/r], ut = [-hsg*y/r, hsg*x/r];
+  const pv = [vx/el.v, vy/el.v], rv = [-pv[0], -pv[1]];
+  let nu = Math.atan2(y, x) - el.w; if (hsg < 0) nu = -nu;
+  nu = Math.atan2(Math.sin(nu), Math.cos(nu));
+  const altP = el.rp - P.R, altA = el.ra - P.R;
+  if (el.e < 1 && altP >= P.alvo - S.tol && altA <= P.alvo + S.tol) { S.apCap = false; return coast('órbita na faixa, motores desligados.'); }
+  const left = S.budget - S.used, vc = Math.sqrt(mu/rt);
+  const aero = S.apAero && S.heat < 0.6;
+  const open = el.e >= 1 || el.ra > S.r0*0.9;
+  const tol = S.tol;
+  // empuxo necessário para corrigir `err` em `key` (rp ou ra) queimando na direção `dir`, sem passar do ponto
+  const precise = (dir, key, err, label) => {
+    const dv = 1e-4*el.v;
+    const e2 = elementsOf(x, y, vx + dir[0]*dv, vy + dir[1]*dv);
+    const v2 = e2[key];
+    const sens = Number.isFinite(v2) ? (v2 - el[key])/dv : 0;
+    if (!(Math.abs(sens) > 1e-9)) return cmd(dir, 1, label);
+    const need = -err/sens;
+    if (need <= 0) return coast(label);
+    return cmd(dir, 0.5*need/(S.thrust*hStep), label);
+  };
+  const minSafe = O.escudo && P.atm > 0 ? P.R + 0.3*P.atm : P.R + P.atm + 0.3*tol;
+  if (!aero && el.rp < minSafe && !(S.apCap && el.e >= 1)) {
+    const dir = el.rv < 0 ? [ut[0]*0.7 + ur[0]*0.7, ut[1]*0.7 + ur[1]*0.7] : ut;
+    const m = Math.hypot(dir[0], dir[1]);
+    return precise([dir[0]/m, dir[1]/m], 'rp', el.rp - (minSafe + 0.2*tol), 'subindo a periapse para longe do perigo.');
+  }
+
+  // leva a sonda para uma órbita com semi-latus rectum = raio-alvo
+  const circ = label => {
+    const vt = Math.sqrt(mu*rt)/r, vrNow = vx*ur[0] + vy*ur[1];
+    const keep = clamp(Math.abs(nu), 0, 1);
+    const dvx = ut[0]*vt + ur[0]*vrNow*keep - vx, dvy = ut[1]*vt + ur[1]*vrNow*keep - vy;
+    const m = Math.hypot(dvx, dvy);
+    if (m < 0.004*vc) { S.apCap = false; return coast('captura concluída, ajustando.'); }
+    return cmd([dvx/m, dvy/m], m/(S.thrust*S.T/150), label);
+  };
+
+  // captura: freia contra o movimento, mas segura a periapse perto do raio-alvo
+  const capture = () => {
+    const rpHold = aero ? P.R + AERO_ALT*P.atm : rt;
+    const raStop = aero ? 6*rt : rt + 0.4*tol;
+    if (aero && left <= S.apReserve) { S.apCap = false; return coast('aerofrenagem.'); }
+    if (el.e < 1 && el.ra <= raStop) { S.apCap = false; return coast(aero ? 'capturado, aerofrenagem nas próximas passagens.' : 'captura concluída, ajustando.'); }
+    const corr = clamp((rpHold - el.rp)/(aero ? 0.15*P.atm : tol)*1.5, -3, 3);
+    const dx = rv[0] + ut[0]*corr, dy = rv[1] + ut[1]*corr, m = Math.hypot(dx, dy);
+    if (m < 1e-6) return coast('freando para captura.');
+    const thr = el.e < 1 ? (el.ra - raStop)/(tol*3) + 0.05 : 1;
+    return cmd([dx/m, dy/m], thr, 'freando para captura.');
+  };
+  if (S.apCap) {
+    if (el.e < 1 && nu > 1.4) S.apCap = false;
+    else return capture();
+  }
+  if (open) {
+    const rpAim = aero ? P.R + AERO_ALT*P.atm : rt;
+    const tolAim = aero ? 0.08*P.atm : 0.4*tol;
+    if (el.rv < 0 && r > 1.6*rt) {
+      const err = el.rp - rpAim;
+      if (Math.abs(err) > tolAim) {
+        const s = err < 0 ? 1 : -1;
+        return precise([ut[0]*s, ut[1]*s], 'rp', err, 'corrigindo a rota de aproximação.');
+      }
+      return coast('rota de aproximação ajustada, aguardando.');
+    }
+    const vp = Math.sqrt(mu*el.p)/el.rp, vdes = Math.sqrt(mu*rt)/el.rp;
+    const half = 0.5*Math.max(0, vp - vdes)/S.thrust*vp/el.rp;
+    const start = clamp(half, 0.05, 1.6);
+    if (nu > -start && nu < 1.4 && r < 3*rt) { S.apCap = true; return capture(); }
+    return coast('aguardando o ponto de frenagem.');
+  }
+  if (S.apWasInAtm && !S.inAtm) { const before = S.apRaBefore || el.ra; S.apDrop = (before - el.ra)*Math.pow(el.ra/before, 2); }
+  if (!S.apWasInAtm && S.inAtm) S.apRaBefore = el.ra;
+  S.apWasInAtm = S.inAtm;
+  if (aero && altP < P.atm && el.ra > rt + 0.5*tol && !S.inAtm && el.ra - 1.6*(S.apDrop || 0) < rt + 0.5*tol) S.apAero = false;
+  else if (aero && altP < P.atm && el.ra > rt + 0.5*tol) {
+    const rpA = P.R + AERO_ALT*P.atm, errA = el.rp - rpA;
+    if (Math.abs(Math.abs(nu) - Math.PI) < 0.4 && Math.abs(errA) > 0.12*P.atm && left > S.apReserve)
+      return precise(errA < 0 ? pv : rv, 'rp', errA, 'na apoapse, acertando a altura da próxima passagem.');
+    return coast(S.inAtm ? 'aerofrenagem: baixando a apoapse.' : 'aguardando a próxima passagem pela atmosfera.');
+  }
+  if (el.e < 0.01) {
+    const key = r < rt ? 'ra' : 'rp', err = el[key] - rt;
+    if (Math.abs(err) > 0.25*tol) return precise(err < 0 ? pv : rv, key, err, err < 0 ? 'subindo a órbita.' : 'baixando a órbita.');
+  }
+  const win = 0.3;
+  if (Math.abs(nu) < win) {
+    const err = el.ra - rt;
+    if (Math.abs(err) > 0.25*tol) return precise(err < 0 ? pv : rv, 'ra', err, err < 0 ? 'acelerando na periapse para subir a apoapse.' : 'freando na periapse para baixar a apoapse.');
+  }
+  if (Math.abs(Math.abs(nu) - Math.PI) < win) {
+    const err = el.rp - rt;
+    if (Math.abs(err) > 0.25*tol) return precise(err < 0 ? pv : rv, 'rp', err, err < 0 ? 'acelerando na apoapse para subir a periapse.' : 'freando na apoapse para baixar a periapse.');
+  }
+  return coast('aguardando o próximo ponto de manobra.');
+}
+
+function fail(title, body){
+  S.phase = 'fim'; S.burning = false; releaseKeys();
+  if (S.auto) body += ' O piloto automático não conseguiu salvar esta missão; o combustível ou o escudo não bastaram.';
+  S.auto = false; updateAutoBtn();
+  showOverlay({title, body, buttons:[
+    {label:'Tentar de novo', primary:true, act:() => setup(current)},
+    {label:'Trocar de planeta', act:() => { hideOverlay(); S.phase='escolha'; document.querySelector('.pbtn[aria-pressed="true"]')?.focus(); }}
+  ]});
+}
+
+function win(el){
+  S.phase = 'fim'; S.burning = false; releaseKeys();
+  const altP = el.rp - P.R, altA = el.ra - P.R;
+  const precision = Math.max(0, 1 - (Math.abs(altP-P.alvo) + Math.abs(altA-P.alvo))/(2*S.tol));
+  const fuel = Math.max(0, (S.budget - S.used)/S.budget);
+  const pts = Math.round(1000*(0.5*precision + 0.5*Math.min(1, fuel/0.35)));
+  const stars = 1 + (fuel >= 0.15 ? 1 : 0) + (precision >= 0.5 ? 1 : 0);
+  const k = bestKey(), prev = best[k], auto = S.autoUsed;
+  const record = !auto && (!prev || pts > prev.pts);
+  if (record) { best[k] = {pts, stars}; saveBest(); renderPlanetButtons(); }
+  if (best[k]) $('bestTxt').textContent = `Seu melhor com ${O.nome} em ${P.nome}: ${best[k].pts} pontos, ${starStr(best[k].stars)}`;
+  S.auto = false; updateAutoBtn();
+  showOverlay({
+    title: auto ? 'Órbita estabelecida pelo piloto automático' : record && prev ? 'Novo recorde!' : 'Órbita estabelecida',
+    stars,
+    body: `Periapse ${km(altP)}, apoapse ${km(altA)}. ${auto ? 'Foram gastos' : 'Você gastou'} ${ms(S.used)} de ${ms(S.budget)}. ${pts} pontos.` + (auto ? ' Agora tente bater essa marca no controle manual.' : ''),
+    buttons:[
+      {label:'Próximo planeta', primary:true, act:() => setup((current+1) % PLANETS.length)},
+      {label:'Trocar de objeto', act:() => { hideOverlay(); S.phase='escolha'; $('objSel').focus(); }},
+      {label:'Jogar de novo', act:() => setup(current)}
+    ]
+  });
+}
+
+// ---------- overlay ----------
+function showOverlay({title, body, stars, buttons}){
+  $('ovTitle').textContent = title;
+  $('ovBody').textContent = body;
+  $('ovStars').textContent = stars ? starStr(stars) : '';
+  $('ovStars').hidden = !stars;
+  const box = $('ovBtns'); box.innerHTML = '';
+  buttons.forEach(b => {
+    const el = document.createElement('button');
+    el.textContent = b.label; if (b.primary) el.className = 'primary';
+    el.onclick = b.act; box.appendChild(el);
+  });
+  $('overlay').hidden = false;
+  box.querySelector('button')?.focus();
+}
+function hideOverlay(){ $('overlay').hidden = true; }
+
+// ---------- controles ----------
+function renderPlanetButtons(){
+  const nav = $('planets'); nav.innerHTML = '';
+  PLANETS.forEach((p,i) => {
+    const b = document.createElement('button');
+    b.className = 'pbtn'; b.setAttribute('aria-pressed', i === current ? 'true' : 'false');
+    b.innerHTML = `<span class="dot" style="background:radial-gradient(circle at 35% 35%, ${p.cor[0]}, ${p.cor[1]})"></span>${p.nome}` +
+      (best[p.nome+'|'+O.id] ? ` <span class="st" aria-label="${best[p.nome+'|'+O.id].stars} estrelas">${starStr(best[p.nome+'|'+O.id].stars)}</span>` : '');
+    b.onclick = () => setup(i);
+    nav.appendChild(b);
+  });
+}
+
+const bestKey = () => P.nome + '|' + O.id;
+const sel = $('objSel');
+[...new Set(OBJECTS.map(o => o.grupo))].forEach(g => {
+  const og = document.createElement('optgroup'); og.label = g;
+  OBJECTS.filter(o => o.grupo === g).forEach(o => {
+    const op = document.createElement('option'); op.value = o.id; op.textContent = o.nome; og.appendChild(op);
+  });
+  sel.appendChild(og);
+});
+sel.value = O.id;
+sel.addEventListener('change', () => { O = OBJECTS.find(o => o.id === sel.value); setup(current); });
+
+const iconCtx = $('objIcon').getContext('2d');
+function renderObjInfo(){
+  $('objGrp').textContent = O.grupo;
+  $('objName').textContent = O.nome;
+  $('objDesc').textContent = O.desc;
+  const box = $('objTraits'); box.innerHTML = '';
+  traitsOf(O).forEach(([t, x]) => { const s = document.createElement('span'); s.textContent = t; if (x) s.className = 'x'; box.appendChild(s); });
+}
+function drawIcon(t){
+  const c = iconCtx;
+  c.setTransform(1,0,0,1,0,0); c.clearRect(0,0,112,112);
+  c.setTransform(3.4,0,0,3.4,56,56);
+  drawShape(c, O.forma, -Math.PI/5, t, false, S && S.rock);
+}
+
+const warpBox = $('warp');
+WARPS.forEach(w => {
+  const b = document.createElement('button');
+  b.textContent = '×' + (w === 0.5 ? '½' : w); b.dataset.w = w;
+  b.onclick = () => setWarp(w);
+  warpBox.appendChild(b);
+});
+function setWarp(w){
+  warp = w;
+  warpBox.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', +b.dataset.w === w ? 'true' : 'false'));
+}
+setWarp(1);
+
+function updatePause(){ $('pauseBtn').textContent = paused ? 'Continuar' : 'Pausar'; }
+$('pauseBtn').onclick = () => { paused = !paused; updatePause(); };
+$('restartBtn').onclick = () => setup(current);
+function toggleAuto(){
+  if (S.phase === 'briefing') { S.phase = 'voo'; hideOverlay(); apStart(); return; }
+  if (S.phase !== 'voo') return;
+  S.auto ? apStop() : apStart();
+}
+$('autoBtn').onclick = toggleAuto;
+
+function syncBurnButtons(){
+  document.querySelectorAll('.burn').forEach(b => b.classList.toggle('on', keys[b.dataset.k]));
+}
+function releaseKeys(){ Object.keys(keys).forEach(k => keys[k] = false); syncBurnButtons(); }
+
+document.querySelectorAll('.burn').forEach(b => {
+  const k = b.dataset.k;
+  const on = e => { e.preventDefault(); apStop(); keys[k] = true; syncBurnButtons(); try { b.setPointerCapture(e.pointerId); } catch(_) {} };
+  const off = () => { keys[k] = false; syncBurnButtons(); };
+  b.addEventListener('pointerdown', on);
+  b.addEventListener('pointerup', off);
+  b.addEventListener('pointercancel', off);
+  b.addEventListener('lostpointercapture', off);
+  b.addEventListener('contextmenu', e => e.preventDefault());
+});
+
+const KEYMAP = {ArrowUp:'pro', w:'pro', W:'pro', ArrowDown:'retro', s:'retro', S:'retro', ArrowLeft:'in', a:'in', A:'in', ArrowRight:'out', d:'out', D:'out'};
+window.addEventListener('keydown', e => {
+  if (!$('overlay').hidden) return;
+  if (KEYMAP[e.key]) { e.preventDefault(); apStop(); keys[KEYMAP[e.key]] = true; syncBurnButtons(); return; }
+  if (e.key === 'p' || e.key === 'P') { toggleAuto(); return; }
+  if (e.key === ' ' && S.phase === 'voo') { e.preventDefault(); paused = !paused; updatePause(); }
+  else if (e.key === 'r' || e.key === 'R') setup(current);
+  else if (e.key === '+' || e.key === '=') setWarp(WARPS[Math.min(WARPS.length-1, WARPS.indexOf(warp)+1)]);
+  else if (e.key === '-' || e.key === '_') setWarp(WARPS[Math.max(0, WARPS.indexOf(warp)-1)]);
+});
+window.addEventListener('keyup', e => { if (KEYMAP[e.key]) { keys[KEYMAP[e.key]] = false; syncBurnButtons(); } });
+window.addEventListener('blur', releaseKeys);
+
+// ---------- desenho ----------
+function withAlpha(a, fn){ ctx.save(); ctx.globalAlpha = a; fn(); ctx.restore(); }
+function annulus(cx, cy, ri, ro){ ctx.beginPath(); ctx.arc(cx,cy,ro,0,Math.PI*2); ctx.arc(cx,cy,Math.max(0,ri),0,Math.PI*2,true); ctx.fill(); }
+
+function draw(el){
+  ctx.fillStyle = colors.space; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = colors.star;
+  for (const s of stars) ctx.fillRect(s.x, s.y, s.s, s.s);
+
+  const cx = W/2, cy = H/2 - 20, sc = Math.min(W, H)/2/viewR;
+  const X = x => cx + x*sc, Y = y => cy - y*sc;
+
+  // faixa-alvo
+  ctx.fillStyle = colors.target;
+  withAlpha(0.14, () => annulus(cx, cy, (S.rt-S.tol)*sc, (S.rt+S.tol)*sc));
+  withAlpha(0.7, () => { ctx.strokeStyle = colors.target; ctx.setLineDash([4,6]); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(cx, cy, S.rt*sc, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]); });
+
+  // atmosfera
+  if (P.atm > 0) {
+    ctx.fillStyle = P.cor[0];
+    withAlpha(0.22, () => annulus(cx, cy, P.R*sc, Math.max((P.R+P.atm)*sc, P.R*sc + 2)));
+  }
+  // planeta
+  const pr = P.R*sc;
+  const g = ctx.createRadialGradient(cx - pr*.35, cy - pr*.35, pr*.1, cx, cy, pr);
+  g.addColorStop(0, P.cor[0]); g.addColorStop(1, P.cor[1]);
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, pr, 0, Math.PI*2); ctx.fill();
+  if (P.aneis) {
+    ctx.fillStyle = P.cor[0];
+    withAlpha(0.32, () => annulus(cx, cy, 1.24*pr, 1.95*pr));
+    withAlpha(0.18, () => annulus(cx, cy, 2.02*pr, 2.27*pr));
+  }
+
+  // rastro
+  if (S.trail.length > 1) {
+    ctx.strokeStyle = colors.muted; ctx.lineWidth = 1.2;
+    withAlpha(0.6, () => { ctx.beginPath();
+      S.trail.forEach((p,i) => i ? ctx.lineTo(X(p[0]), Y(p[1])) : ctx.moveTo(X(p[0]), Y(p[1])));
+      ctx.stroke(); });
+  }
+
+  // trajetória prevista
+  const danger = el.rp < P.R + (O.escudo ? 0 : P.atm);
+  ctx.strokeStyle = danger ? colors.danger : colors.traj; ctx.lineWidth = 2;
+  ctx.beginPath();
+  let pen = false;
+  const N = 540, lim = viewR*4;
+  for (let i = 0; i <= N; i++) {
+    const th = i/N*Math.PI*2;
+    const den = 1 + el.e*Math.cos(th);
+    const r = den > 0.01 ? el.p/den : Infinity;
+    if (r > lim) { pen = false; continue; }
+    const px = X(r*Math.cos(th + el.w)), py = Y(r*Math.sin(th + el.w));
+    pen ? ctx.lineTo(px, py) : ctx.moveTo(px, py); pen = true;
+  }
+  ctx.stroke();
+
+  // marcadores Pe / Ap
+  ctx.font = '600 11px Archivo, system-ui, sans-serif';
+  const mark = (r, ang, label) => {
+    const px = X(r*Math.cos(ang)), py = Y(r*Math.sin(ang));
+    ctx.fillStyle = ctx.strokeStyle; ctx.beginPath(); ctx.arc(px, py, 3.5, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = colors.ink; ctx.fillText(label, px + 7, py - 6);
+  };
+  if (el.e > 0.002) {
+    mark(el.rp, el.w, 'Pe');
+    if (el.e < 1 && el.ra < lim) mark(el.ra, el.w + Math.PI, 'Ap');
+  }
+
+  // objeto
+  const sx = X(S.x), sy = Y(S.y), ang = Math.atan2(S.vy, S.vx), tnow = performance.now()/1000;
+  if (O.forma === 'cometa') {
+    const rr = Math.hypot(S.x, S.y), ux = S.x/rr, uy = -S.y/rr;
+    ctx.strokeStyle = colors.target;
+    [[0.5,4,22],[0.3,7,34],[0.15,10,48]].forEach(([a,w,l]) => withAlpha(a, () => {
+      ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + ux*l, sy + uy*l); ctx.stroke(); }));
+    ctx.lineCap = 'butt';
+  }
+  if (S.inAtm && O.escudo && S.phase === 'voo') {
+    ctx.fillStyle = colors.danger;
+    withAlpha(0.35 + Math.random()*0.25, () => { ctx.beginPath(); ctx.arc(sx, sy, 12, 0, Math.PI*2); ctx.fill(); });
+  }
+  if (S.jetOn && S.phase === 'voo') {
+    ctx.fillStyle = colors.target;
+    const jx = -Math.cos(S.jetAng), jy = Math.sin(S.jetAng);
+    withAlpha(0.7, () => { for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.arc(sx + jx*(7+i*4) + (Math.random()-.5)*3, sy + jy*(7+i*4) + (Math.random()-.5)*3, 1.6, 0, Math.PI*2); ctx.fill(); } });
+  }
+  ctx.save(); ctx.translate(sx, sy);
+  const d = S.burning ? S.lastDir : null;
+  if (d) {
+    const fa = Math.atan2(d[1], d[0]);
+    ctx.save(); ctx.rotate(-fa);
+    ctx.fillStyle = colors.traj; ctx.beginPath();
+    ctx.moveTo(-6, -3.5); ctx.lineTo(-17 - Math.random()*5, 0); ctx.lineTo(-6, 3.5); ctx.fill();
+    ctx.restore();
+  }
+  drawShape(ctx, O.forma, ang, tnow, true, S.rock);
+  ctx.restore();
+
+  // escala
+  const barKm = niceKm(viewR*0.35);
+  const bw = barKm*1000*sc;
+  ctx.strokeStyle = colors.muted; ctx.lineWidth = 1.5; ctx.fillStyle = colors.muted;
+  ctx.beginPath(); ctx.moveTo(14, 18); ctx.lineTo(14 + bw, 18); ctx.moveTo(14, 14); ctx.lineTo(14, 22); ctx.moveTo(14+bw, 14); ctx.lineTo(14+bw, 22); ctx.stroke();
+  ctx.fillText(nf0.format(barKm) + ' km', 14, 36);
+  if (paused && S.phase === 'voo') { ctx.fillStyle = colors.ink; ctx.font = '700 14px Archivo, system-ui, sans-serif'; ctx.fillText('Pausado', W - 76, 26); }
+}
+// formas dos objetos: desenhadas com a frente apontando para +x
+function drawShape(c, forma, ang, t, flipY, rock){
+  c.save();
+  c.rotate(-ang);
+  const ink = colors.ink, acc = colors.traj, mut = colors.muted;
+  const rect = (x,y,w,h,col) => { c.fillStyle = col; c.fillRect(x,y,w,h); };
+  c.lineWidth = 1.2;
+  switch (forma) {
+    case 'capsula':
+      c.fillStyle = ink; c.beginPath(); c.moveTo(6,-2.5); c.lineTo(6,2.5); c.lineTo(-4,6); c.lineTo(-4,-6); c.closePath(); c.fill();
+      rect(-6,-6.5,2,13,acc); break;
+    case 'telescopio':
+      rect(-3,-11,4,7,mut); rect(-3,4,4,7,mut); rect(-7,-3,13,6,ink); rect(6,-3.6,2,7.2,acc); break;
+    case 'estacao':
+      c.strokeStyle = ink; c.beginPath(); c.moveTo(0,-13); c.lineTo(0,13); c.stroke();
+      rect(-4,-14,8,5,mut); rect(-4,9,8,5,mut); rect(-7,-2.5,14,5,ink); break;
+    case 'vela':
+      c.rotate(Math.PI/4); c.fillStyle = acc;
+      c.globalAlpha = 0.35; c.fillRect(-8,-8,16,16); c.globalAlpha = 1;
+      c.strokeStyle = acc; c.strokeRect(-8,-8,16,16);
+      c.beginPath(); c.moveTo(-8,-8); c.lineTo(8,8); c.moveTo(8,-8); c.lineTo(-8,8); c.stroke();
+      rect(-1.5,-1.5,3,3,ink); break;
+    case 'asteroide':
+      c.rotate(t*0.6); c.fillStyle = mut; c.beginPath();
+      (rock || [[7,0],[4,5],[-3,6],[-7,1],[-5,-5],[2,-6]]).forEach((p,i) => i ? c.lineTo(p[0],p[1]) : c.moveTo(p[0],p[1]));
+      c.closePath(); c.fill(); c.strokeStyle = ink; c.stroke(); break;
+    case 'cometa':
+      c.fillStyle = ink; c.beginPath(); c.arc(0,0,3.6,0,Math.PI*2); c.fill(); break;
+    case 'lua':
+      c.rotate(t*0.3); c.fillStyle = mut; c.beginPath(); c.ellipse(0,0,7,5.5,0,0,Math.PI*2); c.fill();
+      c.fillStyle = ink; c.globalAlpha = 0.45;
+      [[2,-1.5,1.6],[-3,1.5,1.1],[-1,-3,0.8]].forEach(([x,y,r]) => { c.beginPath(); c.arc(x,y,r,0,Math.PI*2); c.fill(); });
+      c.globalAlpha = 1; break;
+    case 'charuto':
+      c.rotate(t*1.8); c.fillStyle = acc; c.beginPath(); c.ellipse(0,0,10,2.4,0,0,Math.PI*2); c.fill(); break;
+    case 'cilindro': {
+      rect(-10,-4,20,8,ink); c.fillStyle = mut;
+      const off = (t*10) % 5;
+      for (let x = -10 + off; x < 10; x += 5) c.fillRect(x, -4, 1.2, 8);
+      rect(10,-2,2,4,acc); break; }
+    case 'cargueiro':
+      c.strokeStyle = ink; c.beginPath(); c.moveTo(-12,0); c.lineTo(9,0); c.stroke();
+      for (let i = 0; i < 4; i++) rect(-10 + i*5, -3, 4, 6, i % 2 ? mut : ink);
+      rect(9,-2,3,4,ink);
+      c.strokeStyle = acc; c.lineWidth = 1.6; c.beginPath(); c.ellipse(-12.5,0,1.6,5.5,0,0,Math.PI*2); c.stroke(); break;
+    case 'leviata': {
+      const w = Math.sin(t*5)*2.5;
+      c.fillStyle = ink; c.beginPath();
+      c.moveTo(9,0); c.quadraticCurveTo(3,-6,-6,-2.2); c.quadraticCurveTo(-10,-1+w*.5,-14,-4.5+w);
+      c.lineTo(-12,w*.4); c.lineTo(-14,4.5+w); c.quadraticCurveTo(-10,1+w*.5,-6,2.2); c.quadraticCurveTo(3,6,9,0); c.fill();
+      c.fillStyle = acc; c.beginPath(); c.arc(4.5,-1.2,1.2,0,Math.PI*2); c.fill(); break; }
+    case 'esfera':
+      c.fillStyle = ink; c.beginPath(); c.arc(0,0,5.5,0,Math.PI*2); c.fill();
+      c.strokeStyle = acc; c.globalAlpha = 0.5 + 0.4*Math.sin(t*3);
+      c.beginPath(); c.arc(0,0,8 + Math.sin(t*3),0,Math.PI*2); c.stroke(); c.globalAlpha = 1; break;
+    default:
+      c.fillStyle = ink; c.beginPath();
+      c.moveTo(8,0); c.lineTo(-5,-5); c.lineTo(-2,0); c.lineTo(-5,5); c.closePath(); c.fill();
+  }
+  c.restore();
+}
+
+function niceKm(m){
+  const k = m/1000, p = Math.pow(10, Math.floor(Math.log10(k))), f = k/p;
+  return (f >= 5 ? 5 : f >= 2 ? 2 : 1)*p;
+}
+
+// ---------- painel ----------
+function hud(el){
+  const alt = el.r - P.R;
+  $('tAlt').textContent = km(alt);
+  $('tVel').textContent = kms(el.v);
+  const altP = el.rp - P.R, altA = el.ra - P.R;
+  const per = $('tPer'), apo = $('tApo');
+  per.textContent = altP < 0 ? 'abaixo da superfície' : km(altP);
+  apo.textContent = el.e >= 1 ? 'escape' : km(altA);
+  const okP = altP >= P.alvo - S.tol && altP <= P.alvo + S.tol;
+  const okA = el.e < 1 && altA >= P.alvo - S.tol && altA <= P.alvo + S.tol;
+  per.className = altP < P.atm ? 'bad' : okP ? 'ok' : '';
+  apo.className = el.e >= 1 ? 'bad' : okA ? 'ok' : '';
+  $('tEcc').textContent = nf3.format(el.e);
+  const left = Math.max(0, S.budget - S.used);
+  $('dvTxt').textContent = ms(left);
+  $('dvBar').style.width = (left/S.budget*100).toFixed(1) + '%';
+  if (O.escudo) {
+    const sh = Math.max(0, 1 - S.heat);
+    $('heatTxt').textContent = Math.round(sh*100) + '%';
+    $('heatBar').style.width = (sh*100).toFixed(1) + '%';
+  }
+
+  let msg;
+  if (S.phase === 'briefing') msg = 'Aguardando o início da missão.';
+  else if (S.phase !== 'voo') msg = 'Missão encerrada. Escolha um planeta ou tente de novo.';
+  else if (S.auto) msg = 'Piloto automático: ' + S.apLabel;
+  else if (left <= 0 && !(okP && okA)) msg = 'Sem combustível. Torça para a órbita servir.';
+  else if (el.e >= 1) msg = O.escudo && P.atm > 0 ? 'Trajetória de escape. Freie perto da periapse ou baixe a periapse para dentro da atmosfera.' : 'Trajetória de escape. Freie perto da periapse para ser capturado.';
+  else if (S.inAtm && O.escudo) msg = 'Aerofrenagem em andamento: o escudo está esquentando.';
+  else if (altP < 0) msg = 'A órbita cruza a superfície. Acelere na apoapse ou empurre para fora.';
+  else if (altP < P.atm) msg = O.escudo ? 'A órbita passa pela atmosfera: cada passagem freia o objeto e gasta o escudo.' : 'A órbita cruza a atmosfera. Acelere na apoapse ou empurre para fora.';
+  else if (okP && okA) msg = S.burning ? 'Na faixa. Desligue o motor para confirmar.' : 'Na faixa. Mantendo a órbita…';
+  else if (altA > P.alvo + S.tol) msg = 'Apoapse alta demais. Freie perto da periapse para baixá-la.';
+  else if (altP > P.alvo + S.tol) msg = 'Órbita alta demais. Freie na apoapse para baixar a periapse.';
+  else if (altP < P.alvo - S.tol) msg = 'Periapse baixa demais. Acelere perto da apoapse para subi-la.';
+  else msg = 'Órbita baixa demais. Acelere perto da periapse para subir a apoapse.';
+  $('status').textContent = msg;
+}
+
+// ---------- laço ----------
+let last = performance.now(), trailClock = 0;
+function frame(now){
+  const dt = Math.min(0.05, (now - last)/1000); last = now;
+  if (S.phase === 'voo' && !paused) {
+    if (O.jatos) {
+      S.jetTimer -= dt*Math.min(warp, 2);
+      if (S.jetTimer <= 0) { S.jetOn = !S.jetOn; S.jetTimer = S.jetOn ? 0.5 + Math.random()*1.2 : 1 + Math.random()*2.5; S.jetAng = Math.random()*Math.PI*2; }
+    }
+    simulate(dt*S.timeScale*warp);
+    trailClock += dt;
+    if (trailClock > 1/30) { trailClock = 0; S.trail.push([S.x, S.y]); if (S.trail.length > 900) S.trail.shift(); }
+  } else S.burning = false;
+  const el = elements();
+  if (S.phase === 'voo' && !paused) {
+    const altP = el.rp - P.R, altA = el.ra - P.R;
+    const inBand = el.e < 1 && altP >= P.alvo - S.tol && altA <= P.alvo + S.tol;
+    if (inBand && !S.burning) { S.stable += dt; if (S.stable > 1.2) win(el); }
+    else S.stable = 0;
+  }
+  let tgt = Math.max(el.r*1.3, S.rt*1.6);
+  if (el.e < 1) tgt = Math.max(tgt, Math.min(el.ra*1.15, S.r0*2));
+  viewR += (tgt - viewR)*Math.min(1, dt*2);
+  if (S.phase !== 'voo') S.jetOn = false;
+  draw(el); hud(el); drawIcon(now/1000);
+  requestAnimationFrame(frame);
+}
+
+setup(current);
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
