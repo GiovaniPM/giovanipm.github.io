@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Como ganhar no jogo da velha · Giovani Perotto Mesquita</title>
+<meta name="description" content="Técnicas para ganhar no jogo da velha: probabilidades exatas, ordem de prioridades, aberturas, garfos, armadilhas e defesas, com um jogo contra a máquina. Disponível em português, inglês, italiano e espanhol.">
+<meta name="author" content="Giovani Perotto Mesquita">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Paleta alegre: roxo e magenta vibrantes, amarelo-girassol, verde-água e coral */
+    --bg: #FFF7EC;
+    --surface: #FFFFFF;
+    --ink: #2B1B3D;
+    --text: #3E3350;
+    --muted: #756986;
+    --line: #F1E2CF;
+    --accent: #0E8074;
+    --accent-soft: #E2F6F2;
+    --accent-strong: #5B2A86;
+    --navy: #5B2A86;
+    --navy-deep: #C2185B;
+    --on-navy: #FFFFFF;
+    --on-navy-muted: #FCE4F0;
+    --gold: #FFB703;
+    --gold-ink: #B35300;
+    --gold-soft: #FFF1C9;
+    --coral: #FF6B6B;
+    --sky: #3A86FF;
+    --mint: #2A9D8F;
+    --pink: #EF476F;
+    --sans: "Hanken Grotesk", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1A1328; --surface: #241A36; --ink: #F7F0FF; --text: #E2D8F0; --muted: #A898C0;
+      --line: #3A2D52; --accent: #5FD3C4; --accent-soft: #1D3A38; --accent-strong: #C9A7F5;
+      --navy: #3D1A5C; --navy-deep: #7A1240; --gold: #FFC94D; --gold-ink: #FFC94D; --gold-soft: #3A2E12;
+      --coral: #FF8A8A; --sky: #6FA8FF; --mint: #4CC3B3; --pink: #FF6F91;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 4px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 1.5rem; }
+
+  /* navegação */
+  .nav {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: saturate(160%) blur(10px); -webkit-backdrop-filter: saturate(160%) blur(10px);
+    border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px);
+  }
+  .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 58px; gap: 1rem; }
+  .brand { font-family: var(--serif); font-weight: 600; color: var(--accent-strong); text-decoration: none; font-size: 1.05rem; }
+  .nav ul { list-style: none; display: flex; gap: 1.4rem; margin: 0; padding: 0; }
+  .nav ul a { color: var(--muted); text-decoration: none; font-size: 0.93rem; font-weight: 500; }
+  .nav ul a:hover, .nav ul a[aria-current="page"] { color: var(--ink); }
+  .nav-right { display: flex; align-items: center; gap: 1rem; }
+  .lang { position: relative; }
+  .lang button { font: inherit; cursor: pointer; }
+  .lang .flag { width: 18px; height: 12px; border-radius: 2px; flex: none; box-shadow: 0 0 0 1px rgba(0,0,0,.12); }
+  .lang-current { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.8rem; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 0.3rem 0.5rem 0.3rem 0.55rem; }
+  .lang-current:hover { border-color: var(--muted); }
+  .lang-now { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .lang .chev { width: 12px; height: 12px; color: var(--muted); transition: transform .15s ease; }
+  .lang-current[aria-expanded="true"] .chev { transform: rotate(180deg); }
+  .lang-list { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; min-width: 10.5rem; padding: 0.3rem; display: grid; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 12px 30px rgba(0,0,0,.18); }
+  .lang-list[hidden] { display: none; }
+  .lang-list [role="option"] { display: flex; align-items: center; gap: 0.6rem; width: 100%; text-align: left; font-size: 0.9rem; font-weight: 500; color: var(--ink); background: none; border: 0; border-radius: 6px; padding: 0.45rem 0.6rem; }
+  .lang-list [role="option"]:hover, .lang-list [role="option"]:focus-visible { background: color-mix(in srgb, var(--muted) 14%, transparent); }
+  .lang-list [role="option"][aria-selected="true"] { color: var(--accent-strong); font-weight: 600; }
+  .lang-list [role="option"][aria-selected="true"]::after { content: "✓"; margin-left: auto; }
+  @media (max-width: 480px) { .lang-now { font-size: 0; gap: 0; } }
+  [hidden] { display: none !important; }
+  .note { font-family: var(--sans) !important; font-size: 0.92rem !important; color: var(--muted) !important; }
+  .progress { position: absolute; left: 0; bottom: -1px; height: 3px; width: 0; background: linear-gradient(90deg, var(--coral), var(--gold), var(--mint)); }
+
+  /* abertura */
+  .hero-band {
+    background:
+      radial-gradient(900px 420px at 85% -10%, rgba(255,255,255,.07), transparent 60%),
+      linear-gradient(160deg, var(--navy) 0%, var(--navy-deep) 100%);
+    border-top: 4px solid var(--gold); color: var(--on-navy);
+  }
+  .hero { padding: 3.5rem 0 3.5rem; max-width: 820px; }
+  .crumb { margin: 0 0 1.4rem; font-size: 0.92rem; }
+  .crumb a { color: var(--on-navy-muted); text-decoration: none; }
+  .crumb a:hover { color: var(--gold); }
+  .eyebrow { color: var(--gold); font-weight: 600; font-size: 1rem; margin: 0 0 0.7rem; }
+  h1 { font-family: var(--serif); font-weight: 600; color: var(--on-navy); font-size: clamp(2.3rem, 5.5vw, 3.8rem); line-height: 1.05; letter-spacing: -0.025em; margin: 0; }
+  .dek { font-family: var(--serif); font-style: italic; font-size: clamp(1.1rem, 2.2vw, 1.35rem); color: var(--on-navy-muted); margin: 1.1rem 0 1.6rem; max-width: 58ch; }
+  .byline { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; font-size: 0.92rem; color: var(--on-navy-muted); }
+  .byline strong { color: var(--on-navy); font-weight: 600; }
+  .byline .credit { margin-left: auto; font-style: italic; }
+
+  /* layout do artigo */
+  .layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 3rem; padding: 3rem 0 4rem; align-items: start; }
+  .toc { position: sticky; top: 82px; font-size: 0.92rem; }
+  .toc h2 { font-family: var(--sans); font-size: 0.85rem; font-weight: 600; color: var(--muted); margin: 0 0 0.7rem; border: 0; padding: 0; }
+  .toc ol { list-style: none; margin: 0; padding: 0; counter-reset: toc; border-left: 2px solid var(--line); }
+  .toc li { counter-increment: toc; }
+  .toc a { display: block; padding: 0.35rem 0 0.35rem 1rem; margin-left: -2px; border-left: 2px solid transparent; color: var(--muted); text-decoration: none; line-height: 1.35; }
+  .toc a::before { content: counter(toc) ". "; color: var(--gold-ink); font-weight: 600; }
+  .toc a:hover { color: var(--ink); }
+  .toc a[aria-current="true"] { color: var(--accent-strong); border-left-color: var(--gold); font-weight: 600; }
+
+  article { background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: var(--radius); padding: 3rem clamp(1.25rem, 4vw, 3.5rem); min-width: 0; }
+  article section + section { margin-top: 3.2rem; }
+  article h2 { font-family: var(--serif); font-weight: 600; color: var(--ink); font-size: clamp(1.5rem, 2.8vw, 1.9rem); letter-spacing: -0.015em; line-height: 1.2; margin: 0 0 1.1rem; padding-left: 0.9rem; border-left: 3px solid var(--gold); }
+  article p, article li { font-family: var(--serif); font-size: 1.12rem; line-height: 1.7; color: var(--text); }
+  article p { margin: 0 0 1.1rem; max-width: 68ch; }
+  sup a { font-family: var(--sans); font-size: 0.72rem; font-weight: 700; text-decoration: none; padding: 0 0.15em; }
+
+  figure { margin: 2rem 0; }
+  figure img { display: block; max-width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: #fff; margin: 0 auto; }
+  figure.cover img { max-width: 280px; box-shadow: 0 16px 34px -18px rgba(91,42,134,.5); }
+  figcaption { margin-top: 0.6rem; font-size: 0.86rem; color: var(--muted); text-align: center; }
+
+  blockquote { margin: 1.5rem 0; padding: 1.4rem 1.6rem; background: var(--accent-soft); border-left: 3px solid var(--gold); border-radius: 0 10px 10px 0; }
+  blockquote p { font-size: 1.05rem; margin: 0 0 0.8rem; }
+  blockquote p:last-child { margin-bottom: 0; }
+
+  .laws { counter-reset: law; list-style: none; padding: 0; margin: 1.5rem 0; }
+  .laws li { counter-increment: law; position: relative; padding: 1rem 0 1rem 3.6rem; margin: 0; border-top: 1px solid var(--line); }
+  .laws li:last-child { border-bottom: 1px solid var(--line); }
+  .laws li::before {
+    content: counter(law); position: absolute; left: 0; top: 0.95rem;
+    width: 2.3rem; height: 2.3rem; border-radius: 50%; display: grid; place-items: center;
+    background: var(--navy); color: #fff; font-family: var(--serif); font-weight: 600; font-size: 1.1rem;
+  }
+  .laws li:nth-child(1)::before { background: var(--coral); }
+  .laws li:nth-child(2)::before { background: var(--sky); }
+  .laws li:nth-child(3)::before { background: var(--gold); color: #2B1B3D; }
+  .laws li:nth-child(4)::before { background: var(--mint); }
+  .laws li:nth-child(5)::before { background: var(--pink); }
+  .laws li:nth-child(6)::before { background: var(--accent-strong); }
+  .laws li:nth-child(7)::before { background: var(--accent); }
+  .laws li:nth-child(8)::before { background: var(--gold-ink); }
+  .laws strong { font-family: var(--sans); color: var(--ink); }
+
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.9rem; list-style: none; padding: 0; margin: 1.5rem 0; }
+  .kpis li { margin: 0; padding: 1rem 1.1rem; border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: 10px; font-family: var(--sans); font-size: 0.9rem; line-height: 1.4; color: var(--muted); }
+  .kpis li:nth-child(2) { border-top-color: var(--sky); }
+  .kpis li:nth-child(3) { border-top-color: var(--gold); }
+  .kpis li:nth-child(4) { border-top-color: var(--mint); }
+  .kpis strong { display: block; font-family: var(--serif); font-size: 1.75rem; font-weight: 600; line-height: 1.1; color: var(--ink); margin-bottom: 0.3rem; }
+
+  .table-wrap { overflow-x: auto; margin: 1.5rem 0; }
+  table.data { width: 100%; border-collapse: collapse; font-family: var(--sans); font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+  table.data caption { text-align: left; font-size: 0.86rem; color: var(--muted); margin-bottom: 0.5rem; }
+  table.data th, table.data td { padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--line); text-align: right; color: var(--text); }
+  table.data thead th { background: var(--accent-soft); color: var(--ink); font-weight: 600; }
+  table.data th:first-child { text-align: left; }
+  table.data tbody th { font-weight: 600; color: var(--ink); }
+  table.data tr.total th, table.data tr.total td { font-weight: 700; color: var(--ink); border-top: 2px solid var(--gold); border-bottom: 0; }
+
+  /* jogo contra a máquina */
+  .ttt { margin: 1.5rem 0; padding: 1.4rem clamp(1rem, 3vw, 1.6rem); border: 1px solid var(--line); border-top: 4px solid var(--gold); border-radius: var(--radius); background: color-mix(in srgb, var(--accent-soft) 45%, var(--surface)); font-family: var(--sans); }
+  .ttt-controls { display: flex; flex-wrap: wrap; justify-content: center; align-items: end; gap: 0.7rem 1rem; margin-bottom: 1.3rem; }
+  .ttt-controls label { display: grid; gap: 0.25rem; font-size: 0.82rem; font-weight: 600; color: var(--muted); }
+  .ttt select, .ttt-new { font: inherit; font-size: 0.95rem; padding: 0.45rem 0.7rem; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+  .ttt-new { background: var(--navy); border-color: var(--navy); color: var(--on-navy); font-weight: 600; cursor: pointer; }
+  .ttt-new:hover { background: var(--navy-deep); border-color: var(--navy-deep); }
+  .ttt-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: min(100%, 320px); margin: 0 auto; }
+  .ttt-cell { aspect-ratio: 1; display: grid; place-items: center; padding: 0; border: 0; border-radius: 12px; background: var(--surface); box-shadow: inset 0 0 0 2px var(--line); font: 700 clamp(2.4rem, 11vw, 3.4rem)/1 var(--sans); color: var(--ink); cursor: pointer; transition: box-shadow .15s ease, background .15s ease; }
+  .ttt-cell:enabled:hover { box-shadow: inset 0 0 0 2px var(--gold); }
+  .ttt-cell:disabled { cursor: default; }
+  .ttt-cell.x { color: var(--accent-strong); }
+  .ttt-cell.o { color: var(--accent); }
+  .ttt-cell.win { background: var(--gold-soft); box-shadow: inset 0 0 0 3px var(--gold); }
+  .ttt .ttt-status { font-family: var(--sans); font-size: 1.05rem; font-weight: 600; color: var(--ink); text-align: center; margin: 1rem auto 0.9rem; min-height: 1.7em; }
+  .ttt-score { display: flex; justify-content: center; flex-wrap: wrap; gap: 0.6rem; margin: 0; }
+  .ttt-score div { min-width: 5.8rem; padding: 0.5rem 0.8rem; text-align: center; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+  .ttt-score dt { font-size: 0.8rem; color: var(--muted); }
+  .ttt-score dd { margin: 0; font-family: var(--serif); font-size: 1.5rem; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+  @media (prefers-reduced-motion: reduce) { .ttt-cell { transition: none; } }
+
+
+  .refs { font-family: var(--sans); padding-left: 1.4rem; margin: 0; }
+  .refs li { font-family: var(--sans); font-size: 0.92rem; line-height: 1.55; margin-bottom: 0.7rem; word-break: break-word; }
+  .refs li:target { background: var(--gold-soft); border-radius: 6px; }
+
+  .back { display: inline-block; margin-top: 1rem; font-family: var(--sans); font-size: 0.85rem; text-decoration: none; }
+
+  footer { background: var(--navy-deep); color: var(--on-navy-muted); border-top: 3px solid var(--gold); padding: 1.5rem 0 calc(1.5rem + env(safe-area-inset-bottom, 0px)); font-size: 0.88rem; }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1.5rem; }
+  footer a { color: var(--on-navy); text-decoration: none; }
+  footer a:hover { color: var(--gold); }
+
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: 1fr; gap: 1.5rem; }
+    .toc { position: static; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.2rem 1.4rem; }
+  }
+  @media (max-width: 720px) {
+    .nav ul { display: none; }
+    .hero { padding: 2.5rem 0; }
+    .kpis { grid-template-columns: repeat(2, 1fr); }
+    article p, article li { font-size: 1.05rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  @media print {
+    .nav, .toc, footer, .back, .crumb { display: none !important; }
+    body { background: #fff; }
+    .hero-band { background: none; color: #111; border: 0; }
+    .hero-band h1 { color: #5B2A86; }
+    .dek, .byline, .byline strong { color: #333; }
+    .layout { display: block; padding: 0; }
+    article { border: 0; padding: 0; }
+    section { break-inside: auto; }
+    figure, blockquote, .laws li, .kpis li, table { break-inside: avoid; }
+  }
+</style>
+</head>
+<body id="top">
+
+<nav class="nav" aria-label="Navegação do site">
+  <div class="wrap">
+    <a class="brand" href="index.html" data-home>Giovani Perotto Mesquita</a>
+    <div class="nav-right">
+      <ul>
+        <li><a href="index.html" data-home>Início</a></li>
+        <li><a href="about.html" data-about>Sobre</a></li>
+        <li><a href="resume.html" data-resume>Currículo</a></li>
+        <li><a href="projects.html" data-projects aria-current="page">Projetos</a></li>
+        <li><a href="contact.html" data-contact>Contato</a></li>
+      </ul>
+      <div class="lang">
+        <button type="button" class="lang-current" aria-haspopup="listbox" aria-expanded="false" aria-controls="lang-list" data-label="Idioma / Language / Lingua" aria-label="Idioma / Language / Lingua: Português"><span class="lang-now"><svg class="flag" viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009C3B"/><path d="M10 1.6 18.4 7 10 12.4 1.6 7z" fill="#FEDF00"/><circle cx="10" cy="7" r="3.3" fill="#002776"/><path d="M6.8 6.3c2.1-.6 4.5-.2 6.4 1" stroke="#fff" stroke-width=".7" fill="none"/></svg>PT</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="lang-list" id="lang-list" role="listbox" aria-label="Idioma / Language / Lingua" hidden>
+          <button type="button" role="option" id="tab-pt" aria-controls="pt" aria-selected="true" lang="pt-BR" data-code="PT"><svg class="flag" viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009C3B"/><path d="M10 1.6 18.4 7 10 12.4 1.6 7z" fill="#FEDF00"/><circle cx="10" cy="7" r="3.3" fill="#002776"/><path d="M6.8 6.3c2.1-.6 4.5-.2 6.4 1" stroke="#fff" stroke-width=".7" fill="none"/></svg><span>Português</span></button>
+          <button type="button" role="option" id="tab-en" aria-controls="en" aria-selected="false" lang="en" tabindex="-1" data-code="EN"><svg class="flag" viewBox="0 0 19 10" aria-hidden="true"><rect width="19" height="10" fill="#B22234"/><rect y="0.769" width="19" height="0.769" fill="#fff"/><rect y="2.308" width="19" height="0.769" fill="#fff"/><rect y="3.846" width="19" height="0.769" fill="#fff"/><rect y="5.385" width="19" height="0.769" fill="#fff"/><rect y="6.923" width="19" height="0.769" fill="#fff"/><rect y="8.462" width="19" height="0.769" fill="#fff"/><rect width="7.6" height="5.385" fill="#3C3B6E"/></svg><span>English</span></button>
+          <button type="button" role="option" id="tab-it" aria-controls="it" aria-selected="false" lang="it" tabindex="-1" data-code="IT"><svg class="flag" viewBox="0 0 3 2" aria-hidden="true"><rect width="1" height="2" fill="#009246"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#CE2B37"/></svg><span>Italiano</span></button>
+          <button type="button" role="option" id="tab-es" aria-controls="es" aria-selected="false" lang="es" tabindex="-1" data-code="ES"><svg class="flag" viewBox="0 0 750 500" aria-hidden="true"><rect width="750" height="500" fill="#AA151B"/><rect y="125" width="750" height="250" fill="#F1BF00"/></svg><span>Español</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="progress" aria-hidden="true"></div>
+</nav>
+
+<!-- ===================== PT ===================== -->
+<div id="pt" role="tabpanel" aria-labelledby="tab-pt" lang="pt-BR">
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projetos</a></p>
+      <p class="eyebrow">Artigo</p>
+      <h1>Como ganhar no jogo da velha</h1>
+      <p class="dek">Técnicas de ataque e defesa, probabilidades exatas e as armadilhas que decidem a partida no tabuleiro de 3×3.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado em <time datetime="2026-10-17">17/10/2026</time></span>
+        <span class="credit">Revisado e formatado usando Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-pt">
+    <h2 id="toc-pt">Índice</h2>
+    <ol>
+      <li><a href="#introducao-pt">Introdução</a></li>
+      <li><a href="#historia-pt">Um pouco de história</a></li>
+      <li><a href="#numeros-pt">O tabuleiro em números</a></li>
+      <li><a href="#probabilidades-pt">Probabilidades</a></li>
+      <li><a href="#prioridades-pt">A ordem de prioridades</a></li>
+      <li><a href="#ataque-pt">Ataque: aberturas e garfos</a></li>
+      <li><a href="#defesa-pt">Defesa: as respostas certas</a></li>
+      <li><a href="#pessoas-pt">Jogando contra pessoas</a></li>
+      <li><a href="#jogar-pt">Jogue contra a máquina</a></li>
+      <li><a href="#variantes-pt">Além do 3×3</a></li>
+      <li><a href="#conclusao-pt">Conclusão</a></li>
+      <li><a href="#referencias-pt">Referências</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="introducao-pt" aria-labelledby="h-introducao-pt">
+      <h2 id="h-introducao-pt">Introdução</h2>
+      <p>O jogo da velha é, provavelmente, o primeiro jogo de estratégia que aprendemos: um tabuleiro de 3×3, dois símbolos, X e O, e o objetivo de alinhar três em linha, coluna ou diagonal. É tão simples que parece não ter segredo. E, de certa forma, não tem: o jogo está <strong>resolvido</strong>. Se os dois jogadores não errarem, toda partida termina empatada. <sup><a href="#ref-1-pt">[1]</a></sup></p>
+      <p>Isso não quer dizer que não dê para ganhar. Quer dizer que <strong>só se ganha quando o adversário erra</strong>. Ganhar no jogo da velha é, portanto, a arte de criar situações em que errar é fácil e acertar é difícil, e de nunca cair nessas situações quando é você quem defende.</p>
+      <p>Neste artigo veremos por que algumas casas valem mais que outras, quais são as probabilidades de vitória em cada cenário, a ordem de prioridades que garante nunca perder, as aberturas e armadilhas do ataque e as respostas que salvam a defesa. Os números apresentados foram calculados percorrendo a árvore completa do jogo, partida por partida.</p>
+    </section>
+
+    <section id="historia-pt" aria-labelledby="h-historia-pt">
+      <h2 id="h-historia-pt">Um pouco de história</h2>
+      <p>Jogos de três em linha são muito antigos. Tabuleiros desse tipo foram encontrados gravados em telhas do antigo Egito, e os romanos jogavam o <em>terni lapilli</em> (“três pedrinhas”), em que cada jogador tinha só três peças e as movia pelo tabuleiro. <sup><a href="#ref-1-pt">[1]</a></sup> A versão com papel e lápis, como a conhecemos, se popularizou na Inglaterra, onde é chamada de <em>noughts and crosses</em>; nos Estados Unidos, de <em>tic-tac-toe</em>; na Itália, de <em>tris</em>; e no mundo hispânico, de <em>tres en raya</em>.</p>
+      <p>O jogo também tem lugar na história da computação:</p>
+      <ul>
+        <li>Em 1952, A. S. Douglas programou o <strong>OXO</strong> no computador EDSAC, da Universidade de Cambridge, um dos primeiros jogos digitais com saída gráfica. <sup><a href="#ref-2-pt">[2]</a></sup></li>
+        <li>Em 1961, Donald Michie construiu o <strong>MENACE</strong>, uma “máquina” feita de 304 caixas de fósforos e contas coloridas que aprendia a jogar por tentativa e erro, um ancestral do aprendizado por reforço. <sup><a href="#ref-3-pt">[3]</a></sup></li>
+        <li>Em 1972, Allen Newell e Herbert Simon descreveram a lista de regras que um jogador segue para nunca perder, a mesma que veremos adiante. <sup><a href="#ref-4-pt">[4]</a></sup></li>
+        <li>No filme <em>Jogos de Guerra</em> (<em>WarGames</em>, 1983), um computador militar aprende, jogando o jogo da velha contra si mesmo, que certas disputas não têm vencedor: “a única jogada vencedora é não jogar”. <sup><a href="#ref-5-pt">[5]</a></sup></li>
+      </ul>
+    </section>
+
+    <section id="numeros-pt" aria-labelledby="h-numeros-pt">
+      <h2 id="h-numeros-pt">O tabuleiro em números</h2>
+      <p>Apesar de pequeno, o tabuleiro esconde uma quantidade razoável de possibilidades:</p>
+      <ul class="kpis">
+        <li><strong>8</strong>linhas vencedoras: 3 linhas, 3 colunas e 2 diagonais</li>
+        <li><strong>255.168</strong>partidas diferentes possíveis, contando a ordem das jogadas</li>
+        <li><strong>5.478</strong>posições que podem aparecer numa partida</li>
+        <li><strong>765</strong>posições realmente diferentes, descontando rotações e reflexos</li>
+      </ul>
+      <p>A informação mais útil, porém, é outra: <strong>as casas não valem o mesmo</strong>. O centro participa de 4 das 8 linhas vencedoras; cada canto, de 3; e cada lateral, de apenas 2. Quem ocupa o centro participa de metade das formas de vencer e, ao mesmo tempo, atrapalha metade das formas de o adversário vencer.</p>
+      <figure>
+        <img src="rc_images/JogoDaVelhaCasas.svg" alt="Tabuleiro com o número de linhas vencedoras por casa: 4 no centro, 3 nos cantos e 2 nas laterais" loading="lazy">
+        <figcaption>Quantas linhas vencedoras passam por cada casa</figcaption>
+      </figure>
+      <p>Outro fato importante: como o X começa, ele faz até 5 jogadas e o O, no máximo 4. Essa vantagem de iniciativa aparece em todas as estatísticas a seguir.</p>
+    </section>
+
+    <section id="probabilidades-pt" aria-labelledby="h-probabilidades-pt">
+      <h2 id="h-probabilidades-pt">Probabilidades</h2>
+      <p>Se contarmos as 255.168 partidas possíveis, 131.184 terminam com vitória do X (51,4%), 77.904 com vitória do O (30,5%) e 46.080 empatadas (18,1%). A partida mais curta possível tem 5 jogadas, e a mais longa, 9:</p>
+      <div class="table-wrap">
+        <table class="data">
+          <caption>Partidas possíveis por número de jogadas</caption>
+          <thead><tr><th scope="col">Jogadas</th><th scope="col">Vitórias do X</th><th scope="col">Vitórias do O</th><th scope="col">Empates</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">5</th><td>1.440</td><td>—</td><td>—</td></tr>
+            <tr><th scope="row">6</th><td>—</td><td>5.328</td><td>—</td></tr>
+            <tr><th scope="row">7</th><td>47.952</td><td>—</td><td>—</td></tr>
+            <tr><th scope="row">8</th><td>—</td><td>72.576</td><td>—</td></tr>
+            <tr><th scope="row">9</th><td>81.792</td><td>—</td><td>46.080</td></tr>
+            <tr class="total"><th scope="row">Total</th><td>131.184</td><td>77.904</td><td>46.080</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Contar partidas, no entanto, não é o mesmo que calcular a chance de vencer, porque partidas curtas são mais prováveis do que partidas longas. Se os dois jogadores escolherem casas ao acaso, a probabilidade exata é de <strong>58,5% para o X, 28,8% para o O e 12,7% de empate</strong>. O quadro muda completamente quando um dos lados joga bem:</p>
+      <figure>
+        <img src="rc_images/JogoDaVelhaProbabilidades.svg" alt="Barras com as chances de vitória do X, do O e de empate em quatro cenários: os dois ao acaso, X perfeito, O perfeito e os dois perfeitos" loading="lazy">
+        <figcaption>Chances de cada resultado conforme a qualidade dos jogadores</figcaption>
+      </figure>
+      <p>Três lições saem desse gráfico:</p>
+      <ul>
+        <li><strong>Jogar bem quase sempre vence quem joga mal.</strong> Um X perfeito vence 99,5% das partidas contra um adversário que joga ao acaso.</li>
+        <li><strong>Jogar bem nunca perde.</strong> Mesmo começando em desvantagem, um O perfeito nunca é derrotado e vence 91,6% das vezes contra um X aleatório.</li>
+        <li><strong>Dois jogadores perfeitos sempre empatam.</strong> É por isso que, entre adultos atentos, o jogo costuma acabar em “velha”.</li>
+      </ul>
+      <p>A primeira jogada também influencia as chances. Contra um adversário que joga ao acaso, abrir no centro dá ao X 69,3% de vitórias; no canto, 60,7%; e na lateral, 53,6%. Mas, quando o X joga perfeitamente depois da abertura, o canto passa à frente (99,5%, contra 99,0% do centro e 98,7% da lateral), porque contra o canto só existe <strong>uma</strong> resposta correta. Veremos isso em detalhes na seção de ataque.</p>
+    </section>
+
+    <section id="prioridades-pt" aria-labelledby="h-prioridades-pt">
+      <h2 id="h-prioridades-pt">A ordem de prioridades</h2>
+      <p>Newell e Simon mostraram que é possível jogar de forma perfeita seguindo uma lista simples: a cada vez, escolha a primeira regra da lista que puder ser aplicada. <sup><a href="#ref-4-pt">[4]</a></sup> Quem segue essa lista nunca perde.</p>
+      <ol class="laws">
+        <li><strong>Vencer.</strong> Se você tem duas peças numa linha com a terceira casa livre, jogue nela.</li>
+        <li><strong>Bloquear.</strong> Se o adversário tem duas peças numa linha com a terceira casa livre, ocupe-a.</li>
+        <li><strong>Criar um garfo.</strong> Jogue numa casa que crie duas ameaças de vitória ao mesmo tempo.</li>
+        <li><strong>Impedir o garfo do adversário.</strong> Se houver uma única casa onde ele faria um garfo, ocupe-a. Se houver mais de uma, crie uma ameaça de duas em linha que o obrigue a se defender, desde que essa defesa não lhe dê um garfo.</li>
+        <li><strong>Centro.</strong> Jogue no centro, se estiver livre.</li>
+        <li><strong>Canto oposto.</strong> Se o adversário está num canto, jogue no canto oposto.</li>
+        <li><strong>Canto livre.</strong> Jogue em qualquer canto vazio.</li>
+        <li><strong>Lateral livre.</strong> Jogue em qualquer lateral vazia.</li>
+      </ol>
+      <p>As regras 1 e 2 parecem óbvias, mas são as que mais se esquece na prática: muita gente fica tão concentrada no próprio plano que não vê a ameaça do adversário, ou deixa passar a própria vitória. Antes de cada jogada, faça duas perguntas: “posso ganhar agora?” e “ele pode ganhar na próxima?”.</p>
+    </section>
+
+    <section id="ataque-pt" aria-labelledby="h-ataque-pt">
+      <h2 id="h-ataque-pt">Ataque: aberturas e garfos</h2>
+      <p>No jogo da velha, ninguém vence com uma ameaça só, porque uma ameaça simples sempre pode ser bloqueada. A vitória vem do <strong>garfo</strong> (em inglês, <em>fork</em>): uma jogada que cria duas ameaças ao mesmo tempo. O adversário bloqueia uma, e você completa a outra. Todo o ataque consiste em preparar um garfo.</p>
+      <figure>
+        <img src="rc_images/JogoDaVelhaGarfo.svg" alt="Sequência em três tabuleiros: X abre no canto, O responde na lateral, X toma o centro, O bloqueia e X cria um garfo com duas ameaças" loading="lazy">
+        <figcaption>Um garfo clássico depois de um erro na segunda jogada</figcaption>
+      </figure>
+      <p>A escolha da abertura define quantas chances o adversário tem de errar:</p>
+      <ul>
+        <li><strong>Canto (a abertura mais traiçoeira).</strong> Das 8 respostas possíveis, só uma empata: o centro. Qualquer outra perde contra jogo correto. Contra pessoas que ainda não conhecem essa regra, é a melhor escolha.</li>
+        <li><strong>Centro (a abertura mais sólida).</strong> Das 8 respostas, as 4 laterais perdem e os 4 cantos empatam. É a abertura que mais vence contra jogadas aleatórias, mas o adversário tem mais caminhos para se salvar.</li>
+        <li><strong>Lateral (a abertura mais fraca).</strong> Também há 4 respostas que perdem, mas as chances de vitória do X são as menores, e quem abre na lateral precisa jogar com mais cuidado.</li>
+      </ul>
+      <p>Algumas armadilhas para o ataque, sempre com o X começando:</p>
+      <ol class="laws">
+        <li><strong>Canto e lateral.</strong> X abre no canto e O responde numa lateral. X toma o centro, ameaçando a diagonal; O é obrigado a bloquear no canto oposto; X joga no canto que forma duas ameaças. É o garfo da figura acima.</li>
+        <li><strong>Canto e canto.</strong> X abre no canto e O responde em outro canto. X joga num terceiro canto, criando uma ameaça; depois do bloqueio, o último canto livre cria o garfo.</li>
+        <li><strong>Centro e lateral.</strong> X abre no centro e O responde numa lateral. X joga num canto, criando uma ameaça na diagonal; O bloqueia no canto oposto; X joga no canto que alinha com as duas peças e cria o garfo.</li>
+        <li><strong>Centro e canto oposto.</strong> X abre no centro, O responde num canto e X joga no canto oposto ao do O. Agora O precisa jogar em outro canto; se jogar numa lateral, perde. É a armadilha mais sutil contra quem respondeu bem à primeira jogada.</li>
+      </ol>
+    </section>
+
+    <section id="defesa-pt" aria-labelledby="h-defesa-pt">
+      <h2 id="h-defesa-pt">Defesa: as respostas certas</h2>
+      <p>Quem joga com o O está em desvantagem e, contra um adversário perfeito, joga pelo empate. A boa notícia é que a defesa se resume a poucas respostas que precisam ser memorizadas:</p>
+      <figure>
+        <img src="rc_images/JogoDaVelhaDefesas.svg" alt="Três tabuleiros com as casas que empatam em verde e as que perdem em rosa: contra o canto, o centro; contra o centro, um canto; contra os cantos opostos, uma lateral" loading="lazy">
+        <figcaption>As respostas do O que garantem o empate</figcaption>
+      </figure>
+      <ul>
+        <li><strong>Se o X abre no canto, jogue no centro.</strong> É a única resposta que não perde.</li>
+        <li><strong>Se o X abre no centro, jogue num canto.</strong> Nunca numa lateral.</li>
+        <li><strong>Se o X abre na lateral</strong>, as respostas seguras são o centro, os dois cantos vizinhos à peça do X e a lateral oposta.</li>
+        <li><strong>A armadilha dos cantos opostos.</strong> Se o X abriu no canto, você respondeu no centro e o X jogou no canto oposto, jogue numa <strong>lateral</strong>. Aqui o instinto de “preferir cantos” engana: um canto permite ao X montar um garfo.</li>
+      </ul>
+      <p>Depois dessas primeiras jogadas, a defesa segue a ordem de prioridades: bloqueie sempre que houver duas em linha e, quando puder, crie suas próprias ameaças para forçar o X a responder. Defender atacando tira do adversário o tempo de que ele precisa para montar um garfo.</p>
+    </section>
+
+    <section id="pessoas-pt" aria-labelledby="h-pessoas-pt">
+      <h2 id="h-pessoas-pt">Jogando contra pessoas</h2>
+      <p>A teoria diz que o jogo empata; a prática mostra que pessoas erram, principalmente crianças e jogadores distraídos. Pesquisas com crianças mostram que as estratégias evoluem com a idade: primeiro aprendem a vencer quando têm duas em linha, depois a bloquear e, só bem mais tarde, a criar e a impedir garfos. <sup><a href="#ref-6-pt">[6]</a></sup> Algumas dicas práticas:</p>
+      <ul>
+        <li><strong>Com o X, abra no canto.</strong> A resposta instintiva de muita gente é jogar ao lado ou no canto oposto, e as duas perdem.</li>
+        <li><strong>Varie as aberturas.</strong> Quem repete sempre o mesmo início ensina o adversário a se defender dele.</li>
+        <li><strong>Force as respostas.</strong> Cada ameaça obriga o adversário a jogar onde você quer. Encadeie ameaças até que a última delas seja um garfo.</li>
+        <li><strong>Com o O, não copie o adversário.</strong> Responder a um canto com outro canto parece simétrico e seguro, mas perde.</li>
+        <li><strong>Em séries de partidas, alterne quem começa.</strong> Quem sempre começa tem uma vantagem real contra jogadores imperfeitos.</li>
+      </ul>
+      <blockquote>
+        <p>O cartunista Randall Munroe resumiu toda a estratégia ótima num único desenho: o mapa completo das jogadas certas do X e do O, para qualquer posição. <sup><a href="#ref-7-pt">[7]</a></sup> Cabe numa página, e é a melhor prova de que o jogo tem solução.</p>
+      </blockquote>
+    </section>
+
+    <section id="jogar-pt" aria-labelledby="h-jogar-pt">
+      <h2 id="h-jogar-pt">Jogue contra a máquina</h2>
+      <p>Hora de colocar as técnicas em prática. No nível <strong>fácil</strong>, a máquina joga ao acaso. No <strong>médio</strong>, ela vence quando pode e bloqueia suas ameaças, mas não enxerga garfos. No <strong>impossível</strong>, ela calcula a árvore completa do jogo e nunca perde. Quem começa joga com o X.</p>
+      <div class="ttt" data-lang="pt">
+        <div class="ttt-controls">
+          <label>Nível <select class="ttt-level"><option value="easy">Fácil</option><option value="medium" selected>Médio</option><option value="hard">Impossível</option></select></label>
+          <label>Quem começa <select class="ttt-first"><option value="human">Você</option><option value="ai">A máquina</option></select></label>
+          <button type="button" class="ttt-new">Nova partida</button>
+        </div>
+        <div class="ttt-board" role="group" aria-label="Tabuleiro"></div>
+        <p class="ttt-status" role="status" aria-live="polite"></p>
+        <dl class="ttt-score">
+          <div><dt>Você</dt><dd class="ttt-s-human">0</dd></div>
+          <div><dt>Empates</dt><dd class="ttt-s-draw">0</dd></div>
+          <div><dt>Máquina</dt><dd class="ttt-s-ai">0</dd></div>
+        </dl>
+      </div>
+      <p class="note">Desafio: no nível médio, tente vencer usando uma das armadilhas da seção de ataque. No impossível, o melhor resultado que você pode conseguir é o empate.</p>
+    </section>
+
+    <section id="variantes-pt" aria-labelledby="h-variantes-pt">
+      <h2 id="h-variantes-pt">Além do 3×3</h2>
+      <p>Como o jogo clássico empata, surgiram variantes para devolver o desafio:</p>
+      <ul>
+        <li><strong>Jogo da velha invertido</strong> (<em>misère</em>): perde quem alinhar três. Também empata com jogo perfeito; uma estratégia conhecida para o X é jogar no centro e, depois, sempre na casa simetricamente oposta à do O.</li>
+        <li><strong>Jogo da velha 4×4</strong>: com quatro em linha num tabuleiro maior, o jogo continua terminando empatado com jogo perfeito.</li>
+        <li><strong>Qubic (4×4×4)</strong>: o jogo da velha em três dimensões. Oren Patashnik demonstrou, em 1980, com ajuda de computador, que o primeiro jogador pode sempre vencer. <sup><a href="#ref-8-pt">[8]</a></sup></li>
+        <li><strong>Gomoku</strong>: cinco em linha num tabuleiro de 15×15. Victor Allis demonstrou, em 1994, que o primeiro jogador vence na versão livre, o que levou à criação de regras de compensação. <sup><a href="#ref-9-pt">[9]</a></sup></li>
+        <li><strong>Ultimate tic-tac-toe</strong>: nove tabuleiros dentro de um tabuleiro maior, em que a casa onde você joga define em qual tabuleiro o adversário deve jogar a seguir. Pequeno nas regras e enorme em estratégia. <sup><a href="#ref-10-pt">[10]</a></sup></li>
+      </ul>
+    </section>
+
+    <section id="conclusao-pt" aria-labelledby="h-conclusao-pt">
+      <h2 id="h-conclusao-pt">Conclusão</h2>
+      <p>Ganhar no jogo da velha não depende de sorte, mas de dois hábitos: no ataque, criar posições em que só existe uma resposta correta; na defesa, conhecer essa resposta. Com o X, abra no canto e procure o garfo. Com o O, responda ao canto com o centro, ao centro com um canto e, nos cantos opostos, jogue na lateral. E, a cada jogada, verifique primeiro se pode vencer e depois se precisa bloquear.</p>
+      <p>Seguindo essas regras, você nunca perderá. Se o adversário também as conhecer, a partida terminará empatada, e isso também é uma lição: num jogo resolvido, o melhor resultado possível contra quem não erra é não perder.</p>
+    </section>
+
+    <section id="referencias-pt" aria-labelledby="h-referencias-pt">
+      <h2 id="h-referencias-pt">Referências</h2>
+      <ol class="refs">
+        <li id="ref-1-pt"><strong>Wikipedia</strong>, "Tic-tac-toe", acesso em 17/10/2026, <a href="https://en.wikipedia.org/wiki/Tic-tac-toe" rel="noopener">en.wikipedia.org/wiki/Tic-tac-toe</a>.</li>
+        <li id="ref-2-pt"><strong>Wikipedia</strong>, "OXO (video game)", acesso em 17/10/2026, <a href="https://en.wikipedia.org/wiki/OXO_(video_game)" rel="noopener">en.wikipedia.org/wiki/OXO_(video_game)</a>.</li>
+        <li id="ref-3-pt"><strong>Michie, Donald</strong>, "Experiments on the mechanization of game-learning. Part I: Characterization of the model and its parameters", <em>The Computer Journal</em>, v. 6, n. 3, p. 232–236, 1963.</li>
+        <li id="ref-4-pt"><strong>Newell, Allen; Simon, Herbert A.</strong>, <em>Human Problem Solving</em>, Prentice-Hall, 1972.</li>
+        <li id="ref-5-pt"><strong>Wikipedia</strong>, "WarGames", acesso em 17/10/2026, <a href="https://en.wikipedia.org/wiki/WarGames" rel="noopener">en.wikipedia.org/wiki/WarGames</a>.</li>
+        <li id="ref-6-pt"><strong>Crowley, Kevin; Siegler, Robert S.</strong>, "Flexible strategy use in young children’s tic-tac-toe", <em>Cognitive Science</em>, v. 17, n. 4, p. 531–561, 1993.</li>
+        <li id="ref-7-pt"><strong>Munroe, Randall</strong>, "Tic-Tac-Toe", xkcd 832, acesso em 17/10/2026, <a href="https://xkcd.com/832/" rel="noopener">xkcd.com/832</a>.</li>
+        <li id="ref-8-pt"><strong>Patashnik, Oren</strong>, "Qubic: 4×4×4 Tic-Tac-Toe", <em>Mathematics Magazine</em>, v. 53, n. 4, p. 202–216, 1980.</li>
+        <li id="ref-9-pt"><strong>Allis, L. Victor</strong>, <em>Searching for Solutions in Games and Artificial Intelligence</em>, tese de doutorado, Universidade de Limburg, Maastricht, 1994.</li>
+        <li id="ref-10-pt"><strong>Orlin, Ben</strong>, "Ultimate Tic-Tac-Toe", Math with Bad Drawings, acesso em 17/10/2026, <a href="https://mathwithbaddrawings.com/2013/06/16/ultimate-tic-tac-toe/" rel="noopener">mathwithbaddrawings.com</a>.</li>
+      </ol>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== EN ===================== -->
+<div id="en" role="tabpanel" aria-labelledby="tab-en" lang="en" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projects</a></p>
+      <p class="eyebrow">Article</p>
+      <h1>How to win at tic-tac-toe</h1>
+      <p class="dek">Attack and defense techniques, exact probabilities and the traps that decide the game on the 3×3 board.</p>
+      <div class="byline">
+        <span>By <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Published <time datetime="2026-10-17">17/10/2026</time></span>
+        <span class="credit">Reviewed and formatted using Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-en">
+    <h2 id="toc-en">Contents</h2>
+    <ol>
+      <li><a href="#introducao-en">Introduction</a></li>
+      <li><a href="#historia-en">A little history</a></li>
+      <li><a href="#numeros-en">The board in numbers</a></li>
+      <li><a href="#probabilidades-en">Probabilities</a></li>
+      <li><a href="#prioridades-en">The order of priorities</a></li>
+      <li><a href="#ataque-en">Attack: openings and forks</a></li>
+      <li><a href="#defesa-en">Defense: the right replies</a></li>
+      <li><a href="#pessoas-en">Playing against people</a></li>
+      <li><a href="#jogar-en">Play against the computer</a></li>
+      <li><a href="#variantes-en">Beyond 3×3</a></li>
+      <li><a href="#conclusao-en">Conclusion</a></li>
+      <li><a href="#referencias-en">References</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="introducao-en" aria-labelledby="h-introducao-en">
+      <h2 id="h-introducao-en">Introduction</h2>
+      <p>Tic-tac-toe is probably the first strategy game we ever learn: a 3×3 board, two symbols, X and O, and the goal of getting three in a row, column or diagonal. It is so simple that it seems to hold no secrets. And, in a sense, it doesn’t: the game is <strong>solved</strong>. If neither player makes a mistake, every game ends in a draw. <sup><a href="#ref-1-en">[1]</a></sup></p>
+      <p>That does not mean you cannot win. It means that <strong>you only win when your opponent makes a mistake</strong>. Winning at tic-tac-toe is therefore the art of creating situations in which going wrong is easy and getting it right is hard, and of never falling into those situations when you are the one defending.</p>
+      <p>In this article we will see why some squares are worth more than others, what the odds of winning are in each scenario, the order of priorities that guarantees you never lose, the openings and traps of the attack and the replies that save the defense. The figures shown were computed by walking through the complete game tree, game by game.</p>
+    </section>
+
+    <section id="historia-en" aria-labelledby="h-historia-en">
+      <h2 id="h-historia-en">A little history</h2>
+      <p>Three-in-a-row games are very old. Boards of this kind have been found carved into roofing tiles in ancient Egypt, and the Romans played <em>terni lapilli</em> (“three pebbles”), in which each player had only three pieces and moved them around the board. <sup><a href="#ref-1-en">[1]</a></sup> The pencil-and-paper version we know became popular in England, where it is called <em>noughts and crosses</em>; in the United States it is <em>tic-tac-toe</em>; in Brazil, <em>jogo da velha</em> (“the old woman’s game”); in Italy, <em>tris</em>; and in the Spanish-speaking world, <em>tres en raya</em>.</p>
+      <p>The game also has a place in the history of computing:</p>
+      <ul>
+        <li>In 1952, A. S. Douglas programmed <strong>OXO</strong> on the EDSAC computer at the University of Cambridge, one of the first digital games with graphical output. <sup><a href="#ref-2-en">[2]</a></sup></li>
+        <li>In 1961, Donald Michie built <strong>MENACE</strong>, a “machine” made of 304 matchboxes and coloured beads that learned to play by trial and error, an ancestor of reinforcement learning. <sup><a href="#ref-3-en">[3]</a></sup></li>
+        <li>In 1972, Allen Newell and Herbert Simon described the list of rules a player can follow to never lose, the same one we will see below. <sup><a href="#ref-4-en">[4]</a></sup></li>
+        <li>In the film <em>WarGames</em> (1983), a military computer learns, by playing tic-tac-toe against itself, that some contests have no winner: “the only winning move is not to play”. <sup><a href="#ref-5-en">[5]</a></sup></li>
+      </ul>
+    </section>
+
+    <section id="numeros-en" aria-labelledby="h-numeros-en">
+      <h2 id="h-numeros-en">The board in numbers</h2>
+      <p>Small as it is, the board hides a fair number of possibilities:</p>
+      <ul class="kpis">
+        <li><strong>8</strong>winning lines: 3 rows, 3 columns and 2 diagonals</li>
+        <li><strong>255,168</strong>different possible games, counting the order of moves</li>
+        <li><strong>5,478</strong>positions that can occur in a game</li>
+        <li><strong>765</strong>truly different positions, once rotations and reflections are removed</li>
+      </ul>
+      <p>The most useful fact, however, is another one: <strong>the squares are not worth the same</strong>. The center belongs to 4 of the 8 winning lines; each corner to 3; and each edge to only 2. Whoever holds the center takes part in half the ways of winning and, at the same time, gets in the way of half the opponent’s ways of winning.</p>
+      <figure>
+        <img src="rc_images/JogoDaVelhaCasas-en.svg" alt="Board with the number of winning lines per square: 4 in the center, 3 in the corners and 2 on the edges" loading="lazy">
+        <figcaption>How many winning lines pass through each square</figcaption>
+      </figure>
+      <p>Another important fact: since X moves first, X makes up to 5 moves and O at most 4. This initiative advantage shows up in every statistic that follows.</p>
+    </section>
+
+    <section id="probabilidades-en" aria-labelledby="h-probabilidades-en">
+      <h2 id="h-probabilidades-en">Probabilities</h2>
+      <p>If we count the 255,168 possible games, 131,184 end in a win for X (51.4%), 77,904 in a win for O (30.5%) and 46,080 in a draw (18.1%). The shortest possible game has 5 moves, and the longest, 9:</p>
+      <div class="table-wrap">
+        <table class="data">
+          <caption>Possible games by number of moves</caption>
+          <thead><tr><th scope="col">Moves</th><th scope="col">X wins</th><th scope="col">O wins</th><th scope="col">Draws</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">5</th><td>1,440</td><td>—</td><td>—</td></tr>
+            <tr><th scope="row">6</th><td>—</td><td>5,328</td><td>—</td></tr>
+            <tr><th scope="row">7</th><td>47,952</td><td>—</td><td>—</td></tr>
+            <tr><th scope="row">8</th><td>—</td><td>72,576</td><td>—</td></tr>
+            <tr><th scope="row">9</th><td>81,792</td><td>—</td><td>46,080</td></tr>
+            <tr class="total"><th scope="row">Total</th><td>131,184</td><td>77,904</td><td>46,080</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Counting games, however, is not the same as computing the chance of winning, because short games are more likely than long ones. If both players pick squares at random, the exact probability is <strong>58.5% for X, 28.8% for O and 12.7% for a draw</strong>. The picture changes completely when one side plays well:</p>
+      <figure>
+        <img src="rc_images/JogoDaVelhaProbabilidades-en.svg" alt="Bars with the chances of an X win, an O win and a draw in four scenarios: both random, perfect X, perfect O and both perfect" loading="lazy">
+        <figcaption>Chances of each outcome depending on how well the players play</figcaption>
+      </figure>
+      <p>Three lessons come out of this chart:</p>
+      <ul>
+        <li><strong>Playing well almost always beats playing badly.</strong> A perfect X wins 99.5% of games against an opponent who plays at random.</li>
+        <li><strong>Playing well never loses.</strong> Even starting at a disadvantage, a perfect O is never beaten and wins 91.6% of the time against a random X.</li>
+        <li><strong>Two perfect players always draw.</strong> That is why, between attentive adults, the game usually ends in a “cat’s game”.</li>
+      </ul>
+      <p>The first move also affects the odds. Against an opponent who plays at random, opening in the center gives X 69.3% wins; in a corner, 60.7%; and on an edge, 53.6%. But when X plays perfectly after the opening, the corner moves ahead (99.5%, against 99.0% for the center and 98.7% for the edge), because against the corner there is only <strong>one</strong> correct reply. We will look at this in detail in the attack section.</p>
+    </section>
+
+    <section id="prioridades-en" aria-labelledby="h-prioridades-en">
+      <h2 id="h-prioridades-en">The order of priorities</h2>
+      <p>Newell and Simon showed that it is possible to play perfectly by following a simple list: each time, choose the first rule on the list that can be applied. <sup><a href="#ref-4-en">[4]</a></sup> Whoever follows this list never loses.</p>
+      <ol class="laws">
+        <li><strong>Win.</strong> If you have two pieces in a line with the third square free, play there.</li>
+        <li><strong>Block.</strong> If the opponent has two pieces in a line with the third square free, take it.</li>
+        <li><strong>Fork.</strong> Play a square that creates two winning threats at once.</li>
+        <li><strong>Block the opponent’s fork.</strong> If there is a single square where they would fork, take it. If there is more than one, create a two-in-a-row threat that forces them to defend, as long as that defense does not give them a fork.</li>
+        <li><strong>Center.</strong> Play the center if it is free.</li>
+        <li><strong>Opposite corner.</strong> If the opponent is in a corner, play the opposite corner.</li>
+        <li><strong>Empty corner.</strong> Play any empty corner.</li>
+        <li><strong>Empty edge.</strong> Play any empty edge.</li>
+      </ol>
+      <p>Rules 1 and 2 seem obvious, but they are the ones most often forgotten in practice: many people focus so hard on their own plan that they miss the opponent’s threat, or let their own win slip by. Before each move, ask two questions: “can I win now?” and “can they win next move?”.</p>
+    </section>
+
+    <section id="ataque-en" aria-labelledby="h-ataque-en">
+      <h2 id="h-ataque-en">Attack: openings and forks</h2>
+      <p>In tic-tac-toe nobody wins with a single threat, because a single threat can always be blocked. Victory comes from the <strong>fork</strong>: a move that creates two threats at the same time. The opponent blocks one, and you complete the other. The whole attack is about setting up a fork.</p>
+      <figure>
+        <img src="rc_images/JogoDaVelhaGarfo-en.svg" alt="Sequence on three boards: X opens in the corner, O replies on the edge, X takes the center, O blocks and X creates a fork with two threats" loading="lazy">
+        <figcaption>A classic fork after a mistake on the second move</figcaption>
+      </figure>
+      <p>The choice of opening determines how many chances the opponent has to go wrong:</p>
+      <ul>
+        <li><strong>Corner (the trickiest opening).</strong> Of the 8 possible replies, only one draws: the center. Any other loses against correct play. Against people who don’t yet know this rule, it is the best choice.</li>
+        <li><strong>Center (the most solid opening).</strong> Of the 8 replies, the 4 edges lose and the 4 corners draw. It is the opening that wins most against random play, but the opponent has more ways to save themselves.</li>
+        <li><strong>Edge (the weakest opening).</strong> There are also 4 losing replies, but X’s winning chances are the lowest, and whoever opens on the edge has to play more carefully.</li>
+      </ul>
+      <p>Some traps for the attack, always with X moving first:</p>
+      <ol class="laws">
+        <li><strong>Corner and edge.</strong> X opens in a corner and O replies on an edge. X takes the center, threatening the diagonal; O is forced to block in the opposite corner; X plays the corner that makes two threats. This is the fork in the figure above.</li>
+        <li><strong>Corner and corner.</strong> X opens in a corner and O replies in another corner. X plays a third corner, creating a threat; after the block, the last free corner creates the fork.</li>
+        <li><strong>Center and edge.</strong> X opens in the center and O replies on an edge. X plays a corner, creating a threat on the diagonal; O blocks in the opposite corner; X plays the corner that lines up with both pieces and creates the fork.</li>
+        <li><strong>Center and opposite corner.</strong> X opens in the center, O replies in a corner and X plays the corner opposite O’s. Now O must play another corner; if O plays an edge, O loses. This is the subtlest trap against someone who answered the first move well.</li>
+      </ol>
+    </section>
+
+    <section id="defesa-en" aria-labelledby="h-defesa-en">
+      <h2 id="h-defesa-en">Defense: the right replies</h2>
+      <p>Whoever plays O is at a disadvantage and, against a perfect opponent, plays for the draw. The good news is that defense boils down to a few replies that need to be memorized:</p>
+      <figure>
+        <img src="rc_images/JogoDaVelhaDefesas-en.svg" alt="Three boards with the drawing squares in green and the losing ones in pink: against the corner, the center; against the center, a corner; against opposite corners, an edge" loading="lazy">
+        <figcaption>O’s replies that secure the draw</figcaption>
+      </figure>
+      <ul>
+        <li><strong>If X opens in a corner, take the center.</strong> It is the only reply that does not lose.</li>
+        <li><strong>If X opens in the center, take a corner.</strong> Never an edge.</li>
+        <li><strong>If X opens on an edge</strong>, the safe replies are the center, the two corners next to X’s piece and the opposite edge.</li>
+        <li><strong>The opposite-corners trap.</strong> If X opened in a corner, you replied in the center and X played the opposite corner, play an <strong>edge</strong>. Here the instinct to “prefer corners” is misleading: a corner lets X set up a fork.</li>
+      </ul>
+      <p>After these first moves, defense follows the order of priorities: always block when there are two in a row and, whenever you can, create your own threats to force X to respond. Defending by attacking takes away the time the opponent needs to set up a fork.</p>
+    </section>
+
+    <section id="pessoas-en" aria-labelledby="h-pessoas-en">
+      <h2 id="h-pessoas-en">Playing against people</h2>
+      <p>Theory says the game is a draw; practice shows that people make mistakes, especially children and distracted players. Research with children shows that strategies develop with age: first they learn to win when they have two in a row, then to block and, only much later, to create and prevent forks. <sup><a href="#ref-6-en">[6]</a></sup> Some practical tips:</p>
+      <ul>
+        <li><strong>As X, open in a corner.</strong> Many people’s instinctive reply is to play next to it or in the opposite corner, and both lose.</li>
+        <li><strong>Vary your openings.</strong> Whoever always starts the same way teaches the opponent how to defend against it.</li>
+        <li><strong>Force the replies.</strong> Each threat forces the opponent to play where you want. Chain threats until the last one is a fork.</li>
+        <li><strong>As O, don’t copy your opponent.</strong> Answering a corner with another corner looks symmetrical and safe, but it loses.</li>
+        <li><strong>In a series of games, alternate who starts.</strong> Whoever always starts has a real advantage against imperfect players.</li>
+      </ul>
+      <blockquote>
+        <p>Cartoonist Randall Munroe summed up the entire optimal strategy in a single drawing: the complete map of the right moves for X and O, for any position. <sup><a href="#ref-7-en">[7]</a></sup> It fits on one page, and it is the best proof that the game has a solution.</p>
+      </blockquote>
+    </section>
+
+    <section id="jogar-en" aria-labelledby="h-jogar-en">
+      <h2 id="h-jogar-en">Play against the computer</h2>
+      <p>Time to put the techniques into practice. On <strong>easy</strong>, the computer plays at random. On <strong>medium</strong>, it wins when it can and blocks your threats, but it cannot see forks. On <strong>impossible</strong>, it computes the full game tree and never loses. Whoever starts plays X.</p>
+      <div class="ttt" data-lang="en">
+        <div class="ttt-controls">
+          <label>Level <select class="ttt-level"><option value="easy">Easy</option><option value="medium" selected>Medium</option><option value="hard">Impossible</option></select></label>
+          <label>Who starts <select class="ttt-first"><option value="human">You</option><option value="ai">The computer</option></select></label>
+          <button type="button" class="ttt-new">New game</button>
+        </div>
+        <div class="ttt-board" role="group" aria-label="Board"></div>
+        <p class="ttt-status" role="status" aria-live="polite"></p>
+        <dl class="ttt-score">
+          <div><dt>You</dt><dd class="ttt-s-human">0</dd></div>
+          <div><dt>Draws</dt><dd class="ttt-s-draw">0</dd></div>
+          <div><dt>Computer</dt><dd class="ttt-s-ai">0</dd></div>
+        </dl>
+      </div>
+      <p class="note">Challenge: on medium, try to win using one of the traps from the attack section. On impossible, the best you can get is a draw.</p>
+    </section>
+
+    <section id="variantes-en" aria-labelledby="h-variantes-en">
+      <h2 id="h-variantes-en">Beyond 3×3</h2>
+      <p>Since the classic game is a draw, variants appeared to bring back the challenge:</p>
+      <ul>
+        <li><strong>Misère tic-tac-toe</strong>: whoever gets three in a row loses. It is also a draw with perfect play; a known strategy for X is to play the center and then always the square symmetrically opposite O’s.</li>
+        <li><strong>4×4 tic-tac-toe</strong>: with four in a row on a larger board, the game still ends in a draw with perfect play.</li>
+        <li><strong>Qubic (4×4×4)</strong>: tic-tac-toe in three dimensions. In 1980 Oren Patashnik showed, with computer help, that the first player can always win. <sup><a href="#ref-8-en">[8]</a></sup></li>
+        <li><strong>Gomoku</strong>: five in a row on a 15×15 board. In 1994 Victor Allis showed that the first player wins in the freestyle version, which led to compensation rules. <sup><a href="#ref-9-en">[9]</a></sup></li>
+        <li><strong>Ultimate tic-tac-toe</strong>: nine boards inside a larger board, where the square you play decides which board your opponent must play in next. Small in rules and huge in strategy. <sup><a href="#ref-10-en">[10]</a></sup></li>
+      </ul>
+    </section>
+
+    <section id="conclusao-en" aria-labelledby="h-conclusao-en">
+      <h2 id="h-conclusao-en">Conclusion</h2>
+      <p>Winning at tic-tac-toe does not depend on luck but on two habits: in attack, create positions in which there is only one correct reply; in defense, know that reply. As X, open in a corner and look for the fork. As O, answer the corner with the center, the center with a corner and, with opposite corners, play an edge. And on every move, first check whether you can win, then whether you need to block.</p>
+      <p>Following these rules, you will never lose. If your opponent knows them too, the game will end in a draw, and that is a lesson as well: in a solved game, the best possible result against someone who makes no mistakes is not losing.</p>
+    </section>
+
+    <section id="referencias-en" aria-labelledby="h-referencias-en">
+      <h2 id="h-referencias-en">References</h2>
+      <ol class="refs">
+        <li id="ref-1-en"><strong>Wikipedia</strong>, "Tic-tac-toe", accessed 17/10/2026, <a href="https://en.wikipedia.org/wiki/Tic-tac-toe" rel="noopener">en.wikipedia.org/wiki/Tic-tac-toe</a>.</li>
+        <li id="ref-2-en"><strong>Wikipedia</strong>, "OXO (video game)", accessed 17/10/2026, <a href="https://en.wikipedia.org/wiki/OXO_(video_game)" rel="noopener">en.wikipedia.org/wiki/OXO_(video_game)</a>.</li>
+        <li id="ref-3-en"><strong>Michie, Donald</strong>, "Experiments on the mechanization of game-learning. Part I: Characterization of the model and its parameters", <em>The Computer Journal</em>, vol. 6, no. 3, pp. 232–236, 1963.</li>
+        <li id="ref-4-en"><strong>Newell, Allen; Simon, Herbert A.</strong>, <em>Human Problem Solving</em>, Prentice-Hall, 1972.</li>
+        <li id="ref-5-en"><strong>Wikipedia</strong>, "WarGames", accessed 17/10/2026, <a href="https://en.wikipedia.org/wiki/WarGames" rel="noopener">en.wikipedia.org/wiki/WarGames</a>.</li>
+        <li id="ref-6-en"><strong>Crowley, Kevin; Siegler, Robert S.</strong>, "Flexible strategy use in young children’s tic-tac-toe", <em>Cognitive Science</em>, vol. 17, no. 4, pp. 531–561, 1993.</li>
+        <li id="ref-7-en"><strong>Munroe, Randall</strong>, "Tic-Tac-Toe", xkcd 832, accessed 17/10/2026, <a href="https://xkcd.com/832/" rel="noopener">xkcd.com/832</a>.</li>
+        <li id="ref-8-en"><strong>Patashnik, Oren</strong>, "Qubic: 4×4×4 Tic-Tac-Toe", <em>Mathematics Magazine</em>, vol. 53, no. 4, pp. 202–216, 1980.</li>
+        <li id="ref-9-en"><strong>Allis, L. Victor</strong>, <em>Searching for Solutions in Games and Artificial Intelligence</em>, PhD thesis, University of Limburg, Maastricht, 1994.</li>
+        <li id="ref-10-en"><strong>Orlin, Ben</strong>, "Ultimate Tic-Tac-Toe", Math with Bad Drawings, accessed 17/10/2026, <a href="https://mathwithbaddrawings.com/2013/06/16/ultimate-tic-tac-toe/" rel="noopener">mathwithbaddrawings.com</a>.</li>
+      </ol>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== IT ===================== -->
+<div id="it" role="tabpanel" aria-labelledby="tab-it" lang="it" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Progetti</a></p>
+      <p class="eyebrow">Articolo</p>
+      <h1>Come vincere a tris</h1>
+      <p class="dek">Tecniche di attacco e di difesa, probabilità esatte e le trappole che decidono la partita sulla griglia 3×3.</p>
+      <div class="byline">
+        <span>Di <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Pubblicato il <time datetime="2026-10-17">17/10/2026</time></span>
+        <span class="credit">Rivisto e formattato con Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-it">
+    <h2 id="toc-it">Indice</h2>
+    <ol>
+      <li><a href="#introducao-it">Introduzione</a></li>
+      <li><a href="#historia-it">Un po’ di storia</a></li>
+      <li><a href="#numeros-it">La griglia in numeri</a></li>
+      <li><a href="#probabilidades-it">Probabilità</a></li>
+      <li><a href="#prioridades-it">L’ordine delle priorità</a></li>
+      <li><a href="#ataque-it">Attacco: aperture e forchette</a></li>
+      <li><a href="#defesa-it">Difesa: le risposte giuste</a></li>
+      <li><a href="#pessoas-it">Giocare contro le persone</a></li>
+      <li><a href="#jogar-it">Gioca contro il computer</a></li>
+      <li><a href="#variantes-it">Oltre il 3×3</a></li>
+      <li><a href="#conclusao-it">Conclusione</a></li>
+      <li><a href="#referencias-it">Riferimenti</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="introducao-it" aria-labelledby="h-introducao-it">
+      <h2 id="h-introducao-it">Introduzione</h2>
+      <p>Il tris è probabilmente il primo gioco di strategia che impariamo: una griglia 3×3, due simboli, X e O, e l’obiettivo di allinearne tre in riga, in colonna o in diagonale. È così semplice che sembra non avere segreti. E, in un certo senso, non ne ha: il gioco è <strong>risolto</strong>. Se nessuno dei due giocatori sbaglia, ogni partita finisce in pareggio. <sup><a href="#ref-1-it">[1]</a></sup></p>
+      <p>Questo non significa che non si possa vincere. Significa che <strong>si vince solo quando l’avversario sbaglia</strong>. Vincere a tris è quindi l’arte di creare situazioni in cui sbagliare è facile e azzeccare la mossa è difficile, e di non cadere mai in quelle situazioni quando tocca a noi difendere.</p>
+      <p>In questo articolo vedremo perché alcune caselle valgono più di altre, quali sono le probabilità di vittoria in ogni scenario, l’ordine di priorità che garantisce di non perdere mai, le aperture e le trappole dell’attacco e le risposte che salvano la difesa. I numeri presentati sono stati calcolati percorrendo l’albero completo del gioco, partita per partita.</p>
+    </section>
+
+    <section id="historia-it" aria-labelledby="h-historia-it">
+      <h2 id="h-historia-it">Un po’ di storia</h2>
+      <p>I giochi di allineamento a tre sono molto antichi. Griglie di questo tipo sono state trovate incise su tegole dell’antico Egitto, e i Romani giocavano al <em>terni lapilli</em> (“tre sassolini”), in cui ogni giocatore aveva solo tre pedine e le spostava sulla griglia. <sup><a href="#ref-1-it">[1]</a></sup> La versione con carta e matita che conosciamo si è diffusa in Inghilterra, dove si chiama <em>noughts and crosses</em>; negli Stati Uniti è il <em>tic-tac-toe</em>; in Brasile il <em>jogo da velha</em> (“il gioco della vecchia”); e nel mondo ispanico il <em>tres en raya</em>.</p>
+      <p>Il gioco ha un posto anche nella storia dell’informatica:</p>
+      <ul>
+        <li>Nel 1952, A. S. Douglas programmò <strong>OXO</strong> sul calcolatore EDSAC dell’Università di Cambridge, uno dei primi giochi digitali con uscita grafica. <sup><a href="#ref-2-it">[2]</a></sup></li>
+        <li>Nel 1961, Donald Michie costruì <strong>MENACE</strong>, una “macchina” fatta di 304 scatole di fiammiferi e perline colorate che imparava a giocare per tentativi ed errori, un antenato dell’apprendimento per rinforzo. <sup><a href="#ref-3-it">[3]</a></sup></li>
+        <li>Nel 1972, Allen Newell e Herbert Simon descrissero l’elenco di regole che permette a un giocatore di non perdere mai, lo stesso che vedremo più avanti. <sup><a href="#ref-4-it">[4]</a></sup></li>
+        <li>Nel film <em>Wargames – Giochi di guerra</em> (<em>WarGames</em>, 1983), un computer militare impara, giocando a tris contro sé stesso, che certe sfide non hanno vincitori: “l’unica mossa vincente è non giocare”. <sup><a href="#ref-5-it">[5]</a></sup></li>
+      </ul>
+    </section>
+
+    <section id="numeros-it" aria-labelledby="h-numeros-it">
+      <h2 id="h-numeros-it">La griglia in numeri</h2>
+      <p>Per quanto piccola, la griglia nasconde un numero discreto di possibilità:</p>
+      <ul class="kpis">
+        <li><strong>8</strong>linee vincenti: 3 righe, 3 colonne e 2 diagonali</li>
+        <li><strong>255.168</strong>partite diverse possibili, contando l’ordine delle mosse</li>
+        <li><strong>5.478</strong>posizioni che possono comparire in una partita</li>
+        <li><strong>765</strong>posizioni davvero diverse, escludendo rotazioni e riflessioni</li>
+      </ul>
+      <p>L’informazione più utile, però, è un’altra: <strong>le caselle non valgono tutte uguale</strong>. Il centro partecipa a 4 delle 8 linee vincenti; ogni angolo a 3; e ogni lato a sole 2. Chi occupa il centro partecipa a metà dei modi di vincere e, allo stesso tempo, ostacola metà dei modi di vincere dell’avversario.</p>
+      <figure>
+        <img src="rc_images/JogoDaVelhaCasas-it.svg" alt="Griglia con il numero di linee vincenti per casella: 4 al centro, 3 negli angoli e 2 sui lati" loading="lazy">
+        <figcaption>Quante linee vincenti passano per ogni casella</figcaption>
+      </figure>
+      <p>Un altro fatto importante: poiché la X comincia, fa fino a 5 mosse e la O al massimo 4. Questo vantaggio dell’iniziativa compare in tutte le statistiche che seguono.</p>
+    </section>
+
+    <section id="probabilidades-it" aria-labelledby="h-probabilidades-it">
+      <h2 id="h-probabilidades-it">Probabilità</h2>
+      <p>Se contiamo le 255.168 partite possibili, 131.184 finiscono con la vittoria della X (51,4%), 77.904 con la vittoria della O (30,5%) e 46.080 in pareggio (18,1%). La partita più breve possibile dura 5 mosse, la più lunga 9:</p>
+      <div class="table-wrap">
+        <table class="data">
+          <caption>Partite possibili per numero di mosse</caption>
+          <thead><tr><th scope="col">Mosse</th><th scope="col">Vittorie X</th><th scope="col">Vittorie O</th><th scope="col">Pareggi</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">5</th><td>1.440</td><td>—</td><td>—</td></tr>
+            <tr><th scope="row">6</th><td>—</td><td>5.328</td><td>—</td></tr>
+            <tr><th scope="row">7</th><td>47.952</td><td>—</td><td>—</td></tr>
+            <tr><th scope="row">8</th><td>—</td><td>72.576</td><td>—</td></tr>
+            <tr><th scope="row">9</th><td>81.792</td><td>—</td><td>46.080</td></tr>
+            <tr class="total"><th scope="row">Totale</th><td>131.184</td><td>77.904</td><td>46.080</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Contare le partite, tuttavia, non equivale a calcolare la probabilità di vincere, perché le partite brevi sono più probabili di quelle lunghe. Se entrambi i giocatori scelgono le caselle a caso, la probabilità esatta è del <strong>58,5% per la X, 28,8% per la O e 12,7% di pareggio</strong>. Il quadro cambia completamente quando uno dei due gioca bene:</p>
+      <figure>
+        <img src="rc_images/JogoDaVelhaProbabilidades-it.svg" alt="Barre con le probabilità di vittoria della X, della O e di pareggio in quattro scenari: entrambi a caso, X perfetto, O perfetto ed entrambi perfetti" loading="lazy">
+        <figcaption>Probabilità di ciascun risultato a seconda della bravura dei giocatori</figcaption>
+      </figure>
+      <p>Da questo grafico emergono tre lezioni:</p>
+      <ul>
+        <li><strong>Chi gioca bene batte quasi sempre chi gioca male.</strong> Una X perfetta vince il 99,5% delle partite contro un avversario che gioca a caso.</li>
+        <li><strong>Chi gioca bene non perde mai.</strong> Pur partendo in svantaggio, una O perfetta non viene mai battuta e vince il 91,6% delle volte contro una X casuale.</li>
+        <li><strong>Due giocatori perfetti pareggiano sempre.</strong> Per questo, tra adulti attenti, il gioco di solito finisce in parità.</li>
+      </ul>
+      <p>Anche la prima mossa influisce sulle probabilità. Contro un avversario che gioca a caso, aprire al centro dà alla X il 69,3% di vittorie; in un angolo il 60,7%; e su un lato il 53,6%. Ma quando la X gioca perfettamente dopo l’apertura, l’angolo passa in testa (99,5%, contro il 99,0% del centro e il 98,7% del lato), perché contro l’angolo esiste <strong>una sola</strong> risposta corretta. Lo vedremo in dettaglio nella sezione sull’attacco.</p>
+    </section>
+
+    <section id="prioridades-it" aria-labelledby="h-prioridades-it">
+      <h2 id="h-prioridades-it">L’ordine delle priorità</h2>
+      <p>Newell e Simon mostrarono che è possibile giocare in modo perfetto seguendo un semplice elenco: a ogni turno, si sceglie la prima regola dell’elenco che si può applicare. <sup><a href="#ref-4-it">[4]</a></sup> Chi segue questo elenco non perde mai.</p>
+      <ol class="laws">
+        <li><strong>Vincere.</strong> Se hai due pedine in linea con la terza casella libera, gioca lì.</li>
+        <li><strong>Bloccare.</strong> Se l’avversario ha due pedine in linea con la terza casella libera, occupala.</li>
+        <li><strong>Fare una forchetta.</strong> Gioca in una casella che crei due minacce di vittoria contemporaneamente.</li>
+        <li><strong>Impedire la forchetta dell’avversario.</strong> Se c’è una sola casella in cui farebbe una forchetta, occupala. Se ce n’è più di una, crea una minaccia di due in linea che lo costringa a difendersi, purché quella difesa non gli dia una forchetta.</li>
+        <li><strong>Centro.</strong> Gioca al centro, se è libero.</li>
+        <li><strong>Angolo opposto.</strong> Se l’avversario è in un angolo, gioca nell’angolo opposto.</li>
+        <li><strong>Angolo libero.</strong> Gioca in un qualsiasi angolo vuoto.</li>
+        <li><strong>Lato libero.</strong> Gioca su un qualsiasi lato vuoto.</li>
+      </ol>
+      <p>Le regole 1 e 2 sembrano ovvie, ma sono quelle che si dimenticano più spesso: molte persone sono così concentrate sul proprio piano da non vedere la minaccia dell’avversario, o da lasciarsi sfuggire la propria vittoria. Prima di ogni mossa, fatti due domande: “posso vincere adesso?” e “lui può vincere alla prossima?”.</p>
+    </section>
+
+    <section id="ataque-it" aria-labelledby="h-ataque-it">
+      <h2 id="h-ataque-it">Attacco: aperture e forchette</h2>
+      <p>A tris nessuno vince con una sola minaccia, perché una minaccia semplice può sempre essere bloccata. La vittoria arriva dalla <strong>forchetta</strong> (in inglese <em>fork</em>): una mossa che crea due minacce nello stesso momento. L’avversario ne blocca una e tu completi l’altra. Tutto l’attacco consiste nel preparare una forchetta.</p>
+      <figure>
+        <img src="rc_images/JogoDaVelhaGarfo-it.svg" alt="Sequenza in tre griglie: la X apre nell’angolo, la O risponde sul lato, la X prende il centro, la O blocca e la X crea una forchetta con due minacce" loading="lazy">
+        <figcaption>Una forchetta classica dopo un errore alla seconda mossa</figcaption>
+      </figure>
+      <p>La scelta dell’apertura determina quante occasioni di sbagliare ha l’avversario:</p>
+      <ul>
+        <li><strong>Angolo (l’apertura più insidiosa).</strong> Delle 8 risposte possibili, solo una pareggia: il centro. Qualsiasi altra perde contro il gioco corretto. Contro chi non conosce ancora questa regola, è la scelta migliore.</li>
+        <li><strong>Centro (l’apertura più solida).</strong> Delle 8 risposte, i 4 lati perdono e i 4 angoli pareggiano. È l’apertura che vince di più contro il gioco casuale, ma l’avversario ha più vie per salvarsi.</li>
+        <li><strong>Lato (l’apertura più debole).</strong> Anche qui ci sono 4 risposte perdenti, ma le probabilità di vittoria della X sono le più basse, e chi apre sul lato deve giocare con più attenzione.</li>
+      </ul>
+      <p>Alcune trappole per l’attacco, sempre con la X che comincia:</p>
+      <ol class="laws">
+        <li><strong>Angolo e lato.</strong> La X apre in un angolo e la O risponde su un lato. La X prende il centro, minacciando la diagonale; la O è costretta a bloccare nell’angolo opposto; la X gioca nell’angolo che crea due minacce. È la forchetta della figura qui sopra.</li>
+        <li><strong>Angolo e angolo.</strong> La X apre in un angolo e la O risponde in un altro angolo. La X gioca in un terzo angolo, creando una minaccia; dopo il blocco, l’ultimo angolo libero crea la forchetta.</li>
+        <li><strong>Centro e lato.</strong> La X apre al centro e la O risponde su un lato. La X gioca in un angolo, creando una minaccia sulla diagonale; la O blocca nell’angolo opposto; la X gioca nell’angolo allineato con le sue due pedine e crea la forchetta.</li>
+        <li><strong>Centro e angolo opposto.</strong> La X apre al centro, la O risponde in un angolo e la X gioca nell’angolo opposto a quello della O. Ora la O deve giocare in un altro angolo; se gioca su un lato, perde. È la trappola più sottile contro chi ha risposto bene alla prima mossa.</li>
+      </ol>
+    </section>
+
+    <section id="defesa-it" aria-labelledby="h-defesa-it">
+      <h2 id="h-defesa-it">Difesa: le risposte giuste</h2>
+      <p>Chi gioca con la O è in svantaggio e, contro un avversario perfetto, gioca per il pareggio. La buona notizia è che la difesa si riduce a poche risposte da memorizzare:</p>
+      <figure>
+        <img src="rc_images/JogoDaVelhaDefesas-it.svg" alt="Tre griglie con le caselle che pareggiano in verde e quelle che perdono in rosa: contro l’angolo, il centro; contro il centro, un angolo; contro gli angoli opposti, un lato" loading="lazy">
+        <figcaption>Le risposte della O che garantiscono il pareggio</figcaption>
+      </figure>
+      <ul>
+        <li><strong>Se la X apre in un angolo, gioca al centro.</strong> È l’unica risposta che non perde.</li>
+        <li><strong>Se la X apre al centro, gioca in un angolo.</strong> Mai su un lato.</li>
+        <li><strong>Se la X apre su un lato</strong>, le risposte sicure sono il centro, i due angoli vicini alla pedina della X e il lato opposto.</li>
+        <li><strong>La trappola degli angoli opposti.</strong> Se la X ha aperto in un angolo, tu hai risposto al centro e la X ha giocato nell’angolo opposto, gioca su un <strong>lato</strong>. Qui l’istinto di “preferire gli angoli” inganna: un angolo permette alla X di costruire una forchetta.</li>
+      </ul>
+      <p>Dopo queste prime mosse, la difesa segue l’ordine delle priorità: blocca sempre quando ci sono due in linea e, quando puoi, crea minacce tue per costringere la X a rispondere. Difendere attaccando toglie all’avversario il tempo di cui ha bisogno per costruire una forchetta.</p>
+    </section>
+
+    <section id="pessoas-it" aria-labelledby="h-pessoas-it">
+      <h2 id="h-pessoas-it">Giocare contro le persone</h2>
+      <p>La teoria dice che il gioco finisce in pareggio; la pratica mostra che le persone sbagliano, soprattutto i bambini e i giocatori distratti. Le ricerche sui bambini mostrano che le strategie si sviluppano con l’età: prima imparano a vincere quando hanno due in linea, poi a bloccare e, solo molto più tardi, a creare e impedire le forchette. <sup><a href="#ref-6-it">[6]</a></sup> Alcuni consigli pratici:</p>
+      <ul>
+        <li><strong>Con la X, apri in un angolo.</strong> La risposta istintiva di molti è giocare accanto o nell’angolo opposto, ed entrambe perdono.</li>
+        <li><strong>Varia le aperture.</strong> Chi comincia sempre allo stesso modo insegna all’avversario come difendersi.</li>
+        <li><strong>Forza le risposte.</strong> Ogni minaccia obbliga l’avversario a giocare dove vuoi tu. Concatena minacce finché l’ultima non è una forchetta.</li>
+        <li><strong>Con la O, non copiare l’avversario.</strong> Rispondere a un angolo con un altro angolo sembra simmetrico e sicuro, ma perde.</li>
+        <li><strong>In una serie di partite, alternate chi comincia.</strong> Chi comincia sempre ha un vantaggio reale contro giocatori imperfetti.</li>
+      </ul>
+      <blockquote>
+        <p>Il fumettista Randall Munroe ha riassunto l’intera strategia ottimale in un unico disegno: la mappa completa delle mosse giuste per la X e per la O, in qualsiasi posizione. <sup><a href="#ref-7-it">[7]</a></sup> Sta in una pagina ed è la prova migliore che il gioco ha una soluzione.</p>
+      </blockquote>
+    </section>
+
+    <section id="jogar-it" aria-labelledby="h-jogar-it">
+      <h2 id="h-jogar-it">Gioca contro il computer</h2>
+      <p>È il momento di mettere in pratica le tecniche. Al livello <strong>facile</strong>, il computer gioca a caso. Al <strong>medio</strong>, vince quando può e blocca le tue minacce, ma non vede le forchette. All’<strong>impossibile</strong>, calcola l’albero completo del gioco e non perde mai. Chi comincia gioca con la X.</p>
+      <div class="ttt" data-lang="it">
+        <div class="ttt-controls">
+          <label>Livello <select class="ttt-level"><option value="easy">Facile</option><option value="medium" selected>Medio</option><option value="hard">Impossibile</option></select></label>
+          <label>Chi comincia <select class="ttt-first"><option value="human">Tu</option><option value="ai">Il computer</option></select></label>
+          <button type="button" class="ttt-new">Nuova partita</button>
+        </div>
+        <div class="ttt-board" role="group" aria-label="Griglia"></div>
+        <p class="ttt-status" role="status" aria-live="polite"></p>
+        <dl class="ttt-score">
+          <div><dt>Tu</dt><dd class="ttt-s-human">0</dd></div>
+          <div><dt>Pareggi</dt><dd class="ttt-s-draw">0</dd></div>
+          <div><dt>Computer</dt><dd class="ttt-s-ai">0</dd></div>
+        </dl>
+      </div>
+      <p class="note">Sfida: al livello medio, prova a vincere con una delle trappole della sezione sull’attacco. All’impossibile, il miglior risultato che puoi ottenere è il pareggio.</p>
+    </section>
+
+    <section id="variantes-it" aria-labelledby="h-variantes-it">
+      <h2 id="h-variantes-it">Oltre il 3×3</h2>
+      <p>Poiché il gioco classico finisce in pareggio, sono nate varianti per ridargli sfida:</p>
+      <ul>
+        <li><strong>Tris inverso</strong> (<em>misère</em>): perde chi allinea tre simboli. Anche questo finisce in pareggio con il gioco perfetto; una strategia nota per la X è giocare al centro e poi sempre nella casella simmetricamente opposta a quella della O.</li>
+        <li><strong>Tris 4×4</strong>: con quattro in linea su una griglia più grande, il gioco continua a finire in pareggio con il gioco perfetto.</li>
+        <li><strong>Qubic (4×4×4)</strong>: il tris in tre dimensioni. Nel 1980 Oren Patashnik dimostrò, con l’aiuto del computer, che il primo giocatore può sempre vincere. <sup><a href="#ref-8-it">[8]</a></sup></li>
+        <li><strong>Gomoku</strong>: cinque in linea su una griglia 15×15. Nel 1994 Victor Allis dimostrò che il primo giocatore vince nella versione libera, il che portò a regole di compensazione. <sup><a href="#ref-9-it">[9]</a></sup></li>
+        <li><strong>Ultimate tic-tac-toe</strong>: nove griglie dentro una griglia più grande, in cui la casella in cui giochi decide in quale griglia l’avversario deve giocare dopo. Piccolo nelle regole e enorme nella strategia. <sup><a href="#ref-10-it">[10]</a></sup></li>
+      </ul>
+    </section>
+
+    <section id="conclusao-it" aria-labelledby="h-conclusao-it">
+      <h2 id="h-conclusao-it">Conclusione</h2>
+      <p>Vincere a tris non dipende dalla fortuna, ma da due abitudini: in attacco, creare posizioni in cui esiste una sola risposta corretta; in difesa, conoscere quella risposta. Con la X, apri in un angolo e cerca la forchetta. Con la O, rispondi all’angolo con il centro, al centro con un angolo e, con gli angoli opposti, gioca su un lato. E a ogni mossa controlla prima se puoi vincere e poi se devi bloccare.</p>
+      <p>Seguendo queste regole non perderai mai. Se anche l’avversario le conosce, la partita finirà in pareggio, e anche questa è una lezione: in un gioco risolto, il miglior risultato possibile contro chi non sbaglia è non perdere.</p>
+    </section>
+
+    <section id="referencias-it" aria-labelledby="h-referencias-it">
+      <h2 id="h-referencias-it">Riferimenti</h2>
+      <ol class="refs">
+        <li id="ref-1-it"><strong>Wikipedia</strong>, "Tic-tac-toe", consultato il 17/10/2026, <a href="https://en.wikipedia.org/wiki/Tic-tac-toe" rel="noopener">en.wikipedia.org/wiki/Tic-tac-toe</a>.</li>
+        <li id="ref-2-it"><strong>Wikipedia</strong>, "OXO (video game)", consultato il 17/10/2026, <a href="https://en.wikipedia.org/wiki/OXO_(video_game)" rel="noopener">en.wikipedia.org/wiki/OXO_(video_game)</a>.</li>
+        <li id="ref-3-it"><strong>Michie, Donald</strong>, "Experiments on the mechanization of game-learning. Part I: Characterization of the model and its parameters", <em>The Computer Journal</em>, vol. 6, n. 3, pp. 232–236, 1963.</li>
+        <li id="ref-4-it"><strong>Newell, Allen; Simon, Herbert A.</strong>, <em>Human Problem Solving</em>, Prentice-Hall, 1972.</li>
+        <li id="ref-5-it"><strong>Wikipedia</strong>, "WarGames", consultato il 17/10/2026, <a href="https://en.wikipedia.org/wiki/WarGames" rel="noopener">en.wikipedia.org/wiki/WarGames</a>.</li>
+        <li id="ref-6-it"><strong>Crowley, Kevin; Siegler, Robert S.</strong>, "Flexible strategy use in young children’s tic-tac-toe", <em>Cognitive Science</em>, vol. 17, n. 4, pp. 531–561, 1993.</li>
+        <li id="ref-7-it"><strong>Munroe, Randall</strong>, "Tic-Tac-Toe", xkcd 832, consultato il 17/10/2026, <a href="https://xkcd.com/832/" rel="noopener">xkcd.com/832</a>.</li>
+        <li id="ref-8-it"><strong>Patashnik, Oren</strong>, "Qubic: 4×4×4 Tic-Tac-Toe", <em>Mathematics Magazine</em>, vol. 53, n. 4, pp. 202–216, 1980.</li>
+        <li id="ref-9-it"><strong>Allis, L. Victor</strong>, <em>Searching for Solutions in Games and Artificial Intelligence</em>, tesi di dottorato, Università di Limburg, Maastricht, 1994.</li>
+        <li id="ref-10-it"><strong>Orlin, Ben</strong>, "Ultimate Tic-Tac-Toe", Math with Bad Drawings, consultato il 17/10/2026, <a href="https://mathwithbaddrawings.com/2013/06/16/ultimate-tic-tac-toe/" rel="noopener">mathwithbaddrawings.com</a>.</li>
+      </ol>
+      <a class="back" href="#top">↑ Torna all’inizio</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== ES ===================== -->
+<div id="es" role="tabpanel" aria-labelledby="tab-es" lang="es" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Proyectos</a></p>
+      <p class="eyebrow">Artículo</p>
+      <h1>Cómo ganar al tres en raya</h1>
+      <p class="dek">Técnicas de ataque y defensa, probabilidades exactas y las trampas que deciden la partida en el tablero de 3×3.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado el <time datetime="2026-10-17">17/10/2026</time></span>
+        <span class="credit">Revisado y formateado con Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-es">
+    <h2 id="toc-es">Índice</h2>
+    <ol>
+      <li><a href="#introducao-es">Introducción</a></li>
+      <li><a href="#historia-es">Un poco de historia</a></li>
+      <li><a href="#numeros-es">El tablero en números</a></li>
+      <li><a href="#probabilidades-es">Probabilidades</a></li>
+      <li><a href="#prioridades-es">El orden de prioridades</a></li>
+      <li><a href="#ataque-es">Ataque: aperturas y horquillas</a></li>
+      <li><a href="#defesa-es">Defensa: las respuestas correctas</a></li>
+      <li><a href="#pessoas-es">Jugar contra personas</a></li>
+      <li><a href="#jogar-es">Juega contra la máquina</a></li>
+      <li><a href="#variantes-es">Más allá del 3×3</a></li>
+      <li><a href="#conclusao-es">Conclusión</a></li>
+      <li><a href="#referencias-es">Referencias</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="introducao-es" aria-labelledby="h-introducao-es">
+      <h2 id="h-introducao-es">Introducción</h2>
+      <p>El tres en raya es, probablemente, el primer juego de estrategia que aprendemos: un tablero de 3×3, dos símbolos, X y O, y el objetivo de alinear tres en fila, columna o diagonal. Es tan simple que parece no tener secretos. Y, en cierto modo, no los tiene: el juego está <strong>resuelto</strong>. Si ninguno de los dos jugadores se equivoca, toda partida termina en empate. <sup><a href="#ref-1-es">[1]</a></sup></p>
+      <p>Eso no quiere decir que no se pueda ganar. Quiere decir que <strong>solo se gana cuando el rival se equivoca</strong>. Ganar al tres en raya es, por lo tanto, el arte de crear situaciones en las que equivocarse es fácil y acertar es difícil, y de no caer nunca en esas situaciones cuando eres tú quien defiende.</p>
+      <p>En este artículo veremos por qué algunas casillas valen más que otras, cuáles son las probabilidades de victoria en cada escenario, el orden de prioridades que garantiza no perder nunca, las aperturas y trampas del ataque y las respuestas que salvan la defensa. Las cifras presentadas se calcularon recorriendo el árbol completo del juego, partida por partida.</p>
+    </section>
+
+    <section id="historia-es" aria-labelledby="h-historia-es">
+      <h2 id="h-historia-es">Un poco de historia</h2>
+      <p>Los juegos de tres en línea son muy antiguos. Se han encontrado tableros de este tipo grabados en tejas del antiguo Egipto, y los romanos jugaban al <em>terni lapilli</em> (“tres piedrecitas”), en el que cada jugador tenía solo tres fichas y las movía por el tablero. <sup><a href="#ref-1-es">[1]</a></sup> La versión con papel y lápiz que conocemos se popularizó en Inglaterra, donde se llama <em>noughts and crosses</em>; en Estados Unidos es el <em>tic-tac-toe</em>; en Brasil, el <em>jogo da velha</em> (“el juego de la vieja”); en Italia, el <em>tris</em>; y en varios países de América Latina, el <em>gato</em>.</p>
+      <p>El juego también tiene su lugar en la historia de la computación:</p>
+      <ul>
+        <li>En 1952, A. S. Douglas programó <strong>OXO</strong> en el ordenador EDSAC de la Universidad de Cambridge, uno de los primeros juegos digitales con salida gráfica. <sup><a href="#ref-2-es">[2]</a></sup></li>
+        <li>En 1961, Donald Michie construyó <strong>MENACE</strong>, una “máquina” hecha de 304 cajas de cerillas y cuentas de colores que aprendía a jugar por ensayo y error, un antepasado del aprendizaje por refuerzo. <sup><a href="#ref-3-es">[3]</a></sup></li>
+        <li>En 1972, Allen Newell y Herbert Simon describieron la lista de reglas que permite a un jugador no perder nunca, la misma que veremos más adelante. <sup><a href="#ref-4-es">[4]</a></sup></li>
+        <li>En la película <em>Juegos de guerra</em> (<em>WarGames</em>, 1983), un ordenador militar aprende, jugando al tres en raya contra sí mismo, que algunas contiendas no tienen ganador: “la única jugada ganadora es no jugar”. <sup><a href="#ref-5-es">[5]</a></sup></li>
+      </ul>
+    </section>
+
+    <section id="numeros-es" aria-labelledby="h-numeros-es">
+      <h2 id="h-numeros-es">El tablero en números</h2>
+      <p>Aunque es pequeño, el tablero esconde una cantidad considerable de posibilidades:</p>
+      <ul class="kpis">
+        <li><strong>8</strong>líneas ganadoras: 3 filas, 3 columnas y 2 diagonales</li>
+        <li><strong>255.168</strong>partidas distintas posibles, contando el orden de las jugadas</li>
+        <li><strong>5.478</strong>posiciones que pueden aparecer en una partida</li>
+        <li><strong>765</strong>posiciones realmente distintas, descontando rotaciones y reflejos</li>
+      </ul>
+      <p>La información más útil, sin embargo, es otra: <strong>las casillas no valen lo mismo</strong>. El centro participa en 4 de las 8 líneas ganadoras; cada esquina, en 3; y cada lateral, solo en 2. Quien ocupa el centro participa en la mitad de las formas de ganar y, al mismo tiempo, estorba la mitad de las formas de ganar del rival.</p>
+      <figure>
+        <img src="rc_images/JogoDaVelhaCasas-es.svg" alt="Tablero con el número de líneas ganadoras por casilla: 4 en el centro, 3 en las esquinas y 2 en los laterales" loading="lazy">
+        <figcaption>Cuántas líneas ganadoras pasan por cada casilla</figcaption>
+      </figure>
+      <p>Otro dato importante: como X empieza, hace hasta 5 jugadas y O, como máximo, 4. Esta ventaja de la iniciativa aparece en todas las estadísticas que siguen.</p>
+    </section>
+
+    <section id="probabilidades-es" aria-labelledby="h-probabilidades-es">
+      <h2 id="h-probabilidades-es">Probabilidades</h2>
+      <p>Si contamos las 255.168 partidas posibles, 131.184 terminan con victoria de X (51,4%), 77.904 con victoria de O (30,5%) y 46.080 en empate (18,1%). La partida más corta posible tiene 5 jugadas, y la más larga, 9:</p>
+      <div class="table-wrap">
+        <table class="data">
+          <caption>Partidas posibles por número de jugadas</caption>
+          <thead><tr><th scope="col">Jugadas</th><th scope="col">Victorias de X</th><th scope="col">Victorias de O</th><th scope="col">Empates</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">5</th><td>1.440</td><td>—</td><td>—</td></tr>
+            <tr><th scope="row">6</th><td>—</td><td>5.328</td><td>—</td></tr>
+            <tr><th scope="row">7</th><td>47.952</td><td>—</td><td>—</td></tr>
+            <tr><th scope="row">8</th><td>—</td><td>72.576</td><td>—</td></tr>
+            <tr><th scope="row">9</th><td>81.792</td><td>—</td><td>46.080</td></tr>
+            <tr class="total"><th scope="row">Total</th><td>131.184</td><td>77.904</td><td>46.080</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Contar partidas, sin embargo, no es lo mismo que calcular la probabilidad de ganar, porque las partidas cortas son más probables que las largas. Si los dos jugadores eligen casillas al azar, la probabilidad exacta es de <strong>58,5% para X, 28,8% para O y 12,7% de empate</strong>. El panorama cambia por completo cuando uno de los dos juega bien:</p>
+      <figure>
+        <img src="rc_images/JogoDaVelhaProbabilidades-es.svg" alt="Barras con las probabilidades de victoria de X, de O y de empate en cuatro escenarios: los dos al azar, X perfecto, O perfecto y los dos perfectos" loading="lazy">
+        <figcaption>Probabilidades de cada resultado según la calidad de los jugadores</figcaption>
+      </figure>
+      <p>De este gráfico salen tres lecciones:</p>
+      <ul>
+        <li><strong>Jugar bien casi siempre vence a jugar mal.</strong> Un X perfecto gana el 99,5% de las partidas contra un rival que juega al azar.</li>
+        <li><strong>Jugar bien nunca pierde.</strong> Aun empezando en desventaja, un O perfecto nunca es derrotado y gana el 91,6% de las veces contra un X aleatorio.</li>
+        <li><strong>Dos jugadores perfectos siempre empatan.</strong> Por eso, entre adultos atentos, el juego suele terminar en tablas.</li>
+      </ul>
+      <p>La primera jugada también influye en las probabilidades. Contra un rival que juega al azar, abrir en el centro le da a X un 69,3% de victorias; en una esquina, un 60,7%; y en un lateral, un 53,6%. Pero cuando X juega perfectamente después de la apertura, la esquina pasa al frente (99,5%, frente al 99,0% del centro y el 98,7% del lateral), porque contra la esquina solo existe <strong>una</strong> respuesta correcta. Lo veremos en detalle en la sección de ataque.</p>
+    </section>
+
+    <section id="prioridades-es" aria-labelledby="h-prioridades-es">
+      <h2 id="h-prioridades-es">El orden de prioridades</h2>
+      <p>Newell y Simon mostraron que es posible jugar de forma perfecta siguiendo una lista sencilla: en cada turno, elige la primera regla de la lista que se pueda aplicar. <sup><a href="#ref-4-es">[4]</a></sup> Quien sigue esta lista nunca pierde.</p>
+      <ol class="laws">
+        <li><strong>Ganar.</strong> Si tienes dos fichas en línea con la tercera casilla libre, juega en ella.</li>
+        <li><strong>Bloquear.</strong> Si el rival tiene dos fichas en línea con la tercera casilla libre, ocúpala.</li>
+        <li><strong>Hacer una horquilla.</strong> Juega en una casilla que cree dos amenazas de victoria a la vez.</li>
+        <li><strong>Impedir la horquilla del rival.</strong> Si hay una sola casilla en la que haría una horquilla, ocúpala. Si hay más de una, crea una amenaza de dos en línea que lo obligue a defenderse, siempre que esa defensa no le dé una horquilla.</li>
+        <li><strong>Centro.</strong> Juega en el centro, si está libre.</li>
+        <li><strong>Esquina opuesta.</strong> Si el rival está en una esquina, juega en la esquina opuesta.</li>
+        <li><strong>Esquina libre.</strong> Juega en cualquier esquina vacía.</li>
+        <li><strong>Lateral libre.</strong> Juega en cualquier lateral vacío.</li>
+      </ol>
+      <p>Las reglas 1 y 2 parecen obvias, pero son las que más se olvidan en la práctica: mucha gente se concentra tanto en su propio plan que no ve la amenaza del rival, o deja pasar su propia victoria. Antes de cada jugada, hazte dos preguntas: “¿puedo ganar ahora?” y “¿puede ganar él en la próxima?”.</p>
+    </section>
+
+    <section id="ataque-es" aria-labelledby="h-ataque-es">
+      <h2 id="h-ataque-es">Ataque: aperturas y horquillas</h2>
+      <p>En el tres en raya nadie gana con una sola amenaza, porque una amenaza simple siempre puede bloquearse. La victoria llega con la <strong>horquilla</strong> (en inglés, <em>fork</em>): una jugada que crea dos amenazas al mismo tiempo. El rival bloquea una y tú completas la otra. Todo el ataque consiste en preparar una horquilla.</p>
+      <figure>
+        <img src="rc_images/JogoDaVelhaGarfo-es.svg" alt="Secuencia en tres tableros: X abre en la esquina, O responde en el lateral, X toma el centro, O bloquea y X crea una horquilla con dos amenazas" loading="lazy">
+        <figcaption>Una horquilla clásica tras un error en la segunda jugada</figcaption>
+      </figure>
+      <p>La elección de la apertura define cuántas oportunidades tiene el rival de equivocarse:</p>
+      <ul>
+        <li><strong>Esquina (la apertura más traicionera).</strong> De las 8 respuestas posibles, solo una empata: el centro. Cualquier otra pierde contra el juego correcto. Contra quien todavía no conoce esta regla, es la mejor elección.</li>
+        <li><strong>Centro (la apertura más sólida).</strong> De las 8 respuestas, los 4 laterales pierden y las 4 esquinas empatan. Es la apertura que más gana contra jugadas aleatorias, pero el rival tiene más caminos para salvarse.</li>
+        <li><strong>Lateral (la apertura más débil).</strong> También hay 4 respuestas que pierden, pero las probabilidades de victoria de X son las más bajas, y quien abre en el lateral debe jugar con más cuidado.</li>
+      </ul>
+      <p>Algunas trampas para el ataque, siempre con X empezando:</p>
+      <ol class="laws">
+        <li><strong>Esquina y lateral.</strong> X abre en una esquina y O responde en un lateral. X toma el centro, amenazando la diagonal; O está obligado a bloquear en la esquina opuesta; X juega en la esquina que forma dos amenazas. Es la horquilla de la figura anterior.</li>
+        <li><strong>Esquina y esquina.</strong> X abre en una esquina y O responde en otra esquina. X juega en una tercera esquina, creando una amenaza; tras el bloqueo, la última esquina libre crea la horquilla.</li>
+        <li><strong>Centro y lateral.</strong> X abre en el centro y O responde en un lateral. X juega en una esquina, creando una amenaza en la diagonal; O bloquea en la esquina opuesta; X juega en la esquina que se alinea con sus dos fichas y crea la horquilla.</li>
+        <li><strong>Centro y esquina opuesta.</strong> X abre en el centro, O responde en una esquina y X juega en la esquina opuesta a la de O. Ahora O debe jugar en otra esquina; si juega en un lateral, pierde. Es la trampa más sutil contra quien respondió bien a la primera jugada.</li>
+      </ol>
+    </section>
+
+    <section id="defesa-es" aria-labelledby="h-defesa-es">
+      <h2 id="h-defesa-es">Defensa: las respuestas correctas</h2>
+      <p>Quien juega con O está en desventaja y, contra un rival perfecto, juega por el empate. La buena noticia es que la defensa se reduce a unas pocas respuestas que hay que memorizar:</p>
+      <figure>
+        <img src="rc_images/JogoDaVelhaDefesas-es.svg" alt="Tres tableros con las casillas que empatan en verde y las que pierden en rosa: contra la esquina, el centro; contra el centro, una esquina; contra las esquinas opuestas, un lateral" loading="lazy">
+        <figcaption>Las respuestas de O que aseguran el empate</figcaption>
+      </figure>
+      <ul>
+        <li><strong>Si X abre en una esquina, juega en el centro.</strong> Es la única respuesta que no pierde.</li>
+        <li><strong>Si X abre en el centro, juega en una esquina.</strong> Nunca en un lateral.</li>
+        <li><strong>Si X abre en un lateral</strong>, las respuestas seguras son el centro, las dos esquinas vecinas a la ficha de X y el lateral opuesto.</li>
+        <li><strong>La trampa de las esquinas opuestas.</strong> Si X abrió en una esquina, respondiste en el centro y X jugó en la esquina opuesta, juega en un <strong>lateral</strong>. Aquí el instinto de “preferir las esquinas” engaña: una esquina permite a X montar una horquilla.</li>
+      </ul>
+      <p>Después de estas primeras jugadas, la defensa sigue el orden de prioridades: bloquea siempre que haya dos en línea y, cuando puedas, crea tus propias amenazas para obligar a X a responder. Defender atacando le quita al rival el tiempo que necesita para montar una horquilla.</p>
+    </section>
+
+    <section id="pessoas-es" aria-labelledby="h-pessoas-es">
+      <h2 id="h-pessoas-es">Jugar contra personas</h2>
+      <p>La teoría dice que el juego termina en empate; la práctica muestra que las personas se equivocan, sobre todo los niños y los jugadores distraídos. Las investigaciones con niños muestran que las estrategias evolucionan con la edad: primero aprenden a ganar cuando tienen dos en línea, después a bloquear y, mucho más tarde, a crear e impedir horquillas. <sup><a href="#ref-6-es">[6]</a></sup> Algunos consejos prácticos:</p>
+      <ul>
+        <li><strong>Con X, abre en una esquina.</strong> La respuesta instintiva de mucha gente es jugar al lado o en la esquina opuesta, y las dos pierden.</li>
+        <li><strong>Varía las aperturas.</strong> Quien siempre empieza igual le enseña al rival a defenderse.</li>
+        <li><strong>Fuerza las respuestas.</strong> Cada amenaza obliga al rival a jugar donde tú quieres. Encadena amenazas hasta que la última sea una horquilla.</li>
+        <li><strong>Con O, no copies al rival.</strong> Responder a una esquina con otra esquina parece simétrico y seguro, pero pierde.</li>
+        <li><strong>En series de partidas, alternad quién empieza.</strong> Quien siempre empieza tiene una ventaja real contra jugadores imperfectos.</li>
+      </ul>
+      <blockquote>
+        <p>El dibujante Randall Munroe resumió toda la estrategia óptima en un único dibujo: el mapa completo de las jugadas correctas de X y de O, para cualquier posición. <sup><a href="#ref-7-es">[7]</a></sup> Cabe en una página, y es la mejor prueba de que el juego tiene solución.</p>
+      </blockquote>
+    </section>
+
+    <section id="jogar-es" aria-labelledby="h-jogar-es">
+      <h2 id="h-jogar-es">Juega contra la máquina</h2>
+      <p>Es hora de poner en práctica las técnicas. En el nivel <strong>fácil</strong>, la máquina juega al azar. En el <strong>medio</strong>, gana cuando puede y bloquea tus amenazas, pero no ve las horquillas. En el <strong>imposible</strong>, calcula el árbol completo del juego y nunca pierde. Quien empieza juega con X.</p>
+      <div class="ttt" data-lang="es">
+        <div class="ttt-controls">
+          <label>Nivel <select class="ttt-level"><option value="easy">Fácil</option><option value="medium" selected>Medio</option><option value="hard">Imposible</option></select></label>
+          <label>Quién empieza <select class="ttt-first"><option value="human">Tú</option><option value="ai">La máquina</option></select></label>
+          <button type="button" class="ttt-new">Nueva partida</button>
+        </div>
+        <div class="ttt-board" role="group" aria-label="Tablero"></div>
+        <p class="ttt-status" role="status" aria-live="polite"></p>
+        <dl class="ttt-score">
+          <div><dt>Tú</dt><dd class="ttt-s-human">0</dd></div>
+          <div><dt>Empates</dt><dd class="ttt-s-draw">0</dd></div>
+          <div><dt>Máquina</dt><dd class="ttt-s-ai">0</dd></div>
+        </dl>
+      </div>
+      <p class="note">Desafío: en el nivel medio, intenta ganar con una de las trampas de la sección de ataque. En el imposible, lo mejor que puedes conseguir es un empate.</p>
+    </section>
+
+    <section id="variantes-es" aria-labelledby="h-variantes-es">
+      <h2 id="h-variantes-es">Más allá del 3×3</h2>
+      <p>Como el juego clásico termina en empate, surgieron variantes para devolverle el desafío:</p>
+      <ul>
+        <li><strong>Tres en raya inverso</strong> (<em>misère</em>): pierde quien alinee tres. También termina en empate con juego perfecto; una estrategia conocida para X es jugar en el centro y, después, siempre en la casilla simétricamente opuesta a la de O.</li>
+        <li><strong>Tres en raya 4×4</strong>: con cuatro en línea en un tablero mayor, el juego sigue terminando en empate con juego perfecto.</li>
+        <li><strong>Qubic (4×4×4)</strong>: el tres en raya en tres dimensiones. En 1980, Oren Patashnik demostró, con ayuda del ordenador, que el primer jugador siempre puede ganar. <sup><a href="#ref-8-es">[8]</a></sup></li>
+        <li><strong>Gomoku</strong>: cinco en línea en un tablero de 15×15. En 1994, Victor Allis demostró que el primer jugador gana en la versión libre, lo que llevó a crear reglas de compensación. <sup><a href="#ref-9-es">[9]</a></sup></li>
+        <li><strong>Ultimate tic-tac-toe</strong>: nueve tableros dentro de un tablero mayor, en el que la casilla donde juegas decide en qué tablero debe jugar el rival a continuación. Pequeño en reglas y enorme en estrategia. <sup><a href="#ref-10-es">[10]</a></sup></li>
+      </ul>
+    </section>
+
+    <section id="conclusao-es" aria-labelledby="h-conclusao-es">
+      <h2 id="h-conclusao-es">Conclusión</h2>
+      <p>Ganar al tres en raya no depende de la suerte, sino de dos hábitos: en el ataque, crear posiciones en las que solo existe una respuesta correcta; en la defensa, conocer esa respuesta. Con X, abre en una esquina y busca la horquilla. Con O, responde a la esquina con el centro, al centro con una esquina y, ante las esquinas opuestas, juega en un lateral. Y en cada jugada, comprueba primero si puedes ganar y después si necesitas bloquear.</p>
+      <p>Siguiendo estas reglas, nunca perderás. Si el rival también las conoce, la partida terminará en empate, y eso también es una lección: en un juego resuelto, el mejor resultado posible contra quien no se equivoca es no perder.</p>
+    </section>
+
+    <section id="referencias-es" aria-labelledby="h-referencias-es">
+      <h2 id="h-referencias-es">Referencias</h2>
+      <ol class="refs">
+        <li id="ref-1-es"><strong>Wikipedia</strong>, "Tic-tac-toe", consultado el 17/10/2026, <a href="https://en.wikipedia.org/wiki/Tic-tac-toe" rel="noopener">en.wikipedia.org/wiki/Tic-tac-toe</a>.</li>
+        <li id="ref-2-es"><strong>Wikipedia</strong>, "OXO (video game)", consultado el 17/10/2026, <a href="https://en.wikipedia.org/wiki/OXO_(video_game)" rel="noopener">en.wikipedia.org/wiki/OXO_(video_game)</a>.</li>
+        <li id="ref-3-es"><strong>Michie, Donald</strong>, "Experiments on the mechanization of game-learning. Part I: Characterization of the model and its parameters", <em>The Computer Journal</em>, vol. 6, n.º 3, pp. 232–236, 1963.</li>
+        <li id="ref-4-es"><strong>Newell, Allen; Simon, Herbert A.</strong>, <em>Human Problem Solving</em>, Prentice-Hall, 1972.</li>
+        <li id="ref-5-es"><strong>Wikipedia</strong>, "WarGames", consultado el 17/10/2026, <a href="https://en.wikipedia.org/wiki/WarGames" rel="noopener">en.wikipedia.org/wiki/WarGames</a>.</li>
+        <li id="ref-6-es"><strong>Crowley, Kevin; Siegler, Robert S.</strong>, "Flexible strategy use in young children’s tic-tac-toe", <em>Cognitive Science</em>, vol. 17, n.º 4, pp. 531–561, 1993.</li>
+        <li id="ref-7-es"><strong>Munroe, Randall</strong>, "Tic-Tac-Toe", xkcd 832, consultado el 17/10/2026, <a href="https://xkcd.com/832/" rel="noopener">xkcd.com/832</a>.</li>
+        <li id="ref-8-es"><strong>Patashnik, Oren</strong>, "Qubic: 4×4×4 Tic-Tac-Toe", <em>Mathematics Magazine</em>, vol. 53, n.º 4, pp. 202–216, 1980.</li>
+        <li id="ref-9-es"><strong>Allis, L. Victor</strong>, <em>Searching for Solutions in Games and Artificial Intelligence</em>, tesis doctoral, Universidad de Limburgo, Maastricht, 1994.</li>
+        <li id="ref-10-es"><strong>Orlin, Ben</strong>, "Ultimate Tic-Tac-Toe", Math with Bad Drawings, consultado el 17/10/2026, <a href="https://mathwithbaddrawings.com/2013/06/16/ultimate-tic-tac-toe/" rel="noopener">mathwithbaddrawings.com</a>.</li>
+      </ol>
+      <a class="back" href="#top">↑ Volver al inicio</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span>Giovani Perotto Mesquita · Porto Alegre, RS</span>
+    <span><a href="projects.html" data-projects data-foot="0">Projetos</a> · <a href="resume.html" data-resume data-foot="1">Currículo</a> · <a href="contact.html" data-contact data-foot="2">Contato</a></span>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('.lang [role="option"]'));
+    var titles = {"pt": "Como ganhar no jogo da velha · Giovani Perotto Mesquita", "en": "How to win at tic-tac-toe · Giovani Perotto Mesquita", "it": "Come vincere a tris · Giovani Perotto Mesquita", "es": "Cómo ganar al tres en raya · Giovani Perotto Mesquita"};
+    var foots = {"pt": ["Projetos", "Currículo", "Contato"], "en": ["Projects", "Resume", "Contact"], "it": ["Progetti", "Curriculum", "Contatti"], "es": ["Proyectos", "Currículum", "Contacto"]};
+    var langs = { pt: 'pt-BR', en: 'en', it: 'it', es: 'es' };
+    var bar = document.querySelector('.progress');
+    var article = document.querySelector('[role="tabpanel"]:not([hidden]) article');
+
+    function show(id, focus) {
+      tabs.forEach(function (t) {
+        var on = t.getAttribute('aria-controls') === id;
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+        if (on && focus) t.focus();
+      });
+      document.documentElement.lang = langs[id];
+      document.title = titles[id];
+      var suffix = id === 'pt' ? '' : '#' + id;
+      [['data-home', 'index.html'], ['data-about', 'about.html'], ['data-resume', 'resume.html'], ['data-projects', 'projects.html'], ['data-contact', 'contact.html']].forEach(function (p) {
+        document.querySelectorAll('[' + p[0] + ']').forEach(function (a) { a.href = p[1] + suffix; });
+      });
+      document.querySelectorAll('[data-foot]').forEach(function (a) { a.textContent = foots[id][+a.getAttribute('data-foot')]; });
+      article = document.querySelector('#' + id + ' article');
+      if (history.replaceState) history.replaceState(null, '', id === 'pt' ? location.pathname : '#' + id);
+      progress();
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () { show(t.getAttribute('aria-controls')); });
+      t.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (d) { e.preventDefault(); show(tabs[(i + d + tabs.length) % tabs.length].getAttribute('aria-controls'), true); }
+      });
+    });
+
+    // barra de progresso de leitura
+    function progress() {
+      if (!article) return;
+      var r = article.getBoundingClientRect();
+      var total = r.height - window.innerHeight;
+      var p = total > 0 ? Math.min(Math.max(-r.top / total, 0), 1) : 1;
+      bar.style.width = (p * 100) + '%';
+    }
+    window.addEventListener('scroll', progress, { passive: true });
+    window.addEventListener('resize', progress);
+
+    // destaca a seção atual no índice
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          var panel = e.target.closest('[role="tabpanel"]');
+          panel.querySelectorAll('.toc a').forEach(function (a) {
+            if (a.getAttribute('href') === '#' + e.target.id) a.setAttribute('aria-current', 'true');
+            else a.removeAttribute('aria-current');
+          });
+        });
+      }, { rootMargin: '-20% 0px -70% 0px' });
+      document.querySelectorAll('article section[id]').forEach(function (s) { io.observe(s); });
+    }
+
+    var h = (location.hash || '').replace('#', '');
+    var m = h.match(/^(?:.*-)?(en|it|es)$/);
+    if (m) {
+      show(m[1]);
+      if (h !== m[1]) { var el = document.getElementById(h); if (el) el.scrollIntoView(); if (history.replaceState) history.replaceState(null, '', '#' + h); }
+    } else progress();
+  })();
+</script>
+<script>
+  // seletor de idioma em combobox: abre a lista, sincroniza o botão e fecha
+  (function () {
+    var box = document.querySelector('.lang'); if (!box) return;
+    var btn = box.querySelector('.lang-current'), list = box.querySelector('.lang-list'), now = btn.querySelector('.lang-now');
+    var opts = Array.prototype.slice.call(list.querySelectorAll('[role="option"]'));
+    var menu = {
+      pt: { index: 'Início', about: 'Sobre', resume: 'Currículo', projects: 'Projetos', contact: 'Contato' },
+      en: { index: 'Home', about: 'About', resume: 'Resume', projects: 'Projects', contact: 'Contact' },
+      it: { index: 'Home', about: 'Chi sono', resume: 'Curriculum', projects: 'Progetti', contact: 'Contatti' },
+      es: { index: 'Inicio', about: 'Sobre mí', resume: 'Currículum', projects: 'Proyectos', contact: 'Contacto' }
+    };
+    function translate(id) {
+      document.querySelectorAll('.nav ul a').forEach(function (l) {
+        var k = (l.getAttribute('href') || '').split('#')[0].replace('.html', '');
+        if (menu[id] && menu[id][k]) l.textContent = menu[id][k];
+      });
+      // links do menu para as páginas principais levam o idioma selecionado
+      var suf = id === 'pt' ? '' : '#' + id;
+      document.querySelectorAll('.nav a[href]').forEach(function (l) {
+        var m = l.getAttribute('href').match(/^(index|about|resume|projects|contact)\.html(#(pt|en|it|es))?$/);
+        if (m) l.setAttribute('href', m[1] + '.html' + suf);
+      });
+    }
+    function sync() {
+      var sel = opts.filter(function (o) { return o.getAttribute('aria-selected') === 'true'; })[0] || opts[0];
+      now.innerHTML = sel.querySelector('.flag').outerHTML + sel.getAttribute('data-code');
+      btn.setAttribute('aria-label', btn.getAttribute('data-label') + ': ' + sel.textContent.trim());
+      translate(sel.getAttribute('aria-controls'));
+      return sel;
+    }
+    function open() { list.hidden = false; btn.setAttribute('aria-expanded', 'true'); sync().focus(); }
+    function close(back) { list.hidden = true; btn.setAttribute('aria-expanded', 'false'); if (back) btn.focus(); }
+    btn.addEventListener('click', function () { if (list.hidden) open(); else close(); });
+    btn.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); open(); }
+      else if (e.key === 'Escape') close();
+    });
+    opts.forEach(function (o, i) {
+      o.addEventListener('click', function () { sync(); close(true); });
+      o.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0;
+        if (d) { e.preventDefault(); opts[(i + d + opts.length) % opts.length].focus(); }
+        else if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); opts[e.key === 'Home' ? 0 : opts.length - 1].focus(); }
+        else if (e.key === 'Escape') { e.preventDefault(); close(true); }
+        else if (e.key === 'Tab') close();
+      });
+    });
+    document.addEventListener('click', function (e) { if (!box.contains(e.target)) close(); });
+    new MutationObserver(sync).observe(list, { attributes: true, subtree: true, attributeFilter: ['aria-selected'] });
+    sync();
+  })();
+</script>
+<script>
+  // jogo da velha contra a máquina: fácil (ao acaso), médio (vence e bloqueia) e impossível (minimax)
+  (function () {
+    var T = {
+      pt: { turn: 'Sua vez: você joga com o {s}.', think: 'A máquina está pensando…', win: 'Você venceu!', lose: 'A máquina venceu. Tente de novo.', draw: 'Empate: deu velha!', cell: 'Linha {r}, coluna {c}: {v}', empty: 'vazia' },
+      en: { turn: 'Your turn: you play {s}.', think: 'The computer is thinking…', win: 'You won!', lose: 'The computer won. Try again.', draw: 'Draw: a cat’s game!', cell: 'Row {r}, column {c}: {v}', empty: 'empty' },
+      it: { turn: 'Tocca a te: giochi con la {s}.', think: 'Il computer sta pensando…', win: 'Hai vinto!', lose: 'Ha vinto il computer. Riprova.', draw: 'Pareggio!', cell: 'Riga {r}, colonna {c}: {v}', empty: 'vuota' },
+      es: { turn: 'Tu turno: juegas con {s}.', think: 'La máquina está pensando…', win: '¡Has ganado!', lose: 'Ganó la máquina. Inténtalo de nuevo.', draw: 'Empate: ¡tablas!', cell: 'Fila {r}, columna {c}: {v}', empty: 'vacía' }
+    };
+    var LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+    function fmt(s, o) { return s.replace(/\{(\w)\}/g, function (_, k) { return o[k]; }); }
+    function result(b) {
+      for (var i = 0; i < LINES.length; i++) {
+        var l = LINES[i];
+        if (b[l[0]] && b[l[0]] === b[l[1]] && b[l[0]] === b[l[2]]) return { p: b[l[0]], line: l };
+      }
+      return b.indexOf('') < 0 ? { p: 'D' } : null;
+    }
+    function empties(b) { var e = []; b.forEach(function (v, i) { if (!v) e.push(i); }); return e; }
+    function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+    function other(p) { return p === 'X' ? 'O' : 'X'; }
+
+    // negamax com memória: valor da posição para quem joga (vitórias rápidas valem mais)
+    var memo = {};
+    function negamax(b, p) {
+      var key = b.join(',') + p;
+      if (key in memo) return memo[key];
+      var r = result(b), best;
+      if (r) best = r.p === 'D' ? 0 : -(1 + empties(b).length);
+      else {
+        best = -Infinity;
+        empties(b).forEach(function (i) { b[i] = p; best = Math.max(best, -negamax(b, other(p))); b[i] = ''; });
+      }
+      return (memo[key] = best);
+    }
+    function winningMove(b, p) {
+      return empties(b).filter(function (i) { b[i] = p; var w = result(b); b[i] = ''; return w && w.p === p; })[0];
+    }
+    function aiMove(b, p, level) {
+      var free = empties(b);
+      if (level === 'easy') return pick(free);
+      if (level === 'medium') {
+        var m = winningMove(b, p);
+        if (m === undefined) m = winningMove(b, other(p));
+        return m === undefined ? pick(free) : m;
+      }
+      var best = -Infinity, moves = [];
+      free.forEach(function (i) {
+        b[i] = p; var v = -negamax(b, other(p)); b[i] = '';
+        if (v > best) { best = v; moves = [i]; } else if (v === best) moves.push(i);
+      });
+      return pick(moves);
+    }
+
+    document.querySelectorAll('.ttt').forEach(function (box) {
+      var t = T[box.getAttribute('data-lang')] || T.pt;
+      var grid = box.querySelector('.ttt-board'), status = box.querySelector('.ttt-status');
+      var level = box.querySelector('.ttt-level'), first = box.querySelector('.ttt-first');
+      var score = { human: 0, draw: 0, ai: 0 };
+      var board, human, ai, over, busy, timer;
+      var cells = [];
+      for (var i = 0; i < 9; i++) {
+        var c = document.createElement('button');
+        c.type = 'button'; c.className = 'ttt-cell'; c.setAttribute('data-i', i);
+        grid.appendChild(c); cells.push(c);
+      }
+      function render(win) {
+        cells.forEach(function (c, i) {
+          var v = board[i];
+          c.textContent = v;
+          c.className = 'ttt-cell' + (v ? ' ' + v.toLowerCase() : '') + (win && win.indexOf(i) >= 0 ? ' win' : '');
+          c.disabled = over || busy || !!v;
+          c.setAttribute('aria-label', fmt(t.cell, { r: Math.floor(i / 3) + 1, c: i % 3 + 1, v: v || t.empty }));
+        });
+      }
+      function finish(r) {
+        over = true;
+        var k = r.p === 'D' ? 'draw' : r.p === human ? 'human' : 'ai';
+        score[k]++;
+        box.querySelector('.ttt-s-' + k).textContent = score[k];
+        status.textContent = t[k === 'human' ? 'win' : k === 'ai' ? 'lose' : 'draw'];
+        render(r.line);
+      }
+      function play(i, p) {
+        board[i] = p;
+        var r = result(board);
+        if (r) { finish(r); return true; }
+        return false;
+      }
+      function machine() {
+        busy = true; status.textContent = t.think; render();
+        timer = setTimeout(function () {
+          busy = false;
+          if (!play(aiMove(board, ai, level.value), ai)) { status.textContent = fmt(t.turn, { s: human }); render(); }
+        }, 450);
+      }
+      function start() {
+        clearTimeout(timer);
+        board = ['', '', '', '', '', '', '', '', ''];
+        over = busy = false;
+        human = first.value === 'human' ? 'X' : 'O'; ai = other(human);
+        if (ai === 'X') machine();
+        else { status.textContent = fmt(t.turn, { s: human }); render(); }
+      }
+      grid.addEventListener('click', function (e) {
+        var c = e.target.closest('.ttt-cell');
+        if (!c || c.disabled) return;
+        if (!play(+c.getAttribute('data-i'), human)) machine();
+      });
+      box.querySelector('.ttt-new').addEventListener('click', start);
+      level.addEventListener('change', start);
+      first.addEventListener('change', start);
+      start();
+    });
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,1835 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>My Little Ice World · Giovani Perotto Mesquita</title>
+<meta name="description" content="My Little Ice World: um boneco de neve astronauta explora três sistemas estelares, terraforma planetas com nitrogênio líquido e funda colônias geladas com iceovelhas. Jogo em português, inglês, italiano e espanhol.">
+<meta name="author" content="Giovani Perotto Mesquita">
+<meta name="theme-color" content="#070B1F">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Hanken+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --space: #070B1F; --panel: rgba(14, 20, 48, .88); --panel-solid: #111A3C; --line: rgba(160, 200, 255, .2);
+    --ink: #F2F7FF; --muted: #A9B8DA; --ice: #8FD3FF; --ice-deep: #2F6FE0; --pink: #FF8FB8;
+    --gold: #FFC94D; --danger: #FF6B6B; --ok: #5FD3A4;
+    --round: "Fredoka", "Hanken Grotesk", "Segoe UI", Arial, sans-serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--space); color: var(--ink); font-family: "Hanken Grotesk", "Segoe UI", Arial, sans-serif; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+  body { touch-action: none; }
+  #cv { position: fixed; inset: 0; display: block; }
+  button, select { font: inherit; }
+  button { cursor: pointer; }
+  a { color: var(--ice); }
+  :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+
+  /* HUD */
+  .hud { position: fixed; inset: 0 0 auto 0; display: flex; justify-content: space-between; align-items: flex-start; gap: .5rem; padding: calc(.6rem + env(safe-area-inset-top)) calc(.6rem + env(safe-area-inset-right)) 0 calc(.6rem + env(safe-area-inset-left)); pointer-events: none; }
+  .hud > * { pointer-events: auto; }
+  .hud-left { display: flex; flex-direction: column; gap: .4rem; max-width: min(58vw, 340px); }
+  .chip { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: .35rem .6rem; font-size: .85rem; line-height: 1.35; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+  .loc strong { font-family: var(--round); font-weight: 700; font-size: 1rem; color: var(--ice); }
+  .loc span { color: var(--muted); }
+  .res { display: flex; flex-wrap: wrap; gap: .25rem .8rem; }
+  .res b { color: var(--ice); font-variant-numeric: tabular-nums; }
+  .res .hab b { color: var(--gold); }
+  .bars { display: grid; gap: .3rem; }
+  .bar { display: grid; grid-template-columns: 3.4rem 1fr; align-items: center; gap: .4rem; font-size: .75rem; color: var(--muted); }
+  .bar i { display: block; height: 8px; border-radius: 99px; background: rgba(255,255,255,.12); overflow: hidden; }
+  .bar i b { display: block; height: 100%; width: 100%; border-radius: inherit; background: var(--ice); transition: width .15s linear; }
+  .bar.hp i b { background: var(--ok); }
+  .bar.low i b { background: var(--danger); }
+  .objective { font-size: .82rem; }
+  .objective strong { color: var(--gold); }
+  .hud-right { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .35rem; max-width: 46vw; }
+  .hbtn { display: inline-flex; align-items: center; gap: .35rem; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: .45rem .6rem; font-size: .82rem; font-weight: 600; }
+  .hbtn:hover { border-color: var(--ice); }
+  .hbtn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  .hbtn kbd { font-family: inherit; font-size: .68rem; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 .25rem; }
+  body.touch .hbtn kbd { display: none; }
+  body:not([data-scene="surface"]) .surface-only, body:not([data-scene="space"]) .space-only { display: none; }
+  @media (max-width: 700px) { .hbtn .lbl { display: none; } .chip { font-size: .78rem; } }
+
+  .prompt { position: fixed; left: 50%; bottom: calc(1.2rem + env(safe-area-inset-bottom)); transform: translateX(-50%); max-width: 92vw; background: var(--panel); border: 1px solid var(--gold); border-radius: 999px; padding: .5rem 1.1rem; font-weight: 700; font-size: .95rem; text-align: center; pointer-events: none; }
+  body.touch .prompt { bottom: calc(10.5rem + env(safe-area-inset-bottom)); }
+  .toasts { position: fixed; left: 50%; top: 26%; transform: translateX(-50%); width: min(92vw, 520px); display: grid; gap: .4rem; justify-items: center; pointer-events: none; }
+  .toast { background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--ice); border-radius: 10px; padding: .5rem .9rem; font-size: .92rem; text-align: center; animation: tin .25s ease-out; }
+  .toast.warn { border-left-color: var(--danger); }
+  .toast.good { border-left-color: var(--ok); }
+  @keyframes tin { from { opacity: 0; transform: translateY(8px); } }
+
+  /* controles de toque */
+  .stick { position: fixed; left: calc(1.2rem + env(safe-area-inset-left)); bottom: calc(1.2rem + env(safe-area-inset-bottom)); width: 132px; height: 132px; border-radius: 50%; background: rgba(255,255,255,.07); border: 2px solid rgba(255,255,255,.18); touch-action: none; }
+  .knob { position: absolute; left: 50%; top: 50%; width: 58px; height: 58px; margin: -29px 0 0 -29px; border-radius: 50%; background: rgba(143,211,255,.5); border: 2px solid rgba(255,255,255,.4); }
+  .tbtns { position: fixed; right: calc(1.2rem + env(safe-area-inset-right)); bottom: calc(1.2rem + env(safe-area-inset-bottom)); display: flex; align-items: flex-end; gap: .8rem; }
+  .tbtn { width: 78px; height: 78px; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); background: rgba(47,111,224,.6); color: #fff; font-weight: 700; font-size: .85rem; touch-action: none; }
+  .tbtn.alt { width: 64px; height: 64px; background: rgba(255,143,184,.5); margin-bottom: 3.2rem; }
+
+  /* painéis */
+  .overlay { position: fixed; inset: 0; display: grid; place-items: center; padding: 1rem; background: rgba(5, 8, 24, .6); overflow: auto; }
+  #ovTitle { background: radial-gradient(ellipse at center, rgba(5,8,24,.2), rgba(5,8,24,.75)); }
+  .panel { width: min(100%, 560px); max-height: calc(100dvh - 2rem); overflow: auto; background: var(--panel-solid); border: 1px solid var(--line); border-radius: 20px; padding: 1.4rem clamp(1rem, 4vw, 2rem); box-shadow: 0 30px 80px rgba(0,0,0,.5); -webkit-user-select: text; user-select: text; }
+  .panel h2 { font-family: var(--round); font-weight: 700; font-size: 1.6rem; margin: 0 0 .8rem; color: var(--ice); }
+  .panel h3 { font-family: var(--round); font-weight: 500; font-size: 1.1rem; margin: 1rem 0 .4rem; color: var(--gold); }
+  .panel p, .panel li { color: var(--muted); line-height: 1.5; font-size: .95rem; }
+  .panel ol, .panel ul { padding-left: 1.2rem; margin: 0; }
+  .title { text-align: center; }
+  .title p { margin: .4rem 0; }
+  .back { display: inline-block; font-size: .85rem; text-decoration: none; margin-bottom: .2rem; }
+  #logo { width: 240px; height: 170px; display: block; margin: 0 auto -.4rem; }
+  .logo-text { font-family: var(--round); font-weight: 700; font-size: clamp(2.1rem, 8vw, 3.2rem); line-height: 1.05; margin: 0 0 .4rem; background: linear-gradient(180deg, #FFFFFF 20%, #8FD3FF 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .tag { font-family: var(--round); font-size: 1.15rem; color: var(--pink) !important; }
+  .row { display: flex; flex-wrap: wrap; gap: .6rem; justify-content: center; margin-top: 1rem; }
+  .field { display: grid; gap: .25rem; text-align: left; font-size: .8rem; color: var(--muted); }
+  select { background: #0B1230; color: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: .5rem .6rem; }
+  .btn { border: 0; border-radius: 12px; padding: .7rem 1.2rem; font-weight: 700; font-size: 1rem; color: #fff; background: var(--ice-deep); }
+  .btn:hover { filter: brightness(1.12); }
+  .btn.alt { background: transparent; border: 1px solid var(--line); color: var(--ink); }
+  .btn:disabled { opacity: .4; cursor: default; filter: none; }
+  .small { font-size: .8rem !important; }
+  .list { list-style: none; padding: 0 !important; display: grid; gap: .6rem; }
+  .item { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: .2rem 1rem; padding: .8rem 1rem; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.03); }
+  .item h4 { margin: 0; font-size: 1rem; color: var(--ink); }
+  .item p { margin: .1rem 0 0; font-size: .85rem; }
+  .item .cost { font-size: .8rem; color: var(--ice); }
+  .item .cost.lack { color: var(--danger); }
+  .item .state { font-size: .85rem; font-weight: 700; color: var(--ok); }
+  .item .need { font-size: .78rem; color: var(--muted); max-width: 9rem; text-align: right; }
+  .item .btn { padding: .5rem .9rem; font-size: .9rem; }
+  .sys { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: .3rem 1rem; }
+  .sys .star { width: 34px; height: 34px; border-radius: 50%; }
+  .sys h4 { font-family: var(--round); }
+  .dots { display: flex; flex-wrap: wrap; gap: 4px; margin-top: .3rem; }
+  .dots i { width: 12px; height: 12px; border-radius: 50%; background: #3A4366; }
+  .dots i.c { box-shadow: 0 0 0 2px var(--ok); }
+  .here { font-size: .8rem; font-weight: 700; color: var(--gold); }
+</style>
+</head>
+<body data-scene="title">
+<canvas id="cv" role="img" aria-label="My Little Ice World"></canvas>
+
+<div class="hud" id="hud" hidden>
+  <div class="hud-left">
+    <div class="chip loc" id="loc"></div>
+    <div class="chip res">
+      <span><span data-t="n2"></span> <b id="rN2">0</b></span>
+      <span><span data-t="ice"></span> <b id="rIce">0</b></span>
+      <span class="hab"><span data-t="habited"></span> <b id="rHab">0/0</b></span>
+    </div>
+    <div class="chip bars surface-only">
+      <div class="bar" id="barCold"><span data-t="cold"></span><i><b></b></i></div>
+      <div class="bar hp" id="barHp"><span data-t="suit"></span><i><b></b></i></div>
+    </div>
+    <div class="chip objective" id="objective" aria-live="polite"></div>
+  </div>
+  <div class="hud-right" id="hudRight">
+    <button type="button" class="hbtn space-only" data-act="scan"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="1.5"/><path d="M12 4a8 8 0 1 0 8 8M12 8a4 4 0 1 0 4 4"/></svg><span class="lbl" data-t="sensor"></span><kbd>Q</kbd></button>
+    <button type="button" class="hbtn" data-act="map"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4l-5.3 3 1.2-6-4.5-4.1 6-.7z"/></svg><span class="lbl" data-t="map"></span><kbd>M</kbd></button>
+    <button type="button" class="hbtn surface-only" data-act="build"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7M5 10v10h14V10M10 20v-6h4v6"/></svg><span class="lbl" data-t="build"></span><kbd>B</kbd></button>
+    <button type="button" class="hbtn" data-act="pause"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5v14M15 5v14"/></svg><span class="lbl" data-t="pause"></span><kbd>Esc</kbd></button>
+  </div>
+</div>
+<div class="prompt" id="prompt" hidden></div>
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+
+<div id="touch" hidden>
+  <div class="stick" id="stick"><div class="knob" id="knob"></div></div>
+  <div class="tbtns">
+    <button type="button" class="tbtn alt" id="tThrow"></button>
+    <button type="button" class="tbtn" id="tAct" data-t="action"></button>
+  </div>
+</div>
+
+<section class="overlay" id="ovTitle" aria-labelledby="ttl">
+  <div class="panel title">
+    <a class="back" href="projects.html" id="backLink" data-t="back"></a>
+    <canvas id="logo" aria-hidden="true"></canvas>
+    <h1 class="logo-text" id="ttl">My Little Ice World</h1>
+    <p class="tag" data-t="tagline"></p>
+    <p data-t="story1"></p>
+    <p data-t="story2"></p>
+    <div class="row">
+      <label class="field"><span data-t="size"></span>
+        <select id="sizeSel"><option value="short" data-t="sizeShort"></option><option value="normal" data-t="sizeNormal"></option><option value="long" data-t="sizeLong"></option></select></label>
+      <label class="field"><span data-t="res"></span>
+        <select id="resSel"><option value="abundant" data-t="resAbundant"></option><option value="full" data-t="resFull"></option><option value="sufficient" data-t="resSufficient"></option><option value="scarce" data-t="resScarce"></option><option value="rare" data-t="resRare"></option></select></label>
+      <label class="field"><span data-t="lang"></span>
+        <select class="langSel"><option value="pt">Português</option><option value="en">English</option><option value="it">Italiano</option><option value="es">Español</option></select></label>
+    </div>
+    <div class="row">
+      <button type="button" class="btn" data-act="new" data-t="newGame"></button>
+      <button type="button" class="btn alt" data-act="continue" id="bCont" data-t="cont"></button>
+      <button type="button" class="btn alt" data-act="help" data-t="help"></button>
+    </div>
+    <p class="small" id="owNote" data-t="overwrite"></p>
+  </div>
+</section>
+
+<section class="overlay" id="ovHelp" aria-labelledby="hHelp" hidden>
+  <div class="panel">
+    <h2 id="hHelp" data-t="help"></h2>
+    <h3 data-t="h_steps"></h3>
+    <ol><li data-t="help1"></li><li data-t="help2"></li><li data-t="help3"></li><li data-t="help4"></li><li data-t="help5"></li></ol>
+    <h3 data-t="h_ctl"></h3>
+    <ul><li data-t="ctl1"></li><li data-t="ctl2"></li><li data-t="ctl3"></li><li data-t="ctl4"></li></ul>
+    <h3 data-t="h_sheep"></h3>
+    <p data-t="sheepInfo"></p>
+    <div class="row"><button type="button" class="btn" data-act="closeHelp" data-t="close"></button></div>
+  </div>
+</section>
+
+<section class="overlay" id="ovPause" aria-labelledby="hPause" hidden>
+  <div class="panel title">
+    <h2 id="hPause" data-t="pause"></h2>
+    <div class="row">
+      <label class="field"><span data-t="lang"></span>
+        <select class="langSel"><option value="pt">Português</option><option value="en">English</option><option value="it">Italiano</option><option value="es">Español</option></select></label>
+    </div>
+    <div class="row">
+      <button type="button" class="btn" data-act="resume" data-t="resume"></button>
+      <button type="button" class="btn alt" data-act="help" data-t="help"></button>
+      <button type="button" class="btn alt" data-act="menu" data-t="mainMenu"></button>
+    </div>
+    <p class="small" data-t="savedNote"></p>
+  </div>
+</section>
+
+<section class="overlay" id="ovBuild" aria-labelledby="hBuild" hidden>
+  <div class="panel">
+    <h2 id="hBuild" data-t="b_title"></h2>
+    <p id="buildMsg"></p>
+    <ul class="list" id="buildList"></ul>
+    <div class="row"><button type="button" class="btn alt" data-act="close" data-t="close"></button></div>
+  </div>
+</section>
+
+<section class="overlay" id="ovMap" aria-labelledby="hMap" hidden>
+  <div class="panel">
+    <h2 id="hMap" data-t="m_title"></h2>
+    <p id="mapMsg"></p>
+    <ul class="list" id="sysList"></ul>
+    <div class="row"><button type="button" class="btn alt" data-act="close" data-t="close"></button></div>
+  </div>
+</section>
+
+<section class="overlay" id="ovWin" aria-labelledby="hWin" hidden>
+  <div class="panel title">
+    <h2 id="hWin" data-t="w_title"></h2>
+    <p id="winText"></p>
+    <p id="winStats"></p>
+    <div class="row"><button type="button" class="btn" data-act="again" data-t="playAgain"></button></div>
+  </div>
+</section>
+
+<script>
+(function () {
+  'use strict';
+
+  // ---------------------------------------------------------------- textos
+  const I18N = {
+    pt: {
+      newGame: 'Novo jogo', cont: 'Continuar', help: 'Como jogar', lang: 'Idioma', size: 'Tamanho da galáxia',
+      sizeShort: 'Curta · 6 planetas', sizeNormal: 'Normal · 12 planetas', sizeLong: 'Longa · 21 planetas',
+      res: 'Recursos', resAbundant: 'Abundante', resFull: 'Cheio', resSufficient: 'Suficiente', resScarce: 'Escasso', resRare: 'Raro',
+      tagline: 'Um boneco de neve astronauta em busca de um novo lar.',
+      story1: 'Você é um boneco de neve astronauta perdido no espaço. Sua civilização precisa de mundos gelados para viver.',
+      story2: 'Viaje por três sistemas estelares, terraforme cada planeta com nitrogênio líquido, construa uma colônia e chame sua espécie.',
+      overwrite: 'Começar um novo jogo substitui o jogo salvo.', savedNote: 'O jogo é salvo automaticamente neste navegador.',
+      back: '← Projetos', close: 'Fechar', resume: 'Continuar', pause: 'Pausa', mainMenu: 'Menu principal', playAgain: 'Jogar de novo',
+      h_steps: 'Missão', h_ctl: 'Controles', h_sheep: 'Iceovelhas',
+      help1: 'Na nave, use o sensor perto dos planetas para analisá-los e depois pouse.',
+      help2: 'Extraia nitrogênio líquido dos cristais azuis. Cuidado com o calor: perto da nave você se resfria e recupera o traje.',
+      help3: 'Com N₂ suficiente, volte à nave e terraforme o planeta.',
+      help4: 'Construa o extrator, a habitação, o celeiro, a central de defesa e, por fim, a central de comunicação, que chama sua espécie.',
+      help5: 'Com a colônia fundada, decole e procure o próximo planeta. Você vence quando todos estiverem habitados.',
+      ctl1: 'Mover: WASD ou setas (no celular, o joystick).',
+      ctl2: 'E ou Enter: pousar, decolar, extrair (segure), terraformar e comer sorvete.',
+      ctl3: 'Espaço ou clique: arremessar bola de neve.',
+      ctl4: 'Q: sensor · M: mapa estelar · B: construir · Esc: pausa.',
+      sheepInfo: 'Iceovelhas são parecidas com ovelhas, mas, em vez de lã, são cobertas de sorvete, o alimento da sua espécie. Coma o sorvete delas para recuperar o frio e o traje.',
+      sensor: 'Sensor', map: 'Mapa', build: 'Construir', n2: 'N₂', ice: 'Gelo', cold: 'Frio', suit: 'Traje', habited: 'Habitados', action: 'Ação', throw: 'Neve',
+      sysName: 'Sistema {name}',
+      p_land: '{k} · Pousar em {name}', p_scanFirst: 'Use o sensor ({k}) para analisar este planeta', p_takeoff: '{k} · Decolar', p_terra: '{k} · Terraformar (−{n} N₂)',
+      p_n2: 'Segure {k} · Extrair nitrogênio', p_ice: 'Segure {k} · Coletar gelo', p_sheep: '{k} · Comer sorvete',
+      o_scan: 'Use o sensor perto dos planetas para analisá-los.', o_land: 'Aproxime-se de um planeta analisado para pousar.',
+      o_collect: 'Colete nitrogênio líquido nos cristais azuis: <strong>{a}/{b}</strong>', o_terra: '<strong>N₂ suficiente!</strong> Volte à nave e terraforme o planeta.',
+      o_terraAnim: 'Terraformando…', o_build: 'Construa a infraestrutura ({k}). Falta: {list}', o_comm: 'Construa a central de comunicação para chamar sua espécie.',
+      o_calling: 'Chamando sua espécie…', o_done: '<strong>Planeta habitado!</strong> Volte à nave e decole.', o_sys: 'Este sistema está completo. Abra o mapa estelar e viaje para outro.',
+      i_threat: 'ameaça {l}', i_need: 'N₂ necessário: {n}', threat0: 'baixa', threat1: 'média', threat2: 'alta',
+      st_wild: 'selvagem', st_terra: 'terraformado', st_colony: 'habitado', st_unknown: 'Planeta não analisado',
+      t_scanFound: 'Sensor: {list}', t_scanNone: 'Nenhum planeta novo no alcance do sensor.', t_tooHot: 'Perto demais da estrela!', t_ast: 'Impacto de asteroide!',
+      t_landed: 'Você pousou em {name}.', t_terraStart: 'Terraformação iniciada!', t_terraDone: '{name} agora é um mundo gelado!', t_built: 'Pronto: {s}!',
+      t_noRoom: 'Sem espaço aqui. Afaste-se das outras construções.', t_noRes: 'Recursos insuficientes.', t_calling: 'Central de comunicação ativa: chamando sua espécie…',
+      t_colonized: 'A colônia de {name} foi fundada!', t_suitFail: 'Seu traje falhou! Você voltou à nave e perdeu metade do N₂.',
+      t_melting: 'Você está derretendo! Volte à nave para se resfriar.', t_lava: 'Lava! Saia daí!', t_toxic: 'Gás tóxico!', t_yum: 'Sorvete delicioso! Frio e traje restaurados.',
+      t_storm: 'Tempestade de areia!', t_sheepBorn: 'Três iceovelhas nasceram!', t_warpTo: 'Rumo ao sistema {name}…', t_arrived: 'Sistema {name}: {n} planetas.', t_takeoffFirst: 'Decole para viajar a outro sistema.',
+      ty_ice: 'gelado', ty_life: 'cheio de vida', ty_hot: 'vulcânico', ty_desert: 'desértico', ty_gas: 'gasoso', ty_ocean: 'oceânico',
+      s_extractor: 'Extrator de recursos', s_hab: 'Instalação habitacional', s_barn: 'Celeiro de iceovelhas', s_defense: 'Central de defesa', s_comm: 'Central de comunicação',
+      d_extractor: 'Produz gelo e N₂ sem parar.', d_hab: 'Iglus para sua espécie morar.', d_barn: 'Cria três iceovelhas, que dão sorvete.', d_defense: 'Torre que derruba os adversários.', d_comm: 'Chama sua espécie. Exige as outras quatro.',
+      b_title: 'Infraestrutura', b_locked: 'Terraforme o planeta antes de construir.', b_built: 'Pronto', b_needAll: 'Construa as outras primeiro', b_build: 'Construir',
+      m_title: 'Mapa estelar', m_hab: '{a}/{b} habitados', m_here: 'Você está aqui', m_travel: 'Viajar',
+      w_title: 'Missão cumprida!', w_text: 'Os {n} planetas viraram lares gelados. Sua civilização tem um novo céu para chamar de seu.', w_stats: 'Tempo: {t} · Bolas de neve: {b} · Iceovelhas: {s}'
+    },
+    en: {
+      newGame: 'New game', cont: 'Continue', help: 'How to play', lang: 'Language', size: 'Galaxy size',
+      sizeShort: 'Short · 6 planets', sizeNormal: 'Normal · 12 planets', sizeLong: 'Long · 21 planets',
+      res: 'Resources', resAbundant: 'Abundant', resFull: 'Plentiful', resSufficient: 'Sufficient', resScarce: 'Scarce', resRare: 'Rare',
+      tagline: 'A snowman astronaut in search of a new home.',
+      story1: 'You are a snowman astronaut lost in space. Your civilization needs icy worlds to live on.',
+      story2: 'Travel through three star systems, terraform each planet with liquid nitrogen, build a colony and call your kind.',
+      overwrite: 'Starting a new game replaces your saved game.', savedNote: 'The game is saved automatically in this browser.',
+      back: '← Projects', close: 'Close', resume: 'Resume', pause: 'Paused', mainMenu: 'Main menu', playAgain: 'Play again',
+      h_steps: 'Mission', h_ctl: 'Controls', h_sheep: 'Icesheep',
+      help1: 'In the ship, use the sensor near planets to analyse them, then land.',
+      help2: 'Extract liquid nitrogen from the blue crystals. Watch out for the heat: near the ship you cool down and repair your suit.',
+      help3: 'With enough N₂, go back to the ship and terraform the planet.',
+      help4: 'Build the extractor, housing, the barn, the defense center and, finally, the communication center, which calls your kind.',
+      help5: 'Once the colony is founded, take off and look for the next planet. You win when every planet is inhabited.',
+      ctl1: 'Move: WASD or arrow keys (on a phone, the joystick).',
+      ctl2: 'E or Enter: land, take off, extract (hold), terraform and eat ice cream.',
+      ctl3: 'Space or click: throw a snowball.',
+      ctl4: 'Q: sensor · M: star map · B: build · Esc: pause.',
+      sheepInfo: 'Icesheep look like sheep but, instead of wool, they are covered in ice cream, your species’ food. Eat their ice cream to restore your cold and your suit.',
+      sensor: 'Sensor', map: 'Map', build: 'Build', n2: 'N₂', ice: 'Ice', cold: 'Cold', suit: 'Suit', habited: 'Inhabited', action: 'Action', throw: 'Snow',
+      sysName: '{name} system',
+      p_land: '{k} · Land on {name}', p_scanFirst: 'Use the sensor ({k}) to analyse this planet', p_takeoff: '{k} · Take off', p_terra: '{k} · Terraform (−{n} N₂)',
+      p_n2: 'Hold {k} · Extract nitrogen', p_ice: 'Hold {k} · Collect ice', p_sheep: '{k} · Eat ice cream',
+      o_scan: 'Use the sensor near planets to analyse them.', o_land: 'Approach an analysed planet to land.',
+      o_collect: 'Collect liquid nitrogen from the blue crystals: <strong>{a}/{b}</strong>', o_terra: '<strong>Enough N₂!</strong> Go back to the ship and terraform the planet.',
+      o_terraAnim: 'Terraforming…', o_build: 'Build the infrastructure ({k}). Missing: {list}', o_comm: 'Build the communication center to call your kind.',
+      o_calling: 'Calling your kind…', o_done: '<strong>Planet inhabited!</strong> Go back to the ship and take off.', o_sys: 'This system is complete. Open the star map and travel to another one.',
+      i_threat: '{l} threat', i_need: 'N₂ needed: {n}', threat0: 'low', threat1: 'medium', threat2: 'high',
+      st_wild: 'wild', st_terra: 'terraformed', st_colony: 'inhabited', st_unknown: 'Planet not analysed',
+      t_scanFound: 'Sensor: {list}', t_scanNone: 'No new planets in sensor range.', t_tooHot: 'Too close to the star!', t_ast: 'Asteroid impact!',
+      t_landed: 'You landed on {name}.', t_terraStart: 'Terraforming started!', t_terraDone: '{name} is now an icy world!', t_built: 'Built: {s}!',
+      t_noRoom: 'No room here. Move away from other buildings.', t_noRes: 'Not enough resources.', t_calling: 'Communication center online: calling your kind…',
+      t_colonized: 'The colony on {name} has been founded!', t_suitFail: 'Your suit failed! You were rescued to the ship and lost half your N₂.',
+      t_melting: 'You are melting! Go back to the ship to cool down.', t_lava: 'Lava! Get out!', t_toxic: 'Toxic gas!', t_yum: 'Delicious ice cream! Cold and suit restored.',
+      t_storm: 'Sandstorm!', t_sheepBorn: 'Three icesheep were born!', t_warpTo: 'Heading to the {name} system…', t_arrived: '{name} system: {n} planets.', t_takeoffFirst: 'Take off to travel to another system.',
+      ty_ice: 'icy', ty_life: 'full of life', ty_hot: 'volcanic', ty_desert: 'desert', ty_gas: 'gaseous', ty_ocean: 'ocean',
+      s_extractor: 'Resource extractor', s_hab: 'Housing', s_barn: 'Icesheep barn', s_defense: 'Defense center', s_comm: 'Communication center',
+      d_extractor: 'Keeps producing ice and N₂.', d_hab: 'Igloos for your kind to live in.', d_barn: 'Raises three icesheep, which give ice cream.', d_defense: 'A tower that knocks out enemies.', d_comm: 'Calls your kind. Requires the other four.',
+      b_title: 'Infrastructure', b_locked: 'Terraform the planet before building.', b_built: 'Built', b_needAll: 'Build the others first', b_build: 'Build',
+      m_title: 'Star map', m_hab: '{a}/{b} inhabited', m_here: 'You are here', m_travel: 'Travel',
+      w_title: 'Mission accomplished!', w_text: 'All {n} planets became icy homes. Your civilization has a new sky to call its own.', w_stats: 'Time: {t} · Snowballs: {b} · Icesheep: {s}'
+    },
+    it: {
+      newGame: 'Nuova partita', cont: 'Continua', help: 'Come si gioca', lang: 'Lingua', size: 'Dimensione della galassia',
+      sizeShort: 'Corta · 6 pianeti', sizeNormal: 'Normale · 12 pianeti', sizeLong: 'Lunga · 21 pianeti',
+      res: 'Risorse', resAbundant: 'Abbondanti', resFull: 'Copiose', resSufficient: 'Sufficienti', resScarce: 'Scarse', resRare: 'Rare',
+      tagline: 'Un pupazzo di neve astronauta in cerca di una nuova casa.',
+      story1: 'Sei un pupazzo di neve astronauta perso nello spazio. La tua civiltà ha bisogno di mondi ghiacciati in cui vivere.',
+      story2: 'Viaggia attraverso tre sistemi stellari, terraforma ogni pianeta con azoto liquido, costruisci una colonia e chiama la tua specie.',
+      overwrite: 'Una nuova partita sostituisce quella salvata.', savedNote: 'La partita viene salvata automaticamente in questo browser.',
+      back: '← Progetti', close: 'Chiudi', resume: 'Riprendi', pause: 'Pausa', mainMenu: 'Menu principale', playAgain: 'Gioca ancora',
+      h_steps: 'Missione', h_ctl: 'Comandi', h_sheep: 'Icepecore',
+      help1: 'Sulla nave, usa il sensore vicino ai pianeti per analizzarli, poi atterra.',
+      help2: 'Estrai azoto liquido dai cristalli blu. Attento al calore: vicino alla nave ti raffreddi e ripari la tuta.',
+      help3: 'Con abbastanza N₂, torna alla nave e terraforma il pianeta.',
+      help4: 'Costruisci l’estrattore, le abitazioni, la stalla, la centrale di difesa e, infine, la centrale di comunicazione, che chiama la tua specie.',
+      help5: 'Fondata la colonia, decolla e cerca il prossimo pianeta. Vinci quando tutti sono abitati.',
+      ctl1: 'Muoversi: WASD o frecce (sul telefono, il joystick).',
+      ctl2: 'E o Invio: atterrare, decollare, estrarre (tieni premuto), terraformare e mangiare gelato.',
+      ctl3: 'Spazio o clic: lanciare una palla di neve.',
+      ctl4: 'Q: sensore · M: mappa stellare · B: costruire · Esc: pausa.',
+      sheepInfo: 'Le icepecore somigliano alle pecore ma, invece della lana, sono coperte di gelato, il cibo della tua specie. Mangia il loro gelato per recuperare freddo e tuta.',
+      sensor: 'Sensore', map: 'Mappa', build: 'Costruisci', n2: 'N₂', ice: 'Ghiaccio', cold: 'Freddo', suit: 'Tuta', habited: 'Abitati', action: 'Azione', throw: 'Neve',
+      sysName: 'Sistema {name}',
+      p_land: '{k} · Atterra su {name}', p_scanFirst: 'Usa il sensore ({k}) per analizzare questo pianeta', p_takeoff: '{k} · Decolla', p_terra: '{k} · Terraforma (−{n} N₂)',
+      p_n2: 'Tieni {k} · Estrai azoto', p_ice: 'Tieni {k} · Raccogli ghiaccio', p_sheep: '{k} · Mangia il gelato',
+      o_scan: 'Usa il sensore vicino ai pianeti per analizzarli.', o_land: 'Avvicinati a un pianeta analizzato per atterrare.',
+      o_collect: 'Raccogli azoto liquido dai cristalli blu: <strong>{a}/{b}</strong>', o_terra: '<strong>N₂ sufficiente!</strong> Torna alla nave e terraforma il pianeta.',
+      o_terraAnim: 'Terraformazione in corso…', o_build: 'Costruisci l’infrastruttura ({k}). Manca: {list}', o_comm: 'Costruisci la centrale di comunicazione per chiamare la tua specie.',
+      o_calling: 'Chiamata alla tua specie…', o_done: '<strong>Pianeta abitato!</strong> Torna alla nave e decolla.', o_sys: 'Questo sistema è completo. Apri la mappa stellare e viaggia verso un altro.',
+      i_threat: 'minaccia {l}', i_need: 'N₂ necessario: {n}', threat0: 'bassa', threat1: 'media', threat2: 'alta',
+      st_wild: 'selvaggio', st_terra: 'terraformato', st_colony: 'abitato', st_unknown: 'Pianeta non analizzato',
+      t_scanFound: 'Sensore: {list}', t_scanNone: 'Nessun nuovo pianeta nel raggio del sensore.', t_tooHot: 'Troppo vicino alla stella!', t_ast: 'Impatto con un asteroide!',
+      t_landed: 'Sei atterrato su {name}.', t_terraStart: 'Terraformazione avviata!', t_terraDone: '{name} ora è un mondo ghiacciato!', t_built: 'Completato: {s}!',
+      t_noRoom: 'Non c’è spazio qui. Allontanati dalle altre costruzioni.', t_noRes: 'Risorse insufficienti.', t_calling: 'Centrale di comunicazione attiva: chiamata alla tua specie…',
+      t_colonized: 'La colonia su {name} è stata fondata!', t_suitFail: 'La tuta ha ceduto! Sei stato riportato alla nave e hai perso metà dell’N₂.',
+      t_melting: 'Ti stai sciogliendo! Torna alla nave per raffreddarti.', t_lava: 'Lava! Esci da lì!', t_toxic: 'Gas tossico!', t_yum: 'Gelato delizioso! Freddo e tuta ripristinati.',
+      t_storm: 'Tempesta di sabbia!', t_sheepBorn: 'Sono nate tre icepecore!', t_warpTo: 'In viaggio verso il sistema {name}…', t_arrived: 'Sistema {name}: {n} pianeti.', t_takeoffFirst: 'Decolla per viaggiare verso un altro sistema.',
+      ty_ice: 'ghiacciato', ty_life: 'pieno di vita', ty_hot: 'vulcanico', ty_desert: 'desertico', ty_gas: 'gassoso', ty_ocean: 'oceanico',
+      s_extractor: 'Estrattore di risorse', s_hab: 'Abitazioni', s_barn: 'Stalla delle icepecore', s_defense: 'Centrale di difesa', s_comm: 'Centrale di comunicazione',
+      d_extractor: 'Produce ghiaccio e N₂ senza sosta.', d_hab: 'Igloo in cui vivrà la tua specie.', d_barn: 'Alleva tre icepecore, che danno gelato.', d_defense: 'Una torre che abbatte gli avversari.', d_comm: 'Chiama la tua specie. Richiede le altre quattro.',
+      b_title: 'Infrastruttura', b_locked: 'Terraforma il pianeta prima di costruire.', b_built: 'Pronto', b_needAll: 'Costruisci prima le altre', b_build: 'Costruisci',
+      m_title: 'Mappa stellare', m_hab: '{a}/{b} abitati', m_here: 'Sei qui', m_travel: 'Viaggia',
+      w_title: 'Missione compiuta!', w_text: 'Tutti i {n} pianeti sono diventati case ghiacciate. La tua civiltà ha un nuovo cielo da chiamare suo.', w_stats: 'Tempo: {t} · Palle di neve: {b} · Icepecore: {s}'
+    },
+    es: {
+      newGame: 'Nueva partida', cont: 'Continuar', help: 'Cómo jugar', lang: 'Idioma', size: 'Tamaño de la galaxia',
+      sizeShort: 'Corta · 6 planetas', sizeNormal: 'Normal · 12 planetas', sizeLong: 'Larga · 21 planetas',
+      res: 'Recursos', resAbundant: 'Abundantes', resFull: 'Copiosos', resSufficient: 'Suficientes', resScarce: 'Escasos', resRare: 'Raros',
+      tagline: 'Un muñeco de nieve astronauta en busca de un nuevo hogar.',
+      story1: 'Eres un muñeco de nieve astronauta perdido en el espacio. Tu civilización necesita mundos helados para vivir.',
+      story2: 'Viaja por tres sistemas estelares, terraforma cada planeta con nitrógeno líquido, construye una colonia y llama a tu especie.',
+      overwrite: 'Empezar una nueva partida reemplaza la partida guardada.', savedNote: 'La partida se guarda automáticamente en este navegador.',
+      back: '← Proyectos', close: 'Cerrar', resume: 'Continuar', pause: 'Pausa', mainMenu: 'Menú principal', playAgain: 'Jugar de nuevo',
+      h_steps: 'Misión', h_ctl: 'Controles', h_sheep: 'Iceovejas',
+      help1: 'En la nave, usa el sensor cerca de los planetas para analizarlos y luego aterriza.',
+      help2: 'Extrae nitrógeno líquido de los cristales azules. Cuidado con el calor: cerca de la nave te enfrías y reparas el traje.',
+      help3: 'Con suficiente N₂, vuelve a la nave y terraforma el planeta.',
+      help4: 'Construye el extractor, las viviendas, el establo, la central de defensa y, por último, la central de comunicación, que llama a tu especie.',
+      help5: 'Fundada la colonia, despega y busca el siguiente planeta. Ganas cuando todos estén habitados.',
+      ctl1: 'Moverse: WASD o flechas (en el móvil, el joystick).',
+      ctl2: 'E o Intro: aterrizar, despegar, extraer (mantén pulsado), terraformar y comer helado.',
+      ctl3: 'Espacio o clic: lanzar una bola de nieve.',
+      ctl4: 'Q: sensor · M: mapa estelar · B: construir · Esc: pausa.',
+      sheepInfo: 'Las iceovejas se parecen a las ovejas pero, en lugar de lana, están cubiertas de helado, el alimento de tu especie. Come su helado para recuperar el frío y el traje.',
+      sensor: 'Sensor', map: 'Mapa', build: 'Construir', n2: 'N₂', ice: 'Hielo', cold: 'Frío', suit: 'Traje', habited: 'Habitados', action: 'Acción', throw: 'Nieve',
+      sysName: 'Sistema {name}',
+      p_land: '{k} · Aterrizar en {name}', p_scanFirst: 'Usa el sensor ({k}) para analizar este planeta', p_takeoff: '{k} · Despegar', p_terra: '{k} · Terraformar (−{n} N₂)',
+      p_n2: 'Mantén {k} · Extraer nitrógeno', p_ice: 'Mantén {k} · Recoger hielo', p_sheep: '{k} · Comer helado',
+      o_scan: 'Usa el sensor cerca de los planetas para analizarlos.', o_land: 'Acércate a un planeta analizado para aterrizar.',
+      o_collect: 'Recoge nitrógeno líquido de los cristales azules: <strong>{a}/{b}</strong>', o_terra: '<strong>¡N₂ suficiente!</strong> Vuelve a la nave y terraforma el planeta.',
+      o_terraAnim: 'Terraformando…', o_build: 'Construye la infraestructura ({k}). Falta: {list}', o_comm: 'Construye la central de comunicación para llamar a tu especie.',
+      o_calling: 'Llamando a tu especie…', o_done: '<strong>¡Planeta habitado!</strong> Vuelve a la nave y despega.', o_sys: 'Este sistema está completo. Abre el mapa estelar y viaja a otro.',
+      i_threat: 'amenaza {l}', i_need: 'N₂ necesario: {n}', threat0: 'baja', threat1: 'media', threat2: 'alta',
+      st_wild: 'salvaje', st_terra: 'terraformado', st_colony: 'habitado', st_unknown: 'Planeta sin analizar',
+      t_scanFound: 'Sensor: {list}', t_scanNone: 'Ningún planeta nuevo al alcance del sensor.', t_tooHot: '¡Demasiado cerca de la estrella!', t_ast: '¡Impacto de asteroide!',
+      t_landed: 'Has aterrizado en {name}.', t_terraStart: '¡Terraformación iniciada!', t_terraDone: '¡{name} ya es un mundo helado!', t_built: '¡Listo: {s}!',
+      t_noRoom: 'No hay espacio aquí. Aléjate de otras construcciones.', t_noRes: 'Recursos insuficientes.', t_calling: 'Central de comunicación activa: llamando a tu especie…',
+      t_colonized: '¡La colonia de {name} ha sido fundada!', t_suitFail: '¡Tu traje ha fallado! Te rescataron a la nave y perdiste la mitad del N₂.',
+      t_melting: '¡Te estás derritiendo! Vuelve a la nave para enfriarte.', t_lava: '¡Lava! ¡Sal de ahí!', t_toxic: '¡Gas tóxico!', t_yum: '¡Helado delicioso! Frío y traje restaurados.',
+      t_storm: '¡Tormenta de arena!', t_sheepBorn: '¡Nacieron tres iceovejas!', t_warpTo: 'Rumbo al sistema {name}…', t_arrived: 'Sistema {name}: {n} planetas.', t_takeoffFirst: 'Despega para viajar a otro sistema.',
+      ty_ice: 'helado', ty_life: 'lleno de vida', ty_hot: 'volcánico', ty_desert: 'desértico', ty_gas: 'gaseoso', ty_ocean: 'oceánico',
+      s_extractor: 'Extractor de recursos', s_hab: 'Viviendas', s_barn: 'Establo de iceovejas', s_defense: 'Central de defensa', s_comm: 'Central de comunicación',
+      d_extractor: 'Produce hielo y N₂ sin parar.', d_hab: 'Iglús donde vivirá tu especie.', d_barn: 'Cría tres iceovejas, que dan helado.', d_defense: 'Una torre que derriba a los adversarios.', d_comm: 'Llama a tu especie. Requiere las otras cuatro.',
+      b_title: 'Infraestructura', b_locked: 'Terraforma el planeta antes de construir.', b_built: 'Listo', b_needAll: 'Construye las otras primero', b_build: 'Construir',
+      m_title: 'Mapa estelar', m_hab: '{a}/{b} habitados', m_here: 'Estás aquí', m_travel: 'Viajar',
+      w_title: '¡Misión cumplida!', w_text: 'Los {n} planetas se convirtieron en hogares helados. Tu civilización tiene un nuevo cielo al que llamar suyo.', w_stats: 'Tiempo: {t} · Bolas de nieve: {b} · Iceovejas: {s}'
+    }
+  };
+  let lang = 'pt';
+  function t(k, v) {
+    let s = I18N[lang][k];
+    if (s == null) s = I18N.pt[k];
+    if (s == null) return k;
+    return v ? s.replace(/\{(\w+)\}/g, (_, x) => (v[x] != null ? v[x] : '')) : s;
+  }
+
+  // ---------------------------------------------------------------- utilidades
+  const TAU = Math.PI * 2;
+  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+  const hyp = Math.hypot;
+  function mulberry(seed) {
+    return function () {
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      let x = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
+      return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function shuffle(a, r) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+  const store = {
+    get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* sem armazenamento */ } },
+    del(k) { try { localStorage.removeItem(k); } catch (e) { /* sem armazenamento */ } }
+  };
+  const SAVE_KEY = 'mliw-save-v1', SET_KEY = 'mliw-settings';
+  const $ = (id) => document.getElementById(id);
+
+  // ---------------------------------------------------------------- dados do jogo
+  const SYS = [
+    { name: 'Nix', core: '#FFF3C4', glow: '255,190,60' },
+    { name: 'Boreas', core: '#E2F2FF', glow: '110,170,255' },
+    { name: 'Aurora', core: '#FFE0D2', glow: '255,110,110' }
+  ];
+  const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'];
+  const COUNTS = { short: [2, 2, 2], normal: [3, 4, 5], long: [5, 7, 9] };
+  // dep: N₂ disponível nos cristais em relação ao necessário para terraformar (nunca abaixo de 1);
+  // ice: blocos de gelo por planeta; rate: multiplicador da produção do extrator
+  const RES = {
+    abundant:   { dep: 2.6,  ice: 26, rate: 1.6 },
+    full:       { dep: 2.0,  ice: 20, rate: 1.3 },
+    sufficient: { dep: 1.5,  ice: 16, rate: 1 },
+    scarce:     { dep: 1.2,  ice: 11, rate: 0.75 },
+    rare:       { dep: 1.05, ice: 8,  rate: 0.55 }
+  };
+  const resLevel = () => RES[G.res] || RES.sufficient;
+  // drain: perda de frio por segundo; need: N₂ para terraformar; foes: adversários
+  const TYPES = {
+    ice:    { g: ['#F2FAFF', '#9CC7EA'], spot: '#FFFFFF', ground: '#DCEEFB', dec: '#B5D6F0', drain: 0,   need: 40,  enemy: 'yeti',       foes: 3, hostile: false, threat: 0 },
+    life:   { g: ['#9BE07F', '#2F8F55'], spot: '#2E6FB0', ground: '#79C267', dec: '#3E8F45', drain: .5,  need: 80,  enemy: 'beetle',     foes: 6, hostile: true,  threat: 1 },
+    hot:    { g: ['#FFB067', '#B23A26'], spot: '#FFE066', ground: '#7E3A2B', dec: '#4E2018', drain: 2.4, need: 110, enemy: 'salamander', foes: 5, hostile: true,  threat: 2 },
+    desert: { g: ['#F6DB9C', '#C08A42'], spot: '#A8733A', ground: '#E6C27E', dec: '#C99B55', drain: 1.1, need: 90,  enemy: 'scorpion',   foes: 5, hostile: true,  threat: 1 },
+    gas:    { g: ['#E4CCFF', '#7C5BC9'], spot: '#F6EEFF', ground: '#B9A3E6', dec: '#9A82D0', drain: .6,  need: 100, enemy: 'jelly',      foes: 5, hostile: true,  threat: 2 },
+    ocean:  { g: ['#7CC0FF', '#1E58BC'], spot: '#3FBF7F', ground: '#8ED1C0', dec: '#5FAE9C', drain: .4,  need: 75,  enemy: 'eel',        foes: 4, hostile: true,  threat: 1 }
+  };
+  const HAZ = { hot: ['lava', 10, 50, 130], ocean: ['water', 14, 130, 240], gas: ['toxic', 8, 70, 140], desert: ['sand', 7, 60, 120], life: ['plant', 13, 22, 22], ice: [null, 0, 0, 0] };
+  const EN = {
+    yeti:       { hp: 4, spd: 70,  r: 20 },
+    beetle:     { hp: 2, spd: 125, r: 15 },
+    salamander: { hp: 3, spd: 135, r: 16 },
+    scorpion:   { hp: 3, spd: 115, r: 17 },
+    jelly:      { hp: 2, spd: 85,  r: 18 },
+    eel:        { hp: 3, spd: 150, r: 15 }
+  };
+  const STRUCTS = [
+    { k: 'extractor', ice: 15, n2: 0 },
+    { k: 'hab', ice: 30, n2: 10 },
+    { k: 'barn', ice: 25, n2: 10 },
+    { k: 'defense', ice: 30, n2: 20 },
+    { k: 'comm', ice: 40, n2: 30, needAll: true }
+  ];
+  const FLAVORS = ['#FFB3C7', '#8B5A3C', '#B8F2D0', '#FFF1CC', '#C9B8FF', '#FFD08A'];
+  const HATS = ['#E63B5A', '#3A86FF', '#FFB703', '#2A9D8F', '#C77DFF'];
+  const SCAN_R = 700, WW = 2600, WH = 1800;
+
+  // ---------------------------------------------------------------- estado
+  let G = null;      // estado persistente (salvo)
+  let SP = null;     // estado transitório do espaço
+  let SF = null;     // estado transitório da superfície
+  let scene = 'title';
+  let fade = { a: 0, dir: 0, fn: null };
+
+  function newGame(size, res) {
+    const r = mulberry((Date.now() % 2147483647) | 0);
+    const kinds = Object.keys(TYPES);
+    const systems = COUNTS[size].map((n, s) => {
+      let bag = [];
+      const planets = [];
+      for (let i = 0; i < n; i++) {
+        if (!bag.length) bag = shuffle(kinds.slice(), r);
+        let type = bag.pop();
+        if (s === 0 && i === 0) { if (type !== 'ice') { bag.push(type); bag.splice(bag.indexOf('ice'), 1); } type = 'ice'; }
+        planets.push({
+          name: SYS[s].name + ' ' + ROMAN[i], type, orbit: 330 + i * 200, ang: r() * TAU,
+          spd: (0.05 / (1 + i * 0.45)) * (0.8 + r() * 0.4), rad: type === 'gas' ? 60 : 30 + r() * 18,
+          seed: (r() * 1e9) | 0, scanned: false, terra: false, colony: false, taken: [], iceTaken: [], builds: []
+        });
+      }
+      return { planets };
+    });
+    const outer = 330 + (systems[0].planets.length - 1) * 200;
+    return { v: 1, size, res: RES[res] ? res : 'sufficient', systems, sys: 0, onPlanet: null, won: false, inv: { n2: 0, ice: 0 }, stats: { time: 0, balls: 0, sheep: 0 }, ship: { x: 0, y: -(outer + 330), vx: 0, vy: 0, a: Math.PI / 2 } };
+  }
+  function save() {
+    if (!G) return;
+    G.onPlanet = scene === 'surface' && SF ? SF.pi : null;
+    store.set(SAVE_KEY, G);
+  }
+  function saveSettings() { store.set(SET_KEY, { lang, size: $('sizeSel').value, res: $('resSel').value }); }
+  const totalPlanets = () => G.systems.reduce((n, s) => n + s.planets.length, 0);
+  const colonized = () => G.systems.reduce((n, s) => n + s.planets.filter((p) => p.colony).length, 0);
+
+  // ---------------------------------------------------------------- canvas
+  const cv = $('cv');
+  const mainCtx = cv.getContext('2d');
+  let ctx = mainCtx;
+  const logo = $('logo'), logoCtx = logo.getContext('2d');
+  let W = 0, H = 0, DPR = 1;
+  function resize() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth; H = window.innerHeight;
+    cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+    logo.width = 240 * DPR; logo.height = 170 * DPR;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // ---------------------------------------------------------------- entrada
+  const keys = {};
+  const joy = { x: 0, y: 0, id: null };
+  let actPressed = false, actHeld = false, throwPressed = false, clickAim = null;
+  let isTouch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  const KM = { ArrowUp: 'u', KeyW: 'u', ArrowDown: 'd', KeyS: 'd', ArrowLeft: 'l', KeyA: 'l', ArrowRight: 'r', KeyD: 'r' };
+  const OV = { title: $('ovTitle'), help: $('ovHelp'), pause: $('ovPause'), build: $('ovBuild'), map: $('ovMap'), win: $('ovWin') };
+  const anyModal = () => Object.values(OV).some((o) => !o.hidden);
+  const playing = () => G && (scene === 'space' || scene === 'surface' || scene === 'warp');
+
+  function setTouch(on) { isTouch = on; document.body.classList.toggle('touch', on); }
+  setTouch(isTouch);
+
+  window.addEventListener('keydown', (e) => {
+    const tag = e.target.tagName;
+    if (tag === 'SELECT') return;
+    if (isTouch) setTouch(false);
+    if (e.code === 'Escape') {
+      if (!OV.help.hidden) hide(OV.help);
+      else if (!OV.build.hidden || !OV.map.hidden) { hide(OV.build); hide(OV.map); }
+      else togglePause();
+      return;
+    }
+    if (e.code === 'KeyB' && !OV.build.hidden) { hide(OV.build); return; }
+    if (e.code === 'KeyM' && !OV.map.hidden) { hide(OV.map); return; }
+    if (anyModal()) return;
+    if ((tag === 'BUTTON' || tag === 'A') && (e.code === 'Enter' || e.code === 'Space')) return;
+    if (KM[e.code]) { keys[KM[e.code]] = true; e.preventDefault(); }
+    if (e.code === 'KeyE' || e.code === 'Enter' || e.code === 'NumpadEnter') { if (!e.repeat) actPressed = true; actHeld = true; e.preventDefault(); }
+    if (e.code === 'Space') { if (!e.repeat) { if (scene === 'space') doScan(); else throwPressed = true; } e.preventDefault(); }
+    if (e.code === 'KeyQ') doScan();
+    if (e.code === 'KeyM') openMap();
+    if (e.code === 'KeyB') openBuild();
+    if (e.code === 'KeyP') togglePause();
+    if (e.code === 'KeyH') openHelp();
+  });
+  window.addEventListener('keyup', (e) => {
+    if (KM[e.code]) keys[KM[e.code]] = false;
+    if (e.code === 'KeyE' || e.code === 'Enter' || e.code === 'NumpadEnter') actHeld = false;
+  });
+  window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; actHeld = false; if (playing() && !anyModal()) show(OV.pause); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && playing() && !anyModal()) show(OV.pause); });
+
+  cv.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'touch') { setTouch(true); return; }
+    if (scene !== 'surface' || anyModal() || !SF) return;
+    const Z = surfZoom();
+    clickAim = { x: SF.camX + e.clientX / Z, y: SF.camY + e.clientY / Z };
+  });
+  window.addEventListener('touchstart', () => { if (!isTouch) setTouch(true); }, { passive: true });
+
+  const stick = $('stick'), knob = $('knob');
+  function stickMove(e) {
+    const r = stick.getBoundingClientRect();
+    let x = e.clientX - (r.left + r.width / 2), y = e.clientY - (r.top + r.height / 2);
+    const m = hyp(x, y), max = 50;
+    if (m > max) { x *= max / m; y *= max / m; }
+    knob.style.transform = `translate(${x}px, ${y}px)`;
+    joy.x = x / max; joy.y = y / max;
+    if (hyp(joy.x, joy.y) < 0.15) { joy.x = 0; joy.y = 0; }
+  }
+  stick.addEventListener('pointerdown', (e) => { joy.id = e.pointerId; stick.setPointerCapture(e.pointerId); stickMove(e); e.preventDefault(); });
+  stick.addEventListener('pointermove', (e) => { if (e.pointerId === joy.id) stickMove(e); });
+  const stickEnd = (e) => { if (e.pointerId !== joy.id) return; joy.id = null; joy.x = joy.y = 0; knob.style.transform = ''; };
+  stick.addEventListener('pointerup', stickEnd);
+  stick.addEventListener('pointercancel', stickEnd);
+  const tAct = $('tAct'), tThrow = $('tThrow');
+  tAct.addEventListener('pointerdown', (e) => { e.preventDefault(); actPressed = true; actHeld = true; tAct.setPointerCapture(e.pointerId); });
+  ['pointerup', 'pointercancel'].forEach((ev) => tAct.addEventListener(ev, () => { actHeld = false; }));
+  tThrow.addEventListener('pointerdown', (e) => { e.preventDefault(); if (scene === 'space') doScan(); else throwPressed = true; });
+
+  function inputVec() {
+    let x = (keys.r ? 1 : 0) - (keys.l ? 1 : 0), y = (keys.d ? 1 : 0) - (keys.u ? 1 : 0);
+    if (joy.x || joy.y) { x = joy.x; y = joy.y; }
+    const m = hyp(x, y);
+    if (m > 1) { x /= m; y /= m; }
+    return { x, y };
+  }
+  const keyLabel = () => (isTouch ? t('action') : 'E');
+
+  // ---------------------------------------------------------------- mensagens
+  const toastsEl = $('toasts');
+  function toast(msg, kind) {
+    const d = document.createElement('div');
+    d.className = 'toast ' + (kind || '');
+    d.textContent = msg;
+    toastsEl.appendChild(d);
+    while (toastsEl.children.length > 3) toastsEl.firstChild.remove();
+    setTimeout(() => d.remove(), 3400);
+  }
+  const warned = {};
+  function warn(key, msg, every) {
+    const now = performance.now();
+    if (warned[key] && now - warned[key] < (every || 4000)) return;
+    warned[key] = now;
+    toast(msg, 'warn');
+  }
+
+  // ---------------------------------------------------------------- espaço
+  const sysOuter = (sys) => 330 + (sys.planets.length - 1) * 200;
+  const planetPos = (p) => ({ x: Math.cos(p.ang) * p.orbit, y: Math.sin(p.ang) * p.orbit });
+  const spaceZoom = () => clamp(Math.min(W, H) / 1000, 0.42, 0.85);
+
+  function enterSpace(fromPi, keepShip) {
+    const sys = G.systems[G.sys];
+    const r = mulberry(1000 + G.sys * 77);
+    const ast = [];
+    if (G.sys > 0) {
+      const R = sys.planets.length >= 3 ? 330 + 1.5 * 200 : sysOuter(sys) + 170;
+      const n = G.sys === 1 ? 34 : 56;
+      for (let i = 0; i < n; i++) {
+        const sh = []; for (let k = 0; k < 7; k++) sh.push(0.75 + r() * 0.4);
+        ast.push({ a: r() * TAU, d: R + (r() - 0.5) * 120, r: 8 + r() * 14, spd: 0.02 + r() * 0.03, sh });
+      }
+    }
+    SP = { ast, pulse: null, scanCd: 0, shake: 0, thrust: 0, near: null };
+    const s = G.ship;
+    if (fromPi != null) {
+      const q = planetPos(sys.planets[fromPi]), d = hyp(q.x, q.y) || 1;
+      s.x = q.x + (q.x / d) * (sys.planets[fromPi].rad + 95); s.y = q.y + (q.y / d) * (sys.planets[fromPi].rad + 95);
+      s.vx = s.vy = 0; s.a = Math.atan2(q.y, q.x);
+    } else if (!keepShip) {
+      s.x = 0; s.y = -(sysOuter(sys) + 330); s.vx = s.vy = 0; s.a = Math.PI / 2;
+    }
+    SF = null;
+    scene = 'space';
+  }
+
+  function updateSpace(dt) {
+    const sys = G.systems[G.sys], s = G.ship;
+    sys.planets.forEach((p) => { p.ang += p.spd * dt; });
+    const v = inputVec();
+    SP.thrust = v.x || v.y ? 1 : 0;
+    s.vx += v.x * 520 * dt; s.vy += v.y * 520 * dt;
+    if (!SP.thrust) { const k = Math.max(0, 1 - 0.9 * dt); s.vx *= k; s.vy *= k; }
+    const sp = hyp(s.vx, s.vy), max = 480;
+    if (sp > max) { s.vx *= max / sp; s.vy *= max / sp; }
+    s.x += s.vx * dt; s.y += s.vy * dt;
+    if (sp > 25) { let da = Math.atan2(s.vy, s.vx) - s.a; da = Math.atan2(Math.sin(da), Math.cos(da)); s.a += da * Math.min(1, dt * 8); }
+    // estrela
+    const ds = hyp(s.x, s.y) || 1, SR = 135;
+    if (ds < SR) {
+      const nx = s.x / ds, ny = s.y / ds; s.x = nx * SR; s.y = ny * SR;
+      const dot = s.vx * nx + s.vy * ny; if (dot < 0) { s.vx -= 1.8 * dot * nx; s.vy -= 1.8 * dot * ny; }
+      warn('hot', t('t_tooHot')); SP.shake = 0.35;
+    }
+    const lim = sysOuter(sys) + 700;
+    if (ds > lim) { s.vx -= (s.x / ds) * 400 * dt; s.vy -= (s.y / ds) * 400 * dt; }
+    // planetas são sólidos
+    sys.planets.forEach((p) => {
+      const q = planetPos(p), d = hyp(s.x - q.x, s.y - q.y) || 1, m = p.rad + 18;
+      if (d < m) { s.x = q.x + ((s.x - q.x) / d) * m; s.y = q.y + ((s.y - q.y) / d) * m; }
+    });
+    // asteroides
+    SP.ast.forEach((a) => {
+      a.a += a.spd * dt * 0.3;
+      const ax = Math.cos(a.a) * a.d, ay = Math.sin(a.a) * a.d, d = hyp(s.x - ax, s.y - ay) || 1, m = a.r + 18;
+      if (d < m) {
+        const nx = (s.x - ax) / d, ny = (s.y - ay) / d; s.x = ax + nx * m; s.y = ay + ny * m;
+        const dot = s.vx * nx + s.vy * ny;
+        if (dot < 0) { s.vx -= 1.8 * dot * nx; s.vy -= 1.8 * dot * ny; if (dot < -90) { warn('ast', t('t_ast'), 2500); SP.shake = 0.35; } }
+      }
+    });
+    if (SP.pulse) { SP.pulse.r += 1100 * dt; if (SP.pulse.r > SCAN_R) SP.pulse = null; }
+    SP.scanCd = Math.max(0, SP.scanCd - dt);
+    SP.shake = Math.max(0, SP.shake - dt);
+    // planeta mais próximo
+    SP.near = null; let best = 1e9;
+    sys.planets.forEach((p, i) => { const q = planetPos(p), d = hyp(s.x - q.x, s.y - q.y) - p.rad; if (d < 95 && d < best) { best = d; SP.near = i; } });
+    if (SP.near != null && actPressed && !fade.dir) {
+      const p = sys.planets[SP.near];
+      if (p.scanned) land(SP.near); else doScan();
+    }
+  }
+
+  function doScan() {
+    if (scene !== 'space' || anyModal() || !SP || SP.scanCd > 0) return;
+    SP.pulse = { r: 0 }; SP.scanCd = 2;
+    const s = G.ship, found = [];
+    G.systems[G.sys].planets.forEach((p) => {
+      const q = planetPos(p);
+      if (!p.scanned && hyp(s.x - q.x, s.y - q.y) - p.rad < SCAN_R) { p.scanned = true; found.push(p.name + ' (' + t('ty_' + p.type) + ')'); }
+    });
+    toast(found.length ? t('t_scanFound', { list: found.join(', ') }) : t('t_scanNone'), found.length ? 'good' : '');
+    if (found.length) save();
+  }
+
+  function land(i) {
+    fadeTo(() => { enterSurface(i); toast(t('t_landed', { name: SF.p.name }) + ' ' + cap(t('ty_' + SF.p.type)) + '.'); save(); });
+  }
+  const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
+  // ---------------------------------------------------------------- superfície
+  const surfZoom = () => clamp(Math.min(W, H) / 760, 0.62, 1.15);
+  const hasB = (k) => SF.p.builds.some((b) => b.k === k);
+  function enemyCap() {
+    const p = SF.p, T = SF.T;
+    if (hasB('defense')) return 0;
+    if (!p.terra || p.type === 'ice') return T.foes;
+    return Math.ceil(T.foes / 2);
+  }
+
+  function enterSurface(pi) {
+    const p = G.systems[G.sys].planets[pi], T = TYPES[p.type], r = mulberry(p.seed);
+    const ship = { x: WW / 2, y: WH / 2 };
+    const rp = (minD, margin) => {
+      margin = margin || 90;
+      for (let k = 0; k < 80; k++) {
+        const x = margin + r() * (WW - 2 * margin), y = margin + r() * (WH - 2 * margin);
+        if (hyp(x - ship.x, y - ship.y) > minD) return { x, y };
+      }
+      return { x: margin, y: margin };
+    };
+    const decor = [];
+    for (let i = 0; i < 170; i++) { const q = rp(130, 20); decor.push({ x: q.x, y: q.y, s: 5 + r() * 16, k: r(), a: r() * TAU }); }
+    const hz = [], H0 = HAZ[p.type];
+    for (let i = 0; i < H0[1]; i++) {
+      const q = rp(H0[0] === 'water' ? 340 : 280);
+      hz.push({ k: H0[0], x: q.x, y: q.y, r: H0[2] + r() * (H0[3] - H0[2]), vx: (r() - 0.5) * 40, vy: (r() - 0.5) * 40, cd: r() * 2, ph: r() * TAU });
+    }
+    const RL = resLevel(), deposits = [], nDep = Math.ceil((T.need * RL.dep) / 10);
+    for (let i = 0; i < nDep; i++) { const q = rp(230); deposits.push({ x: q.x, y: q.y, amt: 10, taken: p.taken.includes(i), ph: r() * TAU }); }
+    const ices = [];
+    for (let i = 0; i < RL.ice; i++) { const q = rp(190); ices.push({ x: q.x, y: q.y, amt: 8, taken: p.iceTaken.includes(i), rot: (r() - 0.5) * 0.6 }); }
+    SF = {
+      p, pi, T, W: WW, H: WH, ship, decor, hz, deposits, ices,
+      enemies: [], balls: [], shots: [], spores: [], sheep: [], colonists: [], parts: [], callShips: [],
+      t: 0, stormT: 18 + r() * 10, storm: 0, wind: { x: 0, y: 0 }, respawn: 15, shake: 0,
+      pl: { x: ship.x + 70, y: ship.y + 55, fx: 1, fy: 0, hp: 100, cold: 100, cd: 0, hurt: 0, kx: 0, ky: 0, walk: 0 },
+      ex: null, target: null, terraAnim: p.terra ? 1 : 0, call: null, camX: 0, camY: 0
+    };
+    const n = enemyCap();
+    for (let i = 0; i < n; i++) spawnEnemy(true);
+    p.builds.forEach((b) => { b.cd = 0; if (b.k === 'barn') spawnSheep(b); });
+    if (p.colony) spawnColonists();
+    else if (p.builds.some((b) => b.k === 'comm')) SF.call = { t: 0 }; // retoma a chegada da colônia interrompida
+    G.onPlanet = pi;
+    scene = 'surface';
+  }
+
+  function spawnEnemy(initial) {
+    const S = SF, k = S.T.enemy, D = EN[k];
+    let x = 0, y = 0, home = null;
+    if (k === 'eel') {
+      const waters = S.hz.filter((h) => h.k === 'water');
+      if (!waters.length) return;
+      home = waters[(Math.random() * waters.length) | 0];
+      const a = Math.random() * TAU, d = Math.random() * home.r * 0.7;
+      x = home.x + Math.cos(a) * d; y = home.y + Math.sin(a) * d;
+    } else {
+      for (let i = 0; i < 50; i++) {
+        x = 60 + Math.random() * (S.W - 120); y = 60 + Math.random() * (S.H - 120);
+        if (hyp(x - S.ship.x, y - S.ship.y) > 500 && hyp(x - S.pl.x, y - S.pl.y) > (initial ? 420 : 650)) break;
+      }
+    }
+    S.enemies.push({ k, x, y, hp: D.hp, kx: 0, ky: 0, hit: 0, flash: 0, home, angry: false, wt: 0, wx: 0, wy: 0, t: Math.random() * 10 });
+  }
+  function spawnSheep(b) {
+    for (let i = 0; i < 3; i++) {
+      const sp = []; for (let k = 0; k < 7; k++) sp.push({ x: (Math.random() - 0.5) * 22, y: -12 - Math.random() * 12, c: HATS[(Math.random() * HATS.length) | 0] });
+      SF.sheep.push({ x: b.x + (Math.random() - 0.5) * 120, y: b.y + 50 + Math.random() * 60, home: b, col: FLAVORS[(Math.random() * FLAVORS.length) | 0], ready: true, regrow: 0, wx: 0, wy: 0, wt: 0, f: 1, walk: 0, sp });
+    }
+  }
+  function spawnColonists() {
+    const bs = SF.p.builds;
+    if (!bs.length) return;
+    for (let i = 0; i < 8; i++) {
+      const b = bs[i % bs.length];
+      SF.colonists.push({ x: b.x + (Math.random() - 0.5) * 140, y: b.y + 40 + Math.random() * 60, tx: b.x, ty: b.y + 60, wait: Math.random() * 2, f: 1, walk: 0, col: HATS[i % HATS.length] });
+    }
+  }
+
+  function nearestEnemy(x, y, range) {
+    let best = null, bd = range;
+    for (const e of SF.enemies) { const d = hyp(e.x - x, e.y - y); if (d < bd) { bd = d; best = e; } }
+    return best;
+  }
+  function burst(x, y, col, n, spd) {
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * TAU, s = (spd || 120) * (0.4 + Math.random());
+      SF.parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.6 + Math.random() * 0.4, max: 1, col, r: 2 + Math.random() * 3 });
+    }
+  }
+  function floatText(x, y, txt, col) { SF.parts.push({ x, y, vx: 0, vy: -40, life: 1.2, max: 1.2, col: col || '#8FD3FF', txt }); }
+  function hurt(n, quiet) {
+    const P = SF.pl;
+    P.hp -= n;
+    if (!quiet) { P.hurt = 0.3; SF.shake = 0.25; }
+    if (P.hp <= 0) suitFail();
+  }
+  function suitFail() {
+    const S = SF, P = S.pl;
+    G.inv.n2 = Math.floor(G.inv.n2 / 2);
+    Object.assign(P, { hp: 100, cold: 100, x: S.ship.x + 70, y: S.ship.y + 55, kx: 0, ky: 0, hurt: 0 });
+    S.spores = [];
+    toast(t('t_suitFail'), 'warn');
+    save();
+  }
+  function killEnemy(e) {
+    const S = SF, i = S.enemies.indexOf(e);
+    if (i < 0) return;
+    S.enemies.splice(i, 1);
+    burst(e.x, e.y - 14, '#FFFFFF', 14, 160);
+    G.inv.n2 += 2;
+    floatText(e.x, e.y - 40, '+2 N₂');
+  }
+  function throwBall(dx, dy) {
+    const P = SF.pl, m = hyp(dx, dy) || 1;
+    SF.balls.push({ x: P.x, y: P.y - 30, vx: (dx / m) * 560, vy: (dy / m) * 560, life: 0.85 });
+    P.cd = 0.28; G.stats.balls++;
+    if (Math.abs(dx) > 1) P.fx = dx > 0 ? 1 : -1;
+  }
+  const insideHz = (k, x, y) => SF.hz.some((h) => h.k === k && hyp(x - h.x, y - h.y) < h.r);
+
+  function updateSurface(dt) {
+    const S = SF, p = S.p, T = S.T, P = S.pl, terra = p.terra;
+    S.t += dt;
+    if (terra && S.terraAnim < 1) {
+      S.terraAnim = Math.min(1, S.terraAnim + dt / 3);
+      if (S.terraAnim >= 1) toast(t('t_terraDone', { name: p.name }), 'good');
+    }
+    // tempestade de areia
+    if (p.type === 'desert' && !terra) {
+      if (S.storm > 0) { S.storm -= dt; if (S.storm <= 0) S.stormT = 22 + Math.random() * 12; }
+      else { S.stormT -= dt; if (S.stormT <= 0) { S.storm = 8; const a = Math.random() * TAU; S.wind = { x: Math.cos(a) * 90, y: Math.sin(a) * 90 }; toast(t('t_storm'), 'warn'); } }
+    } else S.storm = 0;
+
+    // movimento
+    const v = inputVec();
+    let spd = 210;
+    const wet = !terra && insideHz('water', P.x, P.y);
+    if (wet) spd *= 0.5;
+    if (!terra && insideHz('sand', P.x, P.y)) spd *= 0.45;
+    if (terra && S.hz.some((h) => (h.k === 'water' || h.k === 'lava') && hyp(P.x - h.x, P.y - h.y) < h.r)) spd *= 1.25;
+    if (S.storm > 0) spd *= 0.8;
+    const wx = S.storm > 0 ? S.wind.x : 0, wy = S.storm > 0 ? S.wind.y : 0;
+    P.x += (v.x * spd + P.kx + wx) * dt; P.y += (v.y * spd + P.ky + wy) * dt;
+    const kd = Math.max(0, 1 - 6 * dt); P.kx *= kd; P.ky *= kd;
+    if (v.x || v.y) { const m = hyp(v.x, v.y); P.fy = v.y / m; if (Math.abs(v.x) > 0.2) P.fx = v.x > 0 ? 1 : -1; P.walk += dt * 9; }
+    P.x = clamp(P.x, 20, S.W - 20); P.y = clamp(P.y, 30, S.H - 10);
+    const solid = [{ x: S.ship.x, y: S.ship.y, r: 42 }].concat(p.builds.map((b) => ({ x: b.x, y: b.y - 10, r: 40 })));
+    solid.forEach((o) => { const d = hyp(P.x - o.x, P.y - o.y) || 1; if (d < o.r) { P.x = o.x + ((P.x - o.x) / d) * o.r; P.y = o.y + ((P.y - o.y) / d) * o.r; } });
+    P.hurt = Math.max(0, P.hurt - dt);
+    S.shake = Math.max(0, S.shake - dt);
+
+    // temperatura e perigos
+    const dShip = hyp(P.x - S.ship.x, P.y - S.ship.y);
+    if (dShip < 150) { P.cold = Math.min(100, P.cold + 30 * dt); P.hp = Math.min(100, P.hp + 8 * dt); }
+    else if (terra) P.cold = Math.min(100, P.cold + 5 * dt);
+    else P.cold = Math.max(0, P.cold - T.drain * dt * (S.storm > 0 ? 1.6 : 1));
+    if (P.cold <= 0) { hurt(6 * dt, true); warn('melt', t('t_melting'), 6000); }
+    if (!terra && insideHz('lava', P.x, P.y)) { hurt(28 * dt, true); P.cold = Math.max(0, P.cold - 20 * dt); P.hurt = 0.1; warn('lava', t('t_lava')); }
+    if (!terra && insideHz('toxic', P.x, P.y)) { hurt(12 * dt, true); P.hurt = 0.1; warn('toxic', t('t_toxic')); }
+    if (wet) hurt(2 * dt, true);
+    S.hz.forEach((h) => {
+      if (h.k === 'toxic' && !terra) {
+        h.x += h.vx * dt; h.y += h.vy * dt;
+        if (h.x < h.r || h.x > S.W - h.r) h.vx *= -1;
+        if (h.y < h.r || h.y > S.H - h.r) h.vy *= -1;
+        const d = hyp(h.x - S.ship.x, h.y - S.ship.y) || 1;
+        if (d < h.r + 160) { h.vx = ((h.x - S.ship.x) / d) * 30; h.vy = ((h.y - S.ship.y) / d) * 30; }
+      }
+      if (h.k === 'plant' && !terra) {
+        h.cd -= dt;
+        const d = hyp(P.x - h.x, P.y - h.y);
+        if (h.cd <= 0 && d < 320 && dShip > 150) {
+          h.cd = 2.4;
+          const a = Math.atan2(P.y - 20 - (h.y - 30), P.x - h.x);
+          S.spores.push({ x: h.x, y: h.y - 30, vx: Math.cos(a) * 220, vy: Math.sin(a) * 220, life: 2.2 });
+        }
+      }
+    });
+    S.spores = S.spores.filter((s) => {
+      s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
+      if (hyp(s.x - P.x, s.y - (P.y - 25)) < 20) { hurt(9); return false; }
+      return s.life > 0;
+    });
+
+    // bolas de neve
+    P.cd = Math.max(0, P.cd - dt);
+    if (throwPressed && P.cd <= 0) {
+      const e = nearestEnemy(P.x, P.y, 380);
+      if (e) throwBall(e.x - P.x, e.y - 14 - (P.y - 30)); else throwBall(P.fx, P.fy * 0.6);
+    }
+    if (clickAim && P.cd <= 0) throwBall(clickAim.x - P.x, clickAim.y - (P.y - 30));
+    clickAim = null;
+    S.balls = S.balls.filter((b) => {
+      b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt;
+      for (const e of S.enemies) {
+        if (hyp(b.x - e.x, b.y - (e.y - EN[e.k].r)) < EN[e.k].r + 8) {
+          e.hp--; e.flash = 0.15; e.angry = true;
+          const m = hyp(b.vx, b.vy) || 1; e.kx = (b.vx / m) * 260; e.ky = (b.vy / m) * 260;
+          burst(b.x, b.y, '#FFFFFF', 6, 90);
+          if (e.hp <= 0) killEnemy(e);
+          return false;
+        }
+      }
+      if (b.life <= 0) { burst(b.x, b.y, '#FFFFFF', 4, 60); return false; }
+      return true;
+    });
+
+    // adversários
+    const safe = dShip < 150;
+    S.enemies.forEach((e) => {
+      const D = EN[e.k];
+      e.t += dt; e.hit = Math.max(0, e.hit - dt); e.flash = Math.max(0, e.flash - dt);
+      const dx = P.x - e.x, dy = P.y - e.y, d = hyp(dx, dy) || 1;
+      const hostile = T.hostile || e.angry;
+      let tx, ty, sp = D.spd;
+      if (hostile && d < 330 && !safe) { tx = dx / d; ty = dy / d; }
+      else {
+        e.wt -= dt;
+        if (e.wt <= 0) { e.wt = 1.5 + Math.random() * 2; const a = Math.random() * TAU; e.wx = Math.cos(a); e.wy = Math.sin(a); }
+        tx = e.wx; ty = e.wy; sp *= 0.35;
+      }
+      e.x += (tx * sp + e.kx) * dt; e.y += (ty * sp + e.ky) * dt;
+      e.kx *= kd; e.ky *= kd;
+      const sd = hyp(e.x - S.ship.x, e.y - S.ship.y) || 1;
+      if (sd < 210) { e.x = S.ship.x + ((e.x - S.ship.x) / sd) * 210; e.y = S.ship.y + ((e.y - S.ship.y) / sd) * 210; }
+      if (e.home) {
+        const hd = hyp(e.x - e.home.x, e.y - e.home.y) || 1, lim = e.home.r + 30;
+        if (hd > lim) { e.x = e.home.x + ((e.x - e.home.x) / hd) * lim; e.y = e.home.y + ((e.y - e.home.y) / hd) * lim; }
+      }
+      e.x = clamp(e.x, 30, S.W - 30); e.y = clamp(e.y, 40, S.H - 10);
+      if (hostile && d < D.r + 18 && e.hit <= 0 && !safe) { e.hit = 1; hurt(12); P.kx = (dx / d) * 380; P.ky = (dy / d) * 380; }
+    });
+    S.respawn -= dt;
+    if (S.respawn <= 0) { S.respawn = 16; if (S.enemies.length < enemyCap()) spawnEnemy(false); }
+
+    // torres de defesa
+    p.builds.forEach((b) => {
+      if (b.k !== 'defense') return;
+      b.cd = (b.cd || 0) - dt;
+      const e = nearestEnemy(b.x, b.y, 470);
+      if (e) {
+        b.aim = Math.atan2(e.y - 14 - (b.y - 26), e.x - b.x);
+        if (b.cd <= 0) { b.cd = 0.7; S.shots.push({ x: b.x + Math.cos(b.aim) * 26, y: b.y - 26 + Math.sin(b.aim) * 26, vx: Math.cos(b.aim) * 620, vy: Math.sin(b.aim) * 620, life: 1.1 }); }
+      }
+    });
+    S.shots = S.shots.filter((s) => {
+      s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
+      for (const e of S.enemies) {
+        if (hyp(s.x - e.x, s.y - (e.y - EN[e.k].r)) < EN[e.k].r + 8) { e.hp -= 2; e.flash = 0.15; burst(s.x, s.y, '#8FD3FF', 6, 90); if (e.hp <= 0) killEnemy(e); return false; }
+      }
+      return s.life > 0;
+    });
+
+    // produção do extrator
+    if (hasB('extractor')) { const k = resLevel().rate; G.inv.ice += 1.5 * k * dt; G.inv.n2 += 1 * k * dt; }
+
+    // iceovelhas e colonos
+    S.sheep.forEach((s) => {
+      s.wt -= dt;
+      if (s.wt <= 0) { s.wt = 1 + Math.random() * 3; const a = Math.random() * TAU, m = Math.random() < 0.4 ? 0 : 1; s.wx = Math.cos(a) * m; s.wy = Math.sin(a) * m; }
+      s.x += s.wx * 35 * dt; s.y += s.wy * 35 * dt;
+      if (s.wx) { s.f = s.wx > 0 ? 1 : -1; s.walk += dt * 8; }
+      const hx = s.home.x, hy = s.home.y + 70, hd = hyp(s.x - hx, s.y - hy) || 1;
+      if (hd > 130) { s.x = hx + ((s.x - hx) / hd) * 130; s.y = hy + ((s.y - hy) / hd) * 130; s.wt = 0; }
+      if (!s.ready) { s.regrow -= dt; if (s.regrow <= 0) s.ready = true; }
+    });
+    S.colonists.forEach((c) => {
+      if (c.wait > 0) { c.wait -= dt; return; }
+      const dx = c.tx - c.x, dy = c.ty - c.y, d = hyp(dx, dy);
+      if (d < 6) {
+        c.wait = 1 + Math.random() * 3;
+        const b = p.builds[(Math.random() * p.builds.length) | 0];
+        c.tx = b.x + (Math.random() - 0.5) * 160; c.ty = b.y + 40 + Math.random() * 60;
+      } else { c.x += (dx / d) * 50 * dt; c.y += (dy / d) * 50 * dt; c.f = dx > 0 ? 1 : -1; c.walk += dt * 8; }
+    });
+
+    // chegada da colônia
+    if (S.call) {
+      S.call.t += dt;
+      if (S.call.t > 1 && !S.callShips.length) {
+        const targets = p.builds.filter((b) => b.k === 'hab' || b.k === 'comm');
+        for (let i = 0; i < 4; i++) { const b = targets[i % targets.length]; const tx = b.x + (i - 1.5) * 70, ty = b.y + 110; S.callShips.push({ x: tx, ty, y: ty - 900 - i * 120 }); }
+      }
+      S.callShips.forEach((c) => { c.y = Math.min(c.ty, c.y + 300 * dt); });
+      if (S.call.t > 5 && !p.colony) {
+        p.colony = true;
+        spawnColonists();
+        toast(t('t_colonized', { name: p.name }), 'good');
+        save();
+        checkWin();
+      }
+      if (S.call.t > 7) { S.call = null; S.callShips = []; }
+    }
+
+    // interação
+    S.target = null;
+    if (dShip < 120) {
+      if (!p.terra && G.inv.n2 >= T.need) S.target = { kind: 'terra' };
+      else if (!(p.terra && S.terraAnim < 1) && !S.call) S.target = { kind: 'takeoff' };
+    }
+    if (!S.target) {
+      let bs = null, bd = 48;
+      S.sheep.forEach((s) => { const d = hyp(P.x - s.x, P.y - s.y); if (s.ready && d < bd) { bd = d; bs = s; } });
+      if (bs) S.target = { kind: 'sheep', s: bs };
+    }
+    if (!S.target) {
+      let best = null, bd = 58;
+      S.deposits.forEach((d, i) => { if (d.taken) return; const q = hyp(P.x - d.x, P.y - d.y); if (q < bd) { bd = q; best = { kind: 'n2', i, x: d.x, y: d.y }; } });
+      if (terra) S.ices.forEach((d, i) => { if (d.taken) return; const q = hyp(P.x - d.x, P.y - d.y); if (q < bd) { bd = q; best = { kind: 'ice', i, x: d.x, y: d.y }; } });
+      if (best) S.target = best;
+    }
+    const tg = S.target;
+    if (tg && actPressed && !fade.dir) {
+      if (tg.kind === 'terra') startTerraform();
+      else if (tg.kind === 'takeoff') takeoff();
+      else if (tg.kind === 'sheep') eatSheep(tg.s);
+    }
+    if (tg && (tg.kind === 'n2' || tg.kind === 'ice') && actHeld) {
+      if (!S.ex || S.ex.kind !== tg.kind || S.ex.i !== tg.i) S.ex = { kind: tg.kind, i: tg.i, x: tg.x, y: tg.y, prog: 0 };
+      S.ex.prog += dt / 0.9;
+      if (S.ex.prog >= 1) {
+        if (tg.kind === 'n2') { const d = S.deposits[tg.i]; d.taken = true; p.taken.push(tg.i); G.inv.n2 += d.amt; floatText(d.x, d.y - 30, '+' + d.amt + ' N₂'); burst(d.x, d.y - 10, '#8FE3FF', 14, 130); }
+        else { const d = S.ices[tg.i]; d.taken = true; p.iceTaken.push(tg.i); G.inv.ice += d.amt; floatText(d.x, d.y - 30, '+' + d.amt + ' ' + t('ice'), '#FFFFFF'); burst(d.x, d.y - 10, '#E6F6FF', 12, 120); }
+        S.ex = null;
+        save();
+      }
+    } else S.ex = null;
+
+    // partículas
+    S.parts = S.parts.filter((q) => { q.x += q.vx * dt; q.y += q.vy * dt; q.vx *= 0.96; q.vy *= q.txt ? 1 : 0.96; q.life -= dt; return q.life > 0; });
+  }
+
+  function startTerraform() {
+    const S = SF, p = S.p;
+    G.inv.n2 -= S.T.need;
+    p.terra = true;
+    S.terraAnim = 0.0001;
+    S.storm = 0; S.spores = [];
+    const keep = enemyCap();
+    while (S.enemies.length > keep) { const e = S.enemies.pop(); burst(e.x, e.y - 14, '#FFFFFF', 10, 140); }
+    toast(t('t_terraStart'), 'good');
+    save();
+  }
+  function eatSheep(s) {
+    const P = SF.pl;
+    s.ready = false; s.regrow = 20;
+    P.hp = 100; P.cold = 100;
+    burst(s.x, s.y - 20, s.col, 14, 120);
+    toast(t('t_yum'), 'good');
+  }
+  function takeoff() {
+    const pi = SF.pi;
+    fadeTo(() => { G.onPlanet = null; enterSpace(pi); save(); });
+  }
+  function tryBuild(k) {
+    const S = SF, p = S.p, def = STRUCTS.find((s) => s.k === k);
+    if (!p.terra || hasB(k)) return;
+    if (def.needAll && !STRUCTS.every((s) => s.k === k || hasB(s.k))) return;
+    if (G.inv.ice < def.ice || G.inv.n2 < def.n2) { toast(t('t_noRes'), 'warn'); return; }
+    const pos = findSpot();
+    if (!pos) { toast(t('t_noRoom'), 'warn'); return; }
+    G.inv.ice -= def.ice; G.inv.n2 -= def.n2;
+    const b = { k, x: pos.x, y: pos.y, cd: 0 };
+    p.builds.push(b);
+    burst(b.x, b.y - 30, '#FFFFFF', 20, 160);
+    toast(t('t_built', { s: t('s_' + k) }), 'good');
+    if (k === 'barn') { spawnSheep(b); G.stats.sheep += 3; toast(t('t_sheepBorn'), 'good'); }
+    if (k === 'comm') { S.call = { t: 0 }; toast(t('t_calling')); }
+    hide(OV.build);
+    save();
+  }
+  function findSpot() {
+    const P = SF.pl, base = Math.atan2(P.fy, P.fx);
+    for (let rr = 90; rr <= 330; rr += 40) {
+      for (let k = 0; k < 12; k++) {
+        const a = base + Math.ceil(k / 2) * (TAU / 12) * (k % 2 ? 1 : -1);
+        const x = P.x + Math.cos(a) * rr, y = P.y + Math.sin(a) * rr;
+        if (validSpot(x, y)) return { x, y };
+      }
+    }
+    return null;
+  }
+  function validSpot(x, y) {
+    const S = SF;
+    if (x < 80 || y < 100 || x > S.W - 80 || y > S.H - 40) return false;
+    if (hyp(x - S.ship.x, y - S.ship.y) < 140) return false;
+    return S.p.builds.every((b) => hyp(x - b.x, y - b.y) > 115);
+  }
+  function checkWin() {
+    if (G.won || !G.systems.every((s) => s.planets.every((p) => p.colony))) return;
+    G.won = true; save();
+    setTimeout(() => {
+      const sec = Math.floor(G.stats.time), tm = Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+      $('winText').textContent = t('w_text', { n: totalPlanets() });
+      $('winStats').textContent = t('w_stats', { t: tm, b: G.stats.balls, s: G.stats.sheep });
+      show(OV.win);
+    }, 2600);
+  }
+
+  // ---------------------------------------------------------------- dobra espacial
+  function startWarp(to) {
+    hide(OV.map);
+    if (to === G.sys) return;
+    toast(t('t_warpTo', { name: SYS[to].name }));
+    SP = { warp: { t: 0, to } };
+    scene = 'warp';
+  }
+  function updateWarp(dt) {
+    SP.warp.t += dt;
+    if (SP.warp.t >= 1.6) {
+      const to = SP.warp.to;
+      G.sys = to;
+      enterSpace(null);
+      toast(t('t_arrived', { name: SYS[to].name, n: G.systems[to].planets.length }));
+      save();
+    }
+  }
+
+  function fadeTo(fn) { if (fade.dir) return; fade.dir = 1; fade.fn = fn; }
+  function updateFade(dt) {
+    if (fade.dir === 1) { fade.a += dt / 0.35; if (fade.a >= 1) { fade.a = 1; fade.dir = -1; const f = fade.fn; fade.fn = null; if (f) f(); } }
+    else if (fade.dir === -1) { fade.a -= dt / 0.35; if (fade.a <= 0) { fade.a = 0; fade.dir = 0; } }
+  }
+
+  // ---------------------------------------------------------------- desenho: peças
+  function rrect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+  function circle(x, y, r, fill) { ctx.fillStyle = fill; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); }
+  function shadow(rx, ry) { ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.beginPath(); ctx.ellipse(0, 0, rx, ry, 0, 0, TAU); ctx.fill(); }
+  function snowball(x, y, r) {
+    const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.2, x, y, r);
+    g.addColorStop(0, '#FFFFFF'); g.addColorStop(1, '#C9DEF2');
+    circle(x, y, r, g);
+  }
+
+  function drawSnowman(x, y, fx, walk, o) {
+    const s = fx < 0 ? -1 : 1, bob = Math.abs(Math.sin(walk)) * 2, sw = Math.sin(walk) * 0.6;
+    ctx.save(); ctx.translate(x, y); ctx.scale(o.scale || 1, o.scale || 1);
+    shadow(18, 6);
+    ctx.translate(0, -bob);
+    if (o.helmet) { ctx.fillStyle = '#8E9BBE'; rrect(-s * 14 - 7, -50, 14, 26, 4); ctx.fill(); ctx.fillStyle = '#5FD3A4'; circle(-s * 14, -44, 2.2, '#5FD3A4'); }
+    ctx.strokeStyle = '#7A4E2D'; ctx.lineWidth = 2.6; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(-10, -30); ctx.lineTo(-25, -38 + sw * 8); ctx.moveTo(-21, -36 + sw * 6); ctx.lineTo(-25, -32 + sw * 6);
+    ctx.moveTo(10, -30); ctx.lineTo(25, -38 - sw * 8); ctx.moveTo(21, -36 - sw * 6); ctx.lineTo(25, -32 - sw * 6); ctx.stroke();
+    snowball(0, -16, 16);
+    circle(0, -22, 1.8, '#26223A'); circle(0, -13, 1.8, '#26223A');
+    snowball(0, -40, 12);
+    ctx.fillStyle = '#E63B5A'; rrect(-11, -31, 22, 6, 3); ctx.fill();
+    ctx.save(); ctx.translate(-s * 6, -28); ctx.rotate(-s * (0.2 + Math.sin(walk * 0.7) * 0.15)); rrect(-2.5, 0, 5, 13, 2); ctx.fill(); ctx.restore();
+    circle(s * 3 - 3.5, -43, 1.7, '#1B1B2F'); circle(s * 3 + 3.5, -43, 1.7, '#1B1B2F');
+    ctx.fillStyle = '#FF8A1F'; ctx.beginPath(); ctx.moveTo(s * 3, -41); ctx.lineTo(s * 15, -39); ctx.lineTo(s * 3, -37); ctx.closePath(); ctx.fill();
+    for (let i = -2; i <= 2; i++) circle(s * 2 + i * 2.6, -34.5 + Math.abs(i) * -0.6, 0.9, '#1B1B2F');
+    if (o.hat) {
+      ctx.fillStyle = o.hat; ctx.beginPath(); ctx.arc(0, -49, 9, Math.PI, 0); ctx.fill();
+      rrect(-10, -50, 20, 4, 2); ctx.fill(); circle(0, -59, 3, '#FFFFFF');
+    }
+    if (o.helmet) {
+      ctx.fillStyle = 'rgba(170,220,255,.16)'; ctx.strokeStyle = 'rgba(205,240,255,.95)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(0, -41, 18, 0, TAU); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(0, -41, 13, 3.6, 4.4); ctx.stroke();
+      ctx.strokeStyle = '#8E9BBE'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(s * 6, -57); ctx.lineTo(s * 9, -66); ctx.stroke(); circle(s * 9, -67, 2.5, '#FF6B6B');
+    }
+    if (o.hurt > 0) { ctx.globalAlpha = Math.min(0.55, o.hurt * 2); circle(0, -28, 26, '#FF4D4D'); ctx.globalAlpha = 1; }
+    ctx.restore();
+  }
+
+  function drawShip(x, y, a, sc, flame, time) {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(a); ctx.scale(sc, sc);
+    if (flame) {
+      const f = 16 + Math.sin(time * 40) * 5;
+      const g = ctx.createLinearGradient(-36, 0, -40 - f - 10, 0);
+      g.addColorStop(0, '#E6FBFF'); g.addColorStop(0.4, '#8FD3FF'); g.addColorStop(1, 'rgba(90,160,255,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(-34, -7); ctx.lineTo(-40 - f - 10, 0); ctx.lineTo(-34, 7); ctx.closePath(); ctx.fill();
+    }
+    ctx.fillStyle = '#FF8FB8';
+    ctx.beginPath(); ctx.moveTo(-14, -11); ctx.lineTo(-30, -24); ctx.lineTo(-25, -7); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-14, 11); ctx.lineTo(-30, 24); ctx.lineTo(-25, 7); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#E6B26A'; ctx.beginPath(); ctx.moveTo(2, -15); ctx.lineTo(-38, 0); ctx.lineTo(2, 15); ctx.closePath(); ctx.fill();
+    ctx.save(); ctx.clip(); ctx.strokeStyle = '#C48A42'; ctx.lineWidth = 1.5;
+    for (let i = -44; i < 10; i += 7) { ctx.beginPath(); ctx.moveTo(i, -16); ctx.lineTo(i + 16, 16); ctx.moveTo(i, 16); ctx.lineTo(i + 16, -16); ctx.stroke(); }
+    ctx.restore();
+    circle(8, 0, 17, '#FFF4F8'); circle(-1, -13, 6, '#FFF4F8'); circle(-1, 13, 6, '#FFF4F8'); circle(-4, 4, 4, '#FFF4F8');
+    const spr = ['#FF6B6B', '#3A86FF', '#FFB703', '#2A9D8F'];
+    [[2, -9], [16, -11], [0, 8], [18, 10], [-2, -2]].forEach((q, i) => { ctx.fillStyle = spr[i % 4]; ctx.save(); ctx.translate(q[0], q[1]); ctx.rotate(i); ctx.fillRect(-2.5, -1, 5, 2); ctx.restore(); });
+    circle(12, 0, 8, '#2F6FE0'); circle(12, 0, 5, '#FFFFFF'); circle(13.5, -1, 1, '#1B1B2F'); circle(9.5, -3.5, 2, 'rgba(255,255,255,.8)');
+    ctx.restore();
+  }
+  function drawLandedShip(x, y, time) {
+    ctx.save(); ctx.translate(x, y); shadow(46, 12); ctx.restore();
+    ctx.strokeStyle = '#8E9BBE'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x - 14, y - 46); ctx.lineTo(x - 38, y); ctx.moveTo(x + 14, y - 46); ctx.lineTo(x + 38, y); ctx.stroke();
+    ctx.fillStyle = '#56627F'; ctx.fillRect(x - 46, y - 3, 16, 5); ctx.fillRect(x + 30, y - 3, 16, 5);
+    drawShip(x, y - 62, -Math.PI / 2, 1.6, false, time);
+    const g = ctx.createRadialGradient(x, y, 10, x, y, 150);
+    g.addColorStop(0, 'rgba(143,211,255,.0)'); g.addColorStop(0.85, 'rgba(143,211,255,.0)'); g.addColorStop(1, 'rgba(143,211,255,.22)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 150, 0, TAU); ctx.fill();
+  }
+
+  function drawSheep(s, time) {
+    const f = s.f < 0 ? -1 : 1, lw = Math.sin(s.walk) * 3;
+    ctx.save(); ctx.translate(s.x, s.y); shadow(18, 5);
+    ctx.strokeStyle = '#3B2E3E'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath();
+    [-10, -4, 4, 10].forEach((lx, i) => { ctx.moveTo(lx, -8); ctx.lineTo(lx + (i % 2 ? lw : -lw), 0); }); ctx.stroke();
+    const scoops = [[-10, -16], [0, -21], [10, -16], [-5, -11], [6, -11], [0, -15]], r = s.ready ? 9 : 6.5;
+    scoops.forEach((q) => circle(q[0], q[1], r, s.ready ? s.col : '#F3E9DC'));
+    if (s.ready) {
+      s.sp.forEach((q, i) => { ctx.fillStyle = q.c; ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(i); ctx.fillRect(-2, -0.8, 4, 1.6); ctx.restore(); });
+      ctx.strokeStyle = '#2A6B3A'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(2, -32); ctx.quadraticCurveTo(4, -38, 8, -39); ctx.stroke();
+      circle(2, -31, 4, '#E8253F'); circle(1, -32.5, 1.2, 'rgba(255,255,255,.8)');
+    }
+    ctx.fillStyle = '#3B2E3E'; ctx.beginPath(); ctx.ellipse(f * 17, -17, 7.5, 6.5, 0, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(f * 13, -22, 4, 2, f * 0.6, 0, TAU); ctx.fill();
+    circle(f * 19.5, -18.5, 1.8, '#FFFFFF');
+    ctx.restore();
+  }
+
+  function drawEnemy(e, time) {
+    const D = EN[e.k], r = D.r, face = SF.pl.x < e.x ? -1 : 1;
+    ctx.save(); ctx.translate(e.x, e.y);
+    shadow(r, r * 0.32);
+    const wob = Math.sin(e.t * 10);
+    if (e.k === 'yeti') {
+      for (let i = 0; i < 10; i++) { const a = (i / 10) * TAU; circle(Math.cos(a) * r * 0.9, -r + Math.sin(a) * r * 0.95, 6, '#EAF4FF'); }
+      circle(0, -r, r, '#F7FBFF');
+      ctx.fillStyle = '#9DB5D3'; ctx.beginPath(); ctx.ellipse(face * 5, -r - 3, 9, 7, 0, 0, TAU); ctx.fill();
+      circle(face * 2, -r - 5, 1.8, e.angry ? '#E8253F' : '#1B1B2F'); circle(face * 8, -r - 5, 1.8, e.angry ? '#E8253F' : '#1B1B2F');
+    } else if (e.k === 'beetle') {
+      ctx.strokeStyle = '#1F3A26'; ctx.lineWidth = 2.2; ctx.beginPath();
+      for (let i = -1; i <= 1; i++) { const l = wob * 3 * (i === 0 ? -1 : 1); ctx.moveTo(-8, -r + i * 6); ctx.lineTo(-20, -r + i * 9 + l); ctx.moveTo(8, -r + i * 6); ctx.lineTo(20, -r + i * 9 - l); }
+      ctx.stroke();
+      ctx.fillStyle = '#2E7D4F'; ctx.beginPath(); ctx.ellipse(0, -r, 13, r, 0, 0, TAU); ctx.fill();
+      ctx.strokeStyle = '#1F5A36'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(0, -r * 2 + 2); ctx.lineTo(0, -2); ctx.stroke();
+      circle(-4, -r - 5, 3, 'rgba(255,255,255,.35)');
+      circle(0, -r * 2 + 1, 6, '#14261A'); circle(-2.5, -r * 2, 1.4, '#FF4D4D'); circle(2.5, -r * 2, 1.4, '#FF4D4D');
+    } else if (e.k === 'salamander') {
+      ctx.strokeStyle = '#E8642A'; ctx.lineWidth = 7; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-face * 8, -10); ctx.quadraticCurveTo(-face * 24, -6 + wob * 6, -face * 30, -16); ctx.stroke();
+      ctx.fillStyle = '#FF7A2F'; ctx.beginPath(); ctx.ellipse(0, -12, 15, 10, 0, 0, TAU); ctx.fill();
+      circle(face * 15, -16, 8, '#FF7A2F');
+      circle(-4, -14, 2.4, '#FFE066'); circle(4, -10, 2, '#FFE066'); circle(-8, -9, 1.6, '#FFE066');
+      circle(face * 18, -19, 2.2, '#1B1B2F');
+      ctx.globalAlpha = 0.25 + 0.15 * Math.sin(time * 6); circle(0, -12, 24, '#FFB067'); ctx.globalAlpha = 1;
+    } else if (e.k === 'scorpion') {
+      ctx.strokeStyle = '#6E4A22'; ctx.lineWidth = 2.2; ctx.beginPath();
+      for (let i = -1; i <= 1; i++) { ctx.moveTo(-6, -8 + i * 4); ctx.lineTo(-18, -4 + i * 6 + wob * 2); ctx.moveTo(6, -8 + i * 4); ctx.lineTo(18, -4 + i * 6 - wob * 2); }
+      ctx.stroke();
+      ctx.fillStyle = '#9C6B30'; ctx.beginPath(); ctx.ellipse(0, -9, 10, 8, 0, 0, TAU); ctx.fill();
+      [[-14, -18], [14, -18]].forEach((q) => { circle(q[0], q[1], 5, '#8A5D28'); });
+      // cauda curvada sobre as costas, terminando no ferrão
+      const sway = Math.sin(time * 3) * 1.5;
+      [[-8, -13], [-12, -21], [-11, -29], [-6, -35], [0, -37]].forEach((q, i) => circle(-face * q[0] + sway, q[1], 4.6 - i * 0.4, '#9C6B30'));
+      ctx.fillStyle = '#3B2414'; ctx.beginPath(); ctx.moveTo(face * 1 + sway, -40); ctx.lineTo(face * 8 + sway, -36); ctx.lineTo(face * 1 + sway, -33); ctx.closePath(); ctx.fill();
+      circle(-3, -12, 1.5, '#1B1B2F'); circle(3, -12, 1.5, '#1B1B2F');
+    } else if (e.k === 'jelly') {
+      const fl = Math.sin(e.t * 2.5) * 5;
+      ctx.translate(0, -12 + fl);
+      ctx.strokeStyle = 'rgba(199,125,255,.8)'; ctx.lineWidth = 2;
+      for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.moveTo(i * 5, -10); ctx.quadraticCurveTo(i * 5 + Math.sin(time * 4 + i) * 6, 2, i * 5, 12); ctx.stroke(); }
+      ctx.fillStyle = 'rgba(199,125,255,.75)'; ctx.beginPath(); ctx.arc(0, -10, r, Math.PI, 0); ctx.closePath(); ctx.fill();
+      circle(-6, -18, 3, 'rgba(255,255,255,.5)');
+      circle(face * 3 - 4, -12, 1.8, '#2B1B3D'); circle(face * 3 + 4, -12, 1.8, '#2B1B3D');
+    } else if (e.k === 'eel') {
+      for (let i = 5; i >= 0; i--) {
+        const x = -face * i * 7, y = -8 + Math.sin(e.t * 8 - i * 0.9) * 4;
+        circle(x, y, 7 - i * 0.6, i ? '#1D3D8F' : '#2B57C2');
+      }
+      circle(face * 3, -10, 1.8, '#FFE066');
+    }
+    if (e.flash > 0) { ctx.globalAlpha = 0.6; circle(0, -r, r + 4, '#FFFFFF'); ctx.globalAlpha = 1; }
+    ctx.restore();
+  }
+
+  function drawBuild(b, time) {
+    ctx.save(); ctx.translate(b.x, b.y); shadow(50, 13);
+    if (b.k === 'hab') {
+      const igloo = (x, r) => {
+        ctx.fillStyle = '#F7FBFF'; ctx.strokeStyle = '#A9C9E6'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(x, 0, r, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(x, 0, r * 0.66, Math.PI, 0); ctx.stroke(); ctx.beginPath(); ctx.arc(x, 0, r * 0.33, Math.PI, 0); ctx.stroke();
+        for (let i = 1; i < 5; i++) { const a = Math.PI + (i / 5) * Math.PI; ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * r * 0.66, Math.sin(a) * r * 0.66); ctx.lineTo(x + Math.cos(a) * r, Math.sin(a) * r); ctx.stroke(); }
+      };
+      igloo(28, 22); igloo(-6, 38);
+      ctx.fillStyle = '#E3EFFA'; rrect(-22, -18, 32, 18, 6); ctx.fill();
+      ctx.fillStyle = '#4C6E96'; ctx.beginPath(); ctx.arc(-6, 0, 10, Math.PI, 0); ctx.fill();
+      ctx.fillStyle = 'rgba(255,214,102,.8)'; ctx.beginPath(); ctx.arc(-6, 0, 6, Math.PI, 0); ctx.fill();
+    } else if (b.k === 'extractor') {
+      ctx.fillStyle = '#6E7C9C'; rrect(-30, -14, 60, 14, 4); ctx.fill();
+      ctx.fillStyle = '#A9B6CF'; ctx.beginPath(); ctx.moveTo(-16, -14); ctx.lineTo(-8, -70); ctx.lineTo(8, -70); ctx.lineTo(16, -14); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#7C8AA8'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-13, -28); ctx.lineTo(13, -28); ctx.moveTo(-11, -44); ctx.lineTo(11, -44); ctx.moveTo(-9, -58); ctx.lineTo(9, -58); ctx.stroke();
+      ctx.save(); ctx.translate(0, -76); ctx.rotate(time * 4); ctx.fillStyle = '#FFC94D';
+      for (let i = 0; i < 4; i++) { ctx.rotate(TAU / 4); ctx.fillRect(-2.5, -12, 5, 12); }
+      ctx.restore(); circle(0, -76, 4, '#56627F');
+      ctx.fillStyle = '#2F6FE0'; rrect(18, -40, 20, 30, 6); ctx.fill();
+      const lv = 0.4 + 0.3 * Math.sin(time * 1.5);
+      ctx.fillStyle = '#8FE3FF'; rrect(21, -13 - 24 * lv, 14, 24 * lv, 4); ctx.fill();
+    } else if (b.k === 'barn') {
+      ctx.fillStyle = '#FF8FB8'; ctx.fillRect(-34, -48, 68, 48);
+      ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.moveTo(-42, -44); ctx.lineTo(0, -80); ctx.lineTo(42, -44); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#E3EFFA'; ctx.fillRect(-42, -47, 84, 5);
+      ctx.fillStyle = '#C2185B'; ctx.fillRect(-13, -32, 26, 32);
+      ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 2; ctx.strokeRect(-13, -32, 26, 32);
+      ctx.beginPath(); ctx.moveTo(-13, -32); ctx.lineTo(13, 0); ctx.moveTo(13, -32); ctx.lineTo(-13, 0); ctx.stroke();
+      circle(0, -60, 6, '#FFF1CC'); ctx.strokeStyle = '#C2185B'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(0, -60, 6, 0, TAU); ctx.stroke();
+    } else if (b.k === 'defense') {
+      ctx.fillStyle = '#56627F'; ctx.beginPath(); ctx.ellipse(0, -6, 30, 12, 0, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#3C4664'; ctx.fillRect(-14, -26, 28, 20);
+      const a = b.aim == null ? -Math.PI / 2 : b.aim;
+      ctx.save(); ctx.translate(0, -26); ctx.rotate(a); ctx.fillStyle = '#2B3A5C'; rrect(0, -4.5, 32, 9, 3); ctx.fill(); ctx.fillStyle = '#8FD3FF'; ctx.fillRect(28, -3, 5, 6); ctx.restore();
+      ctx.fillStyle = '#8FD3FF'; ctx.beginPath(); ctx.arc(0, -26, 16, Math.PI, 0); ctx.fill();
+      circle(-5, -33, 3, 'rgba(255,255,255,.7)');
+      circle(0, -44, 2.5, Math.sin(time * 6) > 0 ? '#5FD3A4' : '#2A6B55');
+    } else if (b.k === 'comm') {
+      ctx.strokeStyle = '#8E9BBE'; ctx.lineWidth = 3; ctx.beginPath();
+      ctx.moveTo(-20, 0); ctx.lineTo(0, -40); ctx.lineTo(20, 0); ctx.moveTo(0, -40); ctx.lineTo(0, -78); ctx.moveTo(-10, -20); ctx.lineTo(10, -20); ctx.stroke();
+      ctx.save(); ctx.translate(0, -78); ctx.rotate(-0.5 + Math.sin(time * 0.6) * 0.25);
+      ctx.fillStyle = '#E6EEF8'; ctx.beginPath(); ctx.ellipse(0, 0, 26, 10, 0, 0, Math.PI); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#A9B6CF'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, 2); ctx.lineTo(0, -16); ctx.stroke(); circle(0, -17, 3, '#FF6B6B');
+      ctx.restore();
+      if (SF.p.colony || SF.call) {
+        ctx.strokeStyle = '#8FD3FF'; ctx.lineWidth = 2;
+        for (let i = 0; i < 3; i++) { const ph = (time * 0.8 + i / 3) % 1; ctx.globalAlpha = 1 - ph; ctx.beginPath(); ctx.arc(0, -96, 10 + ph * 60, -2.4, -0.7); ctx.stroke(); }
+        ctx.globalAlpha = 1;
+      }
+    }
+    ctx.restore();
+  }
+
+  function blobPath(h, k) {
+    ctx.beginPath();
+    for (let i = 0; i <= 28; i++) {
+      const a = (i / 28) * TAU, rr = h.r * k * (1 + 0.07 * Math.sin(a * 3 + h.ph) + 0.05 * Math.sin(a * 5 + h.ph * 2));
+      const x = h.x + Math.cos(a) * rr, y = h.y + Math.sin(a) * rr * 0.85;
+      if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+    }
+    ctx.closePath();
+  }
+  function drawHazard(h, terra, time) {
+    if (h.k === 'lava') {
+      if (terra) { ctx.fillStyle = '#A9D0EF'; blobPath(h, 1); ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(h.x - h.r * 0.4, h.y - h.r * 0.2); ctx.lineTo(h.x, h.y); ctx.lineTo(h.x + h.r * 0.3, h.y - h.r * 0.3); ctx.stroke(); return; }
+      ctx.fillStyle = '#5E2418'; blobPath(h, 1.08); ctx.fill();
+      const g = ctx.createRadialGradient(h.x, h.y, 5, h.x, h.y, h.r);
+      g.addColorStop(0, '#FFE066'); g.addColorStop(0.55, '#FF7A2F'); g.addColorStop(1, '#C2412A');
+      ctx.fillStyle = g; blobPath(h, 1); ctx.fill();
+      for (let i = 0; i < 4; i++) { const ph = (time * 0.6 + i * 0.27 + h.ph) % 1; circle(h.x + Math.cos(h.ph + i * 1.7) * h.r * 0.5, h.y + Math.sin(h.ph + i * 2.3) * h.r * 0.4, 3 + ph * 6, `rgba(255,235,140,${0.8 - ph * 0.8})`); }
+    } else if (h.k === 'water') {
+      if (terra) { ctx.fillStyle = '#D3EBFC'; blobPath(h, 1); ctx.fill(); ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(h.x - h.r * 0.5, h.y - h.r * 0.1); ctx.lineTo(h.x - h.r * 0.2, h.y - h.r * 0.35); ctx.moveTo(h.x + h.r * 0.1, h.y + h.r * 0.2); ctx.lineTo(h.x + h.r * 0.4, h.y - h.r * 0.05); ctx.stroke(); return; }
+      ctx.fillStyle = '#6BB6F5'; blobPath(h, 1.06); ctx.fill();
+      ctx.fillStyle = '#2E7BD8'; blobPath(h, 1); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 2;
+      for (let i = 0; i < 3; i++) { const y = h.y - h.r * 0.3 + i * h.r * 0.3, x = h.x - h.r * 0.3 + Math.sin(time + i + h.ph) * 12; ctx.beginPath(); ctx.moveTo(x - 14, y); ctx.quadraticCurveTo(x - 7, y - 5, x, y); ctx.quadraticCurveTo(x + 7, y + 5, x + 14, y); ctx.stroke(); }
+    } else if (h.k === 'toxic') {
+      if (terra) return;
+      for (let i = 0; i < 5; i++) { const a = h.ph + i * 1.3 + time * 0.3; circle(h.x + Math.cos(a) * h.r * 0.4, h.y + Math.sin(a) * h.r * 0.3, h.r * 0.55, 'rgba(170,225,80,.2)'); }
+      circle(h.x, h.y, h.r * 0.5, 'rgba(200,240,100,.18)');
+    } else if (h.k === 'sand') {
+      ctx.fillStyle = terra ? '#F6FBFF' : 'rgba(176,122,58,.55)'; blobPath(h, 1); ctx.fill();
+      if (!terra) { ctx.strokeStyle = 'rgba(120,80,30,.45)'; ctx.lineWidth = 2; for (let i = 1; i <= 3; i++) { ctx.beginPath(); ctx.arc(h.x, h.y, h.r * 0.25 * i, time * 0.8 * i, time * 0.8 * i + 4); ctx.stroke(); } }
+    } else if (h.k === 'plant') {
+      ctx.save(); ctx.translate(h.x, h.y); shadow(16, 5);
+      const stem = terra ? '#A9C9E6' : '#2F7A3A', head = terra ? '#D3EBFC' : '#D63384';
+      ctx.strokeStyle = stem; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(6, -16, 0, -26); ctx.stroke();
+      ctx.fillStyle = stem; ctx.beginPath(); ctx.ellipse(-9, -8, 9, 4, -0.5, 0, TAU); ctx.fill(); ctx.beginPath(); ctx.ellipse(9, -12, 9, 4, 0.5, 0, TAU); ctx.fill();
+      const open = terra ? 0.1 : 0.25 + 0.25 * Math.max(0, Math.sin(time * 3 + h.ph));
+      ctx.fillStyle = head; ctx.beginPath(); ctx.arc(0, -32, 13, open, TAU - open); ctx.lineTo(0, -32); ctx.closePath(); ctx.fill();
+      if (!terra) { circle(-3, -37, 2, '#FFFFFF'); ctx.fillStyle = '#FFFFFF'; for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.moveTo(6 + i * 2, -32 - (i + 1) * 2); ctx.lineTo(9 + i * 2, -32 - (i + 1) * 2 + 3); ctx.lineTo(4 + i * 2, -32 - (i + 1) * 2 + 2); ctx.fill(); } }
+      ctx.restore();
+    }
+  }
+  function drawDecor(d, type, terra) {
+    const x = d.x, y = d.y, s = d.s;
+    if (terra || type === 'ice') {
+      if (d.k < 0.55) { ctx.fillStyle = terra ? '#F7FBFF' : '#FFFFFF'; ctx.beginPath(); ctx.ellipse(x, y, s * 1.4, s * 0.7, 0, Math.PI, 0); ctx.fill(); ctx.fillStyle = 'rgba(150,190,230,.35)'; ctx.beginPath(); ctx.ellipse(x + s * 0.3, y, s * 1.1, s * 0.25, 0, 0, Math.PI); ctx.fill(); }
+      else { ctx.fillStyle = '#A9D3F5'; ctx.beginPath(); ctx.moveTo(x, y - s * 1.6); ctx.lineTo(x + s * 0.45, y); ctx.lineTo(x - s * 0.45, y); ctx.closePath(); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fillRect(x - 1, y - s * 1.2, 2, s); }
+      return;
+    }
+    const T = TYPES[type];
+    switch (type) {
+      case 'life':
+        if (d.k < 0.5) { circle(x - s * 0.6, y - s * 0.4, s * 0.7, '#3E8F45'); circle(x + s * 0.6, y - s * 0.4, s * 0.7, '#3E8F45'); circle(x, y - s * 0.8, s * 0.85, '#58B05C'); }
+        else { ctx.strokeStyle = '#3E8F45'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - s); ctx.stroke(); const c = d.k < 0.75 ? '#FF8FB8' : '#FFD166'; for (let i = 0; i < 5; i++) { const a = (i / 5) * TAU; circle(x + Math.cos(a) * 4, y - s + Math.sin(a) * 4, 3.2, c); } circle(x, y - s, 2.5, '#FFF4D6'); }
+        break;
+      case 'hot':
+        if (d.k < 0.6) { ctx.fillStyle = T.dec; ctx.beginPath(); ctx.moveTo(x - s, y); ctx.lineTo(x - s * 0.6, y - s * 0.9); ctx.lineTo(x + s * 0.3, y - s); ctx.lineTo(x + s, y); ctx.closePath(); ctx.fill(); ctx.strokeStyle = '#FF7A2F'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x - s * 0.4, y - s * 0.6); ctx.lineTo(x, y - s * 0.3); ctx.lineTo(x + s * 0.2, y - s * 0.7); ctx.stroke(); }
+        else { circle(x, y, s * 0.7, '#3A150E'); circle(x, y, s * 0.35, 'rgba(255,122,47,.8)'); }
+        break;
+      case 'desert':
+        if (d.k < 0.6) { ctx.strokeStyle = T.dec; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(x, y + s, s * 1.6, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke(); }
+        else { ctx.fillStyle = '#4E9A57'; rrect(x - 4, y - s * 1.6, 8, s * 1.6, 4); ctx.fill(); rrect(x - 12, y - s * 1.1, 6, s * 0.6, 3); ctx.fill(); rrect(x + 6, y - s * 1.3, 6, s * 0.5, 3); ctx.fill(); }
+        break;
+      case 'gas':
+        if (d.k < 0.6) { circle(x, y, s, 'rgba(255,255,255,.28)'); circle(x + s * 0.8, y + 2, s * 0.7, 'rgba(255,255,255,.22)'); }
+        else { ctx.fillStyle = '#E0C8FF'; ctx.beginPath(); ctx.moveTo(x, y - s); ctx.lineTo(x + s * 0.5, y - s * 0.3); ctx.lineTo(x, y + s * 0.2); ctx.lineTo(x - s * 0.5, y - s * 0.3); ctx.closePath(); ctx.fill(); }
+        break;
+      case 'ocean':
+        if (d.k < 0.6) { circle(x, y, s * 0.4, '#6E9E92'); circle(x + s * 0.5, y + 2, s * 0.3, '#7FB0A3'); }
+        else { ctx.strokeStyle = '#FF8FB8'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - s); ctx.moveTo(x, y - s * 0.5); ctx.lineTo(x - s * 0.5, y - s * 0.9); ctx.moveTo(x, y - s * 0.6); ctx.lineTo(x + s * 0.5, y - s * 1.1); ctx.stroke(); }
+        break;
+    }
+  }
+
+  // ---------------------------------------------------------------- desenho: cenas
+  const STARS = [];
+  (function () { const r = mulberry(7); for (let l = 0; l < 3; l++) for (let i = 0; i < 110; i++) STARS.push({ x: r() * 1400, y: r() * 1400, r: 0.5 + r() * (l + 1) * 0.6, a: 0.3 + r() * 0.6, l }); })();
+  function drawStars(cx, cy, time) {
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.fillStyle = '#050817'; ctx.fillRect(0, 0, W, H);
+    for (const s of STARS) {
+      const k = [0.05, 0.12, 0.25][s.l];
+      const bx = (((s.x - cx * k) % 1400) + 1400) % 1400, by = (((s.y - cy * k) % 1400) + 1400) % 1400;
+      ctx.globalAlpha = s.a * (0.75 + 0.25 * Math.sin(time * 2 + s.x));
+      for (let ox = bx; ox < W; ox += 1400) for (let oy = by; oy < H; oy += 1400) circle(ox, oy, s.r, '#FFFFFF');
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawPlanet(p, q, near, time, Z) {
+    const T = TYPES[p.type], r = p.rad;
+    ctx.save(); ctx.translate(q.x, q.y);
+    const ringBack = p.type === 'gas';
+    if (ringBack) { ctx.strokeStyle = p.terra ? 'rgba(220,240,255,.6)' : 'rgba(230,210,255,.55)'; ctx.lineWidth = 6; ctx.beginPath(); ctx.ellipse(0, 0, r * 1.75, r * 0.45, -0.35, Math.PI, TAU); ctx.stroke(); }
+    const cols = p.terra ? ['#F7FCFF', '#8FBFE6'] : T.g;
+    const g = ctx.createRadialGradient(-r * 0.4, -r * 0.4, r * 0.1, 0, 0, r);
+    g.addColorStop(0, cols[0]); g.addColorStop(1, cols[1]);
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill();
+    ctx.save(); ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.clip();
+    const rr = mulberry(p.seed);
+    if (p.type === 'gas' && !p.terra) { for (let i = -3; i <= 3; i++) { ctx.fillStyle = i % 2 ? 'rgba(255,255,255,.18)' : 'rgba(90,60,170,.18)'; ctx.fillRect(-r, i * r * 0.28 - r * 0.07, r * 2, r * 0.16); } }
+    else for (let i = 0; i < 6; i++) { const a = rr() * TAU, d = rr() * r * 0.75, s = r * (0.14 + rr() * 0.22); ctx.globalAlpha = p.terra ? 0.5 : 0.45; ctx.fillStyle = p.terra ? '#FFFFFF' : T.spot; ctx.beginPath(); ctx.ellipse(Math.cos(a) * d, Math.sin(a) * d, s * 1.5, s * 0.8, rr() * 3, 0, TAU); ctx.fill(); }
+    ctx.globalAlpha = 1;
+    // lado noturno, oposto à estrela
+    const dl = hyp(q.x, q.y) || 1, nx = q.x / dl, ny = q.y / dl;
+    const sh = ctx.createLinearGradient(-nx * r, -ny * r, nx * r, ny * r);
+    sh.addColorStop(0, 'rgba(0,0,0,0)'); sh.addColorStop(0.55, 'rgba(0,0,0,.05)'); sh.addColorStop(1, 'rgba(5,8,23,.6)');
+    ctx.fillStyle = sh; ctx.fillRect(-r, -r, r * 2, r * 2);
+    if (p.colony) { for (let i = 0; i < 7; i++) { const a = rr() * TAU, d = rr() * r * 0.7; circle(Math.cos(a) * d, Math.sin(a) * d, 1.6, `rgba(255,214,102,${0.6 + 0.4 * Math.sin(time * 3 + i)})`); } }
+    ctx.restore();
+    if (ringBack) { ctx.strokeStyle = p.terra ? 'rgba(220,240,255,.75)' : 'rgba(230,210,255,.7)'; ctx.lineWidth = 6; ctx.beginPath(); ctx.ellipse(0, 0, r * 1.75, r * 0.45, -0.35, 0, Math.PI); ctx.stroke(); }
+    if (near) { ctx.strokeStyle = 'rgba(255,201,77,.9)'; ctx.lineWidth = 2.5 / Z; ctx.setLineDash([8 / Z, 6 / Z]); ctx.lineDashOffset = -time * 20; ctx.beginPath(); ctx.arc(0, 0, r + 22, 0, TAU); ctx.stroke(); ctx.setLineDash([]); }
+    ctx.textAlign = 'center';
+    ctx.shadowColor = 'rgba(0,0,0,.8)'; ctx.shadowBlur = 4;
+    if (p.scanned) {
+      ctx.fillStyle = '#FFFFFF'; ctx.font = `700 ${15 / Z}px "Hanken Grotesk", sans-serif`; ctx.fillText(p.name, 0, r + 30 / Z + 6);
+      ctx.fillStyle = p.colony ? '#5FD3A4' : p.terra ? '#8FD3FF' : '#A9B8DA'; ctx.font = `600 ${12 / Z}px "Hanken Grotesk", sans-serif`;
+      ctx.fillText(p.colony ? '✓ ' + t('st_colony') : p.terra ? t('st_terra') : t('ty_' + p.type), 0, r + 48 / Z + 6);
+    } else { ctx.fillStyle = '#FFC94D'; ctx.font = `700 ${20 / Z}px "Hanken Grotesk", sans-serif`; ctx.fillText('?', 0, r + 32 / Z + 6); }
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  }
+
+  function drawSpace(time) {
+    const s = G.ship, Z = spaceZoom(), sys = G.systems[G.sys], st = SYS[G.sys];
+    drawStars(s.x, s.y, time);
+    const sh = SP.shake > 0 ? 10 * SP.shake : 0, sx = (Math.random() - 0.5) * sh, sy = (Math.random() - 0.5) * sh;
+    ctx.setTransform(DPR * Z, 0, 0, DPR * Z, DPR * (W / 2 - s.x * Z + sx), DPR * (H / 2 - s.y * Z + sy));
+    let g = ctx.createRadialGradient(0, 0, 60, 0, 0, 480);
+    g.addColorStop(0, `rgba(${st.glow},.5)`); g.addColorStop(1, `rgba(${st.glow},0)`);
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 480, 0, TAU); ctx.fill();
+    g = ctx.createRadialGradient(-25, -25, 10, 0, 0, 105);
+    g.addColorStop(0, '#FFFFFF'); g.addColorStop(0.5, st.core); g.addColorStop(1, `rgb(${st.glow})`);
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 105 + Math.sin(time * 2) * 2, 0, TAU); ctx.fill();
+    ctx.lineWidth = 1.5 / Z; ctx.strokeStyle = 'rgba(180,210,255,.13)';
+    sys.planets.forEach((p) => { ctx.beginPath(); ctx.arc(0, 0, p.orbit, 0, TAU); ctx.stroke(); });
+    SP.ast.forEach((a) => {
+      const x = Math.cos(a.a) * a.d, y = Math.sin(a.a) * a.d;
+      ctx.fillStyle = '#6B6F86'; ctx.beginPath();
+      a.sh.forEach((k, i) => { const an = (i / a.sh.length) * TAU + a.a * 4; const px = x + Math.cos(an) * a.r * k, py = y + Math.sin(an) * a.r * k; if (i) ctx.lineTo(px, py); else ctx.moveTo(px, py); });
+      ctx.closePath(); ctx.fill();
+      circle(x - a.r * 0.25, y - a.r * 0.25, a.r * 0.25, '#53566C');
+    });
+    sys.planets.forEach((p, i) => drawPlanet(p, planetPos(p), i === SP.near, time, Z));
+    if (SP.pulse) { ctx.strokeStyle = `rgba(143,211,255,${1 - SP.pulse.r / SCAN_R})`; ctx.lineWidth = 4 / Z; ctx.beginPath(); ctx.arc(s.x, s.y, SP.pulse.r, 0, TAU); ctx.stroke(); }
+    drawShip(s.x, s.y, s.a, 1.1, SP.thrust, time);
+    drawMinimap(time);
+  }
+  function drawMinimap(time) {
+    const sys = G.systems[G.sys], R = 56, outer = sysOuter(sys) + 260, k = R / outer;
+    const top = $('hudRight').getBoundingClientRect().bottom + 12;
+    const cx = W - R - 16, cy = top + R;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    circle(cx, cy, R + 6, 'rgba(14,20,48,.8)');
+    ctx.strokeStyle = 'rgba(160,200,255,.25)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(cx, cy, R + 6, 0, TAU); ctx.stroke();
+    circle(cx, cy, 4, SYS[G.sys].core);
+    sys.planets.forEach((p) => {
+      ctx.strokeStyle = 'rgba(160,200,255,.12)'; ctx.beginPath(); ctx.arc(cx, cy, p.orbit * k, 0, TAU); ctx.stroke();
+      const q = planetPos(p);
+      circle(cx + q.x * k, cy + q.y * k, 3.2, p.colony ? '#5FD3A4' : p.scanned ? TYPES[p.type].g[1] : '#59617F');
+    });
+    const s = G.ship, x = clamp(s.x * k, -R, R), y = clamp(s.y * k, -R, R);
+    ctx.save(); ctx.translate(cx + x, cy + y); ctx.rotate(s.a); ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.moveTo(5, 0); ctx.lineTo(-4, -3.5); ctx.lineTo(-4, 3.5); ctx.closePath(); ctx.fill(); ctx.restore();
+  }
+
+  function drawWarp(time) {
+    const p = Math.min(1, SP.warp.t / 1.6);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.fillStyle = '#030512'; ctx.fillRect(0, 0, W, H);
+    const cx = W / 2, cy = H / 2, r = mulberry(3);
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 220; i++) {
+      const a = r() * TAU, d0 = r() * Math.max(W, H) * 0.7, sp = 0.4 + r();
+      const d1 = d0 + p * sp * 600, d2 = d1 + 30 + p * 260 * sp;
+      ctx.strokeStyle = `rgba(${r() < 0.5 ? '190,230,255' : '255,255,255'},${0.3 + 0.6 * p})`; ctx.lineWidth = 1 + r() * 1.5;
+      ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * d1, cy + Math.sin(a) * d1); ctx.lineTo(cx + Math.cos(a) * d2, cy + Math.sin(a) * d2); ctx.stroke();
+    }
+    drawShip(cx, cy, -Math.PI / 2, 1.4, true, time);
+    ctx.textAlign = 'center'; ctx.fillStyle = '#FFFFFF'; ctx.font = '700 28px Fredoka, sans-serif';
+    ctx.fillText(t('sysName', { name: SYS[SP.warp.to].name }), cx, cy + 110);
+  }
+
+  function drawSurface(time) {
+    const S = SF, P = S.p ? S.pl : null, Z = surfZoom(), vw = W / Z, vh = H / Z;
+    S.camX = clamp(P.x - vw / 2, Math.min(0, (S.W - vw) / 2), Math.max((S.W - vw) / 2, S.W - vw));
+    S.camY = clamp(P.y - 30 - vh / 2, Math.min(0, (S.H - vh) / 2), Math.max((S.H - vh) / 2, S.H - vh));
+    const sh = S.shake > 0 ? 14 * S.shake : 0, sx = (Math.random() - 0.5) * sh, sy = (Math.random() - 0.5) * sh;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.fillStyle = '#0B1026'; ctx.fillRect(0, 0, W, H);
+    ctx.setTransform(DPR * Z, 0, 0, DPR * Z, DPR * (-S.camX * Z + sx), DPR * (-S.camY * Z + sy));
+    const view = { x0: S.camX - 80, y0: S.camY - 80, x1: S.camX + vw + 80, y1: S.camY + vh + 120 };
+    const layer = (terra) => {
+      ctx.fillStyle = terra ? '#E4F2FD' : S.T.ground; ctx.fillRect(0, 0, S.W, S.H);
+      for (const d of S.decor) if (d.x > view.x0 && d.x < view.x1 && d.y > view.y0 && d.y < view.y1) drawDecor(d, S.p.type, terra);
+      for (const h of S.hz) if (h.x + h.r > view.x0 && h.x - h.r < view.x1 && h.y + h.r > view.y0 && h.y - h.r < view.y1 && h.k !== 'plant') drawHazard(h, terra, time);
+    };
+    if (S.p.terra && S.terraAnim < 1) {
+      layer(false);
+      const R = S.terraAnim * hyp(S.W, S.H) * 0.6;
+      ctx.save(); ctx.beginPath(); ctx.arc(S.ship.x, S.ship.y, R, 0, TAU); ctx.clip(); layer(true); ctx.restore();
+      ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 8; ctx.beginPath(); ctx.arc(S.ship.x, S.ship.y, R, 0, TAU); ctx.stroke();
+    } else layer(S.p.terra);
+    ctx.strokeStyle = 'rgba(0,0,0,.3)'; ctx.lineWidth = 8; ctx.strokeRect(0, 0, S.W, S.H);
+    const terraNow = S.p.terra && S.terraAnim >= 0.5;
+
+    S.deposits.forEach((d) => {
+      if (d.taken) return;
+      const b = Math.sin(time * 2 + d.ph) * 2;
+      const g = ctx.createRadialGradient(d.x, d.y - 10, 2, d.x, d.y - 10, 34);
+      g.addColorStop(0, 'rgba(143,227,255,.55)'); g.addColorStop(1, 'rgba(143,227,255,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(d.x, d.y - 10, 34, 0, TAU); ctx.fill();
+      [[-9, 0, 20], [4, -2, 30], [13, 3, 17]].forEach((c) => {
+        const x = d.x + c[0], y = d.y + c[1] + b, h = c[2];
+        ctx.fillStyle = '#8FE3FF'; ctx.strokeStyle = '#2F6FE0'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(x, y - h); ctx.lineTo(x + 5, y - h * 0.35); ctx.lineTo(x, y); ctx.lineTo(x - 5, y - h * 0.35); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.beginPath(); ctx.moveTo(x - 1, y - h * 0.8); ctx.lineTo(x - 2.5, y - h * 0.35); ctx.stroke();
+      });
+    });
+    if (terraNow) S.ices.forEach((d) => {
+      if (d.taken) return;
+      ctx.save(); ctx.translate(d.x, d.y); ctx.rotate(d.rot); shadow(16, 5);
+      ctx.fillStyle = '#BFE6FF'; ctx.fillRect(-13, -20, 26, 18); ctx.fillStyle = '#EAF8FF'; ctx.fillRect(-13, -26, 26, 7);
+      ctx.strokeStyle = '#7FB6E0'; ctx.lineWidth = 1.5; ctx.strokeRect(-13, -26, 26, 24);
+      ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.beginPath(); ctx.moveTo(-8, -16); ctx.lineTo(-3, -11); ctx.stroke();
+      ctx.restore();
+    });
+
+    const list = [{ y: S.ship.y, f: () => drawLandedShip(S.ship.x, S.ship.y, time) }];
+    S.hz.forEach((h) => { if (h.k === 'plant') list.push({ y: h.y, f: () => drawHazard(h, terraNow, time) }); });
+    S.p.builds.forEach((b) => list.push({ y: b.y, f: () => drawBuild(b, time) }));
+    S.sheep.forEach((s) => list.push({ y: s.y, f: () => drawSheep(s, time) }));
+    S.colonists.forEach((c) => list.push({ y: c.y, f: () => drawSnowman(c.x, c.y, c.f, c.walk, { scale: 0.72, hat: c.col }) }));
+    S.enemies.forEach((e) => list.push({ y: e.y, f: () => drawEnemy(e, time) }));
+    list.push({ y: P.y, f: () => drawSnowman(P.x, P.y, P.fx, P.walk, { helmet: true, hurt: P.hurt }) });
+    list.sort((a, b) => a.y - b.y).forEach((o) => o.f());
+
+    S.callShips.forEach((c) => drawShip(c.x, c.y - 50, -Math.PI / 2, 1, c.y < c.ty, time));
+    S.balls.forEach((b) => snowball(b.x, b.y, 7));
+    S.shots.forEach((s) => { circle(s.x, s.y, 5, '#8FD3FF'); circle(s.x, s.y, 2.5, '#FFFFFF'); });
+    S.spores.forEach((s) => { circle(s.x, s.y, 7, 'rgba(170,225,80,.5)'); circle(s.x, s.y, 4, '#8BD14A'); });
+    S.parts.forEach((q) => {
+      ctx.globalAlpha = Math.max(0, Math.min(1, q.life / (q.max * 0.6)));
+      if (q.txt) { ctx.fillStyle = q.col; ctx.font = '700 16px "Hanken Grotesk", sans-serif'; ctx.textAlign = 'center'; ctx.shadowColor = 'rgba(0,0,0,.7)'; ctx.shadowBlur = 3; ctx.fillText(q.txt, q.x, q.y); ctx.shadowBlur = 0; }
+      else circle(q.x, q.y, q.r, q.col);
+    });
+    ctx.globalAlpha = 1;
+    if (S.ex) { ctx.strokeStyle = 'rgba(0,0,0,.3)'; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(S.ex.x, S.ex.y - 12, 30, 0, TAU); ctx.stroke(); ctx.strokeStyle = '#FFC94D'; ctx.beginPath(); ctx.arc(S.ex.x, S.ex.y - 12, 30, -Math.PI / 2, -Math.PI / 2 + TAU * S.ex.prog); ctx.stroke(); }
+    else if (S.target && (S.target.kind === 'n2' || S.target.kind === 'ice')) { ctx.strokeStyle = 'rgba(255,201,77,.7)'; ctx.lineWidth = 2; ctx.setLineDash([5, 5]); ctx.beginPath(); ctx.arc(S.target.x, S.target.y - 12, 30, 0, TAU); ctx.stroke(); ctx.setLineDash([]); }
+
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    if (S.storm > 0) {
+      ctx.fillStyle = `rgba(214,170,100,${Math.min(0.5, S.storm * 0.15)})`; ctx.fillRect(0, 0, W, H);
+      ctx.strokeStyle = 'rgba(255,230,180,.35)'; ctx.lineWidth = 1.5; const r = mulberry(11), dx = S.wind.x / 90, dy = S.wind.y / 90;
+      for (let i = 0; i < 70; i++) { const x = (r() * W + time * 600 * dx) % W, y = (r() * H + time * 600 * dy) % H, X = x < 0 ? x + W : x, Y = y < 0 ? y + H : y; ctx.beginPath(); ctx.moveTo(X, Y); ctx.lineTo(X + dx * 30, Y + dy * 30); ctx.stroke(); }
+    }
+    const low = 1 - S.pl.cold / 35;
+    if (low > 0) { const g = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.3, W / 2, H / 2, Math.max(W, H) * 0.7); g.addColorStop(0, 'rgba(255,90,40,0)'); g.addColorStop(1, `rgba(255,90,40,${0.35 * low})`); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); }
+  }
+
+  function drawTitle(time) {
+    drawStars(time * 30, time * 12, time);
+    // logotipo: boneco de neve flutuando ao lado da nave
+    ctx = logoCtx;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.clearRect(0, 0, 240, 170);
+    const fl = Math.sin(time * 1.6) * 6;
+    drawShip(170, 70 - fl * 0.6, -0.5 + Math.sin(time) * 0.05, 1.3, true, time);
+    ctx.save(); ctx.translate(86, 128 + fl); ctx.rotate(Math.sin(time * 0.9) * 0.12); drawSnowman(0, 0, 1, time * 0.5, { helmet: true, scale: 1.45 }); ctx.restore();
+    ctx = mainCtx;
+  }
+
+  function draw(time) {
+    if (scene === 'space' && SP) drawSpace(time);
+    else if (scene === 'surface' && SF) drawSurface(time);
+    else if (scene === 'warp' && SP) drawWarp(time);
+    else drawTitle(time);
+    if (fade.a > 0) { ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.fillStyle = `rgba(3,5,18,${fade.a})`; ctx.fillRect(0, 0, W, H); }
+  }
+
+  // ---------------------------------------------------------------- HUD
+  const hud = $('hud'), promptEl = $('prompt'), objEl = $('objective'), locEl = $('loc');
+  function setText(el, s) { if (el._v !== s) { el._v = s; el.textContent = s; } }
+  function setHTML(el, s) { if (el._v !== s) { el._v = s; el.innerHTML = s; } }
+  function updateHud() {
+    const show = playing();
+    hud.hidden = !show;
+    $('touch').hidden = !(show && isTouch);
+    document.body.dataset.scene = scene;
+    if (!show) { promptEl.hidden = true; return; }
+    setText($('rN2'), String(Math.floor(G.inv.n2)));
+    setText($('rIce'), String(Math.floor(G.inv.ice)));
+    setText($('rHab'), colonized() + '/' + totalPlanets());
+    setText(tThrow, scene === 'space' ? t('sensor') : t('throw'));
+    let prompt = '', obj = '';
+    if (scene === 'space' || scene === 'warp') {
+      setHTML(locEl, '<strong>' + t('sysName', { name: SYS[scene === 'warp' ? SP.warp.to : G.sys].name }) + '</strong>');
+      const sys = G.systems[G.sys];
+      if (scene === 'space' && SP.near != null) {
+        const p = sys.planets[SP.near];
+        if (p.scanned) {
+          const st = p.colony ? t('st_colony') : p.terra ? t('st_terra') : t('st_wild');
+          obj = '<strong>' + p.name + '</strong> · ' + t('ty_' + p.type) + '<br>' + cap(t('i_threat', { l: t('threat' + TYPES[p.type].threat) })) + ' · ' + st + (p.terra ? '' : '<br>' + t('i_need', { n: TYPES[p.type].need }));
+          prompt = t('p_land', { k: keyLabel(), name: p.name });
+        } else { obj = '<strong>?</strong> ' + t('st_unknown'); prompt = t('p_scanFirst', { k: isTouch ? t('sensor') : 'Q' }); }
+      } else if (sys.planets.every((p) => p.colony)) obj = t('o_sys');
+      else obj = sys.planets.some((p) => p.scanned && !p.colony) ? t('o_land') : t('o_scan');
+    } else if (scene === 'surface') {
+      const S = SF, p = S.p, P = S.pl;
+      setHTML(locEl, '<strong>' + p.name + '</strong> <span>· ' + t('ty_' + p.type) + '</span>');
+      const bc = $('barCold'), bh = $('barHp');
+      bc.querySelector('b').style.width = Math.max(0, P.cold) + '%'; bh.querySelector('b').style.width = Math.max(0, P.hp) + '%';
+      bc.classList.toggle('low', P.cold < 25); bh.classList.toggle('low', P.hp < 30);
+      if (S.call && !p.colony) obj = t('o_calling');
+      else if (p.colony) obj = t('o_done');
+      else if (!p.terra) obj = G.inv.n2 >= S.T.need ? t('o_terra') : t('o_collect', { a: Math.floor(G.inv.n2), b: S.T.need });
+      else if (S.terraAnim < 1) obj = t('o_terraAnim');
+      else {
+        const missing = STRUCTS.filter((s) => !hasB(s.k));
+        obj = missing.length === 1 ? t('o_comm') : t('o_build', { k: isTouch ? t('build') : 'B', list: missing.filter((s) => s.k !== 'comm').map((s) => t('s_' + s.k)).join(', ') });
+      }
+      const tg = S.target, k = keyLabel();
+      if (tg) prompt = tg.kind === 'terra' ? t('p_terra', { k, n: S.T.need }) : tg.kind === 'takeoff' ? t('p_takeoff', { k }) : tg.kind === 'sheep' ? t('p_sheep', { k }) : tg.kind === 'n2' ? t('p_n2', { k }) : t('p_ice', { k });
+    }
+    setHTML(objEl, obj);
+    objEl.hidden = !obj;
+    promptEl.hidden = !prompt || anyModal();
+    setText(promptEl, prompt);
+  }
+
+  // ---------------------------------------------------------------- painéis
+  function show(o) { o.hidden = false; const f = o.querySelector('.btn:not([disabled]), select'); if (f) f.focus({ preventScroll: true }); actHeld = false; for (const k in keys) keys[k] = false; }
+  function hide(o) { o.hidden = true; }
+  function togglePause() { if (!playing()) return; if (!OV.pause.hidden) { hide(OV.pause); return; } if (anyModal()) return; show(OV.pause); }
+  function openHelp() { show(OV.help); }
+  function openBuild() { if (scene !== 'surface' || anyModal()) return; renderBuild(); show(OV.build); }
+  function openMap() { if (!(scene === 'space' || scene === 'surface') || anyModal()) return; renderMap(); show(OV.map); }
+
+  function renderBuild() {
+    const S = SF, p = S.p, list = $('buildList');
+    $('buildMsg').textContent = p.terra ? '' : t('b_locked');
+    $('buildMsg').hidden = p.terra;
+    list.innerHTML = '';
+    STRUCTS.forEach((d) => {
+      const li = document.createElement('li'); li.className = 'item';
+      const built = hasB(d.k), needAll = d.needAll && !STRUCTS.every((s) => s.k === d.k || hasB(s.k));
+      const lack = G.inv.ice < d.ice || G.inv.n2 < d.n2;
+      const cost = t('ice') + ' ' + d.ice + (d.n2 ? ' · N₂ ' + d.n2 : '');
+      li.innerHTML = '<div><h4></h4><p></p><span class="cost"></span></div><div class="act"></div>';
+      li.querySelector('h4').textContent = t('s_' + d.k);
+      li.querySelector('p').textContent = t('d_' + d.k);
+      const c = li.querySelector('.cost'); c.textContent = cost; if (lack && !built) c.classList.add('lack');
+      const act = li.querySelector('.act');
+      if (built) { act.innerHTML = '<span class="state"></span>'; act.firstChild.textContent = '✓ ' + t('b_built'); }
+      else if (needAll) { act.innerHTML = '<span class="need"></span>'; act.firstChild.textContent = t('b_needAll'); }
+      else {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = t('b_build');
+        b.disabled = !p.terra || S.terraAnim < 1 || lack;
+        b.addEventListener('click', () => tryBuild(d.k));
+        act.appendChild(b);
+      }
+      list.appendChild(li);
+    });
+  }
+  function renderMap() {
+    const list = $('sysList');
+    $('mapMsg').textContent = scene === 'surface' ? t('t_takeoffFirst') : '';
+    $('mapMsg').hidden = scene !== 'surface';
+    list.innerHTML = '';
+    G.systems.forEach((s, i) => {
+      const li = document.createElement('li'); li.className = 'item sys';
+      const done = s.planets.filter((p) => p.colony).length;
+      li.innerHTML = '<span class="star"></span><div><h4></h4><p></p><div class="dots"></div></div><div class="act"></div>';
+      li.querySelector('.star').style.background = `radial-gradient(circle at 35% 35%, #fff, ${SYS[i].core} 45%, rgb(${SYS[i].glow}))`;
+      li.querySelector('h4').textContent = t('sysName', { name: SYS[i].name });
+      li.querySelector('p').textContent = t('m_hab', { a: done, b: s.planets.length });
+      const dots = li.querySelector('.dots');
+      s.planets.forEach((p) => { const d = document.createElement('i'); d.style.background = p.colony ? '#E4F2FD' : p.scanned ? TYPES[p.type].g[1] : ''; if (p.colony) d.className = 'c'; d.title = p.name; dots.appendChild(d); });
+      const act = li.querySelector('.act');
+      if (i === G.sys) { act.innerHTML = '<span class="here"></span>'; act.firstChild.textContent = t('m_here'); }
+      else {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = t('m_travel');
+        b.disabled = scene !== 'space';
+        b.addEventListener('click', () => startWarp(i));
+        act.appendChild(b);
+      }
+      list.appendChild(li);
+    });
+  }
+
+  function refreshTitle() {
+    const has = !!store.get(SAVE_KEY);
+    $('bCont').hidden = !has;
+    $('owNote').hidden = !has;
+  }
+  function startNew() {
+    store.del(SAVE_KEY);
+    G = newGame($('sizeSel').value, $('resSel').value);
+    hide(OV.title);
+    enterSpace(null);
+    toast(t('t_arrived', { name: SYS[0].name, n: G.systems[0].planets.length }));
+    toast(t('o_scan'));
+    save();
+  }
+  function continueGame() {
+    const g = store.get(SAVE_KEY);
+    if (!g || !g.systems) { refreshTitle(); return; }
+    G = g;
+    hide(OV.title);
+    if (G.onPlanet != null) enterSurface(G.onPlanet); else enterSpace(null, true);
+  }
+  function toMenu() {
+    save();
+    Object.values(OV).forEach(hide);
+    G = null; SP = null; SF = null; scene = 'title';
+    refreshTitle();
+    show(OV.title);
+  }
+
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-act]');
+    if (!b) return;
+    const a = b.dataset.act;
+    if (a === 'new') startNew();
+    else if (a === 'continue') continueGame();
+    else if (a === 'help') openHelp();
+    else if (a === 'closeHelp') hide(OV.help);
+    else if (a === 'resume') hide(OV.pause);
+    else if (a === 'menu') toMenu();
+    else if (a === 'close') { hide(OV.build); hide(OV.map); }
+    else if (a === 'again') { store.del(SAVE_KEY); toMenu(); store.del(SAVE_KEY); refreshTitle(); }
+    else if (a === 'scan') doScan();
+    else if (a === 'map') openMap();
+    else if (a === 'build') openBuild();
+    else if (a === 'pause') togglePause();
+  });
+
+  // ---------------------------------------------------------------- idioma
+  function applyLang() {
+    document.documentElement.lang = { pt: 'pt-BR', en: 'en', it: 'it', es: 'es' }[lang];
+    document.querySelectorAll('[data-t]').forEach((el) => { el.textContent = t(el.dataset.t); });
+    document.querySelectorAll('.langSel').forEach((s) => { s.value = lang; });
+    $('backLink').href = 'projects.html' + (lang === 'pt' ? '' : '#' + lang);
+    objEl._v = null; locEl._v = null; promptEl._v = null;
+    if (!OV.build.hidden) renderBuild();
+    if (!OV.map.hidden) renderMap();
+    saveSettings();
+  }
+  document.querySelectorAll('.langSel').forEach((s) => s.addEventListener('change', () => { lang = s.value; applyLang(); }));
+  $('sizeSel').addEventListener('change', saveSettings);
+  $('resSel').addEventListener('change', saveSettings);
+
+  const settings = store.get(SET_KEY) || {};
+  const hashLang = (location.hash || '').replace('#', '');
+  const navLang = ((navigator.language || 'pt').slice(0, 2)).toLowerCase();
+  lang = I18N[hashLang] ? hashLang : I18N[settings.lang] ? settings.lang : I18N[navLang] ? navLang : 'pt';
+  if (settings.size && COUNTS[settings.size]) $('sizeSel').value = settings.size; else $('sizeSel').value = 'normal';
+  $('resSel').value = settings.res && RES[settings.res] ? settings.res : 'sufficient';
+  applyLang();
+  refreshTitle();
+
+  // ---------------------------------------------------------------- laço principal
+  let last = performance.now(), autosave = 0;
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    if (G && !anyModal()) {
+      if (scene === 'space') updateSpace(dt);
+      else if (scene === 'surface') updateSurface(dt);
+      else if (scene === 'warp') updateWarp(dt);
+      if (playing()) { G.stats.time += dt; autosave += dt; if (autosave > 10) { autosave = 0; save(); } }
+    }
+    updateFade(dt);
+    draw(now / 1000);
+    updateHud();
+    actPressed = false; throwPressed = false;
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
