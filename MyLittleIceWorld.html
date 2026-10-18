@@ -38,6 +38,20 @@
   .res { display: flex; flex-wrap: wrap; gap: .25rem .8rem; }
   .res b { color: var(--ice); font-variant-numeric: tabular-nums; }
   .res .hab b { color: var(--gold); }
+  .res .lives b { color: var(--pink); letter-spacing: 1px; }
+  .res .lives b.low { animation: blink 1s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: .35; } }
+  @media (prefers-reduced-motion: reduce) { .res .lives b.low { animation: none; } }
+  #hLose, #hLife { color: var(--danger); }
+  #hWin { color: var(--gold); font-size: 2.2rem; margin-bottom: .3rem; }
+  .party { width: min(380px, 100%); aspect-ratio: 380 / 230; height: auto; display: block; margin: 0 auto .4rem; }
+  .win-time { font-family: var(--round); font-size: 1.5rem; color: var(--ice) !important; margin: .3rem 0 !important; }
+  .res .clock { display: inline-flex; align-items: center; gap: .25rem; }
+  .res .clock svg { width: 14px; height: 14px; fill: none; stroke: var(--muted); stroke-width: 2; stroke-linecap: round; }
+  .res .clock b { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .cry { width: 220px; height: 180px; display: block; margin: 0 auto .3rem; }
+  .hearts { font-size: 1.6rem; letter-spacing: 4px; margin: 0 0 .3rem !important; color: var(--pink) !important; }
   .bars { display: grid; gap: .3rem; }
   .bar { display: grid; grid-template-columns: 3.4rem 1fr; align-items: center; gap: .4rem; font-size: .75rem; color: var(--muted); }
   .bar i { display: block; height: 8px; border-radius: 99px; background: rgba(255,255,255,.12); overflow: hidden; }
@@ -120,6 +134,8 @@
       <span><span data-t="n2"></span> <b id="rN2">0</b></span>
       <span><span data-t="ice"></span> <b id="rIce">0</b></span>
       <span class="hab"><span data-t="habited"></span> <b id="rHab">0/0</b></span>
+      <span class="lives"><span data-t="lives"></span> <b id="rLives" role="img"></b></span>
+      <span class="clock"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg><span class="sr" data-t="clock"></span> <b id="rTime">0:00</b></span>
     </div>
     <div class="chip bars surface-only">
       <div class="bar" id="barCold"><span data-t="cold"></span><i><b></b></i></div>
@@ -217,12 +233,34 @@
   </div>
 </section>
 
+<section class="overlay" id="ovLife" aria-labelledby="hLife" hidden>
+  <div class="panel title">
+    <canvas class="cry" id="cryLife" aria-hidden="true"></canvas>
+    <h2 id="hLife" data-t="lf_title"></h2>
+    <p class="hearts" id="lifeHearts" role="img"></p>
+    <p id="lifeText"></p>
+    <div class="row"><button type="button" class="btn" data-act="toBase" data-t="lf_back"></button></div>
+  </div>
+</section>
+
+<section class="overlay" id="ovLose" aria-labelledby="hLose" hidden>
+  <div class="panel title">
+    <canvas class="cry" id="cryLose" aria-hidden="true"></canvas>
+    <h2 id="hLose" data-t="l_title"></h2>
+    <p id="loseText"></p>
+    <p class="small" id="loseCount" aria-live="polite"></p>
+    <div class="row"><button type="button" class="btn" data-act="loseMenu" data-t="mainMenu"></button></div>
+  </div>
+</section>
+
 <section class="overlay" id="ovWin" aria-labelledby="hWin" hidden>
   <div class="panel title">
+    <canvas class="party" id="party" aria-hidden="true"></canvas>
     <h2 id="hWin" data-t="w_title"></h2>
     <p id="winText"></p>
-    <p id="winStats"></p>
-    <div class="row"><button type="button" class="btn" data-act="again" data-t="playAgain"></button></div>
+    <p class="win-time" id="winTime"></p>
+    <p class="small" id="winStats"></p>
+    <div class="row"><button type="button" class="btn" data-act="winMenu" data-t="w_menu"></button></div>
   </div>
 </section>
 
@@ -243,37 +281,37 @@
       back: '← Projetos', close: 'Fechar', resume: 'Continuar', pause: 'Pausa', mainMenu: 'Menu principal', playAgain: 'Jogar de novo',
       h_steps: 'Missão', h_ctl: 'Controles', h_sheep: 'Iceovelhas',
       help1: 'Na nave, use o sensor perto dos planetas para analisá-los e depois pouse.',
-      help2: 'Extraia nitrogênio líquido dos cristais azuis. Cuidado com o calor: perto da nave você se resfria e recupera o traje.',
+      help2: 'Extraia nitrogênio líquido dos cristais azuis; eles se regeneram com o tempo. Quanto mais quente o planeta, mais N₂ ele exige. Cuidado com o calor: perto da nave você se resfria e recupera o traje. Você tem cinco vidas; cada falha do traje custa uma.',
       help3: 'Com N₂ suficiente, volte à nave e terraforme o planeta.',
-      help4: 'Construa o extrator, a habitação, o celeiro, a central de defesa e, por fim, a central de comunicação, que chama sua espécie.',
-      help5: 'Com a colônia fundada, decole e procure o próximo planeta. Você vence quando todos estiverem habitados.',
+      help4: 'Construa o extrator, a habitação, o celeiro, a central de defesa e, por fim, a central de comunicação, que chama sua espécie. Os extratores só entregam a produção a um armazém construído perto deles; retire os recursos lá. Depois da central de comunicação, naves de yetis cinzentos podem pousar e atacar suas construções: proteja-se com até 8 centrais de defesa.',
+      help5: 'Com a colônia fundada, decole e procure o próximo planeta. Toda decolagem consome 200 N₂ dos tanques da nave. Você vence quando todos estiverem habitados.',
       ctl1: 'Mover: WASD ou setas (no celular, o joystick).',
       ctl2: 'E ou Enter: pousar, decolar, extrair (segure), terraformar e comer sorvete.',
       ctl3: 'Espaço ou clique: arremessar bola de neve.',
-      ctl4: 'Q: sensor · M: mapa estelar · B: construir · Esc: pausa.',
+      ctl4: 'Q: sensor · M: mapa estelar · N: mapa do planeta · B: construir · Esc: pausa.', hud_explored: 'Explorado {p}%', hud_ship: 'Nave', hud_close: 'toque ou N para fechar',
       sheepInfo: 'Iceovelhas são parecidas com ovelhas, mas, em vez de lã, são cobertas de sorvete, o alimento da sua espécie. Coma o sorvete delas para recuperar o frio e o traje.',
       sensor: 'Sensor', map: 'Mapa', build: 'Construir', n2: 'N₂', ice: 'Gelo', cold: 'Frio', suit: 'Traje', habited: 'Habitados', action: 'Ação', throw: 'Neve',
       sysName: 'Sistema {name}',
-      p_land: '{k} · Pousar em {name}', p_scanFirst: 'Use o sensor ({k}) para analisar este planeta', p_takeoff: '{k} · Decolar', p_terra: '{k} · Terraformar (−{n} N₂)',
+      p_land: '{k} · Pousar em {name}', p_scanFirst: 'Use o sensor ({k}) para analisar este planeta', p_takeoff: '{k} · Decolar (−{f} N₂)', p_noFuel: '{k} · Decolar (faltam {n} N₂)', p_terra: '{k} · Terraformar (−{n} N₂)',
       p_n2: 'Segure {k} · Extrair nitrogênio', p_ice: 'Segure {k} · Coletar gelo', p_sheep: '{k} · Comer sorvete',
       o_scan: 'Use o sensor perto dos planetas para analisá-los.', o_land: 'Aproxime-se de um planeta analisado para pousar.',
       o_collect: 'Colete nitrogênio líquido nos cristais azuis: <strong>{a}/{b}</strong>', o_terra: '<strong>N₂ suficiente!</strong> Volte à nave e terraforme o planeta.',
       o_terraAnim: 'Terraformando…', o_build: 'Construa a infraestrutura ({k}). Falta: {list}', o_comm: 'Construa a central de comunicação para chamar sua espécie.',
-      o_calling: 'Chamando sua espécie…', o_done: '<strong>Planeta habitado!</strong> Volte à nave e decole.', o_sys: 'Este sistema está completo. Abra o mapa estelar e viaje para outro.',
+      o_calling: 'Chamando sua espécie…', o_done: '<strong>Planeta habitado!</strong> Volte à nave e decole.', o_doneFuel: '<strong>Planeta habitado!</strong> Junte mais {n} N₂ para abastecer a nave ({f}) e decolar.', o_sys: 'Este sistema está completo. Abra o mapa estelar e viaje para outro.',
       i_threat: 'ameaça {l}', i_need: 'N₂ necessário: {n}', threat0: 'baixa', threat1: 'média', threat2: 'alta',
       st_wild: 'selvagem', st_terra: 'terraformado', st_colony: 'habitado', st_unknown: 'Planeta não analisado',
       t_scanFound: 'Sensor: {list}', t_scanNone: 'Nenhum planeta novo no alcance do sensor.', t_tooHot: 'Perto demais da estrela!', t_ast: 'Impacto de asteroide!',
       t_landed: 'Você pousou em {name}.', t_terraStart: 'Terraformação iniciada!', t_terraDone: '{name} agora é um mundo gelado!', t_built: 'Pronto: {s}!',
       t_noRoom: 'Sem espaço aqui. Afaste-se das outras construções.', t_noRes: 'Recursos insuficientes.', t_calling: 'Central de comunicação ativa: chamando sua espécie…',
-      t_colonized: 'A colônia de {name} foi fundada!', t_suitFail: 'Seu traje falhou! Você voltou à nave e perdeu metade do N₂.',
+      t_colonized: 'A colônia de {name} foi fundada!', t_suitFail: 'Seu traje falhou! Você voltou à nave, perdeu metade do N₂ e uma vida. Restam {n}.', lf_title: 'Você perdeu uma vida!', lf_text: 'Seu traje falhou e você foi levado de volta à base, perdendo metade do N₂. Restam {n} de {m} vidas.', lf_back: 'Voltar para a base', lives: 'Vidas', l_title: 'Você perdeu!', l_text: 'Seu traje falhou {n} vezes e a missão terminou. Planetas habitados: {a}/{b}.', l_count: 'Voltando ao menu principal em {s} s…',
       t_melting: 'Você está derretendo! Volte à nave para se resfriar.', t_lava: 'Lava! Saia daí!', t_toxic: 'Gás tóxico!', t_yum: 'Sorvete delicioso! Frio e traje restaurados.',
-      t_storm: 'Tempestade de areia!', t_sheepBorn: 'Três iceovelhas nasceram!', t_warpTo: 'Rumo ao sistema {name}…', t_arrived: 'Sistema {name}: {n} planetas.', t_takeoffFirst: 'Decole para viajar a outro sistema.',
+      t_storm: 'Tempestade de areia!', t_sheepBorn: 'Três iceovelhas nasceram!', t_warpTo: 'Rumo ao sistema {name}…', t_arrived: 'Sistema {name}: {n} planetas.', t_takeoffFirst: 'Decole para viajar a outro sistema.', t_noFuel: 'A nave precisa de {f} N₂ nos tanques para decolar. Faltam {n}.',
       ty_ice: 'gelado', ty_life: 'cheio de vida', ty_hot: 'vulcânico', ty_desert: 'desértico', ty_gas: 'gasoso', ty_ocean: 'oceânico',
-      s_extractor: 'Extrator de recursos', s_hab: 'Instalação habitacional', s_barn: 'Celeiro de iceovelhas', s_defense: 'Central de defesa', s_comm: 'Central de comunicação',
-      d_extractor: 'Produz gelo e N₂ sem parar.', d_hab: 'Iglus para sua espécie morar.', d_barn: 'Cria três iceovelhas, que dão sorvete.', d_defense: 'Torre que derruba os adversários.', d_comm: 'Chama sua espécie. Exige as outras quatro.',
+      s_storage: 'Armazém', d_storage: 'Recebe a produção dos extratores ao seu alcance, mesmo quando você está em outro planeta. É a única forma de coletar o que eles produzem.', b_needExtractor: 'Construa o extrator primeiro', b_nearExtractor: 'Aproxime-se do extrator para construir', p_store: '{k} · Retirar do armazém (N₂ {a} · Gelo {b})', t_collected: 'Retirado do armazém: +{a} N₂, +{b} de gelo.', s_extractor: 'Extrator de recursos', s_hab: 'Instalação habitacional', s_barn: 'Celeiro de iceovelhas', s_defense: 'Central de defesa', s_comm: 'Central de comunicação',
+      d_extractor: 'Produz gelo e N₂, mas só entrega a um armazém ao alcance; sem armazém, fica parado. Construa até 4: cada um soma produção, e cada novo custa um pouco mais.', b_idle: 'Sem armazém ao alcance', d_hab: 'Iglus para sua espécie morar.', d_barn: 'Cria três iceovelhas, que dão sorvete.', d_defense: 'Torre que derruba os adversários. Construa até 8 para proteger a colônia dos yetis cinzentos.', t_raid: 'Uma nave de yetis cinzentos está pousando! Proteja suas construções.', t_raidOver: 'Ataque repelido! As construções vão se reparar aos poucos.', t_destroyed: 'Os yetis cinzentos destruíram: {s}!', o_raid: '<strong>Ataque!</strong> Yetis cinzentos estão atacando suas construções.', d_comm: 'Chama sua espécie. Exige as outras quatro.',
       b_title: 'Infraestrutura', b_locked: 'Terraforme o planeta antes de construir.', b_built: 'Pronto', b_needAll: 'Construa as outras primeiro', b_build: 'Construir',
       m_title: 'Mapa estelar', m_hab: '{a}/{b} habitados', m_here: 'Você está aqui', m_travel: 'Viajar',
-      w_title: 'Missão cumprida!', w_text: 'Os {n} planetas viraram lares gelados. Sua civilização tem um novo céu para chamar de seu.', w_stats: 'Tempo: {t} · Bolas de neve: {b} · Iceovelhas: {s}'
+      w_title: 'Vitória!', w_text: 'Missão cumprida! Os {n} planetas viraram lares gelados e sua espécie comemora com você.', w_time: 'Tempo total: {t}', w_stats: 'Bolas de neve: {b} · Iceovelhas: {s} · Vidas restantes: {l}', w_menu: 'Voltar ao menu principal', clock: 'Tempo de jogo'
     },
     en: {
       newGame: 'New game', cont: 'Continue', help: 'How to play', lang: 'Language', size: 'Galaxy size',
@@ -286,37 +324,37 @@
       back: '← Projects', close: 'Close', resume: 'Resume', pause: 'Paused', mainMenu: 'Main menu', playAgain: 'Play again',
       h_steps: 'Mission', h_ctl: 'Controls', h_sheep: 'Icesheep',
       help1: 'In the ship, use the sensor near planets to analyse them, then land.',
-      help2: 'Extract liquid nitrogen from the blue crystals. Watch out for the heat: near the ship you cool down and repair your suit.',
+      help2: 'Extract liquid nitrogen from the blue crystals; they grow back over time. The hotter the planet, the more N₂ it needs. Watch out for the heat: near the ship you cool down and repair your suit. You have five lives; each suit failure costs one.',
       help3: 'With enough N₂, go back to the ship and terraform the planet.',
-      help4: 'Build the extractor, housing, the barn, the defense center and, finally, the communication center, which calls your kind.',
-      help5: 'Once the colony is founded, take off and look for the next planet. You win when every planet is inhabited.',
+      help4: 'Build the extractor, housing, the barn, the defense center and, finally, the communication center, which calls your kind. Extractors only deliver their output to a storehouse built near them; collect the resources there. After the communication center, gray yeti ships may land and attack your buildings: protect yourself with up to 8 defense centers.',
+      help5: 'Once the colony is founded, take off and look for the next planet. Every take-off burns 200 N₂ from the ship’s tanks. You win when every planet is inhabited.',
       ctl1: 'Move: WASD or arrow keys (on a phone, the joystick).',
       ctl2: 'E or Enter: land, take off, extract (hold), terraform and eat ice cream.',
       ctl3: 'Space or click: throw a snowball.',
-      ctl4: 'Q: sensor · M: star map · B: build · Esc: pause.',
+      ctl4: 'Q: sensor · M: star map · N: planet map · B: build · Esc: pause.', hud_explored: 'Explored {p}%', hud_ship: 'Ship', hud_close: 'tap or N to close',
       sheepInfo: 'Icesheep look like sheep but, instead of wool, they are covered in ice cream, your species’ food. Eat their ice cream to restore your cold and your suit.',
       sensor: 'Sensor', map: 'Map', build: 'Build', n2: 'N₂', ice: 'Ice', cold: 'Cold', suit: 'Suit', habited: 'Inhabited', action: 'Action', throw: 'Snow',
       sysName: '{name} system',
-      p_land: '{k} · Land on {name}', p_scanFirst: 'Use the sensor ({k}) to analyse this planet', p_takeoff: '{k} · Take off', p_terra: '{k} · Terraform (−{n} N₂)',
+      p_land: '{k} · Land on {name}', p_scanFirst: 'Use the sensor ({k}) to analyse this planet', p_takeoff: '{k} · Take off (−{f} N₂)', p_noFuel: '{k} · Take off ({n} N₂ missing)', p_terra: '{k} · Terraform (−{n} N₂)',
       p_n2: 'Hold {k} · Extract nitrogen', p_ice: 'Hold {k} · Collect ice', p_sheep: '{k} · Eat ice cream',
       o_scan: 'Use the sensor near planets to analyse them.', o_land: 'Approach an analysed planet to land.',
       o_collect: 'Collect liquid nitrogen from the blue crystals: <strong>{a}/{b}</strong>', o_terra: '<strong>Enough N₂!</strong> Go back to the ship and terraform the planet.',
       o_terraAnim: 'Terraforming…', o_build: 'Build the infrastructure ({k}). Missing: {list}', o_comm: 'Build the communication center to call your kind.',
-      o_calling: 'Calling your kind…', o_done: '<strong>Planet inhabited!</strong> Go back to the ship and take off.', o_sys: 'This system is complete. Open the star map and travel to another one.',
+      o_calling: 'Calling your kind…', o_done: '<strong>Planet inhabited!</strong> Go back to the ship and take off.', o_doneFuel: '<strong>Planet inhabited!</strong> Collect {n} more N₂ to fuel the ship ({f}) and take off.', o_sys: 'This system is complete. Open the star map and travel to another one.',
       i_threat: '{l} threat', i_need: 'N₂ needed: {n}', threat0: 'low', threat1: 'medium', threat2: 'high',
       st_wild: 'wild', st_terra: 'terraformed', st_colony: 'inhabited', st_unknown: 'Planet not analysed',
       t_scanFound: 'Sensor: {list}', t_scanNone: 'No new planets in sensor range.', t_tooHot: 'Too close to the star!', t_ast: 'Asteroid impact!',
       t_landed: 'You landed on {name}.', t_terraStart: 'Terraforming started!', t_terraDone: '{name} is now an icy world!', t_built: 'Built: {s}!',
       t_noRoom: 'No room here. Move away from other buildings.', t_noRes: 'Not enough resources.', t_calling: 'Communication center online: calling your kind…',
-      t_colonized: 'The colony on {name} has been founded!', t_suitFail: 'Your suit failed! You were rescued to the ship and lost half your N₂.',
+      t_colonized: 'The colony on {name} has been founded!', t_suitFail: 'Your suit failed! You were rescued to the ship and lost half your N₂ and one life. {n} left.', lf_title: 'You lost a life!', lf_text: 'Your suit failed and you were carried back to base, losing half your N₂. {n} of {m} lives left.', lf_back: 'Back to base', lives: 'Lives', l_title: 'You lost!', l_text: 'Your suit failed {n} times and the mission is over. Planets inhabited: {a}/{b}.', l_count: 'Back to the main menu in {s} s…',
       t_melting: 'You are melting! Go back to the ship to cool down.', t_lava: 'Lava! Get out!', t_toxic: 'Toxic gas!', t_yum: 'Delicious ice cream! Cold and suit restored.',
-      t_storm: 'Sandstorm!', t_sheepBorn: 'Three icesheep were born!', t_warpTo: 'Heading to the {name} system…', t_arrived: '{name} system: {n} planets.', t_takeoffFirst: 'Take off to travel to another system.',
+      t_storm: 'Sandstorm!', t_sheepBorn: 'Three icesheep were born!', t_warpTo: 'Heading to the {name} system…', t_arrived: '{name} system: {n} planets.', t_takeoffFirst: 'Take off to travel to another system.', t_noFuel: 'The ship needs {f} N₂ in its tanks to take off. {n} missing.',
       ty_ice: 'icy', ty_life: 'full of life', ty_hot: 'volcanic', ty_desert: 'desert', ty_gas: 'gaseous', ty_ocean: 'ocean',
-      s_extractor: 'Resource extractor', s_hab: 'Housing', s_barn: 'Icesheep barn', s_defense: 'Defense center', s_comm: 'Communication center',
-      d_extractor: 'Keeps producing ice and N₂.', d_hab: 'Igloos for your kind to live in.', d_barn: 'Raises three icesheep, which give ice cream.', d_defense: 'A tower that knocks out enemies.', d_comm: 'Calls your kind. Requires the other four.',
+      s_storage: 'Storehouse', d_storage: 'Receives the output of the extractors within its reach, even while you are on another planet. It is the only way to collect what they produce.', b_needExtractor: 'Build the extractor first', b_nearExtractor: 'Go near the extractor to build', p_store: '{k} · Collect from storehouse (N₂ {a} · Ice {b})', t_collected: 'Collected from the storehouse: +{a} N₂, +{b} ice.', s_extractor: 'Resource extractor', s_hab: 'Housing', s_barn: 'Icesheep barn', s_defense: 'Defense center', s_comm: 'Communication center',
+      d_extractor: 'Produces ice and N₂, but only delivers to a storehouse within reach; without one, it stands still. Build up to 4: each one adds output, and each new one costs a little more.', b_idle: 'No storehouse in reach', d_hab: 'Igloos for your kind to live in.', d_barn: 'Raises three icesheep, which give ice cream.', d_defense: 'A tower that knocks out enemies. Build up to 8 to protect the colony from the gray yetis.', t_raid: 'A gray yeti ship is landing! Protect your buildings.', t_raidOver: 'Attack repelled! Your buildings will slowly repair themselves.', t_destroyed: 'The gray yetis destroyed: {s}!', o_raid: '<strong>Attack!</strong> Gray yetis are attacking your buildings.', d_comm: 'Calls your kind. Requires the other four.',
       b_title: 'Infrastructure', b_locked: 'Terraform the planet before building.', b_built: 'Built', b_needAll: 'Build the others first', b_build: 'Build',
       m_title: 'Star map', m_hab: '{a}/{b} inhabited', m_here: 'You are here', m_travel: 'Travel',
-      w_title: 'Mission accomplished!', w_text: 'All {n} planets became icy homes. Your civilization has a new sky to call its own.', w_stats: 'Time: {t} · Snowballs: {b} · Icesheep: {s}'
+      w_title: 'Victory!', w_text: 'Mission accomplished! All {n} planets became icy homes and your kind is celebrating with you.', w_time: 'Total time: {t}', w_stats: 'Snowballs: {b} · Icesheep: {s} · Lives left: {l}', w_menu: 'Back to main menu', clock: 'Play time'
     },
     it: {
       newGame: 'Nuova partita', cont: 'Continua', help: 'Come si gioca', lang: 'Lingua', size: 'Dimensione della galassia',
@@ -329,37 +367,37 @@
       back: '← Progetti', close: 'Chiudi', resume: 'Riprendi', pause: 'Pausa', mainMenu: 'Menu principale', playAgain: 'Gioca ancora',
       h_steps: 'Missione', h_ctl: 'Comandi', h_sheep: 'Icepecore',
       help1: 'Sulla nave, usa il sensore vicino ai pianeti per analizzarli, poi atterra.',
-      help2: 'Estrai azoto liquido dai cristalli blu. Attento al calore: vicino alla nave ti raffreddi e ripari la tuta.',
+      help2: 'Estrai azoto liquido dai cristalli blu, che si rigenerano col tempo. Più il pianeta è caldo, più N₂ richiede. Attento al calore: vicino alla nave ti raffreddi e ripari la tuta. Hai cinque vite; ogni cedimento della tuta ne costa una.',
       help3: 'Con abbastanza N₂, torna alla nave e terraforma il pianeta.',
-      help4: 'Costruisci l’estrattore, le abitazioni, la stalla, la centrale di difesa e, infine, la centrale di comunicazione, che chiama la tua specie.',
-      help5: 'Fondata la colonia, decolla e cerca il prossimo pianeta. Vinci quando tutti sono abitati.',
+      help4: 'Costruisci l’estrattore, le abitazioni, la stalla, la centrale di difesa e, infine, la centrale di comunicazione, che chiama la tua specie. Gli estrattori consegnano la produzione solo a un magazzino costruito vicino a loro; preleva lì le risorse. Dopo la centrale di comunicazione, navi di yeti grigi possono atterrare e attaccare le tue costruzioni: proteggiti con fino a 8 centrali di difesa.',
+      help5: 'Fondata la colonia, decolla e cerca il prossimo pianeta. Ogni decollo consuma 200 N₂ dai serbatoi della nave. Vinci quando tutti sono abitati.',
       ctl1: 'Muoversi: WASD o frecce (sul telefono, il joystick).',
       ctl2: 'E o Invio: atterrare, decollare, estrarre (tieni premuto), terraformare e mangiare gelato.',
       ctl3: 'Spazio o clic: lanciare una palla di neve.',
-      ctl4: 'Q: sensore · M: mappa stellare · B: costruire · Esc: pausa.',
+      ctl4: 'Q: sensore · M: mappa stellare · N: mappa del pianeta · B: costruire · Esc: pausa.', hud_explored: 'Esplorato {p}%', hud_ship: 'Nave', hud_close: 'tocca o N per chiudere',
       sheepInfo: 'Le icepecore somigliano alle pecore ma, invece della lana, sono coperte di gelato, il cibo della tua specie. Mangia il loro gelato per recuperare freddo e tuta.',
       sensor: 'Sensore', map: 'Mappa', build: 'Costruisci', n2: 'N₂', ice: 'Ghiaccio', cold: 'Freddo', suit: 'Tuta', habited: 'Abitati', action: 'Azione', throw: 'Neve',
       sysName: 'Sistema {name}',
-      p_land: '{k} · Atterra su {name}', p_scanFirst: 'Usa il sensore ({k}) per analizzare questo pianeta', p_takeoff: '{k} · Decolla', p_terra: '{k} · Terraforma (−{n} N₂)',
+      p_land: '{k} · Atterra su {name}', p_scanFirst: 'Usa il sensore ({k}) per analizzare questo pianeta', p_takeoff: '{k} · Decolla (−{f} N₂)', p_noFuel: '{k} · Decolla (mancano {n} N₂)', p_terra: '{k} · Terraforma (−{n} N₂)',
       p_n2: 'Tieni {k} · Estrai azoto', p_ice: 'Tieni {k} · Raccogli ghiaccio', p_sheep: '{k} · Mangia il gelato',
       o_scan: 'Usa il sensore vicino ai pianeti per analizzarli.', o_land: 'Avvicinati a un pianeta analizzato per atterrare.',
       o_collect: 'Raccogli azoto liquido dai cristalli blu: <strong>{a}/{b}</strong>', o_terra: '<strong>N₂ sufficiente!</strong> Torna alla nave e terraforma il pianeta.',
       o_terraAnim: 'Terraformazione in corso…', o_build: 'Costruisci l’infrastruttura ({k}). Manca: {list}', o_comm: 'Costruisci la centrale di comunicazione per chiamare la tua specie.',
-      o_calling: 'Chiamata alla tua specie…', o_done: '<strong>Pianeta abitato!</strong> Torna alla nave e decolla.', o_sys: 'Questo sistema è completo. Apri la mappa stellare e viaggia verso un altro.',
+      o_calling: 'Chiamata alla tua specie…', o_done: '<strong>Pianeta abitato!</strong> Torna alla nave e decolla.', o_doneFuel: '<strong>Pianeta abitato!</strong> Raccogli altri {n} N₂ per rifornire la nave ({f}) e decollare.', o_sys: 'Questo sistema è completo. Apri la mappa stellare e viaggia verso un altro.',
       i_threat: 'minaccia {l}', i_need: 'N₂ necessario: {n}', threat0: 'bassa', threat1: 'media', threat2: 'alta',
       st_wild: 'selvaggio', st_terra: 'terraformato', st_colony: 'abitato', st_unknown: 'Pianeta non analizzato',
       t_scanFound: 'Sensore: {list}', t_scanNone: 'Nessun nuovo pianeta nel raggio del sensore.', t_tooHot: 'Troppo vicino alla stella!', t_ast: 'Impatto con un asteroide!',
       t_landed: 'Sei atterrato su {name}.', t_terraStart: 'Terraformazione avviata!', t_terraDone: '{name} ora è un mondo ghiacciato!', t_built: 'Completato: {s}!',
       t_noRoom: 'Non c’è spazio qui. Allontanati dalle altre costruzioni.', t_noRes: 'Risorse insufficienti.', t_calling: 'Centrale di comunicazione attiva: chiamata alla tua specie…',
-      t_colonized: 'La colonia su {name} è stata fondata!', t_suitFail: 'La tuta ha ceduto! Sei stato riportato alla nave e hai perso metà dell’N₂.',
+      t_colonized: 'La colonia su {name} è stata fondata!', t_suitFail: 'La tuta ha ceduto! Sei stato riportato alla nave e hai perso metà dell’N₂ e una vita. Ne restano {n}.', lf_title: 'Hai perso una vita!', lf_text: 'La tuta ha ceduto e sei stato riportato alla base, perdendo metà dell’N₂. Restano {n} vite su {m}.', lf_back: 'Torna alla base', lives: 'Vite', l_title: 'Hai perso!', l_text: 'La tua tuta ha ceduto {n} volte e la missione è finita. Pianeti abitati: {a}/{b}.', l_count: 'Ritorno al menu principale tra {s} s…',
       t_melting: 'Ti stai sciogliendo! Torna alla nave per raffreddarti.', t_lava: 'Lava! Esci da lì!', t_toxic: 'Gas tossico!', t_yum: 'Gelato delizioso! Freddo e tuta ripristinati.',
-      t_storm: 'Tempesta di sabbia!', t_sheepBorn: 'Sono nate tre icepecore!', t_warpTo: 'In viaggio verso il sistema {name}…', t_arrived: 'Sistema {name}: {n} pianeti.', t_takeoffFirst: 'Decolla per viaggiare verso un altro sistema.',
+      t_storm: 'Tempesta di sabbia!', t_sheepBorn: 'Sono nate tre icepecore!', t_warpTo: 'In viaggio verso il sistema {name}…', t_arrived: 'Sistema {name}: {n} pianeti.', t_takeoffFirst: 'Decolla per viaggiare verso un altro sistema.', t_noFuel: 'La nave ha bisogno di {f} N₂ nei serbatoi per decollare. Ne mancano {n}.',
       ty_ice: 'ghiacciato', ty_life: 'pieno di vita', ty_hot: 'vulcanico', ty_desert: 'desertico', ty_gas: 'gassoso', ty_ocean: 'oceanico',
-      s_extractor: 'Estrattore di risorse', s_hab: 'Abitazioni', s_barn: 'Stalla delle icepecore', s_defense: 'Centrale di difesa', s_comm: 'Centrale di comunicazione',
-      d_extractor: 'Produce ghiaccio e N₂ senza sosta.', d_hab: 'Igloo in cui vivrà la tua specie.', d_barn: 'Alleva tre icepecore, che danno gelato.', d_defense: 'Una torre che abbatte gli avversari.', d_comm: 'Chiama la tua specie. Richiede le altre quattro.',
+      s_storage: 'Magazzino', d_storage: 'Riceve la produzione degli estrattori nel suo raggio, anche quando sei su un altro pianeta. È l’unico modo per raccogliere ciò che producono.', b_needExtractor: 'Costruisci prima l’estrattore', b_nearExtractor: 'Avvicinati all’estrattore per costruire', p_store: '{k} · Preleva dal magazzino (N₂ {a} · Ghiaccio {b})', t_collected: 'Prelevato dal magazzino: +{a} N₂, +{b} di ghiaccio.', s_extractor: 'Estrattore di risorse', s_hab: 'Abitazioni', s_barn: 'Stalla delle icepecore', s_defense: 'Centrale di difesa', s_comm: 'Centrale di comunicazione',
+      d_extractor: 'Produce ghiaccio e N₂, ma consegna solo a un magazzino nel suo raggio; senza magazzino resta fermo. Costruiscine fino a 4: ognuno aumenta la produzione e ogni nuovo costa un po’ di più.', b_idle: 'Nessun magazzino nel raggio', d_hab: 'Igloo in cui vivrà la tua specie.', d_barn: 'Alleva tre icepecore, che danno gelato.', d_defense: 'Una torre che abbatte gli avversari. Costruiscine fino a 8 per proteggere la colonia dagli yeti grigi.', t_raid: 'Una nave di yeti grigi sta atterrando! Proteggi le tue costruzioni.', t_raidOver: 'Attacco respinto! Le costruzioni si ripareranno a poco a poco.', t_destroyed: 'Gli yeti grigi hanno distrutto: {s}!', o_raid: '<strong>Attacco!</strong> Gli yeti grigi stanno attaccando le tue costruzioni.', d_comm: 'Chiama la tua specie. Richiede le altre quattro.',
       b_title: 'Infrastruttura', b_locked: 'Terraforma il pianeta prima di costruire.', b_built: 'Pronto', b_needAll: 'Costruisci prima le altre', b_build: 'Costruisci',
       m_title: 'Mappa stellare', m_hab: '{a}/{b} abitati', m_here: 'Sei qui', m_travel: 'Viaggia',
-      w_title: 'Missione compiuta!', w_text: 'Tutti i {n} pianeti sono diventati case ghiacciate. La tua civiltà ha un nuovo cielo da chiamare suo.', w_stats: 'Tempo: {t} · Palle di neve: {b} · Icepecore: {s}'
+      w_title: 'Vittoria!', w_text: 'Missione compiuta! Tutti i {n} pianeti sono diventati case ghiacciate e la tua specie festeggia con te.', w_time: 'Tempo totale: {t}', w_stats: 'Palle di neve: {b} · Icepecore: {s} · Vite rimaste: {l}', w_menu: 'Torna al menu principale', clock: 'Tempo di gioco'
     },
     es: {
       newGame: 'Nueva partida', cont: 'Continuar', help: 'Cómo jugar', lang: 'Idioma', size: 'Tamaño de la galaxia',
@@ -372,37 +410,37 @@
       back: '← Proyectos', close: 'Cerrar', resume: 'Continuar', pause: 'Pausa', mainMenu: 'Menú principal', playAgain: 'Jugar de nuevo',
       h_steps: 'Misión', h_ctl: 'Controles', h_sheep: 'Iceovejas',
       help1: 'En la nave, usa el sensor cerca de los planetas para analizarlos y luego aterriza.',
-      help2: 'Extrae nitrógeno líquido de los cristales azules. Cuidado con el calor: cerca de la nave te enfrías y reparas el traje.',
+      help2: 'Extrae nitrógeno líquido de los cristales azules; se regeneran con el tiempo. Cuanto más caliente el planeta, más N₂ necesita. Cuidado con el calor: cerca de la nave te enfrías y reparas el traje. Tienes cinco vidas; cada fallo del traje cuesta una.',
       help3: 'Con suficiente N₂, vuelve a la nave y terraforma el planeta.',
-      help4: 'Construye el extractor, las viviendas, el establo, la central de defensa y, por último, la central de comunicación, que llama a tu especie.',
-      help5: 'Fundada la colonia, despega y busca el siguiente planeta. Ganas cuando todos estén habitados.',
+      help4: 'Construye el extractor, las viviendas, el establo, la central de defensa y, por último, la central de comunicación, que llama a tu especie. Los extractores solo entregan su producción a un almacén construido cerca de ellos; recoge allí los recursos. Después de la central de comunicación, naves de yetis grises pueden aterrizar y atacar tus construcciones: protégete con hasta 8 centrales de defensa.',
+      help5: 'Fundada la colonia, despega y busca el siguiente planeta. Cada despegue consume 200 N₂ de los tanques de la nave. Ganas cuando todos estén habitados.',
       ctl1: 'Moverse: WASD o flechas (en el móvil, el joystick).',
       ctl2: 'E o Intro: aterrizar, despegar, extraer (mantén pulsado), terraformar y comer helado.',
       ctl3: 'Espacio o clic: lanzar una bola de nieve.',
-      ctl4: 'Q: sensor · M: mapa estelar · B: construir · Esc: pausa.',
+      ctl4: 'Q: sensor · M: mapa estelar · N: mapa del planeta · B: construir · Esc: pausa.', hud_explored: 'Explorado {p}%', hud_ship: 'Nave', hud_close: 'toca o N para cerrar',
       sheepInfo: 'Las iceovejas se parecen a las ovejas pero, en lugar de lana, están cubiertas de helado, el alimento de tu especie. Come su helado para recuperar el frío y el traje.',
       sensor: 'Sensor', map: 'Mapa', build: 'Construir', n2: 'N₂', ice: 'Hielo', cold: 'Frío', suit: 'Traje', habited: 'Habitados', action: 'Acción', throw: 'Nieve',
       sysName: 'Sistema {name}',
-      p_land: '{k} · Aterrizar en {name}', p_scanFirst: 'Usa el sensor ({k}) para analizar este planeta', p_takeoff: '{k} · Despegar', p_terra: '{k} · Terraformar (−{n} N₂)',
+      p_land: '{k} · Aterrizar en {name}', p_scanFirst: 'Usa el sensor ({k}) para analizar este planeta', p_takeoff: '{k} · Despegar (−{f} N₂)', p_noFuel: '{k} · Despegar (faltan {n} N₂)', p_terra: '{k} · Terraformar (−{n} N₂)',
       p_n2: 'Mantén {k} · Extraer nitrógeno', p_ice: 'Mantén {k} · Recoger hielo', p_sheep: '{k} · Comer helado',
       o_scan: 'Usa el sensor cerca de los planetas para analizarlos.', o_land: 'Acércate a un planeta analizado para aterrizar.',
       o_collect: 'Recoge nitrógeno líquido de los cristales azules: <strong>{a}/{b}</strong>', o_terra: '<strong>¡N₂ suficiente!</strong> Vuelve a la nave y terraforma el planeta.',
       o_terraAnim: 'Terraformando…', o_build: 'Construye la infraestructura ({k}). Falta: {list}', o_comm: 'Construye la central de comunicación para llamar a tu especie.',
-      o_calling: 'Llamando a tu especie…', o_done: '<strong>¡Planeta habitado!</strong> Vuelve a la nave y despega.', o_sys: 'Este sistema está completo. Abre el mapa estelar y viaja a otro.',
+      o_calling: 'Llamando a tu especie…', o_done: '<strong>¡Planeta habitado!</strong> Vuelve a la nave y despega.', o_doneFuel: '<strong>¡Planeta habitado!</strong> Reúne {n} N₂ más para repostar la nave ({f}) y despegar.', o_sys: 'Este sistema está completo. Abre el mapa estelar y viaja a otro.',
       i_threat: 'amenaza {l}', i_need: 'N₂ necesario: {n}', threat0: 'baja', threat1: 'media', threat2: 'alta',
       st_wild: 'salvaje', st_terra: 'terraformado', st_colony: 'habitado', st_unknown: 'Planeta sin analizar',
       t_scanFound: 'Sensor: {list}', t_scanNone: 'Ningún planeta nuevo al alcance del sensor.', t_tooHot: '¡Demasiado cerca de la estrella!', t_ast: '¡Impacto de asteroide!',
       t_landed: 'Has aterrizado en {name}.', t_terraStart: '¡Terraformación iniciada!', t_terraDone: '¡{name} ya es un mundo helado!', t_built: '¡Listo: {s}!',
       t_noRoom: 'No hay espacio aquí. Aléjate de otras construcciones.', t_noRes: 'Recursos insuficientes.', t_calling: 'Central de comunicación activa: llamando a tu especie…',
-      t_colonized: '¡La colonia de {name} ha sido fundada!', t_suitFail: '¡Tu traje ha fallado! Te rescataron a la nave y perdiste la mitad del N₂.',
+      t_colonized: '¡La colonia de {name} ha sido fundada!', t_suitFail: '¡Tu traje ha fallado! Te rescataron a la nave y perdiste la mitad del N₂ y una vida. Te quedan {n}.', lf_title: '¡Has perdido una vida!', lf_text: 'Tu traje falló y te llevaron de vuelta a la base, perdiendo la mitad del N₂. Te quedan {n} de {m} vidas.', lf_back: 'Volver a la base', lives: 'Vidas', l_title: '¡Has perdido!', l_text: 'Tu traje falló {n} veces y la misión ha terminado. Planetas habitados: {a}/{b}.', l_count: 'Volviendo al menú principal en {s} s…',
       t_melting: '¡Te estás derritiendo! Vuelve a la nave para enfriarte.', t_lava: '¡Lava! ¡Sal de ahí!', t_toxic: '¡Gas tóxico!', t_yum: '¡Helado delicioso! Frío y traje restaurados.',
-      t_storm: '¡Tormenta de arena!', t_sheepBorn: '¡Nacieron tres iceovejas!', t_warpTo: 'Rumbo al sistema {name}…', t_arrived: 'Sistema {name}: {n} planetas.', t_takeoffFirst: 'Despega para viajar a otro sistema.',
+      t_storm: '¡Tormenta de arena!', t_sheepBorn: '¡Nacieron tres iceovejas!', t_warpTo: 'Rumbo al sistema {name}…', t_arrived: 'Sistema {name}: {n} planetas.', t_takeoffFirst: 'Despega para viajar a otro sistema.', t_noFuel: 'La nave necesita {f} N₂ en sus tanques para despegar. Faltan {n}.',
       ty_ice: 'helado', ty_life: 'lleno de vida', ty_hot: 'volcánico', ty_desert: 'desértico', ty_gas: 'gaseoso', ty_ocean: 'oceánico',
-      s_extractor: 'Extractor de recursos', s_hab: 'Viviendas', s_barn: 'Establo de iceovejas', s_defense: 'Central de defensa', s_comm: 'Central de comunicación',
-      d_extractor: 'Produce hielo y N₂ sin parar.', d_hab: 'Iglús donde vivirá tu especie.', d_barn: 'Cría tres iceovejas, que dan helado.', d_defense: 'Una torre que derriba a los adversarios.', d_comm: 'Llama a tu especie. Requiere las otras cuatro.',
+      s_storage: 'Almacén', d_storage: 'Recibe la producción de los extractores a su alcance, incluso cuando estás en otro planeta. Es la única forma de recoger lo que producen.', b_needExtractor: 'Construye primero el extractor', b_nearExtractor: 'Acércate al extractor para construir', p_store: '{k} · Retirar del almacén (N₂ {a} · Hielo {b})', t_collected: 'Retirado del almacén: +{a} N₂, +{b} de hielo.', s_extractor: 'Extractor de recursos', s_hab: 'Viviendas', s_barn: 'Establo de iceovejas', s_defense: 'Central de defensa', s_comm: 'Central de comunicación',
+      d_extractor: 'Produce hielo y N₂, pero solo entrega a un almacén a su alcance; sin almacén, se queda parado. Construye hasta 4: cada uno suma producción, y cada nuevo cuesta un poco más.', b_idle: 'Sin almacén al alcance', d_hab: 'Iglús donde vivirá tu especie.', d_barn: 'Cría tres iceovejas, que dan helado.', d_defense: 'Una torre que derriba a los adversarios. Construye hasta 8 para proteger la colonia de los yetis grises.', t_raid: '¡Una nave de yetis grises está aterrizando! Protege tus construcciones.', t_raidOver: '¡Ataque rechazado! Las construcciones se repararán poco a poco.', t_destroyed: 'Los yetis grises destruyeron: {s}!', o_raid: '<strong>¡Ataque!</strong> Los yetis grises están atacando tus construcciones.', d_comm: 'Llama a tu especie. Requiere las otras cuatro.',
       b_title: 'Infraestructura', b_locked: 'Terraforma el planeta antes de construir.', b_built: 'Listo', b_needAll: 'Construye las otras primero', b_build: 'Construir',
       m_title: 'Mapa estelar', m_hab: '{a}/{b} habitados', m_here: 'Estás aquí', m_travel: 'Viajar',
-      w_title: '¡Misión cumplida!', w_text: 'Los {n} planetas se convirtieron en hogares helados. Tu civilización tiene un nuevo cielo al que llamar suyo.', w_stats: 'Tiempo: {t} · Bolas de nieve: {b} · Iceovejas: {s}'
+      w_title: '¡Victoria!', w_text: '¡Misión cumplida! Los {n} planetas se convirtieron en hogares helados y tu especie lo celebra contigo.', w_time: 'Tiempo total: {t}', w_stats: 'Bolas de nieve: {b} · Iceovejas: {s} · Vidas restantes: {l}', w_menu: 'Volver al menú principal', clock: 'Tiempo de juego'
     }
   };
   let lang = 'pt';
@@ -452,34 +490,49 @@
     rare:       { dep: 1.05, ice: 8,  rate: 0.55 }
   };
   const resLevel = () => RES[G.res] || RES.sufficient;
-  // drain: perda de frio por segundo; need: N₂ para terraformar; foes: adversários
+  // drain: perda de frio por segundo; foes: adversários
   const TYPES = {
-    ice:    { g: ['#F2FAFF', '#9CC7EA'], spot: '#FFFFFF', ground: '#DCEEFB', dec: '#B5D6F0', drain: 0,   need: 40,  enemy: 'yeti',       foes: 3, hostile: false, threat: 0 },
-    life:   { g: ['#9BE07F', '#2F8F55'], spot: '#2E6FB0', ground: '#79C267', dec: '#3E8F45', drain: .5,  need: 80,  enemy: 'beetle',     foes: 6, hostile: true,  threat: 1 },
-    hot:    { g: ['#FFB067', '#B23A26'], spot: '#FFE066', ground: '#7E3A2B', dec: '#4E2018', drain: 2.4, need: 110, enemy: 'salamander', foes: 5, hostile: true,  threat: 2 },
-    desert: { g: ['#F6DB9C', '#C08A42'], spot: '#A8733A', ground: '#E6C27E', dec: '#C99B55', drain: 1.1, need: 90,  enemy: 'scorpion',   foes: 5, hostile: true,  threat: 1 },
-    gas:    { g: ['#E4CCFF', '#7C5BC9'], spot: '#F6EEFF', ground: '#B9A3E6', dec: '#9A82D0', drain: .6,  need: 100, enemy: 'jelly',      foes: 5, hostile: true,  threat: 2 },
-    ocean:  { g: ['#7CC0FF', '#1E58BC'], spot: '#3FBF7F', ground: '#8ED1C0', dec: '#5FAE9C', drain: .4,  need: 75,  enemy: 'eel',        foes: 4, hostile: true,  threat: 1 }
+    ice:    { g: ['#F2FAFF', '#9CC7EA'], spot: '#FFFFFF', ground: '#DCEEFB', dec: '#B5D6F0', drain: 0,   enemy: 'yeti',       foes: 3, hostile: false, threat: 0 },
+    life:   { g: ['#9BE07F', '#2F8F55'], spot: '#2E6FB0', ground: '#79C267', dec: '#3E8F45', drain: .5,  enemy: 'beetle',     foes: 6, hostile: true,  threat: 1 },
+    hot:    { g: ['#FFB067', '#B23A26'], spot: '#FFE066', ground: '#7E3A2B', dec: '#4E2018', drain: 2.4, enemy: 'salamander', foes: 5, hostile: true,  threat: 2 },
+    desert: { g: ['#F6DB9C', '#C08A42'], spot: '#A8733A', ground: '#E6C27E', dec: '#C99B55', drain: 1.1, enemy: 'scorpion',   foes: 5, hostile: true,  threat: 1 },
+    gas:    { g: ['#E4CCFF', '#7C5BC9'], spot: '#F6EEFF', ground: '#B9A3E6', dec: '#9A82D0', drain: .6,  enemy: 'jelly',      foes: 5, hostile: true,  threat: 2 },
+    ocean:  { g: ['#7CC0FF', '#1E58BC'], spot: '#3FBF7F', ground: '#8ED1C0', dec: '#5FAE9C', drain: .4,  enemy: 'eel',        foes: 4, hostile: true,  threat: 1 }
   };
+  // faixa de temperatura (°C) de cada tipo de planeta
+  const TEMP = { ice: [-190, -80], gas: [-70, 30], ocean: [0, 30], life: [10, 40], desert: [40, 80], hot: [300, 480] };
+  const FUEL = 200;      // N₂ que a nave consome para decolar
+  const LIVES = 5;       // vidas do astronauta
+  const CRYSTAL = 20;    // N₂ por cristal
+  const REGROW = 150;    // segundos para um cristal extraído se regenerar
   const HAZ = { hot: ['lava', 10, 50, 130], ocean: ['water', 14, 130, 240], gas: ['toxic', 8, 70, 140], desert: ['sand', 7, 60, 120], life: ['plant', 13, 22, 22], ice: [null, 0, 0, 0] };
   const EN = {
     yeti:       { hp: 4, spd: 70,  r: 20 },
+    grayYeti:   { hp: 8, spd: 80,  r: 21 },
     beetle:     { hp: 2, spd: 125, r: 15 },
     salamander: { hp: 3, spd: 135, r: 16 },
     scorpion:   { hp: 3, spd: 115, r: 17 },
     jelly:      { hp: 2, spd: 85,  r: 18 },
     eel:        { hp: 3, spd: 150, r: 15 }
   };
+  // req: construções exigidas antes; optional: não conta para a central de comunicação;
+  // max: quantas podem ser construídas (cada unidade extra custa +10 de gelo e +10 N₂)
   const STRUCTS = [
-    { k: 'extractor', ice: 15, n2: 0 },
+    { k: 'extractor', ice: 15, n2: 0, max: 4 },
+    { k: 'storage', ice: 20, n2: 10, req: ['extractor'], optional: true },
     { k: 'hab', ice: 30, n2: 10 },
     { k: 'barn', ice: 25, n2: 10 },
-    { k: 'defense', ice: 30, n2: 20 },
-    { k: 'comm', ice: 40, n2: 30, needAll: true }
+    { k: 'defense', ice: 30, n2: 20, max: 8 },
+    { k: 'comm', ice: 40, n2: 30, req: ['extractor', 'hab', 'barn', 'defense'] }
   ];
+  const STORE_R = 260;                      // alcance entre extrator e armazém
+  const STORE_CAP = { n2: 150, ice: 220 };  // capacidade do armazém
   const FLAVORS = ['#FFB3C7', '#8B5A3C', '#B8F2D0', '#FFF1CC', '#C9B8FF', '#FFD08A'];
   const HATS = ['#E63B5A', '#3A86FF', '#FFB703', '#2A9D8F', '#C77DFF'];
   const SCAN_R = 700, WW = 2600, WH = 1800;
+  // névoa do mapa do planeta: células de 100 unidades reveladas ao redor do astronauta
+  const FOG = 100, FCOLS = Math.ceil(WW / FOG), FROWS = Math.ceil(WH / FOG), REVEAL_R = 380;
+  const BUILD_COL = { extractor: '#FFC94D', storage: '#C9D6EA', hab: '#FFFFFF', barn: '#FF8FB8', defense: '#8FD3FF', comm: '#5FD3A4' };
 
   // ---------------------------------------------------------------- estado
   let G = null;      // estado persistente (salvo)
@@ -503,15 +556,24 @@
           spd: (0.05 / (1 + i * 0.45)) * (0.8 + r() * 0.4), rad: type === 'gas' ? 60 : 30 + r() * 18,
           seed: (r() * 1e9) | 0, scanned: false, terra: false, colony: false, taken: [], iceTaken: [], builds: []
         });
+        setClimate(planets[i], i);
       }
       return { planets };
     });
     const outer = 330 + (systems[0].planets.length - 1) * 200;
-    return { v: 1, size, res: RES[res] ? res : 'sufficient', systems, sys: 0, onPlanet: null, won: false, inv: { n2: 0, ice: 0 }, stats: { time: 0, balls: 0, sheep: 0 }, ship: { x: 0, y: -(outer + 330), vx: 0, vy: 0, a: Math.PI / 2 } };
+    return { v: 1, size, res: RES[res] ? res : 'sufficient', systems, sys: 0, onPlanet: null, won: false, lives: LIVES, inv: { n2: 0, ice: 0 }, stats: { time: 0, balls: 0, sheep: 0 }, ship: { x: 0, y: -(outer + 330), vx: 0, vy: 0, a: Math.PI / 2 } };
+  }
+  // Temperatura (°C) conforme o tipo e a órbita (mais perto da estrela, mais quente).
+  // O N₂ para terraformar cresce com a temperatura: cerca de 40 num planeta gelado e quase 200 num vulcânico.
+  function setClimate(p, i) {
+    const r = mulberry(p.seed ^ 0x5BD1E995), range = TEMP[p.type];
+    p.temp = Math.round(range[0] + r() * (range[1] - range[0]) + (3 - i) * 6);
+    p.need = Math.max(30, Math.round((30 + (p.temp + 150) * 0.3) / 5) * 5);
   }
   function save() {
-    if (!G) return;
+    if (!G || G.lost || G.won) return;
     G.onPlanet = scene === 'surface' && SF ? SF.pi : null;
+    if (scene === 'surface' && SF && SF.seen) SF.p.fog = Array.prototype.join.call(SF.seen, '');
     store.set(SAVE_KEY, G);
   }
   function saveSettings() { store.set(SET_KEY, { lang, size: $('sizeSel').value, res: $('resSel').value }); }
@@ -539,7 +601,7 @@
   let actPressed = false, actHeld = false, throwPressed = false, clickAim = null;
   let isTouch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
   const KM = { ArrowUp: 'u', KeyW: 'u', ArrowDown: 'd', KeyS: 'd', ArrowLeft: 'l', KeyA: 'l', ArrowRight: 'r', KeyD: 'r' };
-  const OV = { title: $('ovTitle'), help: $('ovHelp'), pause: $('ovPause'), build: $('ovBuild'), map: $('ovMap'), win: $('ovWin') };
+  const OV = { title: $('ovTitle'), help: $('ovHelp'), pause: $('ovPause'), build: $('ovBuild'), map: $('ovMap'), win: $('ovWin'), lose: $('ovLose'), life: $('ovLife') };
   const anyModal = () => Object.values(OV).some((o) => !o.hidden);
   const playing = () => G && (scene === 'space' || scene === 'surface' || scene === 'warp');
 
@@ -552,7 +614,9 @@
     if (isTouch) setTouch(false);
     if (e.code === 'Escape') {
       if (!OV.help.hidden) hide(OV.help);
+      else if (!OV.life.hidden) hide(OV.life);
       else if (!OV.build.hidden || !OV.map.hidden) { hide(OV.build); hide(OV.map); }
+      else if (mapBig) mapBig = false;
       else togglePause();
       return;
     }
@@ -568,6 +632,7 @@
     if (e.code === 'KeyB') openBuild();
     if (e.code === 'KeyP') togglePause();
     if (e.code === 'KeyH') openHelp();
+    if (e.code === 'KeyN' && scene === 'surface') mapBig = !mapBig;
   });
   window.addEventListener('keyup', (e) => {
     if (KM[e.code]) keys[KM[e.code]] = false;
@@ -577,6 +642,11 @@
   document.addEventListener('visibilitychange', () => { if (document.hidden && playing() && !anyModal()) show(OV.pause); });
 
   cv.addEventListener('pointerdown', (e) => {
+    // clique ou toque no mapa do planeta: amplia ou reduz
+    if (scene === 'surface' && SF && !anyModal()) {
+      const R = mapRect();
+      if (mapBig || (e.clientX >= R.x - 6 && e.clientX <= R.x + R.w + 6 && e.clientY >= R.y - 6 && e.clientY <= R.y + R.h + 24)) { mapBig = !mapBig; return; }
+    }
     if (e.pointerType === 'touch') { setTouch(true); return; }
     if (scene !== 'surface' || anyModal() || !SF) return;
     const Z = surfZoom();
@@ -714,7 +784,7 @@
     const s = G.ship, found = [];
     G.systems[G.sys].planets.forEach((p) => {
       const q = planetPos(p);
-      if (!p.scanned && hyp(s.x - q.x, s.y - q.y) - p.rad < SCAN_R) { p.scanned = true; found.push(p.name + ' (' + t('ty_' + p.type) + ')'); }
+      if (!p.scanned && hyp(s.x - q.x, s.y - q.y) - p.rad < SCAN_R) { p.scanned = true; found.push(p.name + ' (' + t('ty_' + p.type) + ', ' + fmtTemp(p.temp) + ')'); }
     });
     toast(found.length ? t('t_scanFound', { list: found.join(', ') }) : t('t_scanNone'), found.length ? 'good' : '');
     if (found.length) save();
@@ -724,10 +794,50 @@
     fadeTo(() => { enterSurface(i); toast(t('t_landed', { name: SF.p.name }) + ' ' + cap(t('ty_' + SF.p.type)) + '.'); save(); });
   }
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  // tempo de jogo: m:ss, ou h:mm:ss a partir de uma hora
+  function fmtTime(sec) {
+    sec = Math.floor(sec || 0);
+    const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = String(sec % 60).padStart(2, '0');
+    return h ? h + ':' + String(m).padStart(2, '0') + ':' + s : m + ':' + s;
+  }
+  const fmtTemp = (c) => (c > 0 ? '+' : c < 0 ? '−' : '') + Math.abs(c) + ' °C';
 
   // ---------------------------------------------------------------- superfície
   const surfZoom = () => clamp(Math.min(W, H) / 760, 0.62, 1.15);
   const hasB = (k) => SF.p.builds.some((b) => b.k === k);
+  const findB = (k) => SF.p.builds.find((b) => b.k === k);
+  const countB = (k) => SF.p.builds.filter((b) => b.k === k).length;
+  const reqMet = (d) => !d.req || d.req.every(hasB);
+  const costOf = (d) => { const n = d.max ? countB(d.k) : 0; return { ice: d.ice + 10 * n, n2: d.n2 + 10 * n }; };
+  const canAddMore = (d) => (d.max ? countB(d.k) < d.max : !hasB(d.k));
+  // extrator mais próximo do astronauta, se estiver ao alcance de um armazém
+  function nearExtractor() {
+    let best = null, bd = STORE_R;
+    SF.p.builds.forEach((b) => { if (b.k !== 'extractor') return; const d = hyp(SF.pl.x - b.x, SF.pl.y - b.y); if (d <= bd) { bd = d; best = b; } });
+    return best;
+  }
+  // extratores ligados ao armazém (dentro do alcance); os demais ficam parados
+  function extractorLinks() {
+    const st = findB('storage'), ex = SF.p.builds.filter((b) => b.k === 'extractor');
+    const linked = st ? ex.filter((b) => hyp(b.x - st.x, b.y - st.y) <= STORE_R) : [];
+    return { st, linked };
+  }
+  // acumula no armazém a produção de 'n' extratores durante 'secs' segundos, até a capacidade
+  function fillStorage(b, secs, n) {
+    const k = resLevel().rate * n;
+    b.stock = b.stock || { n2: 0, ice: 0 };
+    b.stock.ice = Math.min(STORE_CAP.ice, b.stock.ice + 1.5 * k * secs);
+    b.stock.n2 = Math.min(STORE_CAP.n2, b.stock.n2 + 1 * k * secs);
+    b.t = G.stats.time;
+  }
+  function collectStore(b) {
+    const n = Math.floor(b.stock.n2), i = Math.floor(b.stock.ice);
+    G.inv.n2 += n; G.inv.ice += i; b.stock.n2 -= n; b.stock.ice -= i;
+    floatText(b.x, b.y - 80, '+' + n + ' N₂ · +' + i + ' ' + t('ice'));
+    burst(b.x, b.y - 40, '#8FE3FF', 16, 140);
+    toast(t('t_collected', { a: n, b: i }), 'good');
+    save();
+  }
   function enemyCap() {
     const p = SF.p, T = SF.T;
     if (hasB('defense')) return 0;
@@ -753,8 +863,9 @@
       const q = rp(H0[0] === 'water' ? 340 : 280);
       hz.push({ k: H0[0], x: q.x, y: q.y, r: H0[2] + r() * (H0[3] - H0[2]), vx: (r() - 0.5) * 40, vy: (r() - 0.5) * 40, cd: r() * 2, ph: r() * TAU });
     }
-    const RL = resLevel(), deposits = [], nDep = Math.ceil((T.need * RL.dep) / 10);
-    for (let i = 0; i < nDep; i++) { const q = rp(230); deposits.push({ x: q.x, y: q.y, amt: 10, taken: p.taken.includes(i), ph: r() * TAU }); }
+    // os cristais cobrem a terraformação e o combustível da decolagem
+    const RL = resLevel(), deposits = [], nDep = Math.ceil(((p.need + FUEL) * RL.dep) / CRYSTAL);
+    for (let i = 0; i < nDep; i++) { const q = rp(230); deposits.push({ x: q.x, y: q.y, amt: CRYSTAL, taken: p.taken.includes(i), regrow: REGROW * (0.5 + r() * 0.5), ph: r() * TAU }); }
     const ices = [];
     for (let i = 0; i < RL.ice; i++) { const q = rp(190); ices.push({ x: q.x, y: q.y, amt: 8, taken: p.iceTaken.includes(i), rot: (r() - 0.5) * 0.6 }); }
     SF = {
@@ -766,9 +877,18 @@
     };
     const n = enemyCap();
     for (let i = 0; i < n; i++) spawnEnemy(true);
-    p.builds.forEach((b) => { b.cd = 0; if (b.k === 'barn') spawnSheep(b); });
+    p.builds.forEach((b) => { b.cd = 0; if (b.hp == null) b.hp = maxHp(b.k); if (b.k === 'barn') spawnSheep(b); });
+    SF.landers = []; SF.raidOn = false; SF.raidT = 45 + Math.random() * 20;
+    // produção acumulada no armazém enquanto o astronauta esteve longe
+    const lk = extractorLinks();
+    if (lk.st && lk.linked.length) fillStorage(lk.st, Math.max(0, G.stats.time - (lk.st.t == null ? G.stats.time : lk.st.t)), lk.linked.length);
     if (p.colony) spawnColonists();
     else if (p.builds.some((b) => b.k === 'comm')) SF.call = { t: 0 }; // retoma a chegada da colônia interrompida
+    // áreas já exploradas deste planeta
+    SF.seen = new Uint8Array(FCOLS * FROWS); SF.seenN = 0;
+    if (typeof p.fog === 'string' && p.fog.length === SF.seen.length) for (let i = 0; i < p.fog.length; i++) if (p.fog[i] === '1') { SF.seen[i] = 1; SF.seenN++; }
+    revealAround(ship.x, ship.y, REVEAL_R + 60);
+    mapBig = false;
     G.onPlanet = pi;
     scene = 'surface';
   }
@@ -825,10 +945,65 @@
   }
   function suitFail() {
     const S = SF, P = S.pl;
-    G.inv.n2 = Math.floor(G.inv.n2 / 2);
+    G.lives = Math.max(0, (G.lives == null ? LIVES : G.lives) - 1);
     Object.assign(P, { hp: 100, cold: 100, x: S.ship.x + 70, y: S.ship.y + 55, kx: 0, ky: 0, hurt: 0 });
     S.spores = [];
-    toast(t('t_suitFail'), 'warn');
+    if (G.lives === 0) { gameOver(); return; }
+    G.inv.n2 = Math.floor(G.inv.n2 / 2);
+    save();
+    // tela da vida perdida: o herói chora cubos de gelo até o jogador voltar para a base
+    $('lifeText').textContent = t('lf_text', { n: G.lives, m: LIVES });
+    const hearts = $('lifeHearts');
+    hearts.textContent = '♥'.repeat(G.lives) + '♡'.repeat(LIVES - G.lives);
+    hearts.setAttribute('aria-label', G.lives + '/' + LIVES);
+    cryStart = performance.now();
+    show(OV.life);
+  }
+  // sem vidas: mensagem de derrota, o jogo salvo é apagado e o menu principal volta sozinho
+  let loseTimer = null;
+  function gameOver() {
+    G.lost = true;
+    store.del(SAVE_KEY);
+    $('loseText').textContent = t('l_text', { n: LIVES, a: colonized(), b: totalPlanets() });
+    let left = 8;
+    const tick = () => {
+      $('loseCount').textContent = t('l_count', { s: left });
+      if (left-- <= 0) { clearInterval(loseTimer); loseTimer = null; toMenu(); }
+    };
+    tick();
+    loseTimer = setInterval(tick, 1000);
+    cryStart = performance.now();
+    show(OV.lose);
+  }
+  const maxHp = (k) => (k === 'defense' ? 160 : 100);
+  // uma nave de yetis cinzentos pousa longe da nave do herói e solta os invasores
+  function startRaid() {
+    const S = SF;
+    let x = 0, y = 0;
+    for (let i = 0; i < 60; i++) {
+      x = 150 + Math.random() * (S.W - 300); y = 200 + Math.random() * (S.H - 300);
+      if (hyp(x - S.ship.x, y - S.ship.y) > 650 && S.p.builds.every((b) => hyp(x - b.x, y - b.y) > 300)) break;
+    }
+    S.landers.push({ x, y: y - 900, ty: y, st: 'down', t: 0, n: clamp(3 + Math.floor(colonized() / 2), 3, 8) });
+    S.raidOn = true;
+    toast(t('t_raid'), 'warn');
+  }
+  function dropRaiders(l) {
+    for (let i = 0; i < l.n; i++) {
+      const a = (i / l.n) * TAU;
+      SF.enemies.push({ k: 'grayYeti', raid: true, angry: true, x: l.x + Math.cos(a) * 40, y: l.y + 20 + Math.sin(a) * 25, hp: EN.grayYeti.hp, kx: 0, ky: 0, hit: 0, flash: 0, home: null, wt: 0, wx: 0, wy: 0, t: Math.random() * 10, tgt: null });
+    }
+    burst(l.x, l.y, '#9AA3B5', 18, 160);
+  }
+  function destroyBuild(b) {
+    const S = SF, p = S.p, i = p.builds.indexOf(b);
+    if (i < 0) return;
+    p.builds.splice(i, 1);
+    if (b.k === 'barn') S.sheep = S.sheep.filter((s) => s.home !== b);
+    burst(b.x, b.y - 30, '#56627F', 26, 200);
+    burst(b.x, b.y - 30, '#FFFFFF', 14, 140);
+    S.shake = 0.4;
+    toast(t('t_destroyed', { s: t('s_' + b.k) }), 'warn');
     save();
   }
   function killEnemy(e) {
@@ -873,6 +1048,7 @@
     const kd = Math.max(0, 1 - 6 * dt); P.kx *= kd; P.ky *= kd;
     if (v.x || v.y) { const m = hyp(v.x, v.y); P.fy = v.y / m; if (Math.abs(v.x) > 0.2) P.fx = v.x > 0 ? 1 : -1; P.walk += dt * 9; }
     P.x = clamp(P.x, 20, S.W - 20); P.y = clamp(P.y, 30, S.H - 10);
+    revealAround(P.x, P.y, REVEAL_R);
     const solid = [{ x: S.ship.x, y: S.ship.y, r: 42 }].concat(p.builds.map((b) => ({ x: b.x, y: b.y - 10, r: 40 })));
     solid.forEach((o) => { const d = hyp(P.x - o.x, P.y - o.y) || 1; if (d < o.r) { P.x = o.x + ((P.x - o.x) / d) * o.r; P.y = o.y + ((P.y - o.y) / d) * o.r; } });
     P.hurt = Math.max(0, P.hurt - dt);
@@ -942,7 +1118,23 @@
       const dx = P.x - e.x, dy = P.y - e.y, d = hyp(dx, dy) || 1;
       const hostile = T.hostile || e.angry;
       let tx, ty, sp = D.spd;
-      if (hostile && d < 330 && !safe) { tx = dx / d; ty = dy / d; }
+      e.atk = false;
+      if (e.raid && !(d < 150 && !safe)) {
+        // yeti cinzento: vai até a construção mais próxima e a destrói
+        if (!e.tgt || !p.builds.includes(e.tgt)) {
+          let bd = 1e9; e.tgt = null;
+          p.builds.forEach((b) => { const q = hyp(b.x - e.x, b.y - e.y); if (q < bd) { bd = q; e.tgt = b; } });
+        }
+        if (e.tgt) {
+          const bx = e.tgt.x - e.x, by = e.tgt.y + 20 - e.y, bdist = hyp(bx, by) || 1;
+          if (bdist > 46) { tx = bx / bdist; ty = by / bdist; }
+          else {
+            tx = ty = 0; e.atk = true;
+            e.tgt.hp = (e.tgt.hp == null ? maxHp(e.tgt.k) : e.tgt.hp) - 14 * dt;
+            if (e.tgt.hp <= 0) destroyBuild(e.tgt);
+          }
+        } else { tx = dx / d; ty = dy / d; }
+      } else if (hostile && d < 330 && !safe) { tx = dx / d; ty = dy / d; }
       else {
         e.wt -= dt;
         if (e.wt <= 0) { e.wt = 1.5 + Math.random() * 2; const a = Math.random() * TAU; e.wx = Math.cos(a); e.wy = Math.sin(a); }
@@ -951,7 +1143,8 @@
       e.x += (tx * sp + e.kx) * dt; e.y += (ty * sp + e.ky) * dt;
       e.kx *= kd; e.ky *= kd;
       const sd = hyp(e.x - S.ship.x, e.y - S.ship.y) || 1;
-      if (sd < 210) { e.x = S.ship.x + ((e.x - S.ship.x) / sd) * 210; e.y = S.ship.y + ((e.y - S.ship.y) / sd) * 210; }
+      const keepOut = e.raid ? 90 : 210;
+      if (sd < keepOut) { e.x = S.ship.x + ((e.x - S.ship.x) / sd) * keepOut; e.y = S.ship.y + ((e.y - S.ship.y) / sd) * keepOut; }
       if (e.home) {
         const hd = hyp(e.x - e.home.x, e.y - e.home.y) || 1, lim = e.home.r + 30;
         if (hd > lim) { e.x = e.home.x + ((e.x - e.home.x) / hd) * lim; e.y = e.home.y + ((e.y - e.home.y) / hd) * lim; }
@@ -960,7 +1153,24 @@
       if (hostile && d < D.r + 18 && e.hit <= 0 && !safe) { e.hit = 1; hurt(12); P.kx = (dx / d) * 380; P.ky = (dy / d) * 380; }
     });
     S.respawn -= dt;
-    if (S.respawn <= 0) { S.respawn = 16; if (S.enemies.length < enemyCap()) spawnEnemy(false); }
+    if (S.respawn <= 0) { S.respawn = 16; if (S.enemies.filter((e) => !e.raid).length < enemyCap()) spawnEnemy(false); }
+
+    // ataques dos yetis cinzentos depois que a central de comunicação existe
+    if (hasB('comm') && !S.call) {
+      S.raidT -= dt;
+      if (S.raidT <= 0) { S.raidT = 70 + Math.random() * 40; startRaid(); }
+    }
+    S.landers = S.landers.filter((l) => {
+      l.t += dt;
+      if (l.st === 'down') { l.y = Math.min(l.ty, l.y + 380 * dt); if (l.y >= l.ty) { l.st = 'drop'; l.t = 0; dropRaiders(l); } }
+      else if (l.st === 'drop') { if (l.t > 1.2) l.st = 'up'; }
+      else { l.y -= 420 * dt; if (l.y < l.ty - 900) return false; }
+      return true;
+    });
+    const raiders = S.enemies.filter((e) => e.raid).length;
+    if (S.raidOn && !raiders && !S.landers.length) { S.raidOn = false; toast(t('t_raidOver'), 'good'); save(); }
+    // sem ataque em curso, as construções se reparam aos poucos
+    if (!raiders) p.builds.forEach((b) => { const m = maxHp(b.k); if (b.hp == null || b.hp > m) b.hp = m; else if (b.hp < m) b.hp = Math.min(m, b.hp + 2 * dt); });
 
     // torres de defesa
     p.builds.forEach((b) => {
@@ -981,7 +1191,11 @@
     });
 
     // produção do extrator
-    if (hasB('extractor')) { const k = resLevel().rate; G.inv.ice += 1.5 * k * dt; G.inv.n2 += 1 * k * dt; }
+    // os extratores só entregam ao armazém; sem armazém ao alcance, ficam parados
+    if (hasB('extractor')) {
+      const lk = extractorLinks();
+      if (lk.st && lk.linked.length) fillStorage(lk.st, dt, lk.linked.length);
+    }
 
     // iceovelhas e colonos
     S.sheep.forEach((s) => {
@@ -998,7 +1212,8 @@
       const dx = c.tx - c.x, dy = c.ty - c.y, d = hyp(dx, dy);
       if (d < 6) {
         c.wait = 1 + Math.random() * 3;
-        const b = p.builds[(Math.random() * p.builds.length) | 0];
+        // sem construções (destruídas pelos yetis cinzentos), os colonos ficam perto da nave
+        const b = p.builds.length ? p.builds[(Math.random() * p.builds.length) | 0] : S.ship;
         c.tx = b.x + (Math.random() - 0.5) * 160; c.ty = b.y + 40 + Math.random() * 60;
       } else { c.x += (dx / d) * 50 * dt; c.y += (dy / d) * 50 * dt; c.f = dx > 0 ? 1 : -1; c.walk += dt * 8; }
     });
@@ -1021,11 +1236,22 @@
       if (S.call.t > 7) { S.call = null; S.callShips = []; }
     }
 
+    // cristais extraídos se regeneram com o tempo
+    S.deposits.forEach((d, i) => {
+      if (!d.taken) return;
+      d.regrow -= dt;
+      if (d.regrow <= 0) { d.taken = false; p.taken = p.taken.filter((k) => k !== i); }
+    });
+
     // interação
     S.target = null;
     if (dShip < 120) {
-      if (!p.terra && G.inv.n2 >= T.need) S.target = { kind: 'terra' };
+      if (!p.terra && G.inv.n2 >= p.need) S.target = { kind: 'terra' };
       else if (!(p.terra && S.terraAnim < 1) && !S.call) S.target = { kind: 'takeoff' };
+    }
+    if (!S.target) {
+      const st = findB('storage');
+      if (st && st.stock && hyp(P.x - st.x, P.y - st.y) < 80 && Math.floor(st.stock.n2) + Math.floor(st.stock.ice) > 0) S.target = { kind: 'store', b: st };
     }
     if (!S.target) {
       let bs = null, bd = 48;
@@ -1043,12 +1269,13 @@
       if (tg.kind === 'terra') startTerraform();
       else if (tg.kind === 'takeoff') takeoff();
       else if (tg.kind === 'sheep') eatSheep(tg.s);
+      else if (tg.kind === 'store') collectStore(tg.b);
     }
     if (tg && (tg.kind === 'n2' || tg.kind === 'ice') && actHeld) {
       if (!S.ex || S.ex.kind !== tg.kind || S.ex.i !== tg.i) S.ex = { kind: tg.kind, i: tg.i, x: tg.x, y: tg.y, prog: 0 };
       S.ex.prog += dt / 0.9;
       if (S.ex.prog >= 1) {
-        if (tg.kind === 'n2') { const d = S.deposits[tg.i]; d.taken = true; p.taken.push(tg.i); G.inv.n2 += d.amt; floatText(d.x, d.y - 30, '+' + d.amt + ' N₂'); burst(d.x, d.y - 10, '#8FE3FF', 14, 130); }
+        if (tg.kind === 'n2') { const d = S.deposits[tg.i]; d.taken = true; d.regrow = REGROW; p.taken.push(tg.i); G.inv.n2 += d.amt; floatText(d.x, d.y - 30, '+' + d.amt + ' N₂'); burst(d.x, d.y - 10, '#8FE3FF', 14, 130); }
         else { const d = S.ices[tg.i]; d.taken = true; p.iceTaken.push(tg.i); G.inv.ice += d.amt; floatText(d.x, d.y - 30, '+' + d.amt + ' ' + t('ice'), '#FFFFFF'); burst(d.x, d.y - 10, '#E6F6FF', 12, 120); }
         S.ex = null;
         save();
@@ -1061,7 +1288,7 @@
 
   function startTerraform() {
     const S = SF, p = S.p;
-    G.inv.n2 -= S.T.need;
+    G.inv.n2 -= p.need;
     p.terra = true;
     S.terraAnim = 0.0001;
     S.storm = 0; S.spores = [];
@@ -1078,18 +1305,25 @@
     toast(t('t_yum'), 'good');
   }
   function takeoff() {
+    if (G.inv.n2 < FUEL) { warn('fuel', t('t_noFuel', { f: FUEL, n: Math.ceil(FUEL - G.inv.n2) }), 2500); return false; }
     const pi = SF.pi;
+    G.inv.n2 -= FUEL;
     fadeTo(() => { G.onPlanet = null; enterSpace(pi); save(); });
+    return true;
   }
   function tryBuild(k) {
     const S = SF, p = S.p, def = STRUCTS.find((s) => s.k === k);
-    if (!p.terra || hasB(k)) return;
-    if (def.needAll && !STRUCTS.every((s) => s.k === k || hasB(s.k))) return;
-    if (G.inv.ice < def.ice || G.inv.n2 < def.n2) { toast(t('t_noRes'), 'warn'); return; }
-    const pos = findSpot();
+    if (!p.terra || !canAddMore(def)) return;
+    if (!reqMet(def)) return;
+    const anchor = k === 'storage' ? nearExtractor() : null;
+    if (k === 'storage' && !anchor) { toast(t('b_nearExtractor'), 'warn'); return; }
+    const cost = costOf(def);
+    if (G.inv.ice < cost.ice || G.inv.n2 < cost.n2) { toast(t('t_noRes'), 'warn'); return; }
+    const pos = findSpot(anchor);
     if (!pos) { toast(t('t_noRoom'), 'warn'); return; }
-    G.inv.ice -= def.ice; G.inv.n2 -= def.n2;
-    const b = { k, x: pos.x, y: pos.y, cd: 0 };
+    G.inv.ice -= cost.ice; G.inv.n2 -= cost.n2;
+    const b = { k, x: pos.x, y: pos.y, cd: 0, hp: maxHp(k) };
+    if (k === 'storage') { b.stock = { n2: 0, ice: 0 }; b.t = G.stats.time; }
     p.builds.push(b);
     burst(b.x, b.y - 30, '#FFFFFF', 20, 160);
     toast(t('t_built', { s: t('s_' + k) }), 'good');
@@ -1098,13 +1332,14 @@
     hide(OV.build);
     save();
   }
-  function findSpot() {
+  // anchor: o armazém precisa ficar ao alcance do extrator
+  function findSpot(anchor) {
     const P = SF.pl, base = Math.atan2(P.fy, P.fx);
     for (let rr = 90; rr <= 330; rr += 40) {
       for (let k = 0; k < 12; k++) {
         const a = base + Math.ceil(k / 2) * (TAU / 12) * (k % 2 ? 1 : -1);
         const x = P.x + Math.cos(a) * rr, y = P.y + Math.sin(a) * rr;
-        if (validSpot(x, y)) return { x, y };
+        if (validSpot(x, y) && (!anchor || hyp(x - anchor.x, y - anchor.y) <= STORE_R - 30)) return { x, y };
       }
     }
     return null;
@@ -1117,11 +1352,13 @@
   }
   function checkWin() {
     if (G.won || !G.systems.every((s) => s.planets.every((p) => p.colony))) return;
-    G.won = true; save();
+    G.won = true;
+    store.del(SAVE_KEY); // partida concluída: não há o que continuar
     setTimeout(() => {
-      const sec = Math.floor(G.stats.time), tm = Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
       $('winText').textContent = t('w_text', { n: totalPlanets() });
-      $('winStats').textContent = t('w_stats', { t: tm, b: G.stats.balls, s: G.stats.sheep });
+      $('winTime').textContent = t('w_time', { t: fmtTime(G.stats.time) });
+      $('winStats').textContent = t('w_stats', { b: G.stats.balls, s: G.stats.sheep, l: G.lives == null ? LIVES : G.lives });
+      partyStart = performance.now();
       show(OV.win);
     }, 2600);
   }
@@ -1168,8 +1405,19 @@
     ctx.translate(0, -bob);
     if (o.helmet) { ctx.fillStyle = '#8E9BBE'; rrect(-s * 14 - 7, -50, 14, 26, 4); ctx.fill(); ctx.fillStyle = '#5FD3A4'; circle(-s * 14, -44, 2.2, '#5FD3A4'); }
     ctx.strokeStyle = '#7A4E2D'; ctx.lineWidth = 2.6; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(-10, -30); ctx.lineTo(-25, -38 + sw * 8); ctx.moveTo(-21, -36 + sw * 6); ctx.lineTo(-25, -32 + sw * 6);
-    ctx.moveTo(10, -30); ctx.lineTo(25, -38 - sw * 8); ctx.moveTo(21, -36 - sw * 6); ctx.lineTo(25, -32 - sw * 6); ctx.stroke();
+    ctx.beginPath();
+    if (o.sad) { ctx.moveTo(-10, -28); ctx.lineTo(-20, -14); ctx.moveTo(-18, -17); ctx.lineTo(-23, -15); ctx.moveTo(10, -28); ctx.lineTo(20, -14); ctx.moveTo(18, -17); ctx.lineTo(23, -15); }
+    else if (o.cheer) {
+      // braços erguidos, comemorando
+      const wv = Math.sin(walk) * 5;
+      ctx.moveTo(-10, -30); ctx.lineTo(-17, -60 + wv); ctx.moveTo(-15, -53 + wv); ctx.lineTo(-22, -57 + wv);
+      ctx.moveTo(10, -30); ctx.lineTo(17, -60 - wv); ctx.moveTo(15, -53 - wv); ctx.lineTo(22, -57 - wv);
+    }
+    else {
+      ctx.moveTo(-10, -30); ctx.lineTo(-25, -38 + sw * 8); ctx.moveTo(-21, -36 + sw * 6); ctx.lineTo(-25, -32 + sw * 6);
+      ctx.moveTo(10, -30); ctx.lineTo(25, -38 - sw * 8); ctx.moveTo(21, -36 - sw * 6); ctx.lineTo(25, -32 - sw * 6);
+    }
+    ctx.stroke();
     snowball(0, -16, 16);
     circle(0, -22, 1.8, '#26223A'); circle(0, -13, 1.8, '#26223A');
     snowball(0, -40, 12);
@@ -1177,7 +1425,13 @@
     ctx.save(); ctx.translate(-s * 6, -28); ctx.rotate(-s * (0.2 + Math.sin(walk * 0.7) * 0.15)); rrect(-2.5, 0, 5, 13, 2); ctx.fill(); ctx.restore();
     circle(s * 3 - 3.5, -43, 1.7, '#1B1B2F'); circle(s * 3 + 3.5, -43, 1.7, '#1B1B2F');
     ctx.fillStyle = '#FF8A1F'; ctx.beginPath(); ctx.moveTo(s * 3, -41); ctx.lineTo(s * 15, -39); ctx.lineTo(s * 3, -37); ctx.closePath(); ctx.fill();
-    for (let i = -2; i <= 2; i++) circle(s * 2 + i * 2.6, -34.5 + Math.abs(i) * -0.6, 0.9, '#1B1B2F');
+    for (let i = -2; i <= 2; i++) circle(s * 2 + i * 2.6, o.sad ? -36 + Math.abs(i) * 0.9 : -34.5 - Math.abs(i) * 0.6, 0.9, '#1B1B2F');
+    if (o.sad) {
+      // sobrancelhas tristes, com as pontas de dentro levantadas
+      const e1 = s * 3 - 3.5, e2 = s * 3 + 3.5;
+      ctx.strokeStyle = '#1B1B2F'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(e1 - 3, -46); ctx.lineTo(e1 + 2.5, -48.5); ctx.moveTo(e2 + 3, -46); ctx.lineTo(e2 - 2.5, -48.5); ctx.stroke();
+    }
     if (o.hat) {
       ctx.fillStyle = o.hat; ctx.beginPath(); ctx.arc(0, -49, 9, Math.PI, 0); ctx.fill();
       rrect(-10, -50, 20, 4, 2); ctx.fill(); circle(0, -59, 3, '#FFFFFF');
@@ -1211,6 +1465,19 @@
     const spr = ['#FF6B6B', '#3A86FF', '#FFB703', '#2A9D8F'];
     [[2, -9], [16, -11], [0, 8], [18, 10], [-2, -2]].forEach((q, i) => { ctx.fillStyle = spr[i % 4]; ctx.save(); ctx.translate(q[0], q[1]); ctx.rotate(i); ctx.fillRect(-2.5, -1, 5, 2); ctx.restore(); });
     circle(12, 0, 8, '#2F6FE0'); circle(12, 0, 5, '#FFFFFF'); circle(13.5, -1, 1, '#1B1B2F'); circle(9.5, -3.5, 2, 'rgba(255,255,255,.8)');
+    ctx.restore();
+  }
+  // nave dos yetis cinzentos: disco cinza com luzes vermelhas e um feixe ao soltar os invasores
+  function drawLander(l, time) {
+    ctx.save();
+    ctx.globalAlpha = 0.25; ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(l.x, l.ty + 20, 60 * clamp(1 - (l.ty - l.y) / 900, 0.2, 1), 12, 0, 0, TAU); ctx.fill();
+    ctx.globalAlpha = 1;
+    if (l.st === 'drop') { const g = ctx.createLinearGradient(l.x, l.y, l.x, l.y + 60); g.addColorStop(0, 'rgba(255,90,90,.45)'); g.addColorStop(1, 'rgba(255,90,90,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(l.x - 20, l.y - 30); ctx.lineTo(l.x + 20, l.y - 30); ctx.lineTo(l.x + 50, l.y + 30); ctx.lineTo(l.x - 50, l.y + 30); ctx.closePath(); ctx.fill(); }
+    ctx.translate(l.x, l.y - 40);
+    ctx.fillStyle = 'rgba(200,215,235,.7)'; ctx.beginPath(); ctx.arc(0, -8, 22, Math.PI, 0); ctx.fill();
+    ctx.fillStyle = '#6E7688'; ctx.beginPath(); ctx.ellipse(0, 0, 62, 16, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#4A5163'; ctx.beginPath(); ctx.ellipse(0, 4, 40, 8, 0, 0, TAU); ctx.fill();
+    for (let i = 0; i < 6; i++) circle(-45 + i * 18, 2, 3.5, (Math.floor(time * 6) + i) % 2 ? '#FF3B3B' : '#7A1E1E');
     ctx.restore();
   }
   function drawLandedShip(x, y, time) {
@@ -1247,7 +1514,20 @@
     ctx.save(); ctx.translate(e.x, e.y);
     shadow(r, r * 0.32);
     const wob = Math.sin(e.t * 10);
-    if (e.k === 'yeti') {
+    if (e.k === 'grayYeti') {
+      // invasor: pelo cinza, olhos vermelhos, capacete com antena; balança os braços quando ataca
+      const fx = e.atk && e.tgt ? (e.tgt.x < e.x ? -1 : 1) : face, swing = e.atk ? Math.sin(e.t * 18) * 0.9 : wob * 0.2;
+      ctx.strokeStyle = '#6E7688'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(-14, -r - 2); ctx.lineTo(-24 + Math.cos(swing) * 2, -r + 10 - Math.sin(swing) * 12); ctx.moveTo(14, -r - 2); ctx.lineTo(24 - Math.cos(swing) * 2, -r + 10 + Math.sin(swing) * 12); ctx.stroke();
+      for (let i = 0; i < 10; i++) { const a = (i / 10) * TAU; circle(Math.cos(a) * r * 0.9, -r + Math.sin(a) * r * 0.95, 6, '#8A93A6'); }
+      circle(0, -r, r, '#9AA3B5');
+      ctx.fillStyle = '#4A5163'; ctx.beginPath(); ctx.ellipse(fx * 5, -r - 3, 9, 7, 0, 0, TAU); ctx.fill();
+      circle(fx * 2, -r - 5, 2.2, '#FF3B3B'); circle(fx * 8, -r - 5, 2.2, '#FF3B3B');
+      ctx.strokeStyle = '#1B1B2F'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(fx * -1, -r - 10); ctx.lineTo(fx * 4, -r - 8); ctx.moveTo(fx * 11, -r - 10); ctx.lineTo(fx * 6, -r - 8); ctx.stroke();
+      ctx.strokeStyle = 'rgba(200,215,235,.8)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, -r - 2, r + 3, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke();
+      ctx.strokeStyle = '#6E7688'; ctx.beginPath(); ctx.moveTo(0, -2 * r - 4); ctx.lineTo(0, -2 * r - 12); ctx.stroke();
+      circle(0, -2 * r - 13, 2.6, Math.sin(time * 8) > 0 ? '#FF3B3B' : '#7A1E1E');
+    } else if (e.k === 'yeti') {
       for (let i = 0; i < 10; i++) { const a = (i / 10) * TAU; circle(Math.cos(a) * r * 0.9, -r + Math.sin(a) * r * 0.95, 6, '#EAF4FF'); }
       circle(0, -r, r, '#F7FBFF');
       ctx.fillStyle = '#9DB5D3'; ctx.beginPath(); ctx.ellipse(face * 5, -r - 3, 9, 7, 0, 0, TAU); ctx.fill();
@@ -1314,12 +1594,21 @@
       ctx.fillStyle = '#6E7C9C'; rrect(-30, -14, 60, 14, 4); ctx.fill();
       ctx.fillStyle = '#A9B6CF'; ctx.beginPath(); ctx.moveTo(-16, -14); ctx.lineTo(-8, -70); ctx.lineTo(8, -70); ctx.lineTo(16, -14); ctx.closePath(); ctx.fill();
       ctx.strokeStyle = '#7C8AA8'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-13, -28); ctx.lineTo(13, -28); ctx.moveTo(-11, -44); ctx.lineTo(11, -44); ctx.moveTo(-9, -58); ctx.lineTo(9, -58); ctx.stroke();
-      ctx.save(); ctx.translate(0, -76); ctx.rotate(time * 4); ctx.fillStyle = '#FFC94D';
+      // parado (broca imóvel, tanque vazio) quando não há armazém ao alcance
+      const on = !!(SF.linked && SF.linked.includes(b));
+      ctx.save(); ctx.translate(0, -76); ctx.rotate(on ? time * 4 : 0.4); ctx.fillStyle = on ? '#FFC94D' : '#8E9BBE';
       for (let i = 0; i < 4; i++) { ctx.rotate(TAU / 4); ctx.fillRect(-2.5, -12, 5, 12); }
       ctx.restore(); circle(0, -76, 4, '#56627F');
       ctx.fillStyle = '#2F6FE0'; rrect(18, -40, 20, 30, 6); ctx.fill();
-      const lv = 0.4 + 0.3 * Math.sin(time * 1.5);
+      const lv = on ? 0.4 + 0.3 * Math.sin(time * 1.5) : 0.08;
       ctx.fillStyle = '#8FE3FF'; rrect(21, -13 - 24 * lv, 14, 24 * lv, 4); ctx.fill();
+      if (!on && hyp(SF.pl.x - b.x, SF.pl.y - b.y) < 300) {
+        const label = t('b_idle');
+        ctx.font = '700 13px "Hanken Grotesk", sans-serif'; ctx.textAlign = 'center';
+        const w = ctx.measureText(label).width + 14;
+        ctx.fillStyle = 'rgba(194,24,91,.88)'; rrect(-w / 2, -112, w, 20, 10); ctx.fill();
+        ctx.fillStyle = '#FFFFFF'; ctx.fillText(label, 0, -98);
+      }
     } else if (b.k === 'barn') {
       ctx.fillStyle = '#FF8FB8'; ctx.fillRect(-34, -48, 68, 48);
       ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.moveTo(-42, -44); ctx.lineTo(0, -80); ctx.lineTo(42, -44); ctx.closePath(); ctx.fill();
@@ -1336,6 +1625,29 @@
       ctx.fillStyle = '#8FD3FF'; ctx.beginPath(); ctx.arc(0, -26, 16, Math.PI, 0); ctx.fill();
       circle(-5, -33, 3, 'rgba(255,255,255,.7)');
       circle(0, -44, 2.5, Math.sin(time * 6) > 0 ? '#5FD3A4' : '#2A6B55');
+    } else if (b.k === 'storage') {
+      // galpão com teto de neve e dois medidores: N₂ (azul) e gelo (branco)
+      const st = b.stock || { n2: 0, ice: 0 };
+      ctx.fillStyle = '#C9D6EA'; ctx.fillRect(-40, -40, 54, 40);
+      ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.moveTo(-45, -38); ctx.lineTo(-13, -62); ctx.lineTo(19, -38); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#E3EFFA'; ctx.fillRect(-45, -41, 64, 4);
+      ctx.fillStyle = '#6E7C9C'; ctx.fillRect(-26, -27, 26, 27);
+      ctx.strokeStyle = '#A9B6CF'; ctx.lineWidth = 1.5;
+      for (let y = -21; y < 0; y += 6) { ctx.beginPath(); ctx.moveTo(-26, y); ctx.lineTo(0, y); ctx.stroke(); }
+      const gauge = (x, lvl, fill) => {
+        ctx.fillStyle = '#3C4664'; rrect(x, -50, 12, 50, 5); ctx.fill();
+        const h = 44 * clamp(lvl, 0, 1);
+        if (h > 0.5) { ctx.fillStyle = fill; rrect(x + 2, -3 - h, 8, h, 3); ctx.fill(); }
+      };
+      gauge(20, st.n2 / STORE_CAP.n2, '#8FE3FF');
+      gauge(35, st.ice / STORE_CAP.ice, '#F2FBFF');
+      if (hyp(SF.pl.x - b.x, SF.pl.y - b.y) < 300) {
+        ctx.font = '700 13px "Hanken Grotesk", sans-serif'; ctx.textAlign = 'center';
+        const label = 'N₂ ' + Math.floor(st.n2) + '/' + STORE_CAP.n2 + ' · ' + t('ice') + ' ' + Math.floor(st.ice) + '/' + STORE_CAP.ice;
+        const w = ctx.measureText(label).width + 14;
+        ctx.fillStyle = 'rgba(14,20,48,.82)'; rrect(-w / 2, -88, w, 20, 10); ctx.fill();
+        ctx.fillStyle = '#FFFFFF'; ctx.fillText(label, 0, -74);
+      }
     } else if (b.k === 'comm') {
       ctx.strokeStyle = '#8E9BBE'; ctx.lineWidth = 3; ctx.beginPath();
       ctx.moveTo(-20, 0); ctx.lineTo(0, -40); ctx.lineTo(20, 0); ctx.moveTo(0, -40); ctx.lineTo(0, -78); ctx.moveTo(-10, -20); ctx.lineTo(10, -20); ctx.stroke();
@@ -1556,6 +1868,18 @@
     ctx.strokeStyle = 'rgba(0,0,0,.3)'; ctx.lineWidth = 8; ctx.strokeRect(0, 0, S.W, S.H);
     const terraNow = S.p.terra && S.terraAnim >= 0.5;
 
+    // tubulação entre cada extrator ao alcance e o armazém, com a produção fluindo
+    const links = extractorLinks(), stB = links.st;
+    S.linked = links.linked;
+    links.linked.forEach((exB) => {
+      ctx.strokeStyle = '#8E9BBE'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(exB.x + 28, exB.y - 8); ctx.lineTo(stB.x + 26, stB.y - 6); ctx.stroke();
+      const len = hyp(stB.x - exB.x, stB.y - exB.y) || 1;
+      for (let i = 0; i < len / 30; i++) {
+        const f = ((i * 30 + time * 40) % len) / len;
+        circle(exB.x + 28 + (stB.x - exB.x - 2) * f, exB.y - 8 + (stB.y - exB.y + 2) * f, 2.5, '#8FE3FF');
+      }
+    });
     S.deposits.forEach((d) => {
       if (d.taken) return;
       const b = Math.sin(time * 2 + d.ph) * 2;
@@ -1588,6 +1912,15 @@
     list.sort((a, b) => a.y - b.y).forEach((o) => o.f());
 
     S.callShips.forEach((c) => drawShip(c.x, c.y - 50, -Math.PI / 2, 1, c.y < c.ty, time));
+    S.landers.forEach((l) => drawLander(l, time));
+    // barras de integridade das construções danificadas
+    S.p.builds.forEach((b) => {
+      const m = maxHp(b.k);
+      if (b.hp == null || b.hp >= m) return;
+      const f = clamp(b.hp / m, 0, 1);
+      ctx.fillStyle = 'rgba(14,20,48,.8)'; rrect(b.x - 32, b.y + 12, 64, 9, 4); ctx.fill();
+      ctx.fillStyle = f > 0.5 ? '#5FD3A4' : f > 0.25 ? '#FFC94D' : '#FF6B6B'; rrect(b.x - 30, b.y + 14, 60 * f, 5, 2.5); ctx.fill();
+    });
     S.balls.forEach((b) => snowball(b.x, b.y, 7));
     S.shots.forEach((s) => { circle(s.x, s.y, 5, '#8FD3FF'); circle(s.x, s.y, 2.5, '#FFFFFF'); });
     S.spores.forEach((s) => { circle(s.x, s.y, 7, 'rgba(170,225,80,.5)'); circle(s.x, s.y, 4, '#8BD14A'); });
@@ -1608,6 +1941,108 @@
     }
     const low = 1 - S.pl.cold / 35;
     if (low > 0) { const g = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.3, W / 2, H / 2, Math.max(W, H) * 0.7); g.addColorStop(0, 'rgba(255,90,40,0)'); g.addColorStop(1, `rgba(255,90,40,${0.35 * low})`); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); }
+    drawPlanetHud(time, Z);
+  }
+
+  // ---------------------------------------------------------------- HUD de exploração do planeta
+  let mapBig = false;
+  function revealAround(x, y, r) {
+    const S = SF;
+    const c0 = Math.max(0, Math.floor((x - r) / FOG)), c1 = Math.min(FCOLS - 1, Math.floor((x + r) / FOG));
+    const r0 = Math.max(0, Math.floor((y - r) / FOG)), r1 = Math.min(FROWS - 1, Math.floor((y + r) / FOG));
+    for (let row = r0; row <= r1; row++) for (let c = c0; c <= c1; c++) {
+      const i = row * FCOLS + c;
+      if (!S.seen[i] && hyp(c * FOG + FOG / 2 - x, row * FOG + FOG / 2 - y) <= r) { S.seen[i] = 1; S.seenN++; }
+    }
+  }
+  const seenAt = (x, y) => SF.seen[clamp(Math.floor(y / FOG), 0, FROWS - 1) * FCOLS + clamp(Math.floor(x / FOG), 0, FCOLS - 1)] === 1;
+  function mapRect() {
+    if (mapBig) {
+      const w = Math.min(W * 0.88, H * 0.7 * (WW / WH));
+      return { x: (W - w) / 2, y: (H - (w * WH) / WW) / 2 - 10, w, h: (w * WH) / WW, big: true };
+    }
+    const w = W < 600 ? 138 : 190, top = $('hudRight').getBoundingClientRect().bottom + 12;
+    return { x: W - w - 16, y: top, w, h: (w * WH) / WW, big: false };
+  }
+  // seta na borda da área livre da tela (abaixo dos painéis do topo e acima dos controles de toque)
+  function edgeArrow(sx, sy, col, label, top) {
+    const l = 40, r = W - 40, tp = top, bt = H - (isTouch ? 190 : 40);
+    const cx = (l + r) / 2, cy = (tp + bt) / 2, a = Math.atan2(sy - cy, sx - cx);
+    const k = Math.min((r - l) / 2 / Math.abs(Math.cos(a) || 1e-6), (bt - tp) / 2 / Math.abs(Math.sin(a) || 1e-6));
+    const ax = cx + Math.cos(a) * k, ay = cy + Math.sin(a) * k;
+    ctx.save(); ctx.translate(ax, ay); ctx.rotate(a);
+    ctx.fillStyle = col; ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(16, 0); ctx.lineTo(-10, -12); ctx.lineTo(-10, 12); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.restore();
+    if (label) {
+      ctx.font = '700 12px "Hanken Grotesk", sans-serif'; ctx.textAlign = 'center';
+      const lx = ax - Math.cos(a) * 34, ly = ay - Math.sin(a) * 26 + 4, w = ctx.measureText(label).width + 12;
+      ctx.fillStyle = 'rgba(14,20,48,.85)'; rrect(lx - w / 2, ly - 13, w, 18, 9); ctx.fill();
+      ctx.fillStyle = '#FFFFFF'; ctx.fillText(label, lx, ly);
+    }
+  }
+  function drawPlanetHud(time, Z) {
+    const S = SF, P = S.pl, R = mapRect(), k = R.w / S.W, terraNow = S.p.terra && S.terraAnim >= 1;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    if (R.big) { ctx.fillStyle = 'rgba(5,8,24,.6)'; ctx.fillRect(0, 0, W, H); }
+    ctx.fillStyle = 'rgba(14,20,48,.88)'; rrect(R.x - 6, R.y - 6, R.w + 12, R.h + 30, 12); ctx.fill();
+    ctx.strokeStyle = 'rgba(160,200,255,.25)'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.save(); rrect(R.x, R.y, R.w, R.h, 6); ctx.clip();
+    ctx.fillStyle = '#060A1C'; ctx.fillRect(R.x, R.y, R.w, R.h);
+    // terreno revelado
+    const cs = FOG * k;
+    ctx.fillStyle = terraNow ? '#E4F2FD' : S.T.ground;
+    for (let i = 0; i < S.seen.length; i++) if (S.seen[i]) ctx.fillRect(R.x + (i % FCOLS) * cs, R.y + Math.floor(i / FCOLS) * cs, cs + 0.6, cs + 0.6);
+    const dot = (x, y, r, c) => { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(R.x + x * k, R.y + y * k, r, 0, TAU); ctx.fill(); };
+    const big = R.big ? 1.7 : 1;
+    // perigos
+    S.hz.forEach((h) => {
+      if (!seenAt(h.x, h.y)) return;
+      let c = null;
+      if (h.k === 'lava') c = terraNow ? '#A9D0EF' : '#FF7A2F';
+      else if (h.k === 'water') c = terraNow ? '#C3E2FA' : '#2E7BD8';
+      else if (h.k === 'sand' && !terraNow) c = 'rgba(176,122,58,.85)';
+      else if (h.k === 'toxic' && !terraNow) c = 'rgba(170,225,80,.6)';
+      else if (h.k === 'plant') c = terraNow ? '#A9C9E6' : '#D63384';
+      if (c) dot(h.x, h.y, h.k === 'plant' ? 2 * big : Math.max(2, h.r * k), c);
+    });
+    // recursos e construções
+    S.deposits.forEach((d) => { if (!d.taken && seenAt(d.x, d.y)) dot(d.x, d.y, 2.4 * big, '#1FB6FF'); });
+    if (terraNow) S.ices.forEach((d) => { if (!d.taken && seenAt(d.x, d.y)) { dot(d.x, d.y, 2.6 * big, '#7FB6E0'); dot(d.x, d.y, 1.6 * big, '#FFFFFF'); } });
+    S.p.builds.forEach((b) => { const s = 5 * big; ctx.fillStyle = '#26304F'; ctx.fillRect(R.x + b.x * k - s / 2 - 1, R.y + b.y * k - s / 2 - 1, s + 2, s + 2); ctx.fillStyle = BUILD_COL[b.k]; ctx.fillRect(R.x + b.x * k - s / 2, R.y + b.y * k - s / 2, s, s); });
+    S.sheep.forEach((s) => dot(s.x, s.y, 1.6 * big, s.col));
+    // ameaças: invasores sempre; criaturas só perto do astronauta (radar do traje)
+    S.enemies.forEach((e) => { if (e.raid || hyp(e.x - P.x, e.y - P.y) < 550) dot(e.x, e.y, 2.6 * big, e.raid ? '#FF3B3B' : '#FF8A5B'); });
+    S.landers.forEach((l) => { const x = R.x + l.x * k, y = R.y + l.ty * k, s = 4 * big; ctx.strokeStyle = '#FF3B3B'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x - s, y - s); ctx.lineTo(x + s, y + s); ctx.moveTo(x + s, y - s); ctx.lineTo(x - s, y + s); ctx.stroke(); });
+    // área visível na tela
+    ctx.strokeStyle = 'rgba(255,255,255,.4)'; ctx.lineWidth = 1;
+    ctx.strokeRect(R.x + S.camX * k, R.y + S.camY * k, (W / Z) * k, (H / Z) * k);
+    // nave e astronauta
+    dot(S.ship.x, S.ship.y, 4.2 * big, '#FFFFFF'); dot(S.ship.x, S.ship.y, 3 * big, '#FF8FB8');
+    const pulse = 3.5 * big + Math.sin(time * 6) * 1.2;
+    dot(P.x, P.y, pulse + 1.5, 'rgba(255,255,255,.35)'); dot(P.x, P.y, 2.6 * big, '#FFFFFF');
+    ctx.restore();
+    // rodapé: exploração e cristais encontrados
+    const pct = Math.round((S.seenN / S.seen.length) * 100);
+    const found = S.deposits.filter((d) => !d.taken && seenAt(d.x, d.y)).length;
+    ctx.font = '600 11px "Hanken Grotesk", sans-serif'; ctx.textBaseline = 'alphabetic';
+    ctx.textAlign = 'left'; ctx.fillStyle = '#A9B8DA'; ctx.fillText(t('hud_explored', { p: pct }), R.x, R.y + R.h + 16);
+    ctx.textAlign = 'right'; ctx.fillStyle = '#8FE3FF'; ctx.fillText('◆ ' + found, R.x + R.w, R.y + R.h + 16);
+    if (R.big) { ctx.textAlign = 'center'; ctx.fillStyle = '#FFFFFF'; ctx.font = '700 15px Fredoka, sans-serif'; ctx.fillText(S.p.name + ' · ' + t('hud_close'), W / 2, R.y - 16); return; }
+    // setas na borda da tela: nave (rosa, com distância) e ataque mais próximo (vermelho)
+    const top = Math.max(R.y + R.h + 50, $('hud').querySelector('.hud-left').getBoundingClientRect().bottom + 30);
+    const off = (x, y) => x < 0 || y < 0 || x > W || y > H;
+    const shx = (S.ship.x - S.camX) * Z, shy = (S.ship.y - 40 - S.camY) * Z;
+    if (off(shx, shy)) edgeArrow(shx, shy, '#FF8FB8', t('hud_ship') + ' ' + Math.round(hyp(P.x - S.ship.x, P.y - S.ship.y) / 10) + ' m', top);
+    if (S.raidOn) {
+      let tgt = null, bd = 1e9;
+      S.enemies.forEach((e) => { if (!e.raid) return; const d = hyp(e.x - P.x, e.y - P.y); if (d < bd) { bd = d; tgt = e; } });
+      S.landers.forEach((l) => { const d = hyp(l.x - P.x, l.ty - P.y); if (d < bd) { bd = d; tgt = { x: l.x, y: l.ty }; } });
+      if (tgt) {
+        const sx = (tgt.x - S.camX) * Z, sy = (tgt.y - S.camY) * Z;
+        if (off(sx, sy)) { ctx.globalAlpha = 0.6 + 0.4 * Math.sin(time * 8); edgeArrow(sx, sy, '#FF3B3B', '', top); ctx.globalAlpha = 1; }
+      }
+    }
   }
 
   function drawTitle(time) {
@@ -1622,12 +2057,113 @@
     ctx = mainCtx;
   }
 
+  // ---------------------------------------------------------------- animação do herói chorando cubos de gelo
+  let cryStart = 0;
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const PILE = [[78, 158, 0.2], [88, 161, -0.3], [83, 152, 0.5], [137, 158, 0.1], [147, 161, -0.4], [142, 152, 0.3], [95, 157, 0], [127, 157, -0.2], [72, 155, 0.6], [152, 155, -0.6]];
+  function iceCube(x, y, s, rot, alpha) {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.globalAlpha = alpha == null ? 1 : alpha;
+    ctx.fillStyle = '#CFEFFF'; ctx.fillRect(-s / 2, -s / 2, s, s);
+    ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fillRect(-s / 2, -s / 2, s, s * 0.3);
+    ctx.strokeStyle = '#7FB6E0'; ctx.lineWidth = 1; ctx.strokeRect(-s / 2, -s / 2, s, s);
+    ctx.restore();
+  }
+  function drawCry(canvas) {
+    if (canvas.width !== 220 * DPR) { canvas.width = 220 * DPR; canvas.height = 180 * DPR; }
+    const tm = reduceMotion ? 3 : (performance.now() - cryStart) / 1000;
+    ctx = canvas.getContext('2d');
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.clearRect(0, 0, 220, 180);
+    ctx.fillStyle = 'rgba(143,211,255,.14)'; ctx.beginPath(); ctx.ellipse(110, 160, 96, 15, 0, 0, TAU); ctx.fill();
+    // a pilha de cubos cresce enquanto ele chora
+    const pile = Math.min(PILE.length, Math.floor(tm / 0.5));
+    for (let i = 0; i < pile; i++) iceCube(PILE[i][0], PILE[i][1], 8, PILE[i][2]);
+    // soluços: o corpo sobe e desce
+    const sob = reduceMotion ? 0 : Math.abs(Math.sin(tm * 9)) * 2.5;
+    ctx.save(); ctx.translate(0, -sob);
+    drawSnowman(110, 158, 1, 0, { sad: true, scale: 1.9 });
+    ctx.restore();
+    const eyes = [[109, 76 - sob], [122.4, 76 - sob]];
+    ctx.strokeStyle = 'rgba(143,211,255,.7)'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+    eyes.forEach((e, k) => { const sd = k ? 1 : -1; ctx.beginPath(); ctx.moveTo(e[0], e[1] + 3); ctx.lineTo(e[0] + sd * 3, e[1] + 15); ctx.stroke(); });
+    // lágrimas de cubos de gelo saltando dos dois olhos
+    for (let i = 0; i < 8; i++) {
+      const start = i * 0.18;
+      if (tm < start) continue;
+      const p = ((tm - start) % 1.3) / 1.3, sd = i % 2 ? 1 : -1, e = eyes[i % 2 ? 1 : 0];
+      const x = e[0] + sd * (5 + p * 30), y = e[1] + 4 + p * p * 82;
+      iceCube(x, Math.min(y, 156), 6, p * 5 * sd, p > 0.85 ? (1 - p) / 0.15 : 1);
+    }
+    ctx = mainCtx;
+  }
+
+  // ---------------------------------------------------------------- vitória: o herói carregado pelos conterrâneos em festa
+  let partyStart = 0;
+  const FW = ['#FFC94D', '#FF8FB8', '#8FD3FF', '#5FD3A4', '#C77DFF', '#FF6B6B'];
+  const CONFETTI = (() => { const r = mulberry(21), a = []; for (let i = 0; i < 48; i++) a.push({ x: r() * 380, s: 0.6 + r(), d: r() * 5, c: FW[(r() * FW.length) | 0], w: r() * TAU }); return a; })();
+  const PARTY_SHEEP = [210, 330].map((x, i) => ({ x, y: 212, f: i ? -1 : 1, walk: 0, ready: true, col: FLAVORS[i * 2], sp: [{ x: -6, y: -18, c: '#FF6B6B' }, { x: 4, y: -22, c: '#3A86FF' }, { x: 8, y: -14, c: '#FFB703' }] }));
+  function drawParty(canvas) {
+    if (canvas.width !== 380 * DPR) { canvas.width = 380 * DPR; canvas.height = 230 * DPR; }
+    const tm = reduceMotion ? 1.2 : (performance.now() - partyStart) / 1000;
+    ctx = canvas.getContext('2d');
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.clearRect(0, 0, 380, 230);
+    ctx.save(); rrect(0, 0, 380, 230, 14); ctx.clip();
+    const sky = ctx.createLinearGradient(0, 0, 0, 230); sky.addColorStop(0, '#141C46'); sky.addColorStop(1, '#3A4B8C');
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, 380, 230);
+    // fogos de artifício: sobem, explodem e caem devagar
+    for (let i = 0; i < 4; i++) {
+      const per = 1.9, cyc = Math.floor((tm + i * 0.47) / per), ph = ((tm + i * 0.47) % per) / per, r = mulberry(100 + i * 13 + cyc * 7);
+      const cx = 45 + r() * 290, cy = 28 + r() * 60, col = FW[(r() * FW.length) | 0];
+      if (ph < 0.25) circle(cx, 230 - (230 - cy) * (ph / 0.25), 2, col);
+      else {
+        const p = (ph - 0.25) / 0.75;
+        ctx.globalAlpha = 1 - p;
+        for (let k = 0; k < 16; k++) { const a = (k / 16) * TAU; circle(cx + Math.cos(a) * p * 46, cy + Math.sin(a) * p * 46 + p * p * 14, 2.2, col); }
+        ctx.globalAlpha = 1;
+      }
+    }
+    // bandeirinhas
+    ctx.strokeStyle = 'rgba(255,255,255,.6)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(0, 10); ctx.quadraticCurveTo(190, 46, 380, 10); ctx.stroke();
+    for (let i = 0; i < 15; i++) {
+      const u = (i + 0.5) / 15, x = u * 380, y = 10 + 2 * u * (1 - u) * 36;
+      ctx.fillStyle = FW[i % FW.length]; ctx.beginPath(); ctx.moveTo(x - 7, y); ctx.lineTo(x + 7, y); ctx.lineTo(x, y + 13); ctx.closePath(); ctx.fill();
+    }
+    // chão de neve e um iglu ao fundo
+    ctx.fillStyle = '#E4F2FD'; ctx.beginPath(); ctx.ellipse(190, 262, 280, 78, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#F7FBFF'; ctx.strokeStyle = '#A9C9E6'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(46, 200, 30, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#4C6E96'; ctx.beginPath(); ctx.arc(46, 200, 9, Math.PI, 0); ctx.fill();
+    // iceovelhas pulando de alegria
+    PARTY_SHEEP.forEach((s, i) => { ctx.save(); ctx.translate(0, -Math.abs(Math.sin(tm * 5 + i * 1.3)) * 10); drawSheep(s, tm); ctx.restore(); });
+    // conterrâneos com os braços erguidos
+    const carriers = [[120, HATS[0]], [160, HATS[1]], [200, HATS[2]], [240, HATS[3]]];
+    carriers.forEach(([x, hat], i) => {
+      const bob = reduceMotion ? 0 : Math.abs(Math.sin(tm * 5.2 + i)) * 3;
+      ctx.save(); ctx.translate(0, -bob); drawSnowman(x, 208, i % 2 ? -1 : 1, tm * 6 + i, { scale: 0.95, hat, cheer: true }); ctx.restore();
+    });
+    // o herói, deitado sobre as mãos deles, é jogado para cima
+    const toss = reduceMotion ? 0.4 : Math.abs(Math.sin(tm * 2.6));
+    ctx.save(); ctx.translate(180, 132 - toss * 46); ctx.rotate(-Math.PI / 2 + Math.sin(tm * 2.6) * 0.25);
+    drawSnowman(0, 30, 1, tm * 8, { helmet: true, cheer: true });
+    ctx.restore();
+    // confete caindo por cima de tudo
+    CONFETTI.forEach((c) => {
+      const y = ((tm * 55 * c.s + c.d * 50) % 260) - 20, x = c.x + Math.sin(tm * 2 + c.w) * 9;
+      ctx.save(); ctx.translate(x, y); ctx.rotate(tm * 3 * c.s + c.w); ctx.fillStyle = c.c; ctx.fillRect(-3, -1.5, 6, 3); ctx.restore();
+    });
+    ctx.restore();
+    ctx = mainCtx;
+  }
+
   function draw(time) {
     if (scene === 'space' && SP) drawSpace(time);
     else if (scene === 'surface' && SF) drawSurface(time);
     else if (scene === 'warp' && SP) drawWarp(time);
     else drawTitle(time);
     if (fade.a > 0) { ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.fillStyle = `rgba(3,5,18,${fade.a})`; ctx.fillRect(0, 0, W, H); }
+    if (!OV.life.hidden) drawCry($('cryLife'));
+    if (!OV.lose.hidden) drawCry($('cryLose'));
+    if (!OV.win.hidden) drawParty($('party'));
   }
 
   // ---------------------------------------------------------------- HUD
@@ -1643,6 +2179,11 @@
     setText($('rN2'), String(Math.floor(G.inv.n2)));
     setText($('rIce'), String(Math.floor(G.inv.ice)));
     setText($('rHab'), colonized() + '/' + totalPlanets());
+    const lv = clamp(G.lives == null ? LIVES : G.lives, 0, LIVES), rl = $('rLives');
+    setText(rl, '♥'.repeat(lv) + '♡'.repeat(LIVES - lv));
+    rl.classList.toggle('low', lv === 1);
+    setText($('rTime'), fmtTime(G.stats.time));
+    rl.setAttribute('aria-label', lv + '/' + LIVES);
     setText(tThrow, scene === 'space' ? t('sensor') : t('throw'));
     let prompt = '', obj = '';
     if (scene === 'space' || scene === 'warp') {
@@ -1652,27 +2193,28 @@
         const p = sys.planets[SP.near];
         if (p.scanned) {
           const st = p.colony ? t('st_colony') : p.terra ? t('st_terra') : t('st_wild');
-          obj = '<strong>' + p.name + '</strong> · ' + t('ty_' + p.type) + '<br>' + cap(t('i_threat', { l: t('threat' + TYPES[p.type].threat) })) + ' · ' + st + (p.terra ? '' : '<br>' + t('i_need', { n: TYPES[p.type].need }));
+          obj = '<strong>' + p.name + '</strong> · ' + t('ty_' + p.type) + ' · ' + fmtTemp(p.temp) + '<br>' + cap(t('i_threat', { l: t('threat' + TYPES[p.type].threat) })) + ' · ' + st + (p.terra ? '' : '<br>' + t('i_need', { n: p.need }));
           prompt = t('p_land', { k: keyLabel(), name: p.name });
         } else { obj = '<strong>?</strong> ' + t('st_unknown'); prompt = t('p_scanFirst', { k: isTouch ? t('sensor') : 'Q' }); }
       } else if (sys.planets.every((p) => p.colony)) obj = t('o_sys');
       else obj = sys.planets.some((p) => p.scanned && !p.colony) ? t('o_land') : t('o_scan');
     } else if (scene === 'surface') {
       const S = SF, p = S.p, P = S.pl;
-      setHTML(locEl, '<strong>' + p.name + '</strong> <span>· ' + t('ty_' + p.type) + '</span>');
+      setHTML(locEl, '<strong>' + p.name + '</strong> <span>· ' + t('ty_' + p.type) + ' · ' + fmtTemp(p.terra ? Math.min(p.temp, -60) : p.temp) + '</span>');
       const bc = $('barCold'), bh = $('barHp');
       bc.querySelector('b').style.width = Math.max(0, P.cold) + '%'; bh.querySelector('b').style.width = Math.max(0, P.hp) + '%';
       bc.classList.toggle('low', P.cold < 25); bh.classList.toggle('low', P.hp < 30);
-      if (S.call && !p.colony) obj = t('o_calling');
-      else if (p.colony) obj = t('o_done');
-      else if (!p.terra) obj = G.inv.n2 >= S.T.need ? t('o_terra') : t('o_collect', { a: Math.floor(G.inv.n2), b: S.T.need });
+      if (S.raidOn) obj = t('o_raid');
+      else if (S.call && !p.colony) obj = t('o_calling');
+      else if (p.colony) obj = G.inv.n2 >= FUEL ? t('o_done') : t('o_doneFuel', { n: Math.ceil(FUEL - G.inv.n2), f: FUEL });
+      else if (!p.terra) obj = G.inv.n2 >= p.need ? t('o_terra') : t('o_collect', { a: Math.floor(G.inv.n2), b: p.need });
       else if (S.terraAnim < 1) obj = t('o_terraAnim');
       else {
-        const missing = STRUCTS.filter((s) => !hasB(s.k));
+        const missing = STRUCTS.filter((s) => !s.optional && !hasB(s.k));
         obj = missing.length === 1 ? t('o_comm') : t('o_build', { k: isTouch ? t('build') : 'B', list: missing.filter((s) => s.k !== 'comm').map((s) => t('s_' + s.k)).join(', ') });
       }
       const tg = S.target, k = keyLabel();
-      if (tg) prompt = tg.kind === 'terra' ? t('p_terra', { k, n: S.T.need }) : tg.kind === 'takeoff' ? t('p_takeoff', { k }) : tg.kind === 'sheep' ? t('p_sheep', { k }) : tg.kind === 'n2' ? t('p_n2', { k }) : t('p_ice', { k });
+      if (tg) prompt = tg.kind === 'terra' ? t('p_terra', { k, n: p.need }) : tg.kind === 'takeoff' ? (G.inv.n2 >= FUEL ? t('p_takeoff', { k, f: FUEL }) : t('p_noFuel', { k, n: Math.ceil(FUEL - G.inv.n2) })) : tg.kind === 'sheep' ? t('p_sheep', { k }) : tg.kind === 'store' ? t('p_store', { k, a: Math.floor(tg.b.stock.n2), b: Math.floor(tg.b.stock.ice) }) : tg.kind === 'n2' ? t('p_n2', { k }) : t('p_ice', { k });
     }
     setHTML(objEl, obj);
     objEl.hidden = !obj;
@@ -1695,16 +2237,17 @@
     list.innerHTML = '';
     STRUCTS.forEach((d) => {
       const li = document.createElement('li'); li.className = 'item';
-      const built = hasB(d.k), needAll = d.needAll && !STRUCTS.every((s) => s.k === d.k || hasB(s.k));
-      const lack = G.inv.ice < d.ice || G.inv.n2 < d.n2;
-      const cost = t('ice') + ' ' + d.ice + (d.n2 ? ' · N₂ ' + d.n2 : '');
+      const built = !canAddMore(d), locked = !reqMet(d), cst = costOf(d);
+      const blockMsg = locked ? (d.k === 'storage' ? t('b_needExtractor') : t('b_needAll')) : d.k === 'storage' && !nearExtractor() ? t('b_nearExtractor') : '';
+      const lack = G.inv.ice < cst.ice || G.inv.n2 < cst.n2;
+      const cost = t('ice') + ' ' + cst.ice + (cst.n2 ? ' · N₂ ' + cst.n2 : '');
       li.innerHTML = '<div><h4></h4><p></p><span class="cost"></span></div><div class="act"></div>';
-      li.querySelector('h4').textContent = t('s_' + d.k);
+      li.querySelector('h4').textContent = t('s_' + d.k) + (d.max ? ' · ' + countB(d.k) + '/' + d.max : '');
       li.querySelector('p').textContent = t('d_' + d.k);
-      const c = li.querySelector('.cost'); c.textContent = cost; if (lack && !built) c.classList.add('lack');
+      const c = li.querySelector('.cost'); c.textContent = built ? '' : cost; if (lack && !built) c.classList.add('lack');
       const act = li.querySelector('.act');
       if (built) { act.innerHTML = '<span class="state"></span>'; act.firstChild.textContent = '✓ ' + t('b_built'); }
-      else if (needAll) { act.innerHTML = '<span class="need"></span>'; act.firstChild.textContent = t('b_needAll'); }
+      else if (blockMsg) { act.innerHTML = '<span class="need"></span>'; act.firstChild.textContent = blockMsg; }
       else {
         const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = t('b_build');
         b.disabled = !p.terra || S.terraAnim < 1 || lack;
@@ -1758,10 +2301,14 @@
     const g = store.get(SAVE_KEY);
     if (!g || !g.systems) { refreshTitle(); return; }
     G = g;
+    // jogos salvos antes da temperatura por planeta
+    G.systems.forEach((s) => s.planets.forEach((p, i) => { if (p.temp == null || p.need == null) setClimate(p, i); }));
+    if (G.lives == null) G.lives = LIVES;
     hide(OV.title);
     if (G.onPlanet != null) enterSurface(G.onPlanet); else enterSpace(null, true);
   }
   function toMenu() {
+    if (loseTimer) { clearInterval(loseTimer); loseTimer = null; }
     save();
     Object.values(OV).forEach(hide);
     G = null; SP = null; SF = null; scene = 'title';
@@ -1778,9 +2325,10 @@
     else if (a === 'help') openHelp();
     else if (a === 'closeHelp') hide(OV.help);
     else if (a === 'resume') hide(OV.pause);
-    else if (a === 'menu') toMenu();
+    else if (a === 'menu' || a === 'loseMenu') toMenu();
+    else if (a === 'toBase') hide(OV.life);
     else if (a === 'close') { hide(OV.build); hide(OV.map); }
-    else if (a === 'again') { store.del(SAVE_KEY); toMenu(); store.del(SAVE_KEY); refreshTitle(); }
+    else if (a === 'winMenu') toMenu();
     else if (a === 'scan') doScan();
     else if (a === 'map') openMap();
     else if (a === 'build') openBuild();
@@ -1820,7 +2368,7 @@
       if (scene === 'space') updateSpace(dt);
       else if (scene === 'surface') updateSurface(dt);
       else if (scene === 'warp') updateWarp(dt);
-      if (playing()) { G.stats.time += dt; autosave += dt; if (autosave > 10) { autosave = 0; save(); } }
+      if (playing() && !G.won) { G.stats.time += dt; autosave += dt; if (autosave > 10) { autosave = 0; save(); } }
     }
     updateFade(dt);
     draw(now / 1000);
