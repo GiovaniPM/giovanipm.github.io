@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Damas de Gelo · Giovani Perotto Mesquita</title>
+<meta name="description" content="Damas de Gelo: jogo de damas com as regras brasileiras e os personagens de My Little Ice World. Bonecos de neve contra yetis cinzentos, contra o computador ou a dois. Em português, inglês, italiano e espanhol.">
+<meta name="author" content="Giovani Perotto Mesquita">
+<meta name="theme-color" content="#070B1F">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Hanken+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --space: #070B1F; --panel: rgba(14, 20, 48, .88); --panel-solid: #111A3C; --line: rgba(160, 200, 255, .2);
+    --ink: #F2F7FF; --muted: #A9B8DA; --ice: #8FD3FF; --ice-deep: #2F6FE0; --pink: #FF8FB8;
+    --gold: #FFC94D; --danger: #FF6B6B; --ok: #5FD3A4;
+    --round: "Fredoka", "Hanken Grotesk", "Segoe UI", Arial, sans-serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--space); color: var(--ink); font-family: "Hanken Grotesk", "Segoe UI", Arial, sans-serif; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+  body { touch-action: none; }
+  #cv { position: fixed; inset: 0; display: block; outline: none; }
+  button, select { font: inherit; }
+  button { cursor: pointer; }
+  a { color: var(--ice); }
+  :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  /* HUD */
+  .hud { position: fixed; inset: 0 0 auto 0; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: .5rem; padding: calc(.6rem + env(safe-area-inset-top)) calc(.6rem + env(safe-area-inset-right)) 0 calc(.6rem + env(safe-area-inset-left)); pointer-events: none; }
+  .pcard { display: flex; align-items: center; gap: .5rem; min-width: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: .3rem .7rem .3rem .3rem; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+  .pcard.yeti { flex-direction: row-reverse; text-align: right; padding: .3rem .3rem .3rem .7rem; justify-self: end; }
+  .pcard.snow { justify-self: start; }
+  .pcard.on { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 0 16px rgba(255, 201, 77, .3); }
+  .pcard canvas { width: 40px; height: 48px; flex: none; }
+  .pcard strong { display: block; font-family: var(--round); font-weight: 700; font-size: .98rem; line-height: 1.15; color: var(--ice); }
+  .pcard.yeti strong { color: var(--pink); }
+  .pcard span { display: block; font-size: .78rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .status { background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: .45rem 1rem; font-weight: 700; font-size: .92rem; text-align: center; max-width: 42vw; }
+  .status.forced { border-color: var(--pink); color: var(--pink); }
+  .bar { position: fixed; inset: auto 0 0 0; display: flex; flex-wrap: wrap; justify-content: center; gap: .35rem; padding: 0 .6rem calc(.6rem + env(safe-area-inset-bottom)); pointer-events: none; }
+  .bar > * { pointer-events: auto; }
+  .hbtn { display: inline-flex; align-items: center; gap: .35rem; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: .5rem .7rem; font-size: .85rem; font-weight: 600; }
+  .hbtn:hover { border-color: var(--ice); }
+  .hbtn:disabled { opacity: .4; cursor: default; border-color: var(--line); }
+  .hbtn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  .hbtn kbd { font-family: inherit; font-size: .68rem; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 .25rem; }
+  body.touch .hbtn kbd { display: none; }
+  @media (max-width: 640px) {
+    .hud { grid-template-columns: 1fr 1fr; }
+    .status { grid-column: 1 / -1; grid-row: 2; justify-self: center; max-width: 94vw; font-size: .85rem; padding: .3rem .8rem; }
+    .pcard strong { font-size: .85rem; }
+    .pcard span { font-size: .72rem; }
+  }
+  .toasts { position: fixed; left: 50%; top: 22%; transform: translateX(-50%); width: min(92vw, 520px); display: grid; gap: .4rem; justify-items: center; pointer-events: none; }
+  .toast { background: var(--panel-solid); border: 1px solid var(--line); border-left: 4px solid var(--ice); border-radius: 10px; padding: .5rem .9rem; font-size: .92rem; text-align: center; animation: tin .25s ease-out; }
+  .toast.warn { border-left-color: var(--danger); }
+  .toast.good { border-left-color: var(--gold); }
+  @keyframes tin { from { opacity: 0; transform: translateY(8px); } }
+  @media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
+
+  /* painéis */
+  .overlay { position: fixed; inset: 0; display: grid; place-items: center; padding: 1rem; background: rgba(5, 8, 24, .6); overflow: auto; touch-action: auto; }
+  #ovTitle { background: radial-gradient(ellipse at center, rgba(5,8,24,.2), rgba(5,8,24,.75)); }
+  .panel { width: min(100%, 560px); max-height: calc(100dvh - 2rem); overflow: auto; background: var(--panel-solid); border: 1px solid var(--line); border-radius: 20px; padding: 1.4rem clamp(1rem, 4vw, 2rem); box-shadow: 0 30px 80px rgba(0,0,0,.5); -webkit-user-select: text; user-select: text; }
+  .panel h2 { font-family: var(--round); font-weight: 700; font-size: 1.6rem; margin: 0 0 .8rem; color: var(--ice); }
+  .panel p, .panel li { color: var(--muted); line-height: 1.5; font-size: .95rem; }
+  .panel ul { padding-left: 1.2rem; margin: 0; display: grid; gap: .45rem; }
+  .panel li b { color: var(--ink); }
+  .title { text-align: center; }
+  .title p { margin: .4rem 0; }
+  .back { display: inline-block; font-size: .85rem; text-decoration: none; margin-bottom: .2rem; }
+  #logo { width: 300px; max-width: 100%; height: 150px; display: block; margin: 0 auto -.2rem; }
+  .logo-text { font-family: var(--round); font-weight: 700; font-size: clamp(2.1rem, 8vw, 3.2rem); line-height: 1.05; margin: 0 0 .4rem; background: linear-gradient(180deg, #FFFFFF 20%, #8FD3FF 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .tag { font-family: var(--round); font-size: 1.15rem; color: var(--pink) !important; }
+  .row { display: flex; flex-wrap: wrap; gap: .6rem; justify-content: center; margin-top: 1rem; }
+  .field { display: grid; gap: .25rem; text-align: left; font-size: .8rem; color: var(--muted); }
+  select { background: #0B1230; color: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: .5rem .6rem; }
+  .btn { border: 0; border-radius: 12px; padding: .7rem 1.2rem; font-weight: 700; font-size: 1rem; color: #fff; background: var(--ice-deep); }
+  .btn:hover { filter: brightness(1.12); }
+  .btn.alt { background: transparent; border: 1px solid var(--line); color: var(--ink); }
+  .art { width: min(380px, 100%); aspect-ratio: 380 / 230; height: auto; display: block; margin: 0 auto .6rem; }
+  #hEnd { text-align: center; color: var(--gold); font-size: 2rem; margin-bottom: .2rem; }
+  #pEnd { text-align: center; margin: 0; }
+</style>
+</head>
+<body>
+<canvas id="cv" tabindex="0" role="application" aria-label="Damas de Gelo"></canvas>
+
+<div class="hud" id="hud" hidden>
+  <div class="pcard snow" id="cSnow"><canvas id="aSnow" aria-hidden="true"></canvas><div><strong data-t="snow"></strong><span id="nSnow"></span></div></div>
+  <div class="status" id="status" role="status" aria-live="polite"></div>
+  <div class="pcard yeti" id="cYeti"><canvas id="aYeti" aria-hidden="true"></canvas><div><strong data-t="yeti"></strong><span id="nYeti"></span></div></div>
+</div>
+<div class="bar" id="bar" hidden>
+  <button type="button" class="hbtn" id="bUndo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7L4 12l5 5M4 12h11a5 5 0 0 1 0 10h-2"/></svg><span data-t="undo"></span><kbd>U</kbd></button>
+  <button type="button" class="hbtn" id="bNew"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7M5 10v10h14V10M10 20v-6h4v6"/></svg><span data-t="menu"></span></button>
+  <button type="button" class="hbtn" id="bRules"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7M12 17h0"/></svg><span data-t="rules"></span></button>
+  <button type="button" class="hbtn" id="bSound" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9zM17 9a4 4 0 0 1 0 6"/></svg><span id="lSound"></span></button>
+</div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<section class="overlay" id="ovTitle" aria-labelledby="ttl">
+  <div class="panel title">
+    <a class="back" href="projects.html" data-t="back"></a>
+    <canvas id="logo" aria-hidden="true"></canvas>
+    <h1 class="logo-text" id="ttl" data-t="name"></h1>
+    <p class="tag" data-t="tagline"></p>
+    <p data-t="story"></p>
+    <div class="row">
+      <label class="field"><span data-t="mode"></span>
+        <select id="modeSel"><option value="ai" data-t="modeAi"></option><option value="pvp" data-t="modePvp"></option></select></label>
+      <label class="field aiOnly"><span data-t="side"></span>
+        <select id="sideSel"><option value="1" data-t="snow"></option><option value="-1" data-t="yeti"></option></select></label>
+      <label class="field aiOnly"><span data-t="level"></span>
+        <select id="levelSel"><option value="0" data-t="easy"></option><option value="1" data-t="medium"></option><option value="2" data-t="hard"></option></select></label>
+      <label class="field"><span data-t="lang"></span>
+        <select id="langSel"><option value="pt">Português</option><option value="en">English</option><option value="it">Italiano</option><option value="es">Español</option></select></label>
+    </div>
+    <div class="row">
+      <button type="button" class="btn" id="bPlay" data-t="play"></button>
+      <button type="button" class="btn alt" id="bResume" data-t="resume" hidden></button>
+      <button type="button" class="btn alt" id="bRules2" data-t="rules"></button>
+    </div>
+  </div>
+</section>
+
+<section class="overlay" id="ovRules" aria-labelledby="hRules" hidden>
+  <div class="panel">
+    <h2 id="hRules" data-t="rulesTitle"></h2>
+    <ul id="rulesList"></ul>
+    <div class="row"><button type="button" class="btn" id="bRulesClose" data-t="close"></button></div>
+  </div>
+</section>
+
+<section class="overlay" id="ovEnd" aria-labelledby="hEnd" hidden>
+  <div class="panel">
+    <canvas class="art" id="endArt" aria-hidden="true"></canvas>
+    <h2 id="hEnd"></h2>
+    <p id="pEnd"></p>
+    <div class="row">
+      <button type="button" class="btn" id="bAgain" data-t="again"></button>
+      <button type="button" class="btn alt" id="bSeeBoard" data-t="seeBoard"></button>
+      <button type="button" class="btn alt" id="bEndMenu" data-t="menu"></button>
+    </div>
+  </div>
+</section>
+
+<script>
+// Motor das damas (regras brasileiras). Não usa nada de fora: também roda dentro de um Web Worker.
+// Casas: índice = linha * 8 + coluna, linha 0 no topo. Valores: 1 pedra e 2 dama da neve; -1 e -2 dos yetis.
+function Engine() {
+  const RAY = [];
+  for (let s = 0; s < 64; s++) {
+    const r = s >> 3, c = s & 7;
+    RAY[s] = [[-1, -1], [-1, 1], [1, -1], [1, 1]].map(([dr, dc]) => {
+      const a = [];
+      for (let i = r + dr, j = c + dc; i >= 0 && i < 8 && j >= 0 && j < 8; i += dr, j += dc) a.push(i * 8 + j);
+      return a;
+    });
+  }
+  const DARK = [];
+  for (let s = 0; s < 64; s++) if (((s >> 3) + (s & 7)) % 2) DARK.push(s);
+
+  function start() {
+    const b = new Array(64).fill(0);
+    DARK.forEach((s) => { if (s < 24) b[s] = -1; else if (s >= 40) b[s] = 1; });
+    return b;
+  }
+
+  // as peças capturadas só saem no fim do lance: continuam bloqueando e não podem ser saltadas duas vezes
+  function capFrom(b, sq, king, side, path, caps, out) {
+    let found = false;
+    for (let d = 0; d < 4; d++) {
+      const ray = RAY[sq][d];
+      if (!king) {
+        if (ray.length < 2) continue;
+        const a = ray[0], l = ray[1];
+        if (b[a] * side < 0 && b[l] === 0 && !caps.includes(a)) {
+          found = true; path.push(l); caps.push(a);
+          capFrom(b, l, false, side, path, caps, out);
+          path.pop(); caps.pop();
+        }
+      } else {
+        let i = 0;
+        while (i < ray.length && b[ray[i]] === 0) i++;
+        if (i >= ray.length - 1) continue;
+        const a = ray[i];
+        if (b[a] * side >= 0 || caps.includes(a)) continue;
+        for (let j = i + 1; j < ray.length && b[ray[j]] === 0; j++) {
+          found = true; path.push(ray[j]); caps.push(a);
+          capFrom(b, ray[j], true, side, path, caps, out);
+          path.pop(); caps.pop();
+        }
+      }
+    }
+    if (!found && caps.length) out.push({ path: path.slice(), caps: caps.slice() });
+  }
+
+  function genMoves(b, side) {
+    let out = [];
+    for (const s of DARK) {
+      const v = b[s];
+      if (v * side <= 0) continue;
+      b[s] = 0;
+      capFrom(b, s, Math.abs(v) === 2, side, [s], [], out);
+      b[s] = v;
+    }
+    if (out.length) {
+      // lei da maioria: só valem os lances que capturam o maior número de peças
+      const max = out.reduce((m, x) => Math.max(m, x.caps.length), 0);
+      return out.filter((x) => x.caps.length === max);
+    }
+    for (const s of DARK) {
+      const v = b[s];
+      if (v * side <= 0) continue;
+      if (Math.abs(v) === 2) {
+        for (let d = 0; d < 4; d++) for (const t of RAY[s][d]) { if (b[t] !== 0) break; out.push({ path: [s, t], caps: [] }); }
+      } else {
+        const ds = side > 0 ? [0, 1] : [2, 3];
+        for (const d of ds) { const t = RAY[s][d][0]; if (t !== undefined && b[t] === 0) out.push({ path: [s, t], caps: [] }); }
+      }
+    }
+    return out;
+  }
+
+  // a peça teria alguma captura, ainda que menor do que a exigida pela lei da maioria?
+  function hasCapture(b, s) {
+    const v = b[s], out = [];
+    b[s] = 0;
+    capFrom(b, s, Math.abs(v) === 2, Math.sign(v), [s], [], out);
+    b[s] = v;
+    return out.length > 0;
+  }
+
+  function apply(b, m) {
+    const n = b.slice(), from = m.path[0], to = m.path[m.path.length - 1];
+    let v = n[from];
+    n[from] = 0;
+    for (const c of m.caps) n[c] = 0;
+    // a pedra só vira dama se terminar o lance na última fileira
+    if (v === 1 && to >> 3 === 0) v = 2;
+    if (v === -1 && to >> 3 === 7) v = -2;
+    n[to] = v;
+    return n;
+  }
+
+  const posKey = (b, side) => b.join('') + '|' + side;
+
+  // ------------------------------------------------------------ busca
+  const seedRand = (() => { let a = 0x9E3779B9; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return (t ^ (t >>> 14)) >>> 0; }; })();
+  const Z1 = [], Z2 = [];
+  for (let s = 0; s < 64; s++) { Z1[s] = [seedRand(), seedRand(), seedRand(), seedRand()]; Z2[s] = [seedRand(), seedRand(), seedRand(), seedRand()]; }
+  const ZI = { '1': 0, '2': 1, '-1': 2, '-2': 3 }, ZS1 = seedRand(), ZS2 = seedRand();
+  function hash(b, side) {
+    let h1 = side > 0 ? ZS1 : 0, h2 = side > 0 ? ZS2 : 0;
+    for (const s of DARK) if (b[s]) { const k = ZI[b[s]]; h1 ^= Z1[s][k]; h2 ^= Z2[s][k]; }
+    return (h1 >>> 0) * 2097152 + ((h2 >>> 0) & 0x1FFFFF);
+  }
+
+  function evaluate(b, side) {
+    let score = 0, snow = 0, yeti = 0;
+    for (const s of DARK) {
+      const v = b[s];
+      if (!v) continue;
+      const r = s >> 3, c = s & 7, center = c >= 2 && c <= 5 && r >= 2 && r <= 5 ? 4 : 0;
+      if (v === 1) { snow += 100; score += 100 + (7 - r) * 3 + center + (r === 7 ? 6 : 0); }
+      else if (v === -1) { yeti += 100; score -= 100 + r * 3 + center + (r === 0 ? 6 : 0); }
+      else if (v === 2) { snow += 300; score += 320 + (r + c === 7 ? 10 : 0); }
+      else { yeti += 300; score -= 320 + (r + c === 7 ? 10 : 0); }
+    }
+    // quem está na frente prefere trocar peças
+    const total = snow + yeti;
+    if (snow !== yeti) score += Math.sign(snow - yeti) * Math.round((2400 - total) / 40);
+    return score * side;
+  }
+
+  const MATE = 100000, TIMEOUT = {};
+  const TT = new Map();
+  let nodes = 0, deadline = 0;
+
+  function search(b, side, depth, alpha, beta, ply) {
+    if ((++nodes & 2047) === 0 && Date.now() > deadline) throw TIMEOUT;
+    const moves = genMoves(b, side);
+    if (!moves.length) return -MATE + ply;
+    const forced = moves[0].caps.length > 0;
+    // capturas estendem a busca: não se avalia uma posição no meio de uma troca
+    if (depth <= 0 && !forced) return evaluate(b, side);
+    if (ply > 48) return evaluate(b, side);
+    const key = hash(b, side), hit = TT.get(key), a0 = alpha;
+    if (hit && hit.depth >= depth) {
+      if (hit.flag === 0) return hit.score;
+      if (hit.flag < 0 && hit.score <= alpha) return hit.score;
+      if (hit.flag > 0 && hit.score >= beta) return hit.score;
+    }
+    if (hit && hit.best) {
+      const i = moves.findIndex((m) => m.path.join() === hit.best);
+      if (i > 0) { const m = moves[i]; moves[i] = moves[0]; moves[0] = m; }
+    }
+    let best = -Infinity, bestPath = null;
+    for (const m of moves) {
+      const s = -search(apply(b, m), -side, forced || moves.length === 1 ? depth : depth - 1, -beta, -alpha, ply + 1);
+      if (s > best) { best = s; bestPath = m.path; }
+      if (s > alpha) alpha = s;
+      if (alpha >= beta) break;
+    }
+    if (TT.size > 400000) TT.clear();
+    TT.set(key, { depth, score: best, flag: best <= a0 ? -1 : best >= beta ? 1 : 0, best: bestPath && bestPath.join() });
+    return best;
+  }
+
+  // level: 0 fácil, 1 médio, 2 difícil. seen: quantas vezes cada posição já ocorreu na partida
+  function pick({ board, side, level, seen }) {
+    const moves = genMoves(board, side);
+    if (!moves.length) return null;
+    if (moves.length === 1) return moves[0];
+    if (level === 0 && Math.random() < 0.3) return moves[(Math.random() * moves.length) | 0];
+    const maxDepth = [2, 5, 30][level], noise = [30, 8, 0][level];
+    deadline = Date.now() + [1000, 1500, 1100][level];
+    nodes = 0;
+    let order = moves.slice().sort(() => Math.random() - 0.5), best = order[0];
+    try {
+      for (let d = 1; d <= maxDepth; d++) {
+        let alpha = -Infinity, iterBest = null, iterScore = -Infinity;
+        for (const m of order) {
+          const n = apply(board, m), rep = seen ? seen[posKey(n, -side)] || 0 : 0;
+          let s = -search(n, -side, d - 1, -Infinity, noise || rep ? Infinity : -alpha, 1);
+          // evita repetir a posição quando está ganhando
+          if (rep >= 2) s = 0; else if (rep === 1 && s > 0) s *= 0.7;
+          if (noise) s += (Math.random() - 0.5) * noise;
+          if (s > iterScore) { iterScore = s; iterBest = m; }
+          if (s > alpha) alpha = s;
+        }
+        best = iterBest;
+        order = [best].concat(order.filter((m) => m !== best));
+        if (Math.abs(iterScore) > MATE - 200) break;
+      }
+    } catch (e) { if (e !== TIMEOUT) throw e; }
+    return best;
+  }
+
+  return { start, genMoves, hasCapture, apply, posKey, pick };
+}
+</script>
+
+<script>
+(() => {
+  'use strict';
+  const E = Engine();
+  const TAU = Math.PI * 2;
+  const $ = (id) => document.getElementById(id);
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const HATS = ['#E63B5A', '#3A86FF', '#FFB703', '#2A9D8F', '#C77DFF'];
+  const FLAVORS = ['#FFB3C7', '#8B5A3C', '#B8F2D0', '#FFF1CC', '#C9B8FF', '#FFD08A'];
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function mulberry(seed) { let a = seed | 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  const Store = {
+    get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* sem armazenamento */ } },
+    del(k) { try { localStorage.removeItem(k); } catch (e) { /* sem armazenamento */ } }
+  };
+
+  // ---------------------------------------------------------------- textos
+  const I18N = {
+    pt: {
+      name: 'Damas de Gelo', back: '← Voltar aos projetos', tagline: 'Bonecos de neve contra yetis cinzentos',
+      story: 'Os yetis invadiram o tabuleiro de gelo. Atravesse o campo inimigo e ganhe o capacete de astronauta: cada boneco ou yeti que chega ao fim do tabuleiro vira dama.',
+      mode: 'Modo', modeAi: 'Contra o computador', modePvp: 'Dois jogadores', side: 'Jogar com', level: 'Dificuldade', easy: 'Fácil', medium: 'Médio', hard: 'Difícil', lang: 'Idioma',
+      play: 'Novo jogo', resume: 'Continuar partida', rules: 'Regras', rulesTitle: 'Regras das damas brasileiras', close: 'Fechar', undo: 'Desfazer', menu: 'Menu', soundOn: 'Som ligado', soundOff: 'Som desligado',
+      snow: 'Bonecos de neve', yeti: 'Yetis cinzentos', count: 'Peças {m} · Damas {k}', yourTurn: 'Sua vez', turnOf: 'Vez: {name}', thinking: '{name} pensando…', keepGoing: 'Continue capturando',
+      forced1: 'Captura obrigatória: 1 peça', forcedN: 'Captura obrigatória: {n} peças',
+      mustCapture: 'A captura é obrigatória: jogue uma das peças destacadas.', mustMajority: 'Lei da maioria: é obrigatório o lance que captura mais peças.', noMoves: 'Essa peça não tem lance agora.', notYours: 'Essa peça é do adversário.', promoted: '{name}: nova dama!',
+      moved: '{name}: {path}', captured: '{n} capturada(s)',
+      winYou: 'Você venceu!', loseYou: 'Você perdeu', winSnow: 'Os bonecos de neve venceram!', winYeti: 'Os yetis venceram!', draw: 'Empate', again: 'Jogar de novo', seeBoard: 'Ver tabuleiro',
+      endNoMoves: '{name} ficaram sem peças ou sem lances.', drawRep: 'A mesma posição ocorreu três vezes.', drawQuiet: '20 lances seguidos de damas, sem captura nem movimento de pedra.', drawEnd: 'Final de poucas damas: 5 lances sem definição.',
+      rulesList: [
+        '<b>Tabuleiro:</b> 8 × 8, com 12 peças de cada lado, só nas casas escuras. Os bonecos de neve começam.',
+        '<b>Pedra:</b> anda uma casa na diagonal, para a frente, e captura saltando para a frente ou para trás.',
+        '<b>Dama:</b> a peça de capacete, com anel dourado. Anda e captura à distância, em qualquer diagonal.',
+        '<b>Captura obrigatória:</b> se puder capturar, tem de capturar, inclusive em sequência.',
+        '<b>Lei da maioria:</b> entre várias capturas, é obrigatória a que leva mais peças. Dama e pedra valem o mesmo nessa conta.',
+        '<b>Peças capturadas:</b> só saem no fim do lance, ainda bloqueiam a passagem e não podem ser saltadas duas vezes.',
+        '<b>Promoção:</b> a pedra só vira dama se terminar o lance na última fileira. Se puder seguir capturando, continua como pedra.',
+        '<b>Fim:</b> perde quem fica sem peças ou sem lances.',
+        '<b>Empate:</b> a mesma posição três vezes; 20 lances seguidos de damas sem captura nem movimento de pedra; ou 5 lances em finais de poucas peças, como 2 damas contra 1, 1 dama contra 1 ou 3 peças contra 1 dama na grande diagonal.',
+        '<b>Teclado:</b> setas movem o cursor, Enter seleciona, Esc cancela e U desfaz.'
+      ]
+    },
+    en: {
+      name: 'Ice Checkers', back: '← Back to projects', tagline: 'Snowmen against gray yetis',
+      story: 'The yetis have invaded the ice board. Cross enemy lines and earn the astronaut helmet: any snowman or yeti that reaches the far side becomes a king.',
+      mode: 'Mode', modeAi: 'Against the computer', modePvp: 'Two players', side: 'Play as', level: 'Difficulty', easy: 'Easy', medium: 'Medium', hard: 'Hard', lang: 'Language',
+      play: 'New game', resume: 'Resume game', rules: 'Rules', rulesTitle: 'Brazilian checkers rules', close: 'Close', undo: 'Undo', menu: 'Menu', soundOn: 'Sound on', soundOff: 'Sound off',
+      snow: 'Snowmen', yeti: 'Gray yetis', count: 'Men {m} · Kings {k}', yourTurn: 'Your turn', turnOf: 'Turn: {name}', thinking: '{name} thinking…', keepGoing: 'Keep capturing',
+      forced1: 'Forced capture: 1 piece', forcedN: 'Forced capture: {n} pieces',
+      mustCapture: 'Capturing is mandatory: play one of the highlighted pieces.', mustMajority: 'Majority rule: you must play the move that captures the most pieces.', noMoves: 'That piece has no move right now.', notYours: 'That piece belongs to your opponent.', promoted: '{name}: new king!',
+      moved: '{name}: {path}', captured: '{n} captured',
+      winYou: 'You won!', loseYou: 'You lost', winSnow: 'The snowmen won!', winYeti: 'The yetis won!', draw: 'Draw', again: 'Play again', seeBoard: 'See board',
+      endNoMoves: '{name} have no pieces or moves left.', drawRep: 'The same position occurred three times.', drawQuiet: '20 consecutive king moves, with no capture or man move.', drawEnd: 'Small king endgame: 5 moves with no result.',
+      rulesList: [
+        '<b>Board:</b> 8 × 8, with 12 pieces per side, on the dark squares only. The snowmen move first.',
+        '<b>Man:</b> moves one square diagonally forward and captures by jumping forward or backward.',
+        '<b>King:</b> the piece with a helmet and a gold ring. Moves and captures at a distance along any diagonal.',
+        '<b>Forced capture:</b> if you can capture, you must, including in sequence.',
+        '<b>Majority rule:</b> among several captures, you must take the one with the most pieces. Kings and men count the same.',
+        '<b>Captured pieces:</b> leave only when the move ends, still block the way and cannot be jumped twice.',
+        '<b>Promotion:</b> a man becomes a king only if the move ends on the last row. If it can keep capturing, it stays a man.',
+        '<b>End:</b> you lose when you have no pieces or moves left.',
+        '<b>Draw:</b> the same position three times; 20 consecutive king moves with no capture or man move; or 5 moves in endgames with few pieces, such as 2 kings against 1, 1 king against 1 or 3 pieces against 1 king on the main diagonal.',
+        '<b>Keyboard:</b> arrows move the cursor, Enter selects, Esc cancels and U undoes.'
+      ]
+    },
+    it: {
+      name: 'Dama di Ghiaccio', back: '← Torna ai progetti', tagline: 'Pupazzi di neve contro yeti grigi',
+      story: 'Gli yeti hanno invaso la scacchiera di ghiaccio. Attraversa il campo nemico e conquista il casco da astronauta: ogni pupazzo o yeti che arriva in fondo diventa dama.',
+      mode: 'Modalità', modeAi: 'Contro il computer', modePvp: 'Due giocatori', side: 'Gioca con', level: 'Difficoltà', easy: 'Facile', medium: 'Medio', hard: 'Difficile', lang: 'Lingua',
+      play: 'Nuova partita', resume: 'Riprendi partita', rules: 'Regole', rulesTitle: 'Regole della dama brasiliana', close: 'Chiudi', undo: 'Annulla', menu: 'Menu', soundOn: 'Audio attivo', soundOff: 'Audio spento',
+      snow: 'Pupazzi di neve', yeti: 'Yeti grigi', count: 'Pedine {m} · Dame {k}', yourTurn: 'Tocca a te', turnOf: 'Turno: {name}', thinking: '{name}: mossa in arrivo…', keepGoing: 'Continua a catturare',
+      forced1: 'Presa obbligatoria: 1 pezzo', forcedN: 'Presa obbligatoria: {n} pezzi',
+      mustCapture: 'La presa è obbligatoria: gioca uno dei pezzi evidenziati.', mustMajority: 'Regola della maggioranza: devi giocare la mossa che cattura più pezzi.', noMoves: 'Questo pezzo ora non ha mosse.', notYours: 'Questo pezzo è dell’avversario.', promoted: '{name}: nuova dama!',
+      moved: '{name}: {path}', captured: '{n} catturati',
+      winYou: 'Hai vinto!', loseYou: 'Hai perso', winSnow: 'Hanno vinto i pupazzi di neve!', winYeti: 'Hanno vinto gli yeti!', draw: 'Patta', again: 'Gioca ancora', seeBoard: 'Vedi scacchiera',
+      endNoMoves: '{name}: nessun pezzo o mossa rimasti.', drawRep: 'La stessa posizione si è ripetuta tre volte.', drawQuiet: '20 mosse consecutive di dame, senza prese né mosse di pedine.', drawEnd: 'Finale con poche dame: 5 mosse senza esito.',
+      rulesList: [
+        '<b>Scacchiera:</b> 8 × 8, con 12 pezzi per parte, solo sulle case scure. Iniziano i pupazzi di neve.',
+        '<b>Pedina:</b> avanza di una casa in diagonale e cattura saltando in avanti o all’indietro.',
+        '<b>Dama:</b> il pezzo con il casco e l’anello dorato. Si muove e cattura a distanza su qualsiasi diagonale.',
+        '<b>Presa obbligatoria:</b> se puoi catturare, devi farlo, anche in sequenza.',
+        '<b>Regola della maggioranza:</b> tra più prese è obbligatoria quella con più pezzi. Dame e pedine contano uguale.',
+        '<b>Pezzi catturati:</b> escono solo a fine mossa, continuano a bloccare il passaggio e non si possono saltare due volte.',
+        '<b>Promozione:</b> la pedina diventa dama solo se termina la mossa sull’ultima fila. Se può continuare a catturare, resta pedina.',
+        '<b>Fine:</b> perde chi resta senza pezzi o senza mosse.',
+        '<b>Patta:</b> la stessa posizione tre volte; 20 mosse consecutive di dame senza prese né mosse di pedine; oppure 5 mosse nei finali con pochi pezzi, come 2 dame contro 1, 1 dama contro 1 o 3 pezzi contro 1 dama sulla grande diagonale.',
+        '<b>Tastiera:</b> le frecce muovono il cursore, Invio seleziona, Esc annulla e U torna indietro.'
+      ]
+    },
+    es: {
+      name: 'Damas de Hielo', back: '← Volver a los proyectos', tagline: 'Muñecos de nieve contra yetis grises',
+      story: 'Los yetis invadieron el tablero de hielo. Cruza el campo enemigo y gana el casco de astronauta: cada muñeco o yeti que llega al final del tablero se convierte en dama.',
+      mode: 'Modo', modeAi: 'Contra la computadora', modePvp: 'Dos jugadores', side: 'Jugar con', level: 'Dificultad', easy: 'Fácil', medium: 'Medio', hard: 'Difícil', lang: 'Idioma',
+      play: 'Nuevo juego', resume: 'Continuar partida', rules: 'Reglas', rulesTitle: 'Reglas de las damas brasileñas', close: 'Cerrar', undo: 'Deshacer', menu: 'Menú', soundOn: 'Sonido activado', soundOff: 'Sonido desactivado',
+      snow: 'Muñecos de nieve', yeti: 'Yetis grises', count: 'Peones {m} · Damas {k}', yourTurn: 'Tu turno', turnOf: 'Turno: {name}', thinking: '{name} pensando…', keepGoing: 'Sigue capturando',
+      forced1: 'Captura obligatoria: 1 pieza', forcedN: 'Captura obligatoria: {n} piezas',
+      mustCapture: 'La captura es obligatoria: juega una de las piezas resaltadas.', mustMajority: 'Ley de la mayoría: es obligatoria la jugada que captura más piezas.', noMoves: 'Esa pieza no tiene jugada ahora.', notYours: 'Esa pieza es del adversario.', promoted: '{name}: ¡nueva dama!',
+      moved: '{name}: {path}', captured: '{n} capturadas',
+      winYou: '¡Ganaste!', loseYou: 'Perdiste', winSnow: '¡Ganaron los muñecos de nieve!', winYeti: '¡Ganaron los yetis!', draw: 'Empate', again: 'Jugar otra vez', seeBoard: 'Ver tablero',
+      endNoMoves: '{name} se quedaron sin piezas o sin jugadas.', drawRep: 'La misma posición ocurrió tres veces.', drawQuiet: '20 jugadas seguidas de damas, sin captura ni movimiento de peón.', drawEnd: 'Final de pocas damas: 5 jugadas sin definición.',
+      rulesList: [
+        '<b>Tablero:</b> 8 × 8, con 12 piezas por lado, solo en las casillas oscuras. Empiezan los muñecos de nieve.',
+        '<b>Peón:</b> avanza una casilla en diagonal y captura saltando hacia adelante o hacia atrás.',
+        '<b>Dama:</b> la pieza con casco y anillo dorado. Se mueve y captura a distancia en cualquier diagonal.',
+        '<b>Captura obligatoria:</b> si puedes capturar, debes hacerlo, también en secuencia.',
+        '<b>Ley de la mayoría:</b> entre varias capturas, es obligatoria la que toma más piezas. Damas y peones cuentan igual.',
+        '<b>Piezas capturadas:</b> salen solo al final de la jugada, siguen bloqueando el paso y no se pueden saltar dos veces.',
+        '<b>Promoción:</b> el peón solo se convierte en dama si termina la jugada en la última fila. Si puede seguir capturando, sigue siendo peón.',
+        '<b>Fin:</b> pierde quien se queda sin piezas o sin jugadas.',
+        '<b>Empate:</b> la misma posición tres veces; 20 jugadas seguidas de damas sin captura ni movimiento de peón; o 5 jugadas en finales con pocas piezas, como 2 damas contra 1, 1 dama contra 1 o 3 piezas contra 1 dama en la gran diagonal.',
+        '<b>Teclado:</b> las flechas mueven el cursor, Enter selecciona, Esc cancela y U deshace.'
+      ]
+    }
+  };
+  let lang = 'pt';
+  function t(k, v) {
+    let s = I18N[lang][k];
+    if (s === undefined) s = I18N.pt[k];
+    if (v) Object.keys(v).forEach((n) => { s = s.replace('{' + n + '}', v[n]); });
+    return s;
+  }
+  const sideName = (side) => t(side > 0 ? 'snow' : 'yeti');
+  const LANG_TAG = { pt: 'pt-BR', en: 'en', it: 'it', es: 'es' };
+
+  // ---------------------------------------------------------------- canvas
+  const cv = $('cv'), mainCtx = cv.getContext('2d');
+  let ctx = mainCtx, W = 0, H = 0, DPR = 1;
+  let BX = 0, BY = 0, FR = 0, S = 40;   // canto do tabuleiro, moldura e lado da casa
+  const logo = $('logo'), logoCtx = logo.getContext('2d');
+  function resize() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth; H = window.innerHeight;
+    cv.width = W * DPR; cv.height = H * DPR;
+    cv.style.width = W + 'px'; cv.style.height = H + 'px';
+    logo.width = 300 * DPR; logo.height = 150 * DPR;
+    layout();
+    drawAvatars();
+  }
+  function layout() {
+    const hud = $('hud'), bar = $('bar');
+    const top = hud.hidden ? 0 : hud.getBoundingClientRect().bottom, bot = bar.hidden ? H : bar.getBoundingClientRect().top;
+    const room = bot - top - 22, size = Math.max(232, Math.min(W - 14, room));
+    BX = (W - size) / 2; BY = top + 14 + Math.max(0, (room - size) / 2);
+    FR = size * 0.045; S = (size - FR * 2) / 8;
+  }
+  const flipped = () => G && G.mode === 'ai' && G.human === -1;
+  function sqXY(sq) {
+    let r = sq >> 3, c = sq & 7;
+    if (flipped()) { r = 7 - r; c = 7 - c; }
+    return { x: BX + FR + (c + 0.5) * S, y: BY + FR + (r + 0.5) * S };
+  }
+  function xySq(x, y) {
+    let c = Math.floor((x - BX - FR) / S), r = Math.floor((y - BY - FR) / S);
+    if (c < 0 || c > 7 || r < 0 || r > 7) return -1;
+    if (flipped()) { r = 7 - r; c = 7 - c; }
+    return r * 8 + c;
+  }
+  const sqName = (s) => 'abcdefgh'[s & 7] + (8 - (s >> 3));
+
+  // ---------------------------------------------------------------- desenho: personagens de My Little Ice World
+  function rrect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+  function circle(x, y, r, fill) { ctx.fillStyle = fill; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); }
+  function shadow(rx, ry) { ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.beginPath(); ctx.ellipse(0, 0, rx, ry, 0, 0, TAU); ctx.fill(); }
+  function snowball(x, y, r) {
+    const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.2, x, y, r);
+    g.addColorStop(0, '#FFFFFF'); g.addColorStop(1, '#C9DEF2');
+    circle(x, y, r, g);
+  }
+
+  function drawSnowman(x, y, fx, walk, o) {
+    const s = fx < 0 ? -1 : 1, bob = Math.abs(Math.sin(walk)) * 2, sw = Math.sin(walk) * 0.6;
+    ctx.save(); ctx.translate(x, y); ctx.scale(o.scale || 1, o.scale || 1);
+    shadow(18, 6);
+    ctx.translate(0, -bob);
+    if (o.helmet) { ctx.fillStyle = '#8E9BBE'; rrect(-s * 14 - 7, -50, 14, 26, 4); ctx.fill(); ctx.fillStyle = '#5FD3A4'; circle(-s * 14, -44, 2.2, '#5FD3A4'); }
+    ctx.strokeStyle = '#7A4E2D'; ctx.lineWidth = 2.6; ctx.lineCap = 'round';
+    ctx.beginPath();
+    if (o.sad) { ctx.moveTo(-10, -28); ctx.lineTo(-20, -14); ctx.moveTo(-18, -17); ctx.lineTo(-23, -15); ctx.moveTo(10, -28); ctx.lineTo(20, -14); ctx.moveTo(18, -17); ctx.lineTo(23, -15); }
+    else if (o.cheer) {
+      // braços erguidos, comemorando
+      const wv = Math.sin(walk) * 5;
+      ctx.moveTo(-10, -30); ctx.lineTo(-17, -60 + wv); ctx.moveTo(-15, -53 + wv); ctx.lineTo(-22, -57 + wv);
+      ctx.moveTo(10, -30); ctx.lineTo(17, -60 - wv); ctx.moveTo(15, -53 - wv); ctx.lineTo(22, -57 - wv);
+    }
+    else {
+      ctx.moveTo(-10, -30); ctx.lineTo(-25, -38 + sw * 8); ctx.moveTo(-21, -36 + sw * 6); ctx.lineTo(-25, -32 + sw * 6);
+      ctx.moveTo(10, -30); ctx.lineTo(25, -38 - sw * 8); ctx.moveTo(21, -36 - sw * 6); ctx.lineTo(25, -32 - sw * 6);
+    }
+    ctx.stroke();
+    snowball(0, -16, 16);
+    circle(0, -22, 1.8, '#26223A'); circle(0, -13, 1.8, '#26223A');
+    snowball(0, -40, 12);
+    ctx.fillStyle = '#E63B5A'; rrect(-11, -31, 22, 6, 3); ctx.fill();
+    ctx.save(); ctx.translate(-s * 6, -28); ctx.rotate(-s * (0.2 + Math.sin(walk * 0.7) * 0.15)); rrect(-2.5, 0, 5, 13, 2); ctx.fill(); ctx.restore();
+    circle(s * 3 - 3.5, -43, 1.7, '#1B1B2F'); circle(s * 3 + 3.5, -43, 1.7, '#1B1B2F');
+    ctx.fillStyle = '#FF8A1F'; ctx.beginPath(); ctx.moveTo(s * 3, -41); ctx.lineTo(s * 15, -39); ctx.lineTo(s * 3, -37); ctx.closePath(); ctx.fill();
+    for (let i = -2; i <= 2; i++) circle(s * 2 + i * 2.6, o.sad ? -36 + Math.abs(i) * 0.9 : -34.5 - Math.abs(i) * 0.6, 0.9, '#1B1B2F');
+    if (o.sad) {
+      // sobrancelhas tristes, com as pontas de dentro levantadas
+      const e1 = s * 3 - 3.5, e2 = s * 3 + 3.5;
+      ctx.strokeStyle = '#1B1B2F'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(e1 - 3, -46); ctx.lineTo(e1 + 2.5, -48.5); ctx.moveTo(e2 + 3, -46); ctx.lineTo(e2 - 2.5, -48.5); ctx.stroke();
+    }
+    if (o.hat) {
+      ctx.fillStyle = o.hat; ctx.beginPath(); ctx.arc(0, -49, 9, Math.PI, 0); ctx.fill();
+      rrect(-10, -50, 20, 4, 2); ctx.fill(); circle(0, -59, 3, '#FFFFFF');
+    }
+    if (o.helmet) {
+      ctx.fillStyle = 'rgba(170,220,255,.16)'; ctx.strokeStyle = 'rgba(205,240,255,.95)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(0, -41, 18, 0, TAU); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(0, -41, 13, 3.6, 4.4); ctx.stroke();
+      ctx.strokeStyle = '#8E9BBE'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(s * 6, -57); ctx.lineTo(s * 9, -66); ctx.stroke(); circle(s * 9, -67, 2.5, '#FF6B6B');
+    }
+    ctx.restore();
+  }
+
+  // invasor: pelo cinza, olhos vermelhos; balança os braços quando ataca. O capacete com antena marca a dama
+  function drawYeti(x, y, fx, walk, o) {
+    const r = 21, s = fx < 0 ? -1 : 1, swing = o.atk ? Math.sin(walk * 3) * 0.9 : Math.sin(walk) * 0.2, bob = Math.abs(Math.sin(walk)) * 1.5;
+    ctx.save(); ctx.translate(x, y); ctx.scale(o.scale || 1, o.scale || 1);
+    shadow(r, r * 0.32);
+    ctx.translate(0, -bob);
+    ctx.strokeStyle = '#6E7688'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+    ctx.beginPath();
+    if (o.cheer) { const wv = Math.sin(walk) * 5; ctx.moveTo(-14, -r - 6); ctx.lineTo(-27, -2 * r - 4 + wv); ctx.moveTo(14, -r - 6); ctx.lineTo(27, -2 * r - 4 - wv); }
+    else if (o.sad) { ctx.moveTo(-14, -r - 2); ctx.lineTo(-30, -r + 16); ctx.moveTo(14, -r - 2); ctx.lineTo(30, -r + 16); }
+    else { ctx.moveTo(-14, -r - 2); ctx.lineTo(-31 + Math.cos(swing) * 2, -r + 8 - Math.sin(swing) * 12); ctx.moveTo(14, -r - 2); ctx.lineTo(31 - Math.cos(swing) * 2, -r + 8 + Math.sin(swing) * 12); }
+    ctx.stroke();
+    for (let i = 0; i < 10; i++) { const a = (i / 10) * TAU; circle(Math.cos(a) * r * 0.9, -r + Math.sin(a) * r * 0.95, 6, '#8A93A6'); }
+    circle(0, -r, r, '#9AA3B5');
+    ctx.fillStyle = '#4A5163'; ctx.beginPath(); ctx.ellipse(s * 5, -r - 3, 9, 7, 0, 0, TAU); ctx.fill();
+    circle(s * 2, -r - 5, 2.2, '#FF3B3B'); circle(s * 8, -r - 5, 2.2, '#FF3B3B');
+    ctx.strokeStyle = '#1B1B2F'; ctx.lineWidth = 1.5; ctx.beginPath();
+    if (o.sad) { ctx.moveTo(s * -1, -r - 8); ctx.lineTo(s * 4, -r - 10); ctx.moveTo(s * 11, -r - 8); ctx.lineTo(s * 6, -r - 10); }
+    else { ctx.moveTo(s * -1, -r - 10); ctx.lineTo(s * 4, -r - 8); ctx.moveTo(s * 11, -r - 10); ctx.lineTo(s * 6, -r - 8); }
+    ctx.stroke();
+    if (o.helmet) {
+      ctx.strokeStyle = 'rgba(200,215,235,.95)'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(0, -r - 2, r + 3, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke();
+      ctx.strokeStyle = '#6E7688'; ctx.beginPath(); ctx.moveTo(0, -2 * r - 4); ctx.lineTo(0, -2 * r - 12); ctx.stroke();
+      circle(0, -2 * r - 13, 2.8, Math.sin((o.time || 0) * 8) > 0 ? '#FF3B3B' : '#7A1E1E');
+    }
+    ctx.restore();
+  }
+
+  function drawSheep(s) {
+    const f = s.f < 0 ? -1 : 1, lw = Math.sin(s.walk) * 3;
+    ctx.save(); ctx.translate(s.x, s.y); shadow(18, 5);
+    ctx.strokeStyle = '#3B2E3E'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath();
+    [-10, -4, 4, 10].forEach((lx, i) => { ctx.moveTo(lx, -8); ctx.lineTo(lx + (i % 2 ? lw : -lw), 0); }); ctx.stroke();
+    const scoops = [[-10, -16], [0, -21], [10, -16], [-5, -11], [6, -11], [0, -15]];
+    scoops.forEach((q) => circle(q[0], q[1], 9, s.col));
+    s.sp.forEach((q, i) => { ctx.fillStyle = q.c; ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(i); ctx.fillRect(-2, -0.8, 4, 1.6); ctx.restore(); });
+    ctx.strokeStyle = '#2A6B3A'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(2, -32); ctx.quadraticCurveTo(4, -38, 8, -39); ctx.stroke();
+    circle(2, -31, 4, '#E8253F'); circle(1, -32.5, 1.2, 'rgba(255,255,255,.8)');
+    ctx.fillStyle = '#3B2E3E'; ctx.beginPath(); ctx.ellipse(f * 17, -17, 7.5, 6.5, 0, 0, TAU); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(f * 13, -22, 4, 2, f * 0.6, 0, TAU); ctx.fill();
+    circle(f * 19.5, -18.5, 1.8, '#FFFFFF');
+    ctx.restore();
+  }
+
+  function iceCube(x, y, s, rot, alpha) {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.globalAlpha = alpha == null ? 1 : alpha;
+    ctx.fillStyle = '#CFEFFF'; ctx.fillRect(-s / 2, -s / 2, s, s);
+    ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fillRect(-s / 2, -s / 2, s, s * 0.3);
+    ctx.strokeStyle = '#7FB6E0'; ctx.lineWidth = 1; ctx.strokeRect(-s / 2, -s / 2, s, s);
+    ctx.restore();
+  }
+
+  // ---------------------------------------------------------------- fundo
+  const STARS = (() => { const r = mulberry(7), a = []; for (let i = 0; i < 260; i++) a.push({ x: r() * 1400, y: r() * 1400, r: 0.5 + r() * 1.3, a: 0.3 + r() * 0.7, l: (r() * 3) | 0 }); return a; })();
+  function drawStars(cx, cy, time) {
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.fillStyle = '#050817'; ctx.fillRect(0, 0, W, H);
+    for (const s of STARS) {
+      const k = [0.05, 0.12, 0.25][s.l];
+      const bx = (((s.x - cx * k) % 1400) + 1400) % 1400, by = (((s.y - cy * k) % 1400) + 1400) % 1400;
+      ctx.globalAlpha = s.a * (0.75 + 0.25 * Math.sin(time * 2 + s.x));
+      for (let ox = bx; ox < W; ox += 1400) for (let oy = by; oy < H; oy += 1400) circle(ox, oy, s.r, '#FFFFFF');
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // ---------------------------------------------------------------- estado da partida
+  let G = null, pieces = [], legal = [], sel = null, anim = null, particles = [];
+  let scene = 'title', thinking = false, aiToken = 0, nextId = 1, cursor = 52, kbd = false, hover = -1, soundOn = true;
+
+  function newGame(mode, human, level) {
+    const board = E.start(), g = { mode, human, level, board, turn: 1, quiet: 0, endSig: '', endN: 0, last: null, seen: {}, hist: [], over: null };
+    g.seen[E.posKey(board, 1)] = 1;
+    return g;
+  }
+  function syncPieces() {
+    const old = pieces;
+    pieces = [];
+    for (let s = 0; s < 64; s++) {
+      const v = G.board[s], o = old.find((q) => q.sq === s);
+      if (v) pieces.push({ id: nextId++, sq: s, v, hat: o ? o.hat : HATS[(s * 7) % HATS.length], f: o ? o.f : (s & 7) < 4 ? 1 : -1, hit: false });
+    }
+  }
+  const pieceAt = (s) => pieces.find((p) => p.sq === s && !p.hit);
+  const isHuman = (side) => G.mode === 'pvp' || side === G.human;
+  const canAct = () => G && !G.over && !anim && !thinking && isHuman(G.turn);
+  const save = () => Store.set('damasDeGelo.game', G);
+
+  function count(side) {
+    let m = 0, k = 0;
+    G.board.forEach((v) => { if (v === side) m++; else if (v === side * 2) k++; });
+    return { m, k };
+  }
+  // finais em que a regra dá só 5 lances para decidir (regras oficiais da CBD, arts. 99 e 100)
+  function shortEnd() {
+    const a = count(1), b = count(-1), sig = a.k + '.' + a.m + '/' + b.k + '.' + b.m;
+    const set = ['2.0/2.0', '2.0/1.0', '1.0/2.0', '2.0/1.1', '1.1/2.0', '1.0/1.0', '1.0/1.1', '1.1/1.0'];
+    if (set.includes(sig)) return sig;
+    // três peças, com ao menos uma dama, contra uma dama solitária na grande diagonal
+    const three = (x) => x.k >= 1 && x.k + x.m === 3, lone = (x) => x.k === 1 && x.m === 0;
+    if ((three(a) && lone(b)) || (three(b) && lone(a))) {
+      const king = lone(a) ? 2 : -2;
+      if (G.board.some((v, q) => v === king && (q >> 3) + (q & 7) === 7)) return 'diag';
+    }
+    return '';
+  }
+
+  function beginTurn() {
+    legal = E.genMoves(G.board, G.turn);
+    sel = null;
+    if (!legal.length) { finish(-G.turn, 'endNoMoves'); return; }
+    refreshUI();
+    save();
+    if (!isHuman(G.turn)) askAI();
+  }
+
+  function commit(m) {
+    const from = m.path[0], to = m.path[m.path.length - 1], before = G.board[from];
+    G.hist.push({ board: G.board, turn: G.turn, quiet: G.quiet, endSig: G.endSig, endN: G.endN, last: G.last });
+    if (G.hist.length > 400) G.hist.shift();
+    G.board = E.apply(G.board, m);
+    const p = pieces.find((q) => q.sq === to && !q.hit) || pieces.find((q) => q.sq === from);
+    m.caps.forEach((c) => {
+      const v = pieces.find((q) => q.sq === c);
+      if (v) { shatter(v); pieces.splice(pieces.indexOf(v), 1); }
+    });
+    if (p) p.v = G.board[to];
+    const promoted = Math.abs(before) === 1 && Math.abs(G.board[to]) === 2;
+    if (promoted) { sparkle(to); sfx('promo'); toast(t('promoted', { name: sideName(G.turn) }), 'good'); }
+    else if (m.caps.length) sfx('cap');
+    announce(m);
+    // contagens para empate
+    G.quiet = Math.abs(before) === 2 && !m.caps.length ? G.quiet + 1 : 0;
+    const sig = shortEnd();
+    // movimento de pedra ou captura não zera esta contagem; só sair destes finais a encerra
+    if (sig && G.endSig) G.endN++; else G.endN = 0;
+    G.endSig = sig;
+    G.last = { from, to };
+    G.turn = -G.turn;
+    const key = E.posKey(G.board, G.turn);
+    G.seen[key] = (G.seen[key] || 0) + 1;
+    legal = E.genMoves(G.board, G.turn);
+    if (!legal.length) { finish(-G.turn, 'endNoMoves'); return; }
+    if (G.seen[key] >= 3) { finish(0, 'drawRep'); return; }
+    if (G.quiet >= 40) { finish(0, 'drawQuiet'); return; }
+    if (G.endSig && G.endN >= 10) { finish(0, 'drawEnd'); return; }
+    beginTurn();
+  }
+
+  function finish(winner, why) {
+    G.over = { winner, why };
+    sel = null;
+    refreshUI();
+    save();
+    sfx(winner === 0 ? 'draw' : (G.mode === 'ai' && winner !== G.human ? 'lose' : 'win'));
+    showEnd();
+  }
+
+  function showEnd() {
+    const { winner, why } = G.over;
+    let head;
+    if (winner === 0) head = t('draw');
+    else if (G.mode === 'ai') head = t(winner === G.human ? 'winYou' : 'loseYou');
+    else head = t(winner > 0 ? 'winSnow' : 'winYeti');
+    $('hEnd').textContent = head;
+    $('pEnd').textContent = t(why, { name: sideName(-winner) });
+    endStart = performance.now();
+    $('ovEnd').hidden = false;
+    $('bAgain').focus();
+  }
+
+  function undo() {
+    if (!G || anim || !G.hist.length || (sel && sel.step > 0)) return;
+    let i = G.hist.length - 1;
+    if (G.mode === 'ai') { while (i >= 0 && G.hist[i].turn !== G.human) i--; if (i < 0) return; }
+    const h = G.hist[i];
+    aiToken++; thinking = false;
+    G.hist.length = i;
+    Object.assign(G, { board: h.board, turn: h.turn, quiet: h.quiet, endSig: h.endSig, endN: h.endN, last: h.last, over: null });
+    G.seen = {};
+    G.hist.concat([{ board: G.board, turn: G.turn }]).forEach((x) => { const k = E.posKey(x.board, x.turn); G.seen[k] = (G.seen[k] || 0) + 1; });
+    $('ovEnd').hidden = true;
+    syncPieces();
+    beginTurn();
+  }
+  const canUndo = () => {
+    if (!G || !G.hist.length) return false;
+    return G.mode === 'pvp' || G.hist.some((h) => h.turn === G.human);
+  };
+
+  // ---------------------------------------------------------------- computador
+  let worker = null;
+  try {
+    const src = 'const E=(' + Engine.toString() + ')();onmessage=(e)=>{postMessage({id:e.data.id,move:E.pick(e.data)});};';
+    worker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+    worker.onmessage = (e) => aiReply(e.data.id, e.data.move);
+    worker.onerror = () => { worker = null; if (thinking) runInline(aiToken); };
+  } catch (e) { worker = null; }
+  let aiAsked = 0;
+  function askAI() {
+    thinking = true;
+    refreshUI();
+    const id = ++aiToken;
+    aiAsked = performance.now();
+    if (worker) worker.postMessage({ id, board: G.board, side: G.turn, level: G.level, seen: G.seen });
+    else runInline(id);
+  }
+  function runInline(id) {
+    setTimeout(() => { if (id === aiToken) aiReply(id, E.pick({ board: G.board, side: G.turn, level: Math.min(G.level, 1), seen: G.seen })); }, 30);
+  }
+  function aiReply(id, move) {
+    if (id !== aiToken || !G) return;
+    // um respiro mínimo para o jogador ver o lance acontecer
+    const wait = reduceMotion ? 0 : Math.max(0, 450 - (performance.now() - aiAsked));
+    setTimeout(() => {
+      if (id !== aiToken) return;
+      thinking = false;
+      playPath(move, () => commit(move));
+      refreshUI();
+    }, wait);
+  }
+
+  // ---------------------------------------------------------------- animação dos lances
+  function startLeg(p, from, to, cap, cb) {
+    const a = sqXY(from), b = sqXY(to);
+    if (b.x !== a.x) p.f = b.x > a.x ? 1 : -1;
+    const dist = Math.hypot(b.x - a.x, b.y - a.y) / S;
+    anim = { p, from, to, cap, cb, t: 0, dur: reduceMotion ? 0.001 : (0.16 + Math.min(dist, 5) * 0.07) * (cap >= 0 ? 1.25 : 1) };
+    sfx(cap >= 0 ? 'hop' : 'move');
+  }
+  function playPath(m, done) {
+    const p = pieceAt(m.path[0]);
+    let i = 0;
+    const leg = () => {
+      if (i >= m.path.length - 1) { done(); return; }
+      const c = i < m.caps.length ? m.caps[i] : -1;
+      startLeg(p, m.path[i], m.path[i + 1], c, () => { i++; leg(); });
+    };
+    leg();
+  }
+  function updateAnim(dt) {
+    if (anim) {
+      anim.t += dt / anim.dur;
+      if (anim.t >= 1) {
+        const a = anim;
+        a.p.sq = a.to;
+        if (a.cap >= 0) { const v = pieces.find((q) => q.sq === a.cap); if (v) v.hit = true; }
+        anim = null;
+        a.cb();
+      }
+    }
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const q = particles[i];
+      q.t += dt; q.vy += 620 * dt; q.x += q.vx * dt; q.y += q.vy * dt; q.rot += q.spin * dt;
+      if (q.t >= q.life) particles.splice(i, 1);
+    }
+  }
+  function shatter(p) {
+    if (reduceMotion) return;
+    const c = sqXY(p.sq), snow = p.v > 0, n = 12;
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * TAU;
+      particles.push({ kind: snow ? 'cube' : 'fur', x: c.x, y: c.y - S * 0.25, vx: Math.cos(a) * (60 + Math.random() * 90), vy: Math.sin(a) * 110 - 170, t: 0, life: 0.65 + Math.random() * 0.25, rot: Math.random() * TAU, spin: (Math.random() - 0.5) * 9, s: S * (0.08 + Math.random() * 0.06) });
+    }
+  }
+  function sparkle(sq) {
+    if (reduceMotion) return;
+    const c = sqXY(sq);
+    for (let i = 0; i < 18; i++) {
+      const a = (i / 18) * TAU;
+      particles.push({ kind: 'star', x: c.x, y: c.y - S * 0.3, vx: Math.cos(a) * 130, vy: Math.sin(a) * 130 - 90, t: 0, life: 0.8, rot: 0, spin: 4, s: S * 0.06 });
+    }
+  }
+
+  // ---------------------------------------------------------------- tabuleiro
+  function drawBoard(time) {
+    const size = FR * 2 + S * 8;
+    // moldura de gelo
+    const g = ctx.createLinearGradient(BX, BY, BX, BY + size);
+    g.addColorStop(0, '#DCF2FF'); g.addColorStop(1, '#7FB6E0');
+    ctx.fillStyle = 'rgba(0,0,0,.35)'; rrect(BX + 2, BY + 6, size, size, 14); ctx.fill();
+    ctx.fillStyle = g; rrect(BX, BY, size, size, 14); ctx.fill();
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+      const x = BX + FR + c * S, y = BY + FR + r * S, dark = (r + c) % 2 === 1;
+      ctx.fillStyle = dark ? '#34548F' : '#EEF7FF';
+      ctx.fillRect(x, y, S + 0.5, S + 0.5);
+      // facetas de gelo
+      ctx.fillStyle = dark ? 'rgba(143,211,255,.12)' : 'rgba(143,190,235,.16)';
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + S, y); ctx.lineTo(x, y + S); ctx.closePath(); ctx.fill();
+    }
+    // coordenadas na moldura
+    ctx.fillStyle = '#2B4A7E'; ctx.font = '700 ' + Math.max(8, FR * 0.62) + 'px "Hanken Grotesk", Arial, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (let i = 0; i < 8; i++) {
+      const f = flipped(), file = 'abcdefgh'[f ? 7 - i : i], rank = f ? i + 1 : 8 - i;
+      ctx.fillText(file, BX + FR + (i + 0.5) * S, BY + size - FR / 2);
+      ctx.fillText(rank, BX + FR / 2, BY + FR + (i + 0.5) * S);
+    }
+    const tint = (sq, fill) => { const c = sqXY(sq); ctx.fillStyle = fill; ctx.fillRect(c.x - S / 2, c.y - S / 2, S, S); };
+    if (G.last) { tint(G.last.from, 'rgba(120,220,255,.28)'); tint(G.last.to, 'rgba(120,220,255,.42)'); }
+
+    const pulse = reduceMotion ? 0.7 : 0.55 + 0.45 * Math.sin(time * 5);
+    const ring = (sq, color, w) => { const c = sqXY(sq); ctx.strokeStyle = color; ctx.lineWidth = w; ctx.beginPath(); ctx.ellipse(c.x, c.y + S * 0.13, S * 0.43, S * 0.3, 0, 0, TAU); ctx.stroke(); };
+
+    // bases das peças
+    pieces.forEach((p) => {
+      const q = piecePos(p), kingly = Math.abs(p.v) === 2;
+      ctx.globalAlpha = p.hit ? 0.4 : 1;
+      ctx.fillStyle = p.v > 0 ? '#BFE3FF' : '#3A4154'; ctx.strokeStyle = p.v > 0 ? '#2F6FE0' : '#E0464F'; ctx.lineWidth = Math.max(1.5, S * 0.04);
+      ctx.beginPath(); ctx.ellipse(q.x, q.y + S * 0.13, S * 0.4, S * 0.27, 0, 0, TAU); ctx.fill(); ctx.stroke();
+      if (kingly) { ctx.strokeStyle = '#FFC94D'; ctx.lineWidth = Math.max(2, S * 0.065); ctx.beginPath(); ctx.ellipse(q.x, q.y + S * 0.13, S * 0.33, S * 0.215, 0, 0, TAU); ctx.stroke(); }
+      ctx.globalAlpha = 1;
+    });
+
+    // destaques de jogadas
+    if (G && !G.over && !anim && !thinking && isHuman(G.turn)) {
+      if (!sel) {
+        const starts = new Set(legal.map((m) => m.path[0])), forced = legal[0] && legal[0].caps.length > 0;
+        if (forced) starts.forEach((s) => { ctx.globalAlpha = pulse; ring(s, '#FF8FB8', Math.max(2, S * 0.06)); ctx.globalAlpha = 1; });
+      } else {
+        ring(sel.sq, '#FFC94D', Math.max(2.5, S * 0.08));
+        const seenT = new Set(), seenC = new Set();
+        sel.cands.forEach((m) => {
+          seenT.add(m.path[sel.step + 1]);
+          if (m.caps.length) seenC.add(m.caps[sel.step]);
+        });
+        seenC.forEach((c) => { ctx.globalAlpha = pulse; ring(c, '#FF4D6D', Math.max(2.5, S * 0.08)); ctx.globalAlpha = 1; });
+        seenT.forEach((s) => {
+          const c = sqXY(s);
+          ctx.fillStyle = 'rgba(95,211,164,.35)'; ctx.fillRect(c.x - S / 2, c.y - S / 2, S, S);
+          circle(c.x, c.y, S * 0.14, '#5FD3A4');
+        });
+      }
+    }
+
+    // personagens, de trás para a frente
+    pieces.slice().sort((a, b) => piecePos(a).y - piecePos(b).y).forEach((p) => {
+      const q = piecePos(p), scale = S / 74, active = sel && sel.sq === p.sq, walk = reduceMotion ? 0 : (anim && anim.p === p ? anim.t * 10 : time * 1.3 + p.id * 1.7);
+      const king = Math.abs(p.v) === 2, feet = q.y + S * 0.26 - q.lift;
+      ctx.globalAlpha = p.hit ? 0.4 : 1;
+      if (p.v > 0) drawSnowman(q.x, feet, p.f, active && !reduceMotion ? time * 6 : walk, { scale, hat: king ? null : p.hat, helmet: king, cheer: active, sad: p.hit });
+      else drawYeti(q.x, feet, p.f, active && !reduceMotion ? time * 6 : walk, { scale: scale * 1.08, helmet: king, cheer: active, sad: p.hit, atk: anim && anim.p === p && anim.cap >= 0, time });
+      ctx.globalAlpha = 1;
+    });
+
+    particles.forEach((q) => {
+      const a = clamp(1 - q.t / q.life, 0, 1);
+      if (q.kind === 'cube') iceCube(q.x, q.y, q.s, q.rot, a);
+      else if (q.kind === 'fur') { ctx.globalAlpha = a; circle(q.x, q.y, q.s * 0.7, '#8A93A6'); ctx.globalAlpha = 1; }
+      else { ctx.globalAlpha = a; ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(q.rot); ctx.fillStyle = '#FFC94D'; ctx.fillRect(-q.s, -q.s / 3, q.s * 2, q.s / 1.5); ctx.fillRect(-q.s / 3, -q.s, q.s / 1.5, q.s * 2); ctx.restore(); ctx.globalAlpha = 1; }
+    });
+
+    if (kbd && scene === 'game') {
+      const c = sqXY(cursor);
+      ctx.strokeStyle = '#FFC94D'; ctx.lineWidth = 3; ctx.setLineDash([6, 4]); ctx.strokeRect(c.x - S / 2 + 2, c.y - S / 2 + 2, S - 4, S - 4); ctx.setLineDash([]);
+    }
+  }
+  function piecePos(p) {
+    if (anim && anim.p === p) {
+      const a = sqXY(anim.from), b = sqXY(anim.to), u = clamp(anim.t, 0, 1), e = u * u * (3 - 2 * u);
+      return { x: a.x + (b.x - a.x) * e, y: a.y + (b.y - a.y) * e, lift: Math.sin(u * Math.PI) * S * (anim.cap >= 0 ? 0.65 : 0.18) };
+    }
+    const c = sqXY(p.sq);
+    return { x: c.x, y: c.y, lift: 0 };
+  }
+
+  // ---------------------------------------------------------------- logotipo e avatares
+  function drawLogo(time) {
+    ctx = logoCtx;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.clearRect(0, 0, 300, 150);
+    const a = reduceMotion ? 0 : Math.abs(Math.sin(time * 1.5)) * 8, b = reduceMotion ? 0 : Math.abs(Math.sin(time * 1.5 + 1.6)) * 8;
+    // tabuleiro em perspectiva sob os dois
+    ctx.save(); ctx.translate(150, 126); ctx.scale(1, 0.34); ctx.rotate(Math.PI / 4);
+    const u = 26;
+    for (let i = -2; i < 2; i++) for (let j = -2; j < 2; j++) { ctx.fillStyle = (i + j) % 2 ? '#34548F' : '#EEF7FF'; ctx.fillRect(i * u, j * u, u, u); }
+    ctx.restore();
+    ctx.save(); ctx.translate(0, -a); drawSnowman(98, 128, 1, reduceMotion ? 0 : time * 3, { helmet: true, scale: 1.45, cheer: true }); ctx.restore();
+    ctx.save(); ctx.translate(0, -b); drawYeti(204, 128, -1, reduceMotion ? 0 : time * 3, { helmet: true, scale: 1.5, atk: true, time }); ctx.restore();
+    ctx = mainCtx;
+  }
+  function drawAvatars() {
+    [['aSnow', 1], ['aYeti', -1]].forEach(([id, side]) => {
+      const c = $(id);
+      c.width = 40 * DPR; c.height = 48 * DPR;
+      ctx = c.getContext('2d');
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      if (side > 0) drawSnowman(20, 46, 1, 0, { scale: 0.64, hat: HATS[0] });
+      else drawYeti(20, 44, -1, 0, { scale: 0.8, time: 0 });
+    });
+    ctx = mainCtx;
+  }
+
+  // ---------------------------------------------------------------- cenas de fim de jogo
+  let endStart = 0;
+  const FW = ['#FFC94D', '#FF8FB8', '#8FD3FF', '#5FD3A4', '#C77DFF', '#FF6B6B'];
+  const CONFETTI = (() => { const r = mulberry(21), a = []; for (let i = 0; i < 48; i++) a.push({ x: r() * 380, s: 0.6 + r(), d: r() * 5, c: FW[(r() * FW.length) | 0], w: r() * TAU }); return a; })();
+  const PARTY_SHEEP = [52, 330].map((x, i) => ({ x, y: 212, f: i ? -1 : 1, walk: 0, col: FLAVORS[i * 2], sp: [{ x: -6, y: -18, c: '#FF6B6B' }, { x: 4, y: -22, c: '#3A86FF' }, { x: 8, y: -14, c: '#FFB703' }] }));
+  const PILE = [[148, 202, 0.2], [158, 205, -0.3], [153, 196, 0.5], [207, 202, 0.1], [217, 205, -0.4], [212, 196, 0.3], [165, 201, 0], [197, 201, -0.2], [142, 199, 0.6], [222, 199, -0.6]];
+  function sceneBack(c1, c2) {
+    ctx.save(); rrect(0, 0, 380, 230, 14); ctx.clip();
+    const sky = ctx.createLinearGradient(0, 0, 0, 230); sky.addColorStop(0, c1); sky.addColorStop(1, c2);
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, 380, 230);
+  }
+  function snowFloor() { ctx.fillStyle = '#E4F2FD'; ctx.beginPath(); ctx.ellipse(190, 262, 280, 78, 0, 0, TAU); ctx.fill(); }
+  function fireworks(tm) {
+    for (let i = 0; i < 4; i++) {
+      const per = 1.9, cyc = Math.floor((tm + i * 0.47) / per), ph = ((tm + i * 0.47) % per) / per, r = mulberry(100 + i * 13 + cyc * 7);
+      const cx = 45 + r() * 290, cy = 28 + r() * 60, col = FW[(r() * FW.length) | 0];
+      if (ph < 0.25) circle(cx, 230 - (230 - cy) * (ph / 0.25), 2, col);
+      else {
+        const p = (ph - 0.25) / 0.75;
+        ctx.globalAlpha = 1 - p;
+        for (let k = 0; k < 16; k++) { const a = (k / 16) * TAU; circle(cx + Math.cos(a) * p * 46, cy + Math.sin(a) * p * 46 + p * p * 14, 2.2, col); }
+        ctx.globalAlpha = 1;
+      }
+    }
+  }
+  function confetti(tm) {
+    CONFETTI.forEach((c) => {
+      const y = ((tm * 55 * c.s + c.d * 50) % 260) - 20, x = c.x + Math.sin(tm * 2 + c.w) * 9;
+      ctx.save(); ctx.translate(x, y); ctx.rotate(tm * 3 * c.s + c.w); ctx.fillStyle = c.c; ctx.fillRect(-3, -1.5, 6, 3); ctx.restore();
+    });
+  }
+  function drawEnd(tm) {
+    const c = $('endArt');
+    if (c.width !== 380 * DPR) { c.width = 380 * DPR; c.height = 230 * DPR; }
+    ctx = c.getContext('2d');
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.clearRect(0, 0, 380, 230);
+    const w = G.over.winner;
+    if (w > 0) {
+      // bonecos em festa, jogando o herói para cima
+      sceneBack('#141C46', '#3A4B8C');
+      fireworks(tm);
+      snowFloor();
+      PARTY_SHEEP.forEach((s, i) => { ctx.save(); ctx.translate(0, -Math.abs(Math.sin(tm * 5 + i * 1.3)) * 10); drawSheep(s); ctx.restore(); });
+      [[120, HATS[0]], [160, HATS[1]], [200, HATS[2]], [240, HATS[3]]].forEach(([x, hat], i) => {
+        const bob = reduceMotion ? 0 : Math.abs(Math.sin(tm * 5.2 + i)) * 3;
+        ctx.save(); ctx.translate(0, -bob); drawSnowman(x, 208, i % 2 ? -1 : 1, tm * 6 + i, { scale: 0.95, hat, cheer: true }); ctx.restore();
+      });
+      const toss = reduceMotion ? 0.4 : Math.abs(Math.sin(tm * 2.6));
+      ctx.save(); ctx.translate(180, 132 - toss * 46); ctx.rotate(-Math.PI / 2 + Math.sin(tm * 2.6) * 0.25);
+      drawSnowman(0, 30, 1, tm * 8, { helmet: true, cheer: true });
+      ctx.restore();
+      confetti(tm);
+    } else if (w < 0) {
+      // boneco chorando cubos de gelo enquanto os yetis comemoram
+      sceneBack('#1B1230', '#4A2B4F');
+      snowFloor();
+      const pile = Math.min(PILE.length, Math.floor(tm / 0.5));
+      for (let i = 0; i < pile; i++) iceCube(PILE[i][0], PILE[i][1], 8, PILE[i][2]);
+      const sob = reduceMotion ? 0 : Math.abs(Math.sin(tm * 9)) * 2.5;
+      ctx.save(); ctx.translate(0, -sob); drawSnowman(182, 206, 1, 0, { sad: true, scale: 1.9 }); ctx.restore();
+      const eyes = [[181, 124 - sob], [194.4, 124 - sob]];
+      ctx.strokeStyle = 'rgba(143,211,255,.7)'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+      eyes.forEach((e, k) => { const sd = k ? 1 : -1; ctx.beginPath(); ctx.moveTo(e[0], e[1] + 3); ctx.lineTo(e[0] + sd * 3, e[1] + 15); ctx.stroke(); });
+      for (let i = 0; i < 8; i++) {
+        const start = i * 0.18;
+        if (tm < start) continue;
+        const p = ((tm - start) % 1.3) / 1.3, sd = i % 2 ? 1 : -1, e = eyes[i % 2 ? 1 : 0];
+        const x = e[0] + sd * (5 + p * 30), y = e[1] + 4 + p * p * 82;
+        iceCube(x, Math.min(y, 204), 6, p * 5 * sd, p > 0.85 ? (1 - p) / 0.15 : 1);
+      }
+      [[52, 1], [100, 1], [298, -1], [342, -1]].forEach(([x, f], i) => {
+        const bob = reduceMotion ? 0 : Math.abs(Math.sin(tm * 5 + i)) * 6;
+        ctx.save(); ctx.translate(0, -bob); drawYeti(x, 208, f, tm * 6 + i, { scale: 0.95, cheer: true, helmet: i === 0 || i === 3, time: tm }); ctx.restore();
+      });
+    } else {
+      // empate: os dois líderes se encaram, sem vencedor
+      sceneBack('#141C46', '#2E3D73');
+      snowFloor();
+      ctx.save(); drawSnowman(130, 204, 1, reduceMotion ? 0 : tm * 2, { helmet: true, scale: 1.7 }); ctx.restore();
+      drawYeti(250, 204, -1, reduceMotion ? 0 : tm * 2, { helmet: true, scale: 1.7, time: tm });
+    }
+    ctx.restore();
+    ctx = mainCtx;
+  }
+
+  // ---------------------------------------------------------------- som
+  let audio = null;
+  function tone(f, d, type, v, when) {
+    if (!soundOn) return;
+    try {
+      if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+      if (audio.state === 'suspended') audio.resume();
+      const o = audio.createOscillator(), g = audio.createGain(), st = audio.currentTime + (when || 0);
+      o.type = type || 'sine'; o.frequency.setValueAtTime(f, st);
+      g.gain.setValueAtTime(v || 0.07, st); g.gain.exponentialRampToValueAtTime(0.0001, st + d);
+      o.connect(g); g.connect(audio.destination); o.start(st); o.stop(st + d);
+    } catch (e) { /* sem áudio */ }
+  }
+  function sfx(k) {
+    if (k === 'move') tone(520, 0.08, 'triangle');
+    else if (k === 'select') tone(760, 0.05, 'sine', 0.05);
+    else if (k === 'hop') { tone(420, 0.1, 'triangle'); tone(680, 0.1, 'triangle', 0.06, 0.06); }
+    else if (k === 'cap') { [1400, 1100, 900, 1600].forEach((f, i) => tone(f, 0.07, 'square', 0.025, i * 0.035)); }
+    else if (k === 'promo') [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.16, 'sine', 0.08, i * 0.09));
+    else if (k === 'bad') tone(170, 0.14, 'sawtooth', 0.04);
+    else if (k === 'win') [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, 0.22, 'triangle', 0.08, i * 0.12));
+    else if (k === 'lose') [392, 349, 311, 262].forEach((f, i) => tone(f, 0.3, 'sine', 0.08, i * 0.2));
+    else if (k === 'draw') [440, 440].forEach((f, i) => tone(f, 0.2, 'sine', 0.06, i * 0.22));
+  }
+
+  // ---------------------------------------------------------------- interface
+  function refreshUI() {
+    if (!G) return;
+    const a = count(1), b = count(-1);
+    $('nSnow').textContent = t('count', a);
+    $('nYeti').textContent = t('count', b);
+    $('cSnow').classList.toggle('on', !G.over && G.turn > 0);
+    $('cYeti').classList.toggle('on', !G.over && G.turn < 0);
+    const st = $('status');
+    let txt, forced = false;
+    if (G.over) txt = G.over.winner === 0 ? t('draw') : t(G.over.winner > 0 ? 'winSnow' : 'winYeti');
+    else if (thinking) txt = t('thinking', { name: sideName(G.turn) });
+    else if (!isHuman(G.turn)) txt = t('turnOf', { name: sideName(G.turn) });
+    else if (sel && sel.step > 0) { txt = t('keepGoing'); forced = true; }
+    else if (legal[0] && legal[0].caps.length) { const n = legal[0].caps.length; txt = n === 1 ? t('forced1') : t('forcedN', { n }); forced = true; }
+    else txt = G.mode === 'pvp' ? t('turnOf', { name: sideName(G.turn) }) : t('yourTurn');
+    st.textContent = txt;
+    st.classList.toggle('forced', forced);
+    $('bUndo').disabled = !canUndo() || !!anim;
+    layout();
+  }
+  function announce(m) {
+    // texto para leitores de tela: o status já é uma região viva
+    $('srMove').textContent = t('moved', { name: sideName(G.turn), path: m.path.map(sqName).join(m.caps.length ? '×' : '–') });
+  }
+  function toast(msg, cls) {
+    const box = $('toasts'), el = document.createElement('div');
+    el.className = 'toast' + (cls ? ' ' + cls : '');
+    el.textContent = msg;
+    box.appendChild(el);
+    while (box.children.length > 2) box.removeChild(box.firstChild);
+    setTimeout(() => el.remove(), 2800);
+  }
+
+  function clickSquare(sq) {
+    if (!canAct() || sq < 0) return;
+    if (sel) {
+      const nexts = sel.cands.map((m) => m.path[sel.step + 1]);
+      if (nexts.includes(sq)) { advance(sq); return; }
+      if (sel.step > 0) { sfx('bad'); return; }
+    }
+    const p = pieceAt(sq);
+    if (p && p.v * G.turn > 0) {
+      const cands = legal.filter((m) => m.path[0] === sq);
+      if (cands.length) { sel = { sq, cands, step: 0 }; sfx('select'); refreshUI(); return; }
+      sel = null; sfx('bad');
+      if (legal[0].caps.length) toast(t(E.hasCapture(G.board, sq) ? 'mustMajority' : 'mustCapture'), 'warn');
+      else toast(t('noMoves'), 'warn');
+      refreshUI();
+      return;
+    }
+    if (p) { sfx('bad'); toast(t('notYours'), 'warn'); }
+    sel = null;
+    refreshUI();
+  }
+  function advance(sq) {
+    const c = sel.cands.filter((m) => m.path[sel.step + 1] === sq), step = sel.step, from = sel.sq;
+    const p = pieceAt(from);
+    const capSq = c[0].caps.length ? c[0].caps[step] : -1;
+    sel = { sq, cands: c, step: step + 1 };
+    startLeg(p, from, sq, capSq, () => {
+      const m = sel.cands[0];
+      if (sel.step >= m.path.length - 1) { commit(m); return; }
+      // se só houver um caminho, continua sozinho
+      const nexts = new Set(sel.cands.map((x) => x.path[sel.step + 1]));
+      if (nexts.size === 1) advance([...nexts][0]);
+      else refreshUI();
+    });
+    refreshUI();
+  }
+  function cancelSel() {
+    if (!sel || anim) return;
+    if (sel.step > 0) syncPieces();
+    sel = null;
+    refreshUI();
+  }
+
+  cv.addEventListener('pointerdown', (e) => {
+    kbd = false;
+    if (scene !== 'game') return;
+    cv.focus({ preventScroll: true });
+    clickSquare(xySq(e.clientX, e.clientY));
+  });
+  cv.addEventListener('pointermove', (e) => {
+    if (scene !== 'game') return;
+    hover = xySq(e.clientX, e.clientY);
+    let on = false;
+    if (canAct() && hover >= 0) on = sel ? sel.cands.some((m) => m.path[sel.step + 1] === hover) || legal.some((m) => m.path[0] === hover) : legal.some((m) => m.path[0] === hover);
+    cv.style.cursor = on ? 'pointer' : 'default';
+  });
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (!$('ovRules').hidden) { closeRules(); return; }
+      if (scene === 'game' && $('ovEnd').hidden) cancelSel();
+      return;
+    }
+    if (scene !== 'game' || !$('ovEnd').hidden || !$('ovRules').hidden) return;
+    if (e.target && e.target.closest && e.target.closest('select, a')) return;
+    const flip = flipped() ? -1 : 1;
+    const dirs = { ArrowUp: [-flip, 0], ArrowDown: [flip, 0], ArrowLeft: [0, -flip], ArrowRight: [0, flip] };
+    if (dirs[e.key]) {
+      e.preventDefault();
+      kbd = true;
+      const r = clamp((cursor >> 3) + dirs[e.key][0], 0, 7), c = clamp((cursor & 7) + dirs[e.key][1], 0, 7);
+      cursor = r * 8 + c;
+    } else if ((e.key === 'Enter' || e.key === ' ') && e.target === cv) {
+      e.preventDefault();
+      kbd = true;
+      clickSquare(cursor);
+    } else if (e.key === 'u' || e.key === 'U') undo();
+  });
+
+  function showGame() {
+    scene = 'game';
+    $('ovTitle').hidden = true; $('ovEnd').hidden = true;
+    $('hud').hidden = false; $('bar').hidden = false;
+    layout();
+    cv.focus({ preventScroll: true });
+  }
+  function showTitle() {
+    aiToken++; thinking = false; anim = null; sel = null; particles = [];
+    if (G && !G.over) save();
+    scene = 'title';
+    $('hud').hidden = true; $('bar').hidden = true; $('ovEnd').hidden = true;
+    $('ovTitle').hidden = false;
+    refreshResume();
+  }
+  function refreshResume() {
+    const g = Store.get('damasDeGelo.game');
+    $('bResume').hidden = !(g && !g.over && g.board);
+  }
+  function startFromMenu() {
+    const mode = $('modeSel').value;
+    const prefs = { mode, side: +$('sideSel').value, level: +$('levelSel').value };
+    savePrefs(prefs);
+    G = newGame(mode, mode === 'ai' ? prefs.side : 1, prefs.level);
+    anim = null; particles = [];
+    syncPieces();
+    showGame();
+    cursor = flipped() ? 11 : 52;
+    beginTurn();
+  }
+  function resumeGame() {
+    const g = Store.get('damasDeGelo.game');
+    if (!g || g.over) return;
+    G = g;
+    anim = null; particles = [];
+    syncPieces();
+    showGame();
+    beginTurn();
+  }
+  function savePrefs(p) { Store.set('damasDeGelo.prefs', Object.assign({}, Store.get('damasDeGelo.prefs') || {}, p)); }
+  function closeRules() { $('ovRules').hidden = true; }
+  function applySound() {
+    $('lSound').textContent = t(soundOn ? 'soundOn' : 'soundOff');
+    $('bSound').setAttribute('aria-pressed', soundOn ? 'true' : 'false');
+  }
+  function syncModeFields() {
+    document.querySelectorAll('.aiOnly').forEach((el) => { el.hidden = $('modeSel').value !== 'ai'; });
+  }
+  function applyLang() {
+    document.documentElement.lang = LANG_TAG[lang];
+    document.title = t('name') + ' · Giovani Perotto Mesquita';
+    cv.setAttribute('aria-label', t('name'));
+    document.querySelectorAll('[data-t]').forEach((el) => { el.textContent = t(el.dataset.t); });
+    $('rulesList').innerHTML = t('rulesList').map((x) => '<li>' + x + '</li>').join('');
+    $('langSel').value = lang;
+    document.querySelector('.back').href = 'projects.html' + (lang === 'pt' ? '' : '#' + lang);
+    applySound();
+    refreshUI();
+    if (G && G.over && !$('ovEnd').hidden) showEnd();
+  }
+
+  $('bPlay').addEventListener('click', startFromMenu);
+  $('bResume').addEventListener('click', resumeGame);
+  $('bRules').addEventListener('click', () => { $('ovRules').hidden = false; $('bRulesClose').focus(); });
+  $('bRules2').addEventListener('click', () => { $('ovRules').hidden = false; $('bRulesClose').focus(); });
+  $('bRulesClose').addEventListener('click', closeRules);
+  $('bUndo').addEventListener('click', undo);
+  $('bNew').addEventListener('click', showTitle);
+  $('bEndMenu').addEventListener('click', showTitle);
+  $('bAgain').addEventListener('click', () => { const g = G; G = newGame(g.mode, g.human, g.level); anim = null; particles = []; syncPieces(); showGame(); beginTurn(); });
+  $('bSeeBoard').addEventListener('click', () => { $('ovEnd').hidden = true; cv.focus({ preventScroll: true }); });
+  $('bSound').addEventListener('click', () => { soundOn = !soundOn; savePrefs({ sound: soundOn }); applySound(); });
+  $('modeSel').addEventListener('change', syncModeFields);
+  $('langSel').addEventListener('change', () => { lang = $('langSel').value; savePrefs({ lang }); applyLang(); });
+  window.addEventListener('resize', resize);
+  window.addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') document.body.classList.add('touch'); }, { passive: true });
+
+  // ---------------------------------------------------------------- laço principal
+  let lastT = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.05, (now - lastT) / 1000), time = now / 1000;
+    lastT = now;
+    updateAnim(dt);
+    ctx = mainCtx;
+    drawStars(time * 8, time * 3, reduceMotion ? 0 : time);
+    if (scene === 'game' && G) drawBoard(time);
+    if (scene === 'title' && !$('ovTitle').hidden) drawLogo(time);
+    if (G && G.over && !$('ovEnd').hidden) drawEnd(reduceMotion ? 1.2 : (now - endStart) / 1000);
+    requestAnimationFrame(frame);
+  }
+
+  // ---------------------------------------------------------------- início
+  const srEl = document.createElement('div');
+  srEl.id = 'srMove'; srEl.className = 'sr'; srEl.setAttribute('aria-live', 'polite');
+  document.body.appendChild(srEl);
+  const prefs = Store.get('damasDeGelo.prefs') || {};
+  const navLang = ((navigator.language || 'pt').slice(0, 2)).toLowerCase();
+  const hashLang = location.hash.slice(1);
+  lang = I18N[hashLang] ? hashLang : (prefs.lang && I18N[prefs.lang] ? prefs.lang : (I18N[navLang] ? navLang : 'pt'));
+  soundOn = prefs.sound !== false;
+  if (prefs.mode) $('modeSel').value = prefs.mode;
+  if (prefs.side) $('sideSel').value = String(prefs.side);
+  if (prefs.level != null) $('levelSel').value = String(prefs.level);
+  syncModeFields();
+  applyLang();
+  resize();
+  refreshResume();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
