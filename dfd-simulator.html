@@ -1,0 +1,2382 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Nenhum dado sai deste arquivo: sem rede e sem eval. As regras dos modelos passam por um interpretador próprio. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; base-uri 'none'; form-action 'none'">
+<title>DFD Simulator</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23176b5b'/%3E%3Ccircle cx='8' cy='8' r='3.4' fill='none' stroke='white' stroke-width='1.4'/%3E%3Cpath d='M1.5 8h3M11.5 8h3' stroke='white' stroke-width='1.4'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#f3f4f1;--panel:#fff;--panel2:#f8f8f6;--text:#1b2022;--muted:#60686c;--line:#d9dcd6;--line2:#e9ebe6;
+  --accent:#176b5b;--accent-text:#fff;--accent-soft:#dfefeb;--danger:#b3261e;--danger-soft:#fbe9e7;--warn:#8a5a00;--warn-soft:#fdf3dc;--ok:#1f7a3d;
+  --canvas:#fbfbf9;--dot:#d5d8d1;
+  --proc-fill:#e4f0fb;--proc-line:#1f5f99;--ent-fill:#f6ecd9;--ent-line:#85621b;--sto-fill:#e4f3e6;--sto-line:#2b6e3c;--port-fill:#f0ecf8;--port-line:#65509c;
+  --flow:#4a5358;--sel:#d9480f;--token:#d9480f;--read:#2b6e3c;
+  --s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;--s5:#e87ba4;--s6:#008300;--s7:#6250d6;--s8:#e34948;--c-grid:#e1e0d9;--c-base:#c3c2b7;--c-muted:#6f6d68;
+  --mono:ui-monospace,"Cascadia Code","Cascadia Mono",Consolas,"SF Mono",Menlo,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color-scheme:light;
+}
+:root[data-theme=dark]{
+  --bg:#14171a;--panel:#1b1f23;--panel2:#21262a;--text:#e5e8ea;--muted:#9aa2a8;--line:#343a40;--line2:#2a2f34;
+  --accent:#58c4ad;--accent-text:#0b1f1a;--accent-soft:#1b3a33;--danger:#ef8a80;--danger-soft:#3b211f;--warn:#e3b45a;--warn-soft:#352a14;--ok:#6cc98a;
+  --canvas:#171a1d;--dot:#30363b;
+  --proc-fill:#1c3247;--proc-line:#6db5ee;--ent-fill:#3a2f1a;--ent-line:#d9b163;--sto-fill:#1c3522;--sto-line:#74c98b;--port-fill:#2b2640;--port-line:#a795dd;
+  --flow:#a7afb5;--sel:#ff8f5a;--token:#ff8f5a;--read:#74c98b;
+  --s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--s5:#d55181;--s6:#008300;--s7:#9085e9;--s8:#e66767;--c-grid:#2c2c2a;--c-base:#383835;--c-muted:#9a9890;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font:13px/1.4 var(--sans);color:var(--text);background:var(--bg);display:grid;grid-template-rows:46px minmax(0,1fr);overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+button{background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:4px 10px;cursor:pointer;white-space:nowrap}
+button:hover:not(:disabled){background:var(--panel2);border-color:var(--muted)}
+button:disabled{opacity:.45;cursor:default}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-text)}
+button.primary:hover:not(:disabled){background:var(--accent);filter:brightness(1.1)}
+button.danger{color:var(--danger)}
+button.danger-solid{background:var(--danger);border-color:var(--danger);color:var(--panel)}
+button.link{border:none;background:none;color:var(--accent);padding:2px 4px}
+button.on{background:var(--accent-soft);border-color:var(--accent)}
+input[type=text],input[type=number],input[type=search],select,textarea{background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:4px 7px;width:100%}
+input[type=checkbox]{accent-color:var(--accent);margin:0}
+textarea{font:12px/1.5 var(--mono);resize:vertical}
+code,.mono{font-family:var(--mono);font-size:12px}
+.muted{color:var(--muted)}
+.spacer{flex:1}
+.hidden{display:none!important}
+.sep{width:1px;height:20px;background:var(--line);margin:0 3px;flex:none}
+
+#topbar{display:flex;align-items:center;gap:6px;padding:0 10px;background:var(--panel);border-bottom:1px solid var(--line);min-width:0}
+#brand{font-weight:650;display:flex;align-items:center;gap:7px;white-space:nowrap;margin-right:4px}
+#brand svg{width:18px;height:18px;flex:none}
+#crumbs{display:flex;align-items:center;gap:3px;min-width:0;overflow:hidden;white-space:nowrap}
+#crumbs button{border:none;background:none;padding:2px 5px;max-width:170px;overflow:hidden;text-overflow:ellipsis}
+#crumbs button[aria-current=true]{font-weight:600}
+#crumbs span{color:var(--muted)}
+.tools{display:flex;align-items:center;gap:5px}
+.menu{position:relative}
+.menu-list{position:absolute;right:0;top:calc(100% + 3px);background:var(--panel);border:1px solid var(--line);border-radius:6px;box-shadow:0 6px 20px rgba(0,0,0,.2);z-index:40;min-width:220px;padding:4px}
+.menu-list button{display:block;width:100%;text-align:left;border:none;background:none;padding:5px 9px;border-radius:4px}
+.menu-list button:hover:not(:disabled){background:var(--accent-soft)}
+#clock{font:600 13px var(--mono);min-width:82px;text-align:right}
+#status{color:var(--muted);font-size:12px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#speed{width:auto}
+#lang{width:auto}
+
+#main{display:grid;grid-template-columns:186px minmax(0,1fr) 300px;min-height:0}
+#left,#right{background:var(--panel2);min-height:0;display:flex;flex-direction:column}
+#left{border-right:1px solid var(--line)}
+#right{border-left:1px solid var(--line)}
+.side-title{font-size:11px;font-weight:650;color:var(--muted);letter-spacing:.03em;text-transform:uppercase;padding:10px 12px 4px}
+#palette{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:4px 10px 8px}
+.pal{display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 2px;touch-action:none;font-size:11px;white-space:normal;line-height:1.15;cursor:grab}
+.pal svg{width:40px;height:28px;pointer-events:none}
+#outline{overflow:auto;flex:1;padding-bottom:10px}
+.out{display:flex;gap:6px;width:100%;border:none;border-radius:0;background:none;text-align:left;padding:3px 12px;font-size:12px;align-items:baseline}
+.out:hover:not(:disabled){background:var(--line2)}
+.out.active{background:var(--accent-soft);box-shadow:inset 2px 0 0 var(--accent)}
+.out i{font:600 10px var(--mono);color:var(--muted);font-style:normal;flex:none;min-width:22px}
+.out span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+#center{display:grid;grid-template-rows:minmax(0,1fr) auto;min-height:0;min-width:0}
+#stage{position:relative;min-height:0;overflow:hidden;background:var(--canvas)}
+#svg{position:absolute;inset:0;width:100%;height:100%;touch-action:none;user-select:none;outline:none}
+#zoombar{position:absolute;left:10px;bottom:10px;display:flex;gap:3px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:3px}
+#zoombar button{border:none;background:none;padding:2px 8px}
+#zoombar span{align-self:center;font:11px var(--mono);color:var(--muted);min-width:40px;text-align:center}
+#empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;padding:20px}
+#empty>div{pointer-events:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:26px 30px;width:min(520px,100%);text-align:center}
+#empty h1{font-size:18px;margin:0 0 6px;font-weight:650}
+#empty p{margin:0 0 16px;color:var(--muted)}
+#empty .row{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+#renamer{position:absolute;z-index:20;text-align:center;font:13px var(--sans);border:2px solid var(--accent);border-radius:4px;padding:3px;background:var(--panel);resize:none;overflow:hidden}
+
+/* desenho */
+.grid-dot{fill:var(--dot)}
+.n-shape{stroke-width:1.8}
+.n-process .n-shape{fill:var(--proc-fill);stroke:var(--proc-line)}
+.n-entity .n-shape{fill:var(--ent-fill);stroke:var(--ent-line)}
+.n-store .n-fill{fill:var(--sto-fill)}
+.n-store .n-shape{fill:none;stroke:var(--sto-line)}
+.n-port .n-shape{fill:var(--port-fill);stroke:var(--port-line);stroke-dasharray:5 3}
+.n-text{fill:var(--text);font:13px var(--sans);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.n-num{fill:var(--muted);font:600 11px var(--mono);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.node{cursor:move}
+.node.sel .n-shape{stroke:var(--sel);stroke-width:3}
+.node.tgt .n-shape{stroke:var(--accent);stroke-width:3.5}
+.node.warn .n-shape{stroke-dasharray:none}
+.conn{fill:var(--accent);opacity:0;cursor:crosshair;stroke:var(--panel);stroke-width:1.5}
+.node:hover .conn,.node.sel .conn{opacity:1}
+.mode-sim .conn{display:none}
+.open-child{cursor:pointer}
+.open-child rect{fill:var(--panel);stroke:var(--proc-line)}
+.open-child text{fill:var(--proc-line);font:700 12px var(--sans);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.bp{fill:var(--danger);stroke:var(--panel);stroke-width:1.5;pointer-events:none}
+.f-line{fill:none;stroke:var(--flow);stroke-width:1.7;marker-end:url(#arrow)}
+.f-hit{fill:none;stroke:transparent;stroke-width:14;cursor:pointer}
+.flow.sel .f-line{stroke:var(--sel);stroke-width:2.6;marker-end:url(#arrow-sel)}
+.flow.has-guard .f-line{stroke-dasharray:7 4}
+.f-bg{fill:var(--canvas)}
+.f-text{fill:var(--text);font:12px var(--sans);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.f-guard{fill:var(--muted);font:10.5px var(--mono);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.bend{fill:var(--sel);stroke:var(--panel);stroke-width:1.5;cursor:grab}
+.preview{fill:none;stroke:var(--accent);stroke-width:2;stroke-dasharray:6 4;pointer-events:none}
+.marquee{fill:color-mix(in srgb,var(--accent) 14%,transparent);stroke:var(--accent);stroke-dasharray:4 3;pointer-events:none}
+.tok{fill:var(--token);stroke:var(--panel);stroke-width:1.5;cursor:pointer}
+.tok.read{fill:var(--read);pointer-events:none}
+.tok.picked{stroke:var(--text);stroke-width:3}
+.badge rect{fill:var(--text)}
+.badge text{fill:var(--panel);font:700 11px var(--mono);text-anchor:middle;dominant-baseline:central}
+.badge{pointer-events:none}
+.badge.q rect{fill:var(--sel)}
+.badge.in rect{fill:var(--proc-line)}
+.prog{fill:none;stroke:var(--token);stroke-width:4;pointer-events:none}
+.f-count{fill:var(--accent);font:700 10.5px var(--mono);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.mode-sim .node{cursor:pointer}
+.mode-sim .n-entity.manual .n-shape{stroke-width:2.6}
+
+/* inspetor */
+#tabs{display:flex;border-bottom:1px solid var(--line);padding:6px 8px 0;gap:2px;flex:none}
+.rt{border:1px solid transparent;border-bottom:none;border-radius:6px 6px 0 0;background:none;color:var(--muted);padding:4px 11px;margin-bottom:-1px}
+.rt[aria-selected=true]{background:var(--panel2);border-color:var(--line);border-bottom-color:var(--panel2);color:var(--text);font-weight:600}
+.rt b{background:var(--danger);color:var(--panel);border-radius:8px;padding:0 5px;font-size:10px;margin-left:3px}
+.rt b.w{background:var(--warn)}
+#inspector{overflow:auto;flex:1;padding:10px 12px 16px;display:flex;flex-direction:column;gap:9px;min-height:0}
+.field{display:flex;flex-direction:column;gap:3px}
+.field>span,.lab{font-size:12px;color:var(--muted)}
+.hint{font-size:11px;color:var(--muted);line-height:1.35}
+.ferr{font:11px var(--mono);color:var(--danger);white-space:pre-wrap}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.inl{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+h4{margin:6px 0 0;font-size:13px;font-weight:650}
+.type{font-size:11px;font-weight:650;color:var(--muted);letter-spacing:.03em;text-transform:uppercase}
+.issue{display:block;width:100%;text-align:left;white-space:normal;padding:6px 8px;border-left:3px solid var(--warn);border-radius:0 5px 5px 0;font-size:12px}
+.issue.error{border-left-color:var(--danger)}
+.issue small{display:block;color:var(--muted)}
+.ok-msg{color:var(--ok)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:12px}
+.kv dt{color:var(--muted)}.kv dd{margin:0;font-family:var(--mono)}
+pre.json{margin:0;background:var(--panel);border:1px solid var(--line2);border-radius:5px;padding:7px;font:11.5px/1.5 var(--mono);white-space:pre-wrap;word-break:break-word;max-height:220px;overflow:auto}
+
+/* painel da simulação */
+#timeline{padding:4px 10px 0;flex:none;display:flex}#timeline input{width:100%;accent-color:var(--accent);margin:0}
+.f-vol{fill:none;stroke:var(--accent);opacity:.22;stroke-linecap:round;pointer-events:none}
+.f-trail{fill:none;stroke:var(--token);stroke-width:3.5;opacity:.75;pointer-events:none}
+.chart-head{display:flex;align-items:center;gap:12px;padding:6px 10px 2px;flex-wrap:wrap;font-size:12px}
+.chart-head button{padding:1px 8px;font-size:12px}
+.legend{display:flex;gap:12px;flex-wrap:wrap;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i,.c-row i{display:inline-block;width:14px;height:2px;border-radius:1px}
+.chart-wrap{position:relative;padding:0 4px}
+.qchart{display:block;max-width:100%}
+.c-grid{stroke:var(--c-grid);stroke-width:1}.c-base{stroke:var(--c-base);stroke-width:1}
+.c-tick{fill:var(--c-muted);font:11px var(--sans);font-variant-numeric:tabular-nums;dominant-baseline:central}
+.c-end{fill:var(--muted);font:11px var(--sans);dominant-baseline:central}
+.c-line{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.c-dot{stroke:var(--panel);stroke-width:2}
+.c-cross{stroke:var(--c-base);stroke-width:1}
+.c-tip{position:absolute;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:5px 8px;font-size:12px;box-shadow:0 4px 14px rgba(0,0,0,.18);pointer-events:none;white-space:nowrap}
+.c-row{display:flex;align-items:center;gap:6px}.c-row b{min-width:18px;text-align:right}.c-row span{color:var(--muted)}
+.sc-bar{display:flex;align-items:flex-end;gap:8px;padding:8px 10px;flex-wrap:wrap;border-bottom:1px solid var(--line2)}
+.sc-bar .field{width:96px}.sc-bar .field:nth-child(2){width:120px}
+.sc-note{padding:6px 12px}.errline{padding:0 12px 6px;color:var(--danger);font-size:12px}
+#simpanel{height:270px;border-top:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;min-height:0}
+#simtabs{display:flex;gap:4px;padding:5px 10px;border-bottom:1px solid var(--line2);align-items:center;flex:none}
+.st{padding:2px 10px;font-size:12px}
+.st[aria-selected=true]{background:var(--accent-soft);border-color:var(--accent)}
+#simbody{overflow:auto;flex:1;min-height:0;padding:0}
+table.t{border-collapse:separate;border-spacing:0;font-size:12px;width:100%}
+table.t th,table.t td{border-bottom:1px solid var(--line2);padding:3px 9px;text-align:left;white-space:nowrap}
+table.t th{position:sticky;top:0;background:var(--panel2);font-weight:600;font-size:11px;color:var(--muted);z-index:1}
+table.t td.num,table.t th.num{text-align:right;font-variant-numeric:tabular-nums}
+table.t td.m{font-family:var(--mono);max-width:520px;overflow:hidden;text-overflow:ellipsis}
+table.t tr.warn td{background:var(--warn-soft);color:var(--warn)}
+table.t tr.err td{background:var(--danger-soft);color:var(--danger)}
+table.t tr.click{cursor:pointer}
+table.t tr.click:hover td{background:var(--panel2)}
+.summary{display:flex;flex-wrap:wrap;gap:6px 18px;padding:8px 12px;border-bottom:1px solid var(--line2);font-size:12px}
+.summary b{font:600 13px var(--mono)}
+.storeh{padding:8px 12px 3px;font-weight:600}
+.pad{padding:12px}
+
+/* diálogos */
+dialog{border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--text);padding:0;width:min(480px,94vw);max-height:90vh;box-shadow:0 12px 40px rgba(0,0,0,.3)}
+dialog.wide{width:min(760px,96vw)}
+dialog::backdrop{background:rgba(0,0,0,.4)}
+.dlg{display:flex;flex-direction:column;max-height:90vh}
+.dlg header{padding:12px 16px;font-weight:650;font-size:14px;border-bottom:1px solid var(--line2)}
+.dlg .b{padding:14px 16px;overflow:auto;flex:1}
+.dlg .b h4{margin:14px 0 4px}.dlg .b h4:first-child{margin-top:0}
+.dlg .b p{margin:0 0 8px}
+.dlg .b ul{margin:0 0 8px;padding-left:18px}
+.dlg footer{padding:10px 16px;display:flex;justify-content:flex-end;gap:6px;border-top:1px solid var(--line2)}
+#toasts{position:fixed;left:50%;transform:translateX(-50%);top:54px;z-index:9999;display:flex;flex-direction:column;gap:6px;max-width:min(520px,90vw)}
+.toast{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--ok);border-radius:5px;padding:7px 10px;box-shadow:0 4px 18px rgba(0,0,0,.2);display:flex;gap:10px;white-space:pre-wrap}
+.toast.err{border-left-color:var(--danger)}.toast.warn{border-left-color:var(--warn)}
+.toast span{flex:1}.toast button{border:none;background:none;padding:0 3px;color:var(--muted)}
+
+@media (max-width:1000px){
+  #main{grid-template-columns:150px minmax(0,1fr) 240px}
+  #brand span,#status{display:none}
+}
+@media print{
+  #topbar,#left,#right,#zoombar,#simpanel,#toasts{display:none!important}
+  body,#main{display:block}
+  #stage{position:fixed;inset:0;background:#fff}
+}
+</style>
+</head>
+<body>
+<header id="topbar">
+  <div id="brand"><svg viewBox="0 0 16 16" aria-hidden="true"><rect width="16" height="16" rx="3" fill="#176b5b"/><circle cx="8" cy="8" r="3.4" fill="none" stroke="#fff" stroke-width="1.4"/><path d="M1.5 8h3M11.5 8h3" stroke="#fff" stroke-width="1.4"/></svg><span>DFD Simulator</span></div>
+  <nav id="crumbs" aria-label="Níveis"></nav>
+  <div class="spacer"></div>
+  <div class="tools" id="edit-tools">
+    <button id="b-undo" data-t="undo" data-title="undoKey">↶</button>
+    <button id="b-redo" data-t="redo" data-title="redoKey">↷</button>
+    <div class="sep"></div>
+    <div class="menu"><button id="b-file" aria-haspopup="true" data-tx="file"></button></div>
+    <div class="sep"></div>
+    <button id="b-sim" class="primary" data-tx="simulate"></button>
+  </div>
+  <div class="tools hidden" id="sim-tools">
+    <span id="status" role="status"></span>
+    <span id="clock">t = 0.0</span>
+    <button id="b-play" class="primary"></button>
+    <button id="b-back" data-tx="back" data-title="backKey"></button>
+    <button id="b-step" data-tx="step" data-title="stepKey"></button>
+    <button id="b-reset" data-tx="restart"></button>
+    <select id="speed" data-aria="speed"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option><option value="8">8×</option></select>
+    <div class="sep"></div>
+    <button id="b-stop" data-tx="backToEdit"></button>
+  </div>
+  <div class="sep"></div>
+  <select id="lang" aria-label="Idioma / Language / Lingua"><option value="pt">PT</option><option value="en">EN</option><option value="it">IT</option><option value="es">ES</option></select>
+  <button id="b-help" aria-label="?" data-title="help">?</button>
+  <button id="b-theme" data-title="theme">◐</button>
+</header>
+
+<div id="main">
+  <aside id="left">
+    <div class="side-title" data-tx="elements"></div>
+    <div id="palette"></div>
+    <div class="side-title" data-tx="thisDiagram"></div>
+    <div id="outline"></div>
+  </aside>
+  <section id="center">
+    <div id="stage">
+      <svg id="svg" role="application" tabindex="0" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle class="grid-dot" cx="1" cy="1" r="1"/></pattern>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0 0 10 5 0 10z" fill="var(--flow)"/></marker>
+          <marker id="arrow-sel" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0 0 10 5 0 10z" fill="var(--sel)"/></marker>
+        </defs>
+        <rect id="bg" width="100%" height="100%" fill="url(#dots)"/>
+        <g id="world"><g id="g-flows"></g><g id="g-nodes"></g><g id="g-sim"></g><g id="g-over"></g></g>
+      </svg>
+      <div id="empty" class="hidden"><div>
+        <h1 data-tx="emptyTitle"></h1>
+        <p data-tx="emptyText"></p>
+        <div class="row" id="empty-samples"></div>
+      </div></div>
+      <div id="zoombar">
+        <button id="z-out" aria-label="−">−</button><span id="z-label">100%</span><button id="z-in" aria-label="+">+</button><button id="z-fit" data-tx="fit"></button>
+      </div>
+    </div>
+    <div id="simpanel" class="hidden">
+      <div id="timeline"><input id="tl" type="range" min="0" max="1" step="any" value="0" data-aria="timeline"></div>
+      <div id="simtabs" role="tablist"></div>
+      <div id="simbody"></div>
+    </div>
+  </section>
+  <aside id="right">
+    <div id="tabs" role="tablist">
+      <button class="rt" role="tab" data-r="props" data-tx="properties"></button>
+      <button class="rt" role="tab" data-r="check"></button>
+    </div>
+    <div id="inspector"></div>
+  </aside>
+</div>
+<div id="toasts" role="status" aria-live="polite"></div>
+<input id="file-json" type="file" accept=".json,application/json" class="hidden">
+
+<script>
+"use strict";
+/* ========== textos ========== */
+const LANGS=['pt','en','it','es'];
+const I18N={
+file:['Arquivo ▾','File ▾','File ▾','Archivo ▾'],undo:['Desfazer','Undo','Annulla','Deshacer'],redo:['Refazer','Redo','Ripeti','Rehacer'],undoKey:['Desfazer (Ctrl+Z)','Undo (Ctrl+Z)','Annulla (Ctrl+Z)','Deshacer (Ctrl+Z)'],redoKey:['Refazer (Ctrl+Y)','Redo (Ctrl+Y)','Ripeti (Ctrl+Y)','Rehacer (Ctrl+Y)'],
+simulate:['▶ Simular','▶ Simulate','▶ Simula','▶ Simular'],play:['▶ Executar','▶ Run','▶ Esegui','▶ Ejecutar'],pause:['⏸ Pausar','⏸ Pause','⏸ Pausa','⏸ Pausar'],step:['Passo','Step','Passo','Paso'],stepKey:['Avança até o próximo evento (N)','Advance to the next event (N)','Avanza al prossimo evento (N)','Avanza al siguiente evento (N)'],restart:['Reiniciar','Restart','Riavvia','Reiniciar'],backToEdit:['■ Editar','■ Edit','■ Modifica','■ Editar'],speed:['Velocidade','Speed','Velocità','Velocidad'],
+help:['Ajuda','Help','Guida','Ayuda'],theme:['Alternar tema','Toggle theme','Cambia tema','Cambiar tema'],elements:['Elementos','Elements','Elementi','Elementos'],thisDiagram:['Neste diagrama','In this diagram','In questo diagramma','En este diagrama'],fit:['Ajustar','Fit','Adatta','Ajustar'],properties:['Propriedades','Properties','Proprietà','Propiedades'],check:['Verificar','Check','Verifica','Verificar'],
+process:['Processo','Process','Processo','Proceso'],entity:['Entidade externa','External entity','Entità esterna','Entidad externa'],store:['Depósito de dados','Data store','Archivio dati','Almacén de datos'],flow:['Fluxo de dados','Data flow','Flusso di dati','Flujo de datos'],port:['Fluxo do nível superior','Upper-level flow','Flusso del livello superiore','Flujo del nivel superior'],
+newProcess:['Novo processo','New process','Nuovo processo','Nuevo proceso'],newEntity:['Nova entidade','New entity','Nuova entità','Nueva entidad'],newStore:['Novo depósito','New store','Nuovo archivio','Nuevo almacén'],
+emptyTitle:['Comece um diagrama de fluxo de dados','Start a data flow diagram','Inizia un diagramma di flusso dei dati','Empieza un diagrama de flujo de datos'],emptyText:['Arraste os elementos da esquerda para cá, ligue-os pelos pontos das bordas ou abra um exemplo.','Drag elements here from the left, connect them by the dots on their edges, or open a sample.','Trascina qui gli elementi da sinistra, collegali dai punti sui bordi o apri un esempio.','Arrastra aquí los elementos de la izquierda, conéctalos por los puntos de los bordes o abre un ejemplo.'],
+fNew:['Novo modelo','New model','Nuovo modello','Nuevo modelo'],fOpen:['Abrir modelo (.json)…','Open model (.json)…','Apri modello (.json)…','Abrir modelo (.json)…'],fSave:['Salvar modelo (.json)','Save model (.json)','Salva modello (.json)','Guardar modelo (.json)'],fSvg:['Exportar diagrama (SVG)','Export diagram (SVG)','Esporta diagramma (SVG)','Exportar diagrama (SVG)'],fPng:['Exportar diagrama (PNG)','Export diagram (PNG)','Esporta diagramma (PNG)','Exportar diagrama (PNG)'],fPrint:['Imprimir diagrama','Print diagram','Stampa diagramma','Imprimir diagrama'],samples:['Exemplos','Samples','Esempi','Ejemplos'],
+model:['Modelo','Model','Modello','Modelo'],name:['Nome','Name','Nome','Nombre'],desc:['Descrição','Description','Descrizione','Descripción'],notation:['Notação','Notation','Notazione','Notación'],seed:['Semente aleatória','Random seed','Seme casuale','Semilla aleatoria'],seedHint:['A mesma semente repete a mesma simulação.','The same seed repeats the same simulation.','Lo stesso seme ripete la stessa simulazione.','La misma semilla repite la misma simulación.'],modelHint:['Clique em um elemento para editar. As alterações são guardadas neste navegador; use Arquivo para salvar uma cópia.','Click an element to edit it. Changes are kept in this browser; use File to save a copy.','Fai clic su un elemento per modificarlo. Le modifiche restano in questo browser; usa File per salvarne una copia.','Haz clic en un elemento para editarlo. Los cambios se guardan en este navegador; usa Archivo para guardar una copia.'],
+rules:['Regras','Rules','Regole','Reglas'],rulesHint:['Uma por linha: campo = expressão. O resultado segue nos fluxos de saída.','One per line: field = expression. The result goes out on the output flows.','Una per riga: campo = espressione. Il risultato esce sui flussi in uscita.','Una por línea: campo = expresión. El resultado sale por los flujos de salida.'],duration:['Duração','Duration','Durata','Duración'],durationHint:['Em unidades de tempo. Aceita expressão, como random(1,3).','In time units. Accepts an expression, such as random(1,3).','In unità di tempo. Accetta un\'espressione, come random(1,3).','En unidades de tiempo. Acepta una expresión, como random(1,3).'],capacity:['Capacidade','Capacity','Capacità','Capacidad'],join:['Entradas','Inputs','Ingressi','Entradas'],joinAny:['Executa a cada entrada','Runs on each input','Esegue a ogni ingresso','Ejecuta en cada entrada'],joinAll:['Espera todas as entradas','Waits for all inputs','Attende tutti gli ingressi','Espera todas las entradas'],interval:['Intervalo','Interval','Intervallo','Intervalo'],limit:['Limite','Limit','Limite','Límite'],procInterval:['Intervalo automático','Automatic interval','Intervallo automatico','Intervalo automático'],procIntervalHint:['Usado quando o processo não recebe fluxos de dados: ele dispara sozinho e lê os depósitos. 0 desliga.','Used when the process receives no data flows: it fires by itself and reads the stores. 0 turns it off.','Usato quando il processo non riceve flussi di dati: si attiva da solo e legge gli archivi. 0 lo disattiva.','Se usa cuando el proceso no recibe flujos de datos: se dispara solo y lee los almacenes. 0 lo desactiva.'],breakpoint:['Pausar a simulação aqui','Pause the simulation here','Sospendi la simulazione qui','Pausar la simulación aquí'],explode:['Detalhar em subdiagrama','Detail in a sub-diagram','Dettaglia in un sottodiagramma','Detallar en un subdiagrama'],openSub:['Abrir subdiagrama','Open sub-diagram','Apri sottodiagramma','Abrir subdiagrama'],delSub:['Remover subdiagrama','Remove sub-diagram','Rimuovi sottodiagramma','Eliminar subdiagrama'],subHint:['Com subdiagrama, a lógica deste processo é a dos processos internos.','With a sub-diagram, this process\'s logic is that of its inner processes.','Con un sottodiagramma, la logica di questo processo è quella dei processi interni.','Con un subdiagrama, la lógica de este proceso es la de sus procesos internos.'],
+gen:['Dados gerados','Generated data','Dati generati','Datos generados'],genHint:['Uma por linha: campo = expressão. Use seq para o número da emissão.','One per line: field = expression. Use seq for the emission number.','Una per riga: campo = espressione. Usa seq per il numero di emissione.','Una por línea: campo = expresión. Usa seq para el número de emisión.'],genInterval:['Emitir a cada','Emit every','Emetti ogni','Emitir cada'],genIntervalHint:['0 = só ao clicar na entidade durante a simulação. Aceita expressão, como exponential(2).','0 = only when you click the entity during the simulation. Accepts an expression, such as exponential(2).','0 = solo facendo clic sull\'entità durante la simulazione. Accetta un\'espressione, come exponential(2).','0 = solo al hacer clic en la entidad durante la simulación. Acepta una expresión, como exponential(2).'],genLimit:['Limite de emissões','Emission limit','Limite di emissioni','Límite de emisiones'],genLimitHint:['0 = sem limite.','0 = no limit.','0 = nessun limite.','0 = sin límite.'],genStart:['Primeira emissão em','First emission at','Prima emissione a','Primera emisión en'],
+key:['Campo-chave','Key field','Campo chiave','Campo clave'],keyHint:['Identifica o registro em atualizações e exclusões.','Identifies the record in updates and deletions.','Identifica il record in aggiornamenti ed eliminazioni.','Identifica el registro en actualizaciones y eliminaciones.'],initial:['Registros iniciais (JSON)','Initial records (JSON)','Record iniziali (JSON)','Registros iniciales (JSON)'],
+from:['De','From','Da','De'],to:['Para','To','A','A'],invert:['Inverter sentido','Reverse direction','Inverti direzione','Invertir sentido'],straighten:['Endireitar','Straighten','Raddrizza','Enderezar'],guard:['Condição','Condition','Condizione','Condición'],guardHint:['Vazio = sempre. else = quando nenhuma outra condição for verdadeira.','Empty = always. else = when no other condition is true.','Vuoto = sempre. else = quando nessun\'altra condizione è vera.','Vacío = siempre. else = cuando ninguna otra condición es verdadera.'],fields:['Campos que passam','Fields passed','Campi trasmessi','Campos que pasan'],fieldsHint:['Lista separada por vírgulas. Vazio = todos.','Comma-separated list. Empty = all.','Elenco separato da virgole. Vuoto = tutti.','Lista separada por comas. Vacío = todos.'],transit:['Tempo de trânsito','Transit time','Tempo di transito','Tiempo de tránsito'],readFilter:['Filtro de leitura','Read filter','Filtro di lettura','Filtro de lectura'],readFilterHint:['Campos do registro; in.campo é o dado de entrada. Vazio = primeiro registro.','Record fields; in.field is the input data. Empty = first record.','Campi del record; in.campo è il dato in ingresso. Vuoto = primo record.','Campos del registro; in.campo es el dato de entrada. Vacío = primer registro.'],alias:['Nome nas regras','Name in rules','Nome nelle regole','Nombre en las reglas'],aliasHint:['Nome para usar o registro lido, como produto.preco.','Name for using the record read, such as product.price.','Nome per usare il record letto, come product.price.','Nombre para usar el registro leído, como product.price.'],consume:['Remover o registro ao ler','Remove the record on read','Rimuovi il record alla lettura','Eliminar el registro al leer'],writeOp:['Operação de gravação','Write operation','Operazione di scrittura','Operación de escritura'],opInsert:['Inserir','Insert','Inserisci','Insertar'],opUpsert:['Inserir ou atualizar pela chave','Insert or update by key','Inserisci o aggiorna per chiave','Insertar o actualizar por clave'],opDelete:['Excluir pela chave','Delete by key','Elimina per chiave','Eliminar por clave'],readTag:['Leitura de depósito','Store read','Lettura di archivio','Lectura de almacén'],writeTag:['Gravação em depósito','Store write','Scrittura su archivio','Escritura en almacén'],delete:['Excluir','Delete','Elimina','Eliminar'],portHint:['Vem do nível superior. Para mudar, edite o fluxo no diagrama pai.','Comes from the upper level. To change it, edit the flow in the parent diagram.','Viene dal livello superiore. Per cambiarlo, modifica il flusso nel diagramma padre.','Viene del nivel superior. Para cambiarlo, edita el flujo en el diagrama padre.'],portIn:['Entrada do processo pai','Input of the parent process','Ingresso del processo padre','Entrada del proceso padre'],portOut:['Saída do processo pai','Output of the parent process','Uscita del processo padre','Salida del proceso padre'],root:['Nível 0','Level 0','Livello 0','Nivel 0'],multi:['{0} elementos selecionados','{0} elements selected','{0} elementi selezionati','{0} elementos seleccionados'],
+noIssues:['Nenhum problema encontrado.','No problems found.','Nessun problema trovato.','No se encontraron problemas.'],
+iEntEnt:['"{0}" liga duas entidades. Um fluxo precisa passar por um processo.','"{0}" connects two entities. A flow must go through a process.','"{0}" collega due entità. Un flusso deve passare per un processo.','"{0}" conecta dos entidades. Un flujo debe pasar por un proceso.'],iEntSto:['"{0}" liga entidade e depósito diretamente. Use um processo entre eles.','"{0}" connects an entity and a store directly. Use a process between them.','"{0}" collega direttamente entità e archivio. Usa un processo tra loro.','"{0}" conecta directamente entidad y almacén. Usa un proceso entre ellos.'],iStoSto:['"{0}" liga dois depósitos. Use um processo entre eles.','"{0}" connects two stores. Use a process between them.','"{0}" collega due archivi. Usa un processo tra loro.','"{0}" conecta dos almacenes. Usa un proceso entre ellos.'],iSelf:['"{0}" liga um elemento a ele mesmo.','"{0}" connects an element to itself.','"{0}" collega un elemento a se stesso.','"{0}" conecta un elemento consigo mismo.'],iMiracle:['"{0}" não tem entradas: é um "milagre", produz dados do nada.','"{0}" has no inputs: it is a "miracle", producing data from nothing.','"{0}" non ha ingressi: è un "miracolo", produce dati dal nulla.','"{0}" no tiene entradas: es un "milagro", produce datos de la nada.'],iHole:['"{0}" não tem saídas: é um "buraco negro", os dados somem nele.','"{0}" has no outputs: it is a "black hole", data disappears in it.','"{0}" non ha uscite: è un "buco nero", i dati vi scompaiono.','"{0}" no tiene salidas: es un "agujero negro", los datos desaparecen en él.'],iIso:['"{0}" não está ligado a nada.','"{0}" is not connected to anything.','"{0}" non è collegato a nulla.','"{0}" no está conectado a nada.'],iNoRead:['O depósito "{0}" recebe dados, mas ninguém os lê.','Store "{0}" receives data, but nothing reads it.','L\'archivio "{0}" riceve dati, ma nessuno li legge.','El almacén "{0}" recibe datos, pero nadie los lee.'],iNoWrite:['O depósito "{0}" é lido, mas nada grava nele e ele não tem registros iniciais.','Store "{0}" is read, but nothing writes to it and it has no initial records.','L\'archivio "{0}" viene letto, ma nulla vi scrive e non ha record iniziali.','El almacén "{0}" se lee, pero nada escribe en él y no tiene registros iniciales.'],iUnnamedNode:['Há um elemento sem nome.','An element has no name.','C\'è un elemento senza nome.','Hay un elemento sin nombre.'],iUnnamedFlow:['Há um fluxo sem nome entre "{0}" e "{1}".','There is an unnamed flow between "{0}" and "{1}".','C\'è un flusso senza nome tra "{0}" e "{1}".','Hay un flujo sin nombre entre "{0}" y "{1}".'],iPort:['Balanceamento: "{0}" do nível superior não está ligado neste subdiagrama.','Balancing: "{0}" from the upper level is not connected in this sub-diagram.','Bilanciamento: "{0}" del livello superiore non è collegato in questo sottodiagramma.','Balanceo: "{0}" del nivel superior no está conectado en este subdiagrama.'],iExpr:['Expressão inválida em "{0}": {1}','Invalid expression in "{0}": {1}','Espressione non valida in "{0}": {1}','Expresión no válida en "{0}": {1}'],iJson:['Registros iniciais inválidos em "{0}": precisa ser uma lista JSON de objetos.','Invalid initial records in "{0}": it must be a JSON list of objects.','Record iniziali non validi in "{0}": deve essere un elenco JSON di oggetti.','Registros iniciales no válidos en "{0}": debe ser una lista JSON de objetos.'],iNoKey:['"{0}" atualiza ou exclui pela chave, mas o depósito não tem campo-chave.','"{0}" updates or deletes by key, but the store has no key field.','"{0}" aggiorna o elimina per chiave, ma l\'archivio non ha un campo chiave.','"{0}" actualiza o elimina por clave, pero el almacén no tiene campo clave.'],iNoSource:['Nada inicia a simulação: nenhuma entidade emite dados sozinha, mas você pode clicar nas entidades.','Nothing starts the simulation: no entity emits data by itself, but you can click the entities.','Nulla avvia la simulazione: nessuna entità emette dati da sola, ma puoi fare clic sulle entità.','Nada inicia la simulación: ninguna entidad emite datos sola, pero puedes hacer clic en las entidades.'],
+blocked:['Corrija os erros marcados antes de simular.','Fix the marked errors before simulating.','Correggi gli errori segnalati prima di simulare.','Corrige los errores marcados antes de simular.'],warnsStart:['{0} alerta(s) do modelo. Veja a aba Verificar.','{0} model warning(s). See the Check tab.','{0} avviso/i del modello. Vedi la scheda Verifica.','{0} aviso(s) del modelo. Mira la pestaña Verificar.'],badLink:['Ligação não permitida: {0}','Connection not allowed: {0}','Collegamento non consentito: {0}','Conexión no permitida: {0}'],linkEntEnt:['duas entidades não trocam dados sem um processo.','two entities do not exchange data without a process.','due entità non scambiano dati senza un processo.','dos entidades no intercambian datos sin un proceso.'],linkEntSto:['uma entidade não acessa um depósito sem um processo.','an entity does not access a store without a process.','un\'entità non accede a un archivio senza un processo.','una entidad no accede a un almacén sin un proceso.'],linkStoSto:['dois depósitos não trocam dados sem um processo.','two stores do not exchange data without a process.','due archivi non scambiano dati senza un processo.','dos almacenes no intercambian datos sin un proceso.'],linkPort:['fluxos do nível superior só se ligam a processos internos.','upper-level flows connect only to inner processes.','i flussi del livello superiore si collegano solo a processi interni.','los flujos del nivel superior solo se conectan a procesos internos.'],
+confirmNew:['Descartar o modelo atual?','Discard the current model?','Eliminare il modello attuale?','¿Descartar el modelo actual?'],confirmNewText:['O modelo atual será substituído. Se precisar dele, salve antes em Arquivo.','The current model will be replaced. If you need it, save it first under File.','Il modello attuale sarà sostituito. Se ti serve, salvalo prima da File.','El modelo actual se sustituirá. Si lo necesitas, guárdalo antes en Archivo.'],confirmDelSub:['Remover o subdiagrama de "{0}"?','Remove the sub-diagram of "{0}"?','Rimuovere il sottodiagramma di "{0}"?','¿Eliminar el subdiagrama de "{0}"?'],confirmDelText:['{0} elemento(s) internos serão removidos. Ctrl+Z desfaz.','{0} inner element(s) will be removed. Ctrl+Z undoes it.','{0} elementi interni saranno rimossi. Ctrl+Z annulla.','Se eliminarán {0} elemento(s) internos. Ctrl+Z lo deshace.'],cancel:['Cancelar','Cancel','Annulla','Cancelar'],confirm:['Confirmar','Confirm','Conferma','Confirmar'],close:['Fechar','Close','Chiudi','Cerrar'],
+badFile:['Não foi possível abrir: {0}','Could not open: {0}','Impossibile aprire: {0}','No se pudo abrir: {0}'],notModel:['o arquivo não é um modelo deste app.','the file is not a model from this app.','il file non è un modello di questa app.','el archivo no es un modelo de esta aplicación.'],opened:['{0} aberto','{0} opened','{0} aperto','{0} abierto'],copied:['{0} elemento(s) colado(s). Subdiagramas não são copiados.','{0} element(s) pasted. Sub-diagrams are not copied.','{0} elementi incollati. I sottodiagrammi non vengono copiati.','{0} elemento(s) pegado(s). Los subdiagramas no se copian.'],
+stRun:['Em execução','Running','In esecuzione','En ejecución'],stPause:['Em pausa','Paused','In pausa','En pausa'],stDone:['Concluída: nada mais agendado','Finished: nothing else scheduled','Conclusa: nient\'altro in programma','Concluida: nada más programado'],stManual:['Clique em uma entidade para emitir dados','Click an entity to emit data','Fai clic su un\'entità per emettere dati','Haz clic en una entidad para emitir datos'],stBp:['Pausa em "{0}"','Paused at "{0}"','Pausa su "{0}"','Pausa en "{0}"'],
+log:['Registro','Log','Registro','Registro'],stats:['Estatísticas','Statistics','Statistiche','Estadísticas'],stores:['Depósitos','Stores','Archivi','Almacenes'],tokens:['Dados em trânsito','Data in transit','Dati in transito','Datos en tránsito'],exportCsv:['Baixar CSV','Download CSV','Scarica CSV','Descargar CSV'],onlyProblems:['Só problemas','Problems only','Solo problemi','Solo problemas'],time:['Tempo','Time','Tempo','Tiempo'],event:['Evento','Event','Evento','Evento'],where:['Onde','Where','Dove','Dónde'],state:['Estado','State','Stato','Estado'],data:['Dados','Data','Dati','Datos'],noStores:['O modelo não tem depósitos.','The model has no stores.','Il modello non ha archivi.','El modelo no tiene almacenes.'],noTokens:['Nenhum dado em trânsito agora.','No data in transit now.','Nessun dato in transito ora.','Ningún dato en tránsito ahora.'],emptyStore:['Sem registros.','No records.','Nessun record.','Sin registros.'],records:['{0} registro(s)','{0} record(s)','{0} record','{0} registro(s)'],moreRows:['Mostrando os primeiros {0} registros.','Showing the first {0} records.','Primi {0} record mostrati.','Mostrando los primeros {0} registros.'],
+sEmitted:['Emitidos','Emitted','Emessi','Emitidos'],sDelivered:['Entregues','Delivered','Consegnati','Entregados'],sStored:['Gravados','Stored','Archiviati','Almacenados'],sDropped:['Descartados','Dropped','Scartati','Descartados'],sErrors:['Erros','Errors','Errori','Errores'],sLead:['Tempo médio do início à entrega','Average time from start to delivery','Tempo medio dall\'inizio alla consegna','Tiempo medio del inicio a la entrega'],sThroughput:['Entregas por unidade de tempo','Deliveries per time unit','Consegne per unità di tempo','Entregas por unidad de tiempo'],sProc:['Processo','Process','Processo','Proceso'],sIn:['Entradas','Inputs','Ingressi','Entradas'],sDone:['Concluídos','Completed','Completati','Completados'],sQueue:['Na fila','Queued','In coda','En cola'],sMaxQ:['Fila máx.','Max queue','Coda max','Cola máx.'],sWait:['Espera média','Avg wait','Attesa media','Espera media'],sUtil:['Ocupação','Utilisation','Occupazione','Ocupación'],sBottleneck:['Maior ocupação com fila: "{0}"','Highest utilisation with a queue: "{0}"','Massima occupazione con coda: "{0}"','Mayor ocupación con cola: "{0}"'],
+tInQueue:['na fila','queued','in coda','en cola'],tBusy:['em execução','running','in esecuzione','en ejecución'],tTransit:['em trânsito','in transit','in transito','en tránsito'],tWaitJoin:['esperando outras entradas','waiting for other inputs','in attesa di altri ingressi','esperando otras entradas'],
+tokenTitle:['Dado','Data item','Dato','Dato'],origin:['Origem nº','Origin no.','Origine n.','Origen n.º'],path:['Caminho','Path','Percorso','Camino'],emitNow:['Emitir agora','Emit now','Emetti ora','Emitir ahora'],emitNoFlow:['Esta entidade não tem fluxos de saída.','This entity has no output flows.','Questa entità non ha flussi in uscita.','Esta entidad no tiene flujos de salida.'],received:['Recebidos','Received','Ricevuti','Recibidos'],lastData:['Último dado recebido','Last data received','Ultimo dato ricevuto','Último dato recibido'],selectHint:['Clique em um elemento ou dado no diagrama para ver os detalhes. Entidades sem intervalo emitem dados ao clique.','Click an element or data item in the diagram for details. Entities with no interval emit data when clicked.','Fai clic su un elemento o dato nel diagramma per i dettagli. Le entità senza intervallo emettono dati al clic.','Haz clic en un elemento o dato del diagrama para ver los detalles. Las entidades sin intervalo emiten datos al hacer clic.'],
+lEmit:['{0} emitiu #{1}','{0} emitted #{1}','{0} ha emesso #{1}','{0} emitió #{1}'],lFlow:['#{0} em "{1}"','#{0} on "{1}"','#{0} su "{1}"','#{0} en "{1}"'],lStart:['{0} iniciou #{1}','{0} started #{1}','{0} ha avviato #{1}','{0} inició #{1}'],lDone:['{0} concluiu #{1}','{0} completed #{1}','{0} ha completato #{1}','{0} completó #{1}'],lDeliver:['{0} recebeu #{1}','{0} received #{1}','{0} ha ricevuto #{1}','{0} recibió #{1}'],lWrite:['{0}: {1} #{2}','{0}: {1} #{2}','{0}: {1} #{2}','{0}: {1} #{2}'],lRead:['{0} leu {1}: {2}','{0} read {1}: {2}','{0} ha letto {1}: {2}','{0} leyó {1}: {2}'],lFound:['encontrado','found','trovato','encontrado'],lNotFound:['não encontrado','not found','non trovato','no encontrado'],lDrop:['#{0} descartado em {1}: nenhuma condição de saída verdadeira','#{0} dropped at {1}: no output condition is true','#{0} scartato su {1}: nessuna condizione di uscita è vera','#{0} descartado en {1}: ninguna condición de salida es verdadera'],lSink:['#{0} parou em {1}: não há saída','#{0} stopped at {1}: no output','#{0} fermato su {1}: nessuna uscita','#{0} se detuvo en {1}: no hay salida'],lErr:['Erro em {0}: {1}','Error in {0}: {1}','Errore in {0}: {1}','Error en {0}: {1}'],lJoin:['{0} combinou entradas em #{1}','{0} merged inputs into #{1}','{0} ha unito gli ingressi in #{1}','{0} combinó entradas en #{1}'],lUnbal:['#{0} parou em {1}: o fluxo "{2}" não está ligado no subdiagrama','#{0} stopped at {1}: flow "{2}" is not connected in the sub-diagram','#{0} fermato su {1}: il flusso "{2}" non è collegato nel sottodiagramma','#{0} se detuvo en {1}: el flujo "{2}" no está conectado en el subdiagrama'],lBudget:['Muitos eventos no mesmo instante. Simulação em pausa.','Too many events at the same instant. Simulation paused.','Troppi eventi nello stesso istante. Simulazione in pausa.','Demasiados eventos en el mismo instante. Simulación en pausa.'],
+lang:['pt-BR','en','it','es'],
+back:['Voltar','Back','Indietro','Volver'],backKey:['Volta um evento (B)','Go back one event (B)','Torna indietro di un evento (B)','Retrocede un evento (B)'],timeline:['Linha do tempo','Timeline','Linea del tempo','Línea de tiempo'],
+stTimeUp:['Tempo máximo atingido','Maximum time reached','Tempo massimo raggiunto','Tiempo máximo alcanzado'],maxT:['Tempo máximo','Maximum time','Tempo massimo','Tiempo máximo'],maxTHint:['A simulação para nesse instante. 0 = sem limite.','The simulation stops at this instant. 0 = no limit.','La simulazione si ferma a questo istante. 0 = nessun limite.','La simulación se detiene en este instante. 0 = sin límite.'],
+queueLimit:['Limite da fila','Queue limit','Limite della coda','Límite de la cola'],queueLimitHint:['Quem chega com a fila cheia é rejeitado. 0 = sem limite.','Items arriving at a full queue are rejected. 0 = no limit.','Chi arriva con la coda piena viene rifiutato. 0 = nessun limite.','Lo que llega con la cola llena se rechaza. 0 = sin límite.'],priority:['Prioridade','Priority','Priorità','Prioridad'],priorityHint:['Expressão: o menor valor é atendido primeiro. Vazio = ordem de chegada.','Expression: the lowest value is served first. Empty = arrival order.','Espressione: il valore più basso è servito per primo. Vuoto = ordine di arrivo.','Expresión: el valor más bajo se atiende primero. Vacío = orden de llegada.'],
+bpWhen:['Só quando','Only when','Solo quando','Solo cuando'],bpWhenHint:['Condição opcional sobre o dado que chega.','Optional condition on the arriving data.','Condizione facoltativa sul dato in arrivo.','Condición opcional sobre el dato que llega.'],
+readAll:['Ler todos os registros','Read all records','Leggi tutti i record','Leer todos los registros'],readAllHint:['O nome nas regras vira uma lista. Use count, sum, avg, minof e maxof.','The name in rules becomes a list. Use count, sum, avg, minof and maxof.','Il nome nelle regole diventa un elenco. Usa count, sum, avg, minof e maxof.','El nombre en las reglas pasa a ser una lista. Usa count, sum, avg, minof y maxof.'],
+lReject:['#{0} rejeitado em {1}: fila cheia','#{0} rejected at {1}: queue full','#{0} rifiutato su {1}: coda piena','#{0} rechazado en {1}: cola llena'],sRejected:['Rejeitados','Rejected','Rifiutati','Rechazados'],sP50:['Mediana do início à entrega','Median from start to delivery','Mediana dall\'inizio alla consegna','Mediana del inicio a la entrega'],sP95:['95% entregues em até','95% delivered within','95% consegnati entro','95% entregados en hasta'],sWip:['Dados no sistema (média)','Data in the system (average)','Dati nel sistema (media)','Datos en el sistema (media)'],sEnd:['Fim da simulação','End of the simulation','Fine della simulazione','Fin de la simulación'],
+queuesTab:['Filas','Queues','Code','Colas'],scenTab:['Cenários','Scenarios','Scenari','Escenarios'],chartTitle:['Tamanho da fila ao longo do tempo','Queue length over time','Lunghezza della coda nel tempo','Tamaño de la cola a lo largo del tiempo'],noQueue:['Nenhuma fila se formou até agora.','No queue has formed so far.','Finora non si è formata alcuna coda.','No se ha formado ninguna cola hasta ahora.'],viewTable:['Ver tabela','View table','Vedi tabella','Ver tabla'],viewChart:['Ver gráfico','View chart','Vedi grafico','Ver gráfico'],moreSeries:['{0} processo(s) a mais formaram fila; veja Estatísticas.','{0} more process(es) formed a queue; see Statistics.','Altri {0} processi hanno formato una coda; vedi Statistiche.','{0} proceso(s) más formaron cola; mira Estadísticas.'],
+scRuns:['Rodadas','Runs','Esecuzioni','Rondas'],scPerRun:['Tempo por rodada','Time per run','Tempo per esecuzione','Tiempo por ronda'],scPerRunHint:['0 = até terminar.','0 = until it ends.','0 = fino alla fine.','0 = hasta terminar.'],scRepeat:['Repetir com outras sementes','Repeat with other seeds','Ripeti con altri semi','Repetir con otras semillas'],scPin:['Guardar como referência','Save as baseline','Salva come riferimento','Guardar como referencia'],scUnpin:['Limpar referência','Clear baseline','Cancella riferimento','Borrar referencia'],scMetric:['Medida','Measure','Misura','Medida'],scCurrent:['Atual','Current','Attuale','Actual'],scRange:['Menor – maior','Lowest – highest','Minimo – massimo','Menor – mayor'],scBase:['Referência','Baseline','Riferimento','Referencia'],scDiff:['Diferença','Difference','Differenza','Diferencia'],scRead:['Leitura','Reading','Lettura','Lectura'],scClear:['diferença clara','clear difference','differenza netta','diferencia clara'],scUnclear:['dentro da variação','within the variation','entro la variazione','dentro de la variación'],scProgress:['Rodada {0} de {1}…','Run {0} of {1}…','Esecuzione {0} di {1}…','Ronda {0} de {1}…'],scOne:['Uma rodada só, sem margem de erro. Repita para ver quanto o resultado varia.','A single run, with no margin of error. Repeat it to see how much the result varies.','Una sola esecuzione, senza margine di errore. Ripetila per vedere quanto varia il risultato.','Una sola ronda, sin margen de error. Repítela para ver cuánto varía el resultado.'],scMany:['Média de {0} rodadas ± margem de 95%. Elementos aleatórios mantêm os próprios sorteios em cada semente, o que torna a comparação mais justa. Diferença clara = as margens não se sobrepõem.','Average of {0} runs ± 95% margin. Random elements keep their own draws for each seed, which makes the comparison fairer. Clear difference = the margins do not overlap.','Media di {0} esecuzioni ± margine del 95%. Gli elementi casuali mantengono le proprie estrazioni per ogni seme, il che rende il confronto più equo. Differenza netta = i margini non si sovrappongono.','Media de {0} rondas ± margen del 95%. Los elementos aleatorios mantienen sus propios sorteos en cada semilla, lo que hace la comparación más justa. Diferencia clara = los márgenes no se solapan.'],scManual:['Cliques e "Emitir agora" não entram nas rodadas repetidas.','Clicks and "Emit now" are not part of repeated runs.','I clic e "Emetti ora" non rientrano nelle esecuzioni ripetute.','Los clics y "Emitir ahora" no entran en las rondas repetidas.'],scForced:['O modelo não termina sozinho: cada rodada usou {0} unidades de tempo.','The model does not end by itself: each run used {0} time units.','Il modello non termina da solo: ogni esecuzione ha usato {0} unità di tempo.','El modelo no termina solo: cada ronda usó {0} unidades de tiempo.'],scBaseOf:['Referência: {0} rodada(s). Edite o modelo, simule e repita para comparar.','Baseline: {0} run(s). Edit the model, simulate and repeat to compare.','Riferimento: {0} esecuzioni. Modifica il modello, simula e ripeti per confrontare.','Referencia: {0} ronda(s). Edita el modelo, simula y repite para comparar.'],scEvents:['Alguma rodada parou no limite de eventos, e os números ficaram parciais.','A run stopped at the event limit, so the figures are partial.','Un\'esecuzione si è fermata al limite di eventi, quindi i numeri sono parziali.','Alguna ronda se detuvo en el límite de eventos, y las cifras quedaron parciales.'],
+};
+const HELP={
+pt:[['O que é um DFD','Um diagrama de fluxo de dados mostra como a informação circula em um sistema. Processos transformam dados, entidades externas enviam e recebem dados, depósitos os guardam e os fluxos mostram o caminho.'],['Desenhar',['Arraste um elemento da esquerda para o diagrama.','Passe o mouse em um elemento e arraste um ponto da borda até outro para criar um fluxo.','Duplo clique renomeia. Arrastar o ponto no meio de um fluxo selecionado o curva.','Arrastar o fundo seleciona uma área. Botão do meio ou Espaço + arrastar move a vista; a roda do mouse aproxima.']],['Níveis','Selecione um processo e use "Detalhar em subdiagrama". Os fluxos do processo aparecem no subdiagrama como elementos tracejados, o que mantém os níveis balanceados.'],['Simular',['Entidades emitem dados conforme o intervalo definido. Sem intervalo, emitem ao receber um clique; o botão "Emitir agora" funciona em todas.','Processos aplicam as regras, levam o tempo da duração e atendem conforme a capacidade; o excedente aguarda na fila.','Cada fluxo de saída com condição verdadeira recebe uma cópia do dado.','Fluxo vindo de depósito é leitura; fluxo indo para depósito é gravação.']],['Expressões',['Operadores: + - * / % == != < <= > >= && || ! ?:','Funções: round, floor, ceil, abs, min, max, random, randint, exponential, normal, chance, pick, count, sum, avg, minof, maxof, len, upper, lower, concat, contains, exists, coalesce, if, str, num','Variáveis: campos do dado, t (tempo), seq (emissão) e in (entrada, nos filtros).','Campo inexistente vale null. Modelos não executam JavaScript.']],['Atalhos',['Ctrl+Z / Ctrl+Y: desfazer e refazer · Del: excluir · Ctrl+C / Ctrl+V / Ctrl+D: copiar, colar, duplicar · Ctrl+A: selecionar tudo · setas: mover · F: ajustar','Na simulação: Espaço executa ou pausa · N avança um evento · B volta um evento · R reinicia']]],
+en:[['What a DFD is','A data flow diagram shows how information moves through a system. Processes transform data, external entities send and receive it, stores keep it and flows show the path.'],['Drawing',['Drag an element from the left onto the diagram.','Hover an element and drag a dot on its edge to another one to create a flow.','Double-click renames. Dragging the dot in the middle of a selected flow curves it.','Dragging the background selects an area. Middle button or Space + drag pans; the mouse wheel zooms.']],['Levels','Select a process and use "Detail in a sub-diagram". The process\'s flows appear in the sub-diagram as dashed elements, which keeps the levels balanced.'],['Simulating',['Entities emit data at the set interval. With no interval, they emit when clicked; the "Emit now" button works on all of them.','Processes apply their rules, take their duration and serve according to capacity; the excess waits in a queue.','Each output flow whose condition is true receives a copy of the data.','A flow from a store is a read; a flow to a store is a write.']],['Expressions',['Operators: + - * / % == != < <= > >= && || ! ?:','Functions: round, floor, ceil, abs, min, max, random, randint, exponential, normal, chance, pick, count, sum, avg, minof, maxof, len, upper, lower, concat, contains, exists, coalesce, if, str, num','Variables: data fields, t (time), seq (emission) and in (input, in filters).','A missing field is null. Models do not run JavaScript.']],['Shortcuts',['Ctrl+Z / Ctrl+Y: undo and redo · Del: delete · Ctrl+C / Ctrl+V / Ctrl+D: copy, paste, duplicate · Ctrl+A: select all · arrows: move · F: fit','In the simulation: Space runs or pauses · N advances one event · B goes back one event · R restarts']]],
+it:[['Che cos\'è un DFD','Un diagramma di flusso dei dati mostra come le informazioni circolano in un sistema. I processi trasformano i dati, le entità esterne li inviano e ricevono, gli archivi li conservano e i flussi mostrano il percorso.'],['Disegnare',['Trascina un elemento da sinistra sul diagramma.','Passa il mouse su un elemento e trascina un punto del bordo su un altro per creare un flusso.','Il doppio clic rinomina. Trascinare il punto al centro di un flusso selezionato lo curva.','Trascinare lo sfondo seleziona un\'area. Tasto centrale o Spazio + trascinamento sposta la vista; la rotella ingrandisce.']],['Livelli','Seleziona un processo e usa "Dettaglia in un sottodiagramma". I flussi del processo compaiono nel sottodiagramma come elementi tratteggiati, il che mantiene bilanciati i livelli.'],['Simulare',['Le entità emettono dati all\'intervallo impostato. Senza intervallo, emettono al clic; il pulsante "Emetti ora" funziona su tutte.','I processi applicano le regole, impiegano la durata e servono secondo la capacità; l\'eccedenza attende in coda.','Ogni flusso in uscita con condizione vera riceve una copia del dato.','Un flusso da un archivio è una lettura; un flusso verso un archivio è una scrittura.']],['Espressioni',['Operatori: + - * / % == != < <= > >= && || ! ?:','Funzioni: round, floor, ceil, abs, min, max, random, randint, exponential, normal, chance, pick, count, sum, avg, minof, maxof, len, upper, lower, concat, contains, exists, coalesce, if, str, num','Variabili: campi del dato, t (tempo), seq (emissione) e in (ingresso, nei filtri).','Un campo inesistente vale null. I modelli non eseguono JavaScript.']],['Scorciatoie',['Ctrl+Z / Ctrl+Y: annulla e ripeti · Canc: elimina · Ctrl+C / Ctrl+V / Ctrl+D: copia, incolla, duplica · Ctrl+A: seleziona tutto · frecce: sposta · F: adatta','Nella simulazione: Spazio esegue o sospende · N avanza di un evento · B torna indietro di un evento · R riavvia']]],
+es:[['Qué es un DFD','Un diagrama de flujo de datos muestra cómo circula la información en un sistema. Los procesos transforman datos, las entidades externas los envían y reciben, los almacenes los guardan y los flujos muestran el camino.'],['Dibujar',['Arrastra un elemento de la izquierda al diagrama.','Pasa el ratón sobre un elemento y arrastra un punto del borde hasta otro para crear un flujo.','El doble clic renombra. Arrastrar el punto central de un flujo seleccionado lo curva.','Arrastrar el fondo selecciona un área. Botón central o Espacio + arrastrar mueve la vista; la rueda acerca.']],['Niveles','Selecciona un proceso y usa "Detallar en un subdiagrama". Los flujos del proceso aparecen en el subdiagrama como elementos discontinuos, lo que mantiene los niveles balanceados.'],['Simular',['Las entidades emiten datos en el intervalo definido. Sin intervalo, emiten al hacer clic; el botón "Emitir ahora" funciona en todas.','Los procesos aplican las reglas, tardan su duración y atienden según su capacidad; el exceso espera en cola.','Cada flujo de salida con condición verdadera recibe una copia del dato.','Un flujo desde un almacén es una lectura; un flujo hacia un almacén es una escritura.']],['Expresiones',['Operadores: + - * / % == != < <= > >= && || ! ?:','Funciones: round, floor, ceil, abs, min, max, random, randint, exponential, normal, chance, pick, count, sum, avg, minof, maxof, len, upper, lower, concat, contains, exists, coalesce, if, str, num','Variables: campos del dato, t (tiempo), seq (emisión) e in (entrada, en filtros).','Un campo inexistente vale null. Los modelos no ejecutan JavaScript.']],['Atajos',['Ctrl+Z / Ctrl+Y: deshacer y rehacer · Supr: eliminar · Ctrl+C / Ctrl+V / Ctrl+D: copiar, pegar, duplicar · Ctrl+A: seleccionar todo · flechas: mover · F: ajustar','En la simulación: Espacio ejecuta o pausa · N avanza un evento · B retrocede un evento · R reinicia']]],
+};
+const SAMPLE_TEXT={
+orders:{title:['Processamento de pedidos','Order processing','Elaborazione ordini','Procesamiento de pedidos'],desc:['Dois níveis, leitura de depósito, condições de saída e subdiagrama em "Faturar pedido".','Two levels, store reads, output conditions and a sub-diagram in "Invoice order".','Due livelli, lettura di archivio, condizioni di uscita e sottodiagramma in "Fattura ordine".','Dos niveles, lectura de almacén, condiciones de salida y subdiagrama en "Facturar pedido".'],customer:['Cliente','Customer','Cliente','Cliente'],carrier:['Transportadora','Carrier','Corriere','Transportista'],validate:['Validar pedido','Validate order','Convalida ordine','Validar pedido'],invoice:['Faturar pedido','Invoice order','Fattura ordine','Facturar pedido'],products:['Produtos','Products','Prodotti','Productos'],sales:['Vendas','Sales','Vendite','Ventas'],order:['pedido','order','ordine','pedido'],approved:['pedido aprovado','approved order','ordine approvato','pedido aprobado'],refused:['pedido recusado','refused order','ordine rifiutato','pedido rechazado'],price:['preço','price','prezzo','precio'],sale:['venda','sale','vendita','venta'],bill:['nota fiscal','invoice','fattura','factura'],shipping:['ordem de envio','shipping order','ordine di spedizione','orden de envío'],tax:['Calcular imposto','Calculate tax','Calcola imposta','Calcular impuesto'],issue:['Emitir nota','Issue invoice','Emetti fattura','Emitir factura'],taxed:['valor com imposto','amount with tax','importo con imposta','importe con impuesto'],manager:['Gerência','Management','Direzione','Gerencia'],query:['Consultar venda','Look up sale','Consulta vendita','Consultar venta'],ask:['consulta','query','richiesta','consulta'],saleData:['dados da venda','sale data','dati della vendita','datos de la venta'],answer:['venda consultada','sale found','vendita trovata','venta consultada']},
+library:{title:['Empréstimo de biblioteca','Library loan','Prestito in biblioteca','Préstamo de biblioteca'],desc:['Lê e atualiza depósitos: o acervo diminui a cada empréstimo até acabar.','Reads and updates stores: stock drops with each loan until it runs out.','Legge e aggiorna gli archivi: la disponibilità cala a ogni prestito fino a esaurirsi.','Lee y actualiza almacenes: el stock baja con cada préstamo hasta agotarse.'],reader:['Leitor','Reader','Lettore','Lector'],check:['Verificar disponibilidade','Check availability','Verifica disponibilità','Verificar disponibilidad'],lend:['Registrar empréstimo','Record loan','Registra prestito','Registrar préstamo'],books:['Acervo','Collection','Catalogo','Fondo'],loans:['Empréstimos','Loans','Prestiti','Préstamos'],request:['solicitação','request','richiesta','solicitud'],available:['livro disponível','book available','libro disponibile','libro disponible'],unavailable:['indisponível','unavailable','non disponibile','no disponible'],confirmation:['comprovante','receipt','ricevuta','comprobante'],stock:['baixa no acervo','stock update','aggiornamento catalogo','baja en el fondo'],loan:['empréstimo','loan','prestito','préstamo'],record:['dados do livro','book data','dati del libro','datos del libro'],librarian:['Bibliotecário','Librarian','Bibliotecario','Bibliotecario'],query:['Consultar empréstimo','Look up loan','Consulta prestito','Consultar préstamo'],ask:['consulta','query','richiesta','consulta'],loanData:['dados do empréstimo','loan data','dati del prestito','datos del préstamo'],answer:['empréstimo consultado','loan found','prestito trovato','préstamo consultado']},
+queue:{title:['Gargalo de atendimento','Service bottleneck','Collo di bottiglia del servizio','Cuello de botella de atención'],desc:['Chega mais trabalho do que o atendimento absorve. Depois de simular, aumente a capacidade de "Atender" para 2 e compare a fila.','More work arrives than the service can absorb. After simulating, raise the capacity of "Serve" to 2 and compare the queue.','Arriva più lavoro di quanto il servizio assorba. Dopo la simulazione, porta a 2 la capacità di "Servi" e confronta la coda.','Llega más trabajo del que la atención absorbe. Tras simular, sube a 2 la capacidad de "Atender" y compara la cola.'],client:['Clientes','Customers','Clienti','Clientes'],triage:['Triagem','Triage','Smistamento','Triaje'],serve:['Atender','Serve','Servi','Atender'],ticket:['chamado','ticket','richiesta','ticket'],routed:['chamado triado','triaged ticket','richiesta smistata','ticket clasificado'],answer:['resposta','answer','risposta','respuesta']},
+};
+let LANG='pt';
+function t(key,...a){const e=I18N[key];let s=e?e[LANGS.indexOf(LANG)]:key;a.forEach((v,i)=>{s=s.split('{'+i+'}').join(String(v))});return s}
+
+/* ========== utilitários ========== */
+const $=(s,r=document)=>r.querySelector(s);
+const SVGNS='http://www.w3.org/2000/svg';
+function h(tag,attrs,...kids){
+  const e=document.createElement(tag);let val;
+  for(const[k,v]of Object.entries(attrs||{})){
+    if(v==null||v===false)continue;
+    if(k==='class')e.className=v;
+    else if(k.startsWith('on'))e.addEventListener(k.slice(2),v);
+    else if(k==='value')val=v;
+    else if(k==='checked'||k==='disabled'||k==='selected')e[k]=!!v;
+    else e.setAttribute(k,v===true?'':v);
+  }
+  for(const c of kids.flat(Infinity)){if(c==null||c===false)continue;e.append(c.nodeType?c:String(c))}
+  if(val!==undefined)e.value=val;
+  return e;
+}
+function s(tag,attrs,...kids){
+  const e=document.createElementNS(SVGNS,tag);
+  for(const[k,v]of Object.entries(attrs||{})){if(v==null||v===false)continue;if(k==='class')e.setAttribute('class',v);else e.setAttribute(k,v)}
+  for(const c of kids.flat(Infinity)){if(c==null||c===false)continue;e.append(c.nodeType?c:String(c))}
+  return e;
+}
+function toast(msg,kind='ok',ms){
+  const x=h('button',{'aria-label':t('close')},'×');
+  const el=h('div',{class:'toast '+kind},h('span',null,msg),x);x.onclick=()=>el.remove();
+  const box=$('#toasts');box.append(el);while(box.children.length>3)box.firstChild.remove();
+  setTimeout(()=>el.remove(),ms??(kind==='err'?9000:kind==='warn'?7000:3000));
+}
+function download(data,name,type='application/octet-stream'){
+  const url=URL.createObjectURL(new Blob([data],{type}));
+  const a=h('a',{href:url,download:name});document.body.append(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
+}
+const store={get(k,d){try{const v=localStorage.getItem('dfdsim.'+k);return v==null?d:JSON.parse(v)}catch{return d}},set(k,v){try{localStorage.setItem('dfdsim.'+k,JSON.stringify(v))}catch{}}};
+function modal({title,body,actions,wide,onclose}){
+  const d=h('dialog',{class:wide?'wide':null});
+  const foot=h('footer');
+  for(const a of actions||[])foot.append(h('button',{class:a.kind||null,type:'button',onclick(){if(a.run)a.run();d.close()}},a.label));
+  d.append(h('div',{class:'dlg'},h('header',null,title),h('div',{class:'b'},body),foot));
+  d.addEventListener('close',()=>{d.remove();onclose&&onclose()});
+  document.body.append(d);d.showModal();return d;
+}
+const confirmDlg=(title,msg,label=t('confirm'))=>new Promise(res=>{let v=false;modal({title,body:h('p',{style:'margin:0'},msg),actions:[{label:t('cancel')},{label,kind:'danger-solid',run(){v=true}}],onclose(){res(v)}})});
+const fmt=(n,d=1)=>Number(n).toLocaleString(t('lang'),{maximumFractionDigits:d,minimumFractionDigits:d});
+const FORBIDDEN=new Set(['__proto__','constructor','prototype']);
+function clean(o){
+  if(Array.isArray(o))return o.map(clean);
+  if(o&&typeof o==='object'){const r={};for(const k of Object.keys(o))if(!FORBIDDEN.has(k))r[k]=clean(o[k]);return r}
+  return o;
+}
+
+/* ========== linguagem de expressões ========== */
+const TOKEN_RE=/\s*(?:(\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)|('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")|([\p{L}_][\p{L}\p{N}_]*)|(&&|\|\||==|!=|<=|>=|[-+*/%<>!?:().,]))/uy;
+function tokenize(src){
+  const out=[];let i=0;
+  for(;;){
+    while(i<src.length&&/\s/.test(src[i]))i++;
+    if(i>=src.length)break;
+    TOKEN_RE.lastIndex=i;const m=TOKEN_RE.exec(src);
+    if(!m)throw new Error(`"${src.slice(i,i+12)}"`);
+    i=TOKEN_RE.lastIndex;
+    if(m[1]!==undefined)out.push({k:'num',v:Number(m[1])});
+    else if(m[2]!==undefined)out.push({k:'str',v:m[2].slice(1,-1).replace(/\\(.)/g,(_,c)=>c==='n'?'\n':c)});
+    else if(m[3]!==undefined)out.push({k:'id',v:m[3]});
+    else out.push({k:'op',v:m[4]});
+  }
+  return out;
+}
+const BIN={'||':1,'or':1,'&&':2,'and':2,'==':3,'!=':3,'<':4,'<=':4,'>':4,'>=':4,'+':5,'-':5,'*':6,'/':6,'%':6};
+function parseExpr(src){
+  const toks=tokenize(src);let p=0;
+  const peek=()=>toks[p],isOp=v=>toks[p]&&toks[p].k==='op'&&toks[p].v===v;
+  const fail=()=>{throw new Error(toks[p]?`"${toks[p].v}"`:'…')};
+  function ternary(){
+    const c=binary(1);
+    if(isOp('?')){p++;const a=ternary();if(!isOp(':'))fail();p++;return['?',c,a,ternary()]}
+    return c;
+  }
+  function binary(min){
+    let l=unary();
+    for(;;){
+      const k=peek();if(!k)break;
+      const op=k.k==='op'?k.v:(k.k==='id'&&(k.v==='and'||k.v==='or')?k.v:null);
+      if(!op||!BIN[op]||BIN[op]<min)break;
+      p++;l=['b',op==='and'?'&&':op==='or'?'||':op,l,binary(BIN[op]+1)];
+    }
+    return l;
+  }
+  function unary(){
+    if(isOp('!')){p++;return['!',unary()]}
+    if(isOp('-')){p++;return['neg',unary()]}
+    if(peek()&&peek().k==='id'&&peek().v==='not'){p++;return['!',unary()]}
+    return postfix();
+  }
+  function postfix(){
+    let e=primary();
+    while(isOp('.')){p++;const k=peek();if(!k||k.k!=='id')fail();p++;e=['.',e,k.v]}
+    return e;
+  }
+  function primary(){
+    const k=peek();if(!k)fail();
+    if(k.k==='num'||k.k==='str'){p++;return['v',k.v]}
+    if(isOp('(')){p++;const e=ternary();if(!isOp(')'))fail();p++;return e}
+    if(k.k==='id'){
+      p++;
+      if(k.v==='true')return['v',true];if(k.v==='false')return['v',false];if(k.v==='null')return['v',null];
+      if(isOp('(')){
+        if(!FUNCS[k.v])throw new Error(`${k.v}()`);
+        p++;const args=[];
+        if(!isOp(')')){for(;;){args.push(ternary());if(isOp(',')){p++;continue}break}}
+        if(!isOp(')'))fail();p++;return['c',k.v,args];
+      }
+      return['id',k.v];
+    }
+    fail();
+  }
+  if(!toks.length)throw new Error('…');
+  const e=ternary();if(p<toks.length)fail();return e;
+}
+const num=v=>{const n=Number(v);return Number.isFinite(n)?n:0};
+const listNums=(x,f)=>(Array.isArray(x)?x:[]).map(r=>f==null?r:own(r,String(f))).filter(v=>v!=null).map(num);
+const FUNCS={
+  round:(c,x,d)=>{const f=10**num(d);return Math.round(num(x)*f)/f},floor:(c,x)=>Math.floor(num(x)),ceil:(c,x)=>Math.ceil(num(x)),abs:(c,x)=>Math.abs(num(x)),
+  min:(c,...a)=>Math.min(...a.map(num)),max:(c,...a)=>Math.max(...a.map(num)),
+  random:(c,a,b)=>{const lo=a==null?0:num(a),hi=b==null?1:num(b);return lo+c.rng()*(hi-lo)},
+  randint:(c,a,b)=>{const lo=Math.ceil(num(a)),hi=Math.floor(num(b));return lo+Math.floor(c.rng()*(hi-lo+1))},
+  len:(c,x)=>x==null?0:typeof x==='string'||Array.isArray(x)?x.length:typeof x==='object'?Object.keys(x).length:String(x).length,
+  upper:(c,x)=>String(x??'').toUpperCase(),lower:(c,x)=>String(x??'').toLowerCase(),concat:(c,...a)=>a.map(v=>v??'').join(''),
+  contains:(c,x,y)=>String(x??'').includes(String(y??'')),exists:(c,x)=>x!=null&&!(Array.isArray(x)&&!x.length),coalesce:(c,...a)=>{for(const v of a)if(v!=null)return v;return null},
+  str:(c,x)=>String(x??''),num:(c,x)=>num(x),
+  exponential:(c,m)=>-num(m)*Math.log(1-c.rng()),
+  normal:(c,m,d)=>num(m)+num(d)*Math.sqrt(-2*Math.log(1-c.rng()))*Math.cos(2*Math.PI*c.rng()),
+  chance:(c,p)=>c.rng()<num(p),pick:(c,...a)=>a.length?a[Math.floor(c.rng()*a.length)]:null,
+  count:(c,x)=>Array.isArray(x)?x.length:x==null?0:1,
+  sum:(c,x,f)=>listNums(x,f).reduce((a,b)=>a+b,0),
+  avg:(c,x,f)=>{const l=listNums(x,f);return l.length?l.reduce((a,b)=>a+b,0)/l.length:null},
+  minof:(c,x,f)=>{const l=listNums(x,f);return l.length?Math.min(...l):null},
+  maxof:(c,x,f)=>{const l=listNums(x,f);return l.length?Math.max(...l):null},
+};
+FUNCS.if=true;// tratado à parte: só avalia o ramo escolhido
+const own=(o,k)=>o!=null&&typeof o==='object'&&!FORBIDDEN.has(k)&&Object.prototype.hasOwnProperty.call(o,k)?o[k]:undefined;
+function evalAst(a,c){
+  switch(a[0]){
+    case'v':return a[1];
+    case'id':{for(const sc of c.scopes){const v=own(sc,a[1]);if(v!==undefined)return v}return null}
+    case'.':{const v=own(evalAst(a[1],c),a[2]);return v===undefined?null:v}
+    case'!':return!evalAst(a[1],c);
+    case'neg':return-num(evalAst(a[1],c));
+    case'?':return evalAst(a[1],c)?evalAst(a[2],c):evalAst(a[3],c);
+    case'c':{
+      if(a[1]==='if')return evalAst(a[2][0]??['v',null],c)?evalAst(a[2][1]??['v',null],c):evalAst(a[2][2]??['v',null],c);
+      return FUNCS[a[1]](c,...a[2].map(x=>evalAst(x,c)));
+    }
+    case'b':{
+      const op=a[1];
+      if(op==='&&')return evalAst(a[2],c)&&evalAst(a[3],c);
+      if(op==='||')return evalAst(a[2],c)||evalAst(a[3],c);
+      const l=evalAst(a[2],c),r=evalAst(a[3],c);
+      switch(op){
+        case'==':return l==r;case'!=':return l!=r;
+        case'<':return l<r;case'<=':return l<=r;case'>':return l>r;case'>=':return l>=r;
+        case'+':return typeof l==='string'||typeof r==='string'?String(l??'')+String(r??''):num(l)+num(r);
+        case'-':return num(l)-num(r);case'*':return num(l)*num(r);
+        case'/':return num(r)===0?null:num(l)/num(r);case'%':return num(r)===0?null:num(l)%num(r);
+      }
+    }
+  }
+  return null;
+}
+const astCache=new Map();
+function compile(src){
+  let r=astCache.get(src);
+  if(!r){try{r={ast:parseExpr(src)}}catch(e){r={error:e.message}}astCache.set(src,r)}
+  return r;
+}
+function parseRules(text){
+  const items=[],errors=[];
+  String(text||'').split('\n').forEach((raw,i)=>{
+    const line=raw.trim();if(!line||line.startsWith('#')||line.startsWith('//'))return;
+    const m=line.match(/^([\p{L}_][\p{L}\p{N}_]*)\s*=(?!=)\s*(.+)$/u);
+    if(!m||FORBIDDEN.has(m[1])){errors.push(`${i+1}: "${line}"`);return}
+    const r=compile(m[2]);
+    if(r.error)errors.push(`${i+1}: ${r.error}`);else items.push({name:m[1],ast:r.ast});
+  });
+  return{items,errors};
+}
+const isElse=g=>String(g||'').trim().toLowerCase()==='else';
+const exprError=src=>{const v=String(src||'').trim();if(!v)return null;const r=compile(v);return r.error||null};
+const guardError=g=>isElse(g)?null:exprError(g);
+function parseRecords(txt){
+  const v=String(txt||'').trim();if(!v)return[];
+  try{const j=JSON.parse(v);if(!Array.isArray(j)||j.some(x=>!x||typeof x!=='object'||Array.isArray(x)))return null;return clean(j)}catch{return null}
+}
+const normAlias=n=>String(n||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^\p{L}\p{N}_]+/gu,'_').replace(/^_+|_+$/g,'')||'lido';
+
+/* ========== modelo ========== */
+let idSeq=0;const uid=p=>p+Date.now().toString(36)+(idSeq++).toString(36);
+const newModel=()=>({version:1,name:'',notation:'yd',seed:1,maxT:0,diagrams:{root:{id:'root',parent:null,nodes:[],flows:[]}}});
+const NODE_DEFAULTS={
+  process:{name:'',desc:'',k:1,rules:'',duration:'1',capacity:1,queueLimit:0,priority:'',join:'any',interval:0,limit:0,child:null,bp:false,bpWhen:''},
+  entity:{name:'',desc:'',gen:'',interval:'0',limit:0,start:0,bp:false,bpWhen:''},
+  store:{name:'',desc:'',k:1,key:'',initial:'',bp:false,bpWhen:''},
+  port:{name:'',flow:'',dir:'in'},
+};
+const FLOW_DEFAULTS={name:'',guard:'',fields:'',filter:'',alias:'',consume:false,readAll:false,op:'insert',bend:0,transit:1};
+// entidade com emissão automática: número maior que zero ou uma expressão
+function autoInterval(n){const v=String(n.interval??'').trim();if(!v)return false;const x=Number(v);return Number.isFinite(x)?x>0:true}
+function loadModelObject(o){
+  if(!o||typeof o!=='object'||!o.diagrams||typeof o.diagrams!=='object'||!o.diagrams.root)throw new Error(t('notModel'));
+  const m=newModel();
+  m.name=String(o.name??'');m.notation=o.notation==='gs'?'gs':'yd';m.seed=Number.isFinite(+o.seed)?+o.seed:1;m.maxT=Number.isFinite(+o.maxT)&&+o.maxT>0?+o.maxT:0;
+  m.diagrams={};
+  const seen=new Set();
+  const take=(id,parent)=>{
+    const d=o.diagrams[id];if(!d||typeof d!=='object'||seen.has(id)||FORBIDDEN.has(id))return false;
+    seen.add(id);
+    const nd={id,parent,nodes:[],flows:[]};m.diagrams[id]=nd;
+    for(const n of Array.isArray(d.nodes)?d.nodes:[]){
+      if(!n||!NODE_DEFAULTS[n.type]||typeof n.id!=='string'||nd.nodes.some(x=>x.id===n.id))continue;
+      const x={...NODE_DEFAULTS[n.type]};
+      for(const k of Object.keys(x)){
+        if(n[k]===undefined||n[k]===null)continue;
+        if(typeof x[k]==='number'){if(Number.isFinite(+n[k]))x[k]=+n[k]}
+        else if(typeof x[k]==='boolean')x[k]=!!n[k];
+        else if(k!=='child')x[k]=String(n[k]);
+      }
+      nd.nodes.push({id:n.id,type:n.type,x:Number.isFinite(+n.x)?+n.x:100,y:Number.isFinite(+n.y)?+n.y:100,...x});
+      if(n.type==='process'&&typeof n.child==='string'&&take(n.child,n.id))nd.nodes[nd.nodes.length-1].child=n.child;
+    }
+    for(const f of Array.isArray(d.flows)?d.flows:[]){
+      if(!f||typeof f.id!=='string'||nd.flows.some(x=>x.id===f.id))continue;
+      if(!nd.nodes.some(n=>n.id===f.from)||!nd.nodes.some(n=>n.id===f.to))continue;
+      const x={...FLOW_DEFAULTS};
+      for(const k of Object.keys(x)){
+        if(f[k]===undefined||f[k]===null)continue;
+        if(typeof x[k]==='number'){if(Number.isFinite(+f[k]))x[k]=+f[k]}
+        else if(typeof x[k]==='boolean')x[k]=!!f[k];else x[k]=String(f[k]);
+      }
+      if(!['insert','upsert','delete'].includes(x.op))x.op='insert';
+      nd.flows.push({id:f.id,from:f.from,to:f.to,...x});
+    }
+    return true;
+  };
+  take('root',null);
+  syncAllPorts(m);
+  return m;
+}
+function findNode(m,id){for(const d of Object.values(m.diagrams)){const n=d.nodes.find(x=>x.id===id);if(n)return{node:n,diagram:d}}return null}
+function findFlow(m,id){for(const d of Object.values(m.diagrams)){const f=d.flows.find(x=>x.id===id);if(f)return{flow:f,diagram:d}}return null}
+function syncPorts(m,d){
+  if(!d.parent)return;
+  const found=findNode(m,d.parent);if(!found)return;
+  const p=found.node,pd=found.diagram;
+  const flows=pd.flows.filter(f=>f.from===p.id||f.to===p.id);
+  const keep=new Set(flows.map(f=>f.id));
+  const gone=d.nodes.filter(n=>n.type==='port'&&!keep.has(n.flow)).map(n=>n.id);
+  d.nodes=d.nodes.filter(n=>!gone.includes(n.id));
+  d.flows=d.flows.filter(f=>!gone.includes(f.from)&&!gone.includes(f.to));
+  let li=0,ri=0;
+  for(const f of flows){
+    const dir=f.to===p.id?'in':'out';
+    const other=pd.nodes.find(n=>n.id===(dir==='in'?f.from:f.to));
+    const name=f.name||(other?other.name:'');
+    let port=d.nodes.find(n=>n.type==='port'&&n.flow===f.id);
+    if(!port){
+      const i=dir==='in'?li:ri;
+      port={id:uid('n'),type:'port',x:dir==='in'?90:760,y:90+(i*80),...NODE_DEFAULTS.port,flow:f.id};
+      d.nodes.push(port);
+    }
+    port.dir=dir;port.name=name;
+    if(dir==='in')li++;else ri++;
+  }
+}
+function syncAllPorts(m){for(const d of Object.values(m.diagrams))syncPorts(m,d)}
+function numberOf(m,n){
+  if(n.type==='store')return'D'+n.k;
+  if(n.type!=='process')return'';
+  const f=findNode(m,n.id);if(!f||!f.diagram.parent)return String(n.k);
+  const par=findNode(m,f.diagram.parent);
+  return par?numberOf(m,par.node)+'.'+n.k:String(n.k);
+}
+function nextK(d,type,m){
+  const used=new Set();
+  const list=type==='store'?Object.values(m.diagrams).flatMap(x=>x.nodes):d.nodes;
+  for(const n of list)if(n.type===type)used.add(n.k);
+  let k=1;while(used.has(k))k++;return k;
+}
+function removeDiagram(m,id){
+  const d=m.diagrams[id];if(!d)return;
+  for(const n of d.nodes)if(n.child)removeDiagram(m,n.child);
+  delete m.diagrams[id];
+}
+function countDeep(m,id){const d=m.diagrams[id];if(!d)return 0;let c=d.nodes.filter(n=>n.type!=='port').length;for(const n of d.nodes)if(n.child)c+=countDeep(m,n.child);return c}
+function originOf(m,flow){
+  const f=findNode(m,flow.from);if(!f)return null;
+  if(f.node.type==='port'&&f.node.dir==='in'){const pf=findFlow(m,f.node.flow);return pf?originOf(m,pf.flow):null}
+  return f.node;
+}
+function endOf(m,flow){
+  const f=findNode(m,flow.to);if(!f)return null;
+  if(f.node.type==='port'&&f.node.dir==='out'){const pf=findFlow(m,f.node.flow);return pf?endOf(m,pf.flow):null}
+  return f.node;
+}
+function connectionProblem(a,b){
+  if(a.id===b.id)return'self';
+  if(a.type==='port'||b.type==='port')return a.type==='process'||b.type==='process'?null:'port';
+  if(a.type==='process'||b.type==='process')return null;
+  if(a.type==='entity'&&b.type==='entity')return'ent';
+  if(a.type==='store'&&b.type==='store')return'sto';
+  return'mix';
+}
+
+/* ========== verificação ========== */
+function checkModel(m){
+  syncAllPorts(m);
+  const out=[];
+  const add=(sev,diagram,target,msg,blocks=false)=>out.push({sev,diagram,target,msg,blocks});
+  let sources=0,entities=0;
+  for(const d of Object.values(m.diagrams)){
+    const nm=id=>{const n=d.nodes.find(x=>x.id===id);return n?n.name:'?'};
+    for(const f of d.flows){
+      const a=d.nodes.find(n=>n.id===f.from),b=d.nodes.find(n=>n.id===f.to);if(!a||!b)continue;
+      const prob=connectionProblem(a,b),label=f.name||`${a.name} → ${b.name}`;
+      if(prob==='ent')add('error',d.id,f.id,t('iEntEnt',label),true);
+      else if(prob==='mix')add('error',d.id,f.id,t('iEntSto',label),true);
+      else if(prob==='sto')add('error',d.id,f.id,t('iStoSto',label),true);
+      else if(prob==='self')add('error',d.id,f.id,t('iSelf',label),true);
+      else if(prob==='port')add('error',d.id,f.id,t('iEntSto',label),true);
+      const toStore=b.type==='store',fromStore=a.type==='store';
+      if(!f.name&&!toStore&&!fromStore&&a.type!=='port'&&b.type!=='port')add('warn',d.id,f.id,t('iUnnamedFlow',a.name,b.name));
+      const ge=guardError(f.guard);if(ge)add('error',d.id,f.id,t('iExpr',label,ge),true);
+      const fe=exprError(f.filter);if(fe)add('error',d.id,f.id,t('iExpr',label,fe),true);
+      if(toStore&&f.op!=='insert'&&!b.key.trim())add('warn',d.id,f.id,t('iNoKey',label));
+    }
+    for(const n of d.nodes){
+      if(n.type==='port'){
+        if(!d.flows.some(f=>f.from===n.id||f.to===n.id))add('warn',d.id,n.id,t('iPort',n.name));
+        continue;
+      }
+      if(!n.name.trim())add('warn',d.id,n.id,t('iUnnamedNode'));
+      const be=exprError(n.bpWhen);if(be)add('error',d.id,n.id,t('iExpr',n.name,be),true);
+      const inc=d.flows.filter(f=>f.to===n.id),outg=d.flows.filter(f=>f.from===n.id);
+      if(n.type==='entity'){
+        entities++;
+        if(outg.length&&autoInterval(n))sources++;
+        const ie=exprError(n.interval);if(ie)add('error',d.id,n.id,t('iExpr',n.name,ie),true);
+        if(!inc.length&&!outg.length)add('warn',d.id,n.id,t('iIso',n.name));
+        const r=parseRules(n.gen);for(const e of r.errors)add('error',d.id,n.id,t('iExpr',n.name,e),true);
+      }else if(n.type==='process'){
+        if(!inc.length&&!outg.length)add('warn',d.id,n.id,t('iIso',n.name));
+        else{
+          if(!inc.length&&!(n.interval>0))add('error',d.id,n.id,t('iMiracle',n.name));
+          if(!outg.length)add('error',d.id,n.id,t('iHole',n.name));
+        }
+        if(n.interval>0&&!n.child)sources++;
+        if(!n.child){
+          for(const e of parseRules(n.rules).errors)add('error',d.id,n.id,t('iExpr',n.name,e),true);
+          const de=exprError(n.duration);if(de)add('error',d.id,n.id,t('iExpr',n.name,de),true);
+          const pe=exprError(n.priority);if(pe)add('error',d.id,n.id,t('iExpr',n.name,pe),true);
+        }
+      }else if(n.type==='store'){
+        if(!inc.length&&!outg.length)add('warn',d.id,n.id,t('iIso',n.name));
+        const rec=parseRecords(n.initial);
+        if(rec===null)add('error',d.id,n.id,t('iJson',n.name),true);
+        if(inc.length&&!outg.length)add('warn',d.id,n.id,t('iNoRead',n.name));
+        if(outg.length&&!inc.length&&rec&&!rec.length)add('warn',d.id,n.id,t('iNoWrite',n.name));
+      }
+    }
+  }
+  if(entities&&!sources)add('warn','root',null,t('iNoSource'));
+  return out;
+}
+
+/* ========== motor de simulação ========== */
+function mulberry32(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let x=Math.imul(a^a>>>15,1|a);x=x+Math.imul(x^x>>>7,61|x)^x;return((x^x>>>14)>>>0)/4294967296}}
+class Heap{
+  constructor(){this.a=[]}
+  get size(){return this.a.length}
+  less(x,y){return x.t<y.t||(x.t===y.t&&x.seq<y.seq)}
+  push(v){const a=this.a;a.push(v);let i=a.length-1;while(i>0){const p=(i-1)>>1;if(!this.less(a[i],a[p]))break;[a[i],a[p]]=[a[p],a[i]];i=p}}
+  pop(){const a=this.a,top=a[0],l=a.pop();if(a.length){a[0]=l;let i=0;for(;;){let m=i;const x=2*i+1,y=x+1;if(x<a.length&&this.less(a[x],a[m]))m=x;if(y<a.length&&this.less(a[y],a[m]))m=y;if(m===i)break;[a[i],a[m]]=[a[m],a[i]];i=m}}return top}
+  peek(){return this.a[0]}
+}
+const MIN_TRANSIT=0.05,MAX_LOG=5000,MAX_EVENTS_PER_CALL=20000;
+class Sim{
+  constructor(model){
+    this.m=model;syncAllPorts(model);
+    this.t=0;this.seq=0;this.heap=new Heap();this.seed=model.seed|0;this.streams=new Map();this.streamKey=new Map();this.curRng=mulberry32(this.seed);
+    this.maxT=Number(model.maxT)>0?Number(model.maxT):0;this.nFired=0;this.wipArea=0;this.leads=[];this.rejected=0;
+    this.nodes=new Map();this.flows=new Map();this.dgOf=new Map();this.outs=new Map();this.ins=new Map();
+    this.state=new Map();this.tokens=new Map();this.pulses=[];this.log=[];this.nextTok=1;this.nextCorr=1;
+    this.tot={emitted:0,delivered:0,stored:0,dropped:0,errors:0,leadSum:0,leadN:0};
+    this.flowCount=new Map();this.pausedAt=null;this.budgetHit=false;this.lastDelivery=0;
+    for(const d of Object.values(model.diagrams)){
+      d.nodes.forEach((n,i)=>{this.nodes.set(n.id,n);this.dgOf.set(n.id,d.id);this.outs.set(n.id,[]);this.ins.set(n.id,[]);this.streamKey.set(n.id,`${Object.keys(model.diagrams).indexOf(d.id)}:${i}`)});
+      for(const f of d.flows){this.flows.set(f.id,f);this.dgOf.set(f.id,d.id)}
+      for(const f of d.flows){this.outs.get(f.from)?.push(f);this.ins.get(f.to)?.push(f)}
+    }
+    for(const n of this.nodes.values()){
+      if(n.type==='process'){
+        const inc=this.ins.get(n.id);
+        const reads=inc.filter(f=>{const o=originOf(model,f);return o&&o.type==='store'});
+        const inputs=inc.filter(f=>!reads.includes(f));
+        const r=parseRules(n.rules);
+        this.state.set(n.id,{queue:[],busy:0,workers:[],joinBuf:new Map(),reads,inputs,rules:r.items,dur:compile(String(n.duration||'1')).ast||['v',1],in:0,done:0,maxQ:0,waitSum:0,waitN:0,busyT:0,fired:0,idleTimer:false,rejected:0,series:[[0,0]]});
+        const clock=!n.child&&!inputs.length&&(n.interval>0);
+        if(clock)this.push(n.interval,{kind:'timer',node:n.id});
+      }else if(n.type==='entity'){
+        this.state.set(n.id,{rules:parseRules(n.gen).items,emitted:0,received:0,last:null});
+        if(autoInterval(n)&&this.outs.get(n.id).length)this.push(Math.max(0,n.start),{kind:'gen',node:n.id});
+      }else if(n.type==='store'){
+        this.state.set(n.id,{records:(parseRecords(n.initial)||[]).map(r=>({...r})),writes:0,reads:0,touched:-1});
+      }
+    }
+  }
+  push(t,e){e.t=t;e.seq=this.seq++;this.heap.push(e)}
+  note(key,params,kind='info',node=null){if(this.log.length>=MAX_LOG)this.log.splice(0,500);this.log.push({t:this.t,key,params,kind,node})}
+  // cada elemento tem a sua sequência de sorteios: mudar um não altera os demais
+  rngFor(id){
+    let r=this.streams.get(id);
+    if(!r){const key=this.streamKey.get(id)||id;let x=2166136261^this.seed;for(let i=0;i<key.length;i++)x=Math.imul(x^key.charCodeAt(i),16777619);r=mulberry32(x);this.streams.set(id,r)}
+    return r;
+  }
+  ctx(...scopes){return{scopes:[...scopes,{t:this.t}],rng:this.curRng}}
+  qMark(st){
+    const s=st.series,n=st.queue.length,last=s[s.length-1];
+    if(last[1]===n)return;
+    if(last[0]===this.t)last[1]=n;else s.push([this.t,n]);
+    if(s.length>6000)st.series=s.filter((_,i)=>i%2===0||i===s.length-1);
+  }
+  newToken(data,corr,born,path){const id=this.nextTok++;const tok={id,data,corr,born,path:path||[],state:'new'};this.tokens.set(id,tok);return tok}
+  retire(tok,state){tok.state=state;this.tokens.delete(tok.id)}
+  project(data,fields){
+    const list=String(fields||'').split(',').map(x=>x.trim()).filter(Boolean);
+    if(!list.length)return{...data};
+    const o={};for(const k of list){const v=own(data,k);if(v!==undefined)o[k]=v}return o;
+  }
+  guardOf(f,scope){
+    const g=String(f.guard||'').trim();
+    if(!g)return true;
+    const r=compile(g);if(r.error)return false;
+    return!!evalAst(r.ast,this.ctx(scope));
+  }
+  launch(f,data,corr,born,path){
+    const tok=this.newToken(this.project(data,f.fields),corr,born,[...path,{t:this.t,flow:f.id,name:f.name}]);
+    const dur=Math.max(MIN_TRANSIT,Number(f.transit)||0);
+    Object.assign(tok,{state:'transit',flow:f.id,t0:this.t,t1:this.t+dur,dg:this.dgOf.get(f.id)});
+    this.flowCount.set(f.id,(this.flowCount.get(f.id)||0)+1);
+    this.push(tok.t1,{kind:'arrive',tok:tok.id,flow:f.id});
+    this.note('lFlow',[tok.id,f.name],'flow',f.id);
+    return tok;
+  }
+  send(node,data,corr,born,path,tokId){
+    this.curRng=this.rngFor(node.id);
+    const flows=this.outs.get(node.id)||[];
+    if(!flows.length){this.note('lSink',[tokId,node.name],'warn',node.id);this.tot.dropped++;return}
+    const normal=[],elses=[];
+    for(const f of flows)(isElse(f.guard)?elses:normal).push(f);
+    const fire=[];
+    for(const f of normal){if(this.guardOf(f,data))fire.push(f)}
+    if(!fire.length)fire.push(...elses);
+    if(!fire.length){this.note('lDrop',[tokId,node.name],'warn',node.id);this.tot.dropped++;return}
+    for(const f of fire)this.launch(f,data,corr,born,path);
+  }
+  /* entidade emite um novo dado */
+  emit(node,manual){
+    const st=this.state.get(node.id);if(!this.outs.get(node.id).length)return false;
+    this.curRng=this.rngFor(node.id);
+    const seq=st.emitted+1;const data={};
+    try{for(const r of st.rules)data[r.name]=evalAst(r.ast,this.ctx(data,{seq}))}
+    catch(e){this.tot.errors++;this.note('lErr',[node.name,e.message],'err',node.id);return false}
+    st.emitted=seq;this.tot.emitted++;
+    const corr=this.nextCorr++;
+    this.note('lEmit',[node.name,corr],'info',node.id);
+    this.send(node,data,corr,this.t,[{t:this.t,node:node.id,name:node.name}],corr);
+    if(!manual&&autoInterval(node)&&(!node.limit||st.emitted<node.limit)){
+      this.curRng=this.rngFor(node.id);
+      const r=compile(String(node.interval));
+      let dt=1;try{dt=Number(evalAst(r.ast,this.ctx({seq})))}catch{}
+      this.push(this.t+Math.max(.001,Number.isFinite(dt)?dt:1),{kind:'gen',node:node.id});
+    }
+    return true;
+  }
+  /* chegada de um dado ao destino de um fluxo */
+  arrive(tok,f){
+    const node=this.nodes.get(f.to);
+    const path=[...tok.path];
+    this.retire(tok,'arrived');
+    if(!node)return;
+    if(node.bp){
+      const w=String(node.bpWhen||'').trim(),r=w?compile(w):null;
+      let hit=true;
+      if(r&&r.ast)try{hit=!!evalAst(r.ast,this.ctx(tok.data))}catch{hit=false}
+      if(hit)this.pausedAt=node.id;
+    }
+    if(node.type==='process'&&node.child){
+      const child=this.m.diagrams[node.child];
+      const port=child&&child.nodes.find(n=>n.type==='port'&&n.flow===f.id);
+      if(port&&this.outs.get(port.id).length){this.send(port,tok.data,tok.corr,tok.born,[...path,{t:this.t,node:node.id,name:node.name}],tok.id);return}
+      this.note('lUnbal',[tok.id,node.name,f.name],'warn',node.id);this.tot.dropped++;return;
+    }
+    if(node.type==='process')return this.enqueue(node,tok,f,path);
+    if(node.type==='entity'){
+      const st=this.state.get(node.id);st.received++;st.last=tok.data;
+      this.tot.delivered++;this.tot.leadSum+=this.t-tok.born;this.tot.leadN++;this.lastDelivery=this.t;this.leads.push(this.t-tok.born);
+      this.note('lDeliver',[node.name,tok.corr],'info',node.id);return;
+    }
+    if(node.type==='store')return this.write(node,tok,f);
+    if(node.type==='port'){
+      const pf=this.flows.get(node.flow);
+      if(!pf)return;
+      if(isElse(pf.guard)||this.guardOf(pf,tok.data)){this.launch(pf,tok.data,tok.corr,tok.born,path);return}
+      const pn=this.nodes.get(pf.from);
+      this.note('lDrop',[tok.id,pn?pn.name:node.name],'warn',node.id);this.tot.dropped++;
+    }
+  }
+  write(node,tok,f){
+    const st=this.state.get(node.id);const key=node.key.trim();
+    const rec={...tok.data};
+    const same=r=>key&&own(r,key)!==undefined&&own(r,key)==own(rec,key);
+    const eff=this.effective(f,'op');
+    if(eff==='delete')st.records=st.records.filter(r=>!same(r));
+    else if(eff==='upsert'){const ex=st.records.find(same);if(ex)Object.assign(ex,rec);else st.records.push(rec)}
+    else st.records.push(rec);
+    st.writes++;st.touched=this.t;this.tot.stored++;
+    this.note('lWrite',[node.name,t(eff==='delete'?'opDelete':eff==='upsert'?'opUpsert':'opInsert'),tok.corr],'info',node.id);
+  }
+  effective(f,prop){
+    // fluxos de subdiagrama ligados a uma porta herdam as opções do fluxo do nível superior
+    let cur=f,guard=0;
+    while(cur&&guard++<32){
+      if(cur[prop]&&cur[prop]!=='insert')return cur[prop];
+      const a=this.nodes.get(cur.from),b=this.nodes.get(cur.to);
+      const port=a&&a.type==='port'?a:b&&b.type==='port'?b:null;
+      cur=port?this.flows.get(port.flow):null;
+    }
+    return prop==='op'?'insert':f[prop];
+  }
+  enqueue(node,tok,f,path){
+    const st=this.state.get(node.id);st.in++;
+    if(node.join==='all'&&st.inputs.length>1){
+      let buf=st.joinBuf.get(f.id);if(!buf){buf=[];st.joinBuf.set(f.id,buf)}
+      const held=this.newToken(tok.data,tok.corr,tok.born,path);Object.assign(held,{state:'join',at:node.id,dg:this.dgOf.get(node.id)});
+      buf.push(held);
+      if(st.inputs.every(x=>(st.joinBuf.get(x.id)||[]).length)){
+        const parts=st.inputs.map(x=>st.joinBuf.get(x.id).shift());
+        const data={};let born=Infinity;const p=[];
+        for(const q of parts){Object.assign(data,q.data);born=Math.min(born,q.born);p.push(...q.path);this.retire(q,'merged')}
+        const merged=this.newToken(data,parts[0].corr,born,p);
+        this.note('lJoin',[node.name,merged.corr],'info',node.id);
+        this.addQueue(node,st,merged);
+      }
+      return;
+    }
+    const q=this.newToken(tok.data,tok.corr,tok.born,path);
+    this.addQueue(node,st,q);
+  }
+  addQueue(node,st,tok){
+    if(node.queueLimit>0&&st.busy>=node.capacity&&st.queue.length>=node.queueLimit){
+      st.rejected++;this.rejected++;
+      this.note('lReject',[tok.corr,node.name],'warn',node.id);this.retire(tok,'rejected');return;
+    }
+    Object.assign(tok,{state:'queue',at:node.id,dg:this.dgOf.get(node.id),queuedAt:this.t});
+    tok.path=[...tok.path,{t:this.t,node:node.id,name:node.name}];
+    const pr=String(node.priority||'').trim();
+    if(pr){const r=compile(pr);this.curRng=this.rngFor(node.id);try{tok.prio=Number(evalAst(r.ast,this.ctx(tok.data)))||0}catch{tok.prio=0}}
+    st.queue.push(tok);
+    this.pump(node,st);
+    st.maxQ=Math.max(st.maxQ,st.queue.length); // só conta quem realmente ficou esperando
+    this.qMark(st);
+  }
+  pump(node,st){
+    while(st.busy<node.capacity&&st.queue.length){
+      let at=0;
+      if(String(node.priority||'').trim())st.queue.forEach((q,i)=>{if(q.prio<st.queue[at].prio)at=i});
+      const tok=st.queue.splice(at,1)[0];
+      st.waitSum+=this.t-tok.queuedAt;st.waitN++;
+      this.begin(node,st,tok);
+    }
+  }
+  read(node,st,scopeIn,lookup){
+    let found=false;
+    for(const f of st.reads){
+      const src=originOf(this.m,f);if(!src)continue;
+      const ss=this.state.get(src.id);ss.reads++;
+      const filter=this.filterOf(f);
+      const fr=filter?compile(filter):null;
+      const alias=this.aliasOf(f,src);
+      let hit=null;
+      if(this.inherit(f,'readAll')){
+        const list=ss.records.filter(r=>!fr||!fr.ast||evalAst(fr.ast,this.ctx({in:scopeIn},r)));
+        lookup[alias]=list.map(r=>({...r}));
+        if(list.length){hit=list[0];found=true}
+        if(list.length&&this.consumeOf(f)){ss.records=ss.records.filter(r=>!list.includes(r));ss.touched=this.t}
+      }else{
+        for(const r of ss.records){
+          if(!fr||!fr.ast){hit=r;break}
+          if(evalAst(fr.ast,this.ctx({in:scopeIn},r))){hit=r;break}
+        }
+        lookup[alias]=hit?{...hit}:null;
+        if(hit)found=true;
+        if(hit&&this.consumeOf(f)){ss.records.splice(ss.records.indexOf(hit),1);ss.touched=this.t}
+      }
+      this.pulses.push({flow:f.id,t0:this.t,t1:this.t+Math.max(.4,Number(f.transit)||.4),dg:this.dgOf.get(f.id)});
+      this.note('lRead',[node.name,src.name,t(hit?'lFound':'lNotFound')],'read',node.id);
+    }
+    return found;
+  }
+  filterOf(f){let c=f,g=0;while(c&&g++<32){if(String(c.filter||'').trim())return c.filter.trim();const a=this.nodes.get(c.from);c=a&&a.type==='port'?this.flows.get(a.flow):null}return''}
+  aliasOf(f,src){let c=f,g=0;while(c&&g++<32){if(String(c.alias||'').trim())return c.alias.trim();const a=this.nodes.get(c.from);c=a&&a.type==='port'?this.flows.get(a.flow):null}return normAlias(src.name)}
+  inherit(f,prop){let c=f,g=0;while(c&&g++<32){if(c[prop])return true;const a=this.nodes.get(c.from);c=a&&a.type==='port'?this.flows.get(a.flow):null}return false}
+  consumeOf(f){return this.inherit(f,'consume')}
+  begin(node,st,tok,fromStore=false){
+    const lookup={};
+    this.curRng=this.rngFor(node.id);
+    try{
+      this.read(node,st,tok.data,lookup);
+      // sem dado de entrada, os registros lidos viram o dado
+      if(fromStore)for(const v of Object.values(lookup))if(v&&!Array.isArray(v))Object.assign(tok.data,v);
+      const data={...tok.data};
+      for(const r of st.rules)data[r.name]=evalAst(r.ast,this.ctx(data,lookup,{in:tok.data}));
+      const raw=Number(evalAst(st.dur,this.ctx(data,lookup)));
+      const dur=Number.isFinite(raw)?Math.max(0,raw):0;
+      tok.data=data;
+      Object.assign(tok,{state:'busy',t0:this.t,t1:this.t+dur});
+      st.busy++;st.workers.push(tok);st.fired++;
+      this.note('lStart',[node.name,tok.corr],'info',node.id);
+      this.push(tok.t1,{kind:'finish',node:node.id,tok:tok.id,dur});
+    }catch(e){
+      this.tot.errors++;this.note('lErr',[node.name,e.message],'err',node.id);this.retire(tok,'error');
+    }
+  }
+  finish(node,tok,dur){
+    const st=this.state.get(node.id);
+    st.busy--;st.workers.splice(st.workers.indexOf(tok),1);st.done++;st.busyT+=dur;
+    this.note('lDone',[node.name,tok.corr],'info',node.id);
+    this.retire(tok,'done');
+    this.send(node,tok.data,tok.corr,tok.born,tok.path,tok.corr);
+    this.pump(node,st);
+    this.qMark(st);
+  }
+  timer(node){
+    const st=this.state.get(node.id);
+    let acted=false;
+    if(st.busy<node.capacity&&(!node.limit||st.fired<node.limit)&&(!st.reads.length||this.peekRead(st))){
+      const corr=this.nextCorr++;
+      const tok=this.newToken({},corr,this.t,[{t:this.t,node:node.id,name:node.name}]);
+      Object.assign(tok,{at:node.id,dg:this.dgOf.get(node.id)});
+      this.tot.emitted++;
+      this.begin(node,st,tok,st.reads.length>0);
+      acted=true;
+    }
+    st.idleTimer=!acted&&st.busy===0;
+    if(node.limit&&st.fired>=node.limit)return;
+    this.push(this.t+node.interval,{kind:'timer',node:node.id});
+  }
+  peekRead(st){
+    return st.reads.some(f=>{const src=originOf(this.m,f);if(!src)return false;
+      const recs=this.state.get(src.id).records;
+      const filter=this.filterOf(f);const fr=filter?compile(filter):null;
+      return recs.some(r=>!fr||!fr.ast||evalAst(fr.ast,this.ctx({in:{}},r)));
+    });
+  }
+  fireNext(){
+    const e=this.heap.pop();
+    this.nFired++;
+    if(e.t>this.t){this.wipArea+=this.tokens.size*(e.t-this.t);this.t=e.t}
+    if(e.kind==='gen')this.emit(this.nodes.get(e.node));
+    else if(e.kind==='timer')this.timer(this.nodes.get(e.node));
+    else if(e.kind==='arrive'){const tok=this.tokens.get(e.tok);if(tok)this.arrive(tok,this.flows.get(e.flow))}
+    else if(e.kind==='finish'){const tok=this.tokens.get(e.tok);if(tok)this.finish(this.nodes.get(e.node),tok,e.dur)}
+  }
+  advanceTo(T){
+    let n=0;
+    if(this.maxT)T=Math.min(T,this.maxT);
+    while(this.heap.size&&this.heap.peek().t<=T){
+      this.fireNext();
+      if(this.pausedAt)return'bp';
+      if(++n>=MAX_EVENTS_PER_CALL){this.note('lBudget',[],'warn');this.budgetHit=true;return'budget'}
+    }
+    if(T>this.t){this.wipArea+=this.tokens.size*(T-this.t);this.t=T}
+    this.pulses=this.pulses.filter(p=>p.t1>this.t);
+    return'ok';
+  }
+  step(){if(this.heap.size&&!(this.maxT&&this.heap.peek().t>this.maxT)){this.fireNext();this.pulses=this.pulses.filter(p=>p.t1>this.t);return true}return false}
+  isIdle(){
+    if(!this.heap.size||(this.maxT&&this.t>=this.maxT))return true;
+    // só restam disparos automáticos que não têm o que fazer
+    for(const e of this.heap.a){
+      if(e.kind!=='timer')return false;
+      const st=this.state.get(e.node);
+      if(!st.idleTimer||!st.reads.length||this.peekRead(st))return false;
+    }
+    return[...this.state.values()].every(st=>!st.busy);
+  }
+  util(id){
+    const n=this.nodes.get(id),st=this.state.get(id);
+    if(this.t<=0)return 0;
+    let b=st.busyT;for(const w of st.workers)b+=Math.max(0,this.t-w.t0);
+    return Math.min(1,b/(n.capacity*this.t));
+  }
+}
+
+function percentile(list,p){
+  if(!list.length)return null;
+  const s=[...list].sort((a,b)=>a-b),i=(s.length-1)*p,lo=Math.floor(i);
+  return s[lo]+(s[Math.min(lo+1,s.length-1)]-s[lo])*(i-lo);
+}
+function simMetrics(sim){
+  const T=sim.tot,out=[];
+  const add=(k,label,v,d=2,suf='')=>out.push({k,label,v,d,suf});
+  add('emitted',t('sEmitted'),T.emitted,1);add('delivered',t('sDelivered'),T.delivered,1);add('stored',t('sStored'),T.stored,1);
+  add('dropped',t('sDropped'),T.dropped,1);add('rejected',t('sRejected'),sim.rejected,1);
+  add('lead',t('sLead'),T.leadN?T.leadSum/T.leadN:null);add('p50',t('sP50'),percentile(sim.leads,.5));add('p95',t('sP95'),percentile(sim.leads,.95));
+  add('wip',t('sWip'),sim.t>0?sim.wipArea/sim.t:0);add('end',t('sEnd'),sim.t,1);
+  for(const n of sim.nodes.values()){
+    if(n.type!=='process'||n.child)continue;
+    const st=sim.state.get(n.id),nm=`${numberOf(sim.m,n)} ${n.name}`;
+    add('util:'+n.id,`${nm}: ${t('sUtil')}`,sim.util(n.id)*100,1,'%');
+    add('maxq:'+n.id,`${nm}: ${t('sMaxQ')}`,st.maxQ,1);
+    add('wait:'+n.id,`${nm}: ${t('sWait')}`,st.waitN?st.waitSum/st.waitN:null);
+  }
+  return out;
+}
+const T95={1:12.71,2:4.3,3:3.18,4:2.78,5:2.57,6:2.45,7:2.36,8:2.31,9:2.26,10:2.23,15:2.13,20:2.09,30:2.04,60:2};
+function tCrit(df){let v=1.96;for(const k of Object.keys(T95).map(Number).sort((a,b)=>b-a))if(df<=k)v=T95[k];return v}
+function runForever(m){
+  for(const d of Object.values(m.diagrams))for(const n of d.nodes){
+    if(n.type==='entity'&&autoInterval(n)&&!n.limit&&d.flows.some(f=>f.from===n.id))return true;
+    if(n.type==='process'&&!n.child&&n.interval>0&&!n.limit&&!d.flows.some(f=>f.to===n.id))return true;
+  }
+  return false;
+}
+const MAX_RUN_EVENTS=1500000;
+function runOnce(model,seed,maxT){
+  const m=JSON.parse(JSON.stringify(model));m.seed=seed;m.maxT=maxT;
+  const s=new Sim(m);let g=0;
+  while(s.heap.size&&g<MAX_RUN_EVENTS){
+    if(s.maxT&&s.heap.peek().t>s.maxT){s.advanceTo(s.maxT);break}
+    if(g%256===0&&s.isIdle())break;
+    s.fireNext();s.pausedAt=null;g++;
+  }
+  return{metrics:simMetrics(s),capped:g>=MAX_RUN_EVENTS};
+}
+function aggregate(runs){
+  const n=runs.length,stats=new Map();
+  for(const r of runs)for(const x of r.metrics){
+    if(!stats.has(x.k))stats.set(x.k,{k:x.k,label:x.label,d:x.d,suf:x.suf,vals:[]});
+    if(x.v!=null)stats.get(x.k).vals.push(x.v);
+  }
+  for(const m of stats.values()){
+    const c=m.vals.length;
+    m.mean=c?m.vals.reduce((a,b)=>a+b,0)/c:null;
+    const sd=c>1?Math.sqrt(m.vals.reduce((a,b)=>a+(b-m.mean)**2,0)/(c-1)):0;
+    m.ci=c>1?tCrit(c-1)*sd/Math.sqrt(c):null;
+    m.min=c?Math.min(...m.vals):null;m.max=c?Math.max(...m.vals):null;
+    delete m.vals;
+  }
+  return{n,stats,capped:runs.some(r=>r.capped)};
+}
+
+/* ========== exemplos ========== */
+const pickT=(o)=>{const i=LANGS.indexOf(LANG);const r={};for(const[k,v]of Object.entries(o))r[k]=v[i];return r};
+const SAMPLES={
+  orders(){
+    const x=pickT(SAMPLE_TEXT.orders);
+    const m=newModel();m.name=x.title;
+    const R=m.diagrams.root;
+    R.nodes.push(
+      N('entity','c',120,240,x.customer,{gen:'id = seq\nproduct = randint(1,3)\nqty = randint(1,4)',interval:3,limit:8}),
+      N('process','v',380,240,x.validate,{k:1,rules:'price = products.price\ntotal = round(qty * price, 2)\nok = exists(products) && products.stock >= qty',duration:'1'}),
+      N('store','dp',380,70,x.products,{k:1,key:'id',initial:JSON.stringify([{id:1,name:'Mouse',price:90,stock:3},{id:2,name:'Keyboard',price:250,stock:1},{id:3,name:'Monitor',price:1200,stock:10}],null,1)}),
+      N('process','f',660,240,x.invoice,{k:2,child:'sub',duration:'1'}),
+      N('store','ds',660,70,x.sales,{k:2,key:'id'}),
+      N('entity','t',930,240,x.carrier,{}),
+      N('process','q',990,70,x.query,{k:3,duration:'0.5',rules:'found = exists(sale)'}),
+      N('entity','g',1260,70,x.manager,{gen:'id = randint(1,8)'}),
+    );
+    R.flows.push(
+      F('f1','c','v',x.order,{bend:-14}),
+      F('f2','dp','v',x.price,{alias:'products',filter:'id == in.product'}),
+      F('f3','v','f',x.approved,{guard:'ok'}),
+      F('f4','v','c',x.refused,{guard:'else',bend:-54}),
+      F('f5','f','ds',x.sale,{fields:'id, product, qty, total, grand_total'}),
+      F('f6','f','t',x.shipping,{fields:'id, product, qty'}),
+      F('f7','f','c',x.bill,{fields:'id, grand_total',bend:-130}),
+      F('f8','ds','q',x.saleData,{alias:'sale',filter:'id == in.id'}),
+      F('f9','g','q',x.ask,{bend:-22}),
+      F('f10','q','g',x.answer,{bend:-22}),
+    );
+    const S={id:'sub',parent:'f',nodes:[
+      N('process','s1',340,190,x.tax,{k:1,rules:'tax = round(total * 0.12, 2)',duration:'0.5'}),
+      N('process','s2',600,190,x.issue,{k:2,rules:'grand_total = round(total + tax, 2)',duration:'0.5'}),
+    ],flows:[F('sf1','s1','s2',x.taxed)]};
+    m.diagrams.sub=S;
+    syncPorts(m,S);
+    const port=id=>S.nodes.find(n=>n.type==='port'&&n.flow===id);
+    port('f3').x=110;port('f3').y=190;
+    port('f5').x=860;port('f5').y=70;port('f6').x=860;port('f6').y=190;port('f7').x=860;port('f7').y=310;
+    S.flows.unshift(F('sf0',port('f3').id,'s1',x.approved));
+    S.flows.push(F('sf2','s2',port('f5').id,x.sale),F('sf3','s2',port('f6').id,x.shipping),F('sf4','s2',port('f7').id,x.bill));
+    return m;
+  },
+  library(){
+    const x=pickT(SAMPLE_TEXT.library);
+    const m=newModel();m.name=x.title;
+    const R=m.diagrams.root;
+    R.nodes.push(
+      N('entity','r',110,270,x.reader,{gen:'loan_id = seq\nbook = randint(1,2)',interval:4,limit:7}),
+      N('process','c',420,270,x.check,{k:1,rules:'ok = exists(books) && books.copies > 0\ncopies = books.copies - 1',duration:'0.5'}),
+      N('store','d1',420,60,x.books,{k:1,key:'book',initial:JSON.stringify([{book:1,title:'Dom Casmurro',copies:3},{book:2,title:'Grande Sertão',copies:2}],null,1)}),
+      N('process','l',760,270,x.lend,{k:2,duration:'0.5'}),
+      N('store','d2',760,60,x.loans,{k:2,key:'loan_id'}),
+      N('process','q',1090,60,x.query,{k:3,duration:'0.5',rules:'found = exists(loan)'}),
+      N('entity','b',1090,270,x.librarian,{gen:'loan_id = randint(1,7)'}),
+    );
+    R.flows.push(
+      F('a','r','c',x.request,{bend:-14}),
+      F('b','d1','c',x.record,{alias:'books',filter:'book == in.book'}),
+      F('c1','c','l',x.available,{guard:'ok'}),
+      F('c2','c','r',x.unavailable,{guard:'else',bend:-54}),
+      F('e','l','d1',x.stock,{op:'upsert',fields:'book, copies'}),
+      F('g','l','d2',x.loan,{fields:'loan_id, book'}),
+      F('i','l','r',x.confirmation,{fields:'loan_id, book',bend:-150}),
+      F('j','d2','q',x.loanData,{alias:'loan',filter:'loan_id == in.loan_id'}),
+      F('k','b','q',x.ask,{bend:-70}),
+      F('m','q','b',x.answer,{bend:-70}),
+    );
+    return m;
+  },
+  queue(){
+    const x=pickT(SAMPLE_TEXT.queue);
+    const m=newModel();m.name=x.title;
+    const R=m.diagrams.root;
+    R.nodes.push(
+      N('entity','a',110,200,x.client,{gen:'id = seq',interval:1,limit:25}),
+      N('process','b',400,200,x.triage,{k:1,duration:'0.4'}),
+      N('process','c',680,200,x.serve,{k:2,duration:'random(1.5, 2.5)',capacity:1}),
+    );
+    R.flows.push(F('x','a','b',x.ticket,{bend:-14}),F('y','b','c',x.routed),F('z','c','a',x.answer,{bend:-130}));
+    return m;
+  },
+};
+function N(type,id,x,y,name,extra){return{id,type,x,y,...NODE_DEFAULTS[type],name,...extra}}
+function F(id,from,to,name,extra){return{id,from,to,...FLOW_DEFAULTS,name,...extra}}
+
+/* ========== estado da interface ========== */
+const S={model:newModel(),dg:'root',sel:new Set(),view:{},mode:'edit',right:'props',history:[],hIdx:-1,clip:null,
+  sim:null,playing:false,simT:0,speed:1,tok:null,simTab:'log',onlyProblems:false,statusKey:null,statusArg:null,lastPanel:0,issues:[],space:false,manual:[],simMax:0,batch:null,batching:null,baseline:null,batchN:30,batchT:0,forcedT:0,qTable:false,hoverT:null};
+const diagram=()=>S.model.diagrams[S.dg];
+const editing=()=>S.mode==='edit';
+function viewOf(id=S.dg){if(!S.view[id])S.view[id]={x:0,y:0,k:1};return S.view[id]}
+function commit(){
+  syncAllPorts(S.model);
+  const j=JSON.stringify(S.model);
+  if(S.history[S.hIdx]===j)return;
+  S.history.length=S.hIdx+1;S.history.push(j);if(S.history.length>100)S.history.shift();S.hIdx=S.history.length-1;
+  store.set('model',S.model);updateUndo();refreshIssues();
+}
+function restore(j){
+  S.model=JSON.parse(j);
+  if(!S.model.diagrams[S.dg])S.dg='root';
+  S.sel=new Set([...S.sel].filter(id=>findNode(S.model,id)||findFlow(S.model,id)));
+  store.set('model',S.model);
+  renderAll();
+}
+function undo(){if(S.hIdx>0){S.hIdx--;restore(S.history[S.hIdx]);updateUndo()}}
+function redo(){if(S.hIdx<S.history.length-1){S.hIdx++;restore(S.history[S.hIdx]);updateUndo()}}
+function updateUndo(){$('#b-undo').disabled=S.hIdx<=0;$('#b-redo').disabled=S.hIdx>=S.history.length-1}
+function refreshIssues(){S.issues=checkModel(S.model);renderTabs();if(S.right==='check')renderInspector()}
+function setModel(m,keepHistory){
+  stopSim();S.baseline=null;S.batch=null;S.batching=null;
+  S.model=m;S.dg='root';S.sel=new Set();S.view={};
+  if(!keepHistory){S.history=[JSON.stringify(m)];S.hIdx=0}
+  store.set('model',S.model);updateUndo();
+  S.issues=checkModel(m);
+  renderAll();fitView();
+}
+
+/* ========== geometria ========== */
+function half(n){
+  const gs=S.model.notation==='gs';
+  switch(n.type){
+    case'process':return gs?{w:64,h:50}:{w:56,h:56,round:true};
+    case'entity':return{w:62,h:34};
+    case'store':return{w:84,h:24};
+    default:return{w:66,h:16};
+  }
+}
+function edgePoint(n,tx,ty){
+  const b=half(n),dx=tx-n.x,dy=ty-n.y;
+  if(!dx&&!dy)return{x:n.x,y:n.y};
+  if(b.round){const l=Math.hypot(dx,dy);return{x:n.x+dx/l*b.w,y:n.y+dy/l*b.h}}
+  const k=Math.min(dx?b.w/Math.abs(dx):Infinity,dy?b.h/Math.abs(dy):Infinity);
+  return{x:n.x+dx*k,y:n.y+dy*k};
+}
+function flowGeom(d,f){
+  const a=d.nodes.find(n=>n.id===f.from),b=d.nodes.find(n=>n.id===f.to);if(!a||!b)return null;
+  const peers=d.flows.filter(x=>(x.from===f.from&&x.to===f.to)||(x.from===f.to&&x.to===f.from));
+  let bend=f.bend;
+  if(!bend&&peers.length>1){
+    const i=peers.indexOf(f),off=(i-(peers.length-1)/2)*44;
+    bend=f.from<f.to?off:-off;
+  }
+  const mx=(a.x+b.x)/2,my=(a.y+b.y)/2,dx=b.x-a.x,dy=b.y-a.y,l=Math.hypot(dx,dy)||1;
+  const cx=mx-dy/l*bend*2,cy=my+dx/l*bend*2;
+  const p0=edgePoint(a,cx,cy),p2=edgePoint(b,cx,cy);
+  const q=t=>({x:(1-t)*(1-t)*p0.x+2*(1-t)*t*cx+t*t*p2.x,y:(1-t)*(1-t)*p0.y+2*(1-t)*t*cy+t*t*p2.y});
+  return{p0,p2,cx,cy,q,mid:q(.5),nx:-dy/l,ny:dx/l,a,b};
+}
+function wrapText(text,max,lines=3){
+  const words=String(text||'').split(/\s+/).filter(Boolean),out=[];let cur='';
+  for(const w of words){
+    if((cur+' '+w).trim().length<=max)cur=(cur+' '+w).trim();
+    else{if(cur)out.push(cur);cur=w.length>max?w.slice(0,max-1)+'…':w}
+  }
+  if(cur)out.push(cur);
+  if(out.length>lines){out.length=lines;out[lines-1]=out[lines-1].slice(0,Math.max(1,max-1))+'…'}
+  return out;
+}
+function multiline(lines,x,y,lh,cls){
+  const t0=y-(lines.length-1)*lh/2;
+  return lines.map((l,i)=>s('text',{x,y:t0+i*lh,class:cls},l));
+}
+
+/* ========== desenho ========== */
+function drawNode(n){
+  const gs=S.model.notation==='gs',sel=S.sel.has(n.id);
+  const g=s('g',{class:`node n-${n.type}${sel?' sel':''}${n.type==='entity'&&S.mode==='sim'?' manual':''}`,'data-node':n.id,transform:`translate(${n.x} ${n.y})`});
+  const num=numberOf(S.model,n);
+  if(n.type==='process'){
+    if(gs){
+      g.append(s('rect',{class:'n-shape',x:-64,y:-50,width:128,height:100,rx:14}),s('path',{class:'n-shape',d:'M-64 -26H64',fill:'none'}),s('text',{x:0,y:-38,class:'n-num'},num));
+      g.append(...multiline(wrapText(n.name,17),0,12,15,'n-text'));
+    }else{
+      g.append(s('circle',{class:'n-shape',r:56}),s('text',{x:0,y:-36,class:'n-num'},num));
+      g.append(...multiline(wrapText(n.name,16),0,5,15,'n-text'));
+    }
+    if(n.child){
+      const o=s('g',{class:'open-child','data-open':n.id,transform:gs?'translate(50 -38)':'translate(0 40)'});
+      o.append(s('title',null,t('openSub')),s('rect',{x:-9,y:-8,width:18,height:16,rx:3}),s('text',{x:0,y:0},'⊞'));
+      g.append(o);
+    }
+  }else if(n.type==='entity'){
+    if(gs)g.append(s('rect',{class:'n-shape',x:-58,y:-30,width:124,height:68}));
+    g.append(s('rect',{class:'n-shape',x:-62,y:-34,width:124,height:68}));
+    g.append(...multiline(wrapText(n.name,17,2),0,0,15,'n-text'));
+  }else if(n.type==='store'){
+    g.append(s('rect',{class:'n-fill',x:-84,y:-24,width:168,height:48,'data-hit':1}));
+    if(gs)g.append(s('path',{class:'n-shape',d:'M84 -24H-84V24H84M-46 -24V24'}));
+    else g.append(s('path',{class:'n-shape',d:'M-84 -24H84M-84 24H84M-46 -24V24'}));
+    g.append(s('text',{x:-65,y:0,class:'n-num'},num));
+    g.append(...multiline(wrapText(n.name,17,2),19,0,15,'n-text'));
+  }else{
+    g.append(s('rect',{class:'n-shape',x:-66,y:-16,width:132,height:32,rx:16}));
+    g.append(s('text',{x:0,y:0,class:'n-text',style:'font-size:12px'},wrapText(n.name,18,1)[0]||''));
+  }
+  if(n.bp)g.append(s('circle',{class:'bp',cx:half(n).w-6,cy:-half(n).h+6,r:6}));
+  if(editing()){
+    const b=half(n);
+    for(const[x,y]of[[0,-b.h],[b.w,0],[0,b.h],[-b.w,0]])g.append(s('circle',{class:'conn',cx:x,cy:y,r:6,'data-conn':n.id}));
+  }
+  return g;
+}
+function drawFlow(d,f){
+  const G=flowGeom(d,f);if(!G)return null;
+  const sel=S.sel.has(f.id),guard=String(f.guard||'').trim();
+  const g=s('g',{class:`flow${sel?' sel':''}${guard?' has-guard':''}`,'data-flow':f.id});
+  const path=G.a.id===G.b.id?'':`M${G.p0.x} ${G.p0.y}Q${G.cx} ${G.cy} ${G.p2.x} ${G.p2.y}`;
+  g.append(s('path',{class:'f-hit',d:path}),s('path',{class:'f-line',d:path}));
+  const lines=wrapText(f.name,22,2);
+  const lh=14,m=G.mid,w=Math.max(0,...lines.map(l=>l.length))*6.4+10,hh=lines.length*lh+(guard?12:0)+2;
+  if(lines.length||guard){
+    g.append(s('rect',{class:'f-bg',x:m.x-w/2,y:m.y-hh/2,width:w,height:hh,rx:3}));
+    g.append(...multiline(lines,m.x,m.y-(guard?6:0),lh,'f-text'));
+    if(guard){const gl=guard.length>26?guard.slice(0,25)+'…':guard;g.append(s('text',{x:m.x,y:m.y+lines.length*lh/2+(lines.length?2:0),class:'f-guard'},`[${gl}]`))}
+  }
+  if(sel&&editing()&&S.sel.size===1)g.append(s('circle',{class:'bend',cx:m.x,cy:m.y,r:6,'data-bend':f.id}));
+  return g;
+}
+function renderCanvas(){
+  const d=diagram();
+  const gf=$('#g-flows'),gn=$('#g-nodes');
+  gf.replaceChildren(...d.flows.map(f=>drawFlow(d,f)).filter(Boolean));
+  gn.replaceChildren(...d.nodes.map(drawNode));
+  const v=viewOf();
+  $('#world').setAttribute('transform',`translate(${v.x} ${v.y}) scale(${v.k})`);
+  $('#dots').setAttribute('patternTransform',`translate(${v.x} ${v.y}) scale(${v.k})`);
+  $('#z-label').textContent=Math.round(v.k*100)+'%';
+  $('#empty').classList.toggle('hidden',!(S.dg==='root'&&!d.nodes.length&&editing()));
+  document.body.classList.toggle('mode-sim',!editing());
+}
+function renderCrumbs(){
+  const chain=[];let id=S.dg;
+  while(id){const d=S.model.diagrams[id];chain.unshift(d);const pn=d.parent?findNode(S.model,d.parent):null;id=pn?pn.diagram.id:null}
+  const box=$('#crumbs');box.replaceChildren();
+  chain.forEach((d,i)=>{
+    if(i)box.append(h('span',null,'›'));
+    const pn=d.parent?findNode(S.model,d.parent).node:null;
+    const label=pn?`${numberOf(S.model,pn)} ${pn.name}`:(S.model.name||t('root'));
+    box.append(h('button',{'aria-current':d.id===S.dg?'true':null,title:label,onclick(){goto(d.id)}},label));
+  });
+}
+function renderOutline(){
+  const d=diagram(),box=$('#outline');box.replaceChildren();
+  for(const n of d.nodes)box.append(h('button',{class:'out'+(S.sel.has(n.id)?' active':''),onclick(){S.sel=new Set([n.id]);setRight('props');renderCanvas();renderOutline();renderInspector()}},
+    h('i',null,numberOf(S.model,n)||(n.type==='entity'?'E':'↔')),h('span',null,n.name||'—')));
+  for(const f of d.flows){
+    const a=d.nodes.find(n=>n.id===f.from),b=d.nodes.find(n=>n.id===f.to);
+    box.append(h('button',{class:'out'+(S.sel.has(f.id)?' active':''),title:`${a?.name} → ${b?.name}`,onclick(){S.sel=new Set([f.id]);setRight('props');renderCanvas();renderOutline();renderInspector()}},h('i',null,'→'),h('span',null,f.name||`${a?.name} → ${b?.name}`)));
+  }
+}
+function renderTabs(){
+  const errs=S.issues.filter(i=>i.sev==='error').length,warns=S.issues.length-errs;
+  const c=document.querySelector('.rt[data-r=check]');
+  c.replaceChildren(t('check'),errs?h('b',null,errs):warns?h('b',{class:'w'},warns):'');
+  document.querySelectorAll('.rt').forEach(b=>b.setAttribute('aria-selected',b.dataset.r===S.right));
+}
+function setRight(r){S.right=r;renderTabs();renderInspector()}
+function renderPalette(){
+  const items=[['process','<circle cx="20" cy="14" r="12"/>'],['entity','<rect x="6" y="4" width="28" height="20"/>'],['store','<path d="M4 6H36M4 22H36M12 6V22"/>']];
+  const box=$('#palette');box.replaceChildren();
+  for(const[type]of items){
+    const ic=document.createElementNS(SVGNS,'svg');ic.setAttribute('viewBox','0 0 40 28');
+    const stroke={process:'var(--proc-line)',entity:'var(--ent-line)',store:'var(--sto-line)'}[type],fill={process:'var(--proc-fill)',entity:'var(--ent-fill)',store:'none'}[type];
+    if(type==='process')ic.append(s('circle',{cx:20,cy:14,r:12,fill,stroke,'stroke-width':1.6}));
+    if(type==='entity')ic.append(s('rect',{x:6,y:4,width:28,height:20,fill,stroke,'stroke-width':1.6}));
+    if(type==='store')ic.append(s('path',{d:'M4 6H36M4 22H36M12 6V22',fill:'none',stroke,'stroke-width':1.6}));
+    const b=h('button',{class:'pal','data-pal':type,title:t(type)},ic,h('span',null,t(type)));
+    b.addEventListener('pointerdown',e=>paletteDrag(e,type));
+    box.append(b);
+  }
+}
+function goto(id){const first=!S.view[id];S.dg=id;S.sel=new Set();syncPorts(S.model,diagram());renderAll();if(first)fitView()}
+function renderAll(){
+  renderCrumbs();renderPalette();renderOutline();renderCanvas();renderTabs();renderInspector();
+  applyStaticText();updateUndo();
+}
+function applyStaticText(){
+  document.documentElement.lang=t('lang');
+  document.querySelectorAll('[data-tx]').forEach(e=>{e.textContent=t(e.dataset.tx)});
+  document.querySelectorAll('[data-t]').forEach(e=>{e.setAttribute('aria-label',t(e.dataset.t))});
+  document.querySelectorAll('[data-title]').forEach(e=>{e.title=t(e.dataset.title)});
+  document.querySelectorAll('[data-aria]').forEach(e=>{e.setAttribute('aria-label',t(e.dataset.aria))});
+  $('#svg').setAttribute('aria-label',S.model.name||'DFD');
+  const row=$('#empty-samples');row.replaceChildren(...Object.keys(SAMPLES).map(k=>h('button',{onclick(){loadSample(k)}},SAMPLE_TEXT[k].title[LANGS.indexOf(LANG)])));
+  document.querySelectorAll('.rt[data-r=props]').forEach(e=>e.textContent=t('properties'));
+}
+function loadSample(k){
+  setModel(SAMPLES[k]());
+  toast(SAMPLE_TEXT[k].desc[LANGS.indexOf(LANG)],'ok',9000);
+}
+
+/* ========== inspetor ========== */
+function fieldBox(label,input,hint,err){return h('label',{class:'field'},h('span',null,label),input,err,hint&&h('div',{class:'hint'},hint))}
+function textField(obj,prop,label,opts={}){
+  const tag=opts.area?'textarea':'input';
+  const errEl=h('div',{class:'ferr hidden'});
+  const showErr=()=>{const e=opts.check?opts.check(obj[prop]):null;errEl.textContent=e||'';errEl.classList.toggle('hidden',!e)};
+  const inp=h(tag,{type:opts.area?null:(opts.num?'number':'text'),class:opts.mono?'mono':null,rows:opts.rows||(opts.area?3:null),min:opts.min,step:opts.step,spellcheck:opts.mono?'false':null,placeholder:opts.placeholder,value:String(obj[prop]??''),
+    oninput(e){obj[prop]=opts.num?(Number.isFinite(parseFloat(e.target.value))?parseFloat(e.target.value):0):e.target.value;showErr();renderCanvas();if(opts.live)opts.live()},
+    onchange(){if(opts.num&&opts.min!=null&&obj[prop]<opts.min){obj[prop]=opts.min;inp.value=obj[prop]}commit();renderOutline();renderCrumbs();$('#svg').setAttribute('aria-label',S.model.name||'DFD')}});
+  showErr();
+  return fieldBox(label,inp,opts.hint,errEl);
+}
+function selectField(obj,prop,label,options,opts={}){
+  return fieldBox(label,h('select',{value:String(obj[prop]),onchange(e){obj[prop]=e.target.value;if(opts.onset)opts.onset();commit();renderAll()}},options.map(([v,l])=>h('option',{value:v},l))),opts.hint);
+}
+function checkField(obj,prop,label){return h('label',{class:'inl'},h('input',{type:'checkbox',checked:obj[prop],onchange(e){obj[prop]=e.target.checked;commit();renderCanvas()}}),label)}
+const rulesCheck=v=>{const r=parseRules(v);return r.errors.length?r.errors.join('\n'):null};
+function renderInspector(){
+  const box=$('#inspector');const sT=box.scrollTop;box.replaceChildren();
+  if(S.right==='check'){renderCheck(box);return}
+  if(!editing()){renderSimInspector(box);box.scrollTop=sT;return}
+  if(!S.sel.size)return renderModelProps(box);
+  if(S.sel.size>1){
+    box.append(h('div',null,t('multi',S.sel.size)),h('button',{class:'danger',onclick:deleteSelection},t('delete')));
+    return;
+  }
+  const id=[...S.sel][0];
+  const fn=diagram().nodes.find(n=>n.id===id);
+  if(fn)renderNodeProps(box,fn);
+  else{const fl=diagram().flows.find(f=>f.id===id);if(fl)renderFlowProps(box,fl);else renderModelProps(box)}
+  box.scrollTop=sT;
+}
+function renderModelProps(box){
+  const m=S.model;
+  box.append(h('div',{class:'type'},t('model')),
+    textField(m,'name',t('name'),{live:renderCrumbs}),
+    selectField(m,'notation',t('notation'),[['yd','Yourdon / DeMarco'],['gs','Gane & Sarson']]),
+    textField(m,'seed',t('seed'),{num:true,hint:t('seedHint')}),
+    textField(m,'maxT',t('maxT'),{num:true,min:0,step:10,hint:t('maxTHint')}),
+    h('div',{class:'hint'},t('modelHint')));
+}
+function renderNodeProps(box,n){
+  box.append(h('div',{class:'type'},t(n.type),n.type!=='entity'&&n.type!=='port'?' '+numberOf(S.model,n):''));
+  if(n.type==='port'){
+    box.append(h('h4',null,n.name),h('div',null,t(n.dir==='in'?'portIn':'portOut')),h('div',{class:'hint'},t('portHint')));
+    return;
+  }
+  box.append(textField(n,'name',t('name'),{area:true,rows:2,live:renderOutline}));
+  box.append(textField(n,'desc',t('desc'),{area:true,rows:2}));
+  if(n.type==='process'){
+    if(n.child){
+      box.append(h('div',{class:'hint'},t('subHint')),h('div',{class:'inl'},h('button',{class:'primary',onclick(){goto(n.child)}},t('openSub')),h('button',{class:'danger',onclick:()=>removeChild(n)},t('delSub'))));
+    }else{
+      box.append(textField(n,'rules',t('rules'),{area:true,mono:true,rows:4,hint:t('rulesHint'),check:rulesCheck,placeholder:'total = qty * price'}));
+      box.append(h('div',{class:'two'},
+        textField(n,'duration',t('duration'),{mono:true,check:exprError}),
+        textField(n,'capacity',t('capacity'),{num:true,min:1,step:1})),h('div',{class:'hint'},t('durationHint')));
+      box.append(textField(n,'queueLimit',t('queueLimit'),{num:true,min:0,step:1,hint:t('queueLimitHint')}));
+      box.append(textField(n,'priority',t('priority'),{mono:true,hint:t('priorityHint'),check:exprError,placeholder:'-total'}));
+      box.append(selectField(n,'join',t('join'),[['any',t('joinAny')],['all',t('joinAll')]]));
+      box.append(textField(n,'interval',t('procInterval'),{num:true,min:0,step:0.5,hint:t('procIntervalHint')}));
+      box.append(h('button',{onclick:()=>createChild(n)},t('explode')));
+    }
+    box.append(...bpFields(n));
+  }else if(n.type==='entity'){
+    box.append(textField(n,'gen',t('gen'),{area:true,mono:true,rows:4,hint:t('genHint'),check:rulesCheck,placeholder:'id = seq'}));
+    box.append(textField(n,'interval',t('genInterval'),{mono:true,hint:t('genIntervalHint'),check:exprError}));
+    box.append(h('div',{class:'two'},textField(n,'limit',t('genLimit'),{num:true,min:0,step:1}),textField(n,'start',t('genStart'),{num:true,min:0,step:0.5})),h('div',{class:'hint'},t('genLimitHint')));
+    box.append(...bpFields(n));
+  }else if(n.type==='store'){
+    box.append(textField(n,'key',t('key'),{mono:true,hint:t('keyHint')}));
+    box.append(textField(n,'initial',t('initial'),{area:true,mono:true,rows:5,check:v=>parseRecords(v)===null?t('iJson',n.name):null,placeholder:'[{"id": 1, "name": "..."}]'}));
+    box.append(...bpFields(n));
+  }
+  box.append(h('button',{class:'danger',onclick:deleteSelection},t('delete')));
+}
+function bpFields(n){return[checkField(n,'bp',t('breakpoint')),textField(n,'bpWhen',t('bpWhen'),{mono:true,hint:t('bpWhenHint'),check:exprError,placeholder:'total > 100'})]}
+function renderFlowProps(box,f){
+  const d=diagram();
+  const endpoints=d.nodes.map(n=>[n.id,(numberOf(S.model,n)?numberOf(S.model,n)+' ':'')+n.name]);
+  const a=d.nodes.find(n=>n.id===f.from),b=d.nodes.find(n=>n.id===f.to);
+  const isRead=a&&(a.type==='store'||(a.type==='port'&&originOf(S.model,f)?.type==='store'));
+  const isWrite=b&&(b.type==='store'||(b.type==='port'&&endOf(S.model,f)?.type==='store'));
+  box.append(h('div',{class:'type'},t('flow'),isRead?` · ${t('readTag')}`:isWrite?` · ${t('writeTag')}`:''));
+  box.append(textField(f,'name',t('name'),{live:renderOutline}));
+  const setEnd=prop=>e=>{
+    const v=e.target.value,prev=f[prop];
+    const na=prop==='from'?d.nodes.find(n=>n.id===v):a,nb=prop==='to'?d.nodes.find(n=>n.id===v):b;
+    const why=connectionProblem(na,nb);
+    if(why){toast(t('badLink',linkReason(why)),'warn');e.target.value=prev;return}
+    f[prop]=v;commit();renderAll();
+  };
+  box.append(h('div',{class:'two'},
+    fieldBox(t('from'),h('select',{value:f.from,onchange:setEnd('from')},endpoints.map(([v,l])=>h('option',{value:v},l)))),
+    fieldBox(t('to'),h('select',{value:f.to,onchange:setEnd('to')},endpoints.map(([v,l])=>h('option',{value:v},l))))));
+  box.append(h('div',{class:'inl'},h('button',{onclick(){[f.from,f.to]=[f.to,f.from];commit();renderAll()}},t('invert')),f.bend?h('button',{onclick(){f.bend=0;commit();renderAll()}},t('straighten')):null));
+  if(isRead){
+    box.append(textField(f,'filter',t('readFilter'),{mono:true,hint:t('readFilterHint'),check:exprError,placeholder:'id == in.id'}));
+    box.append(textField(f,'alias',t('alias'),{mono:true,hint:t('aliasHint'),placeholder:normAlias((originOf(S.model,f)||{}).name)}));
+    box.append(checkField(f,'readAll',t('readAll')),h('div',{class:'hint'},t('readAllHint')));
+    box.append(checkField(f,'consume',t('consume')));
+  }else{
+    box.append(textField(f,'guard',t('guard'),{mono:true,hint:t('guardHint'),check:guardError,placeholder:'total > 100'}));
+    box.append(textField(f,'fields',t('fields'),{mono:true,hint:t('fieldsHint'),placeholder:'id, total'}));
+    if(isWrite)box.append(selectField(f,'op',t('writeOp'),[['insert',t('opInsert')],['upsert',t('opUpsert')],['delete',t('opDelete')]]));
+  }
+  box.append(textField(f,'transit',t('transit'),{num:true,min:0.05,step:0.25}));
+  box.append(h('button',{class:'danger',onclick:deleteSelection},t('delete')));
+}
+function linkReason(w){return{ent:t('linkEntEnt'),mix:t('linkEntSto'),sto:t('linkStoSto'),port:t('linkPort'),self:t('iSelf','')}[w]}
+function renderCheck(box){
+  S.issues=checkModel(S.model);
+  if(!S.issues.length){box.append(h('div',{class:'ok-msg'},t('noIssues')));return}
+  const sorted=[...S.issues].sort((a,b)=>(a.sev==='error'?0:1)-(b.sev==='error'?0:1));
+  for(const i of sorted)box.append(h('button',{class:'issue '+i.sev,onclick(){
+    if(S.dg!==i.diagram)goto(i.diagram);
+    S.sel=i.target?new Set([i.target]):new Set();
+    if(editing())S.right='props';
+    renderAll();
+  }},i.msg,i.diagram!==S.dg&&h('small',null,diagramLabel(i.diagram))));
+}
+function diagramLabel(id){const d=S.model.diagrams[id];if(!d||!d.parent)return t('root');const p=findNode(S.model,d.parent);return p?`${numberOf(S.model,p.node)} ${p.node.name}`:''}
+function createChild(n){
+  const id=uid('d');
+  S.model.diagrams[id]={id,parent:n.id,nodes:[],flows:[]};
+  n.child=id;syncPorts(S.model,S.model.diagrams[id]);commit();goto(id);fitView();
+}
+async function removeChild(n){
+  const c=countDeep(S.model,n.child);
+  if(c&&!await confirmDlg(t('confirmDelSub',n.name),t('confirmDelText',c)))return;
+  removeDiagram(S.model,n.child);n.child=null;commit();renderAll();
+}
+async function deleteSelection(){
+  if(!editing()||!S.sel.size)return;
+  const d=diagram();
+  const nodes=d.nodes.filter(n=>S.sel.has(n.id)&&n.type!=='port');
+  const inner=nodes.filter(n=>n.child).reduce((a,n)=>a+countDeep(S.model,n.child),0);
+  if(inner&&!await confirmDlg(t('delete'),t('confirmDelText',inner)))return;
+  for(const n of nodes)if(n.child)removeDiagram(S.model,n.child);
+  const gone=new Set(nodes.map(n=>n.id));
+  d.nodes=d.nodes.filter(n=>!gone.has(n.id));
+  d.flows=d.flows.filter(f=>!S.sel.has(f.id)&&!gone.has(f.from)&&!gone.has(f.to));
+  S.sel=new Set();commit();renderAll();
+}
+function addNode(type,x,y){
+  const d=diagram();
+  const name={process:t('newProcess'),entity:t('newEntity'),store:t('newStore')}[type];
+  const n={id:uid('n'),type,x:Math.round(x),y:Math.round(y),...NODE_DEFAULTS[type],name};
+  if(type==='process'||type==='store')n.k=nextK(d,type,S.model);
+  d.nodes.push(n);S.sel=new Set([n.id]);commit();renderAll();
+  return n;
+}
+function addFlow(a,b){
+  const why=connectionProblem(a,b);
+  if(why){toast(t('badLink',linkReason(why)),'warn');return null}
+  const d=diagram();
+  const f={id:uid('f'),from:a.id,to:b.id,...FLOW_DEFAULTS};
+  d.flows.push(f);S.sel=new Set([f.id]);S.right='props';commit();renderAll();
+  return f;
+}
+
+/* ========== interação no diagrama ========== */
+const svg=$('#svg');
+function toWorld(e){const r=svg.getBoundingClientRect(),v=viewOf();return{x:(e.clientX-r.left-v.x)/v.k,y:(e.clientY-r.top-v.y)/v.k}}
+let drag=null,lastClick={id:null,t:0};
+const SNAP=8,snap=v=>Math.round(v/SNAP)*SNAP;
+svg.addEventListener('pointerdown',e=>{
+  if($('#renamer'))finishRename(true);
+  svg.focus({preventScroll:true});
+  const p=toWorld(e),v=viewOf();
+  if(e.button===1||(e.button===0&&S.space)){drag={kind:'pan',sx:e.clientX,sy:e.clientY,vx:v.x,vy:v.y};svg.setPointerCapture(e.pointerId);e.preventDefault();return}
+  if(e.button!==0)return;
+  const tg=e.target;
+  const tokEl=tg.closest('[data-token]');
+  if(tokEl){S.tok=+tokEl.dataset.token;S.sel=new Set();setRight('props');return}
+  const open=tg.closest('[data-open]');
+  if(open){const n=diagram().nodes.find(x=>x.id===open.dataset.open);if(n&&n.child)goto(n.child);return}
+  const conn=tg.closest('[data-conn]');
+  if(conn&&editing()){
+    drag={kind:'link',from:conn.dataset.conn,x:p.x,y:p.y};svg.setPointerCapture(e.pointerId);return;
+  }
+  const bend=tg.closest('[data-bend]');
+  if(bend&&editing()){drag={kind:'bend',flow:bend.dataset.bend};svg.setPointerCapture(e.pointerId);return}
+  const nodeEl=tg.closest('[data-node]');
+  if(nodeEl){
+    const id=nodeEl.dataset.node;
+    const now=performance.now(),dbl=lastClick.id===id&&now-lastClick.t<350;lastClick={id,t:now};
+    if(!editing()){
+      S.sel=new Set([id]);S.tok=null;
+      const n=diagram().nodes.find(x=>x.id===id);
+      if(n&&n.type==='entity'&&S.sim&&!autoInterval(n)&&S.sim.outs.get(n.id).length)emitNow(n);
+      if(dbl&&n&&n.child)goto(n.child);
+      else{setRight('props');renderCanvas();renderOutline()}
+      return;
+    }
+    if(dbl){const n=diagram().nodes.find(x=>x.id===id);if(n&&n.type!=='port'){drag={kind:'rename',obj:n};svg.setPointerCapture(e.pointerId);return}}
+    if(e.shiftKey){if(S.sel.has(id))S.sel.delete(id);else S.sel.add(id)}
+    else if(!S.sel.has(id))S.sel=new Set([id]);
+    drag={kind:'move',start:p,moved:false,orig:diagram().nodes.filter(n=>S.sel.has(n.id)).map(n=>({n,x:n.x,y:n.y}))};
+    svg.setPointerCapture(e.pointerId);
+    if(S.right!=='props')S.right='props';
+    renderCanvas();renderOutline();renderTabs();renderInspector();
+    return;
+  }
+  const flowEl=tg.closest('[data-flow]');
+  if(flowEl){
+    const id=flowEl.dataset.flow;
+    const now=performance.now(),dbl=lastClick.id===id&&now-lastClick.t<350;lastClick={id,t:now};
+    if(!editing()){S.sel=new Set([id]);setRight('props');renderCanvas();return}
+    if(dbl){const f=diagram().flows.find(x=>x.id===id);if(f){drag={kind:'rename',obj:f};svg.setPointerCapture(e.pointerId);return}}
+    S.sel=e.shiftKey?new Set([...S.sel,id]):new Set([id]);
+    S.right='props';renderCanvas();renderOutline();renderTabs();renderInspector();
+    return;
+  }
+  // fundo
+  if(!e.shiftKey&&S.sel.size){S.sel=new Set();S.tok=null;renderCanvas();renderOutline();renderInspector()}
+  else if(S.tok){S.tok=null;renderInspector()}
+  if(editing())drag={kind:'marquee',start:p,base:new Set(S.sel)};
+  else drag={kind:'pan',sx:e.clientX,sy:e.clientY,vx:v.x,vy:v.y};
+  svg.setPointerCapture(e.pointerId);
+});
+svg.addEventListener('pointermove',e=>{
+  if(!drag)return;
+  const p=toWorld(e),over=$('#g-over');
+  if(drag.kind==='pan'){const v=viewOf();v.x=drag.vx+e.clientX-drag.sx;v.y=drag.vy+e.clientY-drag.sy;applyView();return}
+  if(drag.kind==='move'){
+    const dx=p.x-drag.start.x,dy=p.y-drag.start.y;
+    if(!drag.moved&&Math.hypot(dx,dy)<3)return;
+    drag.moved=true;
+    for(const o of drag.orig){o.n.x=e.altKey?o.x+dx:snap(o.x+dx);o.n.y=e.altKey?o.y+dy:snap(o.y+dy)}
+    renderCanvas();return;
+  }
+  if(drag.kind==='link'){
+    const d=diagram(),a=d.nodes.find(n=>n.id===drag.from);if(!a)return;
+    const st=edgePoint(a,p.x,p.y);
+    const el=document.elementFromPoint(e.clientX,e.clientY);
+    const tgt=el&&el.closest&&el.closest('[data-node]');
+    document.querySelectorAll('.node.tgt').forEach(x=>x.classList.remove('tgt'));
+    if(tgt&&tgt.dataset.node!==drag.from)tgt.classList.add('tgt');
+    over.replaceChildren(s('path',{class:'preview',d:`M${st.x} ${st.y}L${p.x} ${p.y}`}));
+    return;
+  }
+  if(drag.kind==='bend'){
+    const d=diagram(),f=d.flows.find(x=>x.id===drag.flow);if(!f)return;
+    const a=d.nodes.find(n=>n.id===f.from),b=d.nodes.find(n=>n.id===f.to);
+    const dx=b.x-a.x,dy=b.y-a.y,l=Math.hypot(dx,dy)||1;
+    const val=((p.x-(a.x+b.x)/2)*(-dy/l)+(p.y-(a.y+b.y)/2)*(dx/l));
+    f.bend=Math.abs(val)<8?0:Math.round(val);
+    renderCanvas();return;
+  }
+  if(drag.kind==='marquee'){
+    const x=Math.min(p.x,drag.start.x),y=Math.min(p.y,drag.start.y),w=Math.abs(p.x-drag.start.x),hh=Math.abs(p.y-drag.start.y);
+    drag.rect={x,y,w,h:hh};
+    over.replaceChildren(s('rect',{class:'marquee',x,y,width:w,height:hh}));
+  }
+});
+function endDrag(e){
+  if(!drag)return;
+  const dr=drag;drag=null;
+  $('#g-over').replaceChildren();
+  if(dr.kind==='rename')startRename(dr.obj); // no pointerup: o mousedown tiraria o foco do campo
+  else if(dr.kind==='move'&&dr.moved){commit();renderAll()}
+  else if(dr.kind==='bend'){commit();renderAll()}
+  else if(dr.kind==='link'&&e){
+    const el=document.elementFromPoint(e.clientX,e.clientY);
+    const tgt=el&&el.closest&&el.closest('[data-node]');
+    document.querySelectorAll('.node.tgt').forEach(x=>x.classList.remove('tgt'));
+    if(tgt&&tgt.dataset.node!==dr.from){
+      const d=diagram();const f=addFlow(d.nodes.find(n=>n.id===dr.from),d.nodes.find(n=>n.id===tgt.dataset.node));
+      if(f){const nameIn=document.querySelector('#inspector input[type=text]');if(nameIn)nameIn.focus()}
+    }
+  }else if(dr.kind==='marquee'&&dr.rect&&dr.rect.w>4){
+    const r=dr.rect,d=diagram();const sel=new Set(dr.base);
+    for(const n of d.nodes)if(n.x>=r.x&&n.x<=r.x+r.w&&n.y>=r.y&&n.y<=r.y+r.h)sel.add(n.id);
+    S.sel=sel;S.right='props';renderCanvas();renderOutline();renderTabs();renderInspector();
+  }
+}
+svg.addEventListener('pointerup',endDrag);
+svg.addEventListener('pointercancel',()=>{drag=null;$('#g-over').replaceChildren()});
+svg.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const r=svg.getBoundingClientRect();
+  zoomAt(e.clientX-r.left,e.clientY-r.top,Math.exp(-e.deltaY*0.0012));
+},{passive:false});
+function applyView(){
+  const v=viewOf();
+  $('#world').setAttribute('transform',`translate(${v.x} ${v.y}) scale(${v.k})`);
+  $('#dots').setAttribute('patternTransform',`translate(${v.x} ${v.y}) scale(${v.k})`);
+  $('#z-label').textContent=Math.round(v.k*100)+'%';
+}
+function zoomAt(px,py,f){
+  const v=viewOf(),k=Math.max(.2,Math.min(3,v.k*f));
+  v.x=px-(px-v.x)*k/v.k;v.y=py-(py-v.y)*k/v.k;v.k=k;applyView();
+}
+function bounds(d){
+  if(!d.nodes.length)return null;
+  let a=Infinity,b=Infinity,c=-Infinity,e=-Infinity;
+  for(const n of d.nodes){const q=half(n);a=Math.min(a,n.x-q.w);b=Math.min(b,n.y-q.h);c=Math.max(c,n.x+q.w);e=Math.max(e,n.y+q.h)}
+  for(const f of d.flows){const G=flowGeom(d,f);if(G){a=Math.min(a,G.mid.x-70);b=Math.min(b,G.mid.y-24);c=Math.max(c,G.mid.x+70);e=Math.max(e,G.mid.y+24)}}
+  return{x:a,y:b,w:c-a,h:e-b};
+}
+function fitView(){
+  const d=diagram(),r=svg.getBoundingClientRect(),b=bounds(d),v=viewOf();
+  if(!b||!r.width){v.x=0;v.y=0;v.k=1;applyView();return}
+  const k=Math.max(.2,Math.min(1.25,Math.min((r.width-60)/b.w,(r.height-60)/b.h)));
+  v.k=k;v.x=(r.width-b.w*k)/2-b.x*k;v.y=(r.height-b.h*k)/2-b.y*k;applyView();
+}
+function paletteDrag(e,type){
+  if(!editing())return;
+  e.preventDefault();
+  const startX=e.clientX,startY=e.clientY;let moved=false;
+  const ghost=h('div',{style:'position:fixed;z-index:60;pointer-events:none;padding:4px 9px;background:var(--accent);color:var(--accent-text);border-radius:5px;font-size:12px;display:none'},t(type));
+  document.body.append(ghost);
+  const mv=ev=>{if(Math.hypot(ev.clientX-startX,ev.clientY-startY)>4)moved=true;if(moved){ghost.style.display='block';ghost.style.left=ev.clientX+8+'px';ghost.style.top=ev.clientY+8+'px'}};
+  const up=ev=>{
+    removeEventListener('pointermove',mv);removeEventListener('pointerup',up);ghost.remove();
+    const r=svg.getBoundingClientRect();
+    if(moved&&ev.clientX>=r.left&&ev.clientX<=r.right&&ev.clientY>=r.top&&ev.clientY<=r.bottom){const p=toWorld(ev);addNode(type,snap(p.x),snap(p.y))}
+    else if(!moved){
+      // clique: coloca no centro da vista, deslocando para não empilhar
+      const v=viewOf(),c=diagram().nodes.length%5;
+      addNode(type,snap((r.width/2-v.x)/v.k+c*24),snap((r.height/2-v.y)/v.k+c*24));
+    }
+  };
+  addEventListener('pointermove',mv);addEventListener('pointerup',up);
+}
+/* renomear no próprio diagrama */
+let renaming=null;
+function startRename(obj,at){
+  finishRename(true);
+  const v=viewOf(),isFlow=!obj.type;
+  let x=obj.x,y=obj.y;
+  if(isFlow){const G=flowGeom(diagram(),obj);if(!G)return;x=G.mid.x;y=G.mid.y}
+  const w=isFlow?170:Math.max(130,half(obj).w*2-6),hh=isFlow?28:56;
+  const ta=h('textarea',{id:'renamer',value:obj.name,'aria-label':t('name'),style:`left:${x*v.k+v.x-w/2}px;top:${y*v.k+v.y-hh/2}px;width:${w}px;height:${hh}px`});
+  renaming={obj,ta,orig:obj.name};
+  ta.addEventListener('keydown',e=>{
+    if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();finishRename(true)}
+    else if(e.key==='Escape'){e.preventDefault();e.stopPropagation();finishRename(false)}
+    e.stopPropagation();
+  });
+  ta.addEventListener('blur',()=>finishRename(true));
+  $('#stage').append(ta);ta.focus();ta.select();
+}
+function finishRename(save){
+  if(!renaming)return;
+  const{obj,ta}=renaming;renaming=null;
+  if(save)obj.name=ta.value.replace(/\s+/g,' ').trim();
+  ta.remove();
+  if(save){commit();renderAll()}
+  svg.focus({preventScroll:true});
+}
+/* copiar e colar */
+function copySelection(){
+  const d=diagram();
+  const nodes=d.nodes.filter(n=>S.sel.has(n.id)&&n.type!=='port');
+  if(!nodes.length)return false;
+  const ids=new Set(nodes.map(n=>n.id));
+  S.clip={nodes:JSON.parse(JSON.stringify(nodes)),flows:JSON.parse(JSON.stringify(d.flows.filter(f=>ids.has(f.from)&&ids.has(f.to))))};
+  return true;
+}
+function paste(){
+  if(!S.clip||!editing())return;
+  const d=diagram(),map=new Map(),sel=new Set();
+  for(const c of S.clip.nodes){
+    const n={...c,id:uid('n'),x:c.x+32,y:c.y+32,child:null};
+    if(n.type==='process'||n.type==='store')n.k=nextK(d,n.type,S.model);
+    map.set(c.id,n.id);d.nodes.push(n);sel.add(n.id);
+  }
+  for(const c of S.clip.flows)d.flows.push({...c,id:uid('f'),from:map.get(c.from),to:map.get(c.to)});
+  S.clip.nodes.forEach(c=>{c.x+=32;c.y+=32});
+  S.sel=sel;commit();renderAll();
+  toast(t('copied',S.clip.nodes.length),'ok',2500);
+}
+
+/* ========== exportação de imagem ========== */
+function diagramSvgText(){
+  const d=diagram(),b=bounds(d)||{x:0,y:0,w:400,h:300},pad=30;
+  const clone=document.createElementNS(SVGNS,'svg');
+  clone.setAttribute('xmlns',SVGNS);clone.setAttribute('viewBox',`${b.x-pad} ${b.y-pad} ${b.w+pad*2} ${b.h+pad*2}`);
+  clone.setAttribute('width',Math.round(b.w+pad*2));clone.setAttribute('height',Math.round(b.h+pad*2));
+  const light=':root,svg{--canvas:#fff;--text:#1b2022;--muted:#60686c;--panel:#fff;--proc-fill:#e4f0fb;--proc-line:#1f5f99;--ent-fill:#f6ecd9;--ent-line:#85621b;--sto-fill:#e4f3e6;--sto-line:#2b6e3c;--port-fill:#f0ecf8;--port-line:#65509c;--flow:#4a5358;--sel:#4a5358;--sans:"Segoe UI",Roboto,Arial,sans-serif;--mono:Consolas,Menlo,monospace}';
+  const css=[...document.querySelector('style').sheet.cssRules].map(r=>r.cssText).filter(c=>/^\.(n-|f-|flow|open-child|bp)|^\.node/.test(c)).join('\n');
+  clone.append(s('style',null,light+'\n'+css));
+  clone.append($('#svg defs').cloneNode(true));
+  clone.append(s('rect',{x:b.x-pad,y:b.y-pad,width:b.w+pad*2,height:b.h+pad*2,fill:'#fff'}));
+  const sel=S.sel;S.sel=new Set();
+  clone.append(s('g',null,d.flows.map(f=>drawFlow(d,f)).filter(Boolean)),s('g',null,d.nodes.map(n=>{const g=drawNode(n);g.querySelectorAll('.conn').forEach(x=>x.remove());return g})));
+  S.sel=sel;
+  return new XMLSerializer().serializeToString(clone);
+}
+const safeName=()=>(S.model.name||'dfd').replace(/[^\p{L}\p{N}_-]+/gu,'_');
+function exportPng(){
+  const text=diagramSvgText();
+  const url=URL.createObjectURL(new Blob([text],{type:'image/svg+xml'}));
+  const img=new Image();
+  img.onload=()=>{
+    const c=document.createElement('canvas');c.width=img.width*2;c.height=img.height*2;
+    const x=c.getContext('2d');x.scale(2,2);x.drawImage(img,0,0);URL.revokeObjectURL(url);
+    c.toBlob(b=>{if(b)download(b,safeName()+'.png','image/png');else toast(t('badFile','PNG'),'err')});
+  };
+  img.onerror=()=>{URL.revokeObjectURL(url);toast(t('badFile','PNG'),'err')};
+  img.src=url;
+}
+
+/* ========== simulação na interface ========== */
+function enterSim(){
+  finishRename(true);
+  const issues=checkModel(S.model);
+  S.issues=issues;
+  if(issues.some(i=>i.blocks)){S.right='check';renderTabs();renderInspector();toast(t('blocked'),'err');return}
+  S.mode='sim';S.sel=new Set();S.tok=null;S.batch=null;S.batching=null;
+  $('#edit-tools').classList.add('hidden');$('#sim-tools').classList.remove('hidden');$('#simpanel').classList.remove('hidden');
+  $('#left').querySelector('#palette').classList.add('hidden');$('#left').querySelector('.side-title').classList.add('hidden');
+  resetSim(true);
+  renderAll();renderSimTabs();
+  const w=issues.filter(i=>!i.blocks).length;
+  if(w)toast(t('warnsStart',w),'warn',5000);
+  requestAnimationFrame(()=>fitView());
+}
+function stopSim(){
+  S.sim=null;S.playing=false;S.tok=null;
+  if(S.mode==='sim'){
+    S.mode='edit';S.right='props';
+    $('#edit-tools').classList.remove('hidden');$('#sim-tools').classList.add('hidden');$('#simpanel').classList.add('hidden');
+    $('#palette').classList.remove('hidden');$('#left').querySelector('.side-title').classList.remove('hidden');
+    $('#g-sim').replaceChildren();
+    requestAnimationFrame(()=>{if(S.model.diagrams[S.dg])fitView()});
+  }
+}
+function resetSim(play){
+  S.sim=new Sim(JSON.parse(JSON.stringify(S.model)));
+  S.manual=[];S.simMax=0;S.hoverT=null;
+  S.simT=0;S.tok=null;S.statusKey=null;S.statusArg=null;S.playing=!!play;
+  updatePlay();drawSim();renderSimPanel(true);renderInspector();
+}
+function setStatus(k,a){S.statusKey=k;S.statusArg=a??null;$('#status').textContent=k?(a!=null?t(k,a):t(k)):''}
+function updatePlay(){const b=$('#b-play');b.textContent=t(S.playing?'pause':'play');if(S.playing)setStatus('stRun')}
+function togglePlay(){if(!S.sim)return;if(!S.playing&&S.sim.isIdle()&&!hasManual()){resetSim(true);return}S.playing=!S.playing;if(!S.playing)setStatus('stPause');updatePlay();lastFrame=0}
+function hasManual(){return[...S.sim.nodes.values()].some(n=>n.type==='entity'&&S.sim.outs.get(n.id)?.length)}
+function pauseWith(k,a){S.playing=false;setStatus(k,a);updatePlay();setStatus(k,a);renderSimPanel(true);renderInspector()}
+/* voltar no tempo: a simulação é determinística, então basta refazê-la até o ponto pedido */
+function replayTo({events,time}){
+  const sim=new Sim(JSON.parse(JSON.stringify(S.model)));
+  const man=S.manual,kept=[];let mi=0,guard=0;
+  const inject=()=>{
+    while(mi<man.length&&man[mi].ev===sim.nFired&&(time==null||man[mi].t<=time)){
+      if(man[mi].t>sim.t)sim.advanceTo(man[mi].t);
+      sim.emit(sim.nodes.get(man[mi].node),true);sim.pausedAt=null;kept.push(man[mi]);mi++;
+    }
+  };
+  for(;;){
+    inject();
+    if(!sim.heap.size||guard++>MAX_RUN_EVENTS)break;
+    if(events!=null&&sim.nFired>=events)break;
+    const nx=sim.heap.peek().t;
+    if((time!=null&&nx>time)||(sim.maxT&&nx>sim.maxT))break;
+    sim.fireNext();sim.pausedAt=null;
+  }
+  if(time!=null)sim.advanceTo(time);
+  S.sim=sim;S.manual=kept;S.simT=sim.t;S.playing=false;lastFrame=0;
+  updatePlay();setStatus('stPause');
+  if(S.tok!=null&&!sim.tokens.has(S.tok))S.tok=null;
+  drawSim();renderSimPanel(true);renderInspector();
+}
+function stepBack(){if(S.sim&&S.sim.nFired>0)replayTo({events:S.sim.nFired-1})}
+function stepSim(){
+  if(!S.sim)return;
+  S.playing=false;updatePlay();
+  if(S.sim.step()){S.simT=S.sim.t;if(S.sim.pausedAt){const n=S.sim.nodes.get(S.sim.pausedAt);S.sim.pausedAt=null;setStatus('stBp',n?n.name:'')}else setStatus('stPause')}
+  else setStatus('stDone');
+  drawSim();renderSimPanel(true);renderInspector();
+}
+function emitNow(n){
+  if(!S.sim)return;
+  if(!S.sim.outs.get(n.id).length){toast(t('emitNoFlow'),'warn');return}
+  S.sim.advanceTo(S.simT);S.sim.pausedAt=null;
+  S.manual.push({t:S.sim.t,ev:S.sim.nFired,node:n.id});
+  S.sim.emit(n,true);
+  if(!S.playing){S.playing=true;updatePlay();lastFrame=0}
+  drawSim();renderSimPanel(true);
+}
+let lastFrame=0;
+function frame(ts){
+  if(S.sim){
+    if(S.playing){
+      const dt=lastFrame?Math.min(.1,(ts-lastFrame)/1000):0;
+      S.simT+=dt*S.speed;
+      const r=S.sim.advanceTo(S.simT);
+      if(r==='bp'){S.simT=S.sim.t;const n=S.sim.nodes.get(S.sim.pausedAt);S.sim.pausedAt=null;pauseWith('stBp',n?n.name:'')}
+      else if(r==='budget'){S.simT=S.sim.t;pauseWith('stPause')}
+      else if(S.sim.isIdle()){
+        S.simT=S.sim.t;
+        const anyAuto=[...S.sim.nodes.values()].some(n=>n.type==='entity'&&autoInterval(n)&&S.sim.outs.get(n.id).length);
+        pauseWith(S.sim.maxT&&S.sim.t>=S.sim.maxT?'stTimeUp':!S.sim.tot.emitted&&!anyAuto?'stManual':'stDone');
+      }
+    }
+    lastFrame=ts;
+    syncTimeline();
+    drawSim();
+    if(ts-S.lastPanel>250){S.lastPanel=ts;renderSimPanel(false);if(S.right==='props'&&S.playing)renderInspector()}
+  }else lastFrame=0;
+  requestAnimationFrame(frame);
+}
+function syncTimeline(){
+  S.simMax=Math.max(S.simMax,S.simT);
+  const r=$('#tl');if(!r)return;
+  const max=Math.max(S.simMax,.1);
+  r.max=max;if(document.activeElement!==r||!r.matches(':active'))r.value=S.simT;
+}
+function nestedCounts(sim){
+  // quantos dados há dentro de cada subdiagrama, para mostrar no processo pai
+  const c=new Map();
+  for(const tok of sim.tokens.values()){
+    let dg=tok.dg;
+    while(dg){const d=sim.m.diagrams[dg];if(!d||!d.parent)break;c.set(d.parent,(c.get(d.parent)||0)+1);const pn=findNode(sim.m,d.parent);dg=pn?pn.diagram.id:null}
+  }
+  return c;
+}
+function badge(x,y,text,cls){
+  const w=Math.max(18,String(text).length*7+8);
+  return s('g',{class:'badge '+(cls||''),transform:`translate(${x} ${y})`},s('rect',{x:-w/2,y:-9,width:w,height:18,rx:9}),s('text',{x:0,y:0},String(text)));
+}
+function drawSim(){
+  const sim=S.sim;if(!sim)return;
+  $('#clock').textContent='t = '+fmt(S.simT);
+  const g=$('#g-sim'),out=[],d=sim.m.diagrams[S.dg];if(!d){g.replaceChildren();return}
+  const nested=nestedCounts(sim);
+  const maxFlow=Math.max(1,...d.flows.map(f=>sim.flowCount.get(f.id)||0));
+  const picked=S.tok!=null?sim.tokens.get(S.tok):null,trail=new Set(picked?picked.path.map(p=>p.flow).filter(Boolean):[]);
+  for(const f of d.flows){
+    const G=flowGeom(d,f);if(!G)continue;
+    const c=sim.flowCount.get(f.id);
+    const line=`M${G.p0.x} ${G.p0.y}Q${G.cx} ${G.cy} ${G.p2.x} ${G.p2.y}`;
+    if(c)out.push(s('path',{class:'f-vol',d:line,'stroke-width':2+c/maxFlow*8}));
+    if(trail.has(f.id))out.push(s('path',{class:'f-trail',d:line}));
+    if(c)out.push(s('text',{class:'f-count',x:G.mid.x+G.nx*0,y:G.mid.y-(f.name?22:12)},'×'+c));
+  }
+  for(const p of sim.pulses){
+    if(p.dg!==S.dg)continue;
+    const f=d.flows.find(x=>x.id===p.flow),G=f&&flowGeom(d,f);if(!G)continue;
+    const u=Math.min(1,Math.max(0,(S.simT-p.t0)/(p.t1-p.t0)));const q=G.q(u);
+    out.push(s('circle',{class:'tok read',cx:q.x,cy:q.y,r:5}));
+  }
+  for(const tok of sim.tokens.values()){
+    if(tok.state!=='transit'||tok.dg!==S.dg)continue;
+    const f=d.flows.find(x=>x.id===tok.flow),G=f&&flowGeom(d,f);if(!G)continue;
+    const u=Math.min(1,Math.max(0,(S.simT-tok.t0)/(tok.t1-tok.t0)));const q=G.q(u);
+    const picked=S.tok===tok.id;
+    out.push(s('circle',{class:'tok'+(picked?' picked':''),cx:q.x,cy:q.y,r:picked?8:7,'data-token':tok.id},s('title',null,JSON.stringify(tok.data))));
+  }
+  for(const n of d.nodes){
+    const b=half(n),st=sim.state.get(n.id);
+    if(n.type==='process'){
+      if(n.child){
+        const c=nested.get(n.id);
+        if(c)out.push(badge(0,-b.h-2,c,'in'));
+        continue;
+      }
+      if(st.busy){
+        const w=st.workers[0],u=w?Math.min(1,Math.max(0,(S.simT-w.t0)/Math.max(1e-6,w.t1-w.t0))):0;
+        const R=b.round?b.w+5:Math.max(b.w,b.h)+6;
+        if(b.round){
+          const a=u*2*Math.PI-Math.PI/2,x=n.x+R*Math.cos(a),y=n.y+R*Math.sin(a);
+          if(u>=.999)out.push(s('circle',{class:'prog',cx:n.x,cy:n.y,r:R}));
+          else out.push(s('path',{class:'prog',d:`M${n.x} ${n.y-R}A${R} ${R} 0 ${u>.5?1:0} 1 ${x} ${y}`}));
+        }else out.push(s('path',{class:'prog',d:`M${n.x-b.w} ${n.y+b.h+5}H${n.x-b.w+2*b.w*u}`}));
+        if(n.capacity>1)out.push(badge(n.x-b.w+6,n.y-b.h+4,`${st.busy}/${n.capacity}`));
+      }
+      const q=st.queue.length;
+      const j=[...st.joinBuf.values()].reduce((a,x)=>a+x.length,0);
+      if(q)out.push(badge(n.x+b.w-4,n.y+b.h-6,'▤ '+q,'q'));
+      if(j)out.push(badge(n.x-b.w+4,n.y+b.h-6,'⋈ '+j));
+      if(st.done)out.push(s('text',{class:'f-count',x:n.x,y:n.y+(b.round?b.h-14:b.h-10)},'✓'+st.done));
+      if(st.rejected)out.push(badge(n.x-b.w+4,n.y-b.h+6,'✕ '+st.rejected,'q'));
+      if(sim.t>0&&st.in)out.push(s('text',{class:'f-count',x:n.x,y:n.y+b.h+14},fmt(sim.util(n.id)*100,0)+'%'));
+    }else if(n.type==='entity'){
+      const parts=[];if(st.emitted)parts.push('↑'+st.emitted);if(st.received)parts.push('↓'+st.received);
+      if(parts.length)out.push(badge(n.x,n.y+b.h+2,parts.join(' ')));
+    }else if(n.type==='store'){
+      out.push(badge(n.x+b.w,n.y-b.h,st.records.length));
+    }
+  }
+  g.replaceChildren(...out);
+}
+/* painel de baixo */
+function renderSimTabs(){
+  const box=$('#simtabs');box.replaceChildren();
+  for(const[k,l]of[['log','log'],['stats','stats'],['queues','queuesTab'],['scen','scenTab'],['stores','stores'],['tokens','tokens']])
+    box.append(h('button',{class:'st',role:'tab','aria-selected':String(S.simTab===k),onclick(){S.simTab=k;renderSimTabs();renderSimPanel(true)}},t(l)));
+  box.append(h('span',{class:'spacer'}));
+  if(S.simTab==='log'){
+    box.append(h('label',{class:'inl',style:'font-size:12px'},h('input',{type:'checkbox',checked:S.onlyProblems,onchange(e){S.onlyProblems=e.target.checked;renderSimPanel(true)}}),t('onlyProblems')));
+    box.append(h('button',{onclick:exportLog},t('exportCsv')));
+  }
+}
+function logText(e){return t(e.key,...e.params)}
+function exportLog(){
+  const q=v=>/[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v;
+  const rows=S.sim.log.map(e=>[e.t.toFixed(3),e.kind,q(logText(e))].join(','));
+  download('﻿'+[`${t('time')},kind,${t('event')}`,...rows].join('\r\n'),safeName()+'-log.csv','text/csv');
+}
+let logSig='';
+function renderSimPanel(force){
+  if(!S.sim)return;
+  const box=$('#simbody');
+  if(S.simTab==='log'){
+    const list=S.onlyProblems?S.sim.log.filter(e=>e.kind==='warn'||e.kind==='err'):S.sim.log;
+    const sig=list.length+'/'+S.sim.log.length+(S.onlyProblems?'p':'')+LANG;
+    if(!force&&sig===logSig)return;
+    logSig=sig;
+    const atBottom=box.scrollTop+box.clientHeight>=box.scrollHeight-30;
+    const rows=list.slice(-300);
+    box.replaceChildren(h('table',{class:'t'},h('thead',null,h('tr',null,h('th',{class:'num'},t('time')),h('th',null,t('event')))),
+      h('tbody',null,rows.map(e=>h('tr',{class:(e.kind==='warn'?'warn':e.kind==='err'?'err':'')+(e.node?' click':''),onclick:e.node?()=>focusEl(e.node):null},h('td',{class:'num'},fmt(e.t,2)),h('td',null,logText(e)))))));
+    if(atBottom||force)box.scrollTop=box.scrollHeight;
+    return;
+  }
+  if(S.simTab==='scen'&&!force&&(box.contains(document.activeElement)||!S.playing))return;
+  const sT=box.scrollTop;
+  if(S.simTab==='queues'){box.replaceChildren(queuesView(box));drawQueueHover();return}
+  if(S.simTab==='scen')box.replaceChildren(scenariosView());
+  else if(S.simTab==='stats')box.replaceChildren(statsView());
+  else if(S.simTab==='stores')box.replaceChildren(storesView());
+  else box.replaceChildren(tokensView());
+  box.scrollTop=sT;
+}
+function focusEl(id){
+  const dgId=S.sim.dgOf.get(id);
+  if(dgId&&dgId!==S.dg)goto(dgId);
+  S.sel=new Set([id]);S.tok=null;S.right='props';renderCanvas();renderOutline();renderInspector();
+}
+function statsView(){
+  const sim=S.sim,T=sim.tot;
+  const lead=T.leadN?fmt(T.leadSum/T.leadN,2):'—';
+  const thr=sim.lastDelivery>0?fmt(T.delivered/sim.lastDelivery,2):'—';
+  const procs=[...sim.nodes.values()].filter(n=>n.type==='process'&&!n.child);
+  let worst=null,wu=-1;
+  for(const n of procs){const st=sim.state.get(n.id),u=sim.util(n.id);if(st.maxQ>0&&u>wu){wu=u;worst=n}}
+  const item=(k,v)=>h('span',null,t(k)+': ',h('b',null,v));
+  return h('div',null,
+    h('div',{class:'summary'},item('sEmitted',T.emitted),item('sDelivered',T.delivered),item('sStored',T.stored),item('sDropped',T.dropped),item('sRejected',sim.rejected),item('sErrors',T.errors),item('sLead',lead),item('sP50',sim.leads.length?fmt(percentile(sim.leads,.5),2):'—'),item('sP95',sim.leads.length?fmt(percentile(sim.leads,.95),2):'—'),item('sThroughput',thr),item('sWip',sim.t>0?fmt(sim.wipArea/sim.t,2):'—'),worst&&h('span',{style:'color:var(--warn)'},t('sBottleneck',worst.name))),
+    h('table',{class:'t'},h('thead',null,h('tr',null,h('th',null,t('sProc')),['sIn','sDone','sQueue','sMaxQ','sWait','sUtil','sRejected'].map(k=>h('th',{class:'num'},t(k))))),
+      h('tbody',null,procs.map(n=>{const st=sim.state.get(n.id);return h('tr',{class:'click',onclick:()=>focusEl(n.id)},h('td',null,`${numberOf(sim.m,n)} ${n.name}`),h('td',{class:'num'},st.in),h('td',{class:'num'},st.done),h('td',{class:'num'},st.queue.length),h('td',{class:'num'},st.maxQ),h('td',{class:'num'},st.waitN?fmt(st.waitSum/st.waitN,2):'—'),h('td',{class:'num'},fmt(sim.util(n.id)*100,0)+'%'),h('td',{class:'num'},st.rejected))}))));
+}
+/* gráfico: tamanho da fila no tempo */
+function queueSeries(sim){
+  const leaf=[...sim.nodes.values()].filter(n=>n.type==='process'&&!n.child);
+  const shown=[];let extra=0;
+  leaf.forEach((n,i)=>{
+    const st=sim.state.get(n.id);if(!st.maxQ)return;
+    if(i>=8){extra++;return}   // a cor segue o processo: não existe nona cor
+    shown.push({n,slot:i+1,name:`${numberOf(sim.m,n)} ${n.name}`,pts:st.series});
+  });
+  return{shown,extra};
+}
+const valueAt=(pts,x)=>{let v=0;for(const p of pts){if(p[0]>x)break;v=p[1]}return v};
+function niceStep(max,n){const raw=max/n,p=10**Math.floor(Math.log10(raw)),m=raw/p;return(m<=1?1:m<=2?2:m<=5?5:10)*p}
+let chartGeo=null;
+function queuesView(box){
+  const sim=S.sim,{shown,extra}=queueSeries(sim);
+  chartGeo=null;
+  if(!shown.length)return h('div',{class:'pad muted'},t('noQueue'));
+  const head=h('div',{class:'chart-head'},h('strong',null,t('chartTitle')),
+    shown.length>1&&h('div',{class:'legend'},shown.map(x=>h('span',null,h('i',{style:`background:var(--s${x.slot})`}),x.name))),
+    h('span',{class:'spacer'}),extra?h('span',{class:'muted'},t('moreSeries',extra)):null,
+    h('button',{onclick(){S.qTable=!S.qTable;renderSimPanel(true)}},t(S.qTable?'viewChart':'viewTable')));
+  const X=Math.max(S.simT,sim.t,.001);
+  if(S.qTable){
+    const steps=20,rows=Array.from({length:steps+1},(_,i)=>X*i/steps);
+    return h('div',null,head,h('table',{class:'t'},h('thead',null,h('tr',null,h('th',{class:'num'},t('time')),shown.map(x=>h('th',{class:'num'},x.name)))),
+      h('tbody',null,rows.map(r=>h('tr',null,h('td',{class:'num'},fmt(r,1)),shown.map(x=>h('td',{class:'num'},valueAt(x.pts,r))))))));
+  }
+  const W=Math.max(320,box.clientWidth-8),H=Math.max(110,box.clientHeight-46),L=34,R=shown.length<=4?150:14,Tp=8,B=22;
+  const maxY=Math.max(1,...shown.flatMap(x=>x.pts.map(p=>p[1])),...shown.map(x=>x.pts.length?0:0));
+  const stepY=Math.max(1,niceStep(maxY,4)),topY=Math.ceil(maxY/stepY)*stepY;
+  const sx=x=>L+x/X*(W-L-R),sy=y=>H-B-y/topY*(H-B-Tp);
+  const g=document.createElementNS(SVGNS,'svg');
+  g.setAttribute('viewBox',`0 0 ${W} ${H}`);g.setAttribute('width',W);g.setAttribute('height',H);g.setAttribute('class','qchart');
+  g.setAttribute('role','img');g.setAttribute('aria-label',t('chartTitle'));
+  for(let y=0;y<=topY+1e-9;y+=stepY){
+    g.append(s('line',{class:y?'c-grid':'c-base',x1:L,x2:W-R,y1:sy(y),y2:sy(y)}),s('text',{class:'c-tick',x:L-6,y:sy(y),'text-anchor':'end'},String(y)));
+  }
+  const stepX=niceStep(X,6);
+  for(let x=0;x<=X+1e-9;x+=stepX)g.append(s('text',{class:'c-tick',x:sx(x),y:H-6,'text-anchor':'middle'},String(+x.toFixed(2))));
+  const placed=[];
+  for(const x of shown){
+    let d=`M${sx(0)} ${sy(0)}`,last=0;
+    for(const p of x.pts){if(p[0]>X)break;d+=`H${sx(p[0])}V${sy(p[1])}`;last=p[1]}
+    d+=`H${sx(X)}`;
+    g.append(s('path',{class:'c-line',d,stroke:`var(--s${x.slot})`}));
+    g.append(s('circle',{class:'c-dot',cx:sx(X),cy:sy(last),r:4,fill:`var(--s${x.slot})`}));
+    // rótulo direto só onde não colide; a legenda e o texto de foco cobrem o resto
+    if(shown.length<=4&&!placed.some(v=>Math.abs(v-sy(last))<14)){
+      placed.push(sy(last));
+      const nm=x.name.length>20?x.name.slice(0,19)+'…':x.name;
+      g.append(s('text',{class:'c-end',x:sx(X)+9,y:sy(last)},nm));
+    }
+  }
+  g.append(s('g',{id:'c-hover'}));
+  chartGeo={shown,sx,sy,X,L,R,W,H,B,Tp};
+  const wrap=h('div',{class:'chart-wrap'},g,h('div',{id:'c-tip',class:'c-tip hidden'}));
+  g.addEventListener('pointermove',e=>{
+    const r=g.getBoundingClientRect(),px=(e.clientX-r.left)*W/r.width;
+    S.hoverT=Math.max(0,Math.min(X,(px-L)/(W-L-R)*X));drawQueueHover();
+  });
+  g.addEventListener('pointerleave',()=>{S.hoverT=null;drawQueueHover()});
+  return h('div',null,head,wrap);
+}
+function drawQueueHover(){
+  const hv=$('#c-hover'),tip=$('#c-tip');if(!hv||!tip||!chartGeo)return;
+  hv.replaceChildren();
+  if(S.hoverT==null||S.hoverT>chartGeo.X){tip.classList.add('hidden');return}
+  const{shown,sx,sy,H,B,Tp,W}=chartGeo,x=sx(S.hoverT);
+  hv.append(s('line',{class:'c-cross',x1:x,x2:x,y1:Tp,y2:H-B}));
+  for(const q of shown)hv.append(s('circle',{class:'c-dot',cx:x,cy:sy(valueAt(q.pts,S.hoverT)),r:4,fill:`var(--s${q.slot})`}));
+  tip.replaceChildren(h('div',{class:'muted'},'t = '+fmt(S.hoverT,1)),...shown.map(q=>h('div',{class:'c-row'},h('i',{style:`background:var(--s${q.slot})`}),h('b',null,valueAt(q.pts,S.hoverT)),h('span',null,q.name))));
+  tip.classList.remove('hidden');
+  tip.style.left=(x>W/2?x-tip.offsetWidth-10:x+10)+'px';tip.style.top=Tp+'px';
+}
+/* cenários: rodadas repetidas e comparação com a referência */
+function currentResult(){
+  if(S.batch)return S.batch;
+  return aggregate([{metrics:simMetrics(S.sim),capped:false}]);
+}
+function startBatch(){
+  if(S.batching)return;
+  const n=Math.max(2,Math.min(500,Math.round(S.batchN)||30));S.batchN=n;
+  let per=Number(S.batchT)>0?Number(S.batchT):Number(S.model.maxT)||0;
+  S.forcedT=0;
+  if(!per&&runForever(S.model)){per=1000;S.forcedT=per}
+  const token={i:0,n,runs:[]};S.batching=token;renderSimPanel(true);
+  const model=JSON.parse(JSON.stringify(S.model)),base=S.model.seed|0;
+  const work=()=>{
+    if(S.batching!==token)return;
+    const until=performance.now()+24;
+    while(token.i<n&&performance.now()<until){token.runs.push(runOnce(model,base+token.i,per));token.i++}
+    if(token.i<n){const p=$('#sc-progress');if(p)p.textContent=t('scProgress',token.i+1,n);setTimeout(work,0);return}
+    S.batch=aggregate(token.runs);S.batching=null;renderSimPanel(true);
+  };
+  setTimeout(work,0);
+}
+const fmtV=(m,v)=>v==null?'—':fmt(v,m.d)+(m.suf||'');
+function scenariosView(){
+  const cur=currentResult(),base=S.baseline;
+  const nInput=h('input',{type:'number',min:2,max:500,step:1,value:String(S.batchN),'aria-label':t('scRuns'),onchange(e){S.batchN=+e.target.value||30}});
+  const tInput=h('input',{type:'number',min:0,step:10,value:String(S.batchT),'aria-label':t('scPerRun'),onchange(e){S.batchT=+e.target.value||0}});
+  const bar=h('div',{class:'sc-bar'},
+    h('label',{class:'field'},h('span',null,t('scRuns')),nInput),
+    h('label',{class:'field',title:t('scPerRunHint')},h('span',null,t('scPerRun')),tInput),
+    h('button',{class:'primary',disabled:!!S.batching,onclick:startBatch},t('scRepeat')),
+    h('button',{disabled:!!S.batching,onclick(){S.baseline=currentResult();renderSimPanel(true)}},t('scPin')),
+    base&&h('button',{onclick(){S.baseline=null;renderSimPanel(true)}},t('scUnpin')),
+    S.batching&&h('span',{id:'sc-progress',class:'muted'},t('scProgress',S.batching.i+1,S.batching.n)));
+  const notes=[];
+  notes.push(cur.n>1?t('scMany',cur.n):t('scOne'));
+  if(cur.n>1)notes.push(t('scManual'));
+  if(cur.n>1&&S.forcedT)notes.push(t('scForced',S.forcedT));
+  if(base)notes.push(t('scBaseOf',base.n));
+  const warn=cur.capped?h('div',{class:'errline'},t('scEvents')):null;
+  // o que mudou vem primeiro; medidas zeradas nos dois cenários não informam nada
+  const rank=m=>{
+    const b=base&&base.stats.get(m.k);
+    if(!b||b.mean==null||m.mean==null)return 3;
+    const dv=m.mean-b.mean;
+    if(dv===0)return 2;
+    return m.ci!=null&&b.ci!=null&&Math.abs(dv)>m.ci+b.ci?0:1;
+  };
+  const rows=[...cur.stats.values()]
+    .filter(m=>{const b=base&&base.stats.get(m.k);return(m.mean!=null&&m.mean!==0)||(b&&b.mean!=null&&b.mean!==0)})
+    .map((m,i)=>({m,i})).sort((x,y)=>(base?rank(x.m)-rank(y.m):0)||x.i-y.i).map(x=>x.m);
+  return h('div',null,bar,h('div',{class:'hint sc-note'},notes.join(' ')),warn,
+    h('table',{class:'t'},h('thead',null,h('tr',null,h('th',null,t('scMetric')),h('th',{class:'num'},t('scCurrent')),cur.n>1&&h('th',{class:'num'},t('scRange')),base&&h('th',{class:'num'},t('scBase')),base&&h('th',{class:'num'},t('scDiff')),base&&h('th',null,t('scRead')))),
+      h('tbody',null,rows.map(m=>{
+        const b=base&&base.stats.get(m.k);
+        let diff='—',read='—';
+        if(b&&b.mean!=null&&m.mean!=null){
+          const dv=m.mean-b.mean;
+          diff=(dv>0?'+':'')+fmt(dv,m.d)+(m.suf||'')+(b.mean!==0&&!m.suf?` (${dv>0?'+':''}${fmt(dv/b.mean*100,0)}%)`:'');
+          if(dv!==0&&m.ci!=null&&b.ci!=null)read=Math.abs(dv)>m.ci+b.ci?t('scClear'):t('scUnclear');
+        }
+        return h('tr',null,h('td',null,m.label),
+          h('td',{class:'num'},fmtV(m,m.mean)+(m.ci!=null&&m.ci>0?' ± '+fmt(m.ci,m.d):'')),
+          cur.n>1&&h('td',{class:'num'},m.min==null?'—':`${fmtV(m,m.min)} – ${fmtV(m,m.max)}`),
+          base&&h('td',{class:'num'},b?fmtV(b,b.mean)+(b.ci!=null&&b.ci>0?' ± '+fmt(b.ci,b.d):''):'—'),
+          base&&h('td',{class:'num'},diff),base&&h('td',null,read));
+      }))));
+}
+function storesView(){
+  const sim=S.sim,stores=[...sim.nodes.values()].filter(n=>n.type==='store');
+  if(!stores.length)return h('div',{class:'pad muted'},t('noStores'));
+  return h('div',null,stores.map(n=>{
+    const recs=sim.state.get(n.id).records,cols=[...new Set(recs.flatMap(r=>Object.keys(r)))];
+    return h('div',null,h('div',{class:'storeh'},`D${n.k} ${n.name} · `,h('span',{class:'muted'},t('records',recs.length))),
+      recs.length?h('table',{class:'t'},h('thead',null,h('tr',null,cols.map(c=>h('th',null,c)))),h('tbody',null,recs.slice(0,200).map(r=>h('tr',null,cols.map(c=>h('td',{class:'m'},fmtVal(r[c]))))))):h('div',{class:'muted',style:'padding:0 12px 6px'},t('emptyStore')),
+      recs.length>200&&h('div',{class:'hint',style:'padding:3px 12px'},t('moreRows',200)));
+  }));
+}
+const fmtVal=v=>v==null?'':typeof v==='object'?JSON.stringify(v):String(v);
+function tokenWhere(tok){
+  const sim=S.sim;
+  if(tok.state==='transit'){const f=sim.flows.get(tok.flow);return f?(f.name||`${sim.nodes.get(f.from)?.name} → ${sim.nodes.get(f.to)?.name}`):''}
+  return sim.nodes.get(tok.at)?.name||'';
+}
+const tokenState=tok=>t({transit:'tTransit',queue:'tInQueue',busy:'tBusy',join:'tWaitJoin'}[tok.state]||'tTransit');
+function tokensView(){
+  const list=[...S.sim.tokens.values()].slice(0,300);
+  if(!list.length)return h('div',{class:'pad muted'},t('noTokens'));
+  return h('table',{class:'t'},h('thead',null,h('tr',null,h('th',{class:'num'},'#'),h('th',null,t('where')),h('th',null,t('state')),h('th',null,t('data')))),
+    h('tbody',null,list.map(tok=>h('tr',{class:'click',onclick(){S.tok=tok.id;S.sel=new Set();const dg=tok.dg;if(dg&&dg!==S.dg)goto(dg);setRight('props')}},h('td',{class:'num'},tok.corr),h('td',null,tokenWhere(tok)),h('td',null,tokenState(tok)),h('td',{class:'m'},JSON.stringify(tok.data))))));
+}
+function renderSimInspector(box){
+  const sim=S.sim;if(!sim)return;
+  if(S.tok!=null){
+    const tok=sim.tokens.get(S.tok);
+    if(tok){
+      box.append(h('div',{class:'type'},`${t('tokenTitle')} #${tok.corr}`),
+        h('dl',{class:'kv'},h('dt',null,t('state')),h('dd',null,tokenState(tok)),h('dt',null,t('where')),h('dd',null,tokenWhere(tok))),
+        h('div',{class:'lab'},t('data')),h('pre',{class:'json'},JSON.stringify(tok.data,null,1)),
+        h('div',{class:'lab'},t('path')),h('table',{class:'t'},h('tbody',null,tok.path.slice(-30).map(p=>h('tr',null,h('td',{class:'num'},fmt(p.t,1)),h('td',null,p.name||'—'))))));
+      return;
+    }
+    S.tok=null;
+  }
+  if(S.sel.size!==1){box.append(h('div',{class:'hint'},t('selectHint')));return}
+  const id=[...S.sel][0],n=sim.nodes.get(id);
+  if(!n){
+    const f=sim.flows.get(id);
+    if(f)box.append(h('div',{class:'type'},t('flow')),h('h4',null,f.name||'—'),f.guard&&h('code',null,`[${f.guard}]`),h('dl',{class:'kv'},h('dt',null,'×'),h('dd',null,sim.flowCount.get(f.id)||0)));
+    return;
+  }
+  box.append(h('div',{class:'type'},t(n.type),' ',numberOf(sim.m,n)),h('h4',null,n.name||'—'));
+  if(n.desc)box.append(h('div',{class:'hint'},n.desc));
+  const st=sim.state.get(id);
+  if(n.type==='process'){
+    if(n.child){box.append(h('button',{class:'primary',onclick(){goto(n.child)}},t('openSub')));return}
+    box.append(h('dl',{class:'kv'},h('dt',null,t('sIn')),h('dd',null,st.in),h('dt',null,t('sDone')),h('dd',null,st.done),h('dt',null,t('sQueue')),h('dd',null,st.queue.length),h('dt',null,t('sMaxQ')),h('dd',null,st.maxQ),h('dt',null,t('sWait')),h('dd',null,st.waitN?fmt(st.waitSum/st.waitN,2):'—'),h('dt',null,t('sUtil')),h('dd',null,fmt(sim.util(id)*100,0)+'%')));
+    if(n.rules.trim())box.append(h('div',{class:'lab'},t('rules')),h('pre',{class:'json'},n.rules));
+  }else if(n.type==='entity'){
+    box.append(h('dl',{class:'kv'},h('dt',null,t('sEmitted')),h('dd',null,st.emitted),h('dt',null,t('received')),h('dd',null,st.received)));
+    if(sim.outs.get(id).length)box.append(h('button',{class:'primary',onclick(){emitNow(n)}},t('emitNow')));
+    if(st.last)box.append(h('div',{class:'lab'},t('lastData')),h('pre',{class:'json'},JSON.stringify(st.last,null,1)));
+  }else if(n.type==='store'){
+    box.append(h('div',null,t('records',st.records.length)));
+    if(st.records.length)box.append(h('pre',{class:'json'},JSON.stringify(st.records.slice(0,20),null,1)));
+  }
+}
+
+/* ========== menus e atalhos ========== */
+function fileMenu(btn){
+  const host=btn.parentNode,open=host.querySelector('.menu-list');
+  if(open){open.remove();return}
+  const it=(k,fn)=>h('button',{onclick(){menu.remove();fn()}},t(k));
+  const menu=h('div',{class:'menu-list'},
+    it('fNew',async()=>{if(!diagramHasContent()||await confirmDlg(t('confirmNew'),t('confirmNewText')))setModel(newModel())}),
+    it('fOpen',()=>$('#file-json').click()),
+    it('fSave',()=>{commit();download(JSON.stringify(S.model,null,1),safeName()+'.json','application/json')}),
+    h('div',{class:'side-title',style:'padding:6px 9px 2px'},t('samples')),
+    Object.keys(SAMPLES).map(k=>h('button',{onclick:async()=>{menu.remove();if(!diagramHasContent()||await confirmDlg(t('confirmNew'),t('confirmNewText')))loadSample(k)}},SAMPLE_TEXT[k].title[LANGS.indexOf(LANG)])),
+    h('div',{class:'side-title',style:'padding:6px 9px 2px'},'SVG / PNG'),
+    it('fSvg',()=>download(diagramSvgText(),safeName()+'.svg','image/svg+xml')),
+    it('fPng',exportPng),
+    it('fPrint',()=>print()));
+  host.append(menu);
+  setTimeout(()=>document.addEventListener('click',function c(e){if(!menu.contains(e.target)){menu.remove();document.removeEventListener('click',c)}}),0);
+}
+const diagramHasContent=()=>Object.values(S.model.diagrams).some(d=>d.nodes.length);
+function helpDlg(){
+  const body=h('div',null,HELP[LANG].map(([title,c])=>[h('h4',null,title),Array.isArray(c)?h('ul',null,c.map(x=>h('li',null,x))):h('p',null,c)]));
+  modal({title:t('help'),body,wide:true,actions:[{label:t('close'),kind:'primary'}]});
+}
+function setLang(l){
+  if(!LANGS.includes(l))return;
+  LANG=l;store.set('lang',l);$('#lang').value=l;
+  S.issues=checkModel(S.model);
+  renderAll();
+  if(S.sim){updatePlay();setStatus(S.statusKey,S.statusArg);renderSimTabs();renderSimPanel(true)}
+}
+function moveSel(dx,dy){
+  const nodes=diagram().nodes.filter(n=>S.sel.has(n.id));if(!nodes.length)return;
+  nodes.forEach(n=>{n.x+=dx;n.y+=dy});commit();renderCanvas();
+}
+document.addEventListener('keydown',e=>{
+  const typing=/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName);
+  const open=document.querySelector('dialog[open]');
+  if(open)return;
+  const mod=e.ctrlKey||e.metaKey,k=e.key.toLowerCase();
+  if(!typing&&e.code==='Space'){
+    if(S.sim){e.preventDefault();togglePlay();return}
+    S.space=true;e.preventDefault();return;
+  }
+  if(typing)return;
+  if(S.sim){
+    if(k==='n'){e.preventDefault();stepSim()}
+    else if(k==='b'){e.preventDefault();stepBack()}
+    else if(k==='r'&&!mod){e.preventDefault();resetSim(true)}
+    else if(k==='f'&&!mod)fitView();
+    else if(k==='escape')stopSim(),renderAll();
+    return;
+  }
+  if(mod&&k==='z'){e.preventDefault();e.shiftKey?redo():undo()}
+  else if(mod&&k==='y'){e.preventDefault();redo()}
+  else if(mod&&k==='a'){e.preventDefault();S.sel=new Set(diagram().nodes.map(n=>n.id));renderCanvas();renderOutline();renderInspector()}
+  else if(mod&&k==='c'){if(copySelection())e.preventDefault()}
+  else if(mod&&k==='x'){if(copySelection()){e.preventDefault();deleteSelection()}}
+  else if(mod&&k==='v'){e.preventDefault();paste()}
+  else if(mod&&k==='d'){e.preventDefault();if(copySelection())paste()}
+  else if(mod&&k==='s'){e.preventDefault();commit();download(JSON.stringify(S.model,null,1),safeName()+'.json','application/json')}
+  else if(k==='delete'||k==='backspace'){e.preventDefault();deleteSelection()}
+  else if(k==='escape'){S.sel=new Set();renderCanvas();renderOutline();renderInspector()}
+  else if(k==='f'&&!mod)fitView();
+  else if(k==='?'||k==='f1'){e.preventDefault();helpDlg()}
+  else if(k.startsWith('arrow')&&S.sel.size){
+    e.preventDefault();const st=e.shiftKey?24:8;
+    moveSel(k==='arrowleft'?-st:k==='arrowright'?st:0,k==='arrowup'?-st:k==='arrowdown'?st:0);
+  }
+});
+document.addEventListener('keyup',e=>{if(e.code==='Space')S.space=false});
+
+$('#b-undo').onclick=undo;$('#b-redo').onclick=redo;
+$('#b-file').onclick=e=>fileMenu(e.currentTarget);
+$('#b-sim').onclick=enterSim;
+$('#b-play').onclick=togglePlay;
+$('#b-step').onclick=stepSim;
+$('#b-back').onclick=stepBack;
+$('#tl').addEventListener('input',e=>{if(S.sim)replayTo({time:+e.target.value})});
+$('#b-reset').onclick=()=>resetSim(true);
+$('#b-stop').onclick=()=>{stopSim();renderAll()};
+$('#speed').onchange=e=>{S.speed=+e.target.value};
+$('#z-in').onclick=()=>{const r=svg.getBoundingClientRect();zoomAt(r.width/2,r.height/2,1.2)};
+$('#z-out').onclick=()=>{const r=svg.getBoundingClientRect();zoomAt(r.width/2,r.height/2,1/1.2)};
+$('#z-fit').onclick=fitView;
+$('#b-help').onclick=helpDlg;
+$('#b-theme').onclick=()=>{const th=document.documentElement.dataset.theme==='dark'?'light':'dark';document.documentElement.dataset.theme=th;store.set('theme',th)};
+$('#lang').onchange=e=>setLang(e.target.value);
+document.querySelectorAll('.rt').forEach(b=>b.onclick=()=>setRight(b.dataset.r));
+$('#file-json').addEventListener('change',async e=>{
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  await openJson(f);
+});
+async function openJson(f){
+  try{
+    const m=loadModelObject(JSON.parse(await f.text()));
+    if(diagramHasContent()&&!await confirmDlg(t('confirmNew'),t('confirmNewText')))return;
+    setModel(m);toast(t('opened',f.name));
+  }catch(err){toast(t('badFile',err.message),'err')}
+}
+addEventListener('dragover',e=>{if([...(e.dataTransfer?.types||[])].includes('Files'))e.preventDefault()});
+addEventListener('drop',e=>{const f=e.dataTransfer?.files[0];if(f){e.preventDefault();openJson(f)}});
+addEventListener('resize',()=>{if(S.sim)drawSim()});
+
+/* ========== início ========== */
+(function init(){
+  document.documentElement.dataset.theme=store.get('theme',matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+  const hash=(location.hash||'').slice(1),nav=(navigator.language||'pt').slice(0,2);
+  LANG=LANGS.includes(hash)?hash:store.get('lang',LANGS.includes(nav)?nav:'pt');
+  if(!LANGS.includes(LANG))LANG='pt';
+  $('#lang').value=LANG;
+  let m=null;
+  try{const saved=store.get('model',null);if(saved)m=loadModelObject(saved)}catch{}
+  S.model=m||newModel();
+  S.history=[JSON.stringify(S.model)];S.hIdx=0;S.issues=checkModel(S.model);
+  renderAll();fitView();
+  requestAnimationFrame(frame);
+  window.__ready=true;
+})();
+</script>
+</body>
+</html>

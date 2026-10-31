@@ -1,0 +1,2306 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SQLite Manager: manual de utilização · Giovani Perotto Mesquita</title>
+<meta name="description" content="Manual completo do SQLite Manager, um gerenciador de bancos SQLite em um único arquivo HTML: abrir e salvar bancos, editar dados, alterar a estrutura, executar SQL, importar e exportar, atalhos e solução de problemas. Disponível em português, inglês, italiano e espanhol.">
+<meta name="author" content="Giovani Perotto Mesquita">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Paleta alegre: roxo e magenta vibrantes, amarelo-girassol, verde-água e coral */
+    --bg: #FFF7EC;
+    --surface: #FFFFFF;
+    --ink: #2B1B3D;
+    --text: #3E3350;
+    --muted: #756986;
+    --line: #F1E2CF;
+    --accent: #0E8074;
+    --accent-soft: #E2F6F2;
+    --accent-strong: #5B2A86;
+    --navy: #5B2A86;
+    --navy-deep: #C2185B;
+    --on-navy: #FFFFFF;
+    --on-navy-muted: #FCE4F0;
+    --gold: #FFB703;
+    --gold-ink: #B35300;
+    --gold-soft: #FFF1C9;
+    --coral: #FF6B6B;
+    --sky: #3A86FF;
+    --mint: #2A9D8F;
+    --pink: #EF476F;
+    --sans: "Hanken Grotesk", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1A1328; --surface: #241A36; --ink: #F7F0FF; --text: #E2D8F0; --muted: #A898C0;
+      --line: #3A2D52; --accent: #5FD3C4; --accent-soft: #1D3A38; --accent-strong: #C9A7F5;
+      --navy: #3D1A5C; --navy-deep: #7A1240; --gold: #FFC94D; --gold-ink: #FFC94D; --gold-soft: #3A2E12;
+      --coral: #FF8A8A; --sky: #6FA8FF; --mint: #4CC3B3; --pink: #FF6F91;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 4px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 1.5rem; }
+
+  /* navegação */
+  .nav {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: saturate(160%) blur(10px); -webkit-backdrop-filter: saturate(160%) blur(10px);
+    border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px);
+  }
+  .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 58px; gap: 1rem; }
+  .brand { font-family: var(--serif); font-weight: 600; color: var(--accent-strong); text-decoration: none; font-size: 1.05rem; }
+  .nav ul { list-style: none; display: flex; gap: 1.4rem; margin: 0; padding: 0; }
+  .nav ul a { color: var(--muted); text-decoration: none; font-size: 0.93rem; font-weight: 500; }
+  .nav ul a:hover, .nav ul a[aria-current="page"] { color: var(--ink); }
+  .nav-right { display: flex; align-items: center; gap: 1rem; }
+  .lang { position: relative; }
+  .lang button { font: inherit; cursor: pointer; }
+  .lang .flag { width: 18px; height: 12px; border-radius: 2px; flex: none; box-shadow: 0 0 0 1px rgba(0,0,0,.12); }
+  .lang-current { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.8rem; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 0.3rem 0.5rem 0.3rem 0.55rem; }
+  .lang-current:hover { border-color: var(--muted); }
+  .lang-now { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .lang .chev { width: 12px; height: 12px; color: var(--muted); transition: transform .15s ease; }
+  .lang-current[aria-expanded="true"] .chev { transform: rotate(180deg); }
+  .lang-list { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; min-width: 10.5rem; padding: 0.3rem; display: grid; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 12px 30px rgba(0,0,0,.18); }
+  .lang-list[hidden] { display: none; }
+  .lang-list [role="option"] { display: flex; align-items: center; gap: 0.6rem; width: 100%; text-align: left; font-size: 0.9rem; font-weight: 500; color: var(--ink); background: none; border: 0; border-radius: 6px; padding: 0.45rem 0.6rem; }
+  .lang-list [role="option"]:hover, .lang-list [role="option"]:focus-visible { background: color-mix(in srgb, var(--muted) 14%, transparent); }
+  .lang-list [role="option"][aria-selected="true"] { color: var(--accent-strong); font-weight: 600; }
+  .lang-list [role="option"][aria-selected="true"]::after { content: "✓"; margin-left: auto; }
+  @media (max-width: 480px) { .lang-now { font-size: 0; gap: 0; } }
+  [hidden] { display: none !important; }
+  .progress { position: absolute; left: 0; bottom: -1px; height: 3px; width: 0; background: linear-gradient(90deg, var(--coral), var(--gold), var(--mint)); }
+
+  /* abertura */
+  .hero-band {
+    background:
+      radial-gradient(900px 420px at 85% -10%, rgba(255,255,255,.07), transparent 60%),
+      linear-gradient(160deg, var(--navy) 0%, var(--navy-deep) 100%);
+    border-top: 4px solid var(--gold); color: var(--on-navy);
+  }
+  .hero { padding: 3.5rem 0 3.5rem; max-width: 820px; }
+  .crumb { margin: 0 0 1.4rem; font-size: 0.92rem; }
+  .crumb a { color: var(--on-navy-muted); text-decoration: none; }
+  .crumb a:hover { color: var(--gold); }
+  .eyebrow { color: var(--gold); font-weight: 600; font-size: 1rem; margin: 0 0 0.7rem; }
+  h1 { font-family: var(--serif); font-weight: 600; color: var(--on-navy); font-size: clamp(2.3rem, 5.5vw, 3.8rem); line-height: 1.05; letter-spacing: -0.025em; margin: 0; }
+  .dek { font-family: var(--serif); font-style: italic; font-size: clamp(1.1rem, 2.2vw, 1.35rem); color: var(--on-navy-muted); margin: 1.1rem 0 1.6rem; max-width: 58ch; }
+  .byline { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; font-size: 0.92rem; color: var(--on-navy-muted); }
+  .byline strong { color: var(--on-navy); font-weight: 600; }
+  .byline .credit { margin-left: auto; font-style: italic; }
+
+  /* layout do artigo */
+  .layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 3rem; padding: 3rem 0 4rem; align-items: start; }
+  .toc { position: sticky; top: 82px; font-size: 0.92rem; max-height: calc(100vh - 100px); overflow-y: auto; }
+  .toc h2 { font-family: var(--sans); font-size: 0.85rem; font-weight: 600; color: var(--muted); margin: 0 0 0.7rem; border: 0; padding: 0; }
+  .toc ol { list-style: none; margin: 0; padding: 0; counter-reset: toc; border-left: 2px solid var(--line); }
+  .toc li { counter-increment: toc; }
+  .toc a { display: block; padding: 0.3rem 0 0.3rem 1rem; margin-left: -2px; border-left: 2px solid transparent; color: var(--muted); text-decoration: none; line-height: 1.35; }
+  .toc a::before { content: counter(toc) ". "; color: var(--gold-ink); font-weight: 600; }
+  .toc a:hover { color: var(--ink); }
+  .toc a[aria-current="true"] { color: var(--accent-strong); border-left-color: var(--gold); font-weight: 600; }
+
+  article { background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: var(--radius); padding: 3rem clamp(1.25rem, 4vw, 3.5rem); min-width: 0; }
+  article section + section { margin-top: 3.2rem; }
+  article h2 { font-family: var(--serif); font-weight: 600; color: var(--ink); font-size: clamp(1.5rem, 2.8vw, 1.9rem); letter-spacing: -0.015em; line-height: 1.2; margin: 0 0 1.1rem; padding-left: 0.9rem; border-left: 3px solid var(--gold); }
+  article h3 { font-family: var(--sans); font-size: 1.1rem; font-weight: 600; color: var(--ink); margin: 2rem 0 0.8rem; }
+  article p, article li { font-family: var(--serif); font-size: 1.12rem; line-height: 1.7; color: var(--text); }
+  article p { margin: 0 0 1.1rem; max-width: 68ch; }
+  article ul, article ol { margin: 0 0 1.1rem; padding-left: 1.4rem; max-width: 68ch; }
+  article li { margin-bottom: 0.3rem; }
+  article strong { color: var(--ink); }
+  sup a { font-family: var(--sans); font-size: 0.72rem; font-weight: 700; text-decoration: none; padding: 0 0.15em; }
+
+  figure { margin: 2rem 0; }
+  figure img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: #FFF7EC; }
+  figcaption { margin-top: 0.6rem; font-size: 0.9rem; color: var(--muted); text-align: center; font-family: var(--sans); line-height: 1.5; }
+
+  blockquote { margin: 1.5rem 0; padding: 1.2rem 1.5rem; background: var(--accent-soft); border-left: 3px solid var(--gold); border-radius: 0 10px 10px 0; }
+  blockquote p { font-size: 1.05rem; margin: 0 0 0.8rem; }
+  blockquote p:last-child { margin-bottom: 0; }
+  blockquote.pull p { font-size: clamp(1.15rem, 2.3vw, 1.35rem); font-style: italic; line-height: 1.45; color: var(--ink); }
+  blockquote cite { font-family: var(--sans); font-size: 0.88rem; font-style: normal; color: var(--muted); }
+
+  /* tabelas */
+  .table-wrap { overflow-x: auto; margin: 1.5rem 0; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-family: var(--sans); font-size: 0.95rem; }
+  th, td { text-align: left; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.5; }
+  thead th { background: var(--gold-soft); color: var(--ink); font-weight: 600; }
+  tbody th { color: var(--ink); font-weight: 600; }
+  tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
+  td code, th code { font-size: 0.9em; }
+
+  /* mitos */
+  .myths { list-style: none; padding: 0; margin: 1.5rem 0; max-width: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
+  .myths li { margin: 0; padding: 1rem 1.2rem; border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: 10px; }
+  .myths li:nth-child(4n+2) { border-top-color: var(--sky); }
+  .myths li:nth-child(4n+3) { border-top-color: var(--mint); }
+  .myths li:nth-child(4n+4) { border-top-color: var(--gold); }
+  .myths h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+  .myths p { margin: 0; font-size: 1rem; line-height: 1.6; }
+
+  /* para fixar */
+  .recap { margin: 1.8rem 0 0; padding: 1.1rem 1.4rem; background: var(--gold-soft); border-left: 4px solid var(--mint); border-radius: 0 10px 10px 0; }
+  .recap h3 { margin: 0 0 0.5rem; font-size: 0.85rem; letter-spacing: .05em; text-transform: uppercase; color: var(--gold-ink); }
+  .recap ul { margin: 0; padding-left: 1.2rem; }
+  .recap li { font-family: var(--sans); font-size: 0.98rem; line-height: 1.55; margin-bottom: 0.25rem; }
+
+  /* revisão rápida */
+  .quiz { display: grid; gap: 0.7rem; margin: 1.5rem 0; }
+  .quiz details { border: 1px solid var(--line); border-left: 4px solid var(--sky); border-radius: 0 10px 10px 0; padding: 0.8rem 1.1rem; }
+  .quiz details:nth-child(3n+2) { border-left-color: var(--pink); }
+  .quiz details:nth-child(3n+3) { border-left-color: var(--mint); }
+  .quiz summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); line-height: 1.45; }
+  .quiz details[open] summary { margin-bottom: 0.5rem; }
+  .quiz p { margin: 0; font-size: 1.02rem; }
+
+  .refs { font-family: var(--sans); padding-left: 1.4rem; margin: 0; }
+  .refs li { font-family: var(--sans); font-size: 0.92rem; line-height: 1.55; margin-bottom: 0.7rem; word-break: break-word; }
+  .refs li:target { background: var(--gold-soft); border-radius: 6px; }
+
+  .back { display: inline-block; margin-top: 1rem; font-family: var(--sans); font-size: 0.85rem; text-decoration: none; }
+
+  footer { background: var(--navy-deep); color: var(--on-navy-muted); border-top: 3px solid var(--gold); padding: 1.5rem 0 calc(1.5rem + env(safe-area-inset-bottom, 0px)); font-size: 0.88rem; }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1.5rem; }
+  footer a { color: var(--on-navy); text-decoration: none; }
+  footer a:hover { color: var(--gold); }
+
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+    .toc { position: static; max-height: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.2rem 1.4rem; }
+  }
+  @media (max-width: 760px) {
+    .myths { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .nav ul { display: none; }
+    .hero { padding: 2.5rem 0; }
+    .wrap { padding: 0 1rem; }
+    article p, article li { font-size: 1.05rem; }
+    th, td { padding: 0.6rem 0.7rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  @media print {
+    .nav, .toc, footer, .back, .crumb { display: none !important; }
+    body { background: #fff; }
+    .hero-band { background: none; color: #111; border: 0; }
+    .hero-band h1 { color: #5B2A86; }
+    .dek, .byline, .byline strong { color: #333; }
+    .layout { display: block; padding: 0; }
+    article { border: 0; padding: 0; }
+    .table-wrap { overflow: visible; }
+    figure, blockquote, .myths li, .recap, .quiz details, tr { break-inside: avoid; }
+  }
+
+  /* blocos de código (Gherkin) */
+  pre.code { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: #2B1B3D; color: #F7F0FF; border-radius: 10px; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.92rem; line-height: 1.6; tab-size: 2; }
+  pre.code code { font-family: inherit; white-space: pre; }
+  pre.code .k { color: #FFB703; font-weight: 700; }
+  pre.code .s { color: #5FD3C4; font-weight: 700; }
+  pre.code .c { color: #A898C0; }
+  pre.code .p { color: #C9A7F5; }
+  article code { font-family: Consolas, "Courier New", monospace; font-size: 0.92em; }
+  article :not(pre) > code { background: var(--accent-soft); color: var(--ink); padding: 0.05em 0.35em; border-radius: 4px; }
+
+  /* fórmulas */
+  pre.formula { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.95rem; line-height: 1.5; }
+
+  /* glossário */
+  dl.glossary { margin: 1.2rem 0; display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  dl.glossary dt, dl.glossary dd { margin: 0; padding: 0.65rem 0.9rem; border-bottom: 1px solid var(--line); font-family: var(--sans); font-size: 0.95rem; line-height: 1.5; }
+  dl.glossary dt { font-weight: 600; color: var(--ink); background: color-mix(in srgb, var(--gold-soft) 60%, var(--surface)); }
+  dl.glossary dd { color: var(--text); }
+  dl.glossary dt:nth-last-of-type(1), dl.glossary dd:last-of-type { border-bottom: 0; }
+  @media (max-width: 720px) { dl.glossary { grid-template-columns: 1fr; } dl.glossary dt { border-bottom: 0; padding-bottom: 0.2rem; } }
+
+  /* figuras geradas pelo PlantUML e código recolhível */
+  figure.puml img { width: auto; max-width: 100%; margin: 0 auto; background: #FFFFFF; padding: 12px; }
+  details.codebox { margin: 1rem 0 1.5rem; border: 1px solid var(--line); border-radius: 10px; padding: 0.6rem 1rem; }
+  details.codebox summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); }
+  details.codebox pre.code { max-height: 480px; overflow: auto; }
+
+  /* nota de atenção */
+  aside.note { margin: 1.2rem 0 1.5rem; padding: 0.8rem 1.1rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; }
+  aside.note p { margin: 0; }
+
+  /* link para o simulador e teclas */
+  .launch { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--sans); font-weight: 600; font-size: 1rem; background: var(--accent-strong); color: var(--surface); text-decoration: none; padding: 0.65rem 1.2rem; border-radius: 10px; }
+  .launch:hover { background: var(--navy-deep); color: #FFFFFF; }
+  kbd { font-family: var(--sans); font-size: 0.85em; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 0.05em 0.4em; white-space: nowrap; }
+</style>
+</head>
+<body id="top">
+
+<nav class="nav" aria-label="Navegação do site">
+  <div class="wrap">
+    <a class="brand" href="index.html" data-home>Giovani Perotto Mesquita</a>
+    <div class="nav-right">
+      <ul>
+        <li><a href="index.html" data-home>Início</a></li>
+        <li><a href="about.html" data-about>Sobre</a></li>
+        <li><a href="resume.html" data-resume>Currículo</a></li>
+        <li><a href="projects.html" data-projects aria-current="page">Projetos</a></li>
+        <li><a href="contact.html" data-contact>Contato</a></li>
+      </ul>
+      <div class="lang">
+        <button type="button" class="lang-current" aria-haspopup="listbox" aria-expanded="false" aria-controls="lang-list" data-label="Idioma / Language / Lingua" aria-label="Idioma / Language / Lingua: Português"><span class="lang-now"><svg class="flag" viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009C3B"/><path d="M10 1.6 18.4 7 10 12.4 1.6 7z" fill="#FEDF00"/><circle cx="10" cy="7" r="3.3" fill="#002776"/><path d="M6.8 6.3c2.1-.6 4.5-.2 6.4 1" stroke="#fff" stroke-width=".7" fill="none"/></svg>PT</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="lang-list" id="lang-list" role="listbox" aria-label="Idioma / Language / Lingua" hidden>
+          <button type="button" role="option" id="tab-pt" aria-controls="pt" aria-selected="true" lang="pt-BR" data-code="PT"><svg class="flag" viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009C3B"/><path d="M10 1.6 18.4 7 10 12.4 1.6 7z" fill="#FEDF00"/><circle cx="10" cy="7" r="3.3" fill="#002776"/><path d="M6.8 6.3c2.1-.6 4.5-.2 6.4 1" stroke="#fff" stroke-width=".7" fill="none"/></svg><span>Português</span></button>
+          <button type="button" role="option" id="tab-en" aria-controls="en" aria-selected="false" lang="en" tabindex="-1" data-code="EN"><svg class="flag" viewBox="0 0 19 10" aria-hidden="true"><rect width="19" height="10" fill="#B22234"/><rect y="0.769" width="19" height="0.769" fill="#fff"/><rect y="2.308" width="19" height="0.769" fill="#fff"/><rect y="3.846" width="19" height="0.769" fill="#fff"/><rect y="5.385" width="19" height="0.769" fill="#fff"/><rect y="6.923" width="19" height="0.769" fill="#fff"/><rect y="8.462" width="19" height="0.769" fill="#fff"/><rect width="7.6" height="5.385" fill="#3C3B6E"/></svg><span>English</span></button>
+          <button type="button" role="option" id="tab-it" aria-controls="it" aria-selected="false" lang="it" tabindex="-1" data-code="IT"><svg class="flag" viewBox="0 0 3 2" aria-hidden="true"><rect width="1" height="2" fill="#009246"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#CE2B37"/></svg><span>Italiano</span></button>
+          <button type="button" role="option" id="tab-es" aria-controls="es" aria-selected="false" lang="es" tabindex="-1" data-code="ES"><svg class="flag" viewBox="0 0 750 500" aria-hidden="true"><rect width="750" height="500" fill="#AA151B"/><rect y="125" width="750" height="250" fill="#F1BF00"/></svg><span>Español</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="progress" aria-hidden="true"></div>
+</nav>
+
+<!-- ===================== PT ===================== -->
+<div id="pt" role="tabpanel" aria-labelledby="tab-pt" lang="pt-BR">
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projetos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>SQLite Manager: manual de utilização</h1>
+      <p class="dek">Como abrir, consultar, editar e salvar bancos SQLite no navegador, sem instalar nada: do primeiro uso à manutenção do banco.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado em <time datetime="2026-10-30">30/10/2026</time></span>
+        <span class="credit">Revisado e formatado usando Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-pt">
+    <h2 id="toc-pt">Índice</h2>
+    <ol>
+      <li><a href="#intro-pt">O que é o SQLite Manager</a></li>
+      <li><a href="#inicio-pt">Primeiros passos</a></li>
+      <li><a href="#interface-pt">A interface</a></li>
+      <li><a href="#arquivos-pt">Abrir, salvar e reverter</a></li>
+      <li><a href="#dados-pt">Aba Dados</a></li>
+      <li><a href="#estrutura-pt">Aba Estrutura</a></li>
+      <li><a href="#sql-pt">Aba SQL</a></li>
+      <li><a href="#importar-pt">Importar e exportar</a></li>
+      <li><a href="#banco-pt">Aba Banco</a></li>
+      <li><a href="#atalhos-pt">Atalhos de teclado</a></li>
+      <li><a href="#problemas-pt">Limitações e solução de problemas</a></li>
+      <li><a href="#revisao-pt">Revisão rápida</a></li>
+      <li><a href="#referencias-pt">Referências</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-pt" aria-labelledby="h-intro-pt">
+<h2 id="h-intro-pt">O que é o SQLite Manager</h2>
+<p>O SQLite Manager abre, consulta, edita e salva bancos de dados SQLite usando apenas o navegador. Ele é um único arquivo HTML: não há instalação, servidor nem conta. <sup><a href="#ref-1-pt">[1]</a></sup> O motor do banco é o próprio SQLite, compilado para WebAssembly e embutido no arquivo. <sup><a href="#ref-2-pt">[2]</a></sup></p>
+<p><a class="launch" href="sqlite-manager.html">Abrir o SQLite Manager <span aria-hidden="true">→</span></a></p>
+<figure>
+<img src="rc_images/SQLiteManagerInicio.png" alt="Tela inicial do SQLite Manager, com os botões Abrir banco, Novo banco vazio e Banco de exemplo" width="1920" height="1080" loading="lazy">
+<figcaption>A tela inicial: arraste um arquivo ou escolha uma das três opções.</figcaption>
+</figure>
+<p>Este manual serve para quem quer gerenciar um banco sem instalar nada. As tarefas do dia a dia não exigem SQL; a aba SQL atende quem já conhece a linguagem.</p>
+<h3>O que você precisa</h3>
+<ul>
+<li>Um navegador atual. Chrome e Edge são os recomendados, porque gravam direto no arquivo original.</li>
+<li>O arquivo <code>sqlite-manager.html</code>. Use o link acima ou salve a página e abra a cópia, que funciona sem internet.</li>
+</ul>
+<h3>Como o app trata os seus dados</h3>
+<ul>
+<li><strong>Nada sai do seu computador.</strong> O banco é processado dentro do navegador, e o arquivo HTML bloqueia conexões de rede.</li>
+<li><strong>O banco é editado na memória.</strong> O arquivo em disco só muda quando você salva.</li>
+<li><strong>O navegador guarda poucas coisas.</strong> Tema, tamanho de página, texto do editor SQL e histórico de consultas ficam no armazenamento local. O conteúdo do banco não fica, mas valores escritos em consultas ficam no histórico.</li>
+</ul>
+<aside class="note"><p>Em computador compartilhado, limpe o histórico e o editor SQL ao terminar. O caminho é <strong>Histórico ▾ → Limpar histórico</strong> e depois <strong>Limpar</strong>.</p></aside>
+</section>
+
+<section id="inicio-pt" aria-labelledby="h-inicio-pt">
+<h2 id="h-inicio-pt">Primeiros passos</h2>
+<p>Em cerca de dez minutos, este roteiro passa pelas principais funções usando o banco de exemplo, sem risco para dados reais. O exemplo tem clientes, produtos, pedidos e itens de pedido.</p>
+<h3>1. Abra o exemplo</h3>
+<ol>
+<li>Abra o SQLite Manager.</li>
+<li>Clique em <strong>Banco de exemplo</strong>. A tabela <code>clientes</code> aparece na aba <strong>Dados</strong>.</li>
+</ol>
+<h3>2. Encontre um registro</h3>
+<ol>
+<li>Na linha de filtros, abaixo do título da coluna <code>cidade</code>, digite <code>recife</code>. Sobra apenas Carla Nunes.</li>
+<li>Apague o filtro para ver as cinco linhas de novo.</li>
+<li>Clique no título da coluna <code>nome</code> para ordenar. Clique de novo para inverter e uma terceira vez para desfazer.</li>
+</ol>
+<h3>3. Edite e insira dados</h3>
+<ol>
+<li>Dê um duplo clique na cidade de Ana Ribeiro, digite <code>Campinas</code> e pressione <kbd>Enter</kbd>. O aviso <strong>● não salvo</strong> aparece na barra superior.</li>
+<li>Clique em <strong>+ Linha</strong>, preencha <code>nome</code> e clique em <strong>Inserir</strong>. As demais colunas recebem o valor padrão.</li>
+</ol>
+<h3>4. Siga uma referência</h3>
+<ol>
+<li>Na lista à esquerda, clique em <code>pedidos</code>.</li>
+<li>Na coluna <code>cliente_id</code>, clique na seta <strong>↗</strong> ao lado de um valor. O app abre <code>clientes</code> filtrada nesse cliente.</li>
+</ol>
+<h3>5. Execute SQL</h3>
+<ol>
+<li>Abra a aba <strong>SQL</strong>, escreva a consulta abaixo e pressione <kbd>Ctrl</kbd>+<kbd>Enter</kbd>. O resultado mostra o total por cliente.
+<pre class="code"><code>SELECT * FROM vw_total_por_cliente;</code></pre></li>
+<li>Troque o texto pelo comando abaixo e execute. A mensagem informa 2 linhas alteradas: o item inserido e o estoque baixado pelo trigger <code>trg_baixa_estoque</code>.
+<pre class="code"><code>INSERT INTO itens_pedido VALUES (4, 1, 1, 349.9);</code></pre></li>
+<li>Clique em <code>produtos</code>. A aba <strong>Dados</strong> abre, e o estoque do teclado caiu de 39 para 38.</li>
+</ol>
+<h3>6. Desfaça ou salve</h3>
+<ol>
+<li>Para desfazer tudo, clique em <strong>Reverter</strong> e confirme. O exemplo volta ao estado inicial.</li>
+<li>Para guardar uma cópia, clique em <strong>Salvar</strong> e escolha onde gravar.</li>
+</ol>
+</section>
+
+<section id="interface-pt" aria-labelledby="h-interface-pt">
+<h2 id="h-interface-pt">A interface</h2>
+<p>A tela tem quatro áreas fixas, e as quatro abas mudam apenas a área central. Depois de aberto um banco, a tela fica assim:</p>
+<figure>
+<img src="rc_images/SQLiteManagerDados.png" alt="Tela principal com a barra superior, a lista de objetos à esquerda, as abas Dados, Estrutura, SQL e Banco, e a grade com a tabela clientes" width="1920" height="1080" loading="lazy">
+<figcaption>A tela principal com a tabela clientes aberta na aba Dados.</figcaption>
+</figure>
+<dl class="glossary">
+<dt>Barra superior</dt><dd>Arquivo (<strong>Novo</strong>, <strong>Abrir…</strong>, <strong>Salvar</strong>, <strong>Salvar como…</strong>, <strong>Reverter</strong>), <strong>Importar CSV…</strong>, <strong>Exportar .sql</strong> e o botão <strong>◐</strong>, que alterna entre tema claro e escuro.</dd>
+<dt>Lista de objetos</dt><dd>Tabelas, views, índices, triggers e tabelas do sistema, com o número de linhas de cada tabela. O campo acima filtra a lista, e <strong>+ Tabela</strong> cria uma tabela.</dd>
+<dt>Abas</dt><dd><strong>Dados</strong> mostra as linhas, <strong>Estrutura</strong> mostra e altera o esquema, <strong>SQL</strong> executa comandos e <strong>Banco</strong> traz informações e manutenção.</dd>
+<dt>Barra de status</dt><dd>Versão do SQLite, tamanho do banco, aviso de transação aberta e a opção <strong>Chaves estrangeiras</strong>.</dd>
+</dl>
+</section>
+
+<section id="arquivos-pt" aria-labelledby="h-arquivos-pt">
+<h2 id="h-arquivos-pt">Abrir, salvar e reverter</h2>
+<p>Tudo o que você faz altera uma cópia na memória; o arquivo em disco só muda quando você salva. Esse é o conceito mais importante do app:</p>
+<figure>
+<img src="rc_images/SQLiteManagerFluxo.svg" alt="Diagrama: Abrir copia o arquivo do disco para o banco na memória; Salvar grava de volta; edições e SQL alteram o banco na memória; Reverter o devolve ao último estado salvo; Importar CSV traz dados e Exportar gera CSV, JSON ou SQL" loading="lazy">
+<figcaption>O banco na memória é o centro: o arquivo em disco só muda ao salvar.</figcaption>
+</figure>
+<h3>Abrir ou criar um banco</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Como</th><th scope="col">O que acontece</th></tr></thead>
+<tbody>
+<tr><th scope="row">Abrir…</th><td>Escolhe um arquivo <code>.db</code>, <code>.db3</code>, <code>.sqlite</code>, <code>.sqlite3</code>, <code>.s3db</code> ou <code>.sl3</code>. Atalho: <kbd>Ctrl</kbd>+<kbd>O</kbd>.</td></tr>
+<tr><th scope="row">Arrastar e soltar</th><td>Solte o arquivo em qualquer ponto da janela.</td></tr>
+<tr><th scope="row">Novo</th><td>Cria um banco vazio chamado <code>novo.sqlite</code> e abre a aba SQL.</td></tr>
+<tr><th scope="row">Banco de exemplo</th><td>Disponível na tela inicial. Traz tabelas, view, índice e trigger para praticar.</td></tr>
+</tbody>
+</table></div>
+<p>Se o banco atual tiver alterações não salvas, o app pede confirmação antes de trocar. Arquivos que não são SQLite, ou que estão criptografados, são recusados, e o banco atual continua aberto.</p>
+<h3>Salvar</h3>
+<p>O indicador <strong>● não salvo</strong> mostra que há alterações só na memória. O app também avisa se você tentar fechar a aba nessa situação.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Ação</th><th scope="col">Chrome e Edge</th><th scope="col">Outros navegadores</th></tr></thead>
+<tbody>
+<tr><th scope="row">Salvar (<kbd>Ctrl</kbd>+<kbd>S</kbd>)</th><td>Grava no arquivo original. O navegador pede permissão na primeira vez. <sup><a href="#ref-7-pt">[7]</a></sup></td><td>Baixa uma cópia para a pasta de downloads.</td></tr>
+<tr><th scope="row">Salvar como…</th><td>Pergunta nome e local, e esse arquivo passa a ser o atual.</td><td>Baixa uma cópia para a pasta de downloads.</td></tr>
+</tbody>
+</table></div>
+<p>No Chrome e no Edge, se outro programa tiver alterado o arquivo depois da abertura, o app pede confirmação antes de substituir. Para manter as duas versões, cancele e use <strong>Salvar como…</strong>.</p>
+<aside class="note"><p>Salvar reinicia a conexão com o banco. Tabelas temporárias e configurações <code>PRAGMA</code> da sessão se perdem; só a opção de chaves estrangeiras é reaplicada.</p></aside>
+<h3>Reverter</h3>
+<p><strong>Reverter</strong> descarta tudo o que foi feito desde a abertura ou o último salvamento. É o único “desfazer” do app: não há desfazer passo a passo. Antes de uma alteração arriscada, salve; assim, o ponto de retorno fica logo antes dela.</p>
+<h3>Bancos em modo WAL</h3>
+<p>Alguns programas usam o modo WAL, que mantém alterações recentes em um arquivo <code>-wal</code> ao lado do banco. <sup><a href="#ref-5-pt">[5]</a></sup> O navegador recebe apenas o arquivo principal, então o app avisa ao abrir e toma duas medidas:</p>
+<ul>
+<li>Abre o banco sem o conteúdo do <code>-wal</code>. Para ver os dados mais recentes, feche antes o programa que usa o banco.</li>
+<li>Não grava sobre o original. <strong>Salvar</strong> pede um arquivo novo, e a sugestão de nome termina em <code>-copia</code>. Não sobrescreva o original, porque um <code>-wal</code> antigo ao lado dele pode corromper os dados.</li>
+</ul>
+</section>
+
+<section id="dados-pt" aria-labelledby="h-dados-pt">
+<h2 id="h-dados-pt">Aba Dados</h2>
+<p>A aba Dados mostra as linhas da tabela ou view selecionada, e nela você busca, edita, insere e exclui sem escrever SQL.</p>
+<h3>Navegar e ordenar</h3>
+<ul>
+<li>Os controles abaixo da grade trocam de página. Escolha 50, 100, 500 ou 1000 linhas por página.</li>
+<li>Clique no título de uma coluna para ordenar: crescente, decrescente e sem ordem. A ordenação usa uma coluna por vez.</li>
+<li>O marcador <strong>PK</strong> identifica colunas da chave primária.</li>
+<li>Valores nulos aparecem como <em>NULL</em> em itálico, e dados binários como <em>BLOB</em> com o tamanho.</li>
+</ul>
+<h3>Filtrar e buscar</h3>
+<p>Cada coluna tem um campo de filtro, e filtros em colunas diferentes valem juntos. O campo <strong>Buscar em todas as colunas</strong> procura o texto em qualquer coluna. <strong>Limpar filtros</strong> remove tudo.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Você digita</th><th scope="col">Encontra</th></tr></thead>
+<tbody>
+<tr><td><code>ana</code></td><td>Valores que contêm “ana”.</td></tr>
+<tr><td><code>=Recife</code> ou <code>!=Recife</code></td><td>Valor igual ou diferente, respeitando maiúsculas.</td></tr>
+<tr><td><code>&gt;10</code>, <code>&gt;=10</code>, <code>&lt;10</code>, <code>&lt;=10</code></td><td>Comparações, também com datas no formato <code>2026-10-30</code>.</td></tr>
+<tr><td><code>NULL</code> ou <code>!NULL</code></td><td>Células vazias ou preenchidas.</td></tr>
+</tbody>
+</table></div>
+<aside class="note"><p>O filtro “contém” ignora maiúsculas apenas em letras sem acento: <code>joão</code> não encontra <code>JOÃO</code>.</p></aside>
+<h3>Editar uma célula</h3>
+<p>Dê um duplo clique na célula. Com o teclado, clique uma vez, mova-se com as setas e pressione <kbd>Enter</kbd> ou <kbd>F2</kbd>.</p>
+<figure>
+<img src="rc_images/SQLiteManagerEditorCelula.png" alt="Editor de célula aberto sobre a grade, com o campo de texto e os botões NULL, Arquivo, Cancelar e Salvar" width="1920" height="1080" loading="lazy">
+<figcaption>O editor de célula. Clicar fora dele cancela a edição.</figcaption>
+</figure>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">No editor</th><th scope="col">Efeito</th></tr></thead>
+<tbody>
+<tr><td><kbd>Enter</kbd></td><td>Salva.</td></tr>
+<tr><td><kbd>Shift</kbd>+<kbd>Enter</kbd></td><td>Quebra a linha.</td></tr>
+<tr><td><kbd>Tab</kbd> e <kbd>Shift</kbd>+<kbd>Tab</kbd></td><td>Salva e vai para a célula seguinte ou anterior.</td></tr>
+<tr><td><kbd>Esc</kbd></td><td>Cancela.</td></tr>
+<tr><td>Botão <strong>NULL</strong></td><td>Grava NULL.</td></tr>
+<tr><td>Botão <strong>Arquivo…</strong></td><td>Grava o conteúdo de um arquivo como BLOB.</td></tr>
+</tbody>
+</table></div>
+<p>A diferença entre NULL e texto vazio importa. Numa célula NULL, confirmar sem digitar mantém o NULL. Para gravar texto vazio nela, use a aba SQL. Numa célula com valor, apagar o texto e salvar grava texto vazio.</p>
+<p>O SQLite converte o valor conforme o tipo da coluna: <code>42</code> vira número numa coluna INTEGER. <sup><a href="#ref-3-pt">[3]</a></sup> Um texto como <code>abc</code> pode ser aceito na mesma coluna, a menos que a tabela seja <code>STRICT</code>.</p>
+<h3>Trabalhar com BLOBs</h3>
+<p>Dados binários não são editados como texto. O editor mostra o conteúdo em hexadecimal ou, em imagens PNG, JPEG, GIF e WebP, uma prévia. Use <strong>Baixar</strong> para extrair o arquivo e <strong>Arquivo…</strong> para substituí-lo.</p>
+<h3>Inserir linhas</h3>
+<p>Clique em <strong>+ Linha</strong>. Cada coluna tem um modo, e digitar muda o modo para <em>valor</em> automaticamente:</p>
+<ul>
+<li><strong>valor</strong> grava o que foi digitado, mesmo vazio.</li>
+<li><strong>NULL</strong> grava nulo.</li>
+<li><strong>padrão</strong> deixa o SQLite decidir: gera o número da chave automática, aplica o <code>DEFAULT</code> ou grava NULL.</li>
+</ul>
+<p>Marque <strong>Continuar adicionando</strong> para inserir várias linhas em sequência. Colunas geradas não aparecem no formulário. Para gravar um BLOB, insira a linha e depois edite a célula.</p>
+<h3>Excluir linhas</h3>
+<ol>
+<li>Marque as caixas das linhas desejadas. A caixa do cabeçalho marca toda a página.</li>
+<li>Clique em <strong>Excluir</strong> e confirme.</li>
+</ol>
+<p>A exclusão é tudo ou nada: se uma linha falhar, nenhuma é excluída. A seleção vale só para a página atual e é limpa ao mudar de página, filtrar, ordenar ou editar.</p>
+<h3>Seguir chaves estrangeiras</h3>
+<p>Colunas com chave estrangeira mostram <strong>↗</strong> ao lado do valor. O clique abre a tabela referenciada, filtrada no registro correspondente.</p>
+<h3>Quando a grade é somente leitura</h3>
+<p>Views nunca são editáveis nesta aba. Colunas geradas também não. Uma tabela fica somente leitura quando não há como identificar suas linhas: sem chave primária e com colunas chamadas <code>rowid</code>, <code>_rowid_</code> e <code>oid</code>. Nesse caso, use a aba SQL.</p>
+</section>
+
+<section id="estrutura-pt" aria-labelledby="h-estrutura-pt">
+<h2 id="h-estrutura-pt">Aba Estrutura</h2>
+<p>A aba Estrutura mostra o esquema do objeto selecionado e altera tabelas, colunas e índices sem escrever SQL.</p>
+<figure>
+<img src="rc_images/SQLiteManagerEstrutura.png" alt="Aba Estrutura da tabela clientes, com a lista de colunas, os índices automáticos e o comando CREATE TABLE" width="1920" height="1080" loading="lazy">
+<figcaption>Colunas, índices, triggers e o DDL, que é o comando SQL que define o objeto.</figcaption>
+</figure>
+<h3>Criar uma tabela</h3>
+<ol>
+<li>Clique em <strong>+ Tabela</strong> e dê um nome à tabela.</li>
+<li>Preencha uma linha por coluna. A primeira já vem como <code>id INTEGER</code> com chave primária.</li>
+<li>Confira o comando em <strong>SQL que será executado</strong> e clique em <strong>Criar tabela</strong>.</li>
+</ol>
+<figure>
+<img src="rc_images/SQLiteManagerNovaTabela.png" alt="Janela Nova tabela com a tabela fornecedores, as colunas id e nome, e a prévia do comando CREATE TABLE" width="1920" height="1080" loading="lazy">
+<figcaption>A prévia mostra exatamente o SQL que será executado.</figcaption>
+</figure>
+<dl class="glossary">
+<dt>PK</dt><dd>Chave primária. Marque em mais de uma coluna para criar uma chave composta.</dd>
+<dt>Auto</dt><dd>Acrescenta <code>AUTOINCREMENT</code>. Exige uma única coluna PK do tipo <code>INTEGER</code>.</dd>
+<dt>Not null</dt><dd>A coluna não aceita NULL.</dd>
+<dt>Único</dt><dd>Não permite valores repetidos.</dd>
+<dt>Padrão</dt><dd>Valor usado quando nada é informado. Números, <code>NULL</code>, <code>CURRENT_TIMESTAMP</code>, textos entre aspas simples e expressões entre parênteses são usados como estão; o restante vira texto.</dd>
+<dt>Referência</dt><dd>Chave estrangeira, no formato <code>tabela(coluna)</code>.</dd>
+</dl>
+<h3>Alterar uma tabela existente</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Ação</th><th scope="col">Onde</th><th scope="col">Observação</th></tr></thead>
+<tbody>
+<tr><th scope="row">Adicionar coluna</th><td><strong>+ Coluna</strong></td><td>Com <code>NOT NULL</code>, um valor padrão é obrigatório.</td></tr>
+<tr><th scope="row">Renomear coluna</th><td><strong>renomear</strong>, na linha da coluna</td><td>O SQLite ajusta as referências a ela no esquema.</td></tr>
+<tr><th scope="row">Excluir coluna</th><td><strong>excluir</strong>, na linha da coluna</td><td>Recusado se a coluna for chave primária, única ou usada por um índice. <sup><a href="#ref-6-pt">[6]</a></sup></td></tr>
+<tr><th scope="row">Criar índice</th><td><strong>+ Índice</strong></td><td>As colunas ficam na ordem da tabela; para outra ordem, use SQL.</td></tr>
+<tr><th scope="row">Renomear tabela</th><td><strong>Renomear</strong></td><td></td></tr>
+<tr><th scope="row">Esvaziar tabela</th><td><strong>Esvaziar</strong></td><td>Exclui as linhas e mantém a estrutura.</td></tr>
+<tr><th scope="row">Excluir objeto</th><td><strong>Excluir tabela</strong>, <strong>view</strong>, <strong>índice</strong> ou <strong>trigger</strong></td><td>Com chaves estrangeiras ligadas, excluir uma tabela aplica as regras <code>ON DELETE</code> de quem a referencia.</td></tr>
+</tbody>
+</table></div>
+<h3>Mudar o tipo de uma coluna</h3>
+<p>O SQLite não altera o tipo de uma coluna diretamente. <sup><a href="#ref-6-pt">[6]</a></sup> Recrie a tabela na aba SQL, dentro de uma transação. O botão <strong>Abrir no editor SQL</strong> copia o DDL atual para servir de ponto de partida.</p>
+<pre class="code"><code>-- Exemplo: a coluna idade de contatos passa de TEXT para INTEGER
+BEGIN;
+CREATE TABLE contatos_novo (id INTEGER PRIMARY KEY, nome TEXT, idade INTEGER);
+INSERT INTO contatos_novo SELECT id, nome, idade FROM contatos;
+DROP TABLE contatos;
+ALTER TABLE contatos_novo RENAME TO contatos;
+COMMIT;</code></pre>
+<p>Recrie depois os índices e triggers da tabela, porque <code>DROP TABLE</code> os remove. Se outras tabelas a referenciarem, desligue <strong>Chaves estrangeiras</strong> antes do <code>BEGIN</code>; ligue de novo ao terminar e rode <strong>Verificar chaves estrangeiras</strong>.</p>
+<h3>Views e triggers</h3>
+<p>Crie views e triggers na aba SQL. Depois, eles aparecem na lista de objetos, onde a aba Estrutura mostra o DDL e permite excluí-los.</p>
+</section>
+
+<section id="sql-pt" aria-labelledby="h-sql-pt">
+<h2 id="h-sql-pt">Aba SQL</h2>
+<p>A aba SQL executa qualquer comando que o SQLite aceite, um ou vários de cada vez, e mostra os resultados abaixo do editor.</p>
+<figure>
+<img src="rc_images/SQLiteManagerSql.png" alt="Aba SQL com uma consulta de clientes e pedidos no editor e a tabela de resultados abaixo" width="1920" height="1080" loading="lazy">
+<figcaption>O editor com realce de sintaxe e os resultados da consulta.</figcaption>
+</figure>
+<h3>Executar comandos</h3>
+<ul>
+<li><kbd>Ctrl</kbd>+<kbd>Enter</kbd> ou <strong>▶ Executar</strong> rodam todo o texto. Com um trecho selecionado, roda só o trecho.</li>
+<li>Separe vários comandos com <code>;</code>. Cada consulta gera uma aba de resultado.</li>
+<li>Se um comando falhar, a execução para ali e o erro indica qual foi. Os comandos anteriores continuam aplicados; para evitar isso, use uma transação.</li>
+<li>A contagem de linhas alteradas inclui as mudanças feitas por triggers.</li>
+</ul>
+<h3>Escrever mais rápido</h3>
+<ul>
+<li>As sugestões aparecem a partir de duas letras, ou logo após um ponto, como em <code>c.</code>, e reconhecem apelidos de tabela.</li>
+<li><kbd>Ctrl</kbd>+<kbd>Espaço</kbd> abre as sugestões. <kbd>↑</kbd> e <kbd>↓</kbd> escolhem, <kbd>Tab</kbd> ou <kbd>Enter</kbd> aceitam e <kbd>Esc</kbd> fecha.</li>
+<li>Fora das sugestões, <kbd>Tab</kbd> insere dois espaços.</li>
+<li>O texto do editor continua lá quando você reabre o app.</li>
+</ul>
+<h3>Resultados</h3>
+<p>Os resultados são paginados de 200 em 200 linhas, e os botões <strong>CSV</strong> e <strong>JSON</strong> exportam o conjunto todo. Cada consulta guarda até 100.000 linhas e avisa quando o limite é atingido. Para resultados maiores, refine a consulta ou use <code>LIMIT</code>.</p>
+<h3>Plano de execução</h3>
+<p><strong>Plano de execução</strong> mostra como o SQLite resolveria o primeiro comando, sem executá-lo. Nos planos, <code>SCAN</code> indica leitura da tabela inteira e <code>SEARCH</code>, em geral, uso de índice ou chave.</p>
+<h3>Transações</h3>
+<p>Use transações para aplicar várias mudanças como uma só. Depois de <code>BEGIN</code>, a barra de status mostra <strong>Transação aberta</strong> com os botões <strong>COMMIT</strong> e <strong>ROLLBACK</strong>.</p>
+<pre class="code"><code>BEGIN;
+UPDATE produtos SET preco = preco * 1.10 WHERE categoria = 'Acessórios';
+-- confira o resultado e clique em COMMIT ou ROLLBACK na barra de status</code></pre>
+<p>Edições feitas na aba Dados durante a transação fazem parte dela. Ao salvar com uma transação aberta, o app pergunta se deve fazer <code>COMMIT</code> ou <code>ROLLBACK</code> antes.</p>
+<h3>Histórico e arquivos</h3>
+<ul>
+<li><strong>Histórico ▾</strong> guarda os últimos 50 comandos executados. O clique os devolve ao editor.</li>
+<li><strong>Abrir .sql…</strong> carrega um script no editor sem executá-lo, e <strong>Baixar .sql</strong> salva o texto do editor.</li>
+<li><strong>Limpar</strong> apaga o texto do editor.</li>
+</ul>
+<h3>Exemplos úteis</h3>
+<pre class="code"><code>-- Criar uma view
+CREATE VIEW vw_estoque_baixo AS
+  SELECT nome, estoque FROM produtos WHERE estoque &lt; 20;
+
+-- Criar um trigger
+CREATE TRIGGER trg_status AFTER UPDATE OF status ON pedidos
+BEGIN
+  UPDATE pedidos SET data = date('now') WHERE id = NEW.id;
+END;
+
+-- Encontrar valores duplicados
+SELECT email, count(*) FROM clientes
+GROUP BY email HAVING count(*) &gt; 1;
+
+-- Gravar texto vazio numa célula NULL
+UPDATE clientes SET email = '' WHERE id = 5;</code></pre>
+</section>
+
+<section id="importar-pt" aria-labelledby="h-importar-pt">
+<h2 id="h-importar-pt">Importar e exportar</h2>
+<p>O app importa CSV e exporta CSV, JSON, SQL e o próprio arquivo do banco. A importação é tudo ou nada: se uma linha falhar, nada é gravado.</p>
+<h3>Importar um CSV</h3>
+<ol>
+<li>Clique em <strong>Importar CSV…</strong> e escolha o arquivo, que deve estar em UTF-8.</li>
+<li>Confira o <strong>Separador</strong>, detectado automaticamente entre vírgula, ponto e vírgula, tab e barra vertical.</li>
+<li>Em <strong>Destino</strong>, escolha <strong>Criar tabela nova</strong> ou <strong>Adicionar em</strong> uma tabela existente.</li>
+<li>Ajuste <strong>Primeira linha é o cabeçalho</strong> e <strong>Campos vazios viram NULL</strong>, confira a prévia e clique em <strong>Importar</strong>.</li>
+</ol>
+<figure>
+<img src="rc_images/SQLiteManagerImportar.png" alt="Janela Importar CSV com o separador ponto e vírgula detectado, a opção Criar tabela nova e a prévia dos dados" width="1920" height="1080" loading="lazy">
+<figcaption>A prévia mostra as primeiras linhas antes de gravar qualquer coisa.</figcaption>
+</figure>
+<p><strong>Em tabela nova</strong>, o app escolhe o tipo de cada coluna entre INTEGER, REAL e TEXT, olhando os valores. Valores com zero à esquerda, como o CEP <code>01310</code>, continuam como texto e não perdem o zero. Números com vírgula decimal, como <code>7,5</code>, também ficam como texto.</p>
+<p><strong>Em tabela existente</strong>, se todos os nomes do cabeçalho existirem na tabela, as colunas são ligadas pelo nome. Caso contrário, são ligadas pela posição.</p>
+<h3>Exportar</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Formato</th><th scope="col">Onde</th><th scope="col">O que leva</th></tr></thead>
+<tbody>
+<tr><th scope="row">CSV, JSON ou SQL de uma tabela</th><td>Aba <strong>Dados</strong>, botões à direita</td><td>Todas as páginas, respeitando filtros e ordem.</td></tr>
+<tr><th scope="row">CSV ou JSON de um resultado</th><td>Aba <strong>SQL</strong>, abaixo do resultado</td><td>Todas as linhas guardadas da consulta.</td></tr>
+<tr><th scope="row">Script do banco inteiro</th><td><strong>Exportar .sql</strong></td><td>Estrutura e dados, exceto o conteúdo de tabelas virtuais.</td></tr>
+<tr><th scope="row">Arquivo do banco</th><td><strong>Salvar como…</strong></td><td>Tudo, inclusive tabelas virtuais.</td></tr>
+</tbody>
+</table></div>
+<p>Para fazer cópia de segurança, prefira <strong>Salvar como…</strong>, que preserva o banco por completo.</p>
+<dl class="glossary">
+<dt>CSV</dt><dd>UTF-8 com marca BOM e separado por vírgula. NULL vira campo vazio e BLOB vira <code>0x</code> mais hexadecimal. Se o Excel juntar tudo numa coluna, importe pelo menu de dados dele e indique a vírgula.</dd>
+<dt>JSON</dt><dd>Lista de objetos. BLOB vira <code>{"$hex": "..."}</code>, e inteiros grandes demais para JavaScript viram texto, para não perder precisão.</dd>
+<dt>SQL</dt><dd>Comandos <code>INSERT</code>; no banco inteiro, também o <code>CREATE</code> de cada objeto, dentro de uma transação.</dd>
+</dl>
+</section>
+
+<section id="banco-pt" aria-labelledby="h-banco-pt">
+<h2 id="h-banco-pt">Aba Banco</h2>
+<p>A aba Banco resume o arquivo e reúne as verificações e a manutenção. Vale consultá-la antes de um salvamento importante.</p>
+<figure>
+<img src="rc_images/SQLiteManagerBanco.png" alt="Aba Banco com a lista de informações do arquivo e o resultado ok da verificação de integridade" width="1920" height="1080" loading="lazy">
+<figcaption>Informações do banco e resultado da verificação de integridade.</figcaption>
+</figure>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Botão</th><th scope="col">O que faz</th><th scope="col">Quando usar</th></tr></thead>
+<tbody>
+<tr><th scope="row">Verificar integridade</th><td>Procura danos na estrutura do arquivo. O resultado esperado é <code>ok</code>.</td><td>Ao receber um arquivo ou suspeitar de corrupção.</td></tr>
+<tr><th scope="row">Verificar chaves estrangeiras</th><td>Lista linhas que apontam para registros inexistentes.</td><td>Depois de importar dados ou trabalhar com a opção desligada.</td></tr>
+<tr><th scope="row">VACUUM</th><td>Reconstrói o banco e recupera as páginas livres.</td><td>Depois de excluir muitos dados.</td></tr>
+<tr><th scope="row">ANALYZE</th><td>Atualiza as estatísticas que orientam as consultas.</td><td>Depois de grandes cargas, ou se consultas ficarem lentas.</td></tr>
+</tbody>
+</table></div>
+<p><strong>VACUUM</strong> e <strong>ANALYZE</strong> alteram o banco, então é preciso salvar depois. <strong>VACUUM</strong> não roda com uma transação aberta.</p>
+<h3>Chaves estrangeiras</h3>
+<p>A opção <strong>Chaves estrangeiras</strong>, na barra de status, vem ligada, ao contrário do padrão do SQLite. <sup><a href="#ref-4-pt">[4]</a></sup> Assim, excluir um registro referenciado por outra tabela dá erro, em vez de deixar dados órfãos. A escolha vale para o app e não fica gravada no arquivo. Ela não muda durante uma transação.</p>
+</section>
+
+<section id="atalhos-pt" aria-labelledby="h-atalhos-pt">
+<h2 id="h-atalhos-pt">Atalhos de teclado</h2>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Onde</th><th scope="col">Tecla</th><th scope="col">Ação</th></tr></thead>
+<tbody>
+<tr><td>Geral</td><td><kbd>Ctrl</kbd>+<kbd>S</kbd></td><td>Salvar</td></tr>
+<tr><td>Geral</td><td><kbd>Ctrl</kbd>+<kbd>O</kbd></td><td>Abrir</td></tr>
+<tr><td>Grade</td><td><kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd></td><td>Mover entre células</td></tr>
+<tr><td>Grade</td><td><kbd>Enter</kbd> ou <kbd>F2</kbd></td><td>Editar a célula atual</td></tr>
+<tr><td>Grade</td><td><kbd>Ctrl</kbd>+<kbd>C</kbd></td><td>Copiar o valor da célula atual</td></tr>
+<tr><td>Editor de célula</td><td><kbd>Enter</kbd></td><td>Salvar</td></tr>
+<tr><td>Editor de célula</td><td><kbd>Shift</kbd>+<kbd>Enter</kbd></td><td>Quebrar a linha</td></tr>
+<tr><td>Editor de célula</td><td><kbd>Tab</kbd> ou <kbd>Shift</kbd>+<kbd>Tab</kbd></td><td>Salvar e ir para a célula seguinte ou anterior</td></tr>
+<tr><td>Editor de célula</td><td><kbd>Esc</kbd></td><td>Cancelar</td></tr>
+<tr><td>Editor SQL</td><td><kbd>Ctrl</kbd>+<kbd>Enter</kbd></td><td>Executar o texto ou a seleção</td></tr>
+<tr><td>Editor SQL</td><td><kbd>Ctrl</kbd>+<kbd>Espaço</kbd></td><td>Abrir sugestões</td></tr>
+<tr><td>Editor SQL</td><td><kbd>Tab</kbd></td><td>Aceitar a sugestão ou inserir dois espaços</td></tr>
+</tbody>
+</table></div>
+</section>
+
+<section id="problemas-pt" aria-labelledby="h-problemas-pt">
+<h2 id="h-problemas-pt">Limitações e solução de problemas</h2>
+<h3>Limitações</h3>
+<ul>
+<li><strong>Bancos grandes:</strong> o arquivo inteiro é carregado na memória, então bancos de vários gigabytes não são adequados.</li>
+<li><strong>Consultas longas:</strong> a tela fica travada até a consulta terminar.</li>
+<li><strong>Acesso simultâneo:</strong> o app trabalha numa cópia e não enxerga mudanças que outro programa faça depois da abertura.</li>
+<li><strong>Navegadores:</strong> o app foi testado no Chromium. O uso no Firefox e no Safari não foi testado.</li>
+<li><strong>Bancos criptografados:</strong> não são suportados.</li>
+</ul>
+<h3>Problemas comuns</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Sintoma</th><th scope="col">Causa provável</th><th scope="col">O que fazer</th></tr></thead>
+<tbody>
+<tr><td>“não é um banco SQLite válido”</td><td>O arquivo é de outro tipo ou está criptografado.</td><td>Confira o arquivo. Bancos criptografados precisam ser decifrados antes em outro programa.</td></tr>
+<tr><td>Dados recentes não aparecem</td><td>Estão no arquivo <code>-wal</code>.</td><td>Feche o programa que usa o banco, para que ele transfira os dados, e abra de novo.</td></tr>
+<tr><td><code>FOREIGN KEY constraint failed</code></td><td>Outra tabela referencia o registro, ou o valor informado não existe na tabela de origem.</td><td>Ajuste os registros relacionados. Em último caso, desligue a opção e rode depois a verificação de chaves.</td></tr>
+<tr><td><code>UNIQUE constraint failed</code></td><td>O valor já existe na coluna.</td><td>Use outro valor ou corrija o registro existente.</td></tr>
+<tr><td><code>NOT NULL constraint failed</code></td><td>Faltou o valor de uma coluna obrigatória.</td><td>Informe o valor no formulário ou no comando.</td></tr>
+<tr><td>“Não foi possível salvar”</td><td>O navegador não recebeu permissão, ou o arquivo está bloqueado por outro programa.</td><td>Conceda a permissão e feche o outro programa, ou use <strong>Salvar como…</strong>. As alterações continuam na memória.</td></tr>
+<tr><td><strong>+ Linha</strong> desativado</td><td>É uma view ou uma tabela sem identificação de linha.</td><td>Use a aba SQL.</td></tr>
+<tr><td>CSV com acentos estranhos</td><td>O arquivo não está em UTF-8.</td><td>Converta para UTF-8 antes de importar.</td></tr>
+<tr><td>Coluna numérica tratada como texto após importar</td><td>Há vírgula decimal ou algum valor não numérico.</td><td>Troque a vírgula por ponto no arquivo ou converta com <code>UPDATE</code>.</td></tr>
+<tr><td>Salvar baixa uma cópia em vez de gravar no arquivo</td><td>O navegador não oferece gravação direta.</td><td>Use Chrome ou Edge e abra o arquivo por <strong>Abrir…</strong> ou arrastando.</td></tr>
+</tbody>
+</table></div>
+</section>
+
+<section id="revisao-pt" aria-labelledby="h-revisao-pt">
+<h2 id="h-revisao-pt">Revisão rápida</h2>
+<p>Tente responder antes de abrir cada pergunta.</p>
+<div class="quiz">
+<details><summary>1. Editei várias células e fechei a aba. O arquivo mudou?</summary><p>Não. As edições ficam na memória até você salvar, e o app avisa ao fechar com alterações pendentes.</p></details>
+<details><summary>2. Como desfazer só a última edição?</summary><p>Não há desfazer passo a passo. Corrija manualmente ou use <strong>Reverter</strong>, que volta ao último estado salvo.</p></details>
+<details><summary>3. Como encontrar as linhas sem e-mail?</summary><p>Digite <code>NULL</code> no filtro da coluna <code>email</code>.</p></details>
+<details><summary>4. O que acontece se o terceiro de cinco comandos falhar?</summary><p>A execução para. Os dois primeiros continuam aplicados, a menos que estejam em uma transação desfeita com <code>ROLLBACK</code>.</p></details>
+<details><summary>5. Por que o CEP <code>01310</code> não perde o zero ao importar um CSV?</summary><p>Porque valores com zero à esquerda fazem a coluna ser criada como TEXT.</p></details>
+<details><summary>6. Qual é a forma mais completa de fazer uma cópia de segurança?</summary><p><strong>Salvar como…</strong>, porque o arquivo preserva tudo, inclusive tabelas virtuais, que o script <code>.sql</code> não leva por completo.</p></details>
+</div>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="referencias-pt" aria-labelledby="h-referencias-pt">
+<h2 id="h-referencias-pt">Referências</h2>
+<ol class="refs">
+<li id="ref-1-pt"><strong>Giovani Perotto Mesquita</strong>, “SQLite Manager”, aplicativo em um único arquivo HTML, <a href="sqlite-manager.html">giovanipm.github.io/sqlite-manager.html</a>.</li>
+<li id="ref-2-pt"><strong>sql.js</strong> (em inglês), “sql.js: SQLite compiled to JavaScript”, acesso em 30/10/2026, <a href="https://github.com/sql-js/sql.js" rel="noopener">github.com/sql-js/sql.js</a>.</li>
+<li id="ref-3-pt"><strong>SQLite</strong> (em inglês), “Datatypes In SQLite”, documentação do SQLite, acesso em 30/10/2026, <a href="https://www.sqlite.org/datatype3.html" rel="noopener">sqlite.org/datatype3.html</a>.</li>
+<li id="ref-4-pt"><strong>SQLite</strong> (em inglês), “SQLite Foreign Key Support”, documentação do SQLite, acesso em 30/10/2026, <a href="https://www.sqlite.org/foreignkeys.html" rel="noopener">sqlite.org/foreignkeys.html</a>.</li>
+<li id="ref-5-pt"><strong>SQLite</strong> (em inglês), “Write-Ahead Logging”, documentação do SQLite, acesso em 30/10/2026, <a href="https://www.sqlite.org/wal.html" rel="noopener">sqlite.org/wal.html</a>.</li>
+<li id="ref-6-pt"><strong>SQLite</strong> (em inglês), “ALTER TABLE”, documentação do SQLite, acesso em 30/10/2026, <a href="https://www.sqlite.org/lang_altertable.html" rel="noopener">sqlite.org/lang_altertable.html</a>.</li>
+<li id="ref-7-pt"><strong>MDN Web Docs</strong> (em inglês), “File System API”, acesso em 30/10/2026, <a href="https://developer.mozilla.org/en-US/docs/Web/API/File_System_API" rel="noopener">developer.mozilla.org/en-US/docs/Web/API/File_System_API</a>.</li>
+</ol>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== EN ===================== -->
+<div id="en" role="tabpanel" aria-labelledby="tab-en" lang="en" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projects</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>SQLite Manager: user manual</h1>
+      <p class="dek">How to open, query, edit and save SQLite databases in the browser, with nothing to install: from first use to database maintenance.</p>
+      <div class="byline">
+        <span>By <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Published on <time datetime="2026-10-30">30 October 2026</time></span>
+        <span class="credit">Reviewed and formatted using Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-en">
+    <h2 id="toc-en">Contents</h2>
+    <ol>
+      <li><a href="#intro-en">What SQLite Manager is</a></li>
+      <li><a href="#inicio-en">Getting started</a></li>
+      <li><a href="#interface-en">The interface</a></li>
+      <li><a href="#arquivos-en">Opening, saving and reverting</a></li>
+      <li><a href="#dados-en">The Dados (data) tab</a></li>
+      <li><a href="#estrutura-en">The Estrutura (structure) tab</a></li>
+      <li><a href="#sql-en">The SQL tab</a></li>
+      <li><a href="#importar-en">Importing and exporting</a></li>
+      <li><a href="#banco-en">The Banco (database) tab</a></li>
+      <li><a href="#atalhos-en">Keyboard shortcuts</a></li>
+      <li><a href="#problemas-en">Limitations and troubleshooting</a></li>
+      <li><a href="#revisao-en">Quick review</a></li>
+      <li><a href="#referencias-en">References</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-en" aria-labelledby="h-intro-en">
+<h2 id="h-intro-en">What SQLite Manager is</h2>
+<p>SQLite Manager opens, queries, edits and saves SQLite databases using only your browser. It is a single HTML file: no installation, server or account. <sup><a href="#ref-1-en">[1]</a></sup> The database engine is SQLite itself, compiled to WebAssembly and embedded in the file. <sup><a href="#ref-2-en">[2]</a></sup></p>
+<p><a class="launch" href="sqlite-manager.html">Open SQLite Manager <span aria-hidden="true">→</span></a></p>
+<aside class="note"><p>The app's interface is in Portuguese only. This manual shows each button under its Portuguese name, and the <a href="#interface-en">interface section</a> has a table with the translations.</p></aside>
+<figure>
+<img src="rc_images/SQLiteManagerInicio.png" alt="SQLite Manager start screen, with the buttons Abrir banco, Novo banco vazio and Banco de exemplo" width="1920" height="1080" loading="lazy">
+<figcaption>The start screen: drag a file in or pick one of the three options.</figcaption>
+</figure>
+<p>This manual is for anyone who wants to manage a database without installing anything. Everyday tasks need no SQL; the SQL tab serves those who already know the language.</p>
+<h3>What you need</h3>
+<ul>
+<li>A current browser. Chrome and Edge are recommended, because they write directly to the original file.</li>
+<li>The file <code>sqlite-manager.html</code>. Use the link above, or save the page and open your copy, which works offline.</li>
+</ul>
+<h3>How the app handles your data</h3>
+<ul>
+<li><strong>Nothing leaves your computer.</strong> The database is processed inside the browser, and the HTML file blocks network connections.</li>
+<li><strong>The database is edited in memory.</strong> The file on disk changes only when you save.</li>
+<li><strong>The browser keeps a few things.</strong> Theme, page size, SQL editor text and query history stay in local storage. The database contents do not, but values written in queries do stay in the history.</li>
+</ul>
+<aside class="note"><p>On a shared computer, clear the history and the SQL editor when you finish: <strong>Histórico ▾ → Limpar histórico</strong> (clear history), then <strong>Limpar</strong> (clear).</p></aside>
+</section>
+
+<section id="inicio-en" aria-labelledby="h-inicio-en">
+<h2 id="h-inicio-en">Getting started</h2>
+<p>In about ten minutes, this walkthrough covers the main features using the sample database, with no risk to real data. The sample holds customers (<code>clientes</code>), products (<code>produtos</code>), orders (<code>pedidos</code>) and order items (<code>itens_pedido</code>).</p>
+<h3>1. Open the sample</h3>
+<ol>
+<li>Open SQLite Manager.</li>
+<li>Click <strong>Banco de exemplo</strong> (sample database). The <code>clientes</code> table appears in the <strong>Dados</strong> (data) tab.</li>
+</ol>
+<h3>2. Find a record</h3>
+<ol>
+<li>In the filter row, under the title of the <code>cidade</code> (city) column, type <code>recife</code>. Only Carla Nunes remains.</li>
+<li>Delete the filter to see all five rows again.</li>
+<li>Click the title of the <code>nome</code> (name) column to sort. Click again to reverse and a third time to undo the sort.</li>
+</ol>
+<h3>3. Edit and insert data</h3>
+<ol>
+<li>Double-click Ana Ribeiro's city, type <code>Campinas</code> and press <kbd>Enter</kbd>. The <strong>● não salvo</strong> (not saved) indicator appears in the top bar.</li>
+<li>Click <strong>+ Linha</strong> (add row), fill in <code>nome</code> and click <strong>Inserir</strong> (insert). The other columns get their default value.</li>
+</ol>
+<h3>4. Follow a reference</h3>
+<ol>
+<li>In the list on the left, click <code>pedidos</code>.</li>
+<li>In the <code>cliente_id</code> column, click the <strong>↗</strong> arrow next to a value. The app opens <code>clientes</code> filtered on that customer.</li>
+</ol>
+<h3>5. Run SQL</h3>
+<ol>
+<li>Open the <strong>SQL</strong> tab, type the query below and press <kbd>Ctrl</kbd>+<kbd>Enter</kbd>. The result shows the total per customer.
+<pre class="code"><code>SELECT * FROM vw_total_por_cliente;</code></pre></li>
+<li>Replace the text with the command below and run it. The message reports 2 changed rows: the inserted item and the stock reduced by the <code>trg_baixa_estoque</code> trigger.
+<pre class="code"><code>INSERT INTO itens_pedido VALUES (4, 1, 1, 349.9);</code></pre></li>
+<li>Click <code>produtos</code>. The <strong>Dados</strong> tab opens, and the keyboard's stock (<code>estoque</code>) has dropped from 39 to 38.</li>
+</ol>
+<h3>6. Undo or save</h3>
+<ol>
+<li>To undo everything, click <strong>Reverter</strong> (revert) and confirm. The sample returns to its initial state.</li>
+<li>To keep a copy, click <strong>Salvar</strong> (save) and choose where to write it.</li>
+</ol>
+</section>
+
+<section id="interface-en" aria-labelledby="h-interface-en">
+<h2 id="h-interface-en">The interface</h2>
+<p>The screen has four fixed areas, and the four tabs change only the central one. Once a database is open, the screen looks like this:</p>
+<figure>
+<img src="rc_images/SQLiteManagerDados.png" alt="Main screen with the top bar, the object list on the left, the tabs Dados, Estrutura, SQL and Banco, and the grid with the clientes table" width="1920" height="1080" loading="lazy">
+<figcaption>The main screen with the clientes table open in the Dados tab.</figcaption>
+</figure>
+<dl class="glossary">
+<dt>Top bar</dt><dd>File actions, CSV import, SQL export and the <strong>◐</strong> button, which switches between light and dark themes.</dd>
+<dt>Object list</dt><dd>Tables, views, indexes, triggers and system tables, with each table's row count. The field above it filters the list, and <strong>+ Tabela</strong> creates a table.</dd>
+<dt>Tabs</dt><dd><strong>Dados</strong> shows the rows, <strong>Estrutura</strong> shows and changes the schema, <strong>SQL</strong> runs commands and <strong>Banco</strong> holds information and maintenance.</dd>
+<dt>Status bar</dt><dd>SQLite version, database size, open-transaction notice and the <strong>Chaves estrangeiras</strong> option.</dd>
+</dl>
+<h3>Button names</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">In the app</th><th scope="col">Meaning</th><th scope="col">In the app</th><th scope="col">Meaning</th></tr></thead>
+<tbody>
+<tr><td>Novo</td><td>New</td><td>Dados</td><td>Data</td></tr>
+<tr><td>Abrir…</td><td>Open</td><td>Estrutura</td><td>Structure</td></tr>
+<tr><td>Salvar</td><td>Save</td><td>Banco</td><td>Database</td></tr>
+<tr><td>Salvar como…</td><td>Save as</td><td>+ Linha / Inserir</td><td>Add row / Insert</td></tr>
+<tr><td>Reverter</td><td>Revert</td><td>Excluir</td><td>Delete</td></tr>
+<tr><td>Importar CSV…</td><td>Import CSV</td><td>Esvaziar</td><td>Empty</td></tr>
+<tr><td>Exportar .sql</td><td>Export .sql</td><td>Renomear</td><td>Rename</td></tr>
+<tr><td>+ Tabela</td><td>Add table</td><td>+ Coluna / + Índice</td><td>Add column / Add index</td></tr>
+<tr><td>Executar</td><td>Run</td><td>Plano de execução</td><td>Query plan</td></tr>
+<tr><td>Histórico</td><td>History</td><td>Limpar</td><td>Clear</td></tr>
+<tr><td>Baixar</td><td>Download</td><td>Arquivo…</td><td>File</td></tr>
+<tr><td>Cancelar</td><td>Cancel</td><td>Chaves estrangeiras</td><td>Foreign keys</td></tr>
+<tr><td>Verificar integridade</td><td>Check integrity</td><td>Verificar chaves estrangeiras</td><td>Check foreign keys</td></tr>
+</tbody>
+</table></div>
+</section>
+
+<section id="arquivos-en" aria-labelledby="h-arquivos-en">
+<h2 id="h-arquivos-en">Opening, saving and reverting</h2>
+<p>Everything you do changes a copy in memory; the file on disk changes only when you save. This is the most important idea in the app:</p>
+<figure>
+<img src="rc_images/SQLiteManagerFluxo-en.svg" alt="Diagram: Abrir copies the file from disk into the in-memory database; Salvar writes it back; edits and SQL change the in-memory database; Reverter returns it to the last saved state; Importar CSV brings data in and Exportar produces CSV, JSON or SQL" loading="lazy">
+<figcaption>The in-memory database is at the centre: the file on disk changes only on save. The arrows use the app's button names.</figcaption>
+</figure>
+<h3>Opening or creating a database</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">How</th><th scope="col">What happens</th></tr></thead>
+<tbody>
+<tr><th scope="row">Abrir… (open)</th><td>Picks a <code>.db</code>, <code>.db3</code>, <code>.sqlite</code>, <code>.sqlite3</code>, <code>.s3db</code> or <code>.sl3</code> file. Shortcut: <kbd>Ctrl</kbd>+<kbd>O</kbd>.</td></tr>
+<tr><th scope="row">Drag and drop</th><td>Drop the file anywhere in the window.</td></tr>
+<tr><th scope="row">Novo (new)</th><td>Creates an empty database named <code>novo.sqlite</code> and opens the SQL tab.</td></tr>
+<tr><th scope="row">Banco de exemplo (sample)</th><td>Available on the start screen. Brings tables, a view, an index and a trigger to practise with.</td></tr>
+</tbody>
+</table></div>
+<p>If the current database has unsaved changes, the app asks for confirmation before switching. Files that are not SQLite, or that are encrypted, are refused, and the current database stays open.</p>
+<h3>Saving</h3>
+<p>The <strong>● não salvo</strong> indicator shows that some changes exist only in memory. The app also warns you if you try to close the tab in that state.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Action</th><th scope="col">Chrome and Edge</th><th scope="col">Other browsers</th></tr></thead>
+<tbody>
+<tr><th scope="row">Salvar (<kbd>Ctrl</kbd>+<kbd>S</kbd>)</th><td>Writes to the original file. The browser asks for permission the first time. <sup><a href="#ref-7-en">[7]</a></sup></td><td>Downloads a copy to the downloads folder.</td></tr>
+<tr><th scope="row">Salvar como… (save as)</th><td>Asks for a name and location, and that file becomes the current one.</td><td>Downloads a copy to the downloads folder.</td></tr>
+</tbody>
+</table></div>
+<p>In Chrome and Edge, if another program changed the file after it was opened, the app asks for confirmation before replacing it. To keep both versions, cancel and use <strong>Salvar como…</strong>.</p>
+<aside class="note"><p>Saving restarts the database connection. Temporary tables and session <code>PRAGMA</code> settings are lost; only the foreign-key option is reapplied.</p></aside>
+<h3>Reverting</h3>
+<p><strong>Reverter</strong> discards everything done since opening or the last save. It is the app's only “undo”: there is no step-by-step undo. Save before a risky change, so that the return point sits just before it.</p>
+<h3>Databases in WAL mode</h3>
+<p>Some programs use WAL mode, which keeps recent changes in a <code>-wal</code> file next to the database. <sup><a href="#ref-5-en">[5]</a></sup> The browser receives only the main file, so the app warns you on opening and takes two measures:</p>
+<ul>
+<li>It opens the database without the contents of the <code>-wal</code> file. To see the latest data, first close the program that uses the database.</li>
+<li>It does not write over the original. <strong>Salvar</strong> asks for a new file, and the suggested name ends in <code>-copia</code>. Do not overwrite the original, because an old <code>-wal</code> file next to it can corrupt the data.</li>
+</ul>
+</section>
+
+<section id="dados-en" aria-labelledby="h-dados-en">
+<h2 id="h-dados-en">The Dados (data) tab</h2>
+<p>The Dados tab shows the rows of the selected table or view, and there you search, edit, insert and delete without writing SQL.</p>
+<h3>Browsing and sorting</h3>
+<ul>
+<li>The controls below the grid change pages. Choose 50, 100, 500 or 1000 rows per page.</li>
+<li>Click a column title to sort: ascending, descending and unsorted. Sorting uses one column at a time.</li>
+<li>The <strong>PK</strong> marker identifies primary-key columns.</li>
+<li>Null values appear as <em>NULL</em> in italics, and binary data as <em>BLOB</em> with its size.</li>
+</ul>
+<h3>Filtering and searching</h3>
+<p>Each column has a filter field, and filters on different columns apply together. The <strong>Buscar em todas as colunas</strong> field searches for text in any column. <strong>Limpar filtros</strong> removes them all.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">You type</th><th scope="col">It finds</th></tr></thead>
+<tbody>
+<tr><td><code>ana</code></td><td>Values containing “ana”.</td></tr>
+<tr><td><code>=Recife</code> or <code>!=Recife</code></td><td>Equal or different value, case-sensitive.</td></tr>
+<tr><td><code>&gt;10</code>, <code>&gt;=10</code>, <code>&lt;10</code>, <code>&lt;=10</code></td><td>Comparisons, also with dates in the <code>2026-10-30</code> format.</td></tr>
+<tr><td><code>NULL</code> or <code>!NULL</code></td><td>Empty or filled cells.</td></tr>
+</tbody>
+</table></div>
+<aside class="note"><p>The “contains” filter ignores case only for unaccented letters: <code>joão</code> does not find <code>JOÃO</code>.</p></aside>
+<h3>Editing a cell</h3>
+<p>Double-click the cell. With the keyboard, click once, move with the arrows and press <kbd>Enter</kbd> or <kbd>F2</kbd>.</p>
+<figure>
+<img src="rc_images/SQLiteManagerEditorCelula.png" alt="Cell editor open over the grid, with the text field and the buttons NULL, Arquivo, Cancelar and Salvar" width="1920" height="1080" loading="lazy">
+<figcaption>The cell editor. Clicking outside it cancels the edit.</figcaption>
+</figure>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">In the editor</th><th scope="col">Effect</th></tr></thead>
+<tbody>
+<tr><td><kbd>Enter</kbd></td><td>Saves.</td></tr>
+<tr><td><kbd>Shift</kbd>+<kbd>Enter</kbd></td><td>Adds a line break.</td></tr>
+<tr><td><kbd>Tab</kbd> and <kbd>Shift</kbd>+<kbd>Tab</kbd></td><td>Saves and moves to the next or previous cell.</td></tr>
+<tr><td><kbd>Esc</kbd></td><td>Cancels.</td></tr>
+<tr><td><strong>NULL</strong> button</td><td>Writes NULL.</td></tr>
+<tr><td><strong>Arquivo…</strong> (file) button</td><td>Writes a file's contents as a BLOB.</td></tr>
+</tbody>
+</table></div>
+<p>The difference between NULL and empty text matters. In a NULL cell, confirming without typing keeps the NULL. To write empty text there, use the SQL tab. In a cell with a value, deleting the text and saving writes empty text.</p>
+<p>SQLite converts the value according to the column type: <code>42</code> becomes a number in an INTEGER column. <sup><a href="#ref-3-en">[3]</a></sup> Text such as <code>abc</code> may be accepted in the same column, unless the table is <code>STRICT</code>.</p>
+<h3>Working with BLOBs</h3>
+<p>Binary data is not edited as text. The editor shows the contents in hexadecimal or, for PNG, JPEG, GIF and WebP images, a preview. Use <strong>Baixar</strong> (download) to extract the file and <strong>Arquivo…</strong> to replace it.</p>
+<h3>Inserting rows</h3>
+<p>Click <strong>+ Linha</strong>. Each column has a mode, and typing switches it to <em>valor</em> automatically:</p>
+<ul>
+<li><strong>valor</strong> (value) writes what was typed, even if empty.</li>
+<li><strong>NULL</strong> writes null.</li>
+<li><strong>padrão</strong> (default) lets SQLite decide: it generates the automatic key number, applies the <code>DEFAULT</code> or writes NULL.</li>
+</ul>
+<p>Tick <strong>Continuar adicionando</strong> (keep adding) to insert several rows in a row. Generated columns do not appear in the form. To write a BLOB, insert the row and then edit the cell.</p>
+<h3>Deleting rows</h3>
+<ol>
+<li>Tick the boxes of the rows you want. The header box ticks the whole page.</li>
+<li>Click <strong>Excluir</strong> (delete) and confirm.</li>
+</ol>
+<p>Deletion is all or nothing: if one row fails, none is deleted. The selection applies only to the current page and is cleared when you change pages, filter, sort or edit.</p>
+<h3>Following foreign keys</h3>
+<p>Columns with a foreign key show <strong>↗</strong> next to the value. Clicking it opens the referenced table, filtered on the matching record.</p>
+<h3>When the grid is read-only</h3>
+<p>Views are never editable in this tab, and neither are generated columns. A table is read-only when its rows cannot be identified: it has no primary key and has columns named <code>rowid</code>, <code>_rowid_</code> and <code>oid</code>. In that case, use the SQL tab.</p>
+</section>
+
+<section id="estrutura-en" aria-labelledby="h-estrutura-en">
+<h2 id="h-estrutura-en">The Estrutura (structure) tab</h2>
+<p>The Estrutura tab shows the schema of the selected object and changes tables, columns and indexes without writing SQL.</p>
+<figure>
+<img src="rc_images/SQLiteManagerEstrutura.png" alt="Estrutura tab for the clientes table, with the column list, the automatic indexes and the CREATE TABLE command" width="1920" height="1080" loading="lazy">
+<figcaption>Columns, indexes, triggers and the DDL, the SQL command that defines the object.</figcaption>
+</figure>
+<h3>Creating a table</h3>
+<ol>
+<li>Click <strong>+ Tabela</strong> and name the table.</li>
+<li>Fill in one line per column. The first already comes as <code>id INTEGER</code> with a primary key.</li>
+<li>Check the command under <strong>SQL que será executado</strong> (SQL to be run) and click <strong>Criar tabela</strong> (create table).</li>
+</ol>
+<figure>
+<img src="rc_images/SQLiteManagerNovaTabela.png" alt="Nova tabela window with the fornecedores table, the id and nome columns, and the CREATE TABLE preview" width="1920" height="1080" loading="lazy">
+<figcaption>The preview shows exactly the SQL that will run.</figcaption>
+</figure>
+<dl class="glossary">
+<dt>PK</dt><dd>Primary key. Tick it on more than one column to create a composite key.</dd>
+<dt>Auto</dt><dd>Adds <code>AUTOINCREMENT</code>. Requires a single PK column of type <code>INTEGER</code>.</dd>
+<dt>Not null</dt><dd>The column does not accept NULL.</dd>
+<dt>Único (unique)</dt><dd>Does not allow repeated values.</dd>
+<dt>Padrão (default)</dt><dd>Value used when none is given. Numbers, <code>NULL</code>, <code>CURRENT_TIMESTAMP</code>, text in single quotes and expressions in parentheses are used as they are; anything else becomes text.</dd>
+<dt>Referência (reference)</dt><dd>Foreign key, in the format <code>table(column)</code>.</dd>
+</dl>
+<h3>Changing an existing table</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Action</th><th scope="col">Where</th><th scope="col">Note</th></tr></thead>
+<tbody>
+<tr><th scope="row">Add column</th><td><strong>+ Coluna</strong></td><td>With <code>NOT NULL</code>, a default value is required.</td></tr>
+<tr><th scope="row">Rename column</th><td><strong>renomear</strong>, on the column's line</td><td>SQLite adjusts references to it in the schema.</td></tr>
+<tr><th scope="row">Delete column</th><td><strong>excluir</strong>, on the column's line</td><td>Refused if the column is a primary key, unique or used by an index. <sup><a href="#ref-6-en">[6]</a></sup></td></tr>
+<tr><th scope="row">Create index</th><td><strong>+ Índice</strong></td><td>Columns follow the table's order; for another order, use SQL.</td></tr>
+<tr><th scope="row">Rename table</th><td><strong>Renomear</strong></td><td></td></tr>
+<tr><th scope="row">Empty table</th><td><strong>Esvaziar</strong></td><td>Deletes the rows and keeps the structure.</td></tr>
+<tr><th scope="row">Delete object</th><td><strong>Excluir tabela</strong>, <strong>view</strong>, <strong>índice</strong> or <strong>trigger</strong></td><td>With foreign keys on, deleting a table applies the <code>ON DELETE</code> rules of whatever references it.</td></tr>
+</tbody>
+</table></div>
+<h3>Changing a column's type</h3>
+<p>SQLite does not change a column's type directly. <sup><a href="#ref-6-en">[6]</a></sup> Recreate the table in the SQL tab, inside a transaction. The <strong>Abrir no editor SQL</strong> (open in SQL editor) button copies the current DDL as a starting point.</p>
+<pre class="code"><code>-- Example: the idade column of contatos changes from TEXT to INTEGER
+BEGIN;
+CREATE TABLE contatos_novo (id INTEGER PRIMARY KEY, nome TEXT, idade INTEGER);
+INSERT INTO contatos_novo SELECT id, nome, idade FROM contatos;
+DROP TABLE contatos;
+ALTER TABLE contatos_novo RENAME TO contatos;
+COMMIT;</code></pre>
+<p>Then recreate the table's indexes and triggers, because <code>DROP TABLE</code> removes them. If other tables reference it, turn off <strong>Chaves estrangeiras</strong> before <code>BEGIN</code>; turn it back on when done and run <strong>Verificar chaves estrangeiras</strong>.</p>
+<h3>Views and triggers</h3>
+<p>Create views and triggers in the SQL tab. They then appear in the object list, where the Estrutura tab shows the DDL and lets you delete them.</p>
+</section>
+
+<section id="sql-en" aria-labelledby="h-sql-en">
+<h2 id="h-sql-en">The SQL tab</h2>
+<p>The SQL tab runs any command SQLite accepts, one or several at a time, and shows the results below the editor.</p>
+<figure>
+<img src="rc_images/SQLiteManagerSql.png" alt="SQL tab with a query on customers and orders in the editor and the results table below" width="1920" height="1080" loading="lazy">
+<figcaption>The editor with syntax highlighting and the query results.</figcaption>
+</figure>
+<h3>Running commands</h3>
+<ul>
+<li><kbd>Ctrl</kbd>+<kbd>Enter</kbd> or <strong>▶ Executar</strong> run all the text. With a passage selected, only that passage runs.</li>
+<li>Separate commands with <code>;</code>. Each query creates a result tab.</li>
+<li>If a command fails, execution stops there and the error says which one. Earlier commands remain applied; to avoid that, use a transaction.</li>
+<li>The count of changed rows includes changes made by triggers.</li>
+</ul>
+<h3>Writing faster</h3>
+<ul>
+<li>Suggestions appear after two letters, or right after a dot, as in <code>c.</code>, and they recognise table aliases.</li>
+<li><kbd>Ctrl</kbd>+<kbd>Space</kbd> opens the suggestions. <kbd>↑</kbd> and <kbd>↓</kbd> choose, <kbd>Tab</kbd> or <kbd>Enter</kbd> accept and <kbd>Esc</kbd> closes.</li>
+<li>Outside the suggestions, <kbd>Tab</kbd> inserts two spaces.</li>
+<li>The editor text is still there when you reopen the app.</li>
+</ul>
+<h3>Results</h3>
+<p>Results are paged 200 rows at a time, and the <strong>CSV</strong> and <strong>JSON</strong> buttons export the whole set. Each query keeps up to 100,000 rows and warns you when it reaches the limit. For larger results, refine the query or use <code>LIMIT</code>.</p>
+<h3>Query plan</h3>
+<p><strong>Plano de execução</strong> shows how SQLite would resolve the first command, without running it. In plans, <code>SCAN</code> means reading the whole table and <code>SEARCH</code> generally means using an index or key.</p>
+<h3>Transactions</h3>
+<p>Use transactions to apply several changes as one. After <code>BEGIN</code>, the status bar shows <strong>Transação aberta</strong> (open transaction) with the <strong>COMMIT</strong> and <strong>ROLLBACK</strong> buttons.</p>
+<pre class="code"><code>BEGIN;
+UPDATE produtos SET preco = preco * 1.10 WHERE categoria = 'Acessórios';
+-- check the result, then click COMMIT or ROLLBACK in the status bar</code></pre>
+<p>Edits made in the Dados tab during the transaction are part of it. If you save with a transaction open, the app asks whether to <code>COMMIT</code> or <code>ROLLBACK</code> first.</p>
+<h3>History and files</h3>
+<ul>
+<li><strong>Histórico ▾</strong> keeps the last 50 commands run. Clicking one returns it to the editor.</li>
+<li><strong>Abrir .sql…</strong> loads a script into the editor without running it, and <strong>Baixar .sql</strong> saves the editor text.</li>
+<li><strong>Limpar</strong> clears the editor text.</li>
+</ul>
+<h3>Useful examples</h3>
+<pre class="code"><code>-- Create a view
+CREATE VIEW vw_estoque_baixo AS
+  SELECT nome, estoque FROM produtos WHERE estoque &lt; 20;
+
+-- Create a trigger
+CREATE TRIGGER trg_status AFTER UPDATE OF status ON pedidos
+BEGIN
+  UPDATE pedidos SET data = date('now') WHERE id = NEW.id;
+END;
+
+-- Find duplicate values
+SELECT email, count(*) FROM clientes
+GROUP BY email HAVING count(*) &gt; 1;
+
+-- Write empty text in a NULL cell
+UPDATE clientes SET email = '' WHERE id = 5;</code></pre>
+</section>
+
+<section id="importar-en" aria-labelledby="h-importar-en">
+<h2 id="h-importar-en">Importing and exporting</h2>
+<p>The app imports CSV and exports CSV, JSON, SQL and the database file itself. Importing is all or nothing: if one row fails, nothing is written.</p>
+<h3>Importing a CSV</h3>
+<ol>
+<li>Click <strong>Importar CSV…</strong> and choose the file, which must be in UTF-8.</li>
+<li>Check the <strong>Separador</strong> (separator), detected automatically among comma, semicolon, tab and vertical bar.</li>
+<li>Under <strong>Destino</strong> (destination), choose <strong>Criar tabela nova</strong> (new table) or <strong>Adicionar em</strong> (add to) an existing table.</li>
+<li>Set <strong>Primeira linha é o cabeçalho</strong> (first line is the header) and <strong>Campos vazios viram NULL</strong> (empty fields become NULL), check the preview and click <strong>Importar</strong>.</li>
+</ol>
+<figure>
+<img src="rc_images/SQLiteManagerImportar.png" alt="Importar CSV window with the semicolon separator detected, the Criar tabela nova option and the data preview" width="1920" height="1080" loading="lazy">
+<figcaption>The preview shows the first rows before anything is written.</figcaption>
+</figure>
+<p><strong>In a new table</strong>, the app chooses each column's type among INTEGER, REAL and TEXT by looking at the values. Values with a leading zero, such as the postal code <code>01310</code>, stay as text and keep the zero. Numbers with a decimal comma, such as <code>7,5</code>, also stay as text.</p>
+<p><strong>In an existing table</strong>, if all the header names exist in the table, columns are matched by name. Otherwise they are matched by position.</p>
+<h3>Exporting</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Format</th><th scope="col">Where</th><th scope="col">What it includes</th></tr></thead>
+<tbody>
+<tr><th scope="row">CSV, JSON or SQL of a table</th><td><strong>Dados</strong> tab, buttons on the right</td><td>All pages, respecting filters and order.</td></tr>
+<tr><th scope="row">CSV or JSON of a result</th><td><strong>SQL</strong> tab, below the result</td><td>All the rows kept from the query.</td></tr>
+<tr><th scope="row">Script of the whole database</th><td><strong>Exportar .sql</strong></td><td>Structure and data, except the contents of virtual tables.</td></tr>
+<tr><th scope="row">Database file</th><td><strong>Salvar como…</strong></td><td>Everything, including virtual tables.</td></tr>
+</tbody>
+</table></div>
+<p>For a backup, prefer <strong>Salvar como…</strong>, which preserves the database in full.</p>
+<dl class="glossary">
+<dt>CSV</dt><dd>UTF-8 with a BOM, comma-separated. NULL becomes an empty field and BLOB becomes <code>0x</code> plus hexadecimal. If Excel puts everything in one column, import through its data menu and specify the comma.</dd>
+<dt>JSON</dt><dd>A list of objects. BLOB becomes <code>{"$hex": "..."}</code>, and integers too large for JavaScript become text, so as not to lose precision.</dd>
+<dt>SQL</dt><dd><code>INSERT</code> commands; for the whole database, also each object's <code>CREATE</code>, inside a transaction.</dd>
+</dl>
+</section>
+
+<section id="banco-en" aria-labelledby="h-banco-en">
+<h2 id="h-banco-en">The Banco (database) tab</h2>
+<p>The Banco tab summarises the file and gathers the checks and maintenance. It is worth a look before an important save.</p>
+<figure>
+<img src="rc_images/SQLiteManagerBanco.png" alt="Banco tab with the list of file information and the ok result of the integrity check" width="1920" height="1080" loading="lazy">
+<figcaption>Database information and the result of the integrity check.</figcaption>
+</figure>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Button</th><th scope="col">What it does</th><th scope="col">When to use it</th></tr></thead>
+<tbody>
+<tr><th scope="row">Verificar integridade</th><td>Looks for damage in the file's structure. The expected result is <code>ok</code>.</td><td>When you receive a file or suspect corruption.</td></tr>
+<tr><th scope="row">Verificar chaves estrangeiras</th><td>Lists rows pointing to records that do not exist.</td><td>After importing data or working with the option off.</td></tr>
+<tr><th scope="row">VACUUM</th><td>Rebuilds the database and recovers free pages.</td><td>After deleting a lot of data.</td></tr>
+<tr><th scope="row">ANALYZE</th><td>Updates the statistics that guide queries.</td><td>After large loads, or if queries become slow.</td></tr>
+</tbody>
+</table></div>
+<p><strong>VACUUM</strong> and <strong>ANALYZE</strong> change the database, so you need to save afterwards. <strong>VACUUM</strong> does not run with a transaction open.</p>
+<h3>Foreign keys</h3>
+<p>The <strong>Chaves estrangeiras</strong> option in the status bar comes on, unlike SQLite's default. <sup><a href="#ref-4-en">[4]</a></sup> So deleting a record referenced by another table gives an error, instead of leaving orphan data. The choice applies to the app and is not written to the file. It does not change during a transaction.</p>
+</section>
+
+<section id="atalhos-en" aria-labelledby="h-atalhos-en">
+<h2 id="h-atalhos-en">Keyboard shortcuts</h2>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Where</th><th scope="col">Key</th><th scope="col">Action</th></tr></thead>
+<tbody>
+<tr><td>General</td><td><kbd>Ctrl</kbd>+<kbd>S</kbd></td><td>Save</td></tr>
+<tr><td>General</td><td><kbd>Ctrl</kbd>+<kbd>O</kbd></td><td>Open</td></tr>
+<tr><td>Grid</td><td><kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd></td><td>Move between cells</td></tr>
+<tr><td>Grid</td><td><kbd>Enter</kbd> or <kbd>F2</kbd></td><td>Edit the current cell</td></tr>
+<tr><td>Grid</td><td><kbd>Ctrl</kbd>+<kbd>C</kbd></td><td>Copy the current cell's value</td></tr>
+<tr><td>Cell editor</td><td><kbd>Enter</kbd></td><td>Save</td></tr>
+<tr><td>Cell editor</td><td><kbd>Shift</kbd>+<kbd>Enter</kbd></td><td>Line break</td></tr>
+<tr><td>Cell editor</td><td><kbd>Tab</kbd> or <kbd>Shift</kbd>+<kbd>Tab</kbd></td><td>Save and go to the next or previous cell</td></tr>
+<tr><td>Cell editor</td><td><kbd>Esc</kbd></td><td>Cancel</td></tr>
+<tr><td>SQL editor</td><td><kbd>Ctrl</kbd>+<kbd>Enter</kbd></td><td>Run the text or the selection</td></tr>
+<tr><td>SQL editor</td><td><kbd>Ctrl</kbd>+<kbd>Space</kbd></td><td>Open suggestions</td></tr>
+<tr><td>SQL editor</td><td><kbd>Tab</kbd></td><td>Accept the suggestion or insert two spaces</td></tr>
+</tbody>
+</table></div>
+</section>
+
+<section id="problemas-en" aria-labelledby="h-problemas-en">
+<h2 id="h-problemas-en">Limitations and troubleshooting</h2>
+<h3>Limitations</h3>
+<ul>
+<li><strong>Large databases:</strong> the whole file is loaded into memory, so databases of several gigabytes are not suitable.</li>
+<li><strong>Long queries:</strong> the screen freezes until the query finishes.</li>
+<li><strong>Concurrent access:</strong> the app works on a copy and does not see changes another program makes after opening.</li>
+<li><strong>Browsers:</strong> the app was tested in Chromium. Use in Firefox and Safari has not been tested.</li>
+<li><strong>Encrypted databases:</strong> not supported.</li>
+</ul>
+<h3>Common problems</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Symptom</th><th scope="col">Likely cause</th><th scope="col">What to do</th></tr></thead>
+<tbody>
+<tr><td>“não é um banco SQLite válido” (not a valid SQLite database)</td><td>The file is of another type or is encrypted.</td><td>Check the file. Encrypted databases must first be decrypted in another program.</td></tr>
+<tr><td>Recent data does not appear</td><td>It is in the <code>-wal</code> file.</td><td>Close the program that uses the database, so that it transfers the data, and open it again.</td></tr>
+<tr><td><code>FOREIGN KEY constraint failed</code></td><td>Another table references the record, or the value given does not exist in the source table.</td><td>Adjust the related records. As a last resort, turn off the option and run the key check afterwards.</td></tr>
+<tr><td><code>UNIQUE constraint failed</code></td><td>The value already exists in the column.</td><td>Use another value or correct the existing record.</td></tr>
+<tr><td><code>NOT NULL constraint failed</code></td><td>A required column has no value.</td><td>Give the value in the form or the command.</td></tr>
+<tr><td>“Não foi possível salvar” (could not save)</td><td>The browser did not get permission, or another program is locking the file.</td><td>Grant permission and close the other program, or use <strong>Salvar como…</strong>. The changes stay in memory.</td></tr>
+<tr><td><strong>+ Linha</strong> disabled</td><td>It is a view or a table with no row identification.</td><td>Use the SQL tab.</td></tr>
+<tr><td>CSV with garbled accents</td><td>The file is not in UTF-8.</td><td>Convert it to UTF-8 before importing.</td></tr>
+<tr><td>Numeric column treated as text after import</td><td>There is a decimal comma or a non-numeric value.</td><td>Replace the comma with a point in the file or convert with <code>UPDATE</code>.</td></tr>
+<tr><td>Saving downloads a copy instead of writing to the file</td><td>The browser does not offer direct writing.</td><td>Use Chrome or Edge and open the file with <strong>Abrir…</strong> or by dragging it.</td></tr>
+</tbody>
+</table></div>
+</section>
+
+<section id="revisao-en" aria-labelledby="h-revisao-en">
+<h2 id="h-revisao-en">Quick review</h2>
+<p>Try to answer before opening each question.</p>
+<div class="quiz">
+<details><summary>1. I edited several cells and closed the tab. Did the file change?</summary><p>No. Edits stay in memory until you save, and the app warns you on closing with pending changes.</p></details>
+<details><summary>2. How do I undo only the last edit?</summary><p>There is no step-by-step undo. Correct it by hand or use <strong>Reverter</strong>, which returns to the last saved state.</p></details>
+<details><summary>3. How do I find rows with no e-mail?</summary><p>Type <code>NULL</code> in the filter of the <code>email</code> column.</p></details>
+<details><summary>4. What happens if the third of five commands fails?</summary><p>Execution stops. The first two remain applied, unless they are in a transaction undone with <code>ROLLBACK</code>.</p></details>
+<details><summary>5. Why does the postal code <code>01310</code> keep its zero when a CSV is imported?</summary><p>Because values with a leading zero make the column be created as TEXT.</p></details>
+<details><summary>6. What is the most complete way to make a backup?</summary><p><strong>Salvar como…</strong>, because the file preserves everything, including virtual tables, which the <code>.sql</code> script does not carry in full.</p></details>
+</div>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="referencias-en" aria-labelledby="h-referencias-en">
+<h2 id="h-referencias-en">References</h2>
+<ol class="refs">
+<li id="ref-1-en"><strong>Giovani Perotto Mesquita</strong>, “SQLite Manager”, single-file HTML application, <a href="sqlite-manager.html">giovanipm.github.io/sqlite-manager.html</a>.</li>
+<li id="ref-2-en"><strong>sql.js</strong> “sql.js: SQLite compiled to JavaScript”, accessed on 30 October 2026, <a href="https://github.com/sql-js/sql.js" rel="noopener">github.com/sql-js/sql.js</a>.</li>
+<li id="ref-3-en"><strong>SQLite</strong> “Datatypes In SQLite”, SQLite documentation, accessed on 30 October 2026, <a href="https://www.sqlite.org/datatype3.html" rel="noopener">sqlite.org/datatype3.html</a>.</li>
+<li id="ref-4-en"><strong>SQLite</strong> “SQLite Foreign Key Support”, SQLite documentation, accessed on 30 October 2026, <a href="https://www.sqlite.org/foreignkeys.html" rel="noopener">sqlite.org/foreignkeys.html</a>.</li>
+<li id="ref-5-en"><strong>SQLite</strong> “Write-Ahead Logging”, SQLite documentation, accessed on 30 October 2026, <a href="https://www.sqlite.org/wal.html" rel="noopener">sqlite.org/wal.html</a>.</li>
+<li id="ref-6-en"><strong>SQLite</strong> “ALTER TABLE”, SQLite documentation, accessed on 30 October 2026, <a href="https://www.sqlite.org/lang_altertable.html" rel="noopener">sqlite.org/lang_altertable.html</a>.</li>
+<li id="ref-7-en"><strong>MDN Web Docs</strong> “File System API”, accessed on 30 October 2026, <a href="https://developer.mozilla.org/en-US/docs/Web/API/File_System_API" rel="noopener">developer.mozilla.org/en-US/docs/Web/API/File_System_API</a>.</li>
+</ol>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== IT ===================== -->
+<div id="it" role="tabpanel" aria-labelledby="tab-it" lang="it" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Progetti</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>SQLite Manager: manuale d'uso</h1>
+      <p class="dek">Come aprire, interrogare, modificare e salvare database SQLite nel browser, senza installare nulla: dal primo utilizzo alla manutenzione del database.</p>
+      <div class="byline">
+        <span>Di <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Pubblicato il <time datetime="2026-10-30">30/10/2026</time></span>
+        <span class="credit">Rivisto e formattato con Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-it">
+    <h2 id="toc-it">Indice</h2>
+    <ol>
+      <li><a href="#intro-it">Che cos'è SQLite Manager</a></li>
+      <li><a href="#inicio-it">Primi passi</a></li>
+      <li><a href="#interface-it">L'interfaccia</a></li>
+      <li><a href="#arquivos-it">Aprire, salvare e ripristinare</a></li>
+      <li><a href="#dados-it">La scheda Dados (dati)</a></li>
+      <li><a href="#estrutura-it">La scheda Estrutura (struttura)</a></li>
+      <li><a href="#sql-it">La scheda SQL</a></li>
+      <li><a href="#importar-it">Importare ed esportare</a></li>
+      <li><a href="#banco-it">La scheda Banco (database)</a></li>
+      <li><a href="#atalhos-it">Scorciatoie da tastiera</a></li>
+      <li><a href="#problemas-it">Limiti e risoluzione dei problemi</a></li>
+      <li><a href="#revisao-it">Ripasso rapido</a></li>
+      <li><a href="#referencias-it">Riferimenti</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-it" aria-labelledby="h-intro-it">
+<h2 id="h-intro-it">Che cos'è SQLite Manager</h2>
+<p>SQLite Manager apre, interroga, modifica e salva database SQLite usando solo il browser. È un unico file HTML: niente installazione, server o account. <sup><a href="#ref-1-it">[1]</a></sup> Il motore del database è lo stesso SQLite, compilato in WebAssembly e incorporato nel file. <sup><a href="#ref-2-it">[2]</a></sup></p>
+<p><a class="launch" href="sqlite-manager.html">Apri SQLite Manager <span aria-hidden="true">→</span></a></p>
+<aside class="note"><p>L'interfaccia dell'app è solo in portoghese. Questo manuale indica ogni pulsante con il nome portoghese, e la <a href="#interface-it">sezione sull'interfaccia</a> contiene una tabella con le traduzioni.</p></aside>
+<figure>
+<img src="rc_images/SQLiteManagerInicio.png" alt="Schermata iniziale di SQLite Manager, con i pulsanti Abrir banco, Novo banco vazio e Banco de exemplo" width="1920" height="1080" loading="lazy">
+<figcaption>La schermata iniziale: trascina un file o scegli una delle tre opzioni.</figcaption>
+</figure>
+<p>Questo manuale è per chi vuole gestire un database senza installare nulla. Le attività quotidiane non richiedono SQL; la scheda SQL è per chi conosce già il linguaggio.</p>
+<h3>Che cosa serve</h3>
+<ul>
+<li>Un browser aggiornato. Sono consigliati Chrome ed Edge, perché scrivono direttamente nel file originale.</li>
+<li>Il file <code>sqlite-manager.html</code>. Usa il link qui sopra, oppure salva la pagina e apri la copia, che funziona senza internet.</li>
+</ul>
+<h3>Come l'app tratta i tuoi dati</h3>
+<ul>
+<li><strong>Nulla esce dal tuo computer.</strong> Il database viene elaborato nel browser, e il file HTML blocca le connessioni di rete.</li>
+<li><strong>Il database viene modificato in memoria.</strong> Il file su disco cambia solo quando salvi.</li>
+<li><strong>Il browser conserva poche cose.</strong> Tema, dimensione della pagina, testo dell'editor SQL e cronologia delle query restano nella memoria locale. Il contenuto del database no, ma i valori scritti nelle query restano nella cronologia.</li>
+</ul>
+<aside class="note"><p>Su un computer condiviso, svuota la cronologia e l'editor SQL alla fine: <strong>Histórico ▾ → Limpar histórico</strong> (svuota la cronologia), poi <strong>Limpar</strong> (svuota).</p></aside>
+</section>
+
+<section id="inicio-it" aria-labelledby="h-inicio-it">
+<h2 id="h-inicio-it">Primi passi</h2>
+<p>In circa dieci minuti, questo percorso mostra le funzioni principali con il database di esempio, senza rischi per i dati reali. L'esempio contiene clienti (<code>clientes</code>), prodotti (<code>produtos</code>), ordini (<code>pedidos</code>) e righe d'ordine (<code>itens_pedido</code>).</p>
+<h3>1. Apri l'esempio</h3>
+<ol>
+<li>Apri SQLite Manager.</li>
+<li>Fai clic su <strong>Banco de exemplo</strong> (database di esempio). La tabella <code>clientes</code> compare nella scheda <strong>Dados</strong> (dati).</li>
+</ol>
+<h3>2. Trova un record</h3>
+<ol>
+<li>Nella riga dei filtri, sotto il titolo della colonna <code>cidade</code> (città), digita <code>recife</code>. Resta solo Carla Nunes.</li>
+<li>Cancella il filtro per rivedere le cinque righe.</li>
+<li>Fai clic sul titolo della colonna <code>nome</code> per ordinare. Fai di nuovo clic per invertire e una terza volta per annullare l'ordinamento.</li>
+</ol>
+<h3>3. Modifica e inserisci dati</h3>
+<ol>
+<li>Fai doppio clic sulla città di Ana Ribeiro, digita <code>Campinas</code> e premi <kbd>Invio</kbd>. L'indicatore <strong>● não salvo</strong> (non salvato) compare nella barra superiore.</li>
+<li>Fai clic su <strong>+ Linha</strong> (aggiungi riga), compila <code>nome</code> e fai clic su <strong>Inserir</strong> (inserisci). Le altre colonne ricevono il valore predefinito.</li>
+</ol>
+<h3>4. Segui un riferimento</h3>
+<ol>
+<li>Nell'elenco a sinistra, fai clic su <code>pedidos</code>.</li>
+<li>Nella colonna <code>cliente_id</code>, fai clic sulla freccia <strong>↗</strong> accanto a un valore. L'app apre <code>clientes</code> filtrata su quel cliente.</li>
+</ol>
+<h3>5. Esegui SQL</h3>
+<ol>
+<li>Apri la scheda <strong>SQL</strong>, scrivi la query qui sotto e premi <kbd>Ctrl</kbd>+<kbd>Invio</kbd>. Il risultato mostra il totale per cliente.
+<pre class="code"><code>SELECT * FROM vw_total_por_cliente;</code></pre></li>
+<li>Sostituisci il testo con il comando qui sotto ed eseguilo. Il messaggio indica 2 righe modificate: la riga inserita e la giacenza ridotta dal trigger <code>trg_baixa_estoque</code>.
+<pre class="code"><code>INSERT INTO itens_pedido VALUES (4, 1, 1, 349.9);</code></pre></li>
+<li>Fai clic su <code>produtos</code>. Si apre la scheda <strong>Dados</strong>, e la giacenza (<code>estoque</code>) della tastiera è scesa da 39 a 38.</li>
+</ol>
+<h3>6. Annulla o salva</h3>
+<ol>
+<li>Per annullare tutto, fai clic su <strong>Reverter</strong> (ripristina) e conferma. L'esempio torna allo stato iniziale.</li>
+<li>Per conservare una copia, fai clic su <strong>Salvar</strong> (salva) e scegli dove scriverla.</li>
+</ol>
+</section>
+
+<section id="interface-it" aria-labelledby="h-interface-it">
+<h2 id="h-interface-it">L'interfaccia</h2>
+<p>Lo schermo ha quattro aree fisse, e le quattro schede cambiano solo quella centrale. Con un database aperto, lo schermo si presenta così:</p>
+<figure>
+<img src="rc_images/SQLiteManagerDados.png" alt="Schermata principale con la barra superiore, l'elenco degli oggetti a sinistra, le schede Dados, Estrutura, SQL e Banco, e la griglia con la tabella clientes" width="1920" height="1080" loading="lazy">
+<figcaption>La schermata principale con la tabella clientes aperta nella scheda Dados.</figcaption>
+</figure>
+<dl class="glossary">
+<dt>Barra superiore</dt><dd>Azioni sul file, importazione CSV, esportazione SQL e il pulsante <strong>◐</strong>, che alterna tema chiaro e scuro.</dd>
+<dt>Elenco degli oggetti</dt><dd>Tabelle, viste, indici, trigger e tabelle di sistema, con il numero di righe di ogni tabella. Il campo in alto filtra l'elenco, e <strong>+ Tabela</strong> crea una tabella.</dd>
+<dt>Schede</dt><dd><strong>Dados</strong> mostra le righe, <strong>Estrutura</strong> mostra e modifica lo schema, <strong>SQL</strong> esegue comandi e <strong>Banco</strong> contiene informazioni e manutenzione.</dd>
+<dt>Barra di stato</dt><dd>Versione di SQLite, dimensione del database, avviso di transazione aperta e l'opzione <strong>Chaves estrangeiras</strong>.</dd>
+</dl>
+<h3>Nomi dei pulsanti</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Nell'app</th><th scope="col">Significato</th><th scope="col">Nell'app</th><th scope="col">Significato</th></tr></thead>
+<tbody>
+<tr><td>Novo</td><td>Nuovo</td><td>Dados</td><td>Dati</td></tr>
+<tr><td>Abrir…</td><td>Apri</td><td>Estrutura</td><td>Struttura</td></tr>
+<tr><td>Salvar</td><td>Salva</td><td>Banco</td><td>Database</td></tr>
+<tr><td>Salvar como…</td><td>Salva con nome</td><td>+ Linha / Inserir</td><td>Aggiungi riga / Inserisci</td></tr>
+<tr><td>Reverter</td><td>Ripristina</td><td>Excluir</td><td>Elimina</td></tr>
+<tr><td>Importar CSV…</td><td>Importa CSV</td><td>Esvaziar</td><td>Svuota</td></tr>
+<tr><td>Exportar .sql</td><td>Esporta .sql</td><td>Renomear</td><td>Rinomina</td></tr>
+<tr><td>+ Tabela</td><td>Aggiungi tabella</td><td>+ Coluna / + Índice</td><td>Aggiungi colonna / indice</td></tr>
+<tr><td>Executar</td><td>Esegui</td><td>Plano de execução</td><td>Piano di esecuzione</td></tr>
+<tr><td>Histórico</td><td>Cronologia</td><td>Limpar</td><td>Svuota</td></tr>
+<tr><td>Baixar</td><td>Scarica</td><td>Arquivo…</td><td>File</td></tr>
+<tr><td>Cancelar</td><td>Annulla</td><td>Chaves estrangeiras</td><td>Chiavi esterne</td></tr>
+<tr><td>Verificar integridade</td><td>Verifica integrità</td><td>Verificar chaves estrangeiras</td><td>Verifica chiavi esterne</td></tr>
+</tbody>
+</table></div>
+</section>
+
+<section id="arquivos-it" aria-labelledby="h-arquivos-it">
+<h2 id="h-arquivos-it">Aprire, salvare e ripristinare</h2>
+<p>Tutto ciò che fai modifica una copia in memoria; il file su disco cambia solo quando salvi. Questo è il concetto più importante dell'app:</p>
+<figure>
+<img src="rc_images/SQLiteManagerFluxo-it.svg" alt="Diagramma: Abrir copia il file dal disco al database in memoria; Salvar lo riscrive; modifiche e SQL cambiano il database in memoria; Reverter lo riporta all'ultimo stato salvato; Importar CSV porta dati e Exportar produce CSV, JSON o SQL" loading="lazy">
+<figcaption>Il database in memoria è al centro: il file su disco cambia solo al salvataggio. Le frecce usano i nomi dei pulsanti dell'app.</figcaption>
+</figure>
+<h3>Aprire o creare un database</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Come</th><th scope="col">Che cosa succede</th></tr></thead>
+<tbody>
+<tr><th scope="row">Abrir… (apri)</th><td>Sceglie un file <code>.db</code>, <code>.db3</code>, <code>.sqlite</code>, <code>.sqlite3</code>, <code>.s3db</code> o <code>.sl3</code>. Scorciatoia: <kbd>Ctrl</kbd>+<kbd>O</kbd>.</td></tr>
+<tr><th scope="row">Trascina e rilascia</th><td>Rilascia il file in un punto qualsiasi della finestra.</td></tr>
+<tr><th scope="row">Novo (nuovo)</th><td>Crea un database vuoto chiamato <code>novo.sqlite</code> e apre la scheda SQL.</td></tr>
+<tr><th scope="row">Banco de exemplo (esempio)</th><td>Disponibile nella schermata iniziale. Contiene tabelle, una vista, un indice e un trigger per esercitarsi.</td></tr>
+</tbody>
+</table></div>
+<p>Se il database corrente ha modifiche non salvate, l'app chiede conferma prima di cambiare. I file che non sono SQLite, o che sono cifrati, vengono rifiutati, e il database corrente resta aperto.</p>
+<h3>Salvare</h3>
+<p>L'indicatore <strong>● não salvo</strong> mostra che alcune modifiche esistono solo in memoria. L'app avvisa anche se provi a chiudere la scheda in questa situazione.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Azione</th><th scope="col">Chrome ed Edge</th><th scope="col">Altri browser</th></tr></thead>
+<tbody>
+<tr><th scope="row">Salvar (<kbd>Ctrl</kbd>+<kbd>S</kbd>)</th><td>Scrive nel file originale. Il browser chiede il permesso la prima volta. <sup><a href="#ref-7-it">[7]</a></sup></td><td>Scarica una copia nella cartella dei download.</td></tr>
+<tr><th scope="row">Salvar como… (salva con nome)</th><td>Chiede nome e posizione, e quel file diventa quello corrente.</td><td>Scarica una copia nella cartella dei download.</td></tr>
+</tbody>
+</table></div>
+<p>In Chrome ed Edge, se un altro programma ha modificato il file dopo l'apertura, l'app chiede conferma prima di sostituirlo. Per conservare entrambe le versioni, annulla e usa <strong>Salvar como…</strong>.</p>
+<aside class="note"><p>Il salvataggio riavvia la connessione al database. Le tabelle temporanee e le impostazioni <code>PRAGMA</code> della sessione vanno perse; viene riapplicata solo l'opzione delle chiavi esterne.</p></aside>
+<h3>Ripristinare</h3>
+<p><strong>Reverter</strong> scarta tutto ciò che è stato fatto dall'apertura o dall'ultimo salvataggio. È l'unico “annulla” dell'app: non esiste un annulla passo per passo. Salva prima di una modifica rischiosa, così il punto di ritorno è subito prima di essa.</p>
+<h3>Database in modalità WAL</h3>
+<p>Alcuni programmi usano la modalità WAL, che tiene le modifiche recenti in un file <code>-wal</code> accanto al database. <sup><a href="#ref-5-it">[5]</a></sup> Il browser riceve solo il file principale, quindi l'app avvisa all'apertura e prende due misure:</p>
+<ul>
+<li>Apre il database senza il contenuto del file <code>-wal</code>. Per vedere i dati più recenti, chiudi prima il programma che usa il database.</li>
+<li>Non scrive sull'originale. <strong>Salvar</strong> chiede un nuovo file, e il nome suggerito termina con <code>-copia</code>. Non sovrascrivere l'originale, perché un vecchio file <code>-wal</code> accanto a esso può corrompere i dati.</li>
+</ul>
+</section>
+
+<section id="dados-it" aria-labelledby="h-dados-it">
+<h2 id="h-dados-it">La scheda Dados (dati)</h2>
+<p>La scheda Dados mostra le righe della tabella o vista selezionata, e lì puoi cercare, modificare, inserire ed eliminare senza scrivere SQL.</p>
+<h3>Navigare e ordinare</h3>
+<ul>
+<li>I controlli sotto la griglia cambiano pagina. Scegli 50, 100, 500 o 1000 righe per pagina.</li>
+<li>Fai clic sul titolo di una colonna per ordinare: crescente, decrescente e senza ordine. L'ordinamento usa una colonna alla volta.</li>
+<li>L'indicatore <strong>PK</strong> identifica le colonne della chiave primaria.</li>
+<li>I valori nulli appaiono come <em>NULL</em> in corsivo, e i dati binari come <em>BLOB</em> con la dimensione.</li>
+</ul>
+<h3>Filtrare e cercare</h3>
+<p>Ogni colonna ha un campo filtro, e i filtri su colonne diverse valgono insieme. Il campo <strong>Buscar em todas as colunas</strong> cerca il testo in qualsiasi colonna. <strong>Limpar filtros</strong> li rimuove tutti.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Digiti</th><th scope="col">Trova</th></tr></thead>
+<tbody>
+<tr><td><code>ana</code></td><td>Valori che contengono “ana”.</td></tr>
+<tr><td><code>=Recife</code> o <code>!=Recife</code></td><td>Valore uguale o diverso, rispettando le maiuscole.</td></tr>
+<tr><td><code>&gt;10</code>, <code>&gt;=10</code>, <code>&lt;10</code>, <code>&lt;=10</code></td><td>Confronti, anche con date nel formato <code>2026-10-30</code>.</td></tr>
+<tr><td><code>NULL</code> o <code>!NULL</code></td><td>Celle vuote o compilate.</td></tr>
+</tbody>
+</table></div>
+<aside class="note"><p>Il filtro “contiene” ignora le maiuscole solo per le lettere non accentate: <code>joão</code> non trova <code>JOÃO</code>.</p></aside>
+<h3>Modificare una cella</h3>
+<p>Fai doppio clic sulla cella. Con la tastiera, fai un clic, spostati con le frecce e premi <kbd>Invio</kbd> o <kbd>F2</kbd>.</p>
+<figure>
+<img src="rc_images/SQLiteManagerEditorCelula.png" alt="Editor di cella aperto sulla griglia, con il campo di testo e i pulsanti NULL, Arquivo, Cancelar e Salvar" width="1920" height="1080" loading="lazy">
+<figcaption>L'editor di cella. Un clic all'esterno annulla la modifica.</figcaption>
+</figure>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Nell'editor</th><th scope="col">Effetto</th></tr></thead>
+<tbody>
+<tr><td><kbd>Invio</kbd></td><td>Salva.</td></tr>
+<tr><td><kbd>Maiusc</kbd>+<kbd>Invio</kbd></td><td>Va a capo.</td></tr>
+<tr><td><kbd>Tab</kbd> e <kbd>Maiusc</kbd>+<kbd>Tab</kbd></td><td>Salva e passa alla cella successiva o precedente.</td></tr>
+<tr><td><kbd>Esc</kbd></td><td>Annulla.</td></tr>
+<tr><td>Pulsante <strong>NULL</strong></td><td>Scrive NULL.</td></tr>
+<tr><td>Pulsante <strong>Arquivo…</strong> (file)</td><td>Scrive il contenuto di un file come BLOB.</td></tr>
+</tbody>
+</table></div>
+<p>La differenza tra NULL e testo vuoto è importante. In una cella NULL, confermare senza digitare mantiene il NULL. Per scrivervi testo vuoto, usa la scheda SQL. In una cella con un valore, cancellare il testo e salvare scrive testo vuoto.</p>
+<p>SQLite converte il valore secondo il tipo della colonna: <code>42</code> diventa un numero in una colonna INTEGER. <sup><a href="#ref-3-it">[3]</a></sup> Un testo come <code>abc</code> può essere accettato nella stessa colonna, a meno che la tabella non sia <code>STRICT</code>.</p>
+<h3>Lavorare con i BLOB</h3>
+<p>I dati binari non si modificano come testo. L'editor mostra il contenuto in esadecimale o, per le immagini PNG, JPEG, GIF e WebP, un'anteprima. Usa <strong>Baixar</strong> (scarica) per estrarre il file e <strong>Arquivo…</strong> per sostituirlo.</p>
+<h3>Inserire righe</h3>
+<p>Fai clic su <strong>+ Linha</strong>. Ogni colonna ha una modalità, e digitare la porta automaticamente su <em>valor</em>:</p>
+<ul>
+<li><strong>valor</strong> (valore) scrive ciò che è stato digitato, anche se vuoto.</li>
+<li><strong>NULL</strong> scrive il valore nullo.</li>
+<li><strong>padrão</strong> (predefinito) lascia decidere a SQLite: genera il numero della chiave automatica, applica il <code>DEFAULT</code> o scrive NULL.</li>
+</ul>
+<p>Spunta <strong>Continuar adicionando</strong> (continua ad aggiungere) per inserire più righe di seguito. Le colonne generate non compaiono nel modulo. Per scrivere un BLOB, inserisci la riga e poi modifica la cella.</p>
+<h3>Eliminare righe</h3>
+<ol>
+<li>Spunta le caselle delle righe desiderate. La casella dell'intestazione seleziona tutta la pagina.</li>
+<li>Fai clic su <strong>Excluir</strong> (elimina) e conferma.</li>
+</ol>
+<p>L'eliminazione è tutto o niente: se una riga fallisce, non viene eliminata nessuna. La selezione vale solo per la pagina corrente e si azzera quando cambi pagina, filtri, ordini o modifichi.</p>
+<h3>Seguire le chiavi esterne</h3>
+<p>Le colonne con chiave esterna mostrano <strong>↗</strong> accanto al valore. Il clic apre la tabella di riferimento, filtrata sul record corrispondente.</p>
+<h3>Quando la griglia è di sola lettura</h3>
+<p>Le viste non sono mai modificabili in questa scheda, e nemmeno le colonne generate. Una tabella è di sola lettura quando le sue righe non si possono identificare: non ha chiave primaria e ha colonne chiamate <code>rowid</code>, <code>_rowid_</code> e <code>oid</code>. In questo caso, usa la scheda SQL.</p>
+</section>
+
+<section id="estrutura-it" aria-labelledby="h-estrutura-it">
+<h2 id="h-estrutura-it">La scheda Estrutura (struttura)</h2>
+<p>La scheda Estrutura mostra lo schema dell'oggetto selezionato e modifica tabelle, colonne e indici senza scrivere SQL.</p>
+<figure>
+<img src="rc_images/SQLiteManagerEstrutura.png" alt="Scheda Estrutura della tabella clientes, con l'elenco delle colonne, gli indici automatici e il comando CREATE TABLE" width="1920" height="1080" loading="lazy">
+<figcaption>Colonne, indici, trigger e il DDL, il comando SQL che definisce l'oggetto.</figcaption>
+</figure>
+<h3>Creare una tabella</h3>
+<ol>
+<li>Fai clic su <strong>+ Tabela</strong> e dai un nome alla tabella.</li>
+<li>Compila una riga per colonna. La prima è già impostata come <code>id INTEGER</code> con chiave primaria.</li>
+<li>Controlla il comando in <strong>SQL que será executado</strong> (SQL che verrà eseguito) e fai clic su <strong>Criar tabela</strong> (crea tabella).</li>
+</ol>
+<figure>
+<img src="rc_images/SQLiteManagerNovaTabela.png" alt="Finestra Nova tabela con la tabella fornecedores, le colonne id e nome e l'anteprima del comando CREATE TABLE" width="1920" height="1080" loading="lazy">
+<figcaption>L'anteprima mostra esattamente l'SQL che verrà eseguito.</figcaption>
+</figure>
+<dl class="glossary">
+<dt>PK</dt><dd>Chiave primaria. Spuntala su più colonne per creare una chiave composta.</dd>
+<dt>Auto</dt><dd>Aggiunge <code>AUTOINCREMENT</code>. Richiede una sola colonna PK di tipo <code>INTEGER</code>.</dd>
+<dt>Not null</dt><dd>La colonna non accetta NULL.</dd>
+<dt>Único (unico)</dt><dd>Non consente valori ripetuti.</dd>
+<dt>Padrão (predefinito)</dt><dd>Valore usato quando non ne viene indicato alcuno. Numeri, <code>NULL</code>, <code>CURRENT_TIMESTAMP</code>, testi tra apici singoli ed espressioni tra parentesi sono usati così come sono; il resto diventa testo.</dd>
+<dt>Referência (riferimento)</dt><dd>Chiave esterna, nel formato <code>tabella(colonna)</code>.</dd>
+</dl>
+<h3>Modificare una tabella esistente</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Azione</th><th scope="col">Dove</th><th scope="col">Nota</th></tr></thead>
+<tbody>
+<tr><th scope="row">Aggiungere una colonna</th><td><strong>+ Coluna</strong></td><td>Con <code>NOT NULL</code>, è obbligatorio un valore predefinito.</td></tr>
+<tr><th scope="row">Rinominare una colonna</th><td><strong>renomear</strong>, sulla riga della colonna</td><td>SQLite aggiorna i riferimenti nello schema.</td></tr>
+<tr><th scope="row">Eliminare una colonna</th><td><strong>excluir</strong>, sulla riga della colonna</td><td>Rifiutato se la colonna è chiave primaria, unica o usata da un indice. <sup><a href="#ref-6-it">[6]</a></sup></td></tr>
+<tr><th scope="row">Creare un indice</th><td><strong>+ Índice</strong></td><td>Le colonne seguono l'ordine della tabella; per un altro ordine, usa SQL.</td></tr>
+<tr><th scope="row">Rinominare la tabella</th><td><strong>Renomear</strong></td><td></td></tr>
+<tr><th scope="row">Svuotare la tabella</th><td><strong>Esvaziar</strong></td><td>Elimina le righe e mantiene la struttura.</td></tr>
+<tr><th scope="row">Eliminare un oggetto</th><td><strong>Excluir tabela</strong>, <strong>view</strong>, <strong>índice</strong> o <strong>trigger</strong></td><td>Con le chiavi esterne attive, eliminare una tabella applica le regole <code>ON DELETE</code> di chi la referenzia.</td></tr>
+</tbody>
+</table></div>
+<h3>Cambiare il tipo di una colonna</h3>
+<p>SQLite non cambia direttamente il tipo di una colonna. <sup><a href="#ref-6-it">[6]</a></sup> Ricrea la tabella nella scheda SQL, dentro una transazione. Il pulsante <strong>Abrir no editor SQL</strong> (apri nell'editor SQL) copia il DDL attuale come punto di partenza.</p>
+<pre class="code"><code>-- Esempio: la colonna idade di contatos passa da TEXT a INTEGER
+BEGIN;
+CREATE TABLE contatos_novo (id INTEGER PRIMARY KEY, nome TEXT, idade INTEGER);
+INSERT INTO contatos_novo SELECT id, nome, idade FROM contatos;
+DROP TABLE contatos;
+ALTER TABLE contatos_novo RENAME TO contatos;
+COMMIT;</code></pre>
+<p>Ricrea poi gli indici e i trigger della tabella, perché <code>DROP TABLE</code> li rimuove. Se altre tabelle la referenziano, disattiva <strong>Chaves estrangeiras</strong> prima di <code>BEGIN</code>; riattivala alla fine ed esegui <strong>Verificar chaves estrangeiras</strong>.</p>
+<h3>Viste e trigger</h3>
+<p>Crea viste e trigger nella scheda SQL. Compaiono poi nell'elenco degli oggetti, dove la scheda Estrutura mostra il DDL e permette di eliminarli.</p>
+</section>
+
+<section id="sql-it" aria-labelledby="h-sql-it">
+<h2 id="h-sql-it">La scheda SQL</h2>
+<p>La scheda SQL esegue qualsiasi comando accettato da SQLite, uno o più alla volta, e mostra i risultati sotto l'editor.</p>
+<figure>
+<img src="rc_images/SQLiteManagerSql.png" alt="Scheda SQL con una query su clienti e ordini nell'editor e la tabella dei risultati sotto" width="1920" height="1080" loading="lazy">
+<figcaption>L'editor con evidenziazione della sintassi e i risultati della query.</figcaption>
+</figure>
+<h3>Eseguire comandi</h3>
+<ul>
+<li><kbd>Ctrl</kbd>+<kbd>Invio</kbd> o <strong>▶ Executar</strong> eseguono tutto il testo. Con una parte selezionata, viene eseguita solo quella.</li>
+<li>Separa i comandi con <code>;</code>. Ogni query crea una scheda di risultati.</li>
+<li>Se un comando fallisce, l'esecuzione si ferma lì e l'errore indica quale. I comandi precedenti restano applicati; per evitarlo, usa una transazione.</li>
+<li>Il conteggio delle righe modificate include le modifiche fatte dai trigger.</li>
+</ul>
+<h3>Scrivere più in fretta</h3>
+<ul>
+<li>I suggerimenti compaiono dopo due lettere, o subito dopo un punto, come in <code>c.</code>, e riconoscono gli alias delle tabelle.</li>
+<li><kbd>Ctrl</kbd>+<kbd>Spazio</kbd> apre i suggerimenti. <kbd>↑</kbd> e <kbd>↓</kbd> scelgono, <kbd>Tab</kbd> o <kbd>Invio</kbd> accettano ed <kbd>Esc</kbd> chiude.</li>
+<li>Fuori dai suggerimenti, <kbd>Tab</kbd> inserisce due spazi.</li>
+<li>Il testo dell'editor è ancora lì quando riapri l'app.</li>
+</ul>
+<h3>Risultati</h3>
+<p>I risultati sono divisi in pagine da 200 righe, e i pulsanti <strong>CSV</strong> e <strong>JSON</strong> esportano l'intero insieme. Ogni query conserva fino a 100.000 righe e avvisa quando raggiunge il limite. Per risultati più grandi, affina la query o usa <code>LIMIT</code>.</p>
+<h3>Piano di esecuzione</h3>
+<p><strong>Plano de execução</strong> mostra come SQLite risolverebbe il primo comando, senza eseguirlo. Nei piani, <code>SCAN</code> indica la lettura dell'intera tabella e <code>SEARCH</code>, in genere, l'uso di un indice o di una chiave.</p>
+<h3>Transazioni</h3>
+<p>Usa le transazioni per applicare più modifiche come una sola. Dopo <code>BEGIN</code>, la barra di stato mostra <strong>Transação aberta</strong> (transazione aperta) con i pulsanti <strong>COMMIT</strong> e <strong>ROLLBACK</strong>.</p>
+<pre class="code"><code>BEGIN;
+UPDATE produtos SET preco = preco * 1.10 WHERE categoria = 'Acessórios';
+-- controlla il risultato, poi fai clic su COMMIT o ROLLBACK nella barra di stato</code></pre>
+<p>Le modifiche fatte nella scheda Dados durante la transazione ne fanno parte. Se salvi con una transazione aperta, l'app chiede se fare prima <code>COMMIT</code> o <code>ROLLBACK</code>.</p>
+<h3>Cronologia e file</h3>
+<ul>
+<li><strong>Histórico ▾</strong> conserva gli ultimi 50 comandi eseguiti. Il clic li riporta nell'editor.</li>
+<li><strong>Abrir .sql…</strong> carica uno script nell'editor senza eseguirlo, e <strong>Baixar .sql</strong> salva il testo dell'editor.</li>
+<li><strong>Limpar</strong> cancella il testo dell'editor.</li>
+</ul>
+<h3>Esempi utili</h3>
+<pre class="code"><code>-- Creare una vista
+CREATE VIEW vw_estoque_baixo AS
+  SELECT nome, estoque FROM produtos WHERE estoque &lt; 20;
+
+-- Creare un trigger
+CREATE TRIGGER trg_status AFTER UPDATE OF status ON pedidos
+BEGIN
+  UPDATE pedidos SET data = date('now') WHERE id = NEW.id;
+END;
+
+-- Trovare valori duplicati
+SELECT email, count(*) FROM clientes
+GROUP BY email HAVING count(*) &gt; 1;
+
+-- Scrivere testo vuoto in una cella NULL
+UPDATE clientes SET email = '' WHERE id = 5;</code></pre>
+</section>
+
+<section id="importar-it" aria-labelledby="h-importar-it">
+<h2 id="h-importar-it">Importare ed esportare</h2>
+<p>L'app importa CSV ed esporta CSV, JSON, SQL e il file stesso del database. L'importazione è tutto o niente: se una riga fallisce, non viene scritto nulla.</p>
+<h3>Importare un CSV</h3>
+<ol>
+<li>Fai clic su <strong>Importar CSV…</strong> e scegli il file, che deve essere in UTF-8.</li>
+<li>Controlla il <strong>Separador</strong> (separatore), rilevato automaticamente tra virgola, punto e virgola, tab e barra verticale.</li>
+<li>In <strong>Destino</strong> (destinazione), scegli <strong>Criar tabela nova</strong> (nuova tabella) o <strong>Adicionar em</strong> (aggiungi a) una tabella esistente.</li>
+<li>Imposta <strong>Primeira linha é o cabeçalho</strong> (la prima riga è l'intestazione) e <strong>Campos vazios viram NULL</strong> (i campi vuoti diventano NULL), controlla l'anteprima e fai clic su <strong>Importar</strong>.</li>
+</ol>
+<figure>
+<img src="rc_images/SQLiteManagerImportar.png" alt="Finestra Importar CSV con il separatore punto e virgola rilevato, l'opzione Criar tabela nova e l'anteprima dei dati" width="1920" height="1080" loading="lazy">
+<figcaption>L'anteprima mostra le prime righe prima di scrivere qualsiasi cosa.</figcaption>
+</figure>
+<p><strong>In una nuova tabella</strong>, l'app sceglie il tipo di ogni colonna tra INTEGER, REAL e TEXT osservando i valori. I valori con zero iniziale, come il codice postale <code>01310</code>, restano testo e conservano lo zero. Anche i numeri con virgola decimale, come <code>7,5</code>, restano testo.</p>
+<p><strong>In una tabella esistente</strong>, se tutti i nomi dell'intestazione esistono nella tabella, le colonne sono abbinate per nome. Altrimenti sono abbinate per posizione.</p>
+<h3>Esportare</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Formato</th><th scope="col">Dove</th><th scope="col">Che cosa include</th></tr></thead>
+<tbody>
+<tr><th scope="row">CSV, JSON o SQL di una tabella</th><td>Scheda <strong>Dados</strong>, pulsanti a destra</td><td>Tutte le pagine, rispettando filtri e ordine.</td></tr>
+<tr><th scope="row">CSV o JSON di un risultato</th><td>Scheda <strong>SQL</strong>, sotto il risultato</td><td>Tutte le righe conservate della query.</td></tr>
+<tr><th scope="row">Script dell'intero database</th><td><strong>Exportar .sql</strong></td><td>Struttura e dati, tranne il contenuto delle tabelle virtuali.</td></tr>
+<tr><th scope="row">File del database</th><td><strong>Salvar como…</strong></td><td>Tutto, comprese le tabelle virtuali.</td></tr>
+</tbody>
+</table></div>
+<p>Per un backup, preferisci <strong>Salvar como…</strong>, che conserva il database per intero.</p>
+<dl class="glossary">
+<dt>CSV</dt><dd>UTF-8 con BOM, separato da virgole. NULL diventa campo vuoto e BLOB diventa <code>0x</code> più esadecimale. Se Excel mette tutto in una colonna, importa dal suo menu dati e indica la virgola.</dd>
+<dt>JSON</dt><dd>Elenco di oggetti. BLOB diventa <code>{"$hex": "..."}</code>, e gli interi troppo grandi per JavaScript diventano testo, per non perdere precisione.</dd>
+<dt>SQL</dt><dd>Comandi <code>INSERT</code>; per l'intero database, anche il <code>CREATE</code> di ogni oggetto, dentro una transazione.</dd>
+</dl>
+</section>
+
+<section id="banco-it" aria-labelledby="h-banco-it">
+<h2 id="h-banco-it">La scheda Banco (database)</h2>
+<p>La scheda Banco riassume il file e riunisce verifiche e manutenzione. Conviene consultarla prima di un salvataggio importante.</p>
+<figure>
+<img src="rc_images/SQLiteManagerBanco.png" alt="Scheda Banco con l'elenco delle informazioni sul file e il risultato ok della verifica di integrità" width="1920" height="1080" loading="lazy">
+<figcaption>Informazioni sul database e risultato della verifica di integrità.</figcaption>
+</figure>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Pulsante</th><th scope="col">Che cosa fa</th><th scope="col">Quando usarlo</th></tr></thead>
+<tbody>
+<tr><th scope="row">Verificar integridade</th><td>Cerca danni nella struttura del file. Il risultato atteso è <code>ok</code>.</td><td>Quando ricevi un file o sospetti una corruzione.</td></tr>
+<tr><th scope="row">Verificar chaves estrangeiras</th><td>Elenca le righe che puntano a record inesistenti.</td><td>Dopo aver importato dati o lavorato con l'opzione disattivata.</td></tr>
+<tr><th scope="row">VACUUM</th><td>Ricostruisce il database e recupera le pagine libere.</td><td>Dopo aver eliminato molti dati.</td></tr>
+<tr><th scope="row">ANALYZE</th><td>Aggiorna le statistiche che guidano le query.</td><td>Dopo grandi caricamenti, o se le query rallentano.</td></tr>
+</tbody>
+</table></div>
+<p><strong>VACUUM</strong> e <strong>ANALYZE</strong> modificano il database, quindi poi bisogna salvare. <strong>VACUUM</strong> non viene eseguito con una transazione aperta.</p>
+<h3>Chiavi esterne</h3>
+<p>L'opzione <strong>Chaves estrangeiras</strong>, nella barra di stato, è attiva all'avvio, al contrario del comportamento predefinito di SQLite. <sup><a href="#ref-4-it">[4]</a></sup> Così, eliminare un record referenziato da un'altra tabella dà errore, invece di lasciare dati orfani. La scelta vale per l'app e non viene scritta nel file. Non cambia durante una transazione.</p>
+</section>
+
+<section id="atalhos-it" aria-labelledby="h-atalhos-it">
+<h2 id="h-atalhos-it">Scorciatoie da tastiera</h2>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Dove</th><th scope="col">Tasto</th><th scope="col">Azione</th></tr></thead>
+<tbody>
+<tr><td>Generale</td><td><kbd>Ctrl</kbd>+<kbd>S</kbd></td><td>Salva</td></tr>
+<tr><td>Generale</td><td><kbd>Ctrl</kbd>+<kbd>O</kbd></td><td>Apri</td></tr>
+<tr><td>Griglia</td><td><kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd></td><td>Spostarsi tra le celle</td></tr>
+<tr><td>Griglia</td><td><kbd>Invio</kbd> o <kbd>F2</kbd></td><td>Modificare la cella corrente</td></tr>
+<tr><td>Griglia</td><td><kbd>Ctrl</kbd>+<kbd>C</kbd></td><td>Copiare il valore della cella corrente</td></tr>
+<tr><td>Editor di cella</td><td><kbd>Invio</kbd></td><td>Salva</td></tr>
+<tr><td>Editor di cella</td><td><kbd>Maiusc</kbd>+<kbd>Invio</kbd></td><td>Andare a capo</td></tr>
+<tr><td>Editor di cella</td><td><kbd>Tab</kbd> o <kbd>Maiusc</kbd>+<kbd>Tab</kbd></td><td>Salvare e passare alla cella successiva o precedente</td></tr>
+<tr><td>Editor di cella</td><td><kbd>Esc</kbd></td><td>Annulla</td></tr>
+<tr><td>Editor SQL</td><td><kbd>Ctrl</kbd>+<kbd>Invio</kbd></td><td>Eseguire il testo o la selezione</td></tr>
+<tr><td>Editor SQL</td><td><kbd>Ctrl</kbd>+<kbd>Spazio</kbd></td><td>Aprire i suggerimenti</td></tr>
+<tr><td>Editor SQL</td><td><kbd>Tab</kbd></td><td>Accettare il suggerimento o inserire due spazi</td></tr>
+</tbody>
+</table></div>
+</section>
+
+<section id="problemas-it" aria-labelledby="h-problemas-it">
+<h2 id="h-problemas-it">Limiti e risoluzione dei problemi</h2>
+<h3>Limiti</h3>
+<ul>
+<li><strong>Database grandi:</strong> l'intero file viene caricato in memoria, quindi i database di diversi gigabyte non sono adatti.</li>
+<li><strong>Query lunghe:</strong> lo schermo resta bloccato fino al termine della query.</li>
+<li><strong>Accesso simultaneo:</strong> l'app lavora su una copia e non vede le modifiche fatte da altri programmi dopo l'apertura.</li>
+<li><strong>Browser:</strong> l'app è stata provata in Chromium. L'uso in Firefox e Safari non è stato provato.</li>
+<li><strong>Database cifrati:</strong> non sono supportati.</li>
+</ul>
+<h3>Problemi comuni</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Sintomo</th><th scope="col">Causa probabile</th><th scope="col">Che cosa fare</th></tr></thead>
+<tbody>
+<tr><td>“não é um banco SQLite válido” (non è un database SQLite valido)</td><td>Il file è di un altro tipo o è cifrato.</td><td>Controlla il file. I database cifrati vanno prima decifrati con un altro programma.</td></tr>
+<tr><td>I dati recenti non compaiono</td><td>Si trovano nel file <code>-wal</code>.</td><td>Chiudi il programma che usa il database, così trasferisce i dati, e riapri.</td></tr>
+<tr><td><code>FOREIGN KEY constraint failed</code></td><td>Un'altra tabella referenzia il record, o il valore indicato non esiste nella tabella di origine.</td><td>Sistema i record collegati. In ultima istanza, disattiva l'opzione ed esegui poi la verifica delle chiavi.</td></tr>
+<tr><td><code>UNIQUE constraint failed</code></td><td>Il valore esiste già nella colonna.</td><td>Usa un altro valore o correggi il record esistente.</td></tr>
+<tr><td><code>NOT NULL constraint failed</code></td><td>Manca il valore di una colonna obbligatoria.</td><td>Indica il valore nel modulo o nel comando.</td></tr>
+<tr><td>“Não foi possível salvar” (impossibile salvare)</td><td>Il browser non ha ricevuto il permesso, o un altro programma blocca il file.</td><td>Concedi il permesso e chiudi l'altro programma, oppure usa <strong>Salvar como…</strong>. Le modifiche restano in memoria.</td></tr>
+<tr><td><strong>+ Linha</strong> disattivato</td><td>È una vista o una tabella senza identificazione delle righe.</td><td>Usa la scheda SQL.</td></tr>
+<tr><td>CSV con accenti strani</td><td>Il file non è in UTF-8.</td><td>Convertilo in UTF-8 prima di importare.</td></tr>
+<tr><td>Colonna numerica trattata come testo dopo l'importazione</td><td>C'è una virgola decimale o un valore non numerico.</td><td>Sostituisci la virgola con il punto nel file o converti con <code>UPDATE</code>.</td></tr>
+<tr><td>Salvar scarica una copia invece di scrivere nel file</td><td>Il browser non offre la scrittura diretta.</td><td>Usa Chrome o Edge e apri il file con <strong>Abrir…</strong> o trascinandolo.</td></tr>
+</tbody>
+</table></div>
+</section>
+
+<section id="revisao-it" aria-labelledby="h-revisao-it">
+<h2 id="h-revisao-it">Ripasso rapido</h2>
+<p>Prova a rispondere prima di aprire ogni domanda.</p>
+<div class="quiz">
+<details><summary>1. Ho modificato varie celle e chiuso la scheda. Il file è cambiato?</summary><p>No. Le modifiche restano in memoria finché non salvi, e l'app avvisa alla chiusura se ce ne sono in sospeso.</p></details>
+<details><summary>2. Come annullo solo l'ultima modifica?</summary><p>Non esiste un annulla passo per passo. Correggi a mano o usa <strong>Reverter</strong>, che torna all'ultimo stato salvato.</p></details>
+<details><summary>3. Come trovo le righe senza e-mail?</summary><p>Digita <code>NULL</code> nel filtro della colonna <code>email</code>.</p></details>
+<details><summary>4. Che cosa succede se il terzo di cinque comandi fallisce?</summary><p>L'esecuzione si ferma. I primi due restano applicati, a meno che non siano in una transazione annullata con <code>ROLLBACK</code>.</p></details>
+<details><summary>5. Perché il codice postale <code>01310</code> conserva lo zero quando si importa un CSV?</summary><p>Perché i valori con zero iniziale fanno creare la colonna come TEXT.</p></details>
+<details><summary>6. Qual è il modo più completo per fare un backup?</summary><p><strong>Salvar como…</strong>, perché il file conserva tutto, comprese le tabelle virtuali, che lo script <code>.sql</code> non porta per intero.</p></details>
+</div>
+<a class="back" href="#top">↑ Torna su</a>
+</section>
+
+<section id="referencias-it" aria-labelledby="h-referencias-it">
+<h2 id="h-referencias-it">Riferimenti</h2>
+<ol class="refs">
+<li id="ref-1-it"><strong>Giovani Perotto Mesquita</strong>, “SQLite Manager”, applicazione in un unico file HTML, <a href="sqlite-manager.html">giovanipm.github.io/sqlite-manager.html</a>.</li>
+<li id="ref-2-it"><strong>sql.js</strong> (in inglese), “sql.js: SQLite compiled to JavaScript”, consultato il 30/10/2026, <a href="https://github.com/sql-js/sql.js" rel="noopener">github.com/sql-js/sql.js</a>.</li>
+<li id="ref-3-it"><strong>SQLite</strong> (in inglese), “Datatypes In SQLite”, documentazione di SQLite, consultato il 30/10/2026, <a href="https://www.sqlite.org/datatype3.html" rel="noopener">sqlite.org/datatype3.html</a>.</li>
+<li id="ref-4-it"><strong>SQLite</strong> (in inglese), “SQLite Foreign Key Support”, documentazione di SQLite, consultato il 30/10/2026, <a href="https://www.sqlite.org/foreignkeys.html" rel="noopener">sqlite.org/foreignkeys.html</a>.</li>
+<li id="ref-5-it"><strong>SQLite</strong> (in inglese), “Write-Ahead Logging”, documentazione di SQLite, consultato il 30/10/2026, <a href="https://www.sqlite.org/wal.html" rel="noopener">sqlite.org/wal.html</a>.</li>
+<li id="ref-6-it"><strong>SQLite</strong> (in inglese), “ALTER TABLE”, documentazione di SQLite, consultato il 30/10/2026, <a href="https://www.sqlite.org/lang_altertable.html" rel="noopener">sqlite.org/lang_altertable.html</a>.</li>
+<li id="ref-7-it"><strong>MDN Web Docs</strong> (in inglese), “File System API”, consultato il 30/10/2026, <a href="https://developer.mozilla.org/en-US/docs/Web/API/File_System_API" rel="noopener">developer.mozilla.org/en-US/docs/Web/API/File_System_API</a>.</li>
+</ol>
+<a class="back" href="#top">↑ Torna su</a>
+</section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== ES ===================== -->
+<div id="es" role="tabpanel" aria-labelledby="tab-es" lang="es" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Proyectos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>SQLite Manager: manual de uso</h1>
+      <p class="dek">Cómo abrir, consultar, editar y guardar bases de datos SQLite en el navegador, sin instalar nada: del primer uso al mantenimiento de la base de datos.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado el <time datetime="2026-10-30">30/10/2026</time></span>
+        <span class="credit">Revisado y formateado con Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-es">
+    <h2 id="toc-es">Índice</h2>
+    <ol>
+      <li><a href="#intro-es">Qué es SQLite Manager</a></li>
+      <li><a href="#inicio-es">Primeros pasos</a></li>
+      <li><a href="#interface-es">La interfaz</a></li>
+      <li><a href="#arquivos-es">Abrir, guardar y revertir</a></li>
+      <li><a href="#dados-es">La pestaña Dados (datos)</a></li>
+      <li><a href="#estrutura-es">La pestaña Estrutura (estructura)</a></li>
+      <li><a href="#sql-es">La pestaña SQL</a></li>
+      <li><a href="#importar-es">Importar y exportar</a></li>
+      <li><a href="#banco-es">La pestaña Banco (base de datos)</a></li>
+      <li><a href="#atalhos-es">Atajos de teclado</a></li>
+      <li><a href="#problemas-es">Limitaciones y solución de problemas</a></li>
+      <li><a href="#revisao-es">Repaso rápido</a></li>
+      <li><a href="#referencias-es">Referencias</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-es" aria-labelledby="h-intro-es">
+<h2 id="h-intro-es">Qué es SQLite Manager</h2>
+<p>SQLite Manager abre, consulta, edita y guarda bases de datos SQLite usando solo el navegador. Es un único archivo HTML: sin instalación, servidor ni cuenta. <sup><a href="#ref-1-es">[1]</a></sup> El motor de la base de datos es el propio SQLite, compilado a WebAssembly e incorporado en el archivo. <sup><a href="#ref-2-es">[2]</a></sup></p>
+<p><a class="launch" href="sqlite-manager.html">Abrir SQLite Manager <span aria-hidden="true">→</span></a></p>
+<aside class="note"><p>La interfaz de la aplicación está solo en portugués. Este manual muestra cada botón con su nombre en portugués, y la <a href="#interface-es">sección sobre la interfaz</a> tiene una tabla con las traducciones.</p></aside>
+<figure>
+<img src="rc_images/SQLiteManagerInicio.png" alt="Pantalla inicial de SQLite Manager, con los botones Abrir banco, Novo banco vazio y Banco de exemplo" width="1920" height="1080" loading="lazy">
+<figcaption>La pantalla inicial: arrastra un archivo o elige una de las tres opciones.</figcaption>
+</figure>
+<p>Este manual es para quien quiere gestionar una base de datos sin instalar nada. Las tareas del día a día no requieren SQL; la pestaña SQL es para quien ya conoce el lenguaje.</p>
+<h3>Qué necesitas</h3>
+<ul>
+<li>Un navegador actual. Se recomiendan Chrome y Edge, porque escriben directamente en el archivo original.</li>
+<li>El archivo <code>sqlite-manager.html</code>. Usa el enlace de arriba, o guarda la página y abre la copia, que funciona sin internet.</li>
+</ul>
+<h3>Cómo trata la aplicación tus datos</h3>
+<ul>
+<li><strong>Nada sale de tu ordenador.</strong> La base de datos se procesa dentro del navegador, y el archivo HTML bloquea las conexiones de red.</li>
+<li><strong>La base de datos se edita en memoria.</strong> El archivo en disco solo cambia cuando guardas.</li>
+<li><strong>El navegador conserva pocas cosas.</strong> Tema, tamaño de página, texto del editor SQL e historial de consultas quedan en el almacenamiento local. El contenido de la base de datos no, pero los valores escritos en consultas sí quedan en el historial.</li>
+</ul>
+<aside class="note"><p>En un ordenador compartido, borra el historial y el editor SQL al terminar: <strong>Histórico ▾ → Limpar histórico</strong> (borrar historial) y después <strong>Limpar</strong> (borrar).</p></aside>
+</section>
+
+<section id="inicio-es" aria-labelledby="h-inicio-es">
+<h2 id="h-inicio-es">Primeros pasos</h2>
+<p>En unos diez minutos, este recorrido muestra las funciones principales con la base de datos de ejemplo, sin riesgo para datos reales. El ejemplo tiene clientes (<code>clientes</code>), productos (<code>produtos</code>), pedidos (<code>pedidos</code>) y líneas de pedido (<code>itens_pedido</code>).</p>
+<h3>1. Abre el ejemplo</h3>
+<ol>
+<li>Abre SQLite Manager.</li>
+<li>Haz clic en <strong>Banco de exemplo</strong> (base de datos de ejemplo). La tabla <code>clientes</code> aparece en la pestaña <strong>Dados</strong> (datos).</li>
+</ol>
+<h3>2. Encuentra un registro</h3>
+<ol>
+<li>En la fila de filtros, bajo el título de la columna <code>cidade</code> (ciudad), escribe <code>recife</code>. Solo queda Carla Nunes.</li>
+<li>Borra el filtro para volver a ver las cinco filas.</li>
+<li>Haz clic en el título de la columna <code>nome</code> (nombre) para ordenar. Haz clic otra vez para invertir y una tercera vez para deshacer el orden.</li>
+</ol>
+<h3>3. Edita e inserta datos</h3>
+<ol>
+<li>Haz doble clic en la ciudad de Ana Ribeiro, escribe <code>Campinas</code> y pulsa <kbd>Intro</kbd>. El indicador <strong>● não salvo</strong> (sin guardar) aparece en la barra superior.</li>
+<li>Haz clic en <strong>+ Linha</strong> (añadir fila), rellena <code>nome</code> y haz clic en <strong>Inserir</strong> (insertar). Las demás columnas reciben el valor predeterminado.</li>
+</ol>
+<h3>4. Sigue una referencia</h3>
+<ol>
+<li>En la lista de la izquierda, haz clic en <code>pedidos</code>.</li>
+<li>En la columna <code>cliente_id</code>, haz clic en la flecha <strong>↗</strong> junto a un valor. La aplicación abre <code>clientes</code> filtrada en ese cliente.</li>
+</ol>
+<h3>5. Ejecuta SQL</h3>
+<ol>
+<li>Abre la pestaña <strong>SQL</strong>, escribe la consulta de abajo y pulsa <kbd>Ctrl</kbd>+<kbd>Intro</kbd>. El resultado muestra el total por cliente.
+<pre class="code"><code>SELECT * FROM vw_total_por_cliente;</code></pre></li>
+<li>Sustituye el texto por el comando de abajo y ejecútalo. El mensaje indica 2 filas modificadas: la línea insertada y el stock reducido por el trigger <code>trg_baixa_estoque</code>.
+<pre class="code"><code>INSERT INTO itens_pedido VALUES (4, 1, 1, 349.9);</code></pre></li>
+<li>Haz clic en <code>produtos</code>. Se abre la pestaña <strong>Dados</strong>, y el stock (<code>estoque</code>) del teclado ha bajado de 39 a 38.</li>
+</ol>
+<h3>6. Deshaz o guarda</h3>
+<ol>
+<li>Para deshacerlo todo, haz clic en <strong>Reverter</strong> (revertir) y confirma. El ejemplo vuelve al estado inicial.</li>
+<li>Para conservar una copia, haz clic en <strong>Salvar</strong> (guardar) y elige dónde escribirla.</li>
+</ol>
+</section>
+
+<section id="interface-es" aria-labelledby="h-interface-es">
+<h2 id="h-interface-es">La interfaz</h2>
+<p>La pantalla tiene cuatro áreas fijas, y las cuatro pestañas solo cambian la central. Con una base de datos abierta, la pantalla se ve así:</p>
+<figure>
+<img src="rc_images/SQLiteManagerDados.png" alt="Pantalla principal con la barra superior, la lista de objetos a la izquierda, las pestañas Dados, Estrutura, SQL y Banco, y la cuadrícula con la tabla clientes" width="1920" height="1080" loading="lazy">
+<figcaption>La pantalla principal con la tabla clientes abierta en la pestaña Dados.</figcaption>
+</figure>
+<dl class="glossary">
+<dt>Barra superior</dt><dd>Acciones de archivo, importación de CSV, exportación de SQL y el botón <strong>◐</strong>, que alterna entre tema claro y oscuro.</dd>
+<dt>Lista de objetos</dt><dd>Tablas, vistas, índices, triggers y tablas del sistema, con el número de filas de cada tabla. El campo superior filtra la lista, y <strong>+ Tabela</strong> crea una tabla.</dd>
+<dt>Pestañas</dt><dd><strong>Dados</strong> muestra las filas, <strong>Estrutura</strong> muestra y cambia el esquema, <strong>SQL</strong> ejecuta comandos y <strong>Banco</strong> reúne información y mantenimiento.</dd>
+<dt>Barra de estado</dt><dd>Versión de SQLite, tamaño de la base de datos, aviso de transacción abierta y la opción <strong>Chaves estrangeiras</strong>.</dd>
+</dl>
+<h3>Nombres de los botones</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">En la aplicación</th><th scope="col">Significado</th><th scope="col">En la aplicación</th><th scope="col">Significado</th></tr></thead>
+<tbody>
+<tr><td>Novo</td><td>Nuevo</td><td>Dados</td><td>Datos</td></tr>
+<tr><td>Abrir…</td><td>Abrir</td><td>Estrutura</td><td>Estructura</td></tr>
+<tr><td>Salvar</td><td>Guardar</td><td>Banco</td><td>Base de datos</td></tr>
+<tr><td>Salvar como…</td><td>Guardar como</td><td>+ Linha / Inserir</td><td>Añadir fila / Insertar</td></tr>
+<tr><td>Reverter</td><td>Revertir</td><td>Excluir</td><td>Eliminar</td></tr>
+<tr><td>Importar CSV…</td><td>Importar CSV</td><td>Esvaziar</td><td>Vaciar</td></tr>
+<tr><td>Exportar .sql</td><td>Exportar .sql</td><td>Renomear</td><td>Renombrar</td></tr>
+<tr><td>+ Tabela</td><td>Añadir tabla</td><td>+ Coluna / + Índice</td><td>Añadir columna / índice</td></tr>
+<tr><td>Executar</td><td>Ejecutar</td><td>Plano de execução</td><td>Plan de ejecución</td></tr>
+<tr><td>Histórico</td><td>Historial</td><td>Limpar</td><td>Borrar</td></tr>
+<tr><td>Baixar</td><td>Descargar</td><td>Arquivo…</td><td>Archivo</td></tr>
+<tr><td>Cancelar</td><td>Cancelar</td><td>Chaves estrangeiras</td><td>Claves foráneas</td></tr>
+<tr><td>Verificar integridade</td><td>Verificar integridad</td><td>Verificar chaves estrangeiras</td><td>Verificar claves foráneas</td></tr>
+</tbody>
+</table></div>
+</section>
+
+<section id="arquivos-es" aria-labelledby="h-arquivos-es">
+<h2 id="h-arquivos-es">Abrir, guardar y revertir</h2>
+<p>Todo lo que haces cambia una copia en memoria; el archivo en disco solo cambia cuando guardas. Este es el concepto más importante de la aplicación:</p>
+<figure>
+<img src="rc_images/SQLiteManagerFluxo-es.svg" alt="Diagrama: Abrir copia el archivo del disco a la base de datos en memoria; Salvar lo escribe de vuelta; las ediciones y el SQL cambian la base de datos en memoria; Reverter la devuelve al último estado guardado; Importar CSV trae datos y Exportar genera CSV, JSON o SQL" loading="lazy">
+<figcaption>La base de datos en memoria está en el centro: el archivo en disco solo cambia al guardar. Las flechas usan los nombres de los botones de la aplicación.</figcaption>
+</figure>
+<h3>Abrir o crear una base de datos</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Cómo</th><th scope="col">Qué ocurre</th></tr></thead>
+<tbody>
+<tr><th scope="row">Abrir…</th><td>Elige un archivo <code>.db</code>, <code>.db3</code>, <code>.sqlite</code>, <code>.sqlite3</code>, <code>.s3db</code> o <code>.sl3</code>. Atajo: <kbd>Ctrl</kbd>+<kbd>O</kbd>.</td></tr>
+<tr><th scope="row">Arrastrar y soltar</th><td>Suelta el archivo en cualquier punto de la ventana.</td></tr>
+<tr><th scope="row">Novo (nuevo)</th><td>Crea una base de datos vacía llamada <code>novo.sqlite</code> y abre la pestaña SQL.</td></tr>
+<tr><th scope="row">Banco de exemplo (ejemplo)</th><td>Disponible en la pantalla inicial. Trae tablas, una vista, un índice y un trigger para practicar.</td></tr>
+</tbody>
+</table></div>
+<p>Si la base de datos actual tiene cambios sin guardar, la aplicación pide confirmación antes de cambiar. Los archivos que no son SQLite, o que están cifrados, se rechazan, y la base de datos actual sigue abierta.</p>
+<h3>Guardar</h3>
+<p>El indicador <strong>● não salvo</strong> muestra que hay cambios solo en memoria. La aplicación también avisa si intentas cerrar la pestaña en esa situación.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Acción</th><th scope="col">Chrome y Edge</th><th scope="col">Otros navegadores</th></tr></thead>
+<tbody>
+<tr><th scope="row">Salvar (<kbd>Ctrl</kbd>+<kbd>S</kbd>)</th><td>Escribe en el archivo original. El navegador pide permiso la primera vez. <sup><a href="#ref-7-es">[7]</a></sup></td><td>Descarga una copia en la carpeta de descargas.</td></tr>
+<tr><th scope="row">Salvar como… (guardar como)</th><td>Pregunta nombre y ubicación, y ese archivo pasa a ser el actual.</td><td>Descarga una copia en la carpeta de descargas.</td></tr>
+</tbody>
+</table></div>
+<p>En Chrome y Edge, si otro programa cambió el archivo después de abrirlo, la aplicación pide confirmación antes de sustituirlo. Para conservar las dos versiones, cancela y usa <strong>Salvar como…</strong>.</p>
+<aside class="note"><p>Guardar reinicia la conexión con la base de datos. Las tablas temporales y los ajustes <code>PRAGMA</code> de la sesión se pierden; solo se vuelve a aplicar la opción de claves foráneas.</p></aside>
+<h3>Revertir</h3>
+<p><strong>Reverter</strong> descarta todo lo hecho desde la apertura o el último guardado. Es el único “deshacer” de la aplicación: no hay deshacer paso a paso. Guarda antes de un cambio arriesgado, para que el punto de retorno quede justo antes.</p>
+<h3>Bases de datos en modo WAL</h3>
+<p>Algunos programas usan el modo WAL, que mantiene los cambios recientes en un archivo <code>-wal</code> junto a la base de datos. <sup><a href="#ref-5-es">[5]</a></sup> El navegador recibe solo el archivo principal, así que la aplicación avisa al abrir y toma dos medidas:</p>
+<ul>
+<li>Abre la base de datos sin el contenido del archivo <code>-wal</code>. Para ver los datos más recientes, cierra antes el programa que la usa.</li>
+<li>No escribe sobre el original. <strong>Salvar</strong> pide un archivo nuevo, y el nombre sugerido termina en <code>-copia</code>. No sobrescribas el original, porque un archivo <code>-wal</code> antiguo junto a él puede corromper los datos.</li>
+</ul>
+</section>
+
+<section id="dados-es" aria-labelledby="h-dados-es">
+<h2 id="h-dados-es">La pestaña Dados (datos)</h2>
+<p>La pestaña Dados muestra las filas de la tabla o vista seleccionada, y en ella buscas, editas, insertas y eliminas sin escribir SQL.</p>
+<h3>Navegar y ordenar</h3>
+<ul>
+<li>Los controles bajo la cuadrícula cambian de página. Elige 50, 100, 500 o 1000 filas por página.</li>
+<li>Haz clic en el título de una columna para ordenar: ascendente, descendente y sin orden. El orden usa una columna cada vez.</li>
+<li>La marca <strong>PK</strong> identifica las columnas de la clave primaria.</li>
+<li>Los valores nulos aparecen como <em>NULL</em> en cursiva, y los datos binarios como <em>BLOB</em> con su tamaño.</li>
+</ul>
+<h3>Filtrar y buscar</h3>
+<p>Cada columna tiene un campo de filtro, y los filtros en columnas distintas se aplican juntos. El campo <strong>Buscar em todas as colunas</strong> busca el texto en cualquier columna. <strong>Limpar filtros</strong> los quita todos.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Escribes</th><th scope="col">Encuentra</th></tr></thead>
+<tbody>
+<tr><td><code>ana</code></td><td>Valores que contienen “ana”.</td></tr>
+<tr><td><code>=Recife</code> o <code>!=Recife</code></td><td>Valor igual o distinto, respetando mayúsculas.</td></tr>
+<tr><td><code>&gt;10</code>, <code>&gt;=10</code>, <code>&lt;10</code>, <code>&lt;=10</code></td><td>Comparaciones, también con fechas en el formato <code>2026-10-30</code>.</td></tr>
+<tr><td><code>NULL</code> o <code>!NULL</code></td><td>Celdas vacías o rellenas.</td></tr>
+</tbody>
+</table></div>
+<aside class="note"><p>El filtro “contiene” ignora las mayúsculas solo en letras sin acento: <code>joão</code> no encuentra <code>JOÃO</code>.</p></aside>
+<h3>Editar una celda</h3>
+<p>Haz doble clic en la celda. Con el teclado, haz un clic, muévete con las flechas y pulsa <kbd>Intro</kbd> o <kbd>F2</kbd>.</p>
+<figure>
+<img src="rc_images/SQLiteManagerEditorCelula.png" alt="Editor de celda abierto sobre la cuadrícula, con el campo de texto y los botones NULL, Arquivo, Cancelar y Salvar" width="1920" height="1080" loading="lazy">
+<figcaption>El editor de celda. Hacer clic fuera de él cancela la edición.</figcaption>
+</figure>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">En el editor</th><th scope="col">Efecto</th></tr></thead>
+<tbody>
+<tr><td><kbd>Intro</kbd></td><td>Guarda.</td></tr>
+<tr><td><kbd>Mayús</kbd>+<kbd>Intro</kbd></td><td>Inserta un salto de línea.</td></tr>
+<tr><td><kbd>Tab</kbd> y <kbd>Mayús</kbd>+<kbd>Tab</kbd></td><td>Guarda y pasa a la celda siguiente o anterior.</td></tr>
+<tr><td><kbd>Esc</kbd></td><td>Cancela.</td></tr>
+<tr><td>Botón <strong>NULL</strong></td><td>Escribe NULL.</td></tr>
+<tr><td>Botón <strong>Arquivo…</strong> (archivo)</td><td>Escribe el contenido de un archivo como BLOB.</td></tr>
+</tbody>
+</table></div>
+<p>La diferencia entre NULL y texto vacío importa. En una celda NULL, confirmar sin escribir mantiene el NULL. Para escribir texto vacío en ella, usa la pestaña SQL. En una celda con valor, borrar el texto y guardar escribe texto vacío.</p>
+<p>SQLite convierte el valor según el tipo de la columna: <code>42</code> pasa a ser un número en una columna INTEGER. <sup><a href="#ref-3-es">[3]</a></sup> Un texto como <code>abc</code> puede aceptarse en la misma columna, a menos que la tabla sea <code>STRICT</code>.</p>
+<h3>Trabajar con BLOB</h3>
+<p>Los datos binarios no se editan como texto. El editor muestra el contenido en hexadecimal o, en imágenes PNG, JPEG, GIF y WebP, una vista previa. Usa <strong>Baixar</strong> (descargar) para extraer el archivo y <strong>Arquivo…</strong> para sustituirlo.</p>
+<h3>Insertar filas</h3>
+<p>Haz clic en <strong>+ Linha</strong>. Cada columna tiene un modo, y al escribir pasa automáticamente a <em>valor</em>:</p>
+<ul>
+<li><strong>valor</strong> escribe lo que se ha tecleado, aunque esté vacío.</li>
+<li><strong>NULL</strong> escribe nulo.</li>
+<li><strong>padrão</strong> (predeterminado) deja decidir a SQLite: genera el número de la clave automática, aplica el <code>DEFAULT</code> o escribe NULL.</li>
+</ul>
+<p>Marca <strong>Continuar adicionando</strong> (seguir añadiendo) para insertar varias filas seguidas. Las columnas generadas no aparecen en el formulario. Para escribir un BLOB, inserta la fila y después edita la celda.</p>
+<h3>Eliminar filas</h3>
+<ol>
+<li>Marca las casillas de las filas deseadas. La casilla de la cabecera marca toda la página.</li>
+<li>Haz clic en <strong>Excluir</strong> (eliminar) y confirma.</li>
+</ol>
+<p>La eliminación es todo o nada: si una fila falla, no se elimina ninguna. La selección vale solo para la página actual y se borra al cambiar de página, filtrar, ordenar o editar.</p>
+<h3>Seguir claves foráneas</h3>
+<p>Las columnas con clave foránea muestran <strong>↗</strong> junto al valor. El clic abre la tabla referenciada, filtrada en el registro correspondiente.</p>
+<h3>Cuándo la cuadrícula es de solo lectura</h3>
+<p>Las vistas nunca se pueden editar en esta pestaña, ni tampoco las columnas generadas. Una tabla es de solo lectura cuando sus filas no se pueden identificar: no tiene clave primaria y tiene columnas llamadas <code>rowid</code>, <code>_rowid_</code> y <code>oid</code>. En ese caso, usa la pestaña SQL.</p>
+</section>
+
+<section id="estrutura-es" aria-labelledby="h-estrutura-es">
+<h2 id="h-estrutura-es">La pestaña Estrutura (estructura)</h2>
+<p>La pestaña Estrutura muestra el esquema del objeto seleccionado y cambia tablas, columnas e índices sin escribir SQL.</p>
+<figure>
+<img src="rc_images/SQLiteManagerEstrutura.png" alt="Pestaña Estrutura de la tabla clientes, con la lista de columnas, los índices automáticos y el comando CREATE TABLE" width="1920" height="1080" loading="lazy">
+<figcaption>Columnas, índices, triggers y el DDL, el comando SQL que define el objeto.</figcaption>
+</figure>
+<h3>Crear una tabla</h3>
+<ol>
+<li>Haz clic en <strong>+ Tabela</strong> y da un nombre a la tabla.</li>
+<li>Rellena una línea por columna. La primera ya viene como <code>id INTEGER</code> con clave primaria.</li>
+<li>Revisa el comando en <strong>SQL que será executado</strong> (SQL que se ejecutará) y haz clic en <strong>Criar tabela</strong> (crear tabla).</li>
+</ol>
+<figure>
+<img src="rc_images/SQLiteManagerNovaTabela.png" alt="Ventana Nova tabela con la tabla fornecedores, las columnas id y nome, y la vista previa del comando CREATE TABLE" width="1920" height="1080" loading="lazy">
+<figcaption>La vista previa muestra exactamente el SQL que se ejecutará.</figcaption>
+</figure>
+<dl class="glossary">
+<dt>PK</dt><dd>Clave primaria. Márcala en más de una columna para crear una clave compuesta.</dd>
+<dt>Auto</dt><dd>Añade <code>AUTOINCREMENT</code>. Requiere una sola columna PK de tipo <code>INTEGER</code>.</dd>
+<dt>Not null</dt><dd>La columna no acepta NULL.</dd>
+<dt>Único</dt><dd>No permite valores repetidos.</dd>
+<dt>Padrão (predeterminado)</dt><dd>Valor usado cuando no se indica ninguno. Los números, <code>NULL</code>, <code>CURRENT_TIMESTAMP</code>, los textos entre comillas simples y las expresiones entre paréntesis se usan tal cual; el resto pasa a ser texto.</dd>
+<dt>Referência (referencia)</dt><dd>Clave foránea, en el formato <code>tabla(columna)</code>.</dd>
+</dl>
+<h3>Cambiar una tabla existente</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Acción</th><th scope="col">Dónde</th><th scope="col">Nota</th></tr></thead>
+<tbody>
+<tr><th scope="row">Añadir columna</th><td><strong>+ Coluna</strong></td><td>Con <code>NOT NULL</code>, es obligatorio un valor predeterminado.</td></tr>
+<tr><th scope="row">Renombrar columna</th><td><strong>renomear</strong>, en la línea de la columna</td><td>SQLite ajusta las referencias en el esquema.</td></tr>
+<tr><th scope="row">Eliminar columna</th><td><strong>excluir</strong>, en la línea de la columna</td><td>Se rechaza si la columna es clave primaria, única o usada por un índice. <sup><a href="#ref-6-es">[6]</a></sup></td></tr>
+<tr><th scope="row">Crear índice</th><td><strong>+ Índice</strong></td><td>Las columnas siguen el orden de la tabla; para otro orden, usa SQL.</td></tr>
+<tr><th scope="row">Renombrar tabla</th><td><strong>Renomear</strong></td><td></td></tr>
+<tr><th scope="row">Vaciar tabla</th><td><strong>Esvaziar</strong></td><td>Elimina las filas y mantiene la estructura.</td></tr>
+<tr><th scope="row">Eliminar objeto</th><td><strong>Excluir tabela</strong>, <strong>view</strong>, <strong>índice</strong> o <strong>trigger</strong></td><td>Con las claves foráneas activas, eliminar una tabla aplica las reglas <code>ON DELETE</code> de quien la referencia.</td></tr>
+</tbody>
+</table></div>
+<h3>Cambiar el tipo de una columna</h3>
+<p>SQLite no cambia directamente el tipo de una columna. <sup><a href="#ref-6-es">[6]</a></sup> Vuelve a crear la tabla en la pestaña SQL, dentro de una transacción. El botón <strong>Abrir no editor SQL</strong> (abrir en el editor SQL) copia el DDL actual como punto de partida.</p>
+<pre class="code"><code>-- Ejemplo: la columna idade de contatos pasa de TEXT a INTEGER
+BEGIN;
+CREATE TABLE contatos_novo (id INTEGER PRIMARY KEY, nome TEXT, idade INTEGER);
+INSERT INTO contatos_novo SELECT id, nome, idade FROM contatos;
+DROP TABLE contatos;
+ALTER TABLE contatos_novo RENAME TO contatos;
+COMMIT;</code></pre>
+<p>Vuelve a crear después los índices y triggers de la tabla, porque <code>DROP TABLE</code> los elimina. Si otras tablas la referencian, desactiva <strong>Chaves estrangeiras</strong> antes de <code>BEGIN</code>; actívala de nuevo al terminar y ejecuta <strong>Verificar chaves estrangeiras</strong>.</p>
+<h3>Vistas y triggers</h3>
+<p>Crea vistas y triggers en la pestaña SQL. Después aparecen en la lista de objetos, donde la pestaña Estrutura muestra el DDL y permite eliminarlos.</p>
+</section>
+
+<section id="sql-es" aria-labelledby="h-sql-es">
+<h2 id="h-sql-es">La pestaña SQL</h2>
+<p>La pestaña SQL ejecuta cualquier comando que SQLite acepte, uno o varios a la vez, y muestra los resultados bajo el editor.</p>
+<figure>
+<img src="rc_images/SQLiteManagerSql.png" alt="Pestaña SQL con una consulta de clientes y pedidos en el editor y la tabla de resultados debajo" width="1920" height="1080" loading="lazy">
+<figcaption>El editor con resaltado de sintaxis y los resultados de la consulta.</figcaption>
+</figure>
+<h3>Ejecutar comandos</h3>
+<ul>
+<li><kbd>Ctrl</kbd>+<kbd>Intro</kbd> o <strong>▶ Executar</strong> ejecutan todo el texto. Con un fragmento seleccionado, se ejecuta solo ese fragmento.</li>
+<li>Separa los comandos con <code>;</code>. Cada consulta crea una pestaña de resultado.</li>
+<li>Si un comando falla, la ejecución se detiene ahí y el error indica cuál. Los comandos anteriores siguen aplicados; para evitarlo, usa una transacción.</li>
+<li>El recuento de filas modificadas incluye los cambios hechos por triggers.</li>
+</ul>
+<h3>Escribir más rápido</h3>
+<ul>
+<li>Las sugerencias aparecen a partir de dos letras, o justo después de un punto, como en <code>c.</code>, y reconocen los alias de tabla.</li>
+<li><kbd>Ctrl</kbd>+<kbd>Espacio</kbd> abre las sugerencias. <kbd>↑</kbd> y <kbd>↓</kbd> eligen, <kbd>Tab</kbd> o <kbd>Intro</kbd> aceptan y <kbd>Esc</kbd> cierra.</li>
+<li>Fuera de las sugerencias, <kbd>Tab</kbd> inserta dos espacios.</li>
+<li>El texto del editor sigue ahí cuando vuelves a abrir la aplicación.</li>
+</ul>
+<h3>Resultados</h3>
+<p>Los resultados se paginan de 200 en 200 filas, y los botones <strong>CSV</strong> y <strong>JSON</strong> exportan el conjunto completo. Cada consulta conserva hasta 100.000 filas y avisa al alcanzar el límite. Para resultados mayores, afina la consulta o usa <code>LIMIT</code>.</p>
+<h3>Plan de ejecución</h3>
+<p><strong>Plano de execução</strong> muestra cómo resolvería SQLite el primer comando, sin ejecutarlo. En los planes, <code>SCAN</code> indica la lectura de toda la tabla y <code>SEARCH</code>, en general, el uso de un índice o clave.</p>
+<h3>Transacciones</h3>
+<p>Usa transacciones para aplicar varios cambios como uno solo. Después de <code>BEGIN</code>, la barra de estado muestra <strong>Transação aberta</strong> (transacción abierta) con los botones <strong>COMMIT</strong> y <strong>ROLLBACK</strong>.</p>
+<pre class="code"><code>BEGIN;
+UPDATE produtos SET preco = preco * 1.10 WHERE categoria = 'Acessórios';
+-- revisa el resultado y haz clic en COMMIT o ROLLBACK en la barra de estado</code></pre>
+<p>Las ediciones hechas en la pestaña Dados durante la transacción forman parte de ella. Si guardas con una transacción abierta, la aplicación pregunta si hacer antes <code>COMMIT</code> o <code>ROLLBACK</code>.</p>
+<h3>Historial y archivos</h3>
+<ul>
+<li><strong>Histórico ▾</strong> conserva los últimos 50 comandos ejecutados. El clic los devuelve al editor.</li>
+<li><strong>Abrir .sql…</strong> carga un script en el editor sin ejecutarlo, y <strong>Baixar .sql</strong> guarda el texto del editor.</li>
+<li><strong>Limpar</strong> borra el texto del editor.</li>
+</ul>
+<h3>Ejemplos útiles</h3>
+<pre class="code"><code>-- Crear una vista
+CREATE VIEW vw_estoque_baixo AS
+  SELECT nome, estoque FROM produtos WHERE estoque &lt; 20;
+
+-- Crear un trigger
+CREATE TRIGGER trg_status AFTER UPDATE OF status ON pedidos
+BEGIN
+  UPDATE pedidos SET data = date('now') WHERE id = NEW.id;
+END;
+
+-- Encontrar valores duplicados
+SELECT email, count(*) FROM clientes
+GROUP BY email HAVING count(*) &gt; 1;
+
+-- Escribir texto vacío en una celda NULL
+UPDATE clientes SET email = '' WHERE id = 5;</code></pre>
+</section>
+
+<section id="importar-es" aria-labelledby="h-importar-es">
+<h2 id="h-importar-es">Importar y exportar</h2>
+<p>La aplicación importa CSV y exporta CSV, JSON, SQL y el propio archivo de la base de datos. La importación es todo o nada: si una fila falla, no se escribe nada.</p>
+<h3>Importar un CSV</h3>
+<ol>
+<li>Haz clic en <strong>Importar CSV…</strong> y elige el archivo, que debe estar en UTF-8.</li>
+<li>Revisa el <strong>Separador</strong>, detectado automáticamente entre coma, punto y coma, tabulador y barra vertical.</li>
+<li>En <strong>Destino</strong>, elige <strong>Criar tabela nova</strong> (tabla nueva) o <strong>Adicionar em</strong> (añadir en) una tabla existente.</li>
+<li>Ajusta <strong>Primeira linha é o cabeçalho</strong> (la primera línea es la cabecera) y <strong>Campos vazios viram NULL</strong> (los campos vacíos pasan a NULL), revisa la vista previa y haz clic en <strong>Importar</strong>.</li>
+</ol>
+<figure>
+<img src="rc_images/SQLiteManagerImportar.png" alt="Ventana Importar CSV con el separador punto y coma detectado, la opción Criar tabela nova y la vista previa de los datos" width="1920" height="1080" loading="lazy">
+<figcaption>La vista previa muestra las primeras filas antes de escribir nada.</figcaption>
+</figure>
+<p><strong>En una tabla nueva</strong>, la aplicación elige el tipo de cada columna entre INTEGER, REAL y TEXT observando los valores. Los valores con cero a la izquierda, como el código postal <code>01310</code>, siguen como texto y conservan el cero. Los números con coma decimal, como <code>7,5</code>, también siguen como texto.</p>
+<p><strong>En una tabla existente</strong>, si todos los nombres de la cabecera existen en la tabla, las columnas se enlazan por nombre. En caso contrario, se enlazan por posición.</p>
+<h3>Exportar</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Formato</th><th scope="col">Dónde</th><th scope="col">Qué incluye</th></tr></thead>
+<tbody>
+<tr><th scope="row">CSV, JSON o SQL de una tabla</th><td>Pestaña <strong>Dados</strong>, botones a la derecha</td><td>Todas las páginas, respetando filtros y orden.</td></tr>
+<tr><th scope="row">CSV o JSON de un resultado</th><td>Pestaña <strong>SQL</strong>, bajo el resultado</td><td>Todas las filas conservadas de la consulta.</td></tr>
+<tr><th scope="row">Script de toda la base de datos</th><td><strong>Exportar .sql</strong></td><td>Estructura y datos, salvo el contenido de las tablas virtuales.</td></tr>
+<tr><th scope="row">Archivo de la base de datos</th><td><strong>Salvar como…</strong></td><td>Todo, incluidas las tablas virtuales.</td></tr>
+</tbody>
+</table></div>
+<p>Para una copia de seguridad, usa preferentemente <strong>Salvar como…</strong>, que conserva la base de datos completa.</p>
+<dl class="glossary">
+<dt>CSV</dt><dd>UTF-8 con BOM, separado por comas. NULL pasa a campo vacío y BLOB a <code>0x</code> más hexadecimal. Si Excel lo junta todo en una columna, importa desde su menú de datos e indica la coma.</dd>
+<dt>JSON</dt><dd>Lista de objetos. BLOB pasa a <code>{"$hex": "..."}</code>, y los enteros demasiado grandes para JavaScript pasan a texto, para no perder precisión.</dd>
+<dt>SQL</dt><dd>Comandos <code>INSERT</code>; en la base de datos completa, también el <code>CREATE</code> de cada objeto, dentro de una transacción.</dd>
+</dl>
+</section>
+
+<section id="banco-es" aria-labelledby="h-banco-es">
+<h2 id="h-banco-es">La pestaña Banco (base de datos)</h2>
+<p>La pestaña Banco resume el archivo y reúne las comprobaciones y el mantenimiento. Conviene consultarla antes de un guardado importante.</p>
+<figure>
+<img src="rc_images/SQLiteManagerBanco.png" alt="Pestaña Banco con la lista de información del archivo y el resultado ok de la comprobación de integridad" width="1920" height="1080" loading="lazy">
+<figcaption>Información de la base de datos y resultado de la comprobación de integridad.</figcaption>
+</figure>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Botón</th><th scope="col">Qué hace</th><th scope="col">Cuándo usarlo</th></tr></thead>
+<tbody>
+<tr><th scope="row">Verificar integridade</th><td>Busca daños en la estructura del archivo. El resultado esperado es <code>ok</code>.</td><td>Al recibir un archivo o sospechar corrupción.</td></tr>
+<tr><th scope="row">Verificar chaves estrangeiras</th><td>Lista las filas que apuntan a registros inexistentes.</td><td>Tras importar datos o trabajar con la opción desactivada.</td></tr>
+<tr><th scope="row">VACUUM</th><td>Reconstruye la base de datos y recupera las páginas libres.</td><td>Tras eliminar muchos datos.</td></tr>
+<tr><th scope="row">ANALYZE</th><td>Actualiza las estadísticas que orientan las consultas.</td><td>Tras grandes cargas, o si las consultas se vuelven lentas.</td></tr>
+</tbody>
+</table></div>
+<p><strong>VACUUM</strong> y <strong>ANALYZE</strong> cambian la base de datos, así que después hay que guardar. <strong>VACUUM</strong> no se ejecuta con una transacción abierta.</p>
+<h3>Claves foráneas</h3>
+<p>La opción <strong>Chaves estrangeiras</strong>, en la barra de estado, viene activada, al contrario que el valor predeterminado de SQLite. <sup><a href="#ref-4-es">[4]</a></sup> Así, eliminar un registro referenciado por otra tabla da error, en lugar de dejar datos huérfanos. La elección vale para la aplicación y no se escribe en el archivo. No cambia durante una transacción.</p>
+</section>
+
+<section id="atalhos-es" aria-labelledby="h-atalhos-es">
+<h2 id="h-atalhos-es">Atajos de teclado</h2>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Dónde</th><th scope="col">Tecla</th><th scope="col">Acción</th></tr></thead>
+<tbody>
+<tr><td>General</td><td><kbd>Ctrl</kbd>+<kbd>S</kbd></td><td>Guardar</td></tr>
+<tr><td>General</td><td><kbd>Ctrl</kbd>+<kbd>O</kbd></td><td>Abrir</td></tr>
+<tr><td>Cuadrícula</td><td><kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd></td><td>Moverse entre celdas</td></tr>
+<tr><td>Cuadrícula</td><td><kbd>Intro</kbd> o <kbd>F2</kbd></td><td>Editar la celda actual</td></tr>
+<tr><td>Cuadrícula</td><td><kbd>Ctrl</kbd>+<kbd>C</kbd></td><td>Copiar el valor de la celda actual</td></tr>
+<tr><td>Editor de celda</td><td><kbd>Intro</kbd></td><td>Guardar</td></tr>
+<tr><td>Editor de celda</td><td><kbd>Mayús</kbd>+<kbd>Intro</kbd></td><td>Salto de línea</td></tr>
+<tr><td>Editor de celda</td><td><kbd>Tab</kbd> o <kbd>Mayús</kbd>+<kbd>Tab</kbd></td><td>Guardar y pasar a la celda siguiente o anterior</td></tr>
+<tr><td>Editor de celda</td><td><kbd>Esc</kbd></td><td>Cancelar</td></tr>
+<tr><td>Editor SQL</td><td><kbd>Ctrl</kbd>+<kbd>Intro</kbd></td><td>Ejecutar el texto o la selección</td></tr>
+<tr><td>Editor SQL</td><td><kbd>Ctrl</kbd>+<kbd>Espacio</kbd></td><td>Abrir sugerencias</td></tr>
+<tr><td>Editor SQL</td><td><kbd>Tab</kbd></td><td>Aceptar la sugerencia o insertar dos espacios</td></tr>
+</tbody>
+</table></div>
+</section>
+
+<section id="problemas-es" aria-labelledby="h-problemas-es">
+<h2 id="h-problemas-es">Limitaciones y solución de problemas</h2>
+<h3>Limitaciones</h3>
+<ul>
+<li><strong>Bases de datos grandes:</strong> todo el archivo se carga en memoria, así que las bases de varios gigabytes no son adecuadas.</li>
+<li><strong>Consultas largas:</strong> la pantalla se queda bloqueada hasta que termina la consulta.</li>
+<li><strong>Acceso simultáneo:</strong> la aplicación trabaja en una copia y no ve los cambios que otro programa haga después de abrirla.</li>
+<li><strong>Navegadores:</strong> la aplicación se ha probado en Chromium. El uso en Firefox y Safari no se ha probado.</li>
+<li><strong>Bases de datos cifradas:</strong> no son compatibles.</li>
+</ul>
+<h3>Problemas comunes</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Síntoma</th><th scope="col">Causa probable</th><th scope="col">Qué hacer</th></tr></thead>
+<tbody>
+<tr><td>“não é um banco SQLite válido” (no es una base SQLite válida)</td><td>El archivo es de otro tipo o está cifrado.</td><td>Revisa el archivo. Las bases cifradas deben descifrarse antes en otro programa.</td></tr>
+<tr><td>Los datos recientes no aparecen</td><td>Están en el archivo <code>-wal</code>.</td><td>Cierra el programa que usa la base de datos, para que transfiera los datos, y vuelve a abrirla.</td></tr>
+<tr><td><code>FOREIGN KEY constraint failed</code></td><td>Otra tabla referencia el registro, o el valor indicado no existe en la tabla de origen.</td><td>Ajusta los registros relacionados. Como último recurso, desactiva la opción y ejecuta después la comprobación de claves.</td></tr>
+<tr><td><code>UNIQUE constraint failed</code></td><td>El valor ya existe en la columna.</td><td>Usa otro valor o corrige el registro existente.</td></tr>
+<tr><td><code>NOT NULL constraint failed</code></td><td>Falta el valor de una columna obligatoria.</td><td>Indica el valor en el formulario o en el comando.</td></tr>
+<tr><td>“Não foi possível salvar” (no se pudo guardar)</td><td>El navegador no recibió permiso, u otro programa bloquea el archivo.</td><td>Concede el permiso y cierra el otro programa, o usa <strong>Salvar como…</strong>. Los cambios siguen en memoria.</td></tr>
+<tr><td><strong>+ Linha</strong> desactivado</td><td>Es una vista o una tabla sin identificación de filas.</td><td>Usa la pestaña SQL.</td></tr>
+<tr><td>CSV con acentos extraños</td><td>El archivo no está en UTF-8.</td><td>Conviértelo a UTF-8 antes de importar.</td></tr>
+<tr><td>Columna numérica tratada como texto tras importar</td><td>Hay una coma decimal o un valor no numérico.</td><td>Cambia la coma por un punto en el archivo o convierte con <code>UPDATE</code>.</td></tr>
+<tr><td>Salvar descarga una copia en lugar de escribir en el archivo</td><td>El navegador no ofrece escritura directa.</td><td>Usa Chrome o Edge y abre el archivo con <strong>Abrir…</strong> o arrastrándolo.</td></tr>
+</tbody>
+</table></div>
+</section>
+
+<section id="revisao-es" aria-labelledby="h-revisao-es">
+<h2 id="h-revisao-es">Repaso rápido</h2>
+<p>Intenta responder antes de abrir cada pregunta.</p>
+<div class="quiz">
+<details><summary>1. Edité varias celdas y cerré la pestaña. ¿Cambió el archivo?</summary><p>No. Las ediciones quedan en memoria hasta que guardas, y la aplicación avisa al cerrar con cambios pendientes.</p></details>
+<details><summary>2. ¿Cómo deshago solo la última edición?</summary><p>No hay deshacer paso a paso. Corrígela a mano o usa <strong>Reverter</strong>, que vuelve al último estado guardado.</p></details>
+<details><summary>3. ¿Cómo encuentro las filas sin correo?</summary><p>Escribe <code>NULL</code> en el filtro de la columna <code>email</code>.</p></details>
+<details><summary>4. ¿Qué ocurre si falla el tercero de cinco comandos?</summary><p>La ejecución se detiene. Los dos primeros siguen aplicados, salvo que estén en una transacción deshecha con <code>ROLLBACK</code>.</p></details>
+<details><summary>5. ¿Por qué el código postal <code>01310</code> conserva el cero al importar un CSV?</summary><p>Porque los valores con cero a la izquierda hacen que la columna se cree como TEXT.</p></details>
+<details><summary>6. ¿Cuál es la forma más completa de hacer una copia de seguridad?</summary><p><strong>Salvar como…</strong>, porque el archivo lo conserva todo, incluidas las tablas virtuales, que el script <code>.sql</code> no incluye por completo.</p></details>
+</div>
+<a class="back" href="#top">↑ Volver al inicio</a>
+</section>
+
+<section id="referencias-es" aria-labelledby="h-referencias-es">
+<h2 id="h-referencias-es">Referencias</h2>
+<ol class="refs">
+<li id="ref-1-es"><strong>Giovani Perotto Mesquita</strong>, “SQLite Manager”, aplicación en un único archivo HTML, <a href="sqlite-manager.html">giovanipm.github.io/sqlite-manager.html</a>.</li>
+<li id="ref-2-es"><strong>sql.js</strong> (en inglés), “sql.js: SQLite compiled to JavaScript”, consultado el 30/10/2026, <a href="https://github.com/sql-js/sql.js" rel="noopener">github.com/sql-js/sql.js</a>.</li>
+<li id="ref-3-es"><strong>SQLite</strong> (en inglés), “Datatypes In SQLite”, documentación de SQLite, consultado el 30/10/2026, <a href="https://www.sqlite.org/datatype3.html" rel="noopener">sqlite.org/datatype3.html</a>.</li>
+<li id="ref-4-es"><strong>SQLite</strong> (en inglés), “SQLite Foreign Key Support”, documentación de SQLite, consultado el 30/10/2026, <a href="https://www.sqlite.org/foreignkeys.html" rel="noopener">sqlite.org/foreignkeys.html</a>.</li>
+<li id="ref-5-es"><strong>SQLite</strong> (en inglés), “Write-Ahead Logging”, documentación de SQLite, consultado el 30/10/2026, <a href="https://www.sqlite.org/wal.html" rel="noopener">sqlite.org/wal.html</a>.</li>
+<li id="ref-6-es"><strong>SQLite</strong> (en inglés), “ALTER TABLE”, documentación de SQLite, consultado el 30/10/2026, <a href="https://www.sqlite.org/lang_altertable.html" rel="noopener">sqlite.org/lang_altertable.html</a>.</li>
+<li id="ref-7-es"><strong>MDN Web Docs</strong> (en inglés), “File System API”, consultado el 30/10/2026, <a href="https://developer.mozilla.org/en-US/docs/Web/API/File_System_API" rel="noopener">developer.mozilla.org/en-US/docs/Web/API/File_System_API</a>.</li>
+</ol>
+<a class="back" href="#top">↑ Volver al inicio</a>
+</section>
+  </article>
+</div>
+</div>
+
+
+<footer>
+  <div class="wrap">
+    <span>Giovani Perotto Mesquita · Porto Alegre, RS</span>
+    <span><a href="projects.html" data-projects data-foot="0">Projetos</a> · <a href="resume.html" data-resume data-foot="1">Currículo</a> · <a href="contact.html" data-contact data-foot="2">Contato</a></span>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('.lang [role="option"]'));
+    var titles = {"pt": "SQLite Manager: manual de utilização · Giovani Perotto Mesquita", "en": "SQLite Manager: user manual · Giovani Perotto Mesquita", "it": "SQLite Manager: manuale d'uso · Giovani Perotto Mesquita", "es": "SQLite Manager: manual de uso · Giovani Perotto Mesquita"};
+    var foots = {"pt": ["Projetos", "Currículo", "Contato"], "en": ["Projects", "Resume", "Contact"], "it": ["Progetti", "Curriculum", "Contatti"], "es": ["Proyectos", "Currículum", "Contacto"]};
+    var langs = { pt: 'pt-BR', en: 'en', it: 'it', es: 'es' };
+    var bar = document.querySelector('.progress');
+    var article = document.querySelector('[role="tabpanel"]:not([hidden]) article');
+
+    function show(id, focus) {
+      tabs.forEach(function (t) {
+        var on = t.getAttribute('aria-controls') === id;
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+        if (on && focus) t.focus();
+      });
+      document.documentElement.lang = langs[id];
+      document.title = titles[id];
+      var suffix = id === 'pt' ? '' : '#' + id;
+      [['data-home', 'index.html'], ['data-about', 'about.html'], ['data-resume', 'resume.html'], ['data-projects', 'projects.html'], ['data-contact', 'contact.html']].forEach(function (p) {
+        document.querySelectorAll('[' + p[0] + ']').forEach(function (a) { a.href = p[1] + suffix; });
+      });
+      document.querySelectorAll('[data-foot]').forEach(function (a) { a.textContent = foots[id][+a.getAttribute('data-foot')]; });
+      article = document.querySelector('#' + id + ' article');
+      if (history.replaceState) history.replaceState(null, '', id === 'pt' ? location.pathname : '#' + id);
+      progress();
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () { show(t.getAttribute('aria-controls')); });
+      t.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (d) { e.preventDefault(); show(tabs[(i + d + tabs.length) % tabs.length].getAttribute('aria-controls'), true); }
+      });
+    });
+
+    // barra de progresso de leitura
+    function progress() {
+      if (!article) return;
+      var r = article.getBoundingClientRect();
+      var total = r.height - window.innerHeight;
+      var p = total > 0 ? Math.min(Math.max(-r.top / total, 0), 1) : 1;
+      bar.style.width = (p * 100) + '%';
+    }
+    window.addEventListener('scroll', progress, { passive: true });
+    window.addEventListener('resize', progress);
+
+    // destaca a seção atual no índice
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          var panel = e.target.closest('[role="tabpanel"]');
+          panel.querySelectorAll('.toc a').forEach(function (a) {
+            if (a.getAttribute('href') === '#' + e.target.id) a.setAttribute('aria-current', 'true');
+            else a.removeAttribute('aria-current');
+          });
+        });
+      }, { rootMargin: '-20% 0px -70% 0px' });
+      document.querySelectorAll('article section[id]').forEach(function (s) { io.observe(s); });
+    }
+
+    var h = (location.hash || '').replace('#', '');
+    var m = h.match(/^(?:.*-)?(en|it|es)$/);
+    if (m) {
+      show(m[1]);
+      if (h !== m[1]) { var el = document.getElementById(h); if (el) el.scrollIntoView(); if (history.replaceState) history.replaceState(null, '', '#' + h); }
+    } else progress();
+  })();
+</script>
+<script>
+  // seletor de idioma em combobox: abre a lista, sincroniza o botão e fecha
+  (function () {
+    var box = document.querySelector('.lang'); if (!box) return;
+    var btn = box.querySelector('.lang-current'), list = box.querySelector('.lang-list'), now = btn.querySelector('.lang-now');
+    var opts = Array.prototype.slice.call(list.querySelectorAll('[role="option"]'));
+    var menu = {
+      pt: { index: 'Início', about: 'Sobre', resume: 'Currículo', projects: 'Projetos', contact: 'Contato' },
+      en: { index: 'Home', about: 'About', resume: 'Resume', projects: 'Projects', contact: 'Contact' },
+      it: { index: 'Home', about: 'Chi sono', resume: 'Curriculum', projects: 'Progetti', contact: 'Contatti' },
+      es: { index: 'Inicio', about: 'Sobre mí', resume: 'Currículum', projects: 'Proyectos', contact: 'Contacto' }
+    };
+    function translate(id) {
+      document.querySelectorAll('.nav ul a').forEach(function (l) {
+        var k = (l.getAttribute('href') || '').split('#')[0].replace('.html', '');
+        if (menu[id] && menu[id][k]) l.textContent = menu[id][k];
+      });
+      // links do menu para as páginas principais levam o idioma selecionado
+      var suf = id === 'pt' ? '' : '#' + id;
+      document.querySelectorAll('.nav a[href]').forEach(function (l) {
+        var m = l.getAttribute('href').match(/^(index|about|resume|projects|contact)\.html(#(pt|en|it|es))?$/);
+        if (m) l.setAttribute('href', m[1] + '.html' + suf);
+      });
+    }
+    function sync() {
+      var sel = opts.filter(function (o) { return o.getAttribute('aria-selected') === 'true'; })[0] || opts[0];
+      now.innerHTML = sel.querySelector('.flag').outerHTML + sel.getAttribute('data-code');
+      btn.setAttribute('aria-label', btn.getAttribute('data-label') + ': ' + sel.textContent.trim());
+      translate(sel.getAttribute('aria-controls'));
+      return sel;
+    }
+    function open() { list.hidden = false; btn.setAttribute('aria-expanded', 'true'); sync().focus(); }
+    function close(back) { list.hidden = true; btn.setAttribute('aria-expanded', 'false'); if (back) btn.focus(); }
+    btn.addEventListener('click', function () { if (list.hidden) open(); else close(); });
+    btn.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); open(); }
+      else if (e.key === 'Escape') close();
+    });
+    opts.forEach(function (o, i) {
+      o.addEventListener('click', function () { sync(); close(true); });
+      o.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0;
+        if (d) { e.preventDefault(); opts[(i + d + opts.length) % opts.length].focus(); }
+        else if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); opts[e.key === 'Home' ? 0 : opts.length - 1].focus(); }
+        else if (e.key === 'Escape') { e.preventDefault(); close(true); }
+        else if (e.key === 'Tab') close();
+      });
+    });
+    document.addEventListener('click', function (e) { if (!box.contains(e.target)) close(); });
+    new MutationObserver(sync).observe(list, { attributes: true, subtree: true, attributeFilter: ['aria-selected'] });
+    sync();
+  })();
+</script>
+</body>
+</html>
