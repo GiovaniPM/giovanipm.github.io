@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Truco Gaúcho · Giovani Perotto Mesquita</title>
+<meta name="description" content="Truco Gaúcho, ou truco cego: jogo de cartas com baralho espanhol, envido, flor e truco, seguindo o regulamento da Confederação Brasileira da Tradição Gaúcha. Contra o computador, em duplas ou trios. Em português, inglês, italiano e espanhol.">
+<meta name="author" content="Giovani Perotto Mesquita">
+<meta name="theme-color" content="#1E3A2B">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #17281F; --felt: #24523A; --felt-2: #1C4230; --panel: #FBF4E6; --panel-2: #F0E4CE; --ink: #2A2118; --muted: #6E5F4E; --line: #DCCBAE;
+    --accent: #A9371E; --accent-ink: #FFFFFF; --gold: #E5A93C; --us: #2C6FB5; --them: #B5402C;
+    --sans: "Hanken Grotesk", "Segoe UI", Arial, sans-serif; --serif: "Source Serif 4", Georgia, serif;
+    --cw: clamp(62px, 9.2vmin, 104px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --panel: #20302A; --panel-2: #2B3F36; --ink: #F4EDE0; --muted: #B3A897; --line: #3F5349; --accent: #CF5433; --us: #6BA9E8; --them: #EE8872; }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: var(--sans); -webkit-tap-highlight-color: transparent; }
+  button, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  button:disabled { cursor: default; opacity: .45; }
+  :focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+  .app { display: grid; grid-template-columns: minmax(0, 1fr) 340px; height: 100dvh; }
+  .stage { position: relative; display: flex; flex-direction: column; min-width: 0; padding: 8px; gap: 8px; }
+  .side { display: flex; flex-direction: column; gap: 8px; padding: 8px 8px 8px 0; min-height: 0; }
+  .box { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: .6rem .75rem; }
+
+  /* mesa */
+  .table { position: relative; flex: 1; min-height: 340px; border-radius: 22px; background: radial-gradient(ellipse at center, var(--felt) 0%, var(--felt-2) 80%); border: 6px solid #5B3B22; box-shadow: inset 0 0 40px rgba(0,0,0,.35), 0 10px 30px rgba(0,0,0,.35); overflow: hidden; }
+  .seat { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 3px; transform: translate(-50%, -50%); width: 150px; color: #FFF8EA; text-align: center; }
+  .nameplate { font-weight: 700; font-size: .84rem; padding: .12rem .55rem; border-radius: 99px; background: rgba(0,0,0,.42); white-space: nowrap; max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+  .seat.team0 .nameplate { box-shadow: inset 0 -2px 0 #7DB8F0; }
+  .seat.team1 .nameplate { box-shadow: inset 0 -2px 0 #F09A85; }
+  .seat.on .nameplate { background: var(--gold); color: #2A2118; }
+  .seat.out { opacity: .5; }
+  .backs { display: flex; }
+  .backs svg { width: calc(var(--cw) * .42); height: calc(var(--cw) * .65); margin-left: calc(var(--cw) * -.2); }
+  .backs svg:first-child { margin-left: 0; }
+  .slot { position: absolute; width: var(--cw); height: calc(var(--cw) * 1.55); transform: translate(-50%, -50%); }
+  .slot .pcard { position: absolute; left: 0; top: 0; }
+  .slot.old { margin-left: calc(var(--cw) * -.42 * var(--back)); margin-top: calc(var(--cw) * -.12 * var(--back)); filter: brightness(.72); }
+  .pcard { width: var(--cw); height: calc(var(--cw) * 1.55); display: block; filter: drop-shadow(0 3px 5px rgba(0,0,0,.4)); }
+  .slot .pcard.win { filter: drop-shadow(0 0 7px var(--gold)); }
+  .bubble { position: absolute; left: 50%; transform: translate(-50%, -100%); top: -4px; background: #FFFDF6; color: #2A2118; font-family: var(--serif); font-weight: 700; padding: .25rem .6rem; border-radius: 12px; box-shadow: 0 3px 10px rgba(0,0,0,.45); font-size: 1rem; white-space: nowrap; z-index: 6; animation: pop .18s ease-out; }
+  .bubble small { display: block; font-family: var(--sans); font-weight: 400; font-size: .72rem; white-space: normal; width: 170px; color: #6E5F4E; }
+  @keyframes pop { from { transform: translate(-50%, -80%) scale(.7); opacity: 0; } }
+  .vazas { position: absolute; left: 10px; top: 10px; display: flex; gap: 5px; }
+  .vaza { width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(255,255,255,.6); background: transparent; }
+  .vaza.t0 { background: #7DB8F0; } .vaza.t1 { background: #F09A85; } .vaza.tie { background: #CFC6B2; }
+  .stake { position: absolute; right: 10px; top: 10px; color: #FFF8EA; background: rgba(0,0,0,.42); padding: .15rem .6rem; border-radius: 99px; font-weight: 700; font-size: .84rem; }
+  /* minha mão */
+  .hand { display: flex; justify-content: center; gap: 8px; min-height: calc(var(--cw) * 1.55 + 4px); }
+  .hcard { padding: 0; border: 0; background: transparent; border-radius: 9px; transition: transform .1s; }
+  .hcard:hover:not(:disabled) { transform: translateY(-8px); }
+  .hcard:disabled { opacity: 1; filter: saturate(.75) brightness(.86); }
+  .action { min-height: 86px; }
+  .action h2 { font-family: var(--serif); font-size: 1.05rem; line-height: 1.2; margin: 0 0 .3rem; }
+  .action p { margin: 0 0 .4rem; font-size: .86rem; line-height: 1.3; color: var(--muted); }
+  .btns { display: flex; flex-wrap: wrap; gap: .35rem; }
+  .btn { border: 1px solid var(--line); background: var(--panel-2); border-radius: 9px; padding: .5rem .72rem; font-weight: 700; font-size: .9rem; min-height: 40px; }
+  .btn:hover:not(:disabled) { border-color: var(--accent); }
+  .btn.pri { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .btn.sm { padding: .3rem .55rem; font-size: .8rem; min-height: 32px; }
+  .mine { font-size: .82rem; color: var(--muted); margin-top: .35rem; }
+  .mine b { color: var(--ink); }
+
+  /* placar */
+  .score { display: grid; gap: .4rem; }
+  .steam { display: grid; grid-template-columns: 1fr auto; gap: .15rem .5rem; align-items: baseline; }
+  .steam strong { font-size: .92rem; }
+  .steam.t0 strong { color: var(--us); } .steam.t1 strong { color: var(--them); }
+  .pts { font-family: var(--serif); font-weight: 700; font-size: 1.35rem; font-variant-numeric: tabular-nums; }
+  .tentos { grid-column: 1 / -1; display: flex; gap: 2px; }
+  .tentos i { flex: 1; height: 8px; border-radius: 3px; background: var(--panel-2); border: 1px solid var(--line); }
+  .tentos i.gap { margin-left: 6px; }
+  .steam.t0 .tentos i.on { background: var(--us); border-color: var(--us); }
+  .steam.t1 .tentos i.on { background: var(--them); border-color: var(--them); }
+  .sublabel { font-size: .72rem; color: var(--muted); display: flex; justify-content: space-between; }
+  .log { flex: 1; min-height: 80px; overflow: auto; font-size: .82rem; line-height: 1.35; }
+  .log ol { list-style: none; margin: 0; padding: 0; display: grid; gap: .25rem; }
+  .log li { color: var(--muted); }
+  .log li:last-child { color: var(--ink); font-weight: 600; }
+  .bar { display: flex; flex-wrap: wrap; gap: .35rem; }
+
+  /* telas */
+  .overlay { position: fixed; inset: 0; display: grid; place-items: center; padding: 1rem; overflow: auto; z-index: 20; background: var(--bg); }
+  .sheet, dialog { background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 16px; padding: 1.2rem clamp(1rem, 4vw, 1.8rem); box-shadow: 0 24px 70px rgba(0,0,0,.5); }
+  .sheet { width: min(100%, 620px); }
+  dialog { width: min(94vw, 640px); max-height: 90dvh; overflow: auto; }
+  dialog::backdrop { background: rgba(5, 15, 10, .65); }
+  .back { font-size: .85rem; color: var(--accent); text-decoration: none; }
+  .hero { width: 100%; height: 170px; border-radius: 12px; display: block; margin: .6rem 0; }
+  .sheet h1 { font-family: var(--serif); font-size: clamp(2.1rem, 7vw, 3rem); line-height: 1.05; margin: .2rem 0 .3rem; }
+  .tag { font-family: var(--serif); font-size: 1.1rem; color: var(--accent); margin: 0 0 .4rem; font-weight: 600; }
+  .sheet p { line-height: 1.45; margin: .3rem 0; font-size: .95rem; color: var(--muted); }
+  .row { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: .8rem; align-items: end; }
+  .field { display: grid; gap: .2rem; font-size: .8rem; color: var(--muted); }
+  select { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: .45rem .5rem; color: var(--ink); min-height: 38px; }
+  dialog h2 { font-family: var(--serif); margin: 0 0 .6rem; font-size: 1.4rem; }
+  dialog h3 { font-size: 1rem; margin: 1rem 0 .35rem; }
+  .rules { padding-left: 1.1rem; margin: 0; display: grid; gap: .4rem; line-height: 1.4; font-size: .93rem; }
+  .ladder { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+  .ladder .pcard { --cw: 46px; width: 46px; height: 71px; }
+  .step { display: inline-flex; align-items: center; gap: 2px; padding: 2px; border-radius: 7px; background: var(--panel-2); }
+  .step small { font-size: .78rem; font-weight: 700; color: var(--muted); padding: 0 2px; }
+  .ladnote { width: 100%; margin: .3rem 0 0; font-size: .82rem; color: var(--muted); }
+  .sumline { display: flex; justify-content: space-between; gap: 1rem; padding: .32rem .45rem; background: var(--panel-2); border-radius: 7px; font-size: .92rem; margin-bottom: .25rem; }
+  .reveal { display: flex; flex-wrap: wrap; gap: .8rem; margin: .5rem 0; }
+  .reveal div { font-size: .78rem; color: var(--muted); }
+  .reveal .cards { display: flex; gap: 3px; }
+  .reveal .pcard { width: 52px; height: 81px; }
+  .art2 { width: 100%; height: 130px; border-radius: 10px; display: block; margin-bottom: .6rem; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  @media (max-width: 900px) {
+    .app { grid-template-columns: minmax(0, 1fr); height: auto; min-height: 100dvh; }
+    .stage { padding: 4px; }
+    .table { min-height: 290px; height: 44dvh; flex: none; }
+    .action { order: -1; }
+    .side { padding: 0 4px 12px; }
+    .log { max-height: 200px; flex: none; }
+    :root { --cw: clamp(58px, 17vw, 96px); }
+    .seat { width: 110px; }
+    .nameplate { font-size: .74rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { .hcard { transition: none; } .bubble { animation: none; } }
+</style>
+</head>
+<body>
+<div class="app" id="app" hidden>
+  <main class="stage">
+    <div class="table" id="table" role="group" aria-label="Mesa"></div>
+    <div class="hand" id="hand" role="group"></div>
+  </main>
+  <aside class="side">
+    <section class="box score" id="score"></section>
+    <section class="box action" id="action" aria-live="polite"></section>
+    <section class="box log" aria-label="Histórico"><ol id="log"></ol></section>
+    <div class="bar">
+      <button type="button" class="btn sm" id="bRules" data-t="rules"></button>
+      <button type="button" class="btn sm" id="bSound"></button>
+      <button type="button" class="btn sm" id="bSpeed"></button>
+      <button type="button" class="btn sm" id="bMenu" data-t="menu"></button>
+    </div>
+  </aside>
+</div>
+
+<section class="overlay" id="ovTitle" aria-labelledby="ttl">
+  <div class="sheet">
+    <a class="back" id="backLink" href="projects.html" data-t="back"></a>
+    <svg class="hero" id="heroArt" viewBox="0 0 620 170" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
+    <h1 id="ttl" data-t="name"></h1>
+    <p class="tag" data-t="tagline"></p>
+    <p data-t="story"></p>
+    <div class="row">
+      <label class="field"><span data-t="tableSize"></span>
+        <select id="sizeSel"><option value="1" data-t="size1"></option><option value="2" data-t="size2"></option><option value="3" data-t="size3"></option></select></label>
+      <label class="field"><span data-t="level"></span>
+        <select id="levelSel"><option value="0" data-t="easy"></option><option value="1" data-t="medium"></option><option value="2" data-t="hard"></option></select></label>
+      <label class="field"><span data-t="duration"></span>
+        <select id="durSel"><option value="1" data-t="dur1"></option><option value="3" data-t="dur3"></option></select></label>
+      <label class="field"><span data-t="lang"></span>
+        <select id="langSel"><option value="pt">Português</option><option value="en">English</option><option value="it">Italiano</option><option value="es">Español</option></select></label>
+    </div>
+    <div class="row">
+      <button type="button" class="btn pri" id="bPlay" data-t="play"></button>
+      <button type="button" class="btn" id="bResume" data-t="resume" hidden></button>
+      <button type="button" class="btn" id="bRules2" data-t="rules"></button>
+    </div>
+  </div>
+</section>
+
+<dialog id="dRules" aria-labelledby="rulesH"><h2 id="rulesH" data-t="rulesTitle"></h2><h3 data-t="ladderTitle"></h3><div class="ladder" id="ladder"></div><div id="rulesBody"></div><div class="row"><button type="button" class="btn pri" id="bRulesClose" data-t="close"></button></div></dialog>
+<dialog id="dHand" aria-labelledby="handH"></dialog>
+
+<script>
+// Motor do truco cego, conforme o regulamento da CBTG. Estado em JSON puro, sem nada de tela.
+function Engine() {
+  const SUITS = ['e', 'b', 'c', 'o'], RANKS = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12], TARGET = 24;
+  const DECK = []; SUITS.forEach((s) => RANKS.forEach((r) => DECK.push(r + s)));
+  const rankOf = (c) => parseInt(c, 10), suitOf = (c) => c[c.length - 1];
+  // hierarquia do regulamento, art. XVI
+  function power(c) {
+    if (c === '1e') return 14; if (c === '1b') return 13; if (c === '7e') return 12; if (c === '7o') return 11;
+    const r = rankOf(c);
+    if (r === 3) return 10; if (r === 2) return 9; if (r === 1) return 8; if (r === 12) return 7; if (r === 11) return 6; if (r === 10) return 5; if (r === 7) return 4; if (r === 6) return 3; if (r === 5) return 2;
+    return 1;
+  }
+  const pts = (c) => { const r = rankOf(c); return r <= 7 ? r : 0; };
+  // envido: duas do mesmo naipe somam 20; sem par, vale a maior branca; só negras, Rei > Cavalo > Sota, abaixo do Ás
+  function envidoOf(hand) {
+    let best = -1;
+    for (let a = 0; a < hand.length; a++) for (let b = a + 1; b < hand.length; b++) if (suitOf(hand[a]) === suitOf(hand[b])) best = Math.max(best, 20 + pts(hand[a]) + pts(hand[b]));
+    if (best >= 0) return best;
+    const w = Math.max(...hand.map(pts));
+    if (w > 0) return w;
+    const r = Math.max(...hand.map(rankOf));
+    return r === 12 ? 0.3 : r === 11 ? 0.2 : 0.1;
+  }
+  const isFlor = (hand) => hand.length === 3 && hand.every((c) => suitOf(c) === suitOf(hand[0]));
+  const florOf = (hand) => 20 + hand.reduce((t, c) => t + pts(c), 0);
+
+  function rnd(S) { S.seed = (S.seed + 0x6D2B79F5) | 0; let t = Math.imul(S.seed ^ (S.seed >>> 15), 1 | S.seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
+  const log = (S, k, v) => { S.log.push({ k, v: v || {} }); if (S.log.length > 300) S.log.shift(); };
+  const say = (S, seat, k) => { S.fx.push({ t: 'say', seat, k }); };
+  const teamOf = (s) => s % 2;
+  const seats = (S) => Array.from({ length: S.n }, (_, i) => i);
+  const posFromMao = (S, s) => (s - S.mao + S.n) % S.n;
+  const falta = (S) => TARGET - Math.max(S.scores[0], S.scores[1]);
+  const playedThisHand = (S, s) => S.played.some((t) => t.some((p) => p.seat === s));
+  const inTrick = (S, s) => S.played[S.trick].some((p) => p.seat === s);
+
+  function newGame({ players, bestOf, seed }) {
+    const n = players.length;
+    const S = { n, players: players.map((p) => ({ name: p.name, kind: p.kind })), scores: [0, 0], matches: [0, 0], bestOf: bestOf || 1, seed: seed == null ? (Date.now() | 0) : seed, mao: 0, handNo: 0, log: [], fx: [], over: null, matchWinner: null };
+    S.mao = Math.floor(rnd(S) * n);
+    deal(S);
+    return S;
+  }
+  function deal(S) {
+    const d = DECK.slice();
+    for (let i = d.length - 1; i > 0; i--) { const j = Math.floor(rnd(S) * (i + 1)); [d[i], d[j]] = [d[j], d[i]]; }
+    S.hands = seats(S).map((s) => d.slice(s * 3, s * 3 + 3));
+    S.initial = S.hands.map((h) => h.slice());
+    S.played = [[], [], []]; S.trick = 0; S.results = []; S.folded = new Array(S.n).fill(false); S.turn = S.mao; S.leader = S.mao;
+    S.tr = { level: 1, by: -1 }; S.trPending = null; S.env = null; S.envDone = false; S.fl = null; S.florDone = false; S.florAny = false; S.deferred = null;
+    S.sum = []; S.reveal = []; S.handWinner = null; S.handNo++; S.matchWinner = null; S.phase = 'play';
+    log(S, 'handStart', { p: S.mao });
+    beginTurn(S);
+  }
+
+  // ---------------------------------------------------------------- pontos
+  function add(S, team, n, key, extra) {
+    const before = S.scores[team];
+    S.scores[team] = Math.min(TARGET, before + n);
+    S.sum.push({ team, n, key });
+    log(S, 'scored', Object.assign({ team, n, why: key }, extra));
+    if (S.scores[team] >= TARGET && S.matchWinner == null) { S.matchWinner = team; closeHand(S); return true; }
+    return false;
+  }
+  function closeHand(S) {
+    S.phase = 'handEnd'; S.trPending = null; S.env = null; S.fl = null;
+  }
+  function finishHand(S, winner, why, value) {
+    S.handWinner = winner;
+    if (S.deferred) {
+      // flor e flor: mostram-se os pontos ao fim da volta e o maior leva a soma
+      const d = S.deferred; S.deferred = null;
+      const w = bestTeam(S, d.sung, florVal);
+      addReveal(S, d.sung);
+      if (add(S, w, 3 * d.sung.length, 'florFlor')) return;
+    }
+    if (winner != null && value > 0) { if (add(S, winner, value, why)) return; }
+    closeHand(S);
+  }
+  const florVal = (S, s) => florOf(S.initial[s]);
+  const envVal = (S, s) => envidoOf(S.initial[s]);
+  function bestTeam(S, list, fn) {
+    // em igualdade, ganha o mão: quem joga primeiro na ordem da volta
+    return teamOf(list.slice().sort((a, b) => fn(S, b) - fn(S, a) || posFromMao(S, a) - posFromMao(S, b))[0]);
+  }
+  function addReveal(S, list) { list.forEach((s) => { if (!S.reveal.includes(s)) S.reveal.push(s); }); }
+
+  // ---------------------------------------------------------------- flor
+  function florQueue(S, from) {
+    const out = [];
+    for (let k = 0; k < S.n; k++) {
+      const s = (from + k) % S.n;
+      if (!S.folded[s] && !playedThisHand(S, s) && isFlor(S.initial[s]) && !(S.fl && (S.fl.sung.includes(s) || S.fl.achic.includes(s)))) out.push(s);
+    }
+    return out;
+  }
+  function startFlor(S, from) {
+    const q = S.florDone ? [] : florQueue(S, from);
+    if (!q.length) return false;
+    S.env = null; S.envDone = true; // a flor anula o envido
+    S.florAny = true;
+    S.fl = { queue: q, sung: [], achic: [], level: 0, prop: -1, hadContra: false, accepted: false, refused: -1 };
+    S.phase = 'flor';
+    return true;
+  }
+  function florChoices(S, s) {
+    const f = S.fl, T = teamOf(s), O = 1 - T, oppSung = f.sung.some((x) => teamOf(x) === O);
+    if (f.level > 0 && f.prop === O) return f.level === 1 ? ['quero', 'resto', 'nao'] : ['quero', 'nao'];
+    if (f.level > 0) return ['flor'];
+    return oppSung ? ['flor', 'contra', 'resto', 'achico'] : ['flor', 'resto', 'achico'];
+  }
+  function responderIn(S, team, from) {
+    const list = seats(S).filter((s) => teamOf(s) === team && !S.folded[s]);
+    const h = list.find((s) => S.players[s].kind === 'human');
+    if (h !== undefined) return h;
+    for (let k = 1; k <= S.n; k++) { const s = (from + k) % S.n; if (list.includes(s)) return s; }
+    return list[0];
+  }
+  function florAct(S, k) {
+    const f = S.fl, s = f.queue[0], T = teamOf(s);
+    if (!florChoices(S, s).includes(k)) return false;
+    f.queue.shift();
+    const push = () => { if (!f.sung.includes(s)) f.sung.push(s); };
+    if (k === 'flor') { push(); say(S, s, 'flor'); log(S, 'sayFlor', { p: s }); }
+    else if (k === 'achico') { f.achic.push(s); say(S, s, 'achico'); log(S, 'sayAchico', { p: s }); }
+    else if (k === 'contra') { push(); f.level = 1; f.prop = T; f.hadContra = true; say(S, s, 'contra'); log(S, 'sayContra', { p: s }); }
+    else if (k === 'resto') { push(); f.level = 2; f.prop = T; say(S, s, 'resto'); log(S, 'sayResto', { p: s }); }
+    else if (k === 'quero') { push(); f.accepted = true; say(S, s, 'quero'); log(S, 'sayQuero', { p: s }); }
+    else if (k === 'nao') { if (!f.sung.includes(s)) f.achic.push(s); f.refused = T; say(S, s, 'nao'); log(S, 'sayNao', { p: s }); }
+    if (f.accepted || f.refused >= 0) {
+      // as flores restantes do grupo que não recusou ainda contam
+      f.queue.forEach((q) => { if (teamOf(q) === f.refused) f.achic.push(q); else f.sung.push(q); });
+      f.queue = [];
+    } else if (f.level > 0) {
+      const O = 1 - f.prop;
+      const waiting = f.queue.some((q) => teamOf(q) === O);
+      if (!waiting) {
+        const opp = f.sung.filter((x) => teamOf(x) === O);
+        if (opp.length) f.queue = [opp.find((x) => S.players[x].kind === 'human') ?? opp[0]].concat(f.queue);
+      }
+    }
+    if (!f.queue.length) settleFlor(S);
+    return true;
+  }
+  function settleFlor(S) {
+    const f = S.fl, sungT = (t) => f.sung.filter((x) => teamOf(x) === t), achT = (t) => f.achic.filter((x) => teamOf(x) === t);
+    const a = sungT(0), b = sungT(1);
+    S.fl = null; S.florDone = true;
+    let ended = false;
+    if (f.refused >= 0) {
+      const W = 1 - f.refused, own = sungT(W);
+      const v = f.hadContra && f.level === 2 ? 3 * f.sung.length : 3 * own.length + (achT(f.refused).length + sungT(f.refused).length);
+      addReveal(S, own);
+      ended = add(S, W, v, 'florRefused');
+    } else if (a.length && b.length) {
+      if (f.level === 0) S.deferred = { sung: f.sung.slice() };
+      else {
+        const W = bestTeam(S, f.sung, florVal), rest = f.level === 2 ? falta(S) : 0;
+        addReveal(S, f.sung);
+        ended = add(S, W, 3 * f.sung.length + rest, f.level === 2 ? 'florResto' : 'florContra');
+      }
+    } else if (a.length || b.length) {
+      const W = a.length ? 0 : 1, own = a.length ? a : b;
+      addReveal(S, own);
+      ended = add(S, W, 3 * own.length + achT(1 - W).length, 'florSimple');
+    } else {
+      // só cantos achicados e nenhum contrário: valem como flor simples
+      addReveal(S, f.achic);
+      [0, 1].forEach((t) => { const n = achT(t).length; if (n && !ended) ended = add(S, t, 3 * n, 'florSimple'); });
+    }
+    if (ended) return;
+    resume(S);
+  }
+  function resume(S) {
+    if (S.phase === 'handEnd') return;
+    if (S.trPending) { S.phase = 'truco'; return; }
+    S.phase = 'play';
+  }
+
+  // ---------------------------------------------------------------- envido
+  const envValue = (S, st) => (st.includes('f') ? falta(S) : st.reduce((t, k) => t + (k === 'e' ? 2 : 3), 0));
+  const envRefused = (st) => Math.max(1, st.slice(0, -1).reduce((t, k) => t + (k === 'e' ? 2 : k === 'r' ? 3 : 0), 0));
+  function envRaises(st) {
+    const last = st[st.length - 1];
+    if (last === 'f') return [];
+    const out = [];
+    if (last === 'e' && st.filter((k) => k === 'e').length < 2) out.push('e');
+    if (st.filter((k) => k === 'r').length < 2) out.push('r');
+    out.push('f');
+    return out;
+  }
+  function canEnvido(S, s) {
+    if (S.trick !== 0 || S.envDone || S.florAny || S.env || playedThisHand(S, s) || S.folded[s]) return false;
+    return !(S.tr.by === teamOf(s)); // quem pediu truco já não põe o envido
+  }
+  function callEnvido(S, s, k) {
+    say(S, s, k === 'e' ? 'envido' : k === 'r' ? 'real' : 'falta');
+    log(S, 'sayEnv', { p: s, c: k });
+    if (S.env) {
+      S.env.stack.push(k); S.env.by = teamOf(s); S.env.seat = s; S.env.resp = responderIn(S, 1 - teamOf(s), s);
+      return;
+    }
+    // quem tem flor precisa acusá-la: a flor anula o envido
+    if (startFlor(S, s)) return;
+    S.env = { stack: [k], by: teamOf(s), seat: s, resp: responderIn(S, 1 - teamOf(s), s) };
+    S.phase = 'envido';
+  }
+  function resolveEnvido(S, accepted) {
+    const e = S.env; S.env = null; S.envDone = true;
+    let ended = false;
+    if (accepted) {
+      const list = seats(S).filter((s) => !S.folded[s]);
+      const best = list.slice().sort((a, b) => envVal(S, b) - envVal(S, a) || posFromMao(S, a) - posFromMao(S, b));
+      const win = best[0], W = teamOf(win), otherT = list.filter((s) => teamOf(s) !== W).sort((a, b) => envVal(S, b) - envVal(S, a))[0];
+      log(S, 'sung', { p: win, v: envVal(S, win) });
+      if (otherT !== undefined) log(S, 'sung', { p: otherT, v: envVal(S, otherT) });
+      addReveal(S, [win]);
+      ended = add(S, W, envValue(S, e.stack), 'envido');
+    } else ended = add(S, e.by, envRefused(e.stack), 'envidoNo');
+    if (!ended) resume(S);
+  }
+
+  // ---------------------------------------------------------------- truco
+  const canTruco = (S, s) => S.tr.level < 4 && S.tr.by !== teamOf(s) && !S.trPending && !S.folded[s];
+  function callTruco(S, s) {
+    const to = S.tr.level === 1 ? 2 : S.tr.level + 1;
+    S.trPending = { to, by: teamOf(s), seat: s, resp: responderIn(S, 1 - teamOf(s), s) };
+    say(S, s, to === 2 ? 'truco' : to === 3 ? 'retruco' : 'vale4');
+    log(S, 'sayTruco', { p: s, to });
+    if (S.trick === 0 && startFlor(S, s)) return;
+    S.phase = 'truco';
+  }
+
+  // ---------------------------------------------------------------- jogo das vazas
+  const activeSeats = (S) => seats(S).filter((s) => !S.folded[s]);
+  function nextToPlay(S, from) {
+    for (let k = 1; k <= S.n; k++) { const s = (from + k) % S.n; if (!S.folded[s] && !inTrick(S, s)) return s; }
+    return -1;
+  }
+  function beginTurn(S) {
+    if (S.phase === 'handEnd') return;
+    S.phase = 'play';
+    if (S.trick === 0 && !playedThisHand(S, S.turn)) startFlor(S, S.turn);
+  }
+  function decide(S) {
+    const r = S.results;
+    if (r.length < 2) return null;
+    const [a, b, c] = r;
+    if (r.length === 2) {
+      if (a === 't' && b === 't') return null;
+      if (a === 't') return b;
+      if (b === 't') return a;
+      return a === b ? a : null;
+    }
+    if (c !== 't') return (a !== 't' && a === b) ? a : c;
+    if (a !== 't') return a; // empatando a terceira, ganha quem fez a primeira
+    if (b !== 't') return b;
+    // três vazas empatadas: ganha o que é mão, dos que empardaram na terceira
+    const t = S.played[2], top = Math.max(...t.map((p) => power(p.card)));
+    return teamOf(t.filter((p) => power(p.card) === top).map((p) => p.seat).sort((x, y) => posFromMao(S, x) - posFromMao(S, y))[0]);
+  }
+  function endTrick(S) {
+    const t = S.played[S.trick], top = Math.max(...t.map((p) => power(p.card))), tops = t.filter((p) => power(p.card) === top);
+    const teams = new Set(tops.map((p) => teamOf(p.seat)));
+    const res = teams.size === 2 ? 't' : teamOf(tops[0].seat);
+    S.results.push(res);
+    S.fx.push({ t: 'trick', res, top: tops[0].seat });
+    log(S, res === 't' ? 'trickTie' : 'trickWon', { p: tops[0].seat, n: S.trick + 1 });
+    let lead = res === 't' ? t[0].seat : tops[0].seat; // na parda, joga primeiro quem foi mão na vaza anterior
+    if (S.folded[lead]) { const nx = nextToPlay(S, lead); lead = nx; }
+    const w = decide(S);
+    if (w != null || S.trick === 2) {
+      const value = S.tr.level;
+      finishHand(S, w, 'hand', value);
+      return;
+    }
+    S.trick++; S.leader = lead; S.turn = lead;
+    beginTurn(S);
+  }
+  function foldAll(S, team) {
+    // grupo inteiro foi ao baralho
+    const W = 1 - team, noCard = !S.played.some((t) => t.some((p) => teamOf(p.seat) === team));
+    if (noCard && S.tr.level === 1 && !S.trPending && !S.envDone && !S.florAny) {
+      const flors = seats(S).filter((s) => teamOf(s) === W && isFlor(S.initial[s]));
+      finishHand(S, W, flors.length ? 'foldFlor' : 'foldStart', flors.length ? 3 * flors.length + 1 : 2);
+    } else finishHand(S, W, 'fold', S.tr.level);
+  }
+
+  // ---------------------------------------------------------------- ações
+  function actor(S) {
+    if (S.over) return -1;
+    if (S.phase === 'flor') return S.fl.queue[0];
+    if (S.phase === 'envido') return S.env.resp;
+    if (S.phase === 'truco') return S.trPending.resp;
+    if (S.phase === 'play') return S.turn;
+    return -1;
+  }
+  function legal(S) {
+    const a = [], s = actor(S);
+    if (S.phase === 'handEnd') return [{ type: 'next' }];
+    if (s < 0) return a;
+    if (S.phase === 'flor') { florChoices(S, s).forEach((k) => a.push({ type: 'fl', k })); return a; }
+    if (S.phase === 'envido') {
+      a.push({ type: 'quero' }, { type: 'nao' });
+      envRaises(S.env.stack).forEach((k) => a.push({ type: 'env', k }));
+      return a;
+    }
+    if (S.phase === 'truco') {
+      a.push({ type: 'quero' }, { type: 'nao' });
+      if (S.trPending.to < 4) a.push({ type: 'raise' });
+      if (canEnvido(S, s)) ['e', 'r', 'f'].forEach((k) => a.push({ type: 'env', k }));
+      return a;
+    }
+    S.hands[s].forEach((c, i) => a.push({ type: 'play', i }));
+    if (canEnvido(S, s)) ['e', 'r', 'f'].forEach((k) => a.push({ type: 'env', k }));
+    if (canTruco(S, s)) a.push({ type: 'truco' });
+    a.push({ type: 'fold' });
+    return a;
+  }
+  function act(S, a) {
+    S.fx = [];
+    if (S.over) return false;
+    if (a.type === 'next') {
+      if (S.phase !== 'handEnd') return false;
+      if (S.matchWinner != null) {
+        const w = S.matchWinner;
+        S.matches[w]++;
+        if (S.matches[w] >= Math.ceil(S.bestOf / 2)) { S.over = { winner: w }; S.phase = 'over'; log(S, 'gameWon', { team: w }); return true; }
+        S.scores = [0, 0];
+      }
+      S.mao = (S.mao + 1) % S.n;
+      deal(S);
+      return true;
+    }
+    const s = actor(S);
+    if (s < 0) return false;
+    const ok = legal(S).some((x) => x.type === a.type && (x.k === undefined || x.k === a.k) && (x.i === undefined || x.i === a.i));
+    if (!ok) return false;
+    switch (a.type) {
+      case 'fl': return florAct(S, a.k);
+      case 'env':
+        if (S.phase === 'envido' || S.phase === 'truco' || S.phase === 'play') callEnvido(S, s, a.k);
+        if (S.env && S.phase !== 'flor') S.phase = 'envido';
+        return true;
+      case 'quero':
+        say(S, s, 'quero'); log(S, 'sayQuero', { p: s });
+        if (S.phase === 'envido') { resolveEnvido(S, true); return true; }
+        S.tr = { level: S.trPending.to, by: S.trPending.by }; S.trPending = null; S.phase = 'play';
+        return true;
+      case 'nao':
+        say(S, s, 'nao'); log(S, 'sayNao', { p: s });
+        if (S.phase === 'envido') { resolveEnvido(S, false); return true; }
+        { const w = S.trPending.by, v = S.tr.level; S.trPending = null; finishHand(S, w, 'trucoNo', v); }
+        return true;
+      case 'raise': {
+        // "quero retruco": aceita a anterior e aumenta
+        const p = S.trPending, to = p.to + 1;
+        S.tr = { level: p.to, by: p.by };
+        S.trPending = { to, by: teamOf(s), seat: s, resp: responderIn(S, 1 - teamOf(s), s) };
+        say(S, s, to === 3 ? 'retruco' : 'vale4');
+        log(S, 'sayTruco', { p: s, to });
+        return true;
+      }
+      case 'truco': callTruco(S, s); return true;
+      case 'play': {
+        const c = S.hands[s].splice(a.i, 1)[0];
+        S.played[S.trick].push({ seat: s, card: c });
+        S.fx.push({ t: 'play', seat: s, card: c });
+        log(S, 'played', { p: s, c });
+        const nx = nextToPlay(S, s);
+        if (nx < 0) { endTrick(S); return true; }
+        S.turn = nx;
+        beginTurn(S);
+        return true;
+      }
+      case 'fold': {
+        S.folded[s] = true;
+        say(S, s, 'fold'); log(S, 'sayFold', { p: s });
+        const T = teamOf(s);
+        if (!seats(S).some((x) => teamOf(x) === T && !S.folded[x])) { foldAll(S, T); return true; }
+        const nx = nextToPlay(S, s);
+        if (nx < 0) { endTrick(S); return true; }
+        S.turn = nx;
+        beginTurn(S);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // ---------------------------------------------------------------- computador: só usa a própria mão e o que é público
+  function publicUnseen(S, s) {
+    const seen = new Set(S.initial[s]);
+    S.played.forEach((t) => t.forEach((p) => seen.add(p.card)));
+    S.reveal.filter((x) => x !== s && S.phase === 'handEnd').forEach((x) => S.initial[x].forEach((c) => seen.add(c)));
+    return DECK.filter((c) => !seen.has(c));
+  }
+  // estimativa da chance de ganhar a volta: sorteia as cartas ocultas e joga cada vaza com regra simples
+  function estimate(S, s, samples, o) {
+    const unseen = publicUnseen(S, s), T = teamOf(s), forced = o && o.card, strong = o && o.strong;
+    let wins = 0, done0 = 0;
+    for (let i = 0; i < samples * (strong ? 4 : 1) && done0 < samples; i++) {
+      for (let j = unseen.length - 1; j > 0; j--) { const q = Math.floor(rnd(S) * (j + 1)); [unseen[j], unseen[q]] = [unseen[q], unseen[j]]; }
+      let u = 0;
+      const hands = seats(S).map((x) => (x === s ? S.hands[s].slice() : unseen.slice(u, u += S.hands[x].length)));
+      // quem pede truco costuma ter jogo: descarta sorteios em que o proponente estaria fraco
+      if (strong) { const h = hands[strong.seat]; if (h.length && Math.max(...h.map(power)) < strong.min) continue; }
+      done0++;
+      const res = S.results.slice();
+      let cur = S.played[S.trick].slice(), order = S.turn;
+      if (forced) { hands[s].splice(hands[s].indexOf(forced), 1); cur = cur.concat({ seat: s, card: forced }); order = (s + 1) % S.n; }
+      let guard = 0, done = null;
+      while (done == null && guard++ < 40) {
+        const already = new Set(cur.map((p) => p.seat));
+        let seat = -1;
+        for (let k = 0; k < S.n; k++) { const x = (order + k) % S.n; if (!S.folded[x] && !already.has(x) && hands[x].length) { seat = x; break; } }
+        if (seat < 0) {
+          if (!cur.length) break;
+          const top = Math.max(...cur.map((p) => power(p.card))), tops = cur.filter((p) => power(p.card) === top), ts = new Set(tops.map((p) => teamOf(p.seat)));
+          res.push(ts.size === 2 ? 't' : teamOf(tops[0].seat));
+          const [a, b, c] = res;
+          if (res.length === 2) { if (a === 't' && b !== 't') done = b; else if (b === 't' && a !== 't') done = a; else if (a === b && a !== 't') done = a; }
+          else if (res.length === 3) done = c !== 't' ? ((a !== 't' && a === b) ? a : c) : (a !== 't' ? a : b !== 't' ? b : teamOf(S.mao));
+          order = ts.size === 2 ? cur[0].seat : tops[0].seat;
+          cur = [];
+          continue;
+        }
+        const h = hands[seat].sort((p, q) => power(p) - power(q));
+        let top = -1, topT = -1;
+        cur.forEach((p) => { const v = power(p.card); if (v > top) { top = v; topT = teamOf(p.seat); } else if (v === top && teamOf(p.seat) !== topT) topT = -1; });
+        let c;
+        if (!cur.length) c = h[h.length - 1];
+        else if (topT === teamOf(seat)) c = h[0];
+        else c = h.find((x) => power(x) > top) || h[0];
+        h.splice(h.indexOf(c), 1);
+        cur.push({ seat, card: c });
+        order = seat;
+      }
+      if (done === T) wins++;
+    }
+    return done0 ? wins / done0 : 0.5;
+  }
+  function envChance(S, s, samples) {
+    const unseen = publicUnseen(S, s), mine = envidoOf(S.initial[s]), myPos = posFromMao(S, s), T = teamOf(s), rivals = seats(S).filter((x) => teamOf(x) !== T && !S.folded[x]);
+    let wins = 0;
+    for (let i = 0; i < samples; i++) {
+      for (let j = unseen.length - 1; j > 0; j--) { const q = Math.floor(rnd(S) * (j + 1)); [unseen[j], unseen[q]] = [unseen[q], unseen[j]]; }
+      let u = 0, ok = true;
+      for (const r of rivals) {
+        const known = S.played.flat().filter((p) => p.seat === r).map((p) => p.card), h = known.concat(unseen.slice(u, u += 3 - known.length));
+        const v = envidoOf(h);
+        if (v > mine || (v === mine && posFromMao(S, r) < myPos)) { ok = false; break; }
+      }
+      if (ok) wins++;
+    }
+    return wins / samples;
+  }
+  function choosePlay(S, s) {
+    const L = S.players[s].kind, h = S.hands[s], sorted = h.map((c, i) => ({ c, i, v: power(c) })).sort((a, b) => a.v - b.v);
+    if (L === 2 && h.length > 1) {
+      let best = sorted[0], top = -1;
+      sorted.forEach((x) => { const p = estimate(S, s, 80, { card: x.c }); if (p > top + 0.005) { top = p; best = x; } });
+      return { type: 'play', i: best.i };
+    }
+    if (L === 0 && rnd(S) < 0.3) return { type: 'play', i: sorted[Math.floor(rnd(S) * sorted.length)].i };
+    const cur = S.played[S.trick], T = teamOf(s);
+    let top = -1, topT = -1;
+    cur.forEach((p) => { const v = power(p.card); if (v > top) { top = v; topT = teamOf(p.seat); } else if (v === top && teamOf(p.seat) !== topT) topT = -1; });
+    if (!cur.length) {
+      if (S.trick === 0 && sorted.length > 1) {
+        // abre com a do meio se tiver uma forte guardada; senão, com a maior
+        return { type: 'play', i: sorted[sorted.length - 1].v >= 11 && L > 0 ? sorted[1].i : sorted[sorted.length - 1].i };
+      }
+      return { type: 'play', i: sorted[sorted.length - 1].i };
+    }
+    if (topT === T) return { type: 'play', i: sorted[0].i };
+    const beat = sorted.find((x) => x.v > top);
+    if (beat) return { type: 'play', i: beat.i };
+    const tie = sorted.find((x) => x.v === top);
+    if (tie && topT !== -1 && (S.trick > 0 || L === 2)) return { type: 'play', i: tie.i };
+    return { type: 'play', i: sorted[0].i };
+  }
+  function ai(S) {
+    if (S.phase === 'handEnd') return { type: 'next' };
+    const s = actor(S), L = S.players[s].kind, T = teamOf(s), my = S.scores[T], rest = TARGET - my, oppLeft = TARGET - S.scores[1 - T];
+    const samples = [10, 40, 120][L], bluff = [0.03, 0.05, 0.1][L];
+    if (S.phase === 'flor') {
+      const c = florChoices(S, s), v = florOf(S.initial[s]);
+      if (c.includes('quero')) {
+        if (c.includes('resto') && v >= [99, 36, 34][L]) return { type: 'fl', k: 'resto' };
+        return { type: 'fl', k: v >= [24, 29, 31][L] ? 'quero' : 'nao' };
+      }
+      if (c.includes('contra')) {
+        if (L > 0 && v >= 36) return { type: 'fl', k: 'resto' };
+        if (L > 0 && v >= 31) return { type: 'fl', k: 'contra' };
+        if (L === 2 && v < 25) return { type: 'fl', k: 'achico' };
+      }
+      return { type: 'fl', k: 'flor' };
+    }
+    if (S.phase === 'envido') {
+      const v = envidoOf(S.initial[s]), st = S.env.stack, value = envValue(S, st), mao = posFromMao(S, s) === 0 ? 1 : 0;
+      const need = (value >= 6 ? 30 : value >= 4 ? 28 : 26) + [2, 0, -1][L] - mao;
+      if (S.scores[1 - T] + envRefused(st) >= TARGET) return { type: 'quero' };
+      const raises = envRaises(st);
+      if (L > 0 && v >= 31 && raises.includes('r') && !st.includes('r')) return { type: 'env', k: 'r' };
+      if (L === 2 && v >= 33 && raises.includes('f') && rest <= 6) return { type: 'env', k: 'f' };
+      if (L === 2) {
+        // aceitar compensa acima de (valor - recusa) / (2 × valor); a folga cobre quem canta porque tem pontos
+        const p = envChance(S, s, 120), r = envRefused(st), be = (value - r) / (2 * value);
+        return { type: p >= be + 0.1 ? 'quero' : 'nao' };
+      }
+      return { type: v >= need ? 'quero' : 'nao' };
+    }
+    if (S.phase === 'truco') {
+      const to = S.trPending.to, p = estimate(S, s, samples, L === 2 ? { strong: { seat: S.trPending.seat, min: to === 2 ? 9 : 10 } } : null);
+      if (S.scores[1 - T] + S.tr.level >= TARGET) return { type: 'quero' };
+      if (canEnvido(S, s) && L > 0) { const v = envidoOf(S.initial[s]); if (v >= 29 && S.trPending.to === 2) return { type: 'env', k: v >= 31 ? 'r' : 'e' }; }
+      if (to < 4 && p > [0.95, 0.8, 0.72][L]) return { type: 'raise' };
+      const need = L === 2 ? (to === 2 ? 0.3 : to === 3 ? 0.42 : 0.5) : (to === 2 ? 0.38 : to === 3 ? 0.5 : 0.6) + [0.12, 0][L];
+      return { type: p >= need ? 'quero' : 'nao' };
+    }
+    // na própria vez
+    if (canEnvido(S, s)) {
+      const v = envidoOf(S.initial[s]), mao = posFromMao(S, s) === 0 ? 1 : 0;
+      if (rest <= 2 && v >= 27 && L === 2) return { type: 'env', k: 'f' };
+      if (L === 2) {
+        const p = envChance(S, s, 120);
+        if (p >= 0.6) return { type: 'env', k: v >= 32 ? 'r' : 'e' };
+      } else if (v >= [31, 29][L] - mao) return { type: 'env', k: L > 0 && v >= 32 ? 'r' : 'e' };
+      if (rnd(S) < bluff * 0.6 && v >= 20) return { type: 'env', k: 'e' };
+    }
+    if (canTruco(S, s) && (L === 2 || S.played[S.trick].length || S.trick > 0)) {
+      const p = estimate(S, s, samples);
+      if (p > [0.9, 0.75, 0.68][L] || (rnd(S) < bluff && S.trick > 0)) return { type: 'truco' };
+    }
+    return choosePlay(S, s);
+  }
+
+  return { DECK, SUITS, RANKS, TARGET, rankOf, suitOf, power, pts, envidoOf, isFlor, florOf, envValue, envRefused, envRaises, falta, newGame, deal, act, actor, legal, ai, choosePlay, canEnvido, canTruco, florChoices, estimate, teamOf, decide };
+}
+</script>
+
+<script>
+(() => {
+  'use strict';
+  const E = Engine();
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const Store = {
+    get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* sem armazenamento */ } },
+  };
+
+  // ---------------------------------------------------------------- cartas espanholas em SVG
+  const SUIT_COLOR = { e: '#2F4A73', b: '#2E7D4F', c: '#B5322A', o: '#C98A10' };
+  function pip(s, x, y, k) {
+    const t = `transform="translate(${x} ${y}) scale(${k})"`;
+    if (s === 'e') return `<g ${t}><path d="M0 -16L2.4 -11V7H-2.400V-11Z" fill="#B9C6D8" stroke="#2F4A73" stroke-width="1"/><path d="M-7 7H7V9.500H-7Z" fill="#C98A10" stroke="#7A5208" stroke-width=".6"/><path d="M-1.800 9.500H1.800V16H-1.800Z" fill="#7A3B16"/><circle cy="17" r="2" fill="#C98A10"/></g>`;
+    if (s === 'b') return `<g ${t}><path d="M-5 16C-7 6 -9 -4 -8 -11C-7 -17 5 -18 7 -12C9 -6 4 6 3 16C2 18 -4 18 -5 16Z" fill="#5C8A3A" stroke="#2E5A22" stroke-width="1.100"/><path d="M-4 -7L-1 -4M2 -10L4 -7M-3 3L0 6" stroke="#2E5A22" stroke-width="1.300" stroke-linecap="round"/></g>`;
+    if (s === 'c') return `<g ${t}><path d="M-9 -14H9C9 -5 6 -1 2 0V8H6V12H-6V8H-2V0C-6 -1 -9 -5 -9 -14Z" fill="#D2483C" stroke="#7A1E18" stroke-width="1"/><path d="M-9 -14H9V-11H-9Z" fill="#E9B23E"/></g>`;
+    return `<g ${t}><circle r="12" fill="#EDB931" stroke="#8A5E08" stroke-width="1.300"/><circle r="7.500" fill="none" stroke="#8A5E08" stroke-width="1"/><circle r="2.500" fill="#8A5E08"/></g>`;
+  }
+  // desenho das figuras: Sota de pé, Cavalo e Rei coroado
+  function figure(r, s) {
+    const col = SUIT_COLOR[s];
+    if (r === 12) return `<g transform="translate(50 86)"><path d="M-22 56C-22 22 -14 8 0 8S22 22 22 56Z" fill="${col}"/><path d="M-3 8H3L5 56H-5Z" fill="#E9D9B4"/><circle cy="-7" r="13" fill="#F0CBA0"/><path d="M-14 -13L-14 -29L-7 -21L0 -33L7 -21L14 -29L14 -13Z" fill="#E5A93C" stroke="#7A5208"/><path d="M-13 -2C-11 11 11 11 13 -2C8 2 -8 2 -13 -2Z" fill="#6B4A2A"/></g>`;
+    if (r === 11) return `<g transform="translate(50 92)"><path d="M-30 22C-30 4 -16 -5 8 -3L20 -18L27 -13L24 -1C28 8 26 16 21 22Z" fill="#8A5A30"/><path d="M-26 22V48M-14 22V48M12 22V48M21 22V48" stroke="#6B421F" stroke-width="5" stroke-linecap="round"/><path d="M-12 -3C-12 -20 8 -20 8 -3Z" fill="${col}"/><circle cx="-2" cy="-26" r="9" fill="#F0CBA0"/><path d="M-13 -30H9L5 -39H-9Z" fill="${col}"/></g>`;
+    return `<g transform="translate(50 92)"><path d="M-17 50L-13 6C-11 -3 11 -3 13 6L17 50Z" fill="${col}"/><path d="M-9 50V28M9 50V28" stroke="#FFF8EA" stroke-width="1.500"/><circle cy="-13" r="12" fill="#F0CBA0"/><path d="M-14 -17C-11 -32 13 -32 15 -17L26 -17L24 -13H-14Z" fill="${col}" stroke="#2A2118" stroke-width=".6"/></g>`;
+  }
+  const PIPS = { 1: [[50, 78, 2.1]], 2: [[50, 44, 1], [50, 112, 1]], 3: [[50, 34, 1], [50, 78, 1], [50, 122, 1]], 4: [[30, 44, 1], [70, 44, 1], [30, 112, 1], [70, 112, 1]], 5: [[30, 40, .92], [70, 40, .92], [50, 78, .92], [30, 116, .92], [70, 116, .92]], 6: [[30, 36, .9], [70, 36, .9], [30, 78, .9], [70, 78, .9], [30, 120, .9], [70, 120, .9]], 7: [[30, 32, .85], [70, 32, .85], [30, 66, .85], [70, 66, .85], [50, 92, .85], [30, 124, .85], [70, 124, .85]] };
+  function cardSvg(c, cls) {
+    const r = E.rankOf(c), s = E.suitOf(c), col = SUIT_COLOR[s];
+    let inner = '';
+    if (r <= 7) inner = PIPS[r].map(([x, y, k]) => pip(s, x, y, k)).join('');
+    else inner = figure(r, s) + pip(s, 78, 30, 0.62);
+    return `<svg class="pcard ${cls || ''}" viewBox="0 0 100 155" role="img" aria-label="${esc(cardName(c))}"><rect x="1" y="1" width="98" height="153" rx="9" fill="#FFFDF6" stroke="${col}" stroke-width="2"/><rect x="5" y="5" width="90" height="145" rx="6" fill="none" stroke="${col}" stroke-width=".8" stroke-dasharray="${s === 'e' ? '0' : s === 'b' ? '6 2' : s === 'c' ? '2 2' : '4 1 1 1'}"/><text x="10" y="24" font-family="Georgia, serif" font-weight="700" font-size="19" fill="${col}">${r}</text><text x="90" y="145" font-family="Georgia, serif" font-weight="700" font-size="19" fill="${col}" text-anchor="end">${r}</text>${inner}</svg>`;
+  }
+  const backSvg = () => `<svg viewBox="0 0 100 155" aria-hidden="true"><rect x="1" y="1" width="98" height="153" rx="9" fill="#7A2E1C" stroke="#FFFDF6" stroke-width="3"/><path d="M50 22L82 78L50 133L18 78Z" fill="none" stroke="#E5A93C" stroke-width="3"/><circle cx="50" cy="78" r="13" fill="#E5A93C"/></svg>`;
+  // coxilha ao entardecer, com figueira e a cuia de chimarrão
+  const pampa = (w, h, id) => `<defs><linearGradient id="sky${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3C5E73"/><stop offset=".6" stop-color="#E58E50"/><stop offset="1" stop-color="#F7CF7B"/></linearGradient></defs><rect width="${w}" height="${h}" fill="url(#sky${id})"/><circle cx="${w * 0.72}" cy="${h * 0.66}" r="${h * 0.15}" fill="#FFE5A0"/><path d="M0 ${h * 0.72}C${w * 0.2} ${h * 0.62} ${w * 0.4} ${h * 0.78} ${w * 0.62} ${h * 0.7}S${w * 0.9} ${h * 0.66} ${w} ${h * 0.74}V${h}H0Z" fill="#2F5A3C"/><path d="M0 ${h * 0.86}C${w * 0.3} ${h * 0.76} ${w * 0.6} ${h * 0.92} ${w} ${h * 0.82}V${h}H0Z" fill="#1E3F2B"/><g transform="translate(${w * 0.2} ${h * 0.72})" fill="#1A2C20"><rect x="-4" y="-${h * 0.2}" width="8" height="${h * 0.2}"/><ellipse cy="-${h * 0.27}" rx="${h * 0.26}" ry="${h * 0.14}"/><ellipse cx="-${h * 0.12}" cy="-${h * 0.2}" rx="${h * 0.14}" ry="${h * 0.08}"/><ellipse cx="${h * 0.13}" cy="-${h * 0.19}" rx="${h * 0.14}" ry="${h * 0.08}"/></g>`;
+
+  // ---------------------------------------------------------------- textos
+  const SUIT_NAMES = { pt: { e: 'espadas', b: 'paus', c: 'copas', o: 'ouros' }, en: { e: 'swords', b: 'clubs', c: 'cups', o: 'coins' }, it: { e: 'spade', b: 'bastoni', c: 'coppe', o: 'denari' }, es: { e: 'espadas', b: 'bastos', c: 'copas', o: 'oros' } };
+  const RANK_NAMES = {
+    pt: { 1: 'Ás', 2: 'Dois', 3: 'Três', 4: 'Quatro', 5: 'Cinco', 6: 'Seis', 7: 'Sete', 10: 'Sota', 11: 'Cavalo', 12: 'Rei', of: 'de' },
+    en: { 1: 'Ace', 2: 'Two', 3: 'Three', 4: 'Four', 5: 'Five', 6: 'Six', 7: 'Seven', 10: 'Page', 11: 'Knight', 12: 'King', of: 'of' },
+    it: { 1: 'Asso', 2: 'Due', 3: 'Tre', 4: 'Quattro', 5: 'Cinque', 6: 'Sei', 7: 'Sette', 10: 'Fante', 11: 'Cavallo', 12: 'Re', of: 'di' },
+    es: { 1: 'As', 2: 'Dos', 3: 'Tres', 4: 'Cuatro', 5: 'Cinco', 6: 'Seis', 7: 'Siete', 10: 'Sota', 11: 'Caballo', 12: 'Rey', of: 'de' },
+  };
+  const I18N = {
+    pt: {
+      name: 'Truco Gaúcho', back: '← Voltar aos projetos', tagline: 'Truco cego, com baralho espanhol, envido e flor', story: 'Do jeito que se joga no Rio Grande do Sul: 40 cartas, Espadão e Bastião na frente, e a partida vai a 24 tentos. Cante o envido, acuse a flor e peça truco, sabendo que o computador só enxerga as próprias cartas.',
+      tableSize: 'Mesa', size1: 'Mano a mano (1 × 1)', size2: 'Duplas (2 × 2)', size3: 'Trios (3 × 3)', level: 'Dificuldade', easy: 'Fácil', medium: 'Médio', hard: 'Difícil', duration: 'Duração', dur1: 'Uma partida', dur3: 'Melhor de três', lang: 'Idioma', play: 'Novo jogo', resume: 'Continuar', rules: 'Regras', rulesTitle: 'Como se joga', ladderTitle: 'Da carta mais forte à mais fraca', ladderNote: '×4: vale para os quatro naipes. Cartas lado a lado têm o mesmo valor.', close: 'Fechar', menu: 'Menu', soundOn: 'Som ligado', soundOff: 'Som desligado', speedN: 'Velocidade normal', speedF: 'Velocidade rápida',
+      you: 'Você', us: 'Nós', them: 'Eles', tentos: 'tentos', malos: 'Malas', buenos: 'Buenas', stake: 'A volta vale {n}', partidas: 'Partidas {a} × {b}', yourTurn: 'Sua vez', yourTurnH: 'Toque numa carta para jogar, ou faça uma proposta.', waiting: 'Vez de {p}', thinking: '{p} está pensando…', myEnvido: 'Seu envido: {v}', myFlor: 'Você tem flor: {v}',
+      florTitle: 'Você tem flor!', florHint: 'Três cartas do mesmo naipe: é preciso cantá-la. Vale {v} pontos.', envTitle: '{p} cantou {c}', envHint: 'Se aceitar, vale {a}. Se recusar, eles levam {b}. Seu envido: {v}.', trTitle: '{p} pediu {c}', trHint: 'Se aceitar, a volta vale {a}. Se fugir, eles levam {b}.', handEnd: 'Fim da volta', next: 'Próxima volta', nextMatch: 'Próxima partida', seeResult: 'Ver resultado',
+      btn: { truco: 'Truco', retruco: 'Retruco', vale4: 'Vale Quatro', envido: 'Envido', real: 'Real Envido', falta: 'Falta Envido', flor: 'Flor', contra: 'Contra-Flor', resto: 'Contra-Flor e o Resto', achico: 'Me achico com flor', quero: 'Quero', nao: 'Não quero', fold: 'Ir ao baralho', raise3: 'Quero Retruco', raise4: 'Quero Vale Quatro' },
+      calls: { truco: 'Truco!', retruco: 'Retruco!', vale4: 'Vale Quatro!', envido: 'Envido!', real: 'Real Envido!', falta: 'Falta Envido!', flor: 'Flor!', contra: 'Contra-Flor!', resto: 'Contra-Flor e o Resto!', achico: 'Me achico com flor!', quero: 'Quero!', nao: 'Não quero!', fold: 'Vou ao baralho.' },
+      gameWonUs: 'Vocês venceram!', gameWonYou: 'Você venceu!', gameLost: 'Eles venceram', gameEnd: 'Placar final: {a} × {b} em partidas.', again: 'Jogar de novo', cardsShown: 'Cartas mostradas', noPoints: 'Ninguém marcou tentos nesta volta.',
+      why: { hand: 'a volta', trucoNo: 'truco não querido', envido: 'envido', envidoNo: 'envido não querido', florSimple: 'flor', florFlor: 'flor e flor', florContra: 'contra-flor', florResto: 'contra-flor e o resto', florRefused: 'flor recusada', fold: 'ida ao baralho', foldStart: 'ida ao baralho antes de jogar', foldFlor: 'ida ao baralho, com flor' },
+      log: { handStart: 'Nova volta: {p} é o mão.', played: '{p} jogou {c}.', trickWon: '{p} ganhou a {n}ª vaza.', trickTie: 'A {n}ª vaza foi às pardas.', sayFlor: '{p} cantou flor.', sayAchico: '{p} se achicou com flor.', sayContra: '{p} cantou contra-flor.', sayResto: '{p} cantou contra-flor e o resto.', sayQuero: '{p}: quero.', sayNao: '{p}: não quero.', sayEnv: '{p} cantou {c}.', sayTruco: '{p} pediu {c}.', sayFold: '{p} foi ao baralho.', sung: '{p} canta {v}.', scored: '{t}: +{n} ({w}).', gameWon: 'Fim de jogo: {t} venceram.' },
+      rulesHtml: `<h3>A volta</h3><ul class="rules"><li><b>Baralho:</b> 40 cartas espanholas, sem 8 e 9. Cada jogador recebe 3 cartas. Quem joga primeiro é o <b>mão</b>, e esse papel passa adiante a cada volta.</li><li><b>Vazas:</b> vence a volta quem fizer 2 das 3 vazas, jogando em turno. Quem faz a carta mais alta sai jogando na vaza seguinte.</li><li><b>Pardas:</b> se a 1ª vaza empata, ganha quem fizer a 2ª. Se a 3ª empata, ganha quem fez a 1ª. Se as três empatam, ganha o mão.</li><li><b>Objetivo:</b> a partida vai a 24 tentos: os 12 primeiros são as “malas” e os 12 seguintes, as “buenas”.</li></ul><h3>Envido</h3><ul class="rules"><li>Vale antes de jogar a primeira carta. Duas cartas do mesmo naipe somam seus valores mais 20. Do Ás ao 7, vale o número; Sota, Cavalo e Rei não valem nada. Sem par de naipe, vale a maior carta.</li><li><b>Envido:</b> 2 tentos se aceito, 1 se recusado. <b>Real Envido:</b> 3 se aceito, 1 se recusado. <b>Falta Envido:</b> os tentos que faltam para quem vai na frente terminar a partida.</li><li>Os revides se somam: Envido, Envido, Real Envido vale 7 se aceito e 4 se recusado. Em empate, ganha o mão.</li></ul><h3>Flor</h3><ul class="rules"><li>Três cartas do mesmo naipe: é preciso cantar antes de jogar. Vale 3 tentos e anula o envido. O valor soma as cartas mais 20.</li><li><b>Flor e flor:</b> ao fim da volta, a maior leva 6. <b>Contra-Flor:</b> aceita, vale 6 de imediato; recusada, 4. <b>Contra-Flor e o Resto:</b> aceita, 6 mais o que falta para terminar a partida.</li><li><b>Me achico com flor:</b> protege uma flor fraca. Se ninguém mais tiver flor, vale 3; se um adversário cantar, ele leva 4.</li></ul><h3>Truco</h3><ul class="rules"><li><b>Truco:</b> vale 2 se querido e 1 se não. <b>Retruco:</b> 3 e 2. <b>Vale Quatro:</b> 4 e 3. Sem truco, a volta vale 1.</li><li>A ordem não muda, e o grupo que pediu não pode aumentar a própria aposta: o próximo aumento cabe ao outro lado.</li><li><b>Ir ao baralho:</b> seu grupo desiste da volta. Antes de qualquer proposta, custa 2 tentos, 1 do envido e 1 do truco; depois, custa o valor em jogo. Com parceiros, quem fica continua jogando.</li></ul><h3>Nesta versão</h3><ul class="rules"><li>Em duplas e trios, você responde pelo seu grupo às propostas. O regulamento alterna roda e “testa” em trios; aqui, sempre se joga em roda, e o mano a mano equivale à testa.</li><li>Ficam de fora a Lei do Jogo, o “peço flor”, as senhas e as penalidades por canto errado: aqui os cantos são automáticos e sempre corretos, e a flor é sempre acusada.</li></ul>`,
+    },
+    en: {
+      name: 'Truco Gaúcho', back: '← Back to projects', tagline: 'Blind truco, with Spanish cards, envido and flor', story: 'The way it is played in southern Brazil: 40 cards, the Ace of Swords and Ace of Clubs on top, and the game goes to 24 points. Sing your envido, declare your flor and call truco, knowing the computer only sees its own cards.',
+      tableSize: 'Table', size1: 'Head to head (1 × 1)', size2: 'Pairs (2 × 2)', size3: 'Trios (3 × 3)', level: 'Difficulty', easy: 'Easy', medium: 'Medium', hard: 'Hard', duration: 'Length', dur1: 'One game', dur3: 'Best of three', lang: 'Language', play: 'New game', resume: 'Resume', rules: 'Rules', rulesTitle: 'How to play', ladderTitle: 'From the strongest card to the weakest', ladderNote: '×4: applies to all four suits. Cards side by side are worth the same.', close: 'Close', menu: 'Menu', soundOn: 'Sound on', soundOff: 'Sound off', speedN: 'Normal speed', speedF: 'Fast speed',
+      you: 'You', us: 'Us', them: 'Them', tentos: 'points', malos: 'Malas', buenos: 'Buenas', stake: 'This hand is worth {n}', partidas: 'Games {a} × {b}', yourTurn: 'Your turn', yourTurnH: 'Tap a card to play it, or make a call.', waiting: '{p}’s turn', thinking: '{p} is thinking…', myEnvido: 'Your envido: {v}', myFlor: 'You have flor: {v}',
+      florTitle: 'You have flor!', florHint: 'Three cards of one suit: you must declare it. It counts {v} points.', envTitle: '{p} called {c}', envHint: 'If you accept, it is worth {a}. If you refuse, they take {b}. Your envido: {v}.', trTitle: '{p} called {c}', trHint: 'If you accept, the hand is worth {a}. If you run, they take {b}.', handEnd: 'End of the hand', next: 'Next hand', nextMatch: 'Next game', seeResult: 'See result',
+      btn: { truco: 'Truco', retruco: 'Retruco', vale4: 'Vale Quatro', envido: 'Envido', real: 'Real Envido', falta: 'Falta Envido', flor: 'Flor', contra: 'Contra-Flor', resto: 'Contra-Flor e o Resto', achico: 'Back down with flor', quero: 'Quero (accept)', nao: 'Não quero (refuse)', fold: 'Fold', raise3: 'Accept and Retruco', raise4: 'Accept and Vale Quatro' },
+      calls: { truco: 'Truco!', retruco: 'Retruco!', vale4: 'Vale Quatro!', envido: 'Envido!', real: 'Real Envido!', falta: 'Falta Envido!', flor: 'Flor!', contra: 'Contra-Flor!', resto: 'Contra-Flor e o Resto!', achico: 'I back down!', quero: 'Quero!', nao: 'Não quero!', fold: 'I fold.' },
+      gameWonUs: 'You won!', gameWonYou: 'You won!', gameLost: 'They won', gameEnd: 'Final score: {a} × {b} in games.', again: 'Play again', cardsShown: 'Cards shown', noPoints: 'Nobody scored in this hand.',
+      why: { hand: 'the hand', trucoNo: 'truco refused', envido: 'envido', envidoNo: 'envido refused', florSimple: 'flor', florFlor: 'flor and flor', florContra: 'contra-flor', florResto: 'contra-flor e o resto', florRefused: 'flor refused', fold: 'fold', foldStart: 'fold before playing', foldFlor: 'fold, with flor' },
+      log: { handStart: 'New hand: {p} leads.', played: '{p} played {c}.', trickWon: '{p} took trick {n}.', trickTie: 'Trick {n} was tied.', sayFlor: '{p} declared flor.', sayAchico: '{p} backed down with flor.', sayContra: '{p} called contra-flor.', sayResto: '{p} called contra-flor e o resto.', sayQuero: '{p}: quero.', sayNao: '{p}: não quero.', sayEnv: '{p} called {c}.', sayTruco: '{p} called {c}.', sayFold: '{p} folded.', sung: '{p} sings {v}.', scored: '{t}: +{n} ({w}).', gameWon: 'Game over: {t} won.' },
+      rulesHtml: `<h3>The hand</h3><ul class="rules"><li><b>Deck and deal:</b> 40 Spanish cards, no 8s or 9s. Each player gets 3 cards. The first to play is the <b>mão</b>, and that role moves on each hand.</li><li><b>Tricks:</b> the side that takes 2 of 3 tricks wins the hand. Whoever plays the highest card leads the next trick.</li><li><b>Ties:</b> if the 1st trick ties, whoever takes the 2nd wins. If the 3rd ties, whoever took the 1st wins. If all three tie, the mão wins.</li><li><b>Goal:</b> the game goes to 24 points: the first 12 are the “malas” and the next 12 the “buenas”.</li></ul><h3>Envido</h3><ul class="rules"><li>Allowed before playing your first card. Two cards of one suit add their values plus 20. Ace to 7 count their number; Page, Knight and King count nothing. With no suited pair, your highest card counts.</li><li><b>Envido:</b> 2 points if accepted, 1 if refused. <b>Real Envido:</b> 3 if accepted, 1 if refused. <b>Falta Envido:</b> the points the leading side still needs to finish the game.</li><li>Raises add up: Envido, Envido, Real Envido is worth 7 if accepted and 4 if refused. On a tie, the mão wins.</li></ul><h3>Flor</h3><ul class="rules"><li>Three cards of one suit: you must declare it before playing. It is worth 3 points and cancels the envido. Its value adds the cards plus 20.</li><li><b>Flor and flor:</b> at the end of the hand, the higher takes 6. <b>Contra-Flor:</b> accepted, 6 at once; refused, 4. <b>Contra-Flor e o Resto:</b> accepted, 6 plus what is left to finish the game.</li><li><b>Backing down with flor:</b> protects a weak flor. If nobody else has flor, it is worth 3; if an opponent declares, they take 4.</li></ul><h3>Truco</h3><ul class="rules"><li><b>Truco:</b> 2 if accepted, 1 if not. <b>Retruco:</b> 3 and 2. <b>Vale Quatro:</b> 4 and 3. With no truco, the hand is worth 1.</li><li>The order never changes, and the side that called cannot raise its own bet: the next raise belongs to the other side.</li><li><b>Fold:</b> your side gives up the hand. Before any call, it costs 2 points, 1 for envido and 1 for truco; afterward, it costs the value in play. With partners, those who stay keep playing.</li></ul><h3>In this version</h3><ul class="rules"><li>In pairs and trios, you answer calls for your side. The rulebook alternates group play and “testa” in trios; here it is always group play, and head to head is equivalent to testa.</li><li>Left out: the Lei do Jogo, “peço flor”, signals and penalties for wrong songs: here songs are automatic and always correct, and flor is always declared.</li></ul>`,
+    },
+    it: {
+      name: 'Truco Gaúcho', back: '← Torna ai progetti', tagline: 'Truco cieco, con carte spagnole, envido e flor', story: 'Come si gioca nel sud del Brasile: 40 carte, l’Asso di spade e l’Asso di bastoni in testa, e la partita arriva a 24 punti. Canta l’envido, dichiara la flor e chiama truco, sapendo che il computer vede solo le proprie carte.',
+      tableSize: 'Tavolo', size1: 'Uno contro uno (1 × 1)', size2: 'Coppie (2 × 2)', size3: 'Terzetti (3 × 3)', level: 'Difficoltà', easy: 'Facile', medium: 'Medio', hard: 'Difficile', duration: 'Durata', dur1: 'Una partita', dur3: 'Al meglio di tre', lang: 'Lingua', play: 'Nuova partita', resume: 'Riprendi', rules: 'Regole', rulesTitle: 'Come si gioca', ladderTitle: 'Dalla carta più forte alla più debole', ladderNote: '×4: vale per tutti e quattro i semi. Le carte affiancate hanno lo stesso valore.', close: 'Chiudi', menu: 'Menu', soundOn: 'Audio attivo', soundOff: 'Audio spento', speedN: 'Velocità normale', speedF: 'Velocità rapida',
+      you: 'Tu', us: 'Noi', them: 'Loro', tentos: 'punti', malos: 'Malas', buenos: 'Buenas', stake: 'La mano vale {n}', partidas: 'Partite {a} × {b}', yourTurn: 'Tocca a te', yourTurnH: 'Tocca una carta per giocarla, o fai una proposta.', waiting: 'Tocca a {p}', thinking: '{p} sta pensando…', myEnvido: 'Il tuo envido: {v}', myFlor: 'Hai la flor: {v}',
+      florTitle: 'Hai la flor!', florHint: 'Tre carte dello stesso seme: devi dichiararla. Conta {v} punti.', envTitle: '{p} ha chiamato {c}', envHint: 'Se accetti, vale {a}. Se rifiuti, loro prendono {b}. Il tuo envido: {v}.', trTitle: '{p} ha chiamato {c}', trHint: 'Se accetti, la mano vale {a}. Se fuggi, loro prendono {b}.', handEnd: 'Fine della mano', next: 'Prossima mano', nextMatch: 'Prossima partita', seeResult: 'Vedi il risultato',
+      btn: { truco: 'Truco', retruco: 'Retruco', vale4: 'Vale Quatro', envido: 'Envido', real: 'Real Envido', falta: 'Falta Envido', flor: 'Flor', contra: 'Contra-Flor', resto: 'Contra-Flor e o Resto', achico: 'Mi ritiro con flor', quero: 'Quero (accetto)', nao: 'Não quero (rifiuto)', fold: 'Vai al mazzo', raise3: 'Accetto e Retruco', raise4: 'Accetto e Vale Quatro' },
+      calls: { truco: 'Truco!', retruco: 'Retruco!', vale4: 'Vale Quatro!', envido: 'Envido!', real: 'Real Envido!', falta: 'Falta Envido!', flor: 'Flor!', contra: 'Contra-Flor!', resto: 'Contra-Flor e o Resto!', achico: 'Mi ritiro!', quero: 'Quero!', nao: 'Não quero!', fold: 'Vado al mazzo.' },
+      gameWonUs: 'Avete vinto!', gameWonYou: 'Hai vinto!', gameLost: 'Hanno vinto loro', gameEnd: 'Risultato finale: {a} × {b} in partite.', again: 'Gioca ancora', cardsShown: 'Carte mostrate', noPoints: 'Nessuno ha segnato in questa mano.',
+      why: { hand: 'la mano', trucoNo: 'truco rifiutato', envido: 'envido', envidoNo: 'envido rifiutato', florSimple: 'flor', florFlor: 'flor e flor', florContra: 'contra-flor', florResto: 'contra-flor e o resto', florRefused: 'flor rifiutata', fold: 'mazzo', foldStart: 'mazzo prima di giocare', foldFlor: 'mazzo, con flor' },
+      log: { handStart: 'Nuova mano: {p} apre.', played: '{p} ha giocato {c}.', trickWon: '{p} ha preso la presa {n}.', trickTie: 'La presa {n} è pari.', sayFlor: '{p} ha dichiarato flor.', sayAchico: '{p} si è ritirato con flor.', sayContra: '{p} ha chiamato contra-flor.', sayResto: '{p} ha chiamato contra-flor e o resto.', sayQuero: '{p}: quero.', sayNao: '{p}: não quero.', sayEnv: '{p} ha chiamato {c}.', sayTruco: '{p} ha chiamato {c}.', sayFold: '{p} è andato al mazzo.', sung: '{p} canta {v}.', scored: '{t}: +{n} ({w}).', gameWon: 'Fine: {t} hanno vinto.' },
+      rulesHtml: `<h3>La mano</h3><ul class="rules"><li><b>Mazzo:</b> 40 carte spagnole, senza 8 e 9. Ogni giocatore riceve 3 carte. Chi gioca per primo è il <b>mão</b>, e il ruolo passa a ogni mano.</li><li><b>Prese:</b> vince la mano chi fa 2 prese su 3. Chi gioca la carta più alta apre la presa successiva.</li><li><b>Pari:</b> se la 1ª presa è pari, vince chi fa la 2ª. Se la 3ª è pari, vince chi ha fatto la 1ª. Se tutte e tre sono pari, vince il mão.</li><li><b>Obiettivo:</b> la partita arriva a 24 punti: i primi 12 sono le “malas”, i 12 seguenti le “buenas”.</li></ul><h3>Envido</h3><ul class="rules"><li>Si chiama prima di giocare la prima carta. Due carte dello stesso seme sommano i valori più 20. Dall’Asso al 7 vale il numero; Fante, Cavallo e Re non valgono nulla. Senza coppia di seme vale la carta più alta.</li><li><b>Envido:</b> 2 punti se accettato, 1 se rifiutato. <b>Real Envido:</b> 3 se accettato, 1 se rifiutato. <b>Falta Envido:</b> i punti che mancano a chi è in testa per finire la partita.</li><li>I rilanci si sommano: Envido, Envido, Real Envido vale 7 se accettato e 4 se rifiutato. In parità vince il mão.</li></ul><h3>Flor</h3><ul class="rules"><li>Tre carte dello stesso seme: va dichiarata prima di giocare. Vale 3 punti e annulla l’envido. Il suo valore somma le carte più 20.</li><li><b>Flor e flor:</b> a fine mano, la più alta prende 6. <b>Contra-Flor:</b> accettata, 6 subito; rifiutata, 4. <b>Contra-Flor e o Resto:</b> accettata, 6 più quanto manca per finire la partita.</li><li><b>Ritirarsi con flor:</b> protegge una flor debole. Se nessun altro ha flor vale 3; se un avversario la dichiara, prende 4.</li></ul><h3>Truco</h3><ul class="rules"><li><b>Truco:</b> 2 se accettato, 1 se no. <b>Retruco:</b> 3 e 2. <b>Vale Quatro:</b> 4 e 3. Senza truco la mano vale 1.</li><li>L’ordine non cambia e chi ha chiamato non può rilanciare la propria puntata: il rilancio successivo spetta all’altra parte.</li><li><b>Andare al mazzo:</b> la tua parte abbandona la mano. Prima di ogni proposta costa 2 punti, 1 di envido e 1 di truco; dopo, costa il valore in gioco. Con i compagni, chi resta continua a giocare.</li></ul><h3>In questa versione</h3><ul class="rules"><li>In coppie e terzetti rispondi tu per la tua parte. Il regolamento alterna gioco di gruppo e “testa” nei terzetti; qui si gioca sempre in gruppo, e l’uno contro uno equivale alla testa.</li><li>Restano fuori la Lei do Jogo, il “peço flor”, i segnali e le penalità per canti errati: qui i canti sono automatici e sempre corretti, e la flor è sempre dichiarata.</li></ul>`,
+    },
+    es: {
+      name: 'Truco Gaúcho', back: '← Volver a los proyectos', tagline: 'Truco ciego, con baraja española, envido y flor', story: 'Como se juega en el sur de Brasil: 40 cartas, el Ancho de espadas y el de bastos al frente, y la partida va a 24 tantos. Canta el envido, declara la flor y pide truco, sabiendo que la computadora solo ve sus propias cartas.',
+      tableSize: 'Mesa', size1: 'Mano a mano (1 × 1)', size2: 'Parejas (2 × 2)', size3: 'Tríos (3 × 3)', level: 'Dificultad', easy: 'Fácil', medium: 'Medio', hard: 'Difícil', duration: 'Duración', dur1: 'Una partida', dur3: 'Al mejor de tres', lang: 'Idioma', play: 'Nuevo juego', resume: 'Continuar', rules: 'Reglas', rulesTitle: 'Cómo se juega', ladderTitle: 'De la carta más fuerte a la más débil', ladderNote: '×4: vale para los cuatro palos. Las cartas juntas tienen el mismo valor.', close: 'Cerrar', menu: 'Menú', soundOn: 'Sonido activado', soundOff: 'Sonido desactivado', speedN: 'Velocidad normal', speedF: 'Velocidad rápida',
+      you: 'Tú', us: 'Nosotros', them: 'Ellos', tentos: 'tantos', malos: 'Malas', buenos: 'Buenas', stake: 'La mano vale {n}', partidas: 'Partidas {a} × {b}', yourTurn: 'Tu turno', yourTurnH: 'Toca una carta para jugarla, o haz una propuesta.', waiting: 'Turno de {p}', thinking: '{p} está pensando…', myEnvido: 'Tu envido: {v}', myFlor: 'Tienes flor: {v}',
+      florTitle: '¡Tienes flor!', florHint: 'Tres cartas del mismo palo: hay que cantarla. Vale {v} puntos.', envTitle: '{p} cantó {c}', envHint: 'Si aceptas, vale {a}. Si rechazas, ellos llevan {b}. Tu envido: {v}.', trTitle: '{p} pidió {c}', trHint: 'Si aceptas, la mano vale {a}. Si huyes, ellos llevan {b}.', handEnd: 'Fin de la mano', next: 'Próxima mano', nextMatch: 'Próxima partida', seeResult: 'Ver resultado',
+      btn: { truco: 'Truco', retruco: 'Retruco', vale4: 'Vale Cuatro', envido: 'Envido', real: 'Real Envido', falta: 'Falta Envido', flor: 'Flor', contra: 'Contraflor', resto: 'Contraflor al Resto', achico: 'Me achico con flor', quero: 'Quiero', nao: 'No quiero', fold: 'Ir al mazo', raise3: 'Quiero Retruco', raise4: 'Quiero Vale Cuatro' },
+      calls: { truco: '¡Truco!', retruco: '¡Retruco!', vale4: '¡Vale Cuatro!', envido: '¡Envido!', real: '¡Real Envido!', falta: '¡Falta Envido!', flor: '¡Flor!', contra: '¡Contraflor!', resto: '¡Contraflor al Resto!', achico: '¡Me achico con flor!', quero: '¡Quiero!', nao: '¡No quiero!', fold: 'Voy al mazo.' },
+      gameWonUs: '¡Ganaron ustedes!', gameWonYou: '¡Ganaste!', gameLost: 'Ganaron ellos', gameEnd: 'Resultado final: {a} × {b} en partidas.', again: 'Jugar otra vez', cardsShown: 'Cartas mostradas', noPoints: 'Nadie marcó tantos en esta mano.',
+      why: { hand: 'la mano', trucoNo: 'truco no querido', envido: 'envido', envidoNo: 'envido no querido', florSimple: 'flor', florFlor: 'flor y flor', florContra: 'contraflor', florResto: 'contraflor al resto', florRefused: 'flor rechazada', fold: 'ida al mazo', foldStart: 'ida al mazo antes de jugar', foldFlor: 'ida al mazo, con flor' },
+      log: { handStart: 'Nueva mano: {p} es mano.', played: '{p} jugó {c}.', trickWon: '{p} ganó la {n}ª baza.', trickTie: 'La {n}ª baza fue parda.', sayFlor: '{p} cantó flor.', sayAchico: '{p} se achicó con flor.', sayContra: '{p} cantó contraflor.', sayResto: '{p} cantó contraflor al resto.', sayQuero: '{p}: quiero.', sayNao: '{p}: no quiero.', sayEnv: '{p} cantó {c}.', sayTruco: '{p} pidió {c}.', sayFold: '{p} fue al mazo.', sung: '{p} canta {v}.', scored: '{t}: +{n} ({w}).', gameWon: 'Fin del juego: {t} ganaron.' },
+      rulesHtml: `<h3>La mano</h3><ul class="rules"><li><b>Baraja:</b> 40 cartas españolas, sin 8 ni 9. Cada jugador recibe 3 cartas. Quien juega primero es <b>mano</b>, y ese papel pasa en cada mano.</li><li><b>Bazas:</b> gana la mano quien haga 2 bazas de 3. Quien juega la carta más alta sale en la baza siguiente.</li><li><b>Pardas:</b> si la 1ª baza empata, gana quien haga la 2ª. Si empata la 3ª, gana quien hizo la 1ª. Si empatan las tres, gana el mano.</li><li><b>Objetivo:</b> la partida va a 24 tantos: los 12 primeros son las “malas” y los 12 siguientes, las “buenas”.</li></ul><h3>Envido</h3><ul class="rules"><li>Se canta antes de jugar la primera carta. Dos cartas del mismo palo suman sus valores más 20. Del As al 7 vale el número; Sota, Caballo y Rey no valen nada. Sin par de palo, vale la carta más alta.</li><li><b>Envido:</b> 2 tantos si se acepta, 1 si se rechaza. <b>Real Envido:</b> 3 si se acepta, 1 si se rechaza. <b>Falta Envido:</b> los tantos que le faltan a quien va al frente para terminar la partida.</li><li>Los revires se suman: Envido, Envido, Real Envido vale 7 si se acepta y 4 si se rechaza. En empate gana el mano.</li></ul><h3>Flor</h3><ul class="rules"><li>Tres cartas del mismo palo: hay que cantarla antes de jugar. Vale 3 tantos y anula el envido. Su valor suma las cartas más 20.</li><li><b>Flor y flor:</b> al final de la mano, la mayor lleva 6. <b>Contraflor:</b> aceptada, 6 de inmediato; rechazada, 4. <b>Contraflor al Resto:</b> aceptada, 6 más lo que falta para terminar la partida.</li><li><b>Achicarse con flor:</b> protege una flor débil. Si nadie más tiene flor, vale 3; si un adversario canta, lleva 4.</li></ul><h3>Truco</h3><ul class="rules"><li><b>Truco:</b> 2 si se acepta, 1 si no. <b>Retruco:</b> 3 y 2. <b>Vale Cuatro:</b> 4 y 3. Sin truco, la mano vale 1.</li><li>El orden no cambia, y el grupo que pidió no puede subir su propia apuesta: la siguiente subida corresponde al otro lado.</li><li><b>Ir al mazo:</b> tu grupo abandona la mano. Antes de cualquier propuesta, cuesta 2 tantos, 1 de envido y 1 de truco; después, cuesta el valor en juego. Con compañeros, quien se queda sigue jugando.</li></ul><h3>En esta versión</h3><ul class="rules"><li>En parejas y tríos, respondes por tu grupo a las propuestas. El reglamento alterna juego de grupo y “testa” en tríos; aquí siempre se juega en grupo, y el mano a mano equivale a la testa.</li><li>Quedan fuera la Lei do Jogo, el “peço flor”, las señas y las penalidades por canto errado: aquí los cantos son automáticos y siempre correctos, y la flor siempre se declara.</li></ul>`,
+    },
+  };
+  let lang = 'pt';
+  const TAG = { pt: 'pt-BR', en: 'en', it: 'it', es: 'es' };
+  function fill(s, v) { return s.replace(/\{(\w+)\}/g, (m, k) => (v && v[k] !== undefined ? v[k] : m)); }
+  function t(k, v) { const s = I18N[lang][k] !== undefined ? I18N[lang][k] : I18N.pt[k]; return v && typeof s === 'string' ? fill(s, v) : s; }
+  function cardName(c) { const R = RANK_NAMES[lang]; return `${R[E.rankOf(c)]} ${R.of} ${SUIT_NAMES[lang][E.suitOf(c)]}`; }
+  const CPU = ['Tchê', 'Guria', 'Piá', 'Gaudério', 'Prenda', 'Bagual'];
+  const valueName = (v) => (v >= 1 ? String(v) : RANK_NAMES[lang][v === 0.3 ? 12 : v === 0.2 ? 11 : 10]);
+
+  // ---------------------------------------------------------------- estado da tela
+  let S = null, fast = false, soundOn = true, busy = false, aiTimer = null, shownTricks = null;
+  const save = () => { if (S) Store.set('trucoGaucho.game', Object.assign({}, S, { fx: [] })); };
+  const delay = (ms) => new Promise((r) => setTimeout(r, reduceMotion ? Math.min(ms, 80) : (fast ? ms * 0.3 : ms)));
+  const pname = (s) => (S.players[s].kind === 'human' ? t('you') : S.players[s].name);
+  const teamName = (x) => (x === 0 ? (S.n === 2 ? t('you') : t('us')) : (S.n === 2 ? S.players[1].name : t('them')));
+  const human = 0;
+  function logText(e) {
+    const v = e.v, o = {};
+    if ('p' in v) o.p = esc(pname(v.p));
+    if ('c' in v) {
+      if (e.k === 'played') o.c = cardName(v.c);
+      else o.c = I18N[lang].btn[v.c === 'e' ? 'envido' : v.c === 'r' ? 'real' : 'falta'];
+    }
+    if ('to' in v) o.c = I18N[lang].btn[v.to === 2 ? 'truco' : v.to === 3 ? 'retruco' : 'vale4'];
+    if ('n' in v) o.n = v.n;
+    if ('v' in v) o.v = valueName(v.v);
+    if ('team' in v) { o.t = esc(teamName(v.team)); o.w = I18N[lang].why[v.why]; }
+    return fill(I18N[lang].log[e.k] || e.k, o);
+  }
+
+  // ---------------------------------------------------------------- mesa
+  const SEATPOS = { 2: [[50, 86], [50, 13]], 4: [[50, 86], [87, 50], [50, 13], [13, 50]], 6: [[50, 88], [86, 70], [86, 26], [50, 11], [14, 26], [14, 70]] };
+  const SLOTPOS = { 2: [[50, 64], [50, 36]], 4: [[50, 66], [68, 50], [50, 34], [32, 50]], 6: [[50, 68], [68, 60], [68, 40], [50, 32], [32, 40], [32, 60]] };
+  function renderTable(bubble) {
+    const pos = SEATPOS[S.n], slots = SLOTPOS[S.n], act = E.actor(S);
+    let h = `<div class="vazas" aria-hidden="true">${[0, 1, 2].map((i) => { const r = S.results[i]; return `<span class="vaza ${r === 't' ? 'tie' : r === 0 ? 't0' : r === 1 ? 't1' : ''}"></span>`; }).join('')}</div><div class="stake">${t('stake', { n: S.trPending ? `${S.tr.level}→${S.trPending.to}` : S.tr.level })}</div>`;
+    const lastTrick = S.played.reduce((m, tr, i) => (tr.length ? i : m), 0);
+    S.played.forEach((tr, ti) => {
+      if (!tr.length) return;
+      const done = ti < S.results.length, top = Math.max(...tr.map((p) => E.power(p.card))), back = lastTrick - ti;
+      tr.forEach((p) => { const [x, y] = slots[p.seat]; h += `<div class="slot${back ? ' old' : ''}" style="left:${x}%;top:${y}%;--back:${back}">${cardSvg(p.card, done && !back && E.power(p.card) === top ? 'win' : '')}</div>`; });
+    });
+    for (let s = 0; s < S.n; s++) {
+      const [x, y] = pos[s], partner = s % 2 === 0 && s !== 0;
+      h += `<div class="seat team${s % 2}${s === act ? ' on' : ''}${S.folded[s] ? ' out' : ''}" style="left:${x}%;top:${y}%">`;
+      if (s !== human) { h += `<div class="backs" aria-hidden="true">${S.hands[s].map(() => backSvg()).join('')}</div>`; }
+      h += `<div class="nameplate">${esc(pname(s))}${s === S.mao ? ' ★' : ''}</div>`;
+      if (bubble && bubble.seat === s) h += `<div class="bubble">${esc(I18N[lang].calls[bubble.k] || '')}</div>`;
+      h += '</div>';
+    }
+    $('table').innerHTML = h;
+  }
+  function renderHand() {
+    const canPlay = !busy && S.phase === 'play' && E.actor(S) === human;
+    $('hand').setAttribute('aria-label', t('you'));
+    $('hand').innerHTML = S.hands[human].map((c, i) => `<button type="button" class="hcard" data-i="${i}" ${canPlay ? '' : 'disabled'} aria-label="${esc(cardName(c))}">${cardSvg(c)}</button>`).join('');
+  }
+  function renderScore() {
+    const bar = (x) => Array.from({ length: 24 }, (_, i) => `<i class="${i < S.scores[x] ? 'on' : ''}${i === 12 ? ' gap' : ''}"></i>`).join('');
+    $('score').innerHTML = [0, 1].map((x) => `<div class="steam t${x}"><strong>${esc(teamName(x))}</strong><span class="pts">${S.scores[x]}</span><div class="tentos" aria-hidden="true">${bar(x)}</div></div>`).join('') + `<div class="sublabel"><span>${t('malos')}</span>${S.bestOf > 1 ? `<span>${t('partidas', { a: S.matches[0], b: S.matches[1] })}</span>` : ''}<span>${t('buenos')}</span></div>`;
+  }
+  function renderLog() {
+    const ol = $('log');
+    ol.innerHTML = S.log.slice(-50).map((e) => `<li>${logText(e)}</li>`).join('');
+    ol.parentElement.scrollTop = ol.parentElement.scrollHeight;
+  }
+  const btn = (attrs, label, cls) => `<button type="button" class="btn ${cls || ''}" ${attrs}>${esc(label)}</button>`;
+  function renderAction() {
+    const el = $('action'), B = I18N[lang].btn, a = E.actor(S);
+    if (S.phase === 'over') { el.innerHTML = `<h2>${t(S.over.winner === 0 ? (S.n === 2 ? 'gameWonYou' : 'gameWonUs') : 'gameLost')}</h2>${btn('data-go="end"', t('again'), 'pri')}`; return; }
+    if (S.phase === 'handEnd') { el.innerHTML = `<h2>${t('handEnd')}</h2>${btn('data-go="hand"', t('seeResult'), 'pri')}`; return; }
+    if (busy || a !== human) {
+      el.innerHTML = `<h2>${a >= 0 ? t('thinking', { p: esc(pname(a)) }) : ''}</h2>${mine()}`;
+      return;
+    }
+    const L = E.legal(S);
+    let h = '';
+    if (S.phase === 'flor') {
+      const v = E.florOf(S.initial[human]);
+      h = `<h2>${t('florTitle')}</h2><p>${t('florHint', { v })}</p><div class="btns">`;
+      L.forEach((x, i) => { const label = x.k === 'nao' ? B.nao : x.k === 'quero' ? B.quero : B[x.k]; h += btn(`data-fl="${x.k}"`, label, i === 0 ? 'pri' : ''); });
+      h += '</div>';
+    } else if (S.phase === 'envido') {
+      const st = S.env.stack, last = st[st.length - 1], who = pname(S.env.seat);
+      h = `<h2>${t('envTitle', { p: esc(who), c: B[last === 'e' ? 'envido' : last === 'r' ? 'real' : 'falta'] })}</h2><p>${t('envHint', { a: E.envValue(S, st), b: E.envRefused(st), v: valueName(E.envidoOf(S.initial[human])) })}</p><div class="btns">${btn('data-a="quero"', B.quero, 'pri')}${btn('data-a="nao"', B.nao)}`;
+      L.filter((x) => x.type === 'env').forEach((x) => { h += btn(`data-env="${x.k}"`, B[x.k === 'e' ? 'envido' : x.k === 'r' ? 'real' : 'falta']); });
+      h += '</div>';
+    } else if (S.phase === 'truco') {
+      const to = S.trPending.to;
+      h = `<h2>${t('trTitle', { p: esc(pname(S.trPending.seat)), c: B[to === 2 ? 'truco' : to === 3 ? 'retruco' : 'vale4'] })}</h2><p>${t('trHint', { a: to, b: S.tr.level })}</p><div class="btns">${btn('data-a="quero"', B.quero, 'pri')}${btn('data-a="nao"', B.nao)}`;
+      if (L.some((x) => x.type === 'raise')) h += btn('data-a="raise"', B[to === 2 ? 'raise3' : 'raise4']);
+      L.filter((x) => x.type === 'env').forEach((x) => { h += btn(`data-env="${x.k}"`, B[x.k === 'e' ? 'envido' : x.k === 'r' ? 'real' : 'falta']); });
+      h += `</div>${mine()}`;
+    } else {
+      h = `<h2>${t('yourTurn')}</h2><p>${t('yourTurnH')}</p><div class="btns">`;
+      if (L.some((x) => x.type === 'truco')) { const nx = S.tr.level === 1 ? 'truco' : S.tr.level === 2 ? 'retruco' : 'vale4'; h += btn('data-a="truco"', B[nx], 'pri'); }
+      L.filter((x) => x.type === 'env').forEach((x) => { h += btn(`data-env="${x.k}"`, B[x.k === 'e' ? 'envido' : x.k === 'r' ? 'real' : 'falta']); });
+      h += btn('data-a="fold"', B.fold) + `</div>${mine()}`;
+    }
+    el.innerHTML = h;
+  }
+  function mine() {
+    const init = S.initial[human];
+    if (S.envDone && !E.isFlor(init)) return '';
+    return `<p class="mine">${E.isFlor(init) ? t('myFlor', { v: `<b>${E.florOf(init)}</b>` }) : t('myEnvido', { v: `<b>${valueName(E.envidoOf(init))}</b>` })}</p>`;
+  }
+  function render(bubble) {
+    renderTable(bubble); renderHand(); renderScore(); renderLog(); renderAction();
+    if (S.phase !== 'handEnd' && S.phase !== 'over' && $('dHand').open) $('dHand').close();
+  }
+  function showHandDialog() {
+    const d = $('dHand'), W = I18N[lang].why;
+    let h = `<svg class="art2" viewBox="0 0 600 130" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${pampa(600, 130, 'h')}</svg>`;
+    if (S.phase === 'over') {
+      h += `<h2 id="handH">${t(S.over.winner === 0 ? (S.n === 2 ? 'gameWonYou' : 'gameWonUs') : 'gameLost')}</h2>${S.bestOf > 1 ? `<p>${t('gameEnd', { a: S.matches[0], b: S.matches[1] })}</p>` : ''}<div class="sumline"><span>${esc(teamName(0))}</span><strong>${S.scores[0]}</strong></div><div class="sumline"><span>${esc(teamName(1))}</span><strong>${S.scores[1]}</strong></div><div class="row"><button type="button" class="btn pri" data-go="menu">${t('again')}</button><button type="button" class="btn" data-go="close">${t('close')}</button></div>`;
+    } else {
+      h += `<h2 id="handH">${t('handEnd')}</h2>`;
+      if (S.sum.length) S.sum.forEach((x) => { h += `<div class="sumline"><span>${esc(teamName(x.team))}: ${W[x.key]}</span><strong>+${x.n}</strong></div>`; });
+      else h += `<p>${t('noPoints')}</p>`;
+      if (S.reveal.length) h += `<h3>${t('cardsShown')}</h3><div class="reveal">${S.reveal.map((s) => `<div>${esc(pname(s))}<div class="cards">${S.initial[s].map((c) => cardSvg(c)).join('')}</div></div>`).join('')}</div>`;
+      h += `<div class="row"><button type="button" class="btn pri" data-go="next" autofocus>${t(S.matchWinner != null ? 'nextMatch' : 'next')}</button><button type="button" class="btn" data-go="close">${t('close')}</button></div>`;
+    }
+    d.innerHTML = h;
+    if (!d.open) d.showModal();
+  }
+
+  // ---------------------------------------------------------------- fluxo
+  async function playFx(list) {
+    for (const f of list) {
+      if (f.t === 'say') { sfx(f.k === 'truco' || f.k === 'retruco' || f.k === 'vale4' ? 'call' : 'say'); renderTable(f); await delay(780); }
+      else if (f.t === 'play') { sfx('card'); await delay(180); }
+      else if (f.t === 'trick') { await delay(620); }
+    }
+  }
+  async function dispatch(a) {
+    if (busy || !S) return false;
+    if (!E.act(S, a)) return false;
+    const list = S.fx.slice(); S.fx = [];
+    save();
+    busy = true;
+    renderTable(); renderHand(); renderScore(); renderLog(); renderActionBusy();
+    await playFx(list);
+    busy = false;
+    render();
+    if (S.phase === 'handEnd') { sfx(S.matchWinner === 0 ? 'win' : 'tick'); showHandDialog(); return true; }
+    if (S.phase === 'over') { sfx(S.over.winner === 0 ? 'win' : 'lose'); showHandDialog(); return true; }
+    schedule();
+    return true;
+  }
+  function renderActionBusy() { $('action').innerHTML = `<h2>…</h2>`; }
+  function schedule() {
+    clearTimeout(aiTimer);
+    if (!S || S.over || !$('ovTitle').hidden || S.phase === 'handEnd') return;
+    const a = E.actor(S);
+    if (a < 0 || S.players[a].kind === 'human') return;
+    aiTimer = setTimeout(() => {
+      if (!S || S.over || busy) return;
+      dispatch(E.ai(S));
+    }, reduceMotion ? 80 : (fast ? 200 : 750));
+  }
+
+  // ---------------------------------------------------------------- som
+  let audio = null;
+  function tone(f, d, type, v, when) {
+    if (!soundOn) return;
+    try {
+      if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+      if (audio.state === 'suspended') audio.resume();
+      const o = audio.createOscillator(), g = audio.createGain(), st = audio.currentTime + (when || 0);
+      o.type = type || 'sine'; o.frequency.setValueAtTime(f, st);
+      g.gain.setValueAtTime(v || 0.05, st); g.gain.exponentialRampToValueAtTime(0.0001, st + d);
+      o.connect(g); g.connect(audio.destination); o.start(st); o.stop(st + d);
+    } catch (e) { /* sem áudio */ }
+  }
+  function sfx(k) {
+    if (k === 'card') tone(520, 0.05, 'triangle', 0.04);
+    else if (k === 'say') tone(660, 0.09, 'sine', 0.04);
+    else if (k === 'call') { tone(330, 0.14, 'sawtooth', 0.03); tone(495, 0.2, 'sawtooth', 0.03, 0.1); }
+    else if (k === 'tick') tone(880, 0.07, 'sine', 0.04);
+    else if (k === 'win') [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.22, 'triangle', 0.07, i * 0.12));
+    else if (k === 'lose') [392, 349, 311, 262].forEach((f, i) => tone(f, 0.28, 'sine', 0.05, i * 0.2));
+  }
+
+  // ---------------------------------------------------------------- telas
+  function startGame() {
+    const size = +$('sizeSel').value, L = +$('levelSel').value, n = size * 2;
+    const players = Array.from({ length: n }, (_, i) => ({ name: i === 0 ? '' : CPU[i - 1], kind: i === 0 ? 'human' : L }));
+    Store.set('trucoGaucho.prefs', Object.assign({}, Store.get('trucoGaucho.prefs') || {}, { size, level: L, dur: +$('durSel').value }));
+    S = E.newGame({ players, bestOf: +$('durSel').value, seed: (Math.random() * 2147483647) | 0 });
+    enter();
+  }
+  function enter() {
+    $('ovTitle').hidden = true; $('app').hidden = false;
+    S.fx = [];
+    save();
+    render();
+    if (S.phase === 'handEnd' || S.phase === 'over') showHandDialog(); else schedule();
+  }
+  function showMenu() {
+    clearTimeout(aiTimer);
+    if (S) save();
+    if ($('dHand').open) $('dHand').close();
+    $('app').hidden = true; $('ovTitle').hidden = false;
+    refreshResume();
+  }
+  function refreshResume() { const g = Store.get('trucoGaucho.game'); $('bResume').hidden = !(g && !g.over && g.players); }
+  const savePref = (o) => Store.set('trucoGaucho.prefs', Object.assign({}, Store.get('trucoGaucho.prefs') || {}, o));
+  function applySoundSpeed() { $('bSound').textContent = t(soundOn ? 'soundOn' : 'soundOff'); $('bSpeed').textContent = t(fast ? 'speedF' : 'speedN'); }
+  function renderLadder() {
+    const groups = [['1e'], ['1b'], ['7e'], ['7o'], ['3o', 4], ['2o', 4], ['1c', '1o'], ['12o', 4], ['11o', 4], ['10o', 4], ['7c', '7b'], ['6o', 4], ['5o', 4], ['4o', 4]];
+    $('ladder').innerHTML = groups.map((g) => `<span class="step">${g.filter((x) => typeof x === 'string').map((c) => cardSvg(c)).join('')}${typeof g[1] === 'number' ? `<small>×${g[1]}</small>` : ''}</span>`).join('') + `<p class="ladnote">${t('ladderNote')}</p>`;
+  }
+  function applyLang() {
+    document.documentElement.lang = TAG[lang];
+    document.title = t('name') + ' · Giovani Perotto Mesquita';
+    document.querySelectorAll('[data-t]').forEach((el) => { el.textContent = t(el.dataset.t); });
+    $('rulesBody').innerHTML = t('rulesHtml');
+    $('langSel').value = lang;
+    $('backLink').href = 'projects.html' + (lang === 'pt' ? '' : '#' + lang);
+    $('heroArt').innerHTML = pampa(620, 170, 'a');
+    renderLadder(); applySoundSpeed();
+    if (S && !$('app').hidden) render();
+  }
+
+  // ---------------------------------------------------------------- cliques
+  $('hand').addEventListener('click', (e) => { const b = e.target.closest('[data-i]'); if (b && !b.disabled) dispatch({ type: 'play', i: +b.dataset.i }); });
+  $('action').addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    if (b.dataset.a) dispatch({ type: b.dataset.a });
+    else if (b.dataset.env) dispatch({ type: 'env', k: b.dataset.env });
+    else if (b.dataset.fl) dispatch({ type: 'fl', k: b.dataset.fl });
+    else if (b.dataset.go) showHandDialog();
+  });
+  $('dHand').addEventListener('click', (e) => {
+    const go = e.target.closest('[data-go]');
+    if (!go) return;
+    const k = go.dataset.go;
+    if (k === 'close') { $('dHand').close(); return; }
+    if (k === 'menu') { showMenu(); return; }
+    if (k === 'next') { $('dHand').close(); dispatch({ type: 'next' }); }
+  });
+  const openRules = () => { $('dRules').showModal(); $('dRules').scrollTop = 0; };
+  $('bRules').addEventListener('click', openRules);
+  $('bRules2').addEventListener('click', openRules);
+  $('bRulesClose').addEventListener('click', () => $('dRules').close());
+  $('bMenu').addEventListener('click', showMenu);
+  $('bPlay').addEventListener('click', startGame);
+  $('bResume').addEventListener('click', () => { const g = Store.get('trucoGaucho.game'); if (g && !g.over) { S = g; enter(); } });
+  $('bSound').addEventListener('click', () => { soundOn = !soundOn; savePref({ sound: soundOn }); applySoundSpeed(); });
+  $('bSpeed').addEventListener('click', () => { fast = !fast; savePref({ fast }); applySoundSpeed(); });
+  $('langSel').addEventListener('change', () => { lang = $('langSel').value; savePref({ lang }); applyLang(); });
+
+  // ---------------------------------------------------------------- início
+  const prefs = Store.get('trucoGaucho.prefs') || {};
+  const hashLang = location.hash.slice(1), navLang = ((navigator.language || 'pt').slice(0, 2)).toLowerCase();
+  lang = I18N[hashLang] ? hashLang : (prefs.lang && I18N[prefs.lang] ? prefs.lang : (I18N[navLang] ? navLang : 'pt'));
+  soundOn = prefs.sound !== false; fast = !!prefs.fast;
+  $('sizeSel').value = String(prefs.size || 1);
+  $('levelSel').value = String(prefs.level == null ? 1 : prefs.level);
+  $('durSel').value = String(prefs.dur || 1);
+  applyLang();
+  refreshResume();
+})();
+</script>
+</body>
+</html>
