@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pife para iniciantes: como jogar · Giovani Perotto Mesquita</title>
+<meta name="description" content="Tutorial de pife para quem nunca jogou: as cartas, trincas e sequências, a vez de cada jogador, como bater, uma rodada comentada e dicas testadas em simulações, com diagramas em SVG.">
+<meta name="author" content="Giovani Perotto Mesquita">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Paleta alegre: roxo e magenta vibrantes, amarelo-girassol, verde-água e coral */
+    --bg: #FFF7EC;
+    --surface: #FFFFFF;
+    --ink: #2B1B3D;
+    --text: #3E3350;
+    --muted: #756986;
+    --line: #F1E2CF;
+    --accent: #0E8074;
+    --accent-soft: #E2F6F2;
+    --accent-strong: #5B2A86;
+    --navy: #5B2A86;
+    --navy-deep: #C2185B;
+    --on-navy: #FFFFFF;
+    --on-navy-muted: #FCE4F0;
+    --gold: #FFB703;
+    --gold-ink: #B35300;
+    --gold-soft: #FFF1C9;
+    --coral: #FF6B6B;
+    --sky: #3A86FF;
+    --mint: #2A9D8F;
+    --pink: #EF476F;
+    --sans: "Hanken Grotesk", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1A1328; --surface: #241A36; --ink: #F7F0FF; --text: #E2D8F0; --muted: #A898C0;
+      --line: #3A2D52; --accent: #5FD3C4; --accent-soft: #1D3A38; --accent-strong: #C9A7F5;
+      --navy: #3D1A5C; --navy-deep: #7A1240; --gold: #FFC94D; --gold-ink: #FFC94D; --gold-soft: #3A2E12;
+      --coral: #FF8A8A; --sky: #6FA8FF; --mint: #4CC3B3; --pink: #FF6F91;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 4px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 1.5rem; }
+
+  /* navegação */
+  .nav {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: saturate(160%) blur(10px); -webkit-backdrop-filter: saturate(160%) blur(10px);
+    border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px);
+  }
+  .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 58px; gap: 1rem; }
+  .brand { font-family: var(--serif); font-weight: 600; color: var(--accent-strong); text-decoration: none; font-size: 1.05rem; }
+  .nav ul { list-style: none; display: flex; gap: 1.4rem; margin: 0; padding: 0; }
+  .nav ul a { color: var(--muted); text-decoration: none; font-size: 0.93rem; font-weight: 500; }
+  .nav ul a:hover, .nav ul a[aria-current="page"] { color: var(--ink); }
+  .nav-right { display: flex; align-items: center; gap: 1rem; }
+  .lang { position: relative; }
+  .lang button { font: inherit; cursor: pointer; }
+  .lang .flag { width: 18px; height: 12px; border-radius: 2px; flex: none; box-shadow: 0 0 0 1px rgba(0,0,0,.12); }
+  .lang-current { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.8rem; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 0.3rem 0.5rem 0.3rem 0.55rem; }
+  .lang-current:hover { border-color: var(--muted); }
+  .lang-now { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .lang .chev { width: 12px; height: 12px; color: var(--muted); transition: transform .15s ease; }
+  .lang-current[aria-expanded="true"] .chev { transform: rotate(180deg); }
+  .lang-list { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; min-width: 10.5rem; padding: 0.3rem; display: grid; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 12px 30px rgba(0,0,0,.18); }
+  .lang-list[hidden] { display: none; }
+  .lang-list [role="option"] { display: flex; align-items: center; gap: 0.6rem; width: 100%; text-align: left; font-size: 0.9rem; font-weight: 500; color: var(--ink); background: none; border: 0; border-radius: 6px; padding: 0.45rem 0.6rem; }
+  .lang-list [role="option"]:hover, .lang-list [role="option"]:focus-visible { background: color-mix(in srgb, var(--muted) 14%, transparent); }
+  .lang-list [role="option"][aria-selected="true"] { color: var(--accent-strong); font-weight: 600; }
+  .lang-list [role="option"][aria-selected="true"]::after { content: "✓"; margin-left: auto; }
+  @media (max-width: 480px) { .lang-now { font-size: 0; gap: 0; } }
+  [hidden] { display: none !important; }
+  .progress { position: absolute; left: 0; bottom: -1px; height: 3px; width: 0; background: linear-gradient(90deg, var(--coral), var(--gold), var(--mint)); }
+
+  /* abertura */
+  .hero-band {
+    background:
+      radial-gradient(900px 420px at 85% -10%, rgba(255,255,255,.07), transparent 60%),
+      linear-gradient(160deg, var(--navy) 0%, var(--navy-deep) 100%);
+    border-top: 4px solid var(--gold); color: var(--on-navy);
+  }
+  .hero { padding: 3.5rem 0 3.5rem; max-width: 820px; }
+  .crumb { margin: 0 0 1.4rem; font-size: 0.92rem; }
+  .crumb a { color: var(--on-navy-muted); text-decoration: none; }
+  .crumb a:hover { color: var(--gold); }
+  .eyebrow { color: var(--gold); font-weight: 600; font-size: 1rem; margin: 0 0 0.7rem; }
+  h1 { font-family: var(--serif); font-weight: 600; color: var(--on-navy); font-size: clamp(2.3rem, 5.5vw, 3.8rem); line-height: 1.05; letter-spacing: -0.025em; margin: 0; }
+  .dek { font-family: var(--serif); font-style: italic; font-size: clamp(1.1rem, 2.2vw, 1.35rem); color: var(--on-navy-muted); margin: 1.1rem 0 1.6rem; max-width: 58ch; }
+  .byline { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; font-size: 0.92rem; color: var(--on-navy-muted); }
+  .byline strong { color: var(--on-navy); font-weight: 600; }
+  .byline .credit { margin-left: auto; font-style: italic; }
+
+  /* layout do artigo */
+  .layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 3rem; padding: 3rem 0 4rem; align-items: start; }
+  .toc { position: sticky; top: 82px; font-size: 0.92rem; max-height: calc(100vh - 100px); overflow-y: auto; }
+  .toc h2 { font-family: var(--sans); font-size: 0.85rem; font-weight: 600; color: var(--muted); margin: 0 0 0.7rem; border: 0; padding: 0; }
+  .toc ol { list-style: none; margin: 0; padding: 0; counter-reset: toc; border-left: 2px solid var(--line); }
+  .toc li { counter-increment: toc; }
+  .toc a { display: block; padding: 0.3rem 0 0.3rem 1rem; margin-left: -2px; border-left: 2px solid transparent; color: var(--muted); text-decoration: none; line-height: 1.35; }
+  .toc a::before { content: counter(toc) ". "; color: var(--gold-ink); font-weight: 600; }
+  .toc a:hover { color: var(--ink); }
+  .toc a[aria-current="true"] { color: var(--accent-strong); border-left-color: var(--gold); font-weight: 600; }
+
+  article { background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: var(--radius); padding: 3rem clamp(1.25rem, 4vw, 3.5rem); min-width: 0; }
+  article section + section { margin-top: 3.2rem; }
+  article h2 { font-family: var(--serif); font-weight: 600; color: var(--ink); font-size: clamp(1.5rem, 2.8vw, 1.9rem); letter-spacing: -0.015em; line-height: 1.2; margin: 0 0 1.1rem; padding-left: 0.9rem; border-left: 3px solid var(--gold); }
+  article h3 { font-family: var(--sans); font-size: 1.1rem; font-weight: 600; color: var(--ink); margin: 2rem 0 0.8rem; }
+  article p, article li { font-family: var(--serif); font-size: 1.12rem; line-height: 1.7; color: var(--text); }
+  article p { margin: 0 0 1.1rem; max-width: 68ch; }
+  article ul, article ol { margin: 0 0 1.1rem; padding-left: 1.4rem; max-width: 68ch; }
+  article li { margin-bottom: 0.3rem; }
+  article strong { color: var(--ink); }
+  sup a { font-family: var(--sans); font-size: 0.72rem; font-weight: 700; text-decoration: none; padding: 0 0.15em; }
+
+  figure { margin: 2rem 0; }
+  figure img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: #FFF7EC; }
+  figcaption { margin-top: 0.6rem; font-size: 0.9rem; color: var(--muted); text-align: center; font-family: var(--sans); line-height: 1.5; }
+
+  blockquote { margin: 1.5rem 0; padding: 1.2rem 1.5rem; background: var(--accent-soft); border-left: 3px solid var(--gold); border-radius: 0 10px 10px 0; }
+  blockquote p { font-size: 1.05rem; margin: 0 0 0.8rem; }
+  blockquote p:last-child { margin-bottom: 0; }
+  blockquote.pull p { font-size: clamp(1.15rem, 2.3vw, 1.35rem); font-style: italic; line-height: 1.45; color: var(--ink); }
+  blockquote cite { font-family: var(--sans); font-size: 0.88rem; font-style: normal; color: var(--muted); }
+
+  /* tabelas */
+  .table-wrap { overflow-x: auto; margin: 1.5rem 0; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-family: var(--sans); font-size: 0.95rem; }
+  th, td { text-align: left; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.5; }
+  thead th { background: var(--gold-soft); color: var(--ink); font-weight: 600; }
+  tbody th { color: var(--ink); font-weight: 600; }
+  tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
+  td code, th code { font-size: 0.9em; }
+
+  /* mitos */
+  .myths { list-style: none; padding: 0; margin: 1.5rem 0; max-width: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
+  .myths li { margin: 0; padding: 1rem 1.2rem; border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: 10px; }
+  .myths li:nth-child(4n+2) { border-top-color: var(--sky); }
+  .myths li:nth-child(4n+3) { border-top-color: var(--mint); }
+  .myths li:nth-child(4n+4) { border-top-color: var(--gold); }
+  .myths h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+  .myths p { margin: 0; font-size: 1rem; line-height: 1.6; }
+
+  /* para fixar */
+  .recap { margin: 1.8rem 0 0; padding: 1.1rem 1.4rem; background: var(--gold-soft); border-left: 4px solid var(--mint); border-radius: 0 10px 10px 0; }
+  .recap h3 { margin: 0 0 0.5rem; font-size: 0.85rem; letter-spacing: .05em; text-transform: uppercase; color: var(--gold-ink); }
+  .recap ul { margin: 0; padding-left: 1.2rem; }
+  .recap li { font-family: var(--sans); font-size: 0.98rem; line-height: 1.55; margin-bottom: 0.25rem; }
+
+  /* revisão rápida */
+  .quiz { display: grid; gap: 0.7rem; margin: 1.5rem 0; }
+  .quiz details { border: 1px solid var(--line); border-left: 4px solid var(--sky); border-radius: 0 10px 10px 0; padding: 0.8rem 1.1rem; }
+  .quiz details:nth-child(3n+2) { border-left-color: var(--pink); }
+  .quiz details:nth-child(3n+3) { border-left-color: var(--mint); }
+  .quiz summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); line-height: 1.45; }
+  .quiz details[open] summary { margin-bottom: 0.5rem; }
+  .quiz p { margin: 0; font-size: 1.02rem; }
+
+  .refs { font-family: var(--sans); padding-left: 1.4rem; margin: 0; }
+  .refs li { font-family: var(--sans); font-size: 0.92rem; line-height: 1.55; margin-bottom: 0.7rem; word-break: break-word; }
+  .refs li:target { background: var(--gold-soft); border-radius: 6px; }
+
+  .back { display: inline-block; margin-top: 1rem; font-family: var(--sans); font-size: 0.85rem; text-decoration: none; }
+
+  footer { background: var(--navy-deep); color: var(--on-navy-muted); border-top: 3px solid var(--gold); padding: 1.5rem 0 calc(1.5rem + env(safe-area-inset-bottom, 0px)); font-size: 0.88rem; }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1.5rem; }
+  footer a { color: var(--on-navy); text-decoration: none; }
+  footer a:hover { color: var(--gold); }
+
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+    .toc { position: static; max-height: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.2rem 1.4rem; }
+  }
+  @media (max-width: 760px) {
+    .myths { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .nav ul { display: none; }
+    .hero { padding: 2.5rem 0; }
+    .wrap { padding: 0 1rem; }
+    article p, article li { font-size: 1.05rem; }
+    th, td { padding: 0.6rem 0.7rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  @media print {
+    .nav, .toc, footer, .back, .crumb { display: none !important; }
+    body { background: #fff; }
+    .hero-band { background: none; color: #111; border: 0; }
+    .hero-band h1 { color: #5B2A86; }
+    .dek, .byline, .byline strong { color: #333; }
+    .layout { display: block; padding: 0; }
+    article { border: 0; padding: 0; }
+    .table-wrap { overflow: visible; }
+    figure, blockquote, .myths li, .recap, .quiz details, tr { break-inside: avoid; }
+  }
+
+  /* blocos de código (Gherkin) */
+  pre.code { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: #2B1B3D; color: #F7F0FF; border-radius: 10px; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.92rem; line-height: 1.6; tab-size: 2; }
+  pre.code code { font-family: inherit; white-space: pre; }
+  pre.code .k { color: #FFB703; font-weight: 700; }
+  pre.code .s { color: #5FD3C4; font-weight: 700; }
+  pre.code .c { color: #A898C0; }
+  pre.code .p { color: #C9A7F5; }
+  article code { font-family: Consolas, "Courier New", monospace; font-size: 0.92em; }
+  article :not(pre) > code { background: var(--accent-soft); color: var(--ink); padding: 0.05em 0.35em; border-radius: 4px; }
+
+  /* fórmulas */
+  pre.formula { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.95rem; line-height: 1.5; }
+
+  /* glossário */
+  dl.glossary { margin: 1.2rem 0; display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  dl.glossary dt, dl.glossary dd { margin: 0; padding: 0.65rem 0.9rem; border-bottom: 1px solid var(--line); font-family: var(--sans); font-size: 0.95rem; line-height: 1.5; }
+  dl.glossary dt { font-weight: 600; color: var(--ink); background: color-mix(in srgb, var(--gold-soft) 60%, var(--surface)); }
+  dl.glossary dd { color: var(--text); }
+  dl.glossary dt:nth-last-of-type(1), dl.glossary dd:last-of-type { border-bottom: 0; }
+  @media (max-width: 720px) { dl.glossary { grid-template-columns: 1fr; } dl.glossary dt { border-bottom: 0; padding-bottom: 0.2rem; } }
+
+  /* figuras geradas pelo PlantUML e código recolhível */
+  figure.puml img { width: auto; max-width: 100%; margin: 0 auto; background: #FFFFFF; padding: 12px; }
+  details.codebox { margin: 1rem 0 1.5rem; border: 1px solid var(--line); border-radius: 10px; padding: 0.6rem 1rem; }
+  details.codebox summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); }
+  details.codebox pre.code { max-height: 480px; overflow: auto; }
+
+  /* nota de atenção */
+  aside.note { margin: 1.2rem 0 1.5rem; padding: 0.8rem 1.1rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; }
+  aside.note p { margin: 0; }
+
+  /* link para o simulador e teclas */
+  .launch { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--sans); font-weight: 600; font-size: 1rem; background: var(--accent-strong); color: var(--surface); text-decoration: none; padding: 0.65rem 1.2rem; border-radius: 10px; }
+  .launch:hover { background: var(--navy-deep); color: #FFFFFF; }
+  kbd { font-family: var(--sans); font-size: 0.85em; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 0.05em 0.4em; white-space: nowrap; }
+  @media (max-width: 720px) { figure { overflow-x: auto; } figure img { width: 680px; max-width: none; } }
+</style>
+</head>
+<body id="top">
+
+<nav class="nav" aria-label="Navegação do site">
+  <div class="wrap">
+    <a class="brand" href="index.html" data-home>Giovani Perotto Mesquita</a>
+    <div class="nav-right">
+      <ul>
+        <li><a href="index.html" data-home>Início</a></li>
+        <li><a href="about.html" data-about>Sobre</a></li>
+        <li><a href="resume.html" data-resume>Currículo</a></li>
+        <li><a href="projects.html" data-projects aria-current="page">Projetos</a></li>
+        <li><a href="contact.html" data-contact>Contato</a></li>
+      </ul>
+      <div class="lang">
+        <button type="button" class="lang-current" aria-haspopup="listbox" aria-expanded="false" aria-controls="lang-list" data-label="Idioma / Language / Lingua" aria-label="Idioma / Language / Lingua: Português"><span class="lang-now"><svg class="flag" viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009C3B"/><path d="M10 1.6 18.4 7 10 12.4 1.6 7z" fill="#FEDF00"/><circle cx="10" cy="7" r="3.3" fill="#002776"/><path d="M6.8 6.3c2.1-.6 4.5-.2 6.4 1" stroke="#fff" stroke-width=".7" fill="none"/></svg>PT</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="lang-list" id="lang-list" role="listbox" aria-label="Idioma / Language / Lingua" hidden>
+          <button type="button" role="option" id="tab-pt" aria-controls="pt" aria-selected="true" lang="pt-BR" data-code="PT"><svg class="flag" viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009C3B"/><path d="M10 1.6 18.4 7 10 12.4 1.6 7z" fill="#FEDF00"/><circle cx="10" cy="7" r="3.3" fill="#002776"/><path d="M6.8 6.3c2.1-.6 4.5-.2 6.4 1" stroke="#fff" stroke-width=".7" fill="none"/></svg><span>Português</span></button>
+          <button type="button" role="option" id="tab-en" aria-controls="en" aria-selected="false" lang="en" tabindex="-1" data-code="EN"><svg class="flag" viewBox="0 0 19 10" aria-hidden="true"><rect width="19" height="10" fill="#B22234"/><rect y="0.769" width="19" height="0.769" fill="#fff"/><rect y="2.308" width="19" height="0.769" fill="#fff"/><rect y="3.846" width="19" height="0.769" fill="#fff"/><rect y="5.385" width="19" height="0.769" fill="#fff"/><rect y="6.923" width="19" height="0.769" fill="#fff"/><rect y="8.462" width="19" height="0.769" fill="#fff"/><rect width="7.6" height="5.385" fill="#3C3B6E"/></svg><span>English</span></button>
+          <button type="button" role="option" id="tab-it" aria-controls="it" aria-selected="false" lang="it" tabindex="-1" data-code="IT"><svg class="flag" viewBox="0 0 3 2" aria-hidden="true"><rect width="1" height="2" fill="#009246"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#CE2B37"/></svg><span>Italiano</span></button>
+          <button type="button" role="option" id="tab-es" aria-controls="es" aria-selected="false" lang="es" tabindex="-1" data-code="ES"><svg class="flag" viewBox="0 0 750 500" aria-hidden="true"><rect width="750" height="500" fill="#AA151B"/><rect y="125" width="750" height="250" fill="#F1BF00"/></svg><span>Español</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="progress" aria-hidden="true"></div>
+</nav>
+
+<!-- ===================== PT ===================== -->
+<div id="pt" role="tabpanel" aria-labelledby="tab-pt" lang="pt-BR">
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projetos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Pife para iniciantes: como jogar</h1>
+      <p class="dek">As cartas, os jogos que valem, o passo a passo da sua vez, como bater e as primeiras dicas para ganhar, com uma rodada comentada do começo ao fim.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado em <time datetime="2026-10-31">31/10/2026</time></span>
+        <span class="credit">Revisado e formatado usando Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-pt">
+    <h2 id="toc-pt">Índice</h2>
+    <ol>
+      <li><a href="#intro-pt">O jogo em um minuto</a></li>
+      <li><a href="#cartas-pt">As cartas</a></li>
+      <li><a href="#jogos-pt">Os jogos que valem</a></li>
+      <li><a href="#turno-pt">Sua vez, passo a passo</a></li>
+      <li><a href="#bater-pt">Como bater</a></li>
+      <li><a href="#exemplo-pt">Uma rodada comentada</a></li>
+      <li><a href="#tela-pt">A tela do app</a></li>
+      <li><a href="#dicas-pt">Dicas para começar bem</a></li>
+      <li><a href="#erros-pt">Erros comuns</a></li>
+      <li><a href="#variacoes-pt">Regras que mudam de mesa para mesa</a></li>
+      <li><a href="#glossario-pt">Glossário</a></li>
+      <li><a href="#revisao-pt">Revisão rápida</a></li>
+      <li><a href="#referencias-pt">Referências</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="intro-pt" aria-labelledby="h-intro-pt">
+      <h2 id="h-intro-pt">O jogo em um minuto</h2>
+      <p>O pife, também chamado de pif-paf em muitos lugares, é um jogo de cartas simples de aprender: cada jogador tem <strong>9 cartas na mão</strong> e tenta organizá-las em combinações. <sup><a href="#ref-1-pt">[1]</a></sup> Quem conseguir encaixar todas primeiro <strong>bate</strong> e ganha a rodada.</p>
+      <p>Não há pontos para somar nem lances para decorar. A cada vez você compra uma carta, fica com a que serve e joga fora a que não serve. A graça está em decidir o que guardar e em prestar atenção no que os outros descartam.</p>
+      <p><a class="launch" href="Pife.html">Jogar Pife <span aria-hidden="true">→</span></a></p>
+      <aside class="note"><p>Este tutorial segue as regras do app, que tem base na Wikipédia. O pife muda bastante de uma mesa para outra, então combine as regras antes de jogar com outras pessoas. As diferenças mais comuns estão na seção <a href="#variacoes-pt">Regras que mudam de mesa para mesa</a>.</p></aside>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="cartas-pt" aria-labelledby="h-cartas-pt">
+      <h2 id="h-cartas-pt">As cartas</h2>
+      <p>O jogo usa <strong>dois baralhos comuns misturados</strong>, sem os curingas: 104 cartas no total. <sup><a href="#ref-4-pt">[4]</a></sup> Por isso cada carta existe em duas cópias, e pode acontecer de você ter dois 7 de ouros na mão.</p>
+      <figure>
+        <img src="rc_images/PifeCartas.svg" alt="As treze cartas de copas em ordem, do Ás ao Rei, e os quatro naipes: espadas, copas, ouros e paus. Cada carta existe em duas cópias." loading="lazy">
+        <figcaption>Cada carta aparece duas vezes, porque o jogo usa dois baralhos</figcaption>
+      </figure>
+      <p>Os valores seguem a ordem de sempre, com o Ás antes do 2. <sup><a href="#ref-3-pt">[3]</a></sup> As cartas não valem pontos: um Rei não pesa mais que um 2. Só importa se a carta entra em um jogo.</p>
+      <p>No começo da rodada, cada jogador recebe 9 cartas fechadas. O que sobra vira o <strong>monte</strong>, virado para baixo, e ao lado dele nasce o <strong>lixo</strong>, com as cartas descartadas viradas para cima.</p>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="jogos-pt" aria-labelledby="h-jogos-pt">
+      <h2 id="h-jogos-pt">Os jogos que valem</h2>
+      <p>Só existem dois tipos de jogo, e os dois precisam de pelo menos 3 cartas. <sup><a href="#ref-1-pt">[1]</a></sup></p>
+      <ul>
+        <li><strong>Trinca:</strong> cartas do mesmo valor e de naipes diferentes, como 7♠ 7♦ 7♣. Com quatro naipes, a trinca pode chegar a 4 cartas.</li>
+        <li><strong>Sequência:</strong> cartas seguidas do mesmo naipe, como 4♥ 5♥ 6♥. Pode ser tão longa quanto você conseguir.</li>
+      </ul>
+      <figure>
+        <img src="rc_images/PifeJogos.svg" alt="Válidos: trinca de setes de naipes diferentes, sequência de 4, 5 e 6 de copas e sequência de 9, 10, Valete e Dama de paus. Inválidos: setes com naipe repetido, sequência com um naipe diferente e sequência com um buraco." loading="lazy">
+        <figcaption>Três jogos válidos e três parecidos que não valem</figcaption>
+      </figure>
+      <p>O erro clássico do iniciante aparece por causa dos dois baralhos: 7♠ 7♦ 7♠ parece trinca, mas repete um naipe e não vale. Cada carta também só pode estar em um jogo por vez.</p>
+      <p>Seus jogos ficam <strong>na sua mão, em segredo</strong>, até o momento de bater. Ninguém baixa cartas na mesa durante a rodada. <sup><a href="#ref-1-pt">[1]</a></sup></p>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="turno-pt" aria-labelledby="h-turno-pt">
+      <h2 id="h-turno-pt">Sua vez, passo a passo</h2>
+      <p>Quem começa é sorteado no app, e depois a vez segue em ordem, um jogador de cada vez. A sua vez tem sempre os mesmos passos:</p>
+      <figure>
+        <img src="rc_images/PifeTurno.svg" alt="Cinco passos: olhar a carta de cima do lixo, comprar do monte ou do lixo, ver se formou algum jogo, bater se todas as cartas encaixam e, se não, descartar uma carta e passar a vez." loading="lazy">
+        <figcaption>Toda vez segue a mesma ordem: comprar, conferir e descartar</figcaption>
+      </figure>
+      <ol>
+        <li><strong>Olhe o lixo.</strong> A carta de cima é a única que você pode pegar. Ela é visível, então já dá para saber se serve.</li>
+        <li><strong>Compre uma carta.</strong> Ou a de cima do lixo, ou a de cima do monte, sem ver. Sempre exatamente uma.</li>
+        <li><strong>Reorganize.</strong> Veja se a carta nova fecha um jogo ou cria uma dupla promissora.</li>
+        <li><strong>Bata, se puder.</strong> Se todas as cartas encaixam, a rodada acaba e você ganha.</li>
+        <li><strong>Descarte uma.</strong> Se não bateu, ponha uma carta no lixo. Você volta a ter 9 e a vez passa.</li>
+      </ol>
+      <p>Há uma exceção, só para quem abre a rodada. O lixo ainda está vazio, então o primeiro jogador compra do monte e, se não gostar da carta, pode descartá-la e comprar outra. <sup><a href="#ref-1-pt">[1]</a></sup></p>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="bater-pt" aria-labelledby="h-bater-pt">
+      <h2 id="h-bater-pt">Como bater</h2>
+      <p><strong>Bater</strong> é mostrar a mão com todas as cartas em jogos válidos. Depois de comprar você tem 10 cartas, então existem dois casos: 9 cartas em jogos e 1 solta, que vira o descarte final, ou as 10 em jogos.</p>
+      <figure>
+        <img src="rc_images/PifeBater.svg" alt="Primeira mão: três jogos de três cartas e uma quarta carta solta, o 5 de ouros, que vai para o lixo. Segunda mão: uma sequência de cinco espadas e uma trinca de quatro Reis, sem sobrar carta." loading="lazy">
+        <figcaption>Duas formas de bater: com um descarte final ou com as nove cartas já em jogos</figcaption>
+      </figure>
+      <p>A forma mais comum são três jogos de três cartas, mas qualquer divisão serve, desde que nenhum jogo tenha menos de 3 cartas. No app, o botão <strong>Bater!</strong> só aparece quando a batida é válida, então você não corre o risco de bater errado.</p>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="exemplo-pt" aria-labelledby="h-exemplo-pt">
+      <h2 id="h-exemplo-pt">Uma rodada comentada</h2>
+      <p>Acompanhe uma mão real, conferida no motor do jogo. Observe como o jogador guarda as duplas boas e se livra das cartas sem par.</p>
+      <figure>
+        <img src="rc_images/PifeExemplo.svg" alt="Mão inicial com 3 e 4 de espadas, 5 e 6 de copas, dois noves, Valete, Rei e 2. O jogador pega o 7 de copas do lixo, compra o 9 de espadas, descarta uma Dama inútil e compra o 5 de espadas, batendo com o Valete como descarte final." loading="lazy">
+        <figcaption>A mesma mão, jogada a jogada, até a batida</figcaption>
+      </figure>
+      <ul>
+        <li><strong>Vez 1.</strong> O adversário descartou o 7♥, que fecha 5♥ 6♥ 7♥. Aqui vale pegar do lixo, porque a carta fecha um jogo. O K♠ não combina com nada e sai.</li>
+        <li><strong>Vez 2.</strong> O lixo não ajuda, então a compra é no monte. Vem o 9♠, e os noves viram trinca. O 2♦ sai.</li>
+        <li><strong>Vez 3.</strong> A Q♦ não combina com nada. Comprar e descartar a mesma carta é um lance normal.</li>
+        <li><strong>Vez 4.</strong> O 5♠ fecha 3♠ 4♠ 5♠. Agora são 9 cartas em jogos e o J♣ solto: é só bater, com o J♣ como descarte final.</li>
+      </ul>
+      <p>Repare no 5: havia 5♥ e 5♠ na mão, e cada um ficou em uma sequência diferente. Isso é permitido, porque são duas cartas.</p>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="tela-pt" aria-labelledby="h-tela-pt">
+      <h2 id="h-tela-pt">A tela do app</h2>
+      <p>O <a href="Pife.html">app</a> faz a parte chata por você: mostra quantas cartas já estão em jogos, marca os jogos com barras coloridas e só deixa fazer o que é permitido.</p>
+      <figure>
+        <img src="rc_images/PifeTela.svg" alt="A mesa com os adversários no alto, o monte e o lixo no centro e a sua mão embaixo, com barras nos jogos prontos. À direita, o painel com os botões e o histórico." loading="lazy">
+        <figcaption>As partes da tela do app</figcaption>
+      </figure>
+      <p>Na hora de descartar, toque em uma carta e depois em <strong>Descartar</strong>, ou toque duas vezes na mesma carta. O botão <strong>Organizar</strong> agrupa os jogos prontos, e você pode arrastar as cartas para a ordem que preferir. Para treinar, comece com 2 jogadores no nível Fácil.</p>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="dicas-pt" aria-labelledby="h-dicas-pt">
+      <h2 id="h-dicas-pt">Dicas para começar bem</h2>
+      <p>Testamos estilos de jogo em 6.000 partidas simuladas de 3 jogadores: um jogador com o estilo indicado contra dois no nível Difícil. Numa disputa equilibrada, cada um venceria 33% das vezes, com margem de erro de 1,2 ponto. <sup><a href="#ref-5-pt">[5]</a></sup></p>
+      <div class="table-wrap"><table><thead><tr><th scope="col">Estilo de jogo</th><th scope="col">Vitórias</th></tr></thead><tbody><tr><th scope="row">Referência: o nível Difícil, sem restrição</th><td>33,4%</td></tr><tr><th scope="row">Nunca pega do lixo, exceto para bater</th><td>19,0%</td></tr><tr><th scope="row">Pega do lixo só se a carta aumenta os jogos</th><td>32,1%</td></tr><tr><th scope="row">Pega do lixo sempre</th><td>9,6%</td></tr><tr><th scope="row">Descarta sempre a carta solta mais alta</th><td>17,1%</td></tr><tr><th scope="row">Descarta sempre a carta que comprou</th><td>0,2%</td></tr><tr><th scope="row">Descarta ao acaso</th><td>0,8%</td></tr></tbody></table></div>
+      <p>Os computadores não jogam como pessoas, então olhe para a direção desses números, não para o valor exato. Eles sustentam as dicas abaixo.</p>
+      <ul class="myths">
+        <li><h3>Olhe o lixo em toda vez</h3><p>Ignorar o lixo derrubou as vitórias para 19,0%. Pegar só quando a carta aumenta seus jogos deu 32,1%, quase o mesmo que a referência. É uma regra simples e muito boa para começar.</p></li>
+        <li><h3>Não pegue do lixo por impulso</h3><p>Pegar sempre deu só 9,6%. Uma carta do lixo que não fecha nada toma o lugar de uma compra no monte, que pode trazer algo melhor. Além disso, todos veem o que você pegou.</p></li>
+        <li><h3>Guarde as duplas com mais saídas</h3><p>Uma dupla de mesmo valor ou de duas cartas seguidas tem 4 cartas que a completam. Com um buraco, ou com Ás e 2, são só 2. Na dúvida, desfaça primeiro as duplas mais fracas.</p></li>
+        <li><h3>Descarte o que não combina, não o que é alto</h3><p>Aqui as cartas não valem pontos. Quem descartou sempre a solta mais alta, sem olhar as chances, ficou em 17,1%. Um Rei com par vale mais do que um 3 sozinho.</p></li>
+        <li><h3>Vigie os descartes</h3><p>Se os dois 6♥ já saíram, a dupla 5♥ 7♥ não tem futuro. Contar o que já apareceu é o que separa o jogador iniciante do experiente.</p></li>
+        <li><h3>Repare no que os outros pegam</h3><p>Se o próximo jogador pegou um 8♣ do lixo, evite dar a ele outro 8 ou cartas vizinhas de paus. Quando não atrapalha a sua mão, descarte outra coisa.</p></li>
+        <li><h3>Mantenha a mão flexível</h3><p>Uma carta que serve a dois jogos possíveis, como um 5♥ ao lado de 5♠ e de 6♥, vale mais do que uma que só serve a um.</p></li>
+      </ul>
+      <figure>
+        <img src="rc_images/PifeOuts.svg" alt="Dois setes de naipes diferentes têm 4 cartas que completam; 5 e 6 de copas também têm 4; 5 e 7 de copas têm 2; Ás e 2 de copas têm 2; e dois 7 de ouros iguais não têm nenhuma." loading="lazy">
+        <figcaption>Quantas cartas do baralho completam cada dupla</figcaption>
+      </figure>
+      <h3>Quanto tempo você tem</h3>
+      <p>Medimos 10.000 rodadas de cada tamanho, com todos no nível Difícil. Com mais jogadores a rodada acaba em menos vezes para cada um, porque alguém bate mais cedo.</p>
+      <div class="table-wrap"><table><thead><tr><th scope="col">Jogadores</th><th scope="col">Vezes de cada um, em média</th><th scope="col">Compras feitas no lixo</th></tr></thead><tbody><tr><th scope="row">2</th><td>9</td><td>19%</td></tr><tr><th scope="row">3</th><td>8</td><td>20%</td></tr><tr><th scope="row">4</th><td>7</td><td>21%</td></tr><tr><th scope="row">6</th><td>6</td><td>21%</td></tr></tbody></table></div>
+      <p>Também contamos 30.000 mãos iniciais: só 27% já vêm com algum jogo pronto, e 1% com dois. Começar sem nenhum é o normal, então não se preocupe. Valem as duplas, e o resto vem nas compras.</p>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="erros-pt" aria-labelledby="h-erros-pt">
+      <h2 id="h-erros-pt">Erros comuns</h2>
+      <ul>
+        <li><strong>Trinca com naipe repetido.</strong> 7♠ 7♦ 7♠ não vale. Conte os naipes, não só os valores.</li>
+        <li><strong>Sequência com naipes misturados.</strong> 4♥ 5♥ 6♦ não vale, nem que as cores sejam iguais.</li>
+        <li><strong>Usar a mesma carta em dois jogos.</strong> Um 5♥ não entra ao mesmo tempo em uma trinca de cincos e em uma sequência de copas.</li>
+        <li><strong>Esquecer de descartar.</strong> Se não bateu, a vez termina com 9 cartas.</li>
+        <li><strong>Descartar a carta que o próximo quer.</strong> Se dá no mesmo para a sua mão, entregue a mais segura.</li>
+        <li><strong>Apegar-se a uma dupla morta.</strong> Se as cartas que a completam já saíram, desista dela.</li>
+      </ul>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="variacoes-pt" aria-labelledby="h-variacoes-pt">
+      <h2 id="h-variacoes-pt">Regras que mudam de mesa para mesa</h2>
+      <p>O pife tem muitos nomes e muitas regras da casa. <sup><a href="#ref-1-pt">[1]</a></sup> Até as fontes discordam: algumas tiram os curingas do baralho, outras os usam, e uma delas faz as duas coisas no mesmo texto. <sup><a href="#ref-2-pt">[2]</a></sup> Antes de jogar com outras pessoas, combine estes pontos:</p>
+      <ul>
+        <li><strong>Curinga amigo.</strong> Baralhos com curinga (a ficha da Wikipédia conta 108 cartas), que substitui qualquer carta que exista: A♠ 🃏 3♠ vale, mas uma quinta carta na trinca não. <sup><a href="#ref-1-pt">[1]</a></sup> O app tem esta opção.</li>
+        <li><strong>Curinga sorteado.</strong> Uma carta é virada, e o valor seguinte vira curinga na rodada. Com um Rei virado, o curinga é o Ás. <sup><a href="#ref-1-pt">[1]</a></sup> O app também tem.</li>
+        <li><strong>Q-K-A e K-A-2.</strong> Em algumas mesas o Ás também vem depois do Rei. <sup><a href="#ref-1-pt">[1]</a></sup> Outras descrições põem o Ás sempre embaixo. <sup><a href="#ref-3-pt">[3]</a></sup> No app é uma opção, desligada no início.</li>
+        <li><strong>Trinca de 4 cartas.</strong> Uma descrição de um jogo aparentado pede exatamente três naipes. <sup><a href="#ref-4-pt">[4]</a></sup> O app aceita 3 ou 4 cartas, como indica o exemplo da Wikipédia. <sup><a href="#ref-1-pt">[1]</a></sup></li>
+        <li><strong>Bater errado.</strong> Em geral, quem bate errado recolhe as cartas e continua, mas só pode bater de novo comprando do monte. <sup><a href="#ref-1-pt">[1]</a></sup> Não existe no app, porque ele só deixa bater quando é válido.</li>
+        <li><strong>Cortar.</strong> Em algumas mesas dá para pegar o descarte fora da sua vez, desde que seja para bater na hora. <sup><a href="#ref-1-pt">[1]</a></sup> O app não tem esta variante.</li>
+        <li><strong>Pontuação e número de jogadores.</strong> A referência fala em 3 a 8 jogadores e não define pontos. <sup><a href="#ref-1-pt">[1]</a></sup> No app são de 2 a 6, e vence quem ganhar as rodadas combinadas.</li>
+      </ul>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="glossario-pt" aria-labelledby="h-glossario-pt">
+      <h2 id="h-glossario-pt">Glossário</h2>
+      <ul>
+        <li><strong>Bater:</strong> mostrar a mão com tudo em jogos e ganhar a rodada.</li>
+        <li><strong>Curinga:</strong> carta que substitui outra, nas variantes que o usam.</li>
+        <li><strong>Descarte:</strong> a carta que você põe no lixo no fim da vez.</li>
+        <li><strong>Dupla:</strong> duas cartas que estão a uma carta de virar jogo.</li>
+        <li><strong>Jogo:</strong> uma trinca ou uma sequência.</li>
+        <li><strong>Lixo:</strong> a pilha de descartes, também chamada de bagaço. <sup><a href="#ref-1-pt">[1]</a></sup></li>
+        <li><strong>Monte:</strong> as cartas fechadas de onde se compra.</li>
+        <li><strong>Sequência:</strong> 3 ou mais cartas seguidas do mesmo naipe.</li>
+        <li><strong>Trinca:</strong> 3 ou 4 cartas do mesmo valor, de naipes diferentes.</li>
+      </ul>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="revisao-pt" aria-labelledby="h-revisao-pt">
+      <h2 id="h-revisao-pt">Revisão rápida</h2>
+      <div class="recap">
+        <h3>Em resumo</h3>
+        <ul>
+          <li>Dois baralhos, 9 cartas na mão, jogos sempre em segredo.</li>
+          <li>Compre uma, confira, bata se puder, senão descarte uma.</li>
+          <li>Pegue do lixo quando a carta aumenta seus jogos. No resto, compre do monte.</li>
+          <li>Descarte o que não combina, não o que é alto.</li>
+        </ul>
+      </div>
+      <div class="quiz">
+        <details><summary>1. 9♠ 9♦ 9♠ é uma trinca?</summary><p>Não. O naipe de espadas se repete. Uma trinca precisa de naipes diferentes.</p></details>
+        <details><summary>2. J♣ Q♣ K♣ é uma sequência?</summary><p>Sim: três cartas seguidas do mesmo naipe.</p></details>
+        <details><summary>3. Você tem 10 cartas: três jogos de 3 cartas e uma solta. O que faz?</summary><p>Bate, e a carta solta vira o descarte final.</p></details>
+        <details><summary>4. O lixo mostra uma carta que não fecha nenhum jogo. O que costuma ser melhor?</summary><p>Comprar do monte. Pegar sempre do lixo foi o pior dos estilos de compra nas simulações, com 9,6% de vitórias.</p></details>
+        <details><summary>5. Qual dupla guardar: 5♥ 6♥ ou 5♥ 7♥?</summary><p>5♥ 6♥. Ela tem 4 cartas que a completam (dois 4♥ e dois 7♥). A outra tem só 2 (os dois 6♥).</p></details>
+        <details><summary>6. Quantas cartas você tem no fim da sua vez, se não bateu?</summary><p>Nove, sempre.</p></details>
+      </div>
+      <p><a class="launch" href="Pife.html">Jogar Pife <span aria-hidden="true">→</span></a></p>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="referencias-pt" aria-labelledby="h-referencias-pt">
+      <h2 id="h-referencias-pt">Referências</h2>
+      <ol class="refs">
+        <li id="ref-1-pt">Wikipédia. <a href="https://pt.wikipedia.org/wiki/Pife_(jogo_de_cartas)" rel="noopener">Pife (jogo de cartas)</a>. É a base das regras deste tutorial.</li>
+        <li id="ref-2-pt">Auditório Ibirapuera. <a href="https://www.auditorioibirapuera.com.br/como-funciona-o-coringa-no-pife/" rel="noopener">Como funciona o coringa no pife</a>. O próprio texto se contradiz: diz que o coringa sai do baralho e depois explica como usá-lo.</li>
+        <li id="ref-3-pt">Auditório Ibirapuera. <a href="https://www.auditorioibirapuera.com.br/qual-a-sequencia-do-baralho-no-pife/" rel="noopener">Qual a sequência do baralho no pife</a>. Coloca o Ás como a carta mais baixa.</li>
+        <li id="ref-4-pt">Denexa Games. <a href="https://www.denexa.com/?p=1887" rel="noopener">Regras do Pif Paf</a>. Descreve um jogo muito parecido, com dois baralhos, 104 cartas, 9 cartas na mão e de 3 a 8 jogadores.</li>
+        <li id="ref-5-pt">Simulações próprias com o <a href="Pife.html">jogo Pife</a> deste site, feitas entre jogadores do computador. Não medem pessoas.</li>
+      </ol>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== EN ===================== -->
+<div id="en" role="tabpanel" aria-labelledby="tab-en" lang="en" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projects</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Pife for beginners: how to play</h1>
+      <p class="dek">The cards, the melds that count, your turn step by step, how to go out and your first winning tips, with one round commented from start to finish.</p>
+      <div class="byline">
+        <span>By <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Published <time datetime="2026-10-31">31/10/2026</time></span>
+        <span class="credit">Reviewed and formatted using Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-en">
+    <h2 id="toc-en">Contents</h2>
+    <ol>
+      <li><a href="#intro-en">The game in one minute</a></li>
+      <li><a href="#cartas-en">The cards</a></li>
+      <li><a href="#jogos-en">The melds that count</a></li>
+      <li><a href="#turno-en">Your turn, step by step</a></li>
+      <li><a href="#bater-en">How to go out</a></li>
+      <li><a href="#exemplo-en">A commented round</a></li>
+      <li><a href="#tela-en">The app screen</a></li>
+      <li><a href="#dicas-en">Tips for a good start</a></li>
+      <li><a href="#erros-en">Common mistakes</a></li>
+      <li><a href="#variacoes-en">Rules that change between tables</a></li>
+      <li><a href="#glossario-en">Glossary</a></li>
+      <li><a href="#revisao-en">Quick review</a></li>
+      <li><a href="#referencias-en">References</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="intro-en" aria-labelledby="h-intro-en">
+      <h2 id="h-intro-en">The game in one minute</h2>
+      <p>Pife, also called pif-paf in many places, is a card game that is easy to learn: each player holds <strong>9 cards</strong> and tries to arrange them into combinations. <sup><a href="#ref-1-en">[1]</a></sup> Whoever fits them all first <strong>goes out</strong> and wins the round.</p>
+      <p>There are no points to add up and no moves to memorise. On each turn you draw a card, keep what helps and throw away what does not. The fun lies in deciding what to keep and in watching what the others discard.</p>
+      <p><a class="launch" href="Pife.html#en">Play Pife <span aria-hidden="true">→</span></a></p>
+      <aside class="note"><p>This tutorial follows the rules of the app, based on Wikipedia. Pife changes a lot from one table to another, so agree on the rules before playing with other people. The most common differences are in the section <a href="#variacoes-en">Rules that change between tables</a>.</p></aside>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="cartas-en" aria-labelledby="h-cartas-en">
+      <h2 id="h-cartas-en">The cards</h2>
+      <p>The game uses <strong>two standard decks mixed together</strong>, without the jokers: 104 cards in all. <sup><a href="#ref-4-en">[4]</a></sup> So every card exists in two copies, and you may well hold two 7 of diamonds.</p>
+      <figure>
+        <img src="rc_images/PifeCartas-en.svg" alt="The thirteen hearts in order, from ace to King, and the four suits: spades, hearts, diamonds and clubs. Every card exists in two copies." loading="lazy">
+        <figcaption>Every card appears twice, because the game uses two decks</figcaption>
+      </figure>
+      <p>Ranks follow the usual order, with the ace before the 2. <sup><a href="#ref-3-en">[3]</a></sup> Cards are not worth points: a King weighs no more than a 2. All that matters is whether the card fits in a meld.</p>
+      <p>At the start of the round, each player gets 9 face-down cards. The rest become the face-down <strong>stock</strong>, and beside it grows the <strong>discards</strong> pile, face up.</p>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="jogos-en" aria-labelledby="h-jogos-en">
+      <h2 id="h-jogos-en">The melds that count</h2>
+      <p>There are only two kinds of meld, and both need at least 3 cards. <sup><a href="#ref-1-en">[1]</a></sup></p>
+      <ul>
+        <li><strong>Set:</strong> cards of one rank and different suits, such as 7♠ 7♦ 7♣. With four suits, a set can reach 4 cards.</li>
+        <li><strong>Run:</strong> consecutive cards of one suit, such as 4♥ 5♥ 6♥. It can be as long as you manage.</li>
+      </ul>
+      <figure>
+        <img src="rc_images/PifeJogos-en.svg" alt="Valid: a set of sevens in different suits, a run of 4, 5 and 6 of hearts and a run of 9, 10, Jack and Queen of clubs. Not valid: sevens with a repeated suit, a run with a different suit and a run with a gap." loading="lazy">
+        <figcaption>Three valid melds and three lookalikes that do not count</figcaption>
+      </figure>
+      <p>The classic beginner’s mistake comes from the two decks: 7♠ 7♦ 7♠ looks like a set, but it repeats a suit and does not count. Each card can also be in only one meld at a time.</p>
+      <p>Your melds stay <strong>in your hand, in secret</strong>, until you go out. Nobody lays cards on the table during the round. <sup><a href="#ref-1-en">[1]</a></sup></p>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="turno-en" aria-labelledby="h-turno-en">
+      <h2 id="h-turno-en">Your turn, step by step</h2>
+      <p>In the app, the first player is drawn at random, and then turns follow in order, one player at a time. Your turn always has the same steps:</p>
+      <figure>
+        <img src="rc_images/PifeTurno-en.svg" alt="Five steps: look at the top discard, draw from the stock or the discards, see whether a meld formed, go out if every card fits and, if not, discard a card and pass the turn." loading="lazy">
+        <figcaption>Every turn follows the same order: draw, check and discard</figcaption>
+      </figure>
+      <ol>
+        <li><strong>Look at the discards.</strong> The top card is the only one you can take. It is visible, so you already know whether it helps.</li>
+        <li><strong>Draw a card.</strong> Either the top discard or the top of the stock, unseen. Always exactly one.</li>
+        <li><strong>Rearrange.</strong> See whether the new card closes a meld or creates a promising pair.</li>
+        <li><strong>Go out, if you can.</strong> If every card fits, the round ends and you win.</li>
+        <li><strong>Discard one.</strong> If you did not go out, put a card on the discards. You are back to 9 and the turn passes.</li>
+      </ol>
+      <p>There is one exception, only for whoever opens the round. The discards are still empty, so the first player draws from the stock and, if they dislike the card, may discard it and draw another. <sup><a href="#ref-1-en">[1]</a></sup></p>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="bater-en" aria-labelledby="h-bater-en">
+      <h2 id="h-bater-en">How to go out</h2>
+      <p><strong>Going out</strong> means showing your hand with every card in valid melds. After drawing you hold 10 cards, so there are two cases: 9 cards in melds and 1 loose, which becomes the final discard, or all 10 in melds.</p>
+      <figure>
+        <img src="rc_images/PifeBater-en.svg" alt="First hand: three melds of three cards and a loose card, the 5 of diamonds, which goes to the discards. Second hand: a run of five spades and a set of four Kings, with no card left over." loading="lazy">
+        <figcaption>Two ways to go out: with a final discard or with all nine cards already in melds</figcaption>
+      </figure>
+      <p>The most common form is three melds of three cards, but any split works, as long as no meld has fewer than 3 cards. In the app, the <strong>Go out!</strong> button only appears when going out is valid, so you never risk a false claim.</p>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="exemplo-en" aria-labelledby="h-exemplo-en">
+      <h2 id="h-exemplo-en">A commented round</h2>
+      <p>Follow a real hand, checked against the game engine. Notice how the player keeps the good pairs and gets rid of unmatched cards.</p>
+      <figure>
+        <img src="rc_images/PifeExemplo-en.svg" alt="Starting hand with 3 and 4 of spades, 5 and 6 of hearts, two nines, Jack, King and 2. The player takes the 7 of hearts from the discards, draws the 9 of spades, discards a useless Queen and draws the 5 of spades, going out with the Jack as the final discard." loading="lazy">
+        <figcaption>The same hand, move by move, until going out</figcaption>
+      </figure>
+      <ul>
+        <li><strong>Turn 1.</strong> The opponent discarded the 7♥, which closes 5♥ 6♥ 7♥. Taking the discard is worth it here, because the card closes a meld. The K♠ matches nothing and goes.</li>
+        <li><strong>Turn 2.</strong> The discards do not help, so the draw is from the stock. The 9♠ comes, and the nines become a set. The 2♦ goes.</li>
+        <li><strong>Turn 3.</strong> The Q♦ matches nothing. Drawing and discarding the same card is a normal move.</li>
+        <li><strong>Turn 4.</strong> The 5♠ closes 3♠ 4♠ 5♠. Now 9 cards are in melds and the J♣ is loose: just go out, with the J♣ as the final discard.</li>
+      </ul>
+      <p>Notice the fives: the hand held 5♥ and 5♠, and each ended up in a different run. That is allowed, because they are two cards.</p>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="tela-en" aria-labelledby="h-tela-en">
+      <h2 id="h-tela-en">The app screen</h2>
+      <p>The <a href="Pife.html#en">app</a> does the dull part for you: it shows how many cards are already in melds, marks melds with coloured bars and only lets you do what is allowed.</p>
+      <figure>
+        <img src="rc_images/PifeTela-en.svg" alt="The table with opponents at the top, the stock and discards in the centre and your hand at the bottom, with bars under finished melds. On the right, the panel with the buttons and the history." loading="lazy">
+        <figcaption>The parts of the app screen</figcaption>
+      </figure>
+      <p>To discard, tap a card and then <strong>Discard</strong>, or tap the same card twice. The <strong>Arrange</strong> button groups finished melds, and you can drag cards into any order you like. To practise, start with 2 players on the Easy level.</p>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="dicas-en" aria-labelledby="h-dicas-en">
+      <h2 id="h-dicas-en">Tips for a good start</h2>
+      <p>We tested playing styles in 6,000 simulated 3-player games: one player with the given style against two on the Hard level. In an even contest, each would win 33% of the time, with a margin of error of 1.2 points. <sup><a href="#ref-5-en">[5]</a></sup></p>
+      <div class="table-wrap"><table><thead><tr><th scope="col">Playing style</th><th scope="col">Wins</th></tr></thead><tbody><tr><th scope="row">Baseline: the Hard level, unrestricted</th><td>33.4%</td></tr><tr><th scope="row">Never takes a discard, except to go out</th><td>19.0%</td></tr><tr><th scope="row">Takes a discard only if it adds to the melds</th><td>32.1%</td></tr><tr><th scope="row">Always takes the discard</th><td>9.6%</td></tr><tr><th scope="row">Always discards the highest loose card</th><td>17.1%</td></tr><tr><th scope="row">Always discards the card just drawn</th><td>0.2%</td></tr><tr><th scope="row">Discards at random</th><td>0.8%</td></tr></tbody></table></div>
+      <p>Computers do not play like people, so look at the direction of these numbers rather than the exact value. They support the tips below.</p>
+      <ul class="myths">
+        <li><h3>Check the discards every turn</h3><p>Ignoring the discards dropped wins to 19.0%. Taking one only when it adds to your melds gave 32.1%, almost the same as the baseline. It is a simple and very good rule to start with.</p></li>
+        <li><h3>Do not take a discard on impulse</h3><p>Always taking it gave only 9.6%. A discard that closes nothing replaces a stock draw that might bring something better. Besides, everybody sees what you took.</p></li>
+        <li><h3>Keep the pairs with the most outs</h3><p>A pair of one rank or two consecutive cards has 4 cards that complete it. With a gap, or with ace and 2, only 2. When in doubt, break up the weaker pairs first.</p></li>
+        <li><h3>Discard what does not match, not what is high</h3><p>Cards are not worth points here. A player who always discarded the highest loose card, without looking at the chances, stayed at 17.1%. A paired King is worth more than a lone 3.</p></li>
+        <li><h3>Watch the discards</h3><p>If both 6♥ are gone, the pair 5♥ 7♥ has no future. Counting what has appeared is what separates the beginner from the experienced player.</p></li>
+        <li><h3>Notice what others take</h3><p>If the next player took an 8♣ from the discards, avoid giving them another 8 or neighbouring clubs. If it does not hurt your hand, discard something else.</p></li>
+        <li><h3>Keep your hand flexible</h3><p>A card that serves two possible melds, such as a 5♥ next to 5♠ and 6♥, is worth more than one that serves only one.</p></li>
+      </ul>
+      <figure>
+        <img src="rc_images/PifeOuts-en.svg" alt="Two sevens of different suits have 4 cards that complete them; 5 and 6 of hearts also have 4; 5 and 7 of hearts have 2; ace and 2 of hearts have 2; and two identical 7 of diamonds have none." loading="lazy">
+        <figcaption>How many cards in the deck complete each pair</figcaption>
+      </figure>
+      <h3>How much time you have</h3>
+      <p>We measured 10,000 rounds of each size, with everyone on the Hard level. With more players the round ends in fewer turns for each one, because someone goes out sooner.</p>
+      <div class="table-wrap"><table><thead><tr><th scope="col">Players</th><th scope="col">Turns each, on average</th><th scope="col">Draws taken from the discards</th></tr></thead><tbody><tr><th scope="row">2</th><td>9</td><td>19%</td></tr><tr><th scope="row">3</th><td>8</td><td>20%</td></tr><tr><th scope="row">4</th><td>7</td><td>21%</td></tr><tr><th scope="row">6</th><td>6</td><td>21%</td></tr></tbody></table></div>
+      <p>We also counted 30,000 starting hands: only 27% already have a finished meld, and 1% have two. Starting with none is normal, so do not worry. Pairs are what count, and the rest comes from drawing.</p>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="erros-en" aria-labelledby="h-erros-en">
+      <h2 id="h-erros-en">Common mistakes</h2>
+      <ul>
+        <li><strong>A set with a repeated suit.</strong> 7♠ 7♦ 7♠ does not count. Count suits, not only ranks.</li>
+        <li><strong>A run with mixed suits.</strong> 4♥ 5♥ 6♦ does not count, even though the colours match.</li>
+        <li><strong>Using one card in two melds.</strong> A 5♥ cannot be in a set of fives and in a run of hearts at the same time.</li>
+        <li><strong>Forgetting to discard.</strong> If you did not go out, the turn ends with 9 cards.</li>
+        <li><strong>Discarding what the next player wants.</strong> If it makes no difference to your hand, hand over the safer card.</li>
+        <li><strong>Clinging to a dead pair.</strong> If the cards that complete it are gone, give up on it.</li>
+      </ul>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="variacoes-en" aria-labelledby="h-variacoes-en">
+      <h2 id="h-variacoes-en">Rules that change between tables</h2>
+      <p>Pife has many names and many house rules. <sup><a href="#ref-1-en">[1]</a></sup> Even sources disagree: some take the jokers out of the deck, others use them, and one does both in the same text. <sup><a href="#ref-2-en">[2]</a></sup> Before playing with other people, agree on these points:</p>
+      <ul>
+        <li><strong>Joker wilds.</strong> Decks with jokers (Wikipedia’s summary counts 108 cards), which replace any card that exists: A♠ 🃏 3♠ is valid, but a fifth card in a set is not. <sup><a href="#ref-1-en">[1]</a></sup> The app has this option.</li>
+        <li><strong>Turned-up wild.</strong> A card is turned up, and the next rank is wild for the round. With a King turned up, the ace is wild. <sup><a href="#ref-1-en">[1]</a></sup> The app has this too.</li>
+        <li><strong>Q-K-A and K-A-2.</strong> At some tables the ace also comes after the King. <sup><a href="#ref-1-en">[1]</a></sup> Other descriptions always put the ace at the bottom. <sup><a href="#ref-3-en">[3]</a></sup> In the app it is an option, off at the start.</li>
+        <li><strong>Sets of 4 cards.</strong> A description of a related game asks for exactly three suits. <sup><a href="#ref-4-en">[4]</a></sup> The app accepts 3 or 4 cards, as Wikipedia’s example indicates. <sup><a href="#ref-1-en">[1]</a></sup></li>
+        <li><strong>False claims.</strong> Usually whoever goes out wrongly takes the cards back and stays in, but can only go out again by drawing from the stock. <sup><a href="#ref-1-en">[1]</a></sup> This does not exist in the app, which only lets you go out when it is valid.</li>
+        <li><strong>Cutting.</strong> At some tables you may take a discard out of turn, as long as it is to go out at once. <sup><a href="#ref-1-en">[1]</a></sup> The app does not have this variant.</li>
+        <li><strong>Scoring and number of players.</strong> The reference mentions 3 to 8 players and defines no points. <sup><a href="#ref-1-en">[1]</a></sup> In the app it is 2 to 6, and the winner is whoever wins the agreed rounds.</li>
+      </ul>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="glossario-en" aria-labelledby="h-glossario-en">
+      <h2 id="h-glossario-en">Glossary</h2>
+      <ul>
+        <li><strong>Discard:</strong> the card you put on the pile at the end of your turn.</li>
+        <li><strong>Discards:</strong> the discard pile, called <em>lixo</em> or <em>bagaço</em> in Portuguese. <sup><a href="#ref-1-en">[1]</a></sup></li>
+        <li><strong>Going out:</strong> showing your hand with everything in melds and winning the round. In Portuguese, <em>bater</em>.</li>
+        <li><strong>Meld:</strong> a set or a run.</li>
+        <li><strong>Pair:</strong> two cards that are one card away from a meld.</li>
+        <li><strong>Run:</strong> 3 or more consecutive cards of one suit.</li>
+        <li><strong>Set:</strong> 3 or 4 cards of one rank, in different suits.</li>
+        <li><strong>Stock:</strong> the face-down cards you draw from.</li>
+        <li><strong>Wild:</strong> a card that replaces another, in the variants that use it.</li>
+      </ul>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="revisao-en" aria-labelledby="h-revisao-en">
+      <h2 id="h-revisao-en">Quick review</h2>
+      <div class="recap">
+        <h3>In short</h3>
+        <ul>
+          <li>Two decks, 9 cards in hand, melds always secret.</li>
+          <li>Draw one, check, go out if you can, otherwise discard one.</li>
+          <li>Take the discard when it adds to your melds. Otherwise, draw from the stock.</li>
+          <li>Discard what does not match, not what is high.</li>
+        </ul>
+      </div>
+      <div class="quiz">
+        <details><summary>1. Is 9♠ 9♦ 9♠ a set?</summary><p>No. Spades repeat. A set needs different suits.</p></details>
+        <details><summary>2. Is J♣ Q♣ K♣ a run?</summary><p>Yes: three consecutive cards of one suit.</p></details>
+        <details><summary>3. You hold 10 cards: three melds of 3 cards and a loose one. What do you do?</summary><p>Go out, and the loose card becomes the final discard.</p></details>
+        <details><summary>4. The discards show a card that closes no meld. What is usually better?</summary><p>Drawing from the stock. Always taking the discard was the worst drawing style in the simulations, with 9.6% wins.</p></details>
+        <details><summary>5. Which pair do you keep: 5♥ 6♥ or 5♥ 7♥?</summary><p>5♥ 6♥. It has 4 cards that complete it (two 4♥ and two 7♥). The other has only 2 (the two 6♥).</p></details>
+        <details><summary>6. How many cards do you hold at the end of your turn, if you did not go out?</summary><p>Nine, always.</p></details>
+      </div>
+      <p><a class="launch" href="Pife.html#en">Play Pife <span aria-hidden="true">→</span></a></p>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="referencias-en" aria-labelledby="h-referencias-en">
+      <h2 id="h-referencias-en">References</h2>
+      <ol class="refs">
+        <li id="ref-1-en">Wikipedia (in Portuguese). <a href="https://pt.wikipedia.org/wiki/Pife_(jogo_de_cartas)" rel="noopener">Pife (jogo de cartas)</a>. The basis of the rules in this tutorial.</li>
+        <li id="ref-2-en">Auditório Ibirapuera (in Portuguese). <a href="https://www.auditorioibirapuera.com.br/como-funciona-o-coringa-no-pife/" rel="noopener">Como funciona o coringa no pife</a>. The text contradicts itself: it says the joker leaves the deck and then explains how to use it.</li>
+        <li id="ref-3-en">Auditório Ibirapuera (in Portuguese). <a href="https://www.auditorioibirapuera.com.br/qual-a-sequencia-do-baralho-no-pife/" rel="noopener">Qual a sequência do baralho no pife</a>. It places the ace as the lowest card.</li>
+        <li id="ref-4-en">Denexa Games. <a href="https://www.denexa.com/?p=1887" rel="noopener">Pif Paf rules</a>. It describes a very similar game, with two decks, 104 cards, 9 cards in hand and 3 to 8 players.</li>
+        <li id="ref-5-en">Our own simulations with this site’s <a href="Pife.html#en">Pife game</a>, played between computer players. They do not measure people.</li>
+      </ol>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== IT ===================== -->
+<div id="it" role="tabpanel" aria-labelledby="tab-it" lang="it" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Progetti</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Pife per principianti: come si gioca</h1>
+      <p class="dek">Le carte, le combinazioni valide, il tuo turno passo per passo, come chiudere e i primi consigli per vincere, con un giro commentato dall’inizio alla fine.</p>
+      <div class="byline">
+        <span>Di <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Pubblicato il <time datetime="2026-10-31">31/10/2026</time></span>
+        <span class="credit">Rivisto e formattato con Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-it">
+    <h2 id="toc-it">Indice</h2>
+    <ol>
+      <li><a href="#intro-it">Il gioco in un minuto</a></li>
+      <li><a href="#cartas-it">Le carte</a></li>
+      <li><a href="#jogos-it">Le combinazioni valide</a></li>
+      <li><a href="#turno-it">Il tuo turno, passo per passo</a></li>
+      <li><a href="#bater-it">Come chiudere</a></li>
+      <li><a href="#exemplo-it">Un giro commentato</a></li>
+      <li><a href="#tela-it">La schermata dell’app</a></li>
+      <li><a href="#dicas-it">Consigli per iniziare bene</a></li>
+      <li><a href="#erros-it">Errori comuni</a></li>
+      <li><a href="#variacoes-it">Regole che cambiano da un tavolo all’altro</a></li>
+      <li><a href="#glossario-it">Glossario</a></li>
+      <li><a href="#revisao-it">Ripasso rapido</a></li>
+      <li><a href="#referencias-it">Riferimenti</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="intro-it" aria-labelledby="h-intro-it">
+      <h2 id="h-intro-it">Il gioco in un minuto</h2>
+      <p>Il Pife, chiamato anche pif-paf in molti posti, è un gioco di carte facile da imparare: ogni giocatore ha <strong>9 carte in mano</strong> e cerca di sistemarle in combinazioni. <sup><a href="#ref-1-it">[1]</a></sup> Chi riesce per primo a farle entrare tutte <strong>chiude</strong> e vince il giro.</p>
+      <p>Non ci sono punti da sommare né mosse da memorizzare. A ogni turno peschi una carta, tieni ciò che serve e butti ciò che non serve. Il bello sta nel decidere cosa tenere e nell’osservare cosa scartano gli altri.</p>
+      <p><a class="launch" href="Pife.html#it">Gioca a Pife <span aria-hidden="true">→</span></a></p>
+      <aside class="note"><p>Questo tutorial segue le regole dell’app, basate su Wikipedia. Il Pife cambia molto da un tavolo all’altro, quindi concorda le regole prima di giocare con altre persone. Le differenze più comuni sono nella sezione <a href="#variacoes-it">Regole che cambiano da un tavolo all’altro</a>.</p></aside>
+      <a class="back" href="#top">↑ Torna all’inizio</a>
+    </section>
+
+    <section id="cartas-it" aria-labelledby="h-cartas-it">
+      <h2 id="h-cartas-it">Le carte</h2>
+      <p>Il gioco usa <strong>due mazzi comuni mescolati</strong>, senza jolly: 104 carte in tutto. <sup><a href="#ref-4-it">[4]</a></sup> Quindi ogni carta esiste in due copie, e può capitare di avere due 7 di quadri in mano.</p>
+      <figure>
+        <img src="rc_images/PifeCartas-it.svg" alt="Le tredici carte di cuori in ordine, dall’asso al Re, e i quattro semi: picche, cuori, quadri e fiori. Ogni carta esiste in due copie." loading="lazy">
+        <figcaption>Ogni carta compare due volte, perché il gioco usa due mazzi</figcaption>
+      </figure>
+      <p>I valori seguono l’ordine solito, con l’asso prima del 2. <sup><a href="#ref-3-it">[3]</a></sup> Le carte non valgono punti: un Re non pesa più di un 2. Conta solo se la carta entra in una combinazione.</p>
+      <p>All’inizio del giro, ogni giocatore riceve 9 carte coperte. Il resto forma il <strong>tallone</strong>, coperto, e accanto nasce la pila degli <strong>scarti</strong>, scoperta.</p>
+      <a class="back" href="#top">↑ Torna all’inizio</a>
+    </section>
+
+    <section id="jogos-it" aria-labelledby="h-jogos-it">
+      <h2 id="h-jogos-it">Le combinazioni valide</h2>
+      <p>Esistono solo due tipi di combinazione, ed entrambi richiedono almeno 3 carte. <sup><a href="#ref-1-it">[1]</a></sup></p>
+      <ul>
+        <li><strong>Tris:</strong> carte dello stesso valore e di semi diversi, come 7♠ 7♦ 7♣. Con quattro semi, il tris può arrivare a 4 carte.</li>
+        <li><strong>Scala:</strong> carte consecutive dello stesso seme, come 4♥ 5♥ 6♥. Può essere lunga quanto riesci.</li>
+      </ul>
+      <figure>
+        <img src="rc_images/PifeJogos-it.svg" alt="Validi: un tris di sette di semi diversi, una scala di 4, 5 e 6 di cuori e una scala di 9, 10, Fante e Regina di fiori. Non validi: sette con un seme ripetuto, una scala con un seme diverso e una scala con un buco." loading="lazy">
+        <figcaption>Tre combinazioni valide e tre simili che non valgono</figcaption>
+      </figure>
+      <p>L’errore classico del principiante nasce dai due mazzi: 7♠ 7♦ 7♠ sembra un tris, ma ripete un seme e non vale. Ogni carta, inoltre, può stare in una sola combinazione alla volta.</p>
+      <p>Le tue combinazioni restano <strong>in mano, in segreto</strong>, fino alla chiusura. Nessuno cala carte sul tavolo durante il giro. <sup><a href="#ref-1-it">[1]</a></sup></p>
+      <a class="back" href="#top">↑ Torna all’inizio</a>
+    </section>
+
+    <section id="turno-it" aria-labelledby="h-turno-it">
+      <h2 id="h-turno-it">Il tuo turno, passo per passo</h2>
+      <p>Nell’app chi inizia è sorteggiato, poi il turno segue l’ordine, un giocatore alla volta. Il tuo turno ha sempre gli stessi passi:</p>
+      <figure>
+        <img src="rc_images/PifeTurno-it.svg" alt="Cinque passi: guardare lo scarto in cima, pescare dal tallone o dagli scarti, vedere se si è formata una combinazione, chiudere se tutte le carte entrano e, altrimenti, scartare una carta e passare il turno." loading="lazy">
+        <figcaption>Ogni turno segue lo stesso ordine: pescare, controllare e scartare</figcaption>
+      </figure>
+      <ol>
+        <li><strong>Guarda gli scarti.</strong> La carta in cima è l’unica che puoi prendere. È visibile, quindi sai già se serve.</li>
+        <li><strong>Pesca una carta.</strong> Lo scarto in cima o la prima del tallone, senza vederla. Sempre esattamente una.</li>
+        <li><strong>Riordina.</strong> Vedi se la carta nuova chiude una combinazione o crea una coppia promettente.</li>
+        <li><strong>Chiudi, se puoi.</strong> Se tutte le carte entrano, il giro finisce e vinci.</li>
+        <li><strong>Scarta una carta.</strong> Se non hai chiuso, metti una carta negli scarti. Torni a 9 e il turno passa.</li>
+      </ol>
+      <p>C’è un’eccezione, solo per chi apre il giro. Gli scarti sono ancora vuoti, quindi il primo giocatore pesca dal tallone e, se la carta non gli piace, può scartarla e pescarne un’altra. <sup><a href="#ref-1-it">[1]</a></sup></p>
+      <a class="back" href="#top">↑ Torna all’inizio</a>
+    </section>
+
+    <section id="bater-it" aria-labelledby="h-bater-it">
+      <h2 id="h-bater-it">Come chiudere</h2>
+      <p><strong>Chiudere</strong> vuol dire mostrare la mano con tutte le carte in combinazioni valide. Dopo aver pescato hai 10 carte, quindi ci sono due casi: 9 carte in combinazioni e 1 libera, che diventa lo scarto finale, oppure tutte e 10 in combinazioni.</p>
+      <figure>
+        <img src="rc_images/PifeBater-it.svg" alt="Prima mano: tre combinazioni da tre carte e una carta libera, il 5 di quadri, che va negli scarti. Seconda mano: una scala di cinque picche e un tris di quattro Re, senza carte in più." loading="lazy">
+        <figcaption>Due modi di chiudere: con uno scarto finale o con tutte e nove le carte già in combinazioni</figcaption>
+      </figure>
+      <p>La forma più comune sono tre combinazioni da tre carte, ma va bene qualsiasi divisione, purché nessuna abbia meno di 3 carte. Nell’app il pulsante <strong>Chiudi!</strong> compare solo quando la chiusura è valida, quindi non rischi di sbagliare.</p>
+      <a class="back" href="#top">↑ Torna all’inizio</a>
+    </section>
+
+    <section id="exemplo-it" aria-labelledby="h-exemplo-it">
+      <h2 id="h-exemplo-it">Un giro commentato</h2>
+      <p>Segui una mano vera, verificata con il motore del gioco. Osserva come il giocatore tiene le coppie buone e si libera delle carte spaiate.</p>
+      <figure>
+        <img src="rc_images/PifeExemplo-it.svg" alt="Mano iniziale con 3 e 4 di picche, 5 e 6 di cuori, due nove, Fante, Re e 2. Il giocatore prende il 7 di cuori dagli scarti, pesca il 9 di picche, scarta una Regina inutile e pesca il 5 di picche, chiudendo con il Fante come scarto finale." loading="lazy">
+        <figcaption>La stessa mano, mossa dopo mossa, fino alla chiusura</figcaption>
+      </figure>
+      <ul>
+        <li><strong>Turno 1.</strong> L’avversario ha scartato il 7♥, che chiude 5♥ 6♥ 7♥. Qui conviene prendere lo scarto, perché chiude una combinazione. Il K♠ non si abbina a nulla ed esce.</li>
+        <li><strong>Turno 2.</strong> Gli scarti non aiutano, quindi si pesca dal tallone. Arriva il 9♠, e i nove diventano un tris. Esce il 2♦.</li>
+        <li><strong>Turno 3.</strong> La Q♦ non si abbina a nulla. Pescare e scartare la stessa carta è una mossa normale.</li>
+        <li><strong>Turno 4.</strong> Il 5♠ chiude 3♠ 4♠ 5♠. Ora 9 carte sono in combinazioni e il J♣ è libero: basta chiudere, con il J♣ come scarto finale.</li>
+      </ul>
+      <p>Nota i cinque: in mano c’erano 5♥ e 5♠, e ognuno è finito in una scala diversa. È permesso, perché sono due carte.</p>
+      <a class="back" href="#top">↑ Torna all’inizio</a>
+    </section>
+
+    <section id="tela-it" aria-labelledby="h-tela-it">
+      <h2 id="h-tela-it">La schermata dell’app</h2>
+      <p>L’<a href="Pife.html#it">app</a> fa per te la parte noiosa: mostra quante carte sono già in combinazioni, le segna con barre colorate e permette solo le mosse valide.</p>
+      <figure>
+        <img src="rc_images/PifeTela-it.svg" alt="Il tavolo con gli avversari in alto, il tallone e gli scarti al centro e la tua mano in basso, con barre sotto le combinazioni pronte. A destra, il pannello con i pulsanti e la cronologia." loading="lazy">
+        <figcaption>Le parti della schermata dell’app</figcaption>
+      </figure>
+      <p>Per scartare, tocca una carta e poi <strong>Scarta</strong>, oppure tocca due volte la stessa carta. Il pulsante <strong>Riordina</strong> raggruppa le combinazioni pronte, e puoi trascinare le carte nell’ordine che preferisci. Per fare pratica, inizia con 2 giocatori al livello Facile.</p>
+      <a class="back" href="#top">↑ Torna all’inizio</a>
+    </section>
+
+    <section id="dicas-it" aria-labelledby="h-dicas-it">
+      <h2 id="h-dicas-it">Consigli per iniziare bene</h2>
+      <p>Abbiamo provato stili di gioco in 6.000 partite simulate a 3 giocatori: un giocatore con lo stile indicato contro due al livello Difficile. In una sfida equilibrata, ognuno vincerebbe il 33% delle volte, con un margine di errore di 1,2 punti. <sup><a href="#ref-5-it">[5]</a></sup></p>
+      <div class="table-wrap"><table><thead><tr><th scope="col">Stile di gioco</th><th scope="col">Vittorie</th></tr></thead><tbody><tr><th scope="row">Riferimento: il livello Difficile, senza limiti</th><td>33,4%</td></tr><tr><th scope="row">Non prende mai lo scarto, salvo per chiudere</th><td>19,0%</td></tr><tr><th scope="row">Prende lo scarto solo se aumenta le combinazioni</th><td>32,1%</td></tr><tr><th scope="row">Prende sempre lo scarto</th><td>9,6%</td></tr><tr><th scope="row">Scarta sempre la carta libera più alta</th><td>17,1%</td></tr><tr><th scope="row">Scarta sempre la carta appena pescata</th><td>0,2%</td></tr><tr><th scope="row">Scarta a caso</th><td>0,8%</td></tr></tbody></table></div>
+      <p>I computer non giocano come le persone, quindi guarda la direzione di questi numeri, non il valore esatto. Sostengono i consigli qui sotto.</p>
+      <ul class="myths">
+        <li><h3>Guarda gli scarti a ogni turno</h3><p>Ignorarli ha fatto scendere le vittorie al 19,0%. Prendere lo scarto solo quando aumenta le combinazioni ha dato il 32,1%, quasi come il riferimento. È una regola semplice e molto buona per iniziare.</p></li>
+        <li><h3>Non prendere lo scarto d’impulso</h3><p>Prenderlo sempre ha dato solo il 9,6%. Uno scarto che non chiude nulla toglie il posto a una pescata dal tallone, che può portare di meglio. Inoltre, tutti vedono cosa hai preso.</p></li>
+        <li><h3>Tieni le coppie con più uscite</h3><p>Una coppia di un valore o due carte consecutive hanno 4 carte che le completano. Con un buco, o con asso e 2, solo 2. Nel dubbio, disfa prima le coppie più deboli.</p></li>
+        <li><h3>Scarta ciò che non si abbina, non ciò che è alto</h3><p>Qui le carte non valgono punti. Chi ha scartato sempre la carta libera più alta, senza guardare le probabilità, è rimasto al 17,1%. Un Re in coppia vale più di un 3 da solo.</p></li>
+        <li><h3>Controlla gli scarti</h3><p>Se i due 6♥ sono già usciti, la coppia 5♥ 7♥ non ha futuro. Contare ciò che è comparso è ciò che separa il principiante dal giocatore esperto.</p></li>
+        <li><h3>Nota cosa prendono gli altri</h3><p>Se il giocatore successivo ha preso un 8♣ dagli scarti, evita di dargli un altro 8 o carte vicine di fiori. Se non danneggia la tua mano, scarta altro.</p></li>
+        <li><h3>Tieni la mano flessibile</h3><p>Una carta che serve a due combinazioni possibili, come un 5♥ accanto a 5♠ e 6♥, vale più di una che ne serve una sola.</p></li>
+      </ul>
+      <figure>
+        <img src="rc_images/PifeOuts-it.svg" alt="Due sette di semi diversi hanno 4 carte che li completano; 5 e 6 di cuori ne hanno 4; 5 e 7 di cuori ne hanno 2; asso e 2 di cuori ne hanno 2; due 7 di quadri identici non ne hanno nessuna." loading="lazy">
+        <figcaption>Quante carte del mazzo completano ogni coppia</figcaption>
+      </figure>
+      <h3>Quanto tempo hai</h3>
+      <p>Abbiamo misurato 10.000 giri per ogni formato, con tutti al livello Difficile. Con più giocatori il giro finisce in meno turni per ciascuno, perché qualcuno chiude prima.</p>
+      <div class="table-wrap"><table><thead><tr><th scope="col">Giocatori</th><th scope="col">Turni di ciascuno, in media</th><th scope="col">Pescate dagli scarti</th></tr></thead><tbody><tr><th scope="row">2</th><td>9</td><td>19%</td></tr><tr><th scope="row">3</th><td>8</td><td>20%</td></tr><tr><th scope="row">4</th><td>7</td><td>21%</td></tr><tr><th scope="row">6</th><td>6</td><td>21%</td></tr></tbody></table></div>
+      <p>Abbiamo contato anche 30.000 mani iniziali: solo il 27% ha già una combinazione pronta, e l’1% ne ha due. Iniziare senza nessuna è normale, quindi niente paura. Contano le coppie, il resto arriva pescando.</p>
+      <a class="back" href="#top">↑ Torna all’inizio</a>
+    </section>
+
+    <section id="erros-it" aria-labelledby="h-erros-it">
+      <h2 id="h-erros-it">Errori comuni</h2>
+      <ul>
+        <li><strong>Tris con un seme ripetuto.</strong> 7♠ 7♦ 7♠ non vale. Conta i semi, non solo i valori.</li>
+        <li><strong>Scala con semi misti.</strong> 4♥ 5♥ 6♦ non vale, anche se i colori sono uguali.</li>
+        <li><strong>Usare una carta in due combinazioni.</strong> Un 5♥ non può stare insieme in un tris di cinque e in una scala di cuori.</li>
+        <li><strong>Dimenticare di scartare.</strong> Se non hai chiuso, il turno finisce con 9 carte.</li>
+        <li><strong>Scartare ciò che vuole il prossimo.</strong> Se per la tua mano è indifferente, dai la carta più sicura.</li>
+        <li><strong>Attaccarsi a una coppia morta.</strong> Se le carte che la completano sono uscite, lasciala perdere.</li>
+      </ul>
+      <a class="back" href="#top">↑ Torna all’inizio</a>
+    </section>
+
+    <section id="variacoes-it" aria-labelledby="h-variacoes-it">
+      <h2 id="h-variacoes-it">Regole che cambiano da un tavolo all’altro</h2>
+      <p>Il Pife ha molti nomi e molte regole della casa. <sup><a href="#ref-1-it">[1]</a></sup> Anche le fonti non concordano: alcune tolgono i jolly dal mazzo, altre li usano, e una fa entrambe le cose nello stesso testo. <sup><a href="#ref-2-it">[2]</a></sup> Prima di giocare con altre persone, concorda questi punti:</p>
+      <ul>
+        <li><strong>Jolly amico.</strong> Mazzi con jolly (la scheda di Wikipedia conta 108 carte), che sostituiscono qualsiasi carta esistente: A♠ 🃏 3♠ vale, ma una quinta carta nel tris no. <sup><a href="#ref-1-it">[1]</a></sup> L’app ha questa opzione.</li>
+        <li><strong>Jolly sorteggiato.</strong> Si gira una carta, e il valore successivo è jolly per il giro. Con un Re girato, il jolly è l’asso. <sup><a href="#ref-1-it">[1]</a></sup> Anche questa è nell’app.</li>
+        <li><strong>Q-K-A e K-A-2.</strong> A certi tavoli l’asso viene anche dopo il Re. <sup><a href="#ref-1-it">[1]</a></sup> Altre descrizioni mettono l’asso sempre in fondo. <sup><a href="#ref-3-it">[3]</a></sup> Nell’app è un’opzione, spenta all’inizio.</li>
+        <li><strong>Tris di 4 carte.</strong> Una descrizione di un gioco affine chiede esattamente tre semi. <sup><a href="#ref-4-it">[4]</a></sup> L’app accetta 3 o 4 carte, come indica l’esempio di Wikipedia. <sup><a href="#ref-1-it">[1]</a></sup></li>
+        <li><strong>Chiusura sbagliata.</strong> In genere chi chiude male riprende le carte e resta in gioco, ma può chiudere di nuovo solo pescando dal tallone. <sup><a href="#ref-1-it">[1]</a></sup> Nell’app non esiste, perché lascia chiudere solo quando è valido.</li>
+        <li><strong>Tagliare.</strong> A certi tavoli si può prendere lo scarto fuori turno, purché sia per chiudere subito. <sup><a href="#ref-1-it">[1]</a></sup> L’app non ha questa variante.</li>
+        <li><strong>Punteggio e numero di giocatori.</strong> Il riferimento parla di 3-8 giocatori e non definisce punti. <sup><a href="#ref-1-it">[1]</a></sup> Nell’app sono da 2 a 6, e vince chi ottiene i giri concordati.</li>
+      </ul>
+      <a class="back" href="#top">↑ Torna all’inizio</a>
+    </section>
+
+    <section id="glossario-it" aria-labelledby="h-glossario-it">
+      <h2 id="h-glossario-it">Glossario</h2>
+      <ul>
+        <li><strong>Chiudere:</strong> mostrare la mano con tutto in combinazioni e vincere il giro. In portoghese, <em>bater</em>.</li>
+        <li><strong>Combinazione:</strong> un tris o una scala.</li>
+        <li><strong>Coppia:</strong> due carte a una carta da una combinazione.</li>
+        <li><strong>Jolly:</strong> carta che ne sostituisce un’altra, nelle varianti che lo usano.</li>
+        <li><strong>Scala:</strong> 3 o più carte consecutive dello stesso seme.</li>
+        <li><strong>Scarti:</strong> la pila degli scarti, in portoghese <em>lixo</em> o <em>bagaço</em>. <sup><a href="#ref-1-it">[1]</a></sup></li>
+        <li><strong>Scarto:</strong> la carta che metti sulla pila alla fine del turno.</li>
+        <li><strong>Tallone:</strong> le carte coperte da cui si pesca.</li>
+        <li><strong>Tris:</strong> 3 o 4 carte dello stesso valore, di semi diversi.</li>
+      </ul>
+      <a class="back" href="#top">↑ Torna all’inizio</a>
+    </section>
+
+    <section id="revisao-it" aria-labelledby="h-revisao-it">
+      <h2 id="h-revisao-it">Ripasso rapido</h2>
+      <div class="recap">
+        <h3>In sintesi</h3>
+        <ul>
+          <li>Due mazzi, 9 carte in mano, combinazioni sempre segrete.</li>
+          <li>Pesca una carta, controlla, chiudi se puoi, altrimenti scartane una.</li>
+          <li>Prendi lo scarto quando aumenta le combinazioni. Altrimenti pesca dal tallone.</li>
+          <li>Scarta ciò che non si abbina, non ciò che è alto.</li>
+        </ul>
+      </div>
+      <div class="quiz">
+        <details><summary>1. 9♠ 9♦ 9♠ è un tris?</summary><p>No. Le picche si ripetono. Un tris richiede semi diversi.</p></details>
+        <details><summary>2. J♣ Q♣ K♣ è una scala?</summary><p>Sì: tre carte consecutive dello stesso seme.</p></details>
+        <details><summary>3. Hai 10 carte: tre combinazioni da 3 carte e una libera. Che cosa fai?</summary><p>Chiudi, e la carta libera diventa lo scarto finale.</p></details>
+        <details><summary>4. Gli scarti mostrano una carta che non chiude nulla. Cosa conviene di solito?</summary><p>Pescare dal tallone. Prendere sempre lo scarto è stato il peggior modo di pescare nelle simulazioni, con il 9,6% di vittorie.</p></details>
+        <details><summary>5. Quale coppia tieni: 5♥ 6♥ o 5♥ 7♥?</summary><p>5♥ 6♥. Ha 4 carte che la completano (due 4♥ e due 7♥). L’altra ne ha solo 2 (i due 6♥).</p></details>
+        <details><summary>6. Quante carte hai alla fine del turno, se non hai chiuso?</summary><p>Nove, sempre.</p></details>
+      </div>
+      <p><a class="launch" href="Pife.html#it">Gioca a Pife <span aria-hidden="true">→</span></a></p>
+      <a class="back" href="#top">↑ Torna all’inizio</a>
+    </section>
+
+    <section id="referencias-it" aria-labelledby="h-referencias-it">
+      <h2 id="h-referencias-it">Riferimenti</h2>
+      <ol class="refs">
+        <li id="ref-1-it">Wikipedia (in portoghese). <a href="https://pt.wikipedia.org/wiki/Pife_(jogo_de_cartas)" rel="noopener">Pife (jogo de cartas)</a>. È la base delle regole di questo tutorial.</li>
+        <li id="ref-2-it">Auditório Ibirapuera (in portoghese). <a href="https://www.auditorioibirapuera.com.br/como-funciona-o-coringa-no-pife/" rel="noopener">Como funciona o coringa no pife</a>. Il testo si contraddice: dice che il jolly esce dal mazzo e poi spiega come usarlo.</li>
+        <li id="ref-3-it">Auditório Ibirapuera (in portoghese). <a href="https://www.auditorioibirapuera.com.br/qual-a-sequencia-do-baralho-no-pife/" rel="noopener">Qual a sequência do baralho no pife</a>. Mette l’asso come carta più bassa.</li>
+        <li id="ref-4-it">Denexa Games. <a href="https://www.denexa.com/?p=1887" rel="noopener">Regole del Pif Paf</a>. Descrive un gioco molto simile, con due mazzi, 104 carte, 9 carte in mano e da 3 a 8 giocatori.</li>
+        <li id="ref-5-it">Simulazioni nostre con il <a href="Pife.html#it">gioco Pife</a> di questo sito, svolte tra giocatori del computer. Non misurano le persone.</li>
+      </ol>
+      <a class="back" href="#top">↑ Torna all’inizio</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== ES ===================== -->
+<div id="es" role="tabpanel" aria-labelledby="tab-es" lang="es" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Proyectos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Pife para principiantes: cómo se juega</h1>
+      <p class="dek">Las cartas, los juegos que valen, tu turno paso a paso, cómo golpear y los primeros consejos para ganar, con una ronda comentada de principio a fin.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado el <time datetime="2026-10-31">31/10/2026</time></span>
+        <span class="credit">Revisado y formateado con Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-es">
+    <h2 id="toc-es">Índice</h2>
+    <ol>
+      <li><a href="#intro-es">El juego en un minuto</a></li>
+      <li><a href="#cartas-es">Las cartas</a></li>
+      <li><a href="#jogos-es">Los juegos que valen</a></li>
+      <li><a href="#turno-es">Tu turno, paso a paso</a></li>
+      <li><a href="#bater-es">Cómo golpear</a></li>
+      <li><a href="#exemplo-es">Una ronda comentada</a></li>
+      <li><a href="#tela-es">La pantalla de la app</a></li>
+      <li><a href="#dicas-es">Consejos para empezar bien</a></li>
+      <li><a href="#erros-es">Errores comunes</a></li>
+      <li><a href="#variacoes-es">Reglas que cambian de una mesa a otra</a></li>
+      <li><a href="#glossario-es">Glosario</a></li>
+      <li><a href="#revisao-es">Repaso rápido</a></li>
+      <li><a href="#referencias-es">Referencias</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="intro-es" aria-labelledby="h-intro-es">
+      <h2 id="h-intro-es">El juego en un minuto</h2>
+      <p>El Pife, también llamado pif-paf en muchos lugares, es un juego de cartas fácil de aprender: cada jugador tiene <strong>9 cartas en la mano</strong> e intenta ordenarlas en combinaciones. <sup><a href="#ref-1-es">[1]</a></sup> Quien consiga encajarlas todas primero <strong>golpea</strong> y gana la ronda.</p>
+      <p>No hay puntos que sumar ni jugadas que memorizar. En cada turno robas una carta, te quedas con la que sirve y tiras la que no. La gracia está en decidir qué guardar y en fijarte en lo que descartan los demás.</p>
+      <p><a class="launch" href="Pife.html#es">Jugar al Pife <span aria-hidden="true">→</span></a></p>
+      <aside class="note"><p>Este tutorial sigue las reglas de la app, basadas en Wikipedia. El Pife cambia mucho de una mesa a otra, así que acuerda las reglas antes de jugar con otras personas. Las diferencias más comunes están en la sección <a href="#variacoes-es">Reglas que cambian de una mesa a otra</a>.</p></aside>
+      <a class="back" href="#top">↑ Volver arriba</a>
+    </section>
+
+    <section id="cartas-es" aria-labelledby="h-cartas-es">
+      <h2 id="h-cartas-es">Las cartas</h2>
+      <p>El juego usa <strong>dos barajas comunes mezcladas</strong>, sin comodines: 104 cartas en total. <sup><a href="#ref-4-es">[4]</a></sup> Por eso cada carta existe en dos copias, y puede ocurrir que tengas dos 7 de diamantes en la mano.</p>
+      <figure>
+        <img src="rc_images/PifeCartas-es.svg" alt="Las trece cartas de corazones en orden, del as al Rey, y los cuatro palos: picas, corazones, diamantes y tréboles. Cada carta existe en dos copias." loading="lazy">
+        <figcaption>Cada carta aparece dos veces, porque el juego usa dos barajas</figcaption>
+      </figure>
+      <p>Los valores siguen el orden de siempre, con el as antes del 2. <sup><a href="#ref-3-es">[3]</a></sup> Las cartas no valen puntos: un Rey no pesa más que un 2. Solo importa si la carta entra en un juego.</p>
+      <p>Al principio de la ronda, cada jugador recibe 9 cartas boca abajo. Lo que sobra forma el <strong>mazo</strong>, boca abajo, y a su lado nace la pila de <strong>descartes</strong>, boca arriba.</p>
+      <a class="back" href="#top">↑ Volver arriba</a>
+    </section>
+
+    <section id="jogos-es" aria-labelledby="h-jogos-es">
+      <h2 id="h-jogos-es">Los juegos que valen</h2>
+      <p>Solo hay dos tipos de juego, y los dos necesitan al menos 3 cartas. <sup><a href="#ref-1-es">[1]</a></sup></p>
+      <ul>
+        <li><strong>Trío:</strong> cartas del mismo valor y de palos distintos, como 7♠ 7♦ 7♣. Con cuatro palos, el trío puede llegar a 4 cartas.</li>
+        <li><strong>Escalera:</strong> cartas seguidas del mismo palo, como 4♥ 5♥ 6♥. Puede ser tan larga como consigas.</li>
+      </ul>
+      <figure>
+        <img src="rc_images/PifeJogos-es.svg" alt="Válidos: un trío de sietes de palos distintos, una escalera de 4, 5 y 6 de corazones y una escalera de 9, 10, Jota y Reina de tréboles. No válidos: sietes con un palo repetido, una escalera con un palo distinto y una escalera con un hueco." loading="lazy">
+        <figcaption>Tres juegos válidos y tres parecidos que no valen</figcaption>
+      </figure>
+      <p>El error clásico del principiante viene de las dos barajas: 7♠ 7♦ 7♠ parece un trío, pero repite un palo y no vale. Además, cada carta solo puede estar en un juego a la vez.</p>
+      <p>Tus juegos se quedan <strong>en tu mano, en secreto</strong>, hasta el momento de golpear. Nadie baja cartas a la mesa durante la ronda. <sup><a href="#ref-1-es">[1]</a></sup></p>
+      <a class="back" href="#top">↑ Volver arriba</a>
+    </section>
+
+    <section id="turno-es" aria-labelledby="h-turno-es">
+      <h2 id="h-turno-es">Tu turno, paso a paso</h2>
+      <p>En la app quien empieza se sortea, y después el turno sigue en orden, un jugador cada vez. Tu turno tiene siempre los mismos pasos:</p>
+      <figure>
+        <img src="rc_images/PifeTurno-es.svg" alt="Cinco pasos: mirar el descarte superior, robar del mazo o de los descartes, ver si se formó un juego, golpear si todas las cartas encajan y, si no, descartar una carta y pasar el turno." loading="lazy">
+        <figcaption>Todo turno sigue el mismo orden: robar, comprobar y descartar</figcaption>
+      </figure>
+      <ol>
+        <li><strong>Mira los descartes.</strong> La carta de arriba es la única que puedes tomar. Se ve, así que ya sabes si sirve.</li>
+        <li><strong>Roba una carta.</strong> El descarte de arriba o la primera del mazo, sin verla. Siempre exactamente una.</li>
+        <li><strong>Reorganiza.</strong> Mira si la carta nueva cierra un juego o crea una pareja prometedora.</li>
+        <li><strong>Golpea, si puedes.</strong> Si todas las cartas encajan, la ronda termina y ganas.</li>
+        <li><strong>Descarta una.</strong> Si no golpeaste, pon una carta en los descartes. Vuelves a tener 9 y el turno pasa.</li>
+      </ol>
+      <p>Hay una excepción, solo para quien abre la ronda. Los descartes aún están vacíos, así que el primer jugador roba del mazo y, si no le gusta la carta, puede descartarla y robar otra. <sup><a href="#ref-1-es">[1]</a></sup></p>
+      <a class="back" href="#top">↑ Volver arriba</a>
+    </section>
+
+    <section id="bater-es" aria-labelledby="h-bater-es">
+      <h2 id="h-bater-es">Cómo golpear</h2>
+      <p><strong>Golpear</strong> es mostrar la mano con todas las cartas en juegos válidos. Después de robar tienes 10 cartas, así que hay dos casos: 9 cartas en juegos y 1 suelta, que pasa a ser el descarte final, o las 10 en juegos.</p>
+      <figure>
+        <img src="rc_images/PifeBater-es.svg" alt="Primera mano: tres juegos de tres cartas y una carta suelta, el 5 de diamantes, que va a los descartes. Segunda mano: una escalera de cinco picas y un trío de cuatro Reyes, sin cartas de más." loading="lazy">
+        <figcaption>Dos formas de golpear: con un descarte final o con las nueve cartas ya en juegos</figcaption>
+      </figure>
+      <p>La forma más común son tres juegos de tres cartas, pero sirve cualquier división, siempre que ningún juego tenga menos de 3 cartas. En la app, el botón <strong>¡Golpear!</strong> solo aparece cuando el golpe es válido, así que no corres el riesgo de golpear mal.</p>
+      <a class="back" href="#top">↑ Volver arriba</a>
+    </section>
+
+    <section id="exemplo-es" aria-labelledby="h-exemplo-es">
+      <h2 id="h-exemplo-es">Una ronda comentada</h2>
+      <p>Sigue una mano real, comprobada con el motor del juego. Observa cómo el jugador guarda las parejas buenas y se libra de las cartas sin pareja.</p>
+      <figure>
+        <img src="rc_images/PifeExemplo-es.svg" alt="Mano inicial con 3 y 4 de picas, 5 y 6 de corazones, dos nueves, Jota, Rey y 2. El jugador toma el 7 de corazones de los descartes, roba el 9 de picas, descarta una Reina inútil y roba el 5 de picas, golpeando con la Jota como descarte final." loading="lazy">
+        <figcaption>La misma mano, jugada a jugada, hasta el golpe</figcaption>
+      </figure>
+      <ul>
+        <li><strong>Turno 1.</strong> El rival descartó el 7♥, que cierra 5♥ 6♥ 7♥. Aquí conviene tomar el descarte, porque la carta cierra un juego. El K♠ no combina con nada y sale.</li>
+        <li><strong>Turno 2.</strong> Los descartes no ayudan, así que se roba del mazo. Llega el 9♠, y los nueves se vuelven un trío. Sale el 2♦.</li>
+        <li><strong>Turno 3.</strong> La Q♦ no combina con nada. Robar y descartar la misma carta es una jugada normal.</li>
+        <li><strong>Turno 4.</strong> El 5♠ cierra 3♠ 4♠ 5♠. Ahora hay 9 cartas en juegos y el J♣ suelto: basta con golpear, con el J♣ como descarte final.</li>
+      </ul>
+      <p>Fíjate en los cincos: había 5♥ y 5♠ en la mano, y cada uno quedó en una escalera distinta. Está permitido, porque son dos cartas.</p>
+      <a class="back" href="#top">↑ Volver arriba</a>
+    </section>
+
+    <section id="tela-es" aria-labelledby="h-tela-es">
+      <h2 id="h-tela-es">La pantalla de la app</h2>
+      <p>La <a href="Pife.html#es">app</a> hace por ti la parte aburrida: muestra cuántas cartas ya están en juegos, los marca con barras de colores y solo deja hacer lo permitido.</p>
+      <figure>
+        <img src="rc_images/PifeTela-es.svg" alt="La mesa con los rivales arriba, el mazo y los descartes en el centro y tu mano abajo, con barras bajo los juegos listos. A la derecha, el panel con los botones y el historial." loading="lazy">
+        <figcaption>Las partes de la pantalla de la app</figcaption>
+      </figure>
+      <p>Para descartar, toca una carta y luego <strong>Descartar</strong>, o toca dos veces la misma carta. El botón <strong>Ordenar</strong> agrupa los juegos listos, y puedes arrastrar las cartas en el orden que prefieras. Para practicar, empieza con 2 jugadores en el nivel Fácil.</p>
+      <a class="back" href="#top">↑ Volver arriba</a>
+    </section>
+
+    <section id="dicas-es" aria-labelledby="h-dicas-es">
+      <h2 id="h-dicas-es">Consejos para empezar bien</h2>
+      <p>Probamos estilos de juego en 6.000 partidas simuladas de 3 jugadores: un jugador con el estilo indicado contra dos en el nivel Difícil. En una disputa equilibrada, cada uno ganaría el 33% de las veces, con un margen de error de 1,2 puntos. <sup><a href="#ref-5-es">[5]</a></sup></p>
+      <div class="table-wrap"><table><thead><tr><th scope="col">Estilo de juego</th><th scope="col">Victorias</th></tr></thead><tbody><tr><th scope="row">Referencia: el nivel Difícil, sin restricción</th><td>33,4%</td></tr><tr><th scope="row">Nunca toma el descarte, salvo para golpear</th><td>19,0%</td></tr><tr><th scope="row">Toma el descarte solo si aumenta los juegos</th><td>32,1%</td></tr><tr><th scope="row">Toma siempre el descarte</th><td>9,6%</td></tr><tr><th scope="row">Descarta siempre la carta suelta más alta</th><td>17,1%</td></tr><tr><th scope="row">Descarta siempre la carta que robó</th><td>0,2%</td></tr><tr><th scope="row">Descarta al azar</th><td>0,8%</td></tr></tbody></table></div>
+      <p>Las computadoras no juegan como las personas, así que mira la dirección de estos números, no el valor exacto. Sostienen los consejos de abajo.</p>
+      <ul class="myths">
+        <li><h3>Mira los descartes en cada turno</h3><p>Ignorarlos bajó las victorias al 19,0%. Tomar el descarte solo cuando aumenta tus juegos dio el 32,1%, casi lo mismo que la referencia. Es una regla simple y muy buena para empezar.</p></li>
+        <li><h3>No tomes el descarte por impulso</h3><p>Tomarlo siempre dio solo el 9,6%. Un descarte que no cierra nada ocupa el lugar de un robo del mazo, que puede traer algo mejor. Además, todos ven lo que tomaste.</p></li>
+        <li><h3>Guarda las parejas con más salidas</h3><p>Una pareja de un valor o dos cartas seguidas tienen 4 cartas que las completan. Con un hueco, o con as y 2, solo 2. En caso de duda, deshaz primero las parejas más débiles.</p></li>
+        <li><h3>Descarta lo que no combina, no lo que es alto</h3><p>Aquí las cartas no valen puntos. Quien descartó siempre la carta suelta más alta, sin mirar las opciones, se quedó en el 17,1%. Un Rey con pareja vale más que un 3 solo.</p></li>
+        <li><h3>Vigila los descartes</h3><p>Si los dos 6♥ ya salieron, la pareja 5♥ 7♥ no tiene futuro. Contar lo que ya apareció es lo que separa al principiante del jugador con experiencia.</p></li>
+        <li><h3>Fíjate en lo que toman los demás</h3><p>Si el siguiente jugador tomó un 8♣ de los descartes, evita darle otro 8 o cartas vecinas de tréboles. Si no perjudica tu mano, descarta otra cosa.</p></li>
+        <li><h3>Mantén la mano flexible</h3><p>Una carta que sirve para dos juegos posibles, como un 5♥ junto a 5♠ y 6♥, vale más que una que sirve para uno solo.</p></li>
+      </ul>
+      <figure>
+        <img src="rc_images/PifeOuts-es.svg" alt="Dos sietes de palos distintos tienen 4 cartas que los completan; 5 y 6 de corazones también tienen 4; 5 y 7 de corazones tienen 2; as y 2 de corazones tienen 2; y dos 7 de diamantes idénticos no tienen ninguna." loading="lazy">
+        <figcaption>Cuántas cartas de la baraja completan cada pareja</figcaption>
+      </figure>
+      <h3>Cuánto tiempo tienes</h3>
+      <p>Medimos 10.000 rondas de cada tamaño, con todos en el nivel Difícil. Con más jugadores la ronda termina en menos turnos para cada uno, porque alguien golpea antes.</p>
+      <div class="table-wrap"><table><thead><tr><th scope="col">Jugadores</th><th scope="col">Turnos de cada uno, de media</th><th scope="col">Robos hechos de los descartes</th></tr></thead><tbody><tr><th scope="row">2</th><td>9</td><td>19%</td></tr><tr><th scope="row">3</th><td>8</td><td>20%</td></tr><tr><th scope="row">4</th><td>7</td><td>21%</td></tr><tr><th scope="row">6</th><td>6</td><td>21%</td></tr></tbody></table></div>
+      <p>También contamos 30.000 manos iniciales: solo el 27% ya trae algún juego listo, y el 1% trae dos. Empezar sin ninguno es lo normal, así que no te preocupes. Lo que cuenta son las parejas, y el resto llega robando.</p>
+      <a class="back" href="#top">↑ Volver arriba</a>
+    </section>
+
+    <section id="erros-es" aria-labelledby="h-erros-es">
+      <h2 id="h-erros-es">Errores comunes</h2>
+      <ul>
+        <li><strong>Trío con palo repetido.</strong> 7♠ 7♦ 7♠ no vale. Cuenta los palos, no solo los valores.</li>
+        <li><strong>Escalera con palos mezclados.</strong> 4♥ 5♥ 6♦ no vale, aunque los colores coincidan.</li>
+        <li><strong>Usar una carta en dos juegos.</strong> Un 5♥ no puede estar a la vez en un trío de cincos y en una escalera de corazones.</li>
+        <li><strong>Olvidar descartar.</strong> Si no golpeaste, el turno termina con 9 cartas.</li>
+        <li><strong>Descartar lo que quiere el siguiente.</strong> Si a tu mano le da igual, entrega la carta más segura.</li>
+        <li><strong>Aferrarse a una pareja muerta.</strong> Si las cartas que la completan ya salieron, abandónala.</li>
+      </ul>
+      <a class="back" href="#top">↑ Volver arriba</a>
+    </section>
+
+    <section id="variacoes-es" aria-labelledby="h-variacoes-es">
+      <h2 id="h-variacoes-es">Reglas que cambian de una mesa a otra</h2>
+      <p>El Pife tiene muchos nombres y muchas reglas de la casa. <sup><a href="#ref-1-es">[1]</a></sup> Hasta las fuentes discrepan: algunas sacan los comodines de la baraja, otras los usan, y una hace las dos cosas en el mismo texto. <sup><a href="#ref-2-es">[2]</a></sup> Antes de jugar con otras personas, acuerda estos puntos:</p>
+      <ul>
+        <li><strong>Comodín amigo.</strong> Barajas con comodín (la ficha de Wikipedia cuenta 108 cartas), que sustituye cualquier carta que exista: A♠ 🃏 3♠ vale, pero una quinta carta en el trío no. <sup><a href="#ref-1-es">[1]</a></sup> La app tiene esta opción.</li>
+        <li><strong>Comodín sorteado.</strong> Se voltea una carta, y el valor siguiente es comodín en la ronda. Con un Rey volteado, el comodín es el as. <sup><a href="#ref-1-es">[1]</a></sup> La app también la tiene.</li>
+        <li><strong>Q-K-A y K-A-2.</strong> En algunas mesas el as también va después del Rey. <sup><a href="#ref-1-es">[1]</a></sup> Otras descripciones ponen el as siempre abajo. <sup><a href="#ref-3-es">[3]</a></sup> En la app es una opción, apagada al principio.</li>
+        <li><strong>Tríos de 4 cartas.</strong> Una descripción de un juego emparentado pide exactamente tres palos. <sup><a href="#ref-4-es">[4]</a></sup> La app acepta 3 o 4 cartas, como indica el ejemplo de Wikipedia. <sup><a href="#ref-1-es">[1]</a></sup></li>
+        <li><strong>Golpear mal.</strong> En general, quien golpea mal recoge las cartas y sigue, pero solo puede golpear de nuevo robando del mazo. <sup><a href="#ref-1-es">[1]</a></sup> No existe en la app, que solo deja golpear cuando es válido.</li>
+        <li><strong>Cortar.</strong> En algunas mesas se puede tomar el descarte fuera de turno, siempre que sea para golpear en el acto. <sup><a href="#ref-1-es">[1]</a></sup> La app no tiene esta variante.</li>
+        <li><strong>Puntuación y número de jugadores.</strong> La referencia habla de 3 a 8 jugadores y no define puntos. <sup><a href="#ref-1-es">[1]</a></sup> En la app son de 2 a 6, y gana quien logre las rondas acordadas.</li>
+      </ul>
+      <a class="back" href="#top">↑ Volver arriba</a>
+    </section>
+
+    <section id="glossario-es" aria-labelledby="h-glossario-es">
+      <h2 id="h-glossario-es">Glosario</h2>
+      <ul>
+        <li><strong>Comodín:</strong> carta que sustituye a otra, en las variantes que lo usan.</li>
+        <li><strong>Descarte:</strong> la carta que pones en la pila al final de tu turno.</li>
+        <li><strong>Descartes:</strong> la pila de descartes, en portugués <em>lixo</em> o <em>bagaço</em>. <sup><a href="#ref-1-es">[1]</a></sup></li>
+        <li><strong>Escalera:</strong> 3 o más cartas seguidas del mismo palo.</li>
+        <li><strong>Golpear:</strong> mostrar la mano con todo en juegos y ganar la ronda. En portugués, <em>bater</em>.</li>
+        <li><strong>Juego:</strong> un trío o una escalera.</li>
+        <li><strong>Mazo:</strong> las cartas boca abajo de donde se roba.</li>
+        <li><strong>Pareja:</strong> dos cartas a una carta de formar un juego.</li>
+        <li><strong>Trío:</strong> 3 o 4 cartas del mismo valor, de palos distintos.</li>
+      </ul>
+      <a class="back" href="#top">↑ Volver arriba</a>
+    </section>
+
+    <section id="revisao-es" aria-labelledby="h-revisao-es">
+      <h2 id="h-revisao-es">Repaso rápido</h2>
+      <div class="recap">
+        <h3>En resumen</h3>
+        <ul>
+          <li>Dos barajas, 9 cartas en la mano, juegos siempre en secreto.</li>
+          <li>Roba una, comprueba, golpea si puedes y, si no, descarta una.</li>
+          <li>Toma el descarte cuando aumenta tus juegos. Si no, roba del mazo.</li>
+          <li>Descarta lo que no combina, no lo que es alto.</li>
+        </ul>
+      </div>
+      <div class="quiz">
+        <details><summary>1. ¿9♠ 9♦ 9♠ es un trío?</summary><p>No. Las picas se repiten. Un trío necesita palos distintos.</p></details>
+        <details><summary>2. ¿J♣ Q♣ K♣ es una escalera?</summary><p>Sí: tres cartas seguidas del mismo palo.</p></details>
+        <details><summary>3. Tienes 10 cartas: tres juegos de 3 cartas y una suelta. ¿Qué haces?</summary><p>Golpeas, y la carta suelta pasa a ser el descarte final.</p></details>
+        <details><summary>4. Los descartes muestran una carta que no cierra ningún juego. ¿Qué suele ser mejor?</summary><p>Robar del mazo. Tomar siempre el descarte fue el peor estilo de robo en las simulaciones, con un 9,6% de victorias.</p></details>
+        <details><summary>5. ¿Qué pareja guardas: 5♥ 6♥ o 5♥ 7♥?</summary><p>5♥ 6♥. Tiene 4 cartas que la completan (dos 4♥ y dos 7♥). La otra tiene solo 2 (los dos 6♥).</p></details>
+        <details><summary>6. ¿Cuántas cartas tienes al final de tu turno, si no golpeaste?</summary><p>Nueve, siempre.</p></details>
+      </div>
+      <p><a class="launch" href="Pife.html#es">Jugar al Pife <span aria-hidden="true">→</span></a></p>
+      <a class="back" href="#top">↑ Volver arriba</a>
+    </section>
+
+    <section id="referencias-es" aria-labelledby="h-referencias-es">
+      <h2 id="h-referencias-es">Referencias</h2>
+      <ol class="refs">
+        <li id="ref-1-es">Wikipedia (en portugués). <a href="https://pt.wikipedia.org/wiki/Pife_(jogo_de_cartas)" rel="noopener">Pife (jogo de cartas)</a>. Es la base de las reglas de este tutorial.</li>
+        <li id="ref-2-es">Auditório Ibirapuera (en portugués). <a href="https://www.auditorioibirapuera.com.br/como-funciona-o-coringa-no-pife/" rel="noopener">Como funciona o coringa no pife</a>. El texto se contradice: dice que el comodín sale de la baraja y luego explica cómo usarlo.</li>
+        <li id="ref-3-es">Auditório Ibirapuera (en portugués). <a href="https://www.auditorioibirapuera.com.br/qual-a-sequencia-do-baralho-no-pife/" rel="noopener">Qual a sequência do baralho no pife</a>. Coloca el as como la carta más baja.</li>
+        <li id="ref-4-es">Denexa Games. <a href="https://www.denexa.com/?p=1887" rel="noopener">Reglas del Pif Paf</a>. Describe un juego muy parecido, con dos barajas, 104 cartas, 9 cartas en la mano y de 3 a 8 jugadores.</li>
+        <li id="ref-5-es">Simulaciones propias con el <a href="Pife.html#es">juego Pife</a> de este sitio, hechas entre jugadores de la computadora. No miden a personas.</li>
+      </ol>
+      <a class="back" href="#top">↑ Volver arriba</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span>Giovani Perotto Mesquita · Porto Alegre, RS</span>
+    <span><a href="projects.html" data-projects data-foot="0">Projetos</a> · <a href="resume.html" data-resume data-foot="1">Currículo</a> · <a href="contact.html" data-contact data-foot="2">Contato</a></span>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('.lang [role="option"]'));
+    var titles = {"pt":"Pife para iniciantes: como jogar · Giovani Perotto Mesquita","en":"Pife for beginners: how to play · Giovani Perotto Mesquita","it":"Pife per principianti: come si gioca · Giovani Perotto Mesquita","es":"Pife para principiantes: cómo se juega · Giovani Perotto Mesquita"};
+    var foots = {"pt": ["Projetos", "Currículo", "Contato"], "en": ["Projects", "Resume", "Contact"], "it": ["Progetti", "Curriculum", "Contatti"], "es": ["Proyectos", "Currículum", "Contacto"]};
+    var langs = { pt: 'pt-BR', en: 'en', it: 'it', es: 'es' };
+    var bar = document.querySelector('.progress');
+    var article = document.querySelector('[role="tabpanel"]:not([hidden]) article');
+
+    function show(id, focus) {
+      tabs.forEach(function (t) {
+        var on = t.getAttribute('aria-controls') === id;
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+        if (on && focus) t.focus();
+      });
+      document.documentElement.lang = langs[id];
+      document.title = titles[id];
+      var suffix = id === 'pt' ? '' : '#' + id;
+      [['data-home', 'index.html'], ['data-about', 'about.html'], ['data-resume', 'resume.html'], ['data-projects', 'projects.html'], ['data-contact', 'contact.html']].forEach(function (p) {
+        document.querySelectorAll('[' + p[0] + ']').forEach(function (a) { a.href = p[1] + suffix; });
+      });
+      document.querySelectorAll('[data-foot]').forEach(function (a) { a.textContent = foots[id][+a.getAttribute('data-foot')]; });
+      article = document.querySelector('#' + id + ' article');
+      if (history.replaceState) history.replaceState(null, '', id === 'pt' ? location.pathname : '#' + id);
+      progress();
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () { show(t.getAttribute('aria-controls')); });
+      t.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (d) { e.preventDefault(); show(tabs[(i + d + tabs.length) % tabs.length].getAttribute('aria-controls'), true); }
+      });
+    });
+
+    // barra de progresso de leitura
+    function progress() {
+      if (!article) return;
+      var r = article.getBoundingClientRect();
+      var total = r.height - window.innerHeight;
+      var p = total > 0 ? Math.min(Math.max(-r.top / total, 0), 1) : 1;
+      bar.style.width = (p * 100) + '%';
+    }
+    window.addEventListener('scroll', progress, { passive: true });
+    window.addEventListener('resize', progress);
+
+    // destaca a seção atual no índice
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          var panel = e.target.closest('[role="tabpanel"]');
+          panel.querySelectorAll('.toc a').forEach(function (a) {
+            if (a.getAttribute('href') === '#' + e.target.id) a.setAttribute('aria-current', 'true');
+            else a.removeAttribute('aria-current');
+          });
+        });
+      }, { rootMargin: '-20% 0px -70% 0px' });
+      document.querySelectorAll('article section[id]').forEach(function (s) { io.observe(s); });
+    }
+
+    var h = (location.hash || '').replace('#', '');
+    var m = h.match(/^(?:.*-)?(en|it|es)$/);
+    if (m) {
+      show(m[1]);
+      if (h !== m[1]) { var el = document.getElementById(h); if (el) el.scrollIntoView(); if (history.replaceState) history.replaceState(null, '', '#' + h); }
+    } else progress();
+  })();
+</script>
+<script>
+  // seletor de idioma em combobox: abre a lista, sincroniza o botão e fecha
+  (function () {
+    var box = document.querySelector('.lang'); if (!box) return;
+    var btn = box.querySelector('.lang-current'), list = box.querySelector('.lang-list'), now = btn.querySelector('.lang-now');
+    var opts = Array.prototype.slice.call(list.querySelectorAll('[role="option"]'));
+    var menu = {
+      pt: { index: 'Início', about: 'Sobre', resume: 'Currículo', projects: 'Projetos', contact: 'Contato' },
+      en: { index: 'Home', about: 'About', resume: 'Resume', projects: 'Projects', contact: 'Contact' },
+      it: { index: 'Home', about: 'Chi sono', resume: 'Curriculum', projects: 'Progetti', contact: 'Contatti' },
+      es: { index: 'Inicio', about: 'Sobre mí', resume: 'Currículum', projects: 'Proyectos', contact: 'Contacto' }
+    };
+    function translate(id) {
+      document.querySelectorAll('.nav ul a').forEach(function (l) {
+        var k = (l.getAttribute('href') || '').split('#')[0].replace('.html', '');
+        if (menu[id] && menu[id][k]) l.textContent = menu[id][k];
+      });
+      // links do menu para as páginas principais levam o idioma selecionado
+      var suf = id === 'pt' ? '' : '#' + id;
+      document.querySelectorAll('.nav a[href]').forEach(function (l) {
+        var m = l.getAttribute('href').match(/^(index|about|resume|projects|contact)\.html(#(pt|en|it|es))?$/);
+        if (m) l.setAttribute('href', m[1] + '.html' + suf);
+      });
+    }
+    function sync() {
+      var sel = opts.filter(function (o) { return o.getAttribute('aria-selected') === 'true'; })[0] || opts[0];
+      now.innerHTML = sel.querySelector('.flag').outerHTML + sel.getAttribute('data-code');
+      btn.setAttribute('aria-label', btn.getAttribute('data-label') + ': ' + sel.textContent.trim());
+      translate(sel.getAttribute('aria-controls'));
+      return sel;
+    }
+    function open() { list.hidden = false; btn.setAttribute('aria-expanded', 'true'); sync().focus(); }
+    function close(back) { list.hidden = true; btn.setAttribute('aria-expanded', 'false'); if (back) btn.focus(); }
+    btn.addEventListener('click', function () { if (list.hidden) open(); else close(); });
+    btn.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); open(); }
+      else if (e.key === 'Escape') close();
+    });
+    opts.forEach(function (o, i) {
+      o.addEventListener('click', function () { sync(); close(true); });
+      o.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0;
+        if (d) { e.preventDefault(); opts[(i + d + opts.length) % opts.length].focus(); }
+        else if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); opts[e.key === 'Home' ? 0 : opts.length - 1].focus(); }
+        else if (e.key === 'Escape') { e.preventDefault(); close(true); }
+        else if (e.key === 'Tab') close();
+      });
+    });
+    document.addEventListener('click', function (e) { if (!box.contains(e.target)) close(); });
+    new MutationObserver(sync).observe(list, { attributes: true, subtree: true, attributeFilter: ['aria-selected'] });
+    sync();
+  })();
+</script>
+</body>
+</html>

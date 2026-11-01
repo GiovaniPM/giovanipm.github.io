@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pife · Giovani Perotto Mesquita</title>
+<meta name="description" content="Pife, ou pif-paf: jogo de cartas com dois baralhos e nove cartas na mão. Forme trincas e sequências e bata antes dos adversários, contra o computador. Em português, inglês, italiano e espanhol.">
+<meta name="author" content="Giovani Perotto Mesquita">
+<meta name="theme-color" content="#3A1420">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #2A0F18; --felt: #6B1F33; --felt-2: #4E1525; --panel: #FBF5EA; --panel-2: #F1E6D2; --ink: #2A1E18; --muted: #6F5F50; --line: #DFCDB1;
+    --accent: #1E6F68; --accent-ink: #FFFFFF; --gold: #E8B23E; --ok: #1F7A4D;
+    --sans: "Hanken Grotesk", "Segoe UI", Arial, sans-serif; --serif: "Source Serif 4", Georgia, serif;
+    --cw: clamp(56px, 8.4vmin, 92px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --panel: #2B2124; --panel-2: #3A2C30; --ink: #F5EDE3; --muted: #B9A99B; --line: #4C3B40; --accent: #2F9C92; --ok: #5CC490; }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: var(--sans); -webkit-tap-highlight-color: transparent; }
+  button, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  button:disabled { cursor: default; opacity: .45; }
+  :focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+  .app { display: grid; grid-template-columns: minmax(0, 1fr) 320px; height: 100dvh; }
+  .stage { display: flex; flex-direction: column; min-width: 0; padding: 8px; gap: 8px; }
+  .side { display: flex; flex-direction: column; gap: 8px; padding: 8px 8px 8px 0; min-height: 0; }
+  .box { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: .6rem .75rem; }
+
+  /* mesa */
+  .table { position: relative; flex: 1; min-height: 240px; border-radius: 20px; background: radial-gradient(ellipse at center, var(--felt) 0%, var(--felt-2) 85%); border: 6px solid #3B2413; box-shadow: inset 0 0 40px rgba(0,0,0,.35), 0 10px 30px rgba(0,0,0,.35); display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 10px; gap: 8px; overflow: hidden; }
+  .opps { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; }
+  .opp { display: flex; flex-direction: column; align-items: center; gap: 3px; color: #FFF7EA; }
+  .opp .np { font-weight: 700; font-size: .84rem; padding: .1rem .55rem; border-radius: 99px; background: rgba(0,0,0,.4); white-space: nowrap; }
+  .opp.on .np { background: var(--gold); color: #2A1E18; }
+  .backs { display: flex; height: calc(var(--cw) * .62); }
+  .backs svg { width: calc(var(--cw) * .4); height: calc(var(--cw) * .58); margin-left: calc(var(--cw) * -.31); }
+  .backs svg:first-child { margin-left: 0; }
+  .piles { display: flex; gap: clamp(14px, 4vw, 34px); align-items: center; justify-content: center; flex: 1; }
+  .pile { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #FFF7EA; font-size: .8rem; background: transparent; border: 0; padding: 4px; border-radius: 10px; }
+  .pile.can { outline: 3px solid var(--gold); outline-offset: 1px; }
+  .pile.can:hover { background: rgba(255,255,255,.08); }
+  .pile:disabled { opacity: 1; }
+  .slotcard { width: var(--cw); height: calc(var(--cw) * 1.45); display: block; }
+  .emptyslot { width: var(--cw); height: calc(var(--cw) * 1.45); border: 2px dashed rgba(255,255,255,.35); border-radius: 8px; }
+  .vira { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #FFF7EA; font-size: .8rem; }
+  .pcard { display: block; filter: drop-shadow(0 2px 4px rgba(0,0,0,.35)); }
+
+  /* mão */
+  .hand { position: relative; display: flex; justify-content: center; padding: 16px 4px 12px; min-height: calc(var(--cw) * 1.45 + 30px); touch-action: pan-y; }
+  .hcard { position: relative; padding: 0; border: 0; background: transparent; width: var(--cw); height: calc(var(--cw) * 1.45); margin-left: var(--ov, 2px); flex: none; border-radius: 8px; transition: transform .1s; touch-action: none; }
+  .hcard:first-child { margin-left: 0; }
+  .hcard svg { width: 100%; height: 100%; }
+  .hcard.sel { transform: translateY(-14px); z-index: 3; }
+  .hcard.sel svg { filter: drop-shadow(0 0 6px var(--gold)); }
+  .hcard.isnew::after { content: ""; position: absolute; top: -7px; left: 50%; width: 10px; height: 10px; margin-left: -5px; background: var(--gold); border-radius: 50%; }
+  .hcard .bar { position: absolute; left: 6%; right: 6%; bottom: -8px; height: 5px; border-radius: 3px; }
+  .hcard.drag { opacity: .55; }
+  .hcard.over { box-shadow: -3px 0 0 var(--gold); }
+  .action { min-height: 86px; }
+  .action h2 { font-family: var(--serif); font-size: 1.05rem; line-height: 1.2; margin: 0 0 .3rem; }
+  .action p { margin: 0 0 .4rem; font-size: .86rem; line-height: 1.3; color: var(--muted); }
+  .btns { display: flex; flex-wrap: wrap; gap: .35rem; }
+  .btn { border: 1px solid var(--line); background: var(--panel-2); border-radius: 9px; padding: .5rem .72rem; font-weight: 700; font-size: .9rem; min-height: 40px; }
+  .btn:hover:not(:disabled) { border-color: var(--accent); }
+  .btn.pri { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .btn.win { background: var(--gold); color: #2A1E18; border-color: var(--gold); animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 50% { box-shadow: 0 0 0 5px rgba(232,178,62,.35); } }
+  .btn.sm { padding: .3rem .55rem; font-size: .8rem; min-height: 32px; }
+  .score { display: grid; gap: .25rem; font-size: .9rem; }
+  .score .row2 { display: flex; justify-content: space-between; gap: .5rem; padding: .15rem .3rem; border-radius: 6px; }
+  .score .row2.on { background: var(--panel-2); font-weight: 700; }
+  .score .sub { font-size: .75rem; color: var(--muted); }
+  .log { flex: 1; min-height: 70px; overflow: auto; font-size: .82rem; line-height: 1.35; }
+  .log ol { list-style: none; margin: 0; padding: 0; display: grid; gap: .25rem; }
+  .log li { color: var(--muted); }
+  .log li:last-child { color: var(--ink); font-weight: 600; }
+  .bar { display: flex; flex-wrap: wrap; gap: .35rem; }
+
+  /* telas */
+  .overlay { position: fixed; inset: 0; display: grid; place-items: center; padding: 1rem; overflow: auto; z-index: 20; background: var(--bg); }
+  .sheet, dialog { background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 16px; padding: 1.2rem clamp(1rem, 4vw, 1.8rem); box-shadow: 0 24px 70px rgba(0,0,0,.5); }
+  .sheet { width: min(100%, 620px); }
+  dialog { width: min(94vw, 680px); max-height: 90dvh; overflow: auto; }
+  dialog::backdrop { background: rgba(10, 2, 6, .65); }
+  .back { font-size: .85rem; color: var(--accent); text-decoration: none; }
+  .hero { display: flex; justify-content: center; padding: .9rem 0 .4rem; }
+  .hero .pcard { width: 76px; height: 110px; margin-left: -22px; }
+  .hero .pcard:first-child { margin-left: 0; }
+  .hero .pcard:nth-child(1) { transform: rotate(-12deg); } .hero .pcard:nth-child(2) { transform: rotate(-6deg) translateY(-6px); } .hero .pcard:nth-child(3) { transform: translateY(-9px); } .hero .pcard:nth-child(4) { transform: rotate(6deg) translateY(-6px); } .hero .pcard:nth-child(5) { transform: rotate(12deg); }
+  .sheet h1 { font-family: var(--serif); font-size: clamp(2.2rem, 7vw, 3.1rem); line-height: 1.05; margin: .2rem 0 .3rem; }
+  .tag { font-family: var(--serif); font-size: 1.1rem; color: var(--accent); margin: 0 0 .4rem; font-weight: 600; }
+  .sheet p { line-height: 1.45; margin: .3rem 0; font-size: .95rem; color: var(--muted); }
+  .row { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: .8rem; align-items: end; }
+  .field { display: grid; gap: .2rem; font-size: .8rem; color: var(--muted); }
+  select { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: .45rem .5rem; color: var(--ink); min-height: 38px; }
+  dialog h2 { font-family: var(--serif); margin: 0 0 .6rem; font-size: 1.4rem; }
+  dialog h3 { font-size: 1rem; margin: 1rem 0 .35rem; }
+  .rules { padding-left: 1.1rem; margin: 0; display: grid; gap: .4rem; line-height: 1.4; font-size: .93rem; }
+  .melds { display: flex; flex-wrap: wrap; gap: .8rem; margin: .5rem 0; }
+  .meld { display: flex; padding: 5px; background: var(--panel-2); border-radius: 8px; }
+  .meld svg { width: 44px; height: 64px; margin-left: -18px; }
+  .meld svg:first-child { margin-left: 0; }
+  .sumline { display: flex; justify-content: space-between; gap: 1rem; padding: .32rem .45rem; background: var(--panel-2); border-radius: 7px; font-size: .92rem; margin-bottom: .25rem; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  @media (max-width: 900px) {
+    .app { grid-template-columns: minmax(0, 1fr); height: auto; min-height: 100dvh; }
+    .stage { padding: 4px; }
+    .table { min-height: 280px; height: 40dvh; flex: none; }
+    .side { padding: 0 4px 12px; }
+    .log { max-height: 180px; flex: none; }
+    .action { order: -1; }
+    :root { --cw: clamp(54px, 15vw, 88px); }
+  }
+  @media (prefers-reduced-motion: reduce) { .hcard { transition: none; } .btn.win { animation: none; } }
+</style>
+</head>
+<body>
+<div class="app" id="app" hidden>
+  <main class="stage">
+    <div class="table" id="table" role="group" aria-label="Mesa"></div>
+    <div class="hand" id="hand" role="group"></div>
+  </main>
+  <aside class="side">
+    <section class="box action" id="action" aria-live="polite"></section>
+    <section class="box score" id="score"></section>
+    <section class="box log" aria-label="Histórico"><ol id="log"></ol></section>
+    <div class="bar">
+      <button type="button" class="btn sm" id="bRules" data-t="rules"></button>
+      <button type="button" class="btn sm" id="bSound"></button>
+      <button type="button" class="btn sm" id="bSpeed"></button>
+      <button type="button" class="btn sm" id="bMenu" data-t="menu"></button>
+    </div>
+  </aside>
+</div>
+
+<section class="overlay" id="ovTitle" aria-labelledby="ttl">
+  <div class="sheet">
+    <a class="back" id="backLink" href="projects.html" data-t="back"></a>
+    <div class="hero" id="heroArt" aria-hidden="true"></div>
+    <h1 id="ttl">Pife</h1>
+    <p class="tag" data-t="tagline"></p>
+    <p data-t="story"></p>
+    <div class="row">
+      <label class="field"><span data-t="players"></span>
+        <select id="numSel"><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></label>
+      <label class="field"><span data-t="level"></span>
+        <select id="levelSel"><option value="0" data-t="easy"></option><option value="1" data-t="medium"></option><option value="2" data-t="hard"></option></select></label>
+      <label class="field"><span data-t="wild"></span>
+        <select id="wildSel"><option value="none" data-t="wildNone"></option><option value="joker" data-t="wildJoker"></option><option value="vira" data-t="wildVira"></option></select></label>
+      <label class="field"><span data-t="wrap"></span>
+        <select id="wrapSel"><option value="0" data-t="wrapNo"></option><option value="1" data-t="wrapYes"></option></select></label>
+      <label class="field"><span data-t="target"></span>
+        <select id="targetSel"><option value="1">1</option><option value="3">3</option><option value="5">5</option></select></label>
+      <label class="field"><span data-t="lang"></span>
+        <select id="langSel"><option value="pt">Português</option><option value="en">English</option><option value="it">Italiano</option><option value="es">Español</option></select></label>
+    </div>
+    <div class="row">
+      <button type="button" class="btn pri" id="bPlay" data-t="play"></button>
+      <button type="button" class="btn" id="bResume" data-t="resume" hidden></button>
+      <button type="button" class="btn" id="bRules2" data-t="rules"></button>
+    </div>
+  </div>
+</section>
+
+<dialog id="dRules" aria-labelledby="rulesH"><h2 id="rulesH" data-t="rulesTitle"></h2><div id="rulesBody"></div><div class="row"><button type="button" class="btn pri" id="bRulesClose" data-t="close"></button></div></dialog>
+<dialog id="dEnd" aria-labelledby="endH"></dialog>
+
+<script>
+// Motor do pife: regras e computador, sem nada de tela. Estado em JSON puro.
+function Engine() {
+  const SUITS = ['s', 'h', 'd', 'c'], HAND = 9, OUT_GAIN = 2, OUT_WIN = 40, cache = new Map();
+  const rankOf = (c) => parseInt(c, 10), suitOf = (c) => c[c.length - 1];
+  function rnd(S) { S.seed = (S.seed + 0x6D2B79F5) | 0; let t = Math.imul(S.seed ^ (S.seed >>> 15), 1 | S.seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
+  const shuffle = (S, a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd(S) * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const log = (S, k, v) => { S.log.push({ k, v: v || {} }); if (S.log.length > 200) S.log.shift(); };
+  const isWild = (c, o) => c === 'X' || (o.wildRank > 0 && rankOf(c) === o.wildRank);
+  const rules = (S) => ({ wrap: S.opts.wrap, wildRank: S.wildRank, jokers: S.opts.wild === 'joker' });
+
+  // trinca: mesmo valor e naipes diferentes, no máximo 4. Curinga substitui uma carta que exista
+  function validSet(n, w) {
+    if (n.length + w > 4) return false;
+    if (n.some((c) => rankOf(c) !== rankOf(n[0]))) return false;
+    return new Set(n.map(suitOf)).size === n.length;
+  }
+  // sequência: mesmo naipe, cartas seguidas. Por opção, Q-K-A e K-A-2 valem (a ordem dá a volta)
+  function validRun(n, w, o) {
+    if (!n.length) return true;
+    if (n.some((c) => suitOf(c) !== suitOf(n[0]))) return false;
+    const r = n.map(rankOf).sort((a, b) => a - b);
+    if (new Set(r).size !== r.length || r.length + w > 13) return false;
+    if (r[r.length - 1] - r[0] + 1 - r.length <= w) return true;
+    if (!o.wrap) return false;
+    // sequência circular: o maior buraco fica de fora
+    let gap = r[0] + 13 - r[r.length - 1];
+    for (let i = 1; i < r.length; i++) gap = Math.max(gap, r[i] - r[i - 1]);
+    return 13 - gap + 1 - r.length <= w;
+  }
+  function validMeld(cards, o) {
+    if (cards.length < 3) return false;
+    const n = cards.filter((c) => !isWild(c, o)), w = cards.length - n.length;
+    return validSet(n, w) || validRun(n, w, o) || validNaturalWild(cards, o);
+  }
+  // um curinga sorteado também pode valer como carta normal: 3 de valor igual são trinca natural
+  function validNaturalWild(cards, o) {
+    if (!o.wildRank || cards.includes('X')) return false;
+    return validSet(cards, 0) || validRun(cards, 0, o);
+  }
+  // maior cobertura da mão por jogos. Só testa grupos de cartas compatíveis entre si, o que deixa a busca rápida
+  const compat = (x, y, o) => {
+    if (isWild(x, o) || isWild(y, o)) return true;
+    const sameRank = rankOf(x) === rankOf(y), sameSuit = suitOf(x) === suitOf(y);
+    return sameRank ? !sameSuit : sameSuit;
+  };
+  const popcount = (x) => { let c = 0; while (x) { c++; x &= x - 1; } return c; };
+  function solve(hand, o) {
+    const key = hand.join() + '|' + (o.wrap ? 1 : 0) + '|' + (o.wildRank || 0);
+    const hit = cache.get(key);
+    if (hit) return hit;
+    const n = hand.length, adj = new Array(n).fill(0), byLow = hand.map(() => []);
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) if (i !== j && compat(hand[i], hand[j], o)) adj[i] |= 1 << j;
+    const list = [];
+    const grow = (first, m, cand, size) => {
+      if (size >= 3 && validMeld(list, o)) byLow[first].push(m);
+      for (let c = cand; c; c &= c - 1) {
+        const bit = c & -c, i = 31 - Math.clz32(bit);
+        list.push(hand[i]);
+        grow(first, m | bit, c & ~(bit | (bit - 1)) & adj[i], size + 1);
+        list.pop();
+      }
+    };
+    for (let i = 0; i < n; i++) { list.push(hand[i]); grow(i, 1 << i, adj[i] & ~((2 << i) - 1), 1); list.pop(); }
+    const best = new Int8Array(1 << n).fill(-1), pick = new Int32Array(1 << n);
+    const rec = (m) => {
+      if (!m) return 0;
+      if (best[m] >= 0) return best[m];
+      const low = m & -m;
+      let b = rec(m ^ low), p = 0;
+      for (const t of byLow[31 - Math.clz32(low)]) {
+        if ((t & m) !== t) continue;
+        const v = popcount(t) + rec(m ^ t);
+        if (v > b) { b = v; p = t; }
+      }
+      best[m] = b; pick[m] = p;
+      return b;
+    };
+    const full = (1 << n) - 1, covered = rec(full), groups = [], used = new Set();
+    let m = full;
+    while (m) {
+      const p = pick[m], low = m & -m;
+      if (p) { const g = []; for (let i = 0; i < n; i++) if (p & (1 << i)) { g.push(i); used.add(i); } groups.push(g); m ^= p; } else m ^= low;
+    }
+    const r = { covered, groups, loose: hand.map((_, i) => i).filter((i) => !used.has(i)) };
+    if (cache.size > 40000) cache.clear();
+    cache.set(key, r);
+    return r;
+  }
+  // bate com a mão toda (9 ou 10 cartas) ou deixando uma carta para o último descarte
+  function batida(hand, o) {
+    if (hand.length === HAND) { const s = solve(hand, o); return s.covered === HAND ? { discard: -1, groups: s.groups, hand: hand.slice() } : null; }
+    const all = solve(hand, o);
+    if (all.covered === hand.length) return { discard: -1, groups: all.groups, hand: hand.slice() };
+    for (let i = 0; i < hand.length; i++) {
+      const rest = hand.filter((_, k) => k !== i), s = solve(rest, o);
+      if (s.covered === rest.length) return { discard: i, groups: s.groups, hand: rest };
+    }
+    return null;
+  }
+
+  function buildDeck(S) {
+    const d = [];
+    for (let k = 0; k < 2; k++) SUITS.forEach((s) => { for (let r = 1; r <= 13; r++) d.push(r + s); });
+    if (S.opts.wild === 'joker') d.push('X', 'X', 'X', 'X');
+    return d;
+  }
+  function newGame({ players, opts, target, seed }) {
+    const S = { players: players.map((p) => ({ name: p.name, kind: p.kind })), n: players.length, opts: Object.assign({ wild: 'none', wrap: false }, opts), target: target || 1, wins: players.map(() => 0), seed: seed == null ? (Date.now() | 0) : seed, log: [], fx: [], over: null, roundNo: 0 };
+    S.starter = Math.floor(rnd(S) * S.n);
+    deal(S);
+    return S;
+  }
+  function deal(S) {
+    const d = shuffle(S, buildDeck(S));
+    S.hands = S.players.map(() => d.splice(0, HAND));
+    S.vira = null; S.wildRank = 0;
+    if (S.opts.wild === 'vira') { S.vira = d.pop(); S.wildRank = rankOf(S.vira) % 13 + 1; }
+    S.stock = d; S.discard = []; S.turn = S.starter; S.phase = 'draw'; S.drew = null; S.newCard = null; S.canSwap = false; S.first = true; S.turnNo = 0; S.pick = S.players.map(() => []); S.result = null; S.reshuffles = 0; S.roundNo++;
+    log(S, 'round', { p: S.turn });
+  }
+  function refill(S) {
+    if (S.stock.length) return;
+    const top = S.discard.pop();
+    S.stock = shuffle(S, S.discard); S.discard = top ? [top] : []; S.reshuffles++;
+    log(S, 'reshuffle');
+    S.fx.push({ t: 'reshuffle' });
+  }
+  function next(S) {
+    S.turn = (S.turn + 1) % S.n; S.phase = 'draw'; S.drew = null; S.newCard = null; S.canSwap = false; S.turnNo++;
+  }
+  function finish(S, seat, b) {
+    S.wins[seat]++;
+    S.result = { seat, groups: b.groups.map((g) => g.map((i) => b.hand[i])), last: b.discard >= 0 ? S.hands[seat][b.discard] : null };
+    S.phase = 'roundEnd';
+    log(S, 'bater', { p: seat });
+    S.fx.push({ t: 'bater', seat });
+  }
+  const canBater = (S) => S.phase !== 'roundEnd' && S.phase !== 'over' && !!batida(S.hands[S.turn], rules(S));
+  function legal(S) {
+    if (S.over) return [];
+    if (S.phase === 'roundEnd') return [{ type: 'next' }];
+    const a = [];
+    if (canBater(S)) a.push({ type: 'bater' });
+    if (S.phase === 'draw') {
+      a.push({ type: 'stock' });
+      if (S.discard.length) a.push({ type: 'pile' });
+    } else {
+      S.hands[S.turn].forEach((_, i) => a.push({ type: 'discard', i }));
+      if (S.canSwap) a.push({ type: 'swap' });
+    }
+    return a;
+  }
+  function act(S, a) {
+    S.fx = [];
+    if (S.over) return false;
+    if (!legal(S).some((x) => x.type === a.type && (x.i === undefined || x.i === a.i))) return false;
+    const P = S.turn;
+    switch (a.type) {
+      case 'stock': {
+        refill(S);
+        const c = S.stock.pop();
+        S.hands[P].push(c); S.drew = 'stock'; S.newCard = c; S.phase = 'discard';
+        // só o primeiro jogador da rodada pode trocar a primeira carta comprada
+        S.canSwap = S.first; S.first = false;
+        log(S, 'drewStock', { p: P });
+        S.fx.push({ t: 'draw', seat: P, from: 'stock' });
+        return true;
+      }
+      case 'pile': {
+        const c = S.discard.pop();
+        S.hands[P].push(c); S.drew = 'pile'; S.newCard = c; S.phase = 'discard'; S.first = false; S.pick[P].push(c);
+        log(S, 'drewPile', { p: P, c });
+        S.fx.push({ t: 'draw', seat: P, from: 'pile' });
+        return true;
+      }
+      case 'swap': {
+        const i = S.hands[P].lastIndexOf(S.newCard), c = S.hands[P].splice(i, 1)[0];
+        S.discard.push(c);
+        refill(S);
+        const d = S.stock.pop();
+        S.hands[P].push(d); S.newCard = d; S.canSwap = false;
+        log(S, 'swapped', { p: P, c });
+        S.fx.push({ t: 'draw', seat: P, from: 'stock' });
+        return true;
+      }
+      case 'discard': {
+        const c = S.hands[P].splice(a.i, 1)[0], k = S.pick[P].indexOf(c);
+        if (k >= 0) S.pick[P].splice(k, 1);
+        S.discard.push(c);
+        log(S, 'discarded', { p: P, c });
+        S.fx.push({ t: 'discard', seat: P, c });
+        next(S);
+        return true;
+      }
+      case 'bater': {
+        const b = batida(S.hands[P], rules(S));
+        finish(S, P, b);
+        if (b.discard >= 0) { const c = S.hands[P].splice(b.discard, 1)[0]; S.discard.push(c); }
+        return true;
+      }
+      case 'next': {
+        const w = S.result.seat;
+        if (S.wins[w] >= S.target) { S.over = { winner: w }; S.phase = 'over'; log(S, 'gameWon', { p: w }); return true; }
+        S.starter = (S.starter + 1) % S.n;
+        deal(S);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // ---------------------------------------------------------------- computador: só usa a própria mão e o que é público
+  // cartas ainda possíveis: dois baralhos menos o que ele vê
+  function seenCounts(S, s) {
+    const seen = {};
+    const add = (c) => { seen[c] = (seen[c] || 0) + 1; };
+    S.hands[s].forEach(add); S.discard.forEach(add);
+    if (S.vira) add(S.vira);
+    S.pick.forEach((list, i) => { if (i !== s) list.forEach(add); });
+    return seen;
+  }
+  // valor da mão: cartas em jogos pesam muito; as soltas valem pelas chances de virar jogo
+  function evalHand(hand, o, L, seen) {
+    const s = solve(hand, o);
+    let score = s.covered * 100;
+    const loose = s.loose.map((i) => hand[i]), left = (c) => (seen ? Math.max(0, 2 - (seen[c] || 0)) : 1.2);
+    hand.forEach((c) => { if (isWild(c, o)) score += 60; });
+    for (let a = 0; a < loose.length; a++) {
+      const x = loose[a];
+      if (isWild(x, o)) continue;
+      for (let b = a + 1; b < loose.length; b++) {
+        const y = loose[b];
+        if (isWild(y, o)) continue;
+        const rx = rankOf(x), ry = rankOf(y), sx = suitOf(x), sy = suitOf(y);
+        if (rx === ry && sx !== sy) {
+          const outs = SUITS.filter((q) => q !== sx && q !== sy).reduce((t, q) => t + left(rx + q), 0);
+          score += L === 0 ? 8 : 4 + outs * 3;
+        } else if (sx === sy) {
+          const d = Math.abs(rx - ry), near = d === 1 || (o.wrap && d === 12), gap = d === 2 || (o.wrap && d === 11);
+          if (near || gap) {
+            const lo = Math.min(rx, ry), hi = Math.max(rx, ry), cand = near ? [lo - 1, hi + 1] : [lo + 1];
+            const outs = cand.filter((r) => r >= 1 && r <= 13).reduce((t, r) => t + left(r + sx), 0);
+            score += L === 0 ? 7 : 3 + outs * 3;
+          }
+        }
+      }
+    }
+    return L === 2 ? score + outsValue(hand, o, seen, s.covered) : score;
+  }
+  // difícil: conta as cartas não vistas que aumentam os jogos, e pesa mais as que já fazem bater
+  function outsValue(hand, o, seen, base) {
+    const sorted = hand.slice().sort();
+    let v = 0;
+    const tryCard = (c, left) => {
+      if (left <= 0 || !sorted.some((x) => compat(x, c, o))) return;
+      const cov = solve(sorted.concat(c).sort(), o).covered;
+      if (cov > base) v += left * ((cov - base) * OUT_GAIN + (cov >= HAND ? OUT_WIN : 0));
+    };
+    SUITS.forEach((q) => { for (let r = 1; r <= 13; r++) tryCard(r + q, 2 - (seen[r + q] || 0)); });
+    if (seen.X !== undefined || o.jokers) tryCard('X', 4 - (seen.X || 0));
+    return v;
+  }
+  function bestDiscard(S, s) {
+    const hand = S.hands[s], o = rules(S), L = S.players[s].kind, seen = L === 2 ? seenCounts(S, s) : null, nextSeat = (s + 1) % S.n, pk = S.pick[nextSeat];
+    let best = -1e9, idx = 0;
+    hand.forEach((c, i) => {
+      if (isWild(c, o)) return;
+      const rest = hand.filter((_, k) => k !== i);
+      let v = evalHand(rest, o, L, seen);
+      if (L === 0) v += rnd(S) * 26;
+      if (L === 2 && pk.length) {
+        // evita dar ao próximo jogador o que combina com o que ele já pegou do lixo
+        const rx = rankOf(c), sx = suitOf(c);
+        pk.forEach((p) => { const rp = rankOf(p), sp = suitOf(p); if ((rp === rx && sp !== sx) || (sp === sx && Math.abs(rp - rx) <= 2)) v -= 14; });
+      }
+      if (v > best) { best = v; idx = i; }
+    });
+    return idx;
+  }
+  function ai(S) {
+    if (S.phase === 'roundEnd') return { type: 'next' };
+    const s = S.turn, L = S.players[s].kind, hand = S.hands[s], o = rules(S);
+    if (canBater(S)) return { type: 'bater' };
+    if (S.phase === 'draw') {
+      if (!S.discard.length) return { type: 'stock' };
+      const top = S.discard[S.discard.length - 1], seen = L === 2 ? seenCounts(S, s) : null;
+      if (isWild(top, o)) return { type: 'pile' };
+      const base = solve(hand, o).covered, withTop = hand.concat(top), bat = batida(withTop, o);
+      if (bat) return { type: 'pile' };
+      if (L === 0) return solve(withTop, o).covered > base && rnd(S) < 0.7 ? { type: 'pile' } : { type: 'stock' };
+      // compara a melhor mão ficando com a carta do lixo com a mão atual
+      const now = evalHand(hand, o, L, seen);
+      let bestV = -1e9;
+      withTop.forEach((c, i) => { if (c === top && i === withTop.length - 1) return; const v = evalHand(withTop.filter((_, k) => k !== i), o, L, seen); if (v > bestV) bestV = v; });
+      const margin = L === 2 ? 45 : 12;
+      return bestV > now + margin ? { type: 'pile' } : { type: 'stock' };
+    }
+    if (S.canSwap && S.newCard) {
+      const seen = L === 2 ? seenCounts(S, s) : null, without = hand.slice(); without.splice(without.lastIndexOf(S.newCard), 1);
+      const i0 = bestDiscard(S, s);
+      if (!isWild(S.newCard, o) && hand[i0] === S.newCard && L > 0 && evalHand(without, o, L, seen) < 120) return { type: 'swap' };
+    }
+    return { type: 'discard', i: bestDiscard(S, s) };
+  }
+  return { SUITS, HAND, rankOf, suitOf, isWild, rules, validMeld, solve, batida, canBater, newGame, deal, legal, act, ai, evalHand };
+}
+</script>
+
+<script>
+(() => {
+  'use strict';
+  const E = Engine();
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const Store = {
+    get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* sem armazenamento */ } },
+  };
+
+  // ---------------------------------------------------------------- cartas francesas em SVG
+  const SUITP = {
+    h: 'M0 12C-4 6 -12 1 -12 -5C-12 -10 -8 -13 -5 -13C-2 -13 0 -11 0 -8C0 -11 2 -13 5 -13C8 -13 12 -10 12 -5C12 1 4 6 0 12Z',
+    d: 'M0 -14L10 0L0 14L-10 0Z',
+    s: 'M0 -14C4 -8 12 -3 12 3C12 8 7 10 3.500 7.500C4 10 5 12 7 14H-7C-5 12 -4 10 -3.500 7.500C-7 10 -12 8 -12 3C-12 -3 -4 -8 0 -14Z',
+    c: 'M0 -14A6.200 6.200 0 0 1 5 -4A6.200 6.200 0 1 1 3.500 7C4 10 5 12 7 14H-7C-5 12 -4 10 -3.500 7A6.200 6.200 0 1 1 -5 -4A6.200 6.200 0 0 1 0 -14Z',
+  };
+  const RED = { h: 1, d: 1 };
+  const col = (s) => (RED[s] ? '#C2252F' : '#20242B');
+  const pip = (s, x, y, k, flip) => `<path transform="translate(${x} ${y}) scale(${k})${flip ? ' rotate(180)' : ''}" d="${SUITP[s]}" fill="${col(s)}"/>`;
+  const Y = { t: 28, b: 117 };
+  const PIPS = {
+    1: [[50, 72.5, 2.2]], 2: [[50, Y.t], [50, Y.b, 1, 1]], 3: [[50, Y.t], [50, 72.5], [50, Y.b, 1, 1]], 4: [[35, Y.t], [65, Y.t], [35, Y.b, 1, 1], [65, Y.b, 1, 1]],
+    5: [[35, Y.t], [65, Y.t], [50, 72.5], [35, Y.b, 1, 1], [65, Y.b, 1, 1]], 6: [[35, Y.t], [65, Y.t], [35, 72.5], [65, 72.5], [35, Y.b, 1, 1], [65, Y.b, 1, 1]],
+    7: [[35, Y.t], [65, Y.t], [50, 50], [35, 72.5], [65, 72.5], [35, Y.b, 1, 1], [65, Y.b, 1, 1]], 8: [[35, Y.t], [65, Y.t], [50, 50], [35, 72.5], [65, 72.5], [50, 95, 1, 1], [35, Y.b, 1, 1], [65, Y.b, 1, 1]],
+    9: [[35, Y.t], [65, Y.t], [35, 57], [65, 57], [50, 72.5], [35, 88, 1, 1], [65, 88, 1, 1], [35, Y.b, 1, 1], [65, Y.b, 1, 1]], 10: [[35, Y.t], [65, Y.t], [50, 41], [35, 57], [65, 57], [35, 88, 1, 1], [65, 88, 1, 1], [50, 104, 1, 1], [35, Y.b, 1, 1], [65, Y.b, 1, 1]],
+  };
+  const RL = { 1: 'A', 11: 'J', 12: 'Q', 13: 'K' };
+  const rl = (r) => RL[r] || String(r);
+  function figure(r, s) {
+    const c = col(s), crown = r === 13 ? `<path d="M34 50L34 34L42 42L50 30L58 42L66 34L66 50Z" fill="#E8B23E" stroke="#7A5208"/>` : r === 12 ? `<path d="M38 50L36 38L44 44L50 34L56 44L64 38L62 50Z" fill="#E8B23E" stroke="#7A5208"/><circle cx="50" cy="33" r="2.500" fill="#C2252F"/>` : `<path d="M36 50C36 38 64 38 64 50Z" fill="${c}"/><path d="M60 42L74 36" stroke="#C2252F" stroke-width="2.500"/>`;
+    return `<rect x="24" y="24" width="52" height="97" rx="4" fill="${RED[s] ? '#FBE9E6' : '#E9ECF2'}" stroke="${c}"/>${crown}<circle cx="50" cy="60" r="11" fill="#F0CBA0"/><path d="M28 118C28 88 38 74 50 74S72 88 72 118Z" fill="${c}"/><path d="M47 74H53L55 118H45Z" fill="#FFF7EA"/>${pip(s, 50, 96, 0.72)}`;
+  }
+  function cardSvg(c, cls) {
+    if (c === 'X') return `<svg class="pcard ${cls || ''}" viewBox="0 0 100 145" role="img" aria-label="${esc(t('joker'))}"><rect x="1" y="1" width="98" height="143" rx="8" fill="#FFFDF6" stroke="#7A5208" stroke-width="1.500"/><text x="8" y="23" font-family="Georgia, serif" font-weight="700" font-size="18" fill="#7A2E8F">★</text><path d="M50 40L57 60L78 60L61 73L68 94L50 81L32 94L39 73L22 60L43 60Z" fill="#E8B23E" stroke="#7A5208"/><text x="50" y="122" font-family="Georgia, serif" font-weight="700" font-size="14" fill="#7A2E8F" text-anchor="middle">★ ★ ★</text></svg>`;
+    const r = E.rankOf(c), s = E.suitOf(c), k = col(s), lb = rl(r);
+    const inner = r > 10 ? figure(r, s) : PIPS[r].map(([x, y, q, f]) => pip(s, x, y, r === 1 ? q : 0.72, f)).join('');
+    return `<svg class="pcard ${cls || ''}" viewBox="0 0 100 145" role="img" aria-label="${esc(cardName(c))}"><rect x="1" y="1" width="98" height="143" rx="8" fill="#FFFDF6" stroke="#B9A98F" stroke-width="1.500"/><text x="7" y="21" font-family="Georgia, serif" font-weight="700" font-size="20" fill="${k}">${lb}</text>${pip(s, 15, 33, 0.55)}<g transform="rotate(180 50 72.500)"><text x="7" y="21" font-family="Georgia, serif" font-weight="700" font-size="20" fill="${k}">${lb}</text>${pip(s, 15, 33, 0.55)}</g>${inner}</svg>`;
+  }
+  const backSvg = (cls) => `<svg class="${cls || ''}" viewBox="0 0 100 145" aria-hidden="true"><rect x="1" y="1" width="98" height="143" rx="8" fill="#1E4A6B" stroke="#FFFDF6" stroke-width="3"/><rect x="9" y="9" width="82" height="127" rx="5" fill="none" stroke="#E8B23E" stroke-width="2"/><path d="M50 30L74 72L50 115L26 72Z" fill="none" stroke="#E8B23E" stroke-width="2.500"/><circle cx="50" cy="72" r="9" fill="#E8B23E"/></svg>`;
+
+  // ---------------------------------------------------------------- textos
+  const NAMES = {
+    pt: { ranks: { 1: 'Ás', 2: 'Dois', 3: 'Três', 4: 'Quatro', 5: 'Cinco', 6: 'Seis', 7: 'Sete', 8: 'Oito', 9: 'Nove', 10: 'Dez', 11: 'Valete', 12: 'Dama', 13: 'Rei' }, of: 'de', suits: { s: 'espadas', h: 'copas', d: 'ouros', c: 'paus' } },
+    en: { ranks: { 1: 'Ace', 2: 'Two', 3: 'Three', 4: 'Four', 5: 'Five', 6: 'Six', 7: 'Seven', 8: 'Eight', 9: 'Nine', 10: 'Ten', 11: 'Jack', 12: 'Queen', 13: 'King' }, of: 'of', suits: { s: 'spades', h: 'hearts', d: 'diamonds', c: 'clubs' } },
+    it: { ranks: { 1: 'Asso', 2: 'Due', 3: 'Tre', 4: 'Quattro', 5: 'Cinque', 6: 'Sei', 7: 'Sette', 8: 'Otto', 9: 'Nove', 10: 'Dieci', 11: 'Fante', 12: 'Regina', 13: 'Re' }, of: 'di', suits: { s: 'picche', h: 'cuori', d: 'quadri', c: 'fiori' } },
+    es: { ranks: { 1: 'As', 2: 'Dos', 3: 'Tres', 4: 'Cuatro', 5: 'Cinco', 6: 'Seis', 7: 'Siete', 8: 'Ocho', 9: 'Nueve', 10: 'Diez', 11: 'Jota', 12: 'Reina', 13: 'Rey' }, of: 'de', suits: { s: 'picas', h: 'corazones', d: 'diamantes', c: 'tréboles' } },
+  };
+  const I18N = {
+    pt: {
+      back: '← Voltar aos projetos', tagline: 'Nove cartas, três jogos e uma batida', story: 'Compre, descarte e arrume a mão em trincas e sequências, sem mostrar nada a ninguém. Quem conseguir encaixar todas as cartas primeiro bate e ganha a rodada.',
+      players: 'Jogadores', level: 'Dificuldade', easy: 'Fácil', medium: 'Médio', hard: 'Difícil', wild: 'Curingas', wildNone: 'Sem curinga', wildJoker: 'Curinga amigo', wildVira: 'Curinga sorteado', wrap: 'Q-K-A e K-A-2', wrapNo: 'Não valem', wrapYes: 'Valem', target: 'Rodadas para vencer', lang: 'Idioma', play: 'Novo jogo', resume: 'Continuar', rules: 'Regras', rulesTitle: 'Como se joga', close: 'Fechar', menu: 'Menu', soundOn: 'Som ligado', soundOff: 'Som desligado', speedN: 'Velocidade normal', speedF: 'Velocidade rápida',
+      you: 'Você', joker: 'Curinga', stock: 'Monte ({n})', pile: 'Lixo', vira: 'Vira', wildIs: 'Curinga: {r}', wins: 'Vitórias', round: 'Rodada {n}', target2: 'Vence quem chegar a {n}', drawT: 'Sua vez: compre', drawH: 'Pegue do monte ou a carta de cima do lixo.', discardT: 'Agora descarte', discardH: 'Toque numa carta e depois em Descartar. Arraste para reorganizar.', thinking: '{p} está jogando…', melded: '{a} de {b} cartas em jogos.', batOk: 'Você pode bater!',
+      btnStock: 'Comprar do monte', btnPile: 'Pegar do lixo', btnBater: 'Bater!', btnDiscard: 'Descartar', btnSwap: 'Descartar e comprar outra', btnSort: 'Organizar', btnLeft: 'Mover ←', btnRight: 'Mover →', again: 'Jogar de novo', nextRound: 'Próxima rodada', seeResult: 'Ver resultado',
+      endYou: 'Você bateu!', endOther: '{p} bateu', overYou: 'Você venceu o jogo!', overOther: '{p} venceu o jogo', meldsOf: 'Jogos de {p}', lastCard: 'Último descarte: {c}', yourMelds: 'Seus jogos', yourHand: 'Sua mão',
+      logMe: { round: 'Nova rodada: você começa.', drewStock: 'Você comprou do monte.', drewPile: 'Você pegou {c} do lixo.', swapped: 'Você trocou a primeira carta ({c}).', discarded: 'Você descartou {c}.', bater: 'Você bateu!', gameWon: 'Fim de jogo: você venceu.' },
+      log: { round: 'Nova rodada: começa {p}.', drewStock: '{p} comprou do monte.', drewPile: '{p} pegou {c} do lixo.', swapped: '{p} trocou a primeira carta ({c}).', discarded: '{p} descartou {c}.', reshuffle: 'O monte acabou: o lixo foi embaralhado.', bater: '{p} bateu!', gameWon: 'Fim de jogo: {p} venceu.' },
+      rulesHtml: `<h3>O jogo</h3><ul class="rules"><li><b>Baralho:</b> dois baralhos comuns, 104 cartas, mais 4 curingas se estiver jogando com curinga amigo. Cada jogador recebe 9 cartas.</li><li><b>Objetivo:</b> deixar todas as cartas da mão em combinações. Os jogos ficam na mão, em segredo, até bater.</li><li><b>Trinca:</b> três ou quatro cartas do mesmo valor e de naipes diferentes. Como são dois baralhos, A♥ A♦ A♥ não vale.</li><li><b>Sequência:</b> três ou mais cartas seguidas do mesmo naipe. O Ás fica antes do 2. A♥ 2♥ 3♦ não vale.</li></ul><h3>Sua vez</h3><ul class="rules"><li>Compre uma carta do monte ou a de cima do lixo. Depois, descarte uma, ficando de novo com 9.</li><li>O primeiro jogador da rodada, se não gostar da primeira carta que comprou, pode descartá-la e comprar outra.</li><li><b>Bater:</b> quando todas as cartas estiverem em jogos, com ou sem o último descarte, é só bater para ganhar a rodada.</li></ul><h3>Opções</h3><ul class="rules"><li><b>Curinga amigo:</b> o curinga substitui qualquer carta que exista: A♠ 🃏 3♠ ou 2♦ 2♣ 🃏 valem, mas não uma quinta carta na trinca.</li><li><b>Curinga sorteado:</b> uma carta é virada, e o valor seguinte é o curinga da rodada. Se a virada é um Ás, o curinga é o 2; se é um Rei, é o Ás.</li><li><b>Q-K-A e K-A-2:</b> nesta opção, a sequência pode dar a volta pelo Ás.</li></ul><h3>Nesta versão</h3><ul class="rules"><li>As regras variam muito de mesa para mesa. A base aqui é a descrita na Wikipédia; ela não define pontuação, então vence quem ganhar o número de rodadas escolhido.</li><li>A referência fala em 3 a 8 jogadores; aqui são de 2 a 6, sempre contra o computador.</li><li>Decisões desta versão: quando o monte acaba, o lixo é embaralhado e vira monte novo, mantendo a carta de cima; o botão de bater só aparece quando a batida é válida, então não existe a penalidade por bater errado; e a variante de “cortar” a vez de outro jogador ficou de fora.</li></ul>`,
+    },
+    en: {
+      back: '← Back to projects', tagline: 'Nine cards, three melds and one knock', story: 'Draw, discard and arrange your hand into sets and runs, showing nothing to anyone. Whoever fits every card first goes out and wins the round.',
+      players: 'Players', level: 'Difficulty', easy: 'Easy', medium: 'Medium', hard: 'Hard', wild: 'Wild cards', wildNone: 'No wilds', wildJoker: 'Joker wilds', wildVira: 'Turned-up wild', wrap: 'Q-K-A and K-A-2', wrapNo: 'Not allowed', wrapYes: 'Allowed', target: 'Rounds to win', lang: 'Language', play: 'New game', resume: 'Resume', rules: 'Rules', rulesTitle: 'How to play', close: 'Close', menu: 'Menu', soundOn: 'Sound on', soundOff: 'Sound off', speedN: 'Normal speed', speedF: 'Fast speed',
+      you: 'You', joker: 'Joker', stock: 'Stock ({n})', pile: 'Discards', vira: 'Turned', wildIs: 'Wild: {r}', wins: 'Wins', round: 'Round {n}', target2: 'First to {n} wins', drawT: 'Your turn: draw', drawH: 'Take from the stock or the top of the discards.', discardT: 'Now discard', discardH: 'Tap a card, then Discard. Drag to rearrange.', thinking: '{p} is playing…', melded: '{a} of {b} cards in melds.', batOk: 'You can go out!',
+      btnStock: 'Draw from stock', btnPile: 'Take the discard', btnBater: 'Go out!', btnDiscard: 'Discard', btnSwap: 'Discard and draw again', btnSort: 'Arrange', btnLeft: 'Move ←', btnRight: 'Move →', again: 'Play again', nextRound: 'Next round', seeResult: 'See result',
+      endYou: 'You went out!', endOther: '{p} went out', overYou: 'You won the game!', overOther: '{p} won the game', meldsOf: '{p}’s melds', lastCard: 'Last discard: {c}', yourMelds: 'Your melds', yourHand: 'Your hand',
+      logMe: { round: 'New round: you start.', drewStock: 'You drew from the stock.', drewPile: 'You took {c} from the discards.', swapped: 'You swapped the first card ({c}).', discarded: 'You discarded {c}.', bater: 'You went out!', gameWon: 'Game over: you won.' },
+      log: { round: 'New round: {p} starts.', drewStock: '{p} drew from the stock.', drewPile: '{p} took {c} from the discards.', swapped: '{p} swapped the first card ({c}).', discarded: '{p} discarded {c}.', reshuffle: 'The stock ran out: the discards were shuffled.', bater: '{p} went out!', gameWon: 'Game over: {p} won.' },
+      rulesHtml: `<h3>The game</h3><ul class="rules"><li><b>Deck:</b> two standard decks, 104 cards, plus 4 jokers when playing with joker wilds. Each player gets 9 cards.</li><li><b>Goal:</b> have every card in your hand in a combination. Melds stay in your hand, secret, until you go out.</li><li><b>Set:</b> three or four cards of one rank and different suits. With two decks, A♥ A♦ A♥ is not valid.</li><li><b>Run:</b> three or more consecutive cards of one suit. The ace comes before the 2. A♥ 2♥ 3♦ is not valid.</li></ul><h3>Your turn</h3><ul class="rules"><li>Draw a card from the stock or take the top discard. Then discard one, back to 9.</li><li>The round’s first player, if unhappy with the first card drawn, may discard it and draw another.</li><li><b>Going out:</b> when all your cards are in melds, with or without a final discard, go out to win the round.</li></ul><h3>Options</h3><ul class="rules"><li><b>Joker wilds:</b> a joker replaces any card that exists: A♠ 🃏 3♠ or 2♦ 2♣ 🃏 are valid, but not a fifth card in a set.</li><li><b>Turned-up wild:</b> a card is turned up, and the next rank is wild for the round. If an ace is turned, the 2 is wild; if a King, the ace.</li><li><b>Q-K-A and K-A-2:</b> with this option, runs can wrap around the ace.</li></ul><h3>In this version</h3><ul class="rules"><li>Rules vary a lot between tables. The base here is the one described on Portuguese Wikipedia; it defines no scoring, so the winner is whoever wins the chosen number of rounds.</li><li>That reference mentions 3 to 8 players; here it is 2 to 6, always against the computer.</li><li>Choices made for this version: when the stock runs out, the discards are shuffled into a new stock, keeping the top card; the go-out button only appears when going out is valid, so there is no penalty for a false claim; and the variant of “cutting” another player’s turn is left out.</li></ul>`,
+    },
+    it: {
+      back: '← Torna ai progetti', tagline: 'Nove carte, tre combinazioni e una chiusura', story: 'Pesca, scarta e sistema la mano in tris e scale, senza mostrare nulla a nessuno. Chi fa entrare per primo tutte le carte chiude e vince il giro.',
+      players: 'Giocatori', level: 'Difficoltà', easy: 'Facile', medium: 'Medio', hard: 'Difficile', wild: 'Jolly', wildNone: 'Senza jolly', wildJoker: 'Jolly amico', wildVira: 'Jolly sorteggiato', wrap: 'Q-K-A e K-A-2', wrapNo: 'Non valgono', wrapYes: 'Valgono', target: 'Giri per vincere', lang: 'Lingua', play: 'Nuova partita', resume: 'Riprendi', rules: 'Regole', rulesTitle: 'Come si gioca', close: 'Chiudi', menu: 'Menu', soundOn: 'Audio attivo', soundOff: 'Audio spento', speedN: 'Velocità normale', speedF: 'Velocità rapida',
+      you: 'Tu', joker: 'Jolly', stock: 'Tallone ({n})', pile: 'Scarti', vira: 'Girata', wildIs: 'Jolly: {r}', wins: 'Vittorie', round: 'Giro {n}', target2: 'Vince chi arriva a {n}', drawT: 'Tocca a te: pesca', drawH: 'Prendi dal tallone o la carta in cima agli scarti.', discardT: 'Ora scarta', discardH: 'Tocca una carta e poi Scarta. Trascina per riordinare.', thinking: '{p}: sta giocando…', melded: '{a} carte su {b} in combinazioni.', batOk: 'Puoi chiudere!',
+      btnStock: 'Pesca dal tallone', btnPile: 'Prendi lo scarto', btnBater: 'Chiudi!', btnDiscard: 'Scarta', btnSwap: 'Scarta e pesca ancora', btnSort: 'Riordina', btnLeft: 'Sposta ←', btnRight: 'Sposta →', again: 'Gioca ancora', nextRound: 'Prossimo giro', seeResult: 'Vedi il risultato',
+      endYou: 'Hai chiuso!', endOther: '{p} ha chiuso', overYou: 'Hai vinto la partita!', overOther: '{p} ha vinto la partita', meldsOf: 'Combinazioni di {p}', lastCard: 'Ultimo scarto: {c}', yourMelds: 'Le tue combinazioni', yourHand: 'La tua mano',
+      logMe: { round: 'Nuovo giro: inizi tu.', drewStock: 'Hai pescato dal tallone.', drewPile: 'Hai preso {c} dagli scarti.', swapped: 'Hai cambiato la prima carta ({c}).', discarded: 'Hai scartato {c}.', bater: 'Hai chiuso!', gameWon: 'Fine: hai vinto.' },
+      log: { round: 'Nuovo giro: inizia {p}.', drewStock: '{p} ha pescato dal tallone.', drewPile: '{p} ha preso {c} dagli scarti.', swapped: '{p} ha cambiato la prima carta ({c}).', discarded: '{p} ha scartato {c}.', reshuffle: 'Il tallone è finito: gli scarti sono stati mescolati.', bater: '{p} ha chiuso!', gameWon: 'Fine: {p} ha vinto.' },
+      rulesHtml: `<h3>Il gioco</h3><ul class="rules"><li><b>Mazzo:</b> due mazzi comuni, 104 carte, più 4 jolly se giochi con il jolly amico. Ogni giocatore riceve 9 carte.</li><li><b>Obiettivo:</b> avere tutte le carte della mano in combinazioni. Le combinazioni restano in mano, segrete, fino alla chiusura.</li><li><b>Tris:</b> tre o quattro carte dello stesso valore e di semi diversi. Con due mazzi, A♥ A♦ A♥ non vale.</li><li><b>Scala:</b> tre o più carte consecutive dello stesso seme. L’asso viene prima del 2. A♥ 2♥ 3♦ non vale.</li></ul><h3>Il tuo turno</h3><ul class="rules"><li>Pesca dal tallone o prendi lo scarto in cima. Poi scarta una carta, tornando a 9.</li><li>Il primo giocatore del giro, se non gli piace la prima carta pescata, può scartarla e pescarne un’altra.</li><li><b>Chiudere:</b> quando tutte le carte sono in combinazioni, con o senza l’ultimo scarto, chiudi e vinci il giro.</li></ul><h3>Opzioni</h3><ul class="rules"><li><b>Jolly amico:</b> il jolly sostituisce qualsiasi carta esistente: A♠ 🃏 3♠ o 2♦ 2♣ 🃏 valgono, ma non una quinta carta nel tris.</li><li><b>Jolly sorteggiato:</b> si gira una carta, e il valore successivo è jolly per il giro. Se esce un asso, il jolly è il 2; se esce un Re, l’asso.</li><li><b>Q-K-A e K-A-2:</b> con questa opzione, la scala può girare sull’asso.</li></ul><h3>In questa versione</h3><ul class="rules"><li>Le regole cambiano molto da un tavolo all’altro. La base è quella descritta su Wikipedia in portoghese; non definisce un punteggio, quindi vince chi ottiene il numero di giri scelto.</li><li>Quel riferimento parla di 3-8 giocatori; qui sono da 2 a 6, sempre contro il computer.</li><li>Scelte di questa versione: quando il tallone finisce, gli scarti vengono mescolati in un nuovo tallone, tenendo la carta in cima; il pulsante di chiusura appare solo quando è valida, quindi non c’è penalità per una chiusura errata; la variante del “tagliare” il turno di un altro giocatore è esclusa.</li></ul>`,
+    },
+    es: {
+      back: '← Volver a los proyectos', tagline: 'Nueve cartas, tres juegos y un golpe', story: 'Roba, descarta y ordena tu mano en tríos y escaleras, sin mostrar nada a nadie. Quien encaje primero todas las cartas golpea y gana la ronda.',
+      players: 'Jugadores', level: 'Dificultad', easy: 'Fácil', medium: 'Medio', hard: 'Difícil', wild: 'Comodines', wildNone: 'Sin comodín', wildJoker: 'Comodín amigo', wildVira: 'Comodín sorteado', wrap: 'Q-K-A y K-A-2', wrapNo: 'No valen', wrapYes: 'Valen', target: 'Rondas para ganar', lang: 'Idioma', play: 'Nuevo juego', resume: 'Continuar', rules: 'Reglas', rulesTitle: 'Cómo se juega', close: 'Cerrar', menu: 'Menú', soundOn: 'Sonido activado', soundOff: 'Sonido desactivado', speedN: 'Velocidad normal', speedF: 'Velocidad rápida',
+      you: 'Tú', joker: 'Comodín', stock: 'Mazo ({n})', pile: 'Descartes', vira: 'Volteada', wildIs: 'Comodín: {r}', wins: 'Victorias', round: 'Ronda {n}', target2: 'Gana quien llegue a {n}', drawT: 'Tu turno: roba', drawH: 'Toma del mazo o la carta superior de los descartes.', discardT: 'Ahora descarta', discardH: 'Toca una carta y luego Descartar. Arrastra para reordenar.', thinking: '{p} está jugando…', melded: '{a} de {b} cartas en juegos.', batOk: '¡Puedes golpear!',
+      btnStock: 'Robar del mazo', btnPile: 'Tomar el descarte', btnBater: '¡Golpear!', btnDiscard: 'Descartar', btnSwap: 'Descartar y robar otra', btnSort: 'Ordenar', btnLeft: 'Mover ←', btnRight: 'Mover →', again: 'Jugar otra vez', nextRound: 'Próxima ronda', seeResult: 'Ver resultado',
+      endYou: '¡Golpeaste!', endOther: '{p} golpeó', overYou: '¡Ganaste el juego!', overOther: '{p} ganó el juego', meldsOf: 'Juegos de {p}', lastCard: 'Último descarte: {c}', yourMelds: 'Tus juegos', yourHand: 'Tu mano',
+      logMe: { round: 'Nueva ronda: empiezas tú.', drewStock: 'Robaste del mazo.', drewPile: 'Tomaste {c} de los descartes.', swapped: 'Cambiaste la primera carta ({c}).', discarded: 'Descartaste {c}.', bater: '¡Golpeaste!', gameWon: 'Fin del juego: ganaste.' },
+      log: { round: 'Nueva ronda: empieza {p}.', drewStock: '{p} robó del mazo.', drewPile: '{p} tomó {c} de los descartes.', swapped: '{p} cambió la primera carta ({c}).', discarded: '{p} descartó {c}.', reshuffle: 'El mazo se acabó: se barajaron los descartes.', bater: '¡{p} golpeó!', gameWon: 'Fin del juego: ganó {p}.' },
+      rulesHtml: `<h3>El juego</h3><ul class="rules"><li><b>Baraja:</b> dos barajas comunes, 104 cartas, más 4 comodines si juegas con comodín amigo. Cada jugador recibe 9 cartas.</li><li><b>Objetivo:</b> tener todas las cartas de la mano en combinaciones. Los juegos quedan en la mano, en secreto, hasta golpear.</li><li><b>Trío:</b> tres o cuatro cartas del mismo valor y de palos distintos. Con dos barajas, A♥ A♦ A♥ no vale.</li><li><b>Escalera:</b> tres o más cartas seguidas del mismo palo. El as va antes del 2. A♥ 2♥ 3♦ no vale.</li></ul><h3>Tu turno</h3><ul class="rules"><li>Roba una carta del mazo o toma la superior de los descartes. Después descarta una, volviendo a 9.</li><li>Quien empieza la ronda, si no le gusta la primera carta robada, puede descartarla y robar otra.</li><li><b>Golpear:</b> cuando todas las cartas estén en juegos, con o sin el último descarte, golpea para ganar la ronda.</li></ul><h3>Opciones</h3><ul class="rules"><li><b>Comodín amigo:</b> el comodín sustituye cualquier carta que exista: A♠ 🃏 3♠ o 2♦ 2♣ 🃏 valen, pero no una quinta carta en el trío.</li><li><b>Comodín sorteado:</b> se voltea una carta, y el valor siguiente es comodín en la ronda. Si sale un as, el comodín es el 2; si sale un Rey, el as.</li><li><b>Q-K-A y K-A-2:</b> con esta opción, la escalera puede dar la vuelta por el as.</li></ul><h3>En esta versión</h3><ul class="rules"><li>Las reglas varían mucho de una mesa a otra. La base es la descrita en la Wikipedia en portugués; no define puntuación, así que gana quien logre el número de rondas elegido.</li><li>Esa referencia habla de 3 a 8 jugadores; aquí son de 2 a 6, siempre contra la computadora.</li><li>Decisiones de esta versión: cuando el mazo se acaba, los descartes se barajan en un mazo nuevo, conservando la carta superior; el botón de golpear solo aparece cuando es válido, así que no hay penalidad por golpear mal; y la variante de “cortar” el turno de otro jugador queda fuera.</li></ul>`,
+    },
+  };
+  let lang = 'pt';
+  const TAG = { pt: 'pt-BR', en: 'en', it: 'it', es: 'es' };
+  const fill = (s, v) => s.replace(/\{(\w+)\}/g, (m, k) => (v && v[k] !== undefined ? v[k] : m));
+  const t = (k, v) => { const s = I18N[lang][k] !== undefined ? I18N[lang][k] : I18N.pt[k]; return v ? fill(s, v) : s; };
+  const SUITCH = { s: '♠', h: '♥', d: '♦', c: '♣' };
+  const cardName = (c) => (c === 'X' ? t('joker') : `${NAMES[lang].ranks[E.rankOf(c)]} ${NAMES[lang].of} ${NAMES[lang].suits[E.suitOf(c)]}`);
+  const shortName = (c) => (c === 'X' ? '★' : rl(E.rankOf(c)) + SUITCH[E.suitOf(c)]);
+  const CPU = ['Tchê', 'Dona Zefa', 'Seu Lima', 'Guria', 'Piá'];
+
+  // ---------------------------------------------------------------- estado da tela
+  let S = null, fast = false, soundOn = true, busy = false, aiTimer = null, sel = null;
+  const human = 0;
+  const save = () => { if (S) Store.set('pife.game', Object.assign({}, S, { fx: [] })); };
+  const delay = (ms) => new Promise((r) => setTimeout(r, reduceMotion ? Math.min(ms, 60) : (fast ? ms * 0.3 : ms)));
+  const pname = (s) => (S.players[s].kind === 'human' ? t('you') : S.players[s].name);
+  const BARC = ['#1E6F68', '#C98A10', '#7A45A8', '#C2252F'];
+
+  function renderTable() {
+    const top = S.discard[S.discard.length - 1], myDraw = !busy && S.turn === human && S.phase === 'draw';
+    let h = `<div class="opps">${S.players.map((p, s) => (s === human ? '' : `<div class="opp${s === S.turn && S.phase !== 'roundEnd' && S.phase !== 'over' ? ' on' : ''}"><div class="backs" aria-hidden="true">${S.hands[s].map(() => backSvg()).join('')}</div><div class="np">${esc(p.name)} · ${S.wins[s]}</div></div>`)).join('')}</div>`;
+    h += '<div class="piles">';
+    h += `<button type="button" class="pile${myDraw ? ' can' : ''}" id="pStock" ${myDraw ? '' : 'disabled'} aria-label="${esc(t('btnStock'))}">${backSvg('slotcard')}<span>${t('stock', { n: S.stock.length })}</span></button>`;
+    h += `<button type="button" class="pile${myDraw && top ? ' can' : ''}" id="pPile" ${myDraw && top ? '' : 'disabled'} aria-label="${esc(t('btnPile'))}">${top ? cardSvg(top, 'slotcard') : '<div class="emptyslot"></div>'}<span>${t('pile')}</span></button>`;
+    if (S.vira) h += `<div class="vira">${cardSvg(S.vira, 'slotcard')}<span>${t('vira')} → ${rl(S.wildRank)}</span></div>`;
+    h += '</div>';
+    $('table').innerHTML = h;
+  }
+  function groupsOf(hand) {
+    const r = E.solve(hand, E.rules(S)), map = {};
+    r.groups.forEach((g, i) => g.forEach((x) => { map[x] = i; }));
+    return { map, covered: r.covered, groups: r.groups, loose: r.loose };
+  }
+  function renderHand() {
+    const hand = S.hands[human], box = $('hand'), n = hand.length, canPick = !busy && S.turn === human && S.phase === 'discard', g = groupsOf(hand);
+    const w = box.clientWidth - 8, cw = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cw')) || 0;
+    const cardW = box.querySelector('.hcard') ? box.querySelector('.hcard').offsetWidth : (cw || 70);
+    const ov = n > 1 ? Math.min(2, (w - cardW * n) / (n - 1)) : 0;
+    box.setAttribute('aria-label', t('yourHand'));
+    box.style.setProperty('--ov', ov + 'px');
+    let newIdx = S.turn === human && S.phase === 'discard' ? hand.lastIndexOf(S.newCard) : -1;
+    box.innerHTML = hand.map((c, i) => `<button type="button" class="hcard${sel === i ? ' sel' : ''}${newIdx === i ? ' isnew' : ''}" data-i="${i}" aria-label="${esc(cardName(c))}" aria-pressed="${sel === i}">${cardSvg(c)}${g.map[i] !== undefined ? `<span class="bar" style="background:${BARC[g.map[i] % 4]}"></span>` : ''}</button>`).join('');
+    if (canPick) box.classList.add('pick'); else box.classList.remove('pick');
+  }
+  function renderScore() {
+    $('score').innerHTML = `<div class="sub">${t('round', { n: S.roundNo })}${S.target > 1 ? ' · ' + t('target2', { n: S.target }) : ''}${S.wildRank ? ' · ' + t('wildIs', { r: rl(S.wildRank) }) : ''}</div>` + S.players.map((p, s) => `<div class="row2${s === S.turn && S.phase !== 'roundEnd' && S.phase !== 'over' ? ' on' : ''}"><span>${esc(pname(s))}</span><strong>${S.wins[s]}</strong></div>`).join('');
+  }
+  function logText(e) {
+    const v = e.v, o = {};
+    if ('p' in v) o.p = esc(pname(v.p));
+    if ('c' in v) o.c = shortName(v.c);
+    const mine = v.p === human && I18N[lang].logMe[e.k];
+    return fill(mine || I18N[lang].log[e.k] || e.k, o);
+  }
+  function renderLog() { const ol = $('log'); ol.innerHTML = S.log.slice(-50).map((e) => `<li>${logText(e)}</li>`).join(''); ol.parentElement.scrollTop = ol.parentElement.scrollHeight; }
+  const btn = (a, label, cls, dis) => `<button type="button" class="btn ${cls || ''}" data-a="${a}" ${dis ? 'disabled' : ''}>${esc(label)}</button>`;
+  function renderAction() {
+    const el = $('action');
+    if (S.phase === 'over' || S.phase === 'roundEnd') { el.innerHTML = btn('showEnd', t('seeResult'), 'pri'); return; }
+    if (S.turn !== human) { el.innerHTML = `<h2>${t('thinking', { p: esc(pname(S.turn)) })}</h2>`; return; }
+    if (busy) { el.innerHTML = `<h2>${t(S.phase === 'draw' ? 'drawT' : 'discardT')}</h2>`; return; }
+    const hand = S.hands[human], bat = E.canBater(S), g = groupsOf(hand), info = `<p>${t('melded', { a: g.covered, b: hand.length })}${bat ? ` <b>${t('batOk')}</b>` : ''}</p>`;
+    if (S.phase === 'draw') {
+      el.innerHTML = `<h2>${t('drawT')}</h2><p>${t('drawH')}</p>${info}<div class="btns">${bat ? btn('bater', t('btnBater'), 'win') : ''}${btn('stock', t('btnStock'), bat ? '' : 'pri')}${btn('pile', t('btnPile'), '', !S.discard.length)}${btn('sort', t('btnSort'))}</div>`;
+    } else {
+      el.innerHTML = `<h2>${t('discardT')}</h2><p>${t('discardH')}</p>${info}<div class="btns">${bat ? btn('bater', t('btnBater'), 'win') : ''}${btn('discard', t('btnDiscard'), bat ? '' : 'pri', sel == null)}${S.canSwap ? btn('swap', t('btnSwap')) : ''}${btn('sort', t('btnSort'))}${btn('left', t('btnLeft'), '', sel == null || sel === 0)}${btn('right', t('btnRight'), '', sel == null || sel === hand.length - 1)}</div>`;
+    }
+  }
+  function render() {
+    renderTable(); renderHand(); renderScore(); renderLog(); renderAction();
+    requestAnimationFrame(renderHandOverlap);
+  }
+  // sobreposição das cartas para caber na largura da tela
+  function renderHandOverlap() {
+    const box = $('hand'), first = box.querySelector('.hcard');
+    if (!first) return;
+    const n = box.children.length, w = box.clientWidth - 8, cw = first.offsetWidth, ov = n > 1 ? Math.min(2, (w - cw * n) / (n - 1)) : 0;
+    box.style.setProperty('--ov', ov + 'px');
+  }
+  function showEnd() {
+    const r = S.result, d = $('dEnd');
+    let h;
+    if (S.phase === 'over') h = `<h2 id="endH">${S.over.winner === human ? t('overYou') : t('overOther', { p: esc(pname(S.over.winner)) })}</h2>`;
+    else h = `<h2 id="endH">${r.seat === human ? t('endYou') : t('endOther', { p: esc(pname(r.seat)) })}</h2>`;
+    h += `<h3>${r.seat === human ? t('yourMelds') : t('meldsOf', { p: esc(pname(r.seat)) })}</h3><div class="melds">${r.groups.map((g) => `<div class="meld">${g.map((c) => cardSvg(c)).join('')}</div>`).join('')}</div>`;
+    if (r.last) h += `<p>${t('lastCard', { c: cardName(r.last) })}</p>`;
+    h += S.players.map((p, s) => `<div class="sumline"><span>${esc(pname(s))}</span><strong>${S.wins[s]}</strong></div>`).join('');
+    h += `<div class="row">${S.phase === 'over' ? `<button type="button" class="btn pri" data-go="menu">${t('again')}</button>` : `<button type="button" class="btn pri" data-go="next">${t(S.wins[r.seat] >= S.target ? 'seeResult' : 'nextRound')}</button>`}<button type="button" class="btn" data-go="close">${t('close')}</button></div>`;
+    d.innerHTML = h;
+    if (!d.open) d.showModal();
+  }
+
+  // ---------------------------------------------------------------- fluxo
+  async function playFx(list) {
+    for (const f of list) {
+      if (f.t === 'draw') { sfx('card'); await delay(f.seat === human ? 120 : 420); }
+      else if (f.t === 'discard') { sfx('card'); await delay(f.seat === human ? 140 : 520); }
+      else if (f.t === 'reshuffle') { sfx('tick'); await delay(450); }
+      else if (f.t === 'bater') { await delay(300); }
+    }
+  }
+  async function dispatch(a) {
+    if (busy || !S) return false;
+    if (!E.act(S, a)) return false;
+    const list = S.fx.slice(); S.fx = [];
+    if (a.type !== 'stock' && a.type !== 'pile') sel = null;
+    save();
+    busy = true;
+    render();
+    await playFx(list);
+    busy = false;
+    render();
+    if (S.phase === 'roundEnd') { sfx(S.result.seat === human ? 'win' : 'lose'); showEnd(); return true; }
+    if (S.phase === 'over') { sfx(S.over.winner === human ? 'win' : 'lose'); showEnd(); return true; }
+    schedule();
+    return true;
+  }
+  function schedule() {
+    clearTimeout(aiTimer);
+    if (!S || S.over || !$('ovTitle').hidden || S.phase === 'roundEnd' || S.turn === human) return;
+    aiTimer = setTimeout(() => { if (S && !S.over && !busy) dispatch(E.ai(S)); }, reduceMotion ? 60 : (fast ? 140 : 480));
+  }
+  function arrange() {
+    const hand = S.hands[human], g = groupsOf(hand), order = [];
+    const key = (c) => (c === 'X' ? 999 : 'shdc'.indexOf(E.suitOf(c)) * 20 + E.rankOf(c));
+    g.groups.forEach((gr) => gr.slice().sort((a, b) => key(hand[a]) - key(hand[b])).forEach((i) => order.push(hand[i])));
+    g.loose.slice().sort((a, b) => key(hand[a]) - key(hand[b])).forEach((i) => order.push(hand[i]));
+    S.hands[human] = order; sel = null; save(); render();
+  }
+  function moveCard(from, to) {
+    const h = S.hands[human], c = h.splice(from, 1)[0];
+    h.splice(to, 0, c);
+    sel = to; save(); render();
+  }
+
+  // ---------------------------------------------------------------- som
+  let audio = null;
+  function tone(f, d, type, v, when) {
+    if (!soundOn) return;
+    try {
+      if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+      if (audio.state === 'suspended') audio.resume();
+      const o = audio.createOscillator(), g = audio.createGain(), st = audio.currentTime + (when || 0);
+      o.type = type || 'sine'; o.frequency.setValueAtTime(f, st);
+      g.gain.setValueAtTime(v || 0.05, st); g.gain.exponentialRampToValueAtTime(0.0001, st + d);
+      o.connect(g); g.connect(audio.destination); o.start(st); o.stop(st + d);
+    } catch (e) { /* sem áudio */ }
+  }
+  function sfx(k) {
+    if (k === 'card') tone(520, 0.05, 'triangle', 0.04);
+    else if (k === 'tick') tone(880, 0.07, 'sine', 0.04);
+    else if (k === 'win') [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.22, 'triangle', 0.07, i * 0.12));
+    else if (k === 'lose') [392, 349, 311, 262].forEach((f, i) => tone(f, 0.26, 'sine', 0.05, i * 0.18));
+  }
+
+  // ---------------------------------------------------------------- telas
+  function startGame() {
+    const n = +$('numSel').value, L = +$('levelSel').value, wild = $('wildSel').value, wrap = $('wrapSel').value === '1', target = +$('targetSel').value;
+    savePref({ num: n, level: L, wild, wrap, target });
+    const players = Array.from({ length: n }, (_, i) => ({ name: i ? CPU[i - 1] : '', kind: i ? L : 'human' }));
+    S = E.newGame({ players, opts: { wild, wrap }, target, seed: (Math.random() * 2147483647) | 0 });
+    sel = null;
+    enter();
+  }
+  function enter() {
+    $('ovTitle').hidden = true; $('app').hidden = false;
+    S.fx = []; save(); render();
+    if (S.phase === 'roundEnd' || S.phase === 'over') showEnd(); else schedule();
+  }
+  function showMenu() {
+    clearTimeout(aiTimer);
+    if (S) save();
+    if ($('dEnd').open) $('dEnd').close();
+    $('app').hidden = true; $('ovTitle').hidden = false;
+    refreshResume();
+  }
+  function refreshResume() { const g = Store.get('pife.game'); $('bResume').hidden = !(g && !g.over && g.players); }
+  const savePref = (o) => Store.set('pife.prefs', Object.assign({}, Store.get('pife.prefs') || {}, o));
+  function applySoundSpeed() { $('bSound').textContent = t(soundOn ? 'soundOn' : 'soundOff'); $('bSpeed').textContent = t(fast ? 'speedF' : 'speedN'); }
+  function applyLang() {
+    document.documentElement.lang = TAG[lang];
+    document.querySelectorAll('[data-t]').forEach((el) => { el.textContent = t(el.dataset.t); });
+    $('rulesBody').innerHTML = t('rulesHtml');
+    $('langSel').value = lang;
+    $('backLink').href = 'projects.html' + (lang === 'pt' ? '' : '#' + lang);
+    $('heroArt').innerHTML = ['1s', '2s', '3s', '13h', '13d'].map((c) => cardSvg(c)).join('');
+    applySoundSpeed();
+    if (S && !$('app').hidden) render();
+  }
+
+  // ---------------------------------------------------------------- cliques e arrasto
+  $('table').addEventListener('click', (e) => {
+    const b = e.target.closest('.pile');
+    if (!b || b.disabled) return;
+    dispatch({ type: b.id === 'pStock' ? 'stock' : 'pile' });
+  });
+  $('action').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-a]');
+    if (!b || b.disabled) return;
+    const a = b.dataset.a;
+    if (a === 'showEnd') showEnd();
+    else if (a === 'sort') arrange();
+    else if (a === 'left') moveCard(sel, sel - 1);
+    else if (a === 'right') moveCard(sel, sel + 1);
+    else if (a === 'discard') dispatch({ type: 'discard', i: sel });
+    else dispatch({ type: a });
+  });
+  let drag = null;
+  $('hand').addEventListener('pointerdown', (e) => {
+    const b = e.target.closest('.hcard');
+    if (!b || busy) return;
+    drag = { from: +b.dataset.i, x: e.clientX, moved: false, id: e.pointerId, el: b, over: null };
+  });
+  window.addEventListener('pointermove', (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    if (Math.abs(e.clientX - drag.x) > 10) { drag.moved = true; drag.el.classList.add('drag'); }
+    if (!drag.moved) return;
+    const under = document.elementFromPoint(e.clientX, e.clientY), c = under && under.closest && under.closest('.hcard');
+    $('hand').querySelectorAll('.over').forEach((x) => x.classList.remove('over'));
+    if (c && c !== drag.el) { c.classList.add('over'); drag.over = +c.dataset.i; } else drag.over = null;
+  });
+  window.addEventListener('pointerup', (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const d = drag; drag = null;
+    if (d.moved) {
+      suppressClick = true; setTimeout(() => { suppressClick = false; }, 0);
+      if (d.over != null && d.over !== d.from) moveCard(d.from, d.over); else render();
+    }
+  });
+  let suppressClick = false;
+  $('hand').addEventListener('click', (e) => {
+    const b = e.target.closest('.hcard');
+    if (suppressClick) { suppressClick = false; return; }
+    if (!b || busy) return;
+    const i = +b.dataset.i;
+    // no descarte, o segundo toque na mesma carta descarta; fora dele, só seleciona para mover
+    if (sel === i) {
+      if (S.turn === human && S.phase === 'discard') { dispatch({ type: 'discard', i }); return; }
+      sel = null;
+    } else sel = i;
+    render();
+  });
+  $('dEnd').addEventListener('click', (e) => {
+    const go = e.target.closest('[data-go]');
+    if (!go) return;
+    const k = go.dataset.go;
+    if (k === 'close') $('dEnd').close();
+    else if (k === 'menu') showMenu();
+    else if (k === 'next') { $('dEnd').close(); dispatch({ type: 'next' }); }
+  });
+  const openRules = () => { $('dRules').showModal(); $('dRules').scrollTop = 0; };
+  $('bRules').addEventListener('click', openRules);
+  $('bRules2').addEventListener('click', openRules);
+  $('bRulesClose').addEventListener('click', () => $('dRules').close());
+  $('bMenu').addEventListener('click', showMenu);
+  $('bPlay').addEventListener('click', startGame);
+  $('bResume').addEventListener('click', () => { const g = Store.get('pife.game'); if (g && !g.over) { S = g; sel = null; enter(); } });
+  $('bSound').addEventListener('click', () => { soundOn = !soundOn; savePref({ sound: soundOn }); applySoundSpeed(); });
+  $('bSpeed').addEventListener('click', () => { fast = !fast; savePref({ fast }); applySoundSpeed(); });
+  $('langSel').addEventListener('change', () => { lang = $('langSel').value; savePref({ lang }); applyLang(); });
+  window.addEventListener('resize', () => { if (S && !$('app').hidden) renderHandOverlap(); });
+
+  // ---------------------------------------------------------------- início
+  const prefs = Store.get('pife.prefs') || {};
+  const hashLang = location.hash.slice(1), navLang = ((navigator.language || 'pt').slice(0, 2)).toLowerCase();
+  lang = I18N[hashLang] ? hashLang : (prefs.lang && I18N[prefs.lang] ? prefs.lang : (I18N[navLang] ? navLang : 'pt'));
+  soundOn = prefs.sound !== false; fast = !!prefs.fast;
+  $('numSel').value = String(prefs.num || 3);
+  $('levelSel').value = String(prefs.level == null ? 1 : prefs.level);
+  $('wildSel').value = prefs.wild || 'none';
+  $('wrapSel').value = prefs.wrap ? '1' : '0';
+  $('targetSel').value = String(prefs.target || 3);
+  applyLang();
+  refreshResume();
+})();
+</script>
+</body>
+</html>

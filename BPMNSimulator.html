@@ -1,0 +1,2048 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BPMN Simulator: tutorial · Giovani Perotto Mesquita</title>
+<meta name="description" content="Tutorial de BPMN para iniciantes: definições, história da norma, elementos, como as fichas andam, roteiro no BPMN Simulator, simulação, cenários de teste e prompts de IA, com diagramas em SVG. Disponível em português, inglês, italiano e espanhol.">
+<meta name="author" content="Giovani Perotto Mesquita">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Paleta alegre: roxo e magenta vibrantes, amarelo-girassol, verde-água e coral */
+    --bg: #FFF7EC;
+    --surface: #FFFFFF;
+    --ink: #2B1B3D;
+    --text: #3E3350;
+    --muted: #756986;
+    --line: #F1E2CF;
+    --accent: #0E8074;
+    --accent-soft: #E2F6F2;
+    --accent-strong: #5B2A86;
+    --navy: #5B2A86;
+    --navy-deep: #C2185B;
+    --on-navy: #FFFFFF;
+    --on-navy-muted: #FCE4F0;
+    --gold: #FFB703;
+    --gold-ink: #B35300;
+    --gold-soft: #FFF1C9;
+    --coral: #FF6B6B;
+    --sky: #3A86FF;
+    --mint: #2A9D8F;
+    --pink: #EF476F;
+    --sans: "Hanken Grotesk", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1A1328; --surface: #241A36; --ink: #F7F0FF; --text: #E2D8F0; --muted: #A898C0;
+      --line: #3A2D52; --accent: #5FD3C4; --accent-soft: #1D3A38; --accent-strong: #C9A7F5;
+      --navy: #3D1A5C; --navy-deep: #7A1240; --gold: #FFC94D; --gold-ink: #FFC94D; --gold-soft: #3A2E12;
+      --coral: #FF8A8A; --sky: #6FA8FF; --mint: #4CC3B3; --pink: #FF6F91;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 4px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 1.5rem; }
+
+  /* navegação */
+  .nav {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: saturate(160%) blur(10px); -webkit-backdrop-filter: saturate(160%) blur(10px);
+    border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px);
+  }
+  .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 58px; gap: 1rem; }
+  .brand { font-family: var(--serif); font-weight: 600; color: var(--accent-strong); text-decoration: none; font-size: 1.05rem; }
+  .nav ul { list-style: none; display: flex; gap: 1.4rem; margin: 0; padding: 0; }
+  .nav ul a { color: var(--muted); text-decoration: none; font-size: 0.93rem; font-weight: 500; }
+  .nav ul a:hover, .nav ul a[aria-current="page"] { color: var(--ink); }
+  .nav-right { display: flex; align-items: center; gap: 1rem; }
+  .lang { position: relative; }
+  .lang button { font: inherit; cursor: pointer; }
+  .lang .flag { width: 18px; height: 12px; border-radius: 2px; flex: none; box-shadow: 0 0 0 1px rgba(0,0,0,.12); }
+  .lang-current { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.8rem; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 0.3rem 0.5rem 0.3rem 0.55rem; }
+  .lang-current:hover { border-color: var(--muted); }
+  .lang-now { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .lang .chev { width: 12px; height: 12px; color: var(--muted); transition: transform .15s ease; }
+  .lang-current[aria-expanded="true"] .chev { transform: rotate(180deg); }
+  .lang-list { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; min-width: 10.5rem; padding: 0.3rem; display: grid; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 12px 30px rgba(0,0,0,.18); }
+  .lang-list[hidden] { display: none; }
+  .lang-list [role="option"] { display: flex; align-items: center; gap: 0.6rem; width: 100%; text-align: left; font-size: 0.9rem; font-weight: 500; color: var(--ink); background: none; border: 0; border-radius: 6px; padding: 0.45rem 0.6rem; }
+  .lang-list [role="option"]:hover, .lang-list [role="option"]:focus-visible { background: color-mix(in srgb, var(--muted) 14%, transparent); }
+  .lang-list [role="option"][aria-selected="true"] { color: var(--accent-strong); font-weight: 600; }
+  .lang-list [role="option"][aria-selected="true"]::after { content: "✓"; margin-left: auto; }
+  @media (max-width: 480px) { .lang-now { font-size: 0; gap: 0; } }
+  [hidden] { display: none !important; }
+  .progress { position: absolute; left: 0; bottom: -1px; height: 3px; width: 0; background: linear-gradient(90deg, var(--coral), var(--gold), var(--mint)); }
+
+  /* abertura */
+  .hero-band {
+    background:
+      radial-gradient(900px 420px at 85% -10%, rgba(255,255,255,.07), transparent 60%),
+      linear-gradient(160deg, var(--navy) 0%, var(--navy-deep) 100%);
+    border-top: 4px solid var(--gold); color: var(--on-navy);
+  }
+  .hero { padding: 3.5rem 0 3.5rem; max-width: 820px; }
+  .crumb { margin: 0 0 1.4rem; font-size: 0.92rem; }
+  .crumb a { color: var(--on-navy-muted); text-decoration: none; }
+  .crumb a:hover { color: var(--gold); }
+  .eyebrow { color: var(--gold); font-weight: 600; font-size: 1rem; margin: 0 0 0.7rem; }
+  h1 { font-family: var(--serif); font-weight: 600; color: var(--on-navy); font-size: clamp(2.3rem, 5.5vw, 3.8rem); line-height: 1.05; letter-spacing: -0.025em; margin: 0; }
+  .dek { font-family: var(--serif); font-style: italic; font-size: clamp(1.1rem, 2.2vw, 1.35rem); color: var(--on-navy-muted); margin: 1.1rem 0 1.6rem; max-width: 58ch; }
+  .byline { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; font-size: 0.92rem; color: var(--on-navy-muted); }
+  .byline strong { color: var(--on-navy); font-weight: 600; }
+  .byline .credit { margin-left: auto; font-style: italic; }
+
+  /* layout do artigo */
+  .layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 3rem; padding: 3rem 0 4rem; align-items: start; }
+  .toc { position: sticky; top: 82px; font-size: 0.92rem; max-height: calc(100vh - 100px); overflow-y: auto; }
+  .toc h2 { font-family: var(--sans); font-size: 0.85rem; font-weight: 600; color: var(--muted); margin: 0 0 0.7rem; border: 0; padding: 0; }
+  .toc ol { list-style: none; margin: 0; padding: 0; counter-reset: toc; border-left: 2px solid var(--line); }
+  .toc li { counter-increment: toc; }
+  .toc a { display: block; padding: 0.3rem 0 0.3rem 1rem; margin-left: -2px; border-left: 2px solid transparent; color: var(--muted); text-decoration: none; line-height: 1.35; }
+  .toc a::before { content: counter(toc) ". "; color: var(--gold-ink); font-weight: 600; }
+  .toc a:hover { color: var(--ink); }
+  .toc a[aria-current="true"] { color: var(--accent-strong); border-left-color: var(--gold); font-weight: 600; }
+
+  article { background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: var(--radius); padding: 3rem clamp(1.25rem, 4vw, 3.5rem); min-width: 0; }
+  article section + section { margin-top: 3.2rem; }
+  article h2 { font-family: var(--serif); font-weight: 600; color: var(--ink); font-size: clamp(1.5rem, 2.8vw, 1.9rem); letter-spacing: -0.015em; line-height: 1.2; margin: 0 0 1.1rem; padding-left: 0.9rem; border-left: 3px solid var(--gold); }
+  article h3 { font-family: var(--sans); font-size: 1.1rem; font-weight: 600; color: var(--ink); margin: 2rem 0 0.8rem; }
+  article p, article li { font-family: var(--serif); font-size: 1.12rem; line-height: 1.7; color: var(--text); }
+  article p { margin: 0 0 1.1rem; max-width: 68ch; }
+  article ul, article ol { margin: 0 0 1.1rem; padding-left: 1.4rem; max-width: 68ch; }
+  article li { margin-bottom: 0.3rem; }
+  article strong { color: var(--ink); }
+  sup a { font-family: var(--sans); font-size: 0.72rem; font-weight: 700; text-decoration: none; padding: 0 0.15em; }
+
+  figure { margin: 2rem 0; }
+  figure img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: #FFF7EC; }
+  figcaption { margin-top: 0.6rem; font-size: 0.9rem; color: var(--muted); text-align: center; font-family: var(--sans); line-height: 1.5; }
+
+  blockquote { margin: 1.5rem 0; padding: 1.2rem 1.5rem; background: var(--accent-soft); border-left: 3px solid var(--gold); border-radius: 0 10px 10px 0; }
+  blockquote p { font-size: 1.05rem; margin: 0 0 0.8rem; }
+  blockquote p:last-child { margin-bottom: 0; }
+  blockquote.pull p { font-size: clamp(1.15rem, 2.3vw, 1.35rem); font-style: italic; line-height: 1.45; color: var(--ink); }
+  blockquote cite { font-family: var(--sans); font-size: 0.88rem; font-style: normal; color: var(--muted); }
+
+  /* tabelas */
+  .table-wrap { overflow-x: auto; margin: 1.5rem 0; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-family: var(--sans); font-size: 0.95rem; }
+  th, td { text-align: left; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.5; }
+  thead th { background: var(--gold-soft); color: var(--ink); font-weight: 600; }
+  tbody th { color: var(--ink); font-weight: 600; }
+  tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
+  td code, th code { font-size: 0.9em; }
+
+  /* mitos */
+  .myths { list-style: none; padding: 0; margin: 1.5rem 0; max-width: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
+  .myths li { margin: 0; padding: 1rem 1.2rem; border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: 10px; }
+  .myths li:nth-child(4n+2) { border-top-color: var(--sky); }
+  .myths li:nth-child(4n+3) { border-top-color: var(--mint); }
+  .myths li:nth-child(4n+4) { border-top-color: var(--gold); }
+  .myths h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+  .myths p { margin: 0; font-size: 1rem; line-height: 1.6; }
+
+  /* para fixar */
+  .recap { margin: 1.8rem 0 0; padding: 1.1rem 1.4rem; background: var(--gold-soft); border-left: 4px solid var(--mint); border-radius: 0 10px 10px 0; }
+  .recap h3 { margin: 0 0 0.5rem; font-size: 0.85rem; letter-spacing: .05em; text-transform: uppercase; color: var(--gold-ink); }
+  .recap ul { margin: 0; padding-left: 1.2rem; }
+  .recap li { font-family: var(--sans); font-size: 0.98rem; line-height: 1.55; margin-bottom: 0.25rem; }
+
+  /* revisão rápida */
+  .quiz { display: grid; gap: 0.7rem; margin: 1.5rem 0; }
+  .quiz details { border: 1px solid var(--line); border-left: 4px solid var(--sky); border-radius: 0 10px 10px 0; padding: 0.8rem 1.1rem; }
+  .quiz details:nth-child(3n+2) { border-left-color: var(--pink); }
+  .quiz details:nth-child(3n+3) { border-left-color: var(--mint); }
+  .quiz summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); line-height: 1.45; }
+  .quiz details[open] summary { margin-bottom: 0.5rem; }
+  .quiz p { margin: 0; font-size: 1.02rem; }
+
+  .refs { font-family: var(--sans); padding-left: 1.4rem; margin: 0; }
+  .refs li { font-family: var(--sans); font-size: 0.92rem; line-height: 1.55; margin-bottom: 0.7rem; word-break: break-word; }
+  .refs li:target { background: var(--gold-soft); border-radius: 6px; }
+
+  .back { display: inline-block; margin-top: 1rem; font-family: var(--sans); font-size: 0.85rem; text-decoration: none; }
+
+  footer { background: var(--navy-deep); color: var(--on-navy-muted); border-top: 3px solid var(--gold); padding: 1.5rem 0 calc(1.5rem + env(safe-area-inset-bottom, 0px)); font-size: 0.88rem; }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1.5rem; }
+  footer a { color: var(--on-navy); text-decoration: none; }
+  footer a:hover { color: var(--gold); }
+
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+    .toc { position: static; max-height: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.2rem 1.4rem; }
+  }
+  @media (max-width: 760px) {
+    .myths { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .nav ul { display: none; }
+    .hero { padding: 2.5rem 0; }
+    .wrap { padding: 0 1rem; }
+    article p, article li { font-size: 1.05rem; }
+    th, td { padding: 0.6rem 0.7rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  @media print {
+    .nav, .toc, footer, .back, .crumb { display: none !important; }
+    body { background: #fff; }
+    .hero-band { background: none; color: #111; border: 0; }
+    .hero-band h1 { color: #5B2A86; }
+    .dek, .byline, .byline strong { color: #333; }
+    .layout { display: block; padding: 0; }
+    article { border: 0; padding: 0; }
+    .table-wrap { overflow: visible; }
+    figure, blockquote, .myths li, .recap, .quiz details, tr { break-inside: avoid; }
+  }
+
+  /* blocos de código (Gherkin) */
+  pre.code { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: #2B1B3D; color: #F7F0FF; border-radius: 10px; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.92rem; line-height: 1.6; tab-size: 2; }
+  pre.code code { font-family: inherit; white-space: pre; }
+  pre.code .k { color: #FFB703; font-weight: 700; }
+  pre.code .s { color: #5FD3C4; font-weight: 700; }
+  pre.code .c { color: #A898C0; }
+  pre.code .p { color: #C9A7F5; }
+  article code { font-family: Consolas, "Courier New", monospace; font-size: 0.92em; }
+  article :not(pre) > code { background: var(--accent-soft); color: var(--ink); padding: 0.05em 0.35em; border-radius: 4px; }
+
+  /* fórmulas */
+  pre.formula { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.95rem; line-height: 1.5; }
+
+  /* glossário */
+  dl.glossary { margin: 1.2rem 0; display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  dl.glossary dt, dl.glossary dd { margin: 0; padding: 0.65rem 0.9rem; border-bottom: 1px solid var(--line); font-family: var(--sans); font-size: 0.95rem; line-height: 1.5; }
+  dl.glossary dt { font-weight: 600; color: var(--ink); background: color-mix(in srgb, var(--gold-soft) 60%, var(--surface)); }
+  dl.glossary dd { color: var(--text); }
+  dl.glossary dt:nth-last-of-type(1), dl.glossary dd:last-of-type { border-bottom: 0; }
+  @media (max-width: 720px) { dl.glossary { grid-template-columns: 1fr; } dl.glossary dt { border-bottom: 0; padding-bottom: 0.2rem; } }
+
+  /* figuras geradas pelo PlantUML e código recolhível */
+  figure.puml img { width: auto; max-width: 100%; margin: 0 auto; background: #FFFFFF; padding: 12px; }
+  details.codebox { margin: 1rem 0 1.5rem; border: 1px solid var(--line); border-radius: 10px; padding: 0.6rem 1rem; }
+  details.codebox summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); }
+  details.codebox pre.code { max-height: 480px; overflow: auto; }
+
+  /* nota de atenção */
+  aside.note { margin: 1.2rem 0 1.5rem; padding: 0.8rem 1.1rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; }
+  aside.note p { margin: 0; }
+
+  /* link para o simulador e teclas */
+  .launch { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--sans); font-weight: 600; font-size: 1rem; background: var(--accent-strong); color: var(--surface); text-decoration: none; padding: 0.65rem 1.2rem; border-radius: 10px; }
+  .launch:hover { background: var(--navy-deep); color: #FFFFFF; }
+  kbd { font-family: var(--sans); font-size: 0.85em; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 0.05em 0.4em; white-space: nowrap; }
+  @media (max-width: 720px) { figure { overflow-x: auto; } figure img { width: 680px; max-width: none; } }
+  .promptbox { position: relative; margin: 1rem 0 1.6rem; }
+  .promptbox pre.code { margin: 0; padding-top: 2.6rem; max-height: 420px; overflow: auto; }
+  .promptbox pre.code code { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .promptbox .copy { position: absolute; top: 8px; right: 14px; z-index: 1; font: 600 0.8rem var(--sans); color: #2B1B3D; background: #FFB703; border: 0; border-radius: 6px; padding: 0.3rem 0.65rem; cursor: pointer; }
+</style>
+</head>
+<body id="top">
+
+<nav class="nav" aria-label="Navegação do site">
+  <div class="wrap">
+    <a class="brand" href="index.html" data-home>Giovani Perotto Mesquita</a>
+    <div class="nav-right">
+      <ul>
+        <li><a href="index.html" data-home>Início</a></li>
+        <li><a href="about.html" data-about>Sobre</a></li>
+        <li><a href="resume.html" data-resume>Currículo</a></li>
+        <li><a href="projects.html" data-projects aria-current="page">Projetos</a></li>
+        <li><a href="contact.html" data-contact>Contato</a></li>
+      </ul>
+      <div class="lang">
+        <button type="button" class="lang-current" aria-haspopup="listbox" aria-expanded="false" aria-controls="lang-list" data-label="Idioma / Language / Lingua" aria-label="Idioma / Language / Lingua: Português"><span class="lang-now"><svg class="flag" viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009C3B"/><path d="M10 1.6 18.4 7 10 12.4 1.6 7z" fill="#FEDF00"/><circle cx="10" cy="7" r="3.3" fill="#002776"/><path d="M6.8 6.3c2.1-.6 4.5-.2 6.4 1" stroke="#fff" stroke-width=".7" fill="none"/></svg>PT</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="lang-list" id="lang-list" role="listbox" aria-label="Idioma / Language / Lingua" hidden>
+          <button type="button" role="option" id="tab-pt" aria-controls="pt" aria-selected="true" lang="pt-BR" data-code="PT"><svg class="flag" viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009C3B"/><path d="M10 1.6 18.4 7 10 12.4 1.6 7z" fill="#FEDF00"/><circle cx="10" cy="7" r="3.3" fill="#002776"/><path d="M6.8 6.3c2.1-.6 4.5-.2 6.4 1" stroke="#fff" stroke-width=".7" fill="none"/></svg><span>Português</span></button>
+          <button type="button" role="option" id="tab-en" aria-controls="en" aria-selected="false" lang="en" tabindex="-1" data-code="EN"><svg class="flag" viewBox="0 0 19 10" aria-hidden="true"><rect width="19" height="10" fill="#B22234"/><rect y="0.769" width="19" height="0.769" fill="#fff"/><rect y="2.308" width="19" height="0.769" fill="#fff"/><rect y="3.846" width="19" height="0.769" fill="#fff"/><rect y="5.385" width="19" height="0.769" fill="#fff"/><rect y="6.923" width="19" height="0.769" fill="#fff"/><rect y="8.462" width="19" height="0.769" fill="#fff"/><rect width="7.6" height="5.385" fill="#3C3B6E"/></svg><span>English</span></button>
+          <button type="button" role="option" id="tab-it" aria-controls="it" aria-selected="false" lang="it" tabindex="-1" data-code="IT"><svg class="flag" viewBox="0 0 3 2" aria-hidden="true"><rect width="1" height="2" fill="#009246"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#CE2B37"/></svg><span>Italiano</span></button>
+          <button type="button" role="option" id="tab-es" aria-controls="es" aria-selected="false" lang="es" tabindex="-1" data-code="ES"><svg class="flag" viewBox="0 0 750 500" aria-hidden="true"><rect width="750" height="500" fill="#AA151B"/><rect y="125" width="750" height="250" fill="#F1BF00"/></svg><span>Español</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="progress" aria-hidden="true"></div>
+</nav>
+
+<!-- ===================== PT ===================== -->
+<div id="pt" role="tabpanel" aria-labelledby="tab-pt" lang="pt-BR">
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projetos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>BPMN Simulator: do primeiro desenho ao teste do processo</h1>
+      <p class="dek">O que é BPMN, de onde veio, como ler e desenhar um processo, como simular e testar, e como usar IA sem perder o controle do resultado.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado em <time datetime="2026-10-31">31 de outubro de 2026</time></span>
+        <span class="credit">Revisado e formatado usando Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-pt">
+    <h2 id="toc-pt">Neste tutorial</h2>
+    <ol>
+      <li><a href="#intro-pt">O que é BPMN</a></li>
+      <li><a href="#historia-pt">Uma breve história</a></li>
+      <li><a href="#definicoes-pt">Definições essenciais</a></li>
+      <li><a href="#elementos-pt">Os elementos da notação</a></li>
+      <li><a href="#ficha-pt">Como a ficha anda</a></li>
+      <li><a href="#tela-pt">A tela do app</a></li>
+      <li><a href="#primeiro-pt">Seu primeiro processo</a></li>
+      <li><a href="#simular-pt">Simular</a></li>
+      <li><a href="#cenarios-pt">Cenários de teste</a></li>
+      <li><a href="#verificar-pt">Verificar o modelo</a></li>
+      <li><a href="#ia-pt">Prompts de IA</a></li>
+      <li><a href="#praticas-pt">Boas práticas e erros comuns</a></li>
+      <li><a href="#revisao-pt">Revisão rápida</a></li>
+      <li><a href="#referencias-pt">Referências</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="intro-pt" aria-labelledby="h-intro-pt">
+      <h2 id="h-intro-pt">O que é BPMN</h2>
+      <p><strong>BPMN</strong> (Business Process Model and Notation) é uma linguagem gráfica padronizada para descrever processos de negócio: quem faz o quê, em que ordem, com quais decisões e o que acontece quando algo sai do previsto.</p>
+      <p>A própria norma define o objetivo: ser compreensível por todos os envolvidos, dos analistas que fazem o primeiro rascunho aos desenvolvedores que implementam e às pessoas que gerenciam o processo. Ela chama isso de ponte entre o desenho e a implementação. <sup><a href="#ref-1-pt">[1]</a></sup></p>
+      <p>Você não precisa conhecer todos os símbolos para começar. Eventos, tarefas, gateways e fluxos de sequência já resolvem boa parte dos diagramas. Este tutorial vai nessa ordem e usa o <strong>BPMN Simulator</strong>, um app em um único arquivo HTML: nada é enviado para a rede, e os diagramas ficam no seu navegador.</p>
+      <p><a class="launch" href="bpmn-simulator.html">Abrir o BPMN Simulator <span aria-hidden="true">→</span></a></p>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="historia-pt" aria-labelledby="h-historia-pt">
+      <h2 id="h-historia-pt">Uma breve história</h2>
+      <p>O BPMN nasceu da necessidade de uma notação comum entre analistas e tecnologia. A linha do tempo abaixo traz os marcos, com as datas das fontes consultadas.</p>
+      <figure>
+        <img src="rc_images/BPMNHistoria.svg" alt="Maio de 2004: BPMI.org publica o BPMN 1.0. Junho de 2005: BPMI se funde à OMG. Março de 2007: versão 1.0 formal da OMG. Janeiro de 2008 e de 2009: versões 1.1 e 1.2. Dezembro de 2010: versão 2.0. Julho de 2013: ISO/IEC 19510. Janeiro de 2014: versão 2.0.2." loading="lazy">
+        <figcaption>Da primeira versão, em 2004, à versão atual da OMG</figcaption>
+      </figure>
+      <ul>
+        <li><strong>2004.</strong> A Business Process Management Initiative (BPMI.org) anuncia o BPMN 1.0, então chamado <em>Business Process Modeling Notation</em>. Stephen White, da IBM, presidia o grupo de trabalho. Pelo menos 20 empresas se comprometeram a dar suporte à notação. <sup><a href="#ref-3-pt">[3]</a></sup></li>
+        <li><strong>2005.</strong> A BPMI se funde à Object Management Group (OMG), que passa a manter a norma. <sup><a href="#ref-5-pt">[5]</a></sup><sup><a href="#ref-6-pt">[6]</a></sup></li>
+        <li><strong>2007 a 2009.</strong> A OMG registra a versão 1.0 formal em março de 2007, a 1.1 em janeiro de 2008 e a 1.2 em janeiro de 2009. <sup><a href="#ref-2-pt">[2]</a></sup><sup><a href="#ref-1-pt">[1]</a></sup></li>
+        <li><strong>2010.</strong> O BPMN 2.0 acrescenta semântica de execução e um formato de intercâmbio com diagrama. O nome muda para <em>Model and Notation</em>, mantendo a sigla. <sup><a href="#ref-4-pt">[4]</a></sup><sup><a href="#ref-5-pt">[5]</a></sup></li>
+        <li><strong>2013.</strong> A norma é publicada também como ISO/IEC 19510. <sup><a href="#ref-7-pt">[7]</a></sup></li>
+        <li><strong>2014.</strong> A versão 2.0.2, com publicação em janeiro, é a atual na OMG. A única mudança declarada em relação à anterior está na cláusula 15. <sup><a href="#ref-1-pt">[1]</a></sup></li>
+      </ul>
+      <p>As fontes nem sempre concordam nos detalhes, e as divergências estão anotadas nas referências. O app segue a versão 2.0.2.</p>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="definicoes-pt" aria-labelledby="h-definicoes-pt">
+      <h2 id="h-definicoes-pt">Definições essenciais</h2>
+      <div class="table-wrap"><table><thead><tr><th scope="col">Termo</th><th scope="col">O que significa</th></tr></thead><tbody>
+        <tr><th scope="row">Processo</th><td>Sequência de atividades para atingir um resultado, como pagar um reembolso.</td></tr>
+        <tr><th scope="row">Instância (caso)</th><td>Uma execução do processo. Se 30 pedidos entram hoje, são 30 instâncias.</td></tr>
+        <tr><th scope="row">Ficha (token)</th><td>Marcador imaginário que percorre o diagrama e mostra onde a execução está. A norma o chama de conceito teórico. <sup><a href="#ref-1-pt">[1]</a></sup></td></tr>
+        <tr><th scope="row">Atividade</th><td>Trabalho feito por pessoa ou sistema. Pode ser tarefa (atômica) ou subprocesso (com etapas internas).</td></tr>
+        <tr><th scope="row">Evento</th><td>Algo que acontece: um pedido chega, um prazo vence, ocorre um erro.</td></tr>
+        <tr><th scope="row">Gateway</th><td>Ponto em que o fluxo se divide ou se une. Ele não faz trabalho nem decide por conta própria: aplica uma regra.</td></tr>
+        <tr><th scope="row">Fluxo de sequência</th><td>Seta contínua: a ordem dentro de um mesmo processo.</td></tr>
+        <tr><th scope="row">Fluxo de mensagem</th><td>Seta tracejada: comunicação entre participantes diferentes.</td></tr>
+        <tr><th scope="row">Pool</th><td>Um participante do processo, como uma empresa ou um cliente.</td></tr>
+        <tr><th scope="row">Raia</th><td>Divisão de um pool, geralmente por papel ou setor.</td></tr>
+        <tr><th scope="row">Colaboração</th><td>Diagrama com dois ou mais pools que trocam mensagens.</td></tr>
+        <tr><th scope="row">Caixa-preta</th><td>Pool sem processo visível: sabemos que existe, não como trabalha.</td></tr>
+        <tr><th scope="row">Evento de borda</th><td>Evento preso a uma atividade, para o que pode ocorrer enquanto ela roda.</td></tr>
+        <tr><th scope="row">Compensação</th><td>Desfazer o que já foi concluído, como cancelar um voo reservado.</td></tr>
+        <tr><th scope="row">Conformidade</th><td>Níveis que a norma define para ferramentas. O app segue as subclasses Descritiva e Analítica. <sup><a href="#ref-1-pt">[1]</a></sup></td></tr>
+      </tbody></table></div>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="elementos-pt" aria-labelledby="h-elementos-pt">
+      <h2 id="h-elementos-pt">Os elementos da notação</h2>
+      <p>Quase todo diagrama usa quatro famílias de elementos. A forma indica a família, e o ícone interno indica o tipo.</p>
+      <figure>
+        <img src="rc_images/BPMNElementos.svg" alt="Eventos são círculos: início, intermediário de captura, intermediário de disparo e fim. Atividades são retângulos arredondados: tarefa, tarefa de usuário, subprocesso e atividade de chamada. Gateways são losangos: exclusivo, paralelo, inclusivo e baseado em eventos. Conexões e organização: fluxo de sequência, fluxo de mensagem, associação, objeto de dados, pool e raias." loading="lazy">
+        <figcaption>As quatro famílias de elementos que aparecem em quase todo diagrama</figcaption>
+      </figure>
+      <h3>Eventos</h3>
+      <p>A borda indica a posição: fina no início, dupla no meio e grossa no fim. O ícone indica o gatilho ou o resultado. Ícone vazado <em>captura</em> algo, e preenchido <em>dispara</em>. O app só oferece as combinações permitidas pela Tabela 10.93 da norma. <sup><a href="#ref-1-pt">[1]</a></sup></p>
+      <figure>
+        <img src="rc_images/BPMNEventos.svg" alt="Tabela com seis tipos de evento (nenhum, mensagem, tempo, erro, sinal e término) nas seis posições: início, captura, borda, borda sem interrupção, disparo e fim. O traço indica combinação que a norma não prevê." loading="lazy">
+        <figcaption>Parte da Tabela 10.93: nem todo evento existe em toda posição</figcaption>
+      </figure>
+      <h3>Atividades</h3>
+      <p>A tarefa é a unidade de trabalho, e o ícone no canto informa o tipo: usuário, serviço, manual, envio, recebimento, script ou regra de negócio. O <strong>+</strong> embaixo indica um subprocesso recolhido. Três barras indicam múltiplas instâncias, e a seta circular indica repetição.</p>
+      <h3>Gateways</h3>
+      <p>O símbolo dentro do losango muda completamente o comportamento. Sempre pergunte: quantas fichas saem e quantas a junção espera?</p>
+      <figure>
+        <img src="rc_images/BPMNGateways.svg" alt="Exclusivo: a ficha segue por um único caminho. Paralelo: uma ficha em cada caminho, e a junção espera todas. Inclusivo: uma ficha em cada condição verdadeira, e a junção espera só quem ainda pode chegar." loading="lazy">
+        <figcaption>A mesma forma de losango, com três regras diferentes</figcaption>
+      </figure>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="ficha-pt" aria-labelledby="h-ficha-pt">
+      <h2 id="h-ficha-pt">Como a ficha anda</h2>
+      <p>A execução fica fácil de entender quando você acompanha uma ficha. O evento de início cria a ficha. Ela segue pelas setas, fica na atividade enquanto o trabalho dura e, no gateway, obedece à regra daquele tipo. O evento de fim a consome, e a instância termina quando não restam fichas nem atividades em andamento. <sup><a href="#ref-1-pt">[1]</a></sup></p>
+      <p>Daí vem o erro mais comum de iniciantes: abrir caminhos com um tipo de gateway e fechar com outro.</p>
+      <figure>
+        <img src="rc_images/BPMNImpasse.svg" alt="À esquerda, um gateway exclusivo abre dois caminhos e um paralelo fecha: só uma ficha chega e a junção espera para sempre. À direita, paralelo abre e paralelo fecha: as duas fichas chegam e o processo termina." loading="lazy">
+        <figcaption>Abrir com um tipo de gateway e fechar com outro pode travar o processo</figcaption>
+      </figure>
+      <p>O contrário também atrapalha: se um paralelo abre e um exclusivo fecha, cada ficha passa sozinha e o que vem depois roda duas vezes. A norma também trata o caso de uma condição não valer: em um gateway exclusivo sem condição verdadeira e sem fluxo padrão, ocorre uma exceção (Tabela 13.2). <sup><a href="#ref-1-pt">[1]</a></sup></p>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="tela-pt" aria-labelledby="h-tela-pt">
+      <h2 id="h-tela-pt">A tela do app</h2>
+      <figure>
+        <img src="rc_images/BPMNTela.svg" alt="Paleta de elementos à esquerda, lista do diagrama abaixo dela, área de desenho no centro, botões Arquivo, Organizar e Simular no alto e, à direita, as abas Propriedades e Verificar." loading="lazy">
+        <figcaption>As partes da tela do BPMN Simulator</figcaption>
+      </figure>
+      <p>Selecione um elemento para ver as ações ao lado dele: acrescentar o próximo passo, conectar ou excluir. Com duplo clique ou F2 você escreve o nome. O próprio app escolhe o tipo de conexão conforme a norma e recusa, mostrando o motivo, as ligações proibidas, como um fluxo de sequência saindo de um evento de fim.</p>
+      <p>No menu <strong>Arquivo</strong> há cinco exemplos prontos, para explorar antes de desenhar. <strong>Admissão de funcionário</strong> mostra subprocessos, e <strong>Central de atendimento</strong> mostra filas.</p>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="primeiro-pt" aria-labelledby="h-primeiro-pt">
+      <h2 id="h-primeiro-pt">Seu primeiro processo</h2>
+      <p>Vamos desenhar uma versão curta deste reembolso. Faça cada passo no app, sem pressa:</p>
+      <figure>
+        <img src="rc_images/BPMNExemplo.svg" alt="Depois de enviada a despesa, alguém confere o comprovante. Sem comprovante válido, o pedido é recusado. Com ele, valores acima de 500 passam por aprovação; depois o reembolso é pago." loading="lazy">
+        <figcaption>O processo de reembolso, desenhado pelo próprio app</figcaption>
+      </figure>
+      <ol>
+        <li>Abra o <a href="bpmn-simulator.html">BPMN Simulator</a> e arraste um <strong>Evento de início</strong> para a área de desenho. Com duplo clique, escreva <em>Despesa enviada</em>.</li>
+        <li>Com o evento selecionado, clique em <strong>Acrescentar tarefa</strong> no painel ao lado dele e escreva <em>Conferir comprovante</em>.</li>
+        <li>Com a tarefa selecionada, clique em <strong>Acrescentar gateway</strong> e chame-o de <em>Comprovante válido?</em>. Nome de gateway de decisão funciona bem como pergunta.</li>
+        <li>A partir do gateway, acrescente a tarefa <em>Pagar reembolso</em> e, depois dela, um evento de fim <em>Reembolso pago</em>.</li>
+        <li>Selecione de novo o gateway e acrescente outro evento de fim: <em>Pedido recusado</em>.</li>
+        <li>Clique na seta que vai para <em>Pagar reembolso</em>. Em <strong>Propriedades</strong>, escreva o nome <em>Sim</em> e a <strong>Condição</strong> <code>comprovante_ok</code>.</li>
+        <li>Clique na outra seta, escreva o nome <em>Não</em> e marque <strong>É o fluxo padrão</strong>. Uma barrinha aparece na origem da seta.</li>
+        <li>Clique na área vazia e, em <strong>Dados iniciais</strong>, escreva <code>comprovante_ok = chance(0.9)</code>. Em cada caso, há 90% de chance de o comprovante valer.</li>
+        <li>Abra a aba <strong>Verificar</strong>. Não deve haver erros de norma. Se houver, clique no item para ir até o elemento.</li>
+      </ol>
+      <p>Para salvar, use <strong>Arquivo → Salvar .bpmn</strong>. O arquivo segue o formato BPMN 2.0 XML da norma, e outras ferramentas compatíveis podem abri-lo.</p>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="simular-pt" aria-labelledby="h-simular-pt">
+      <h2 id="h-simular-pt">Simular</h2>
+      <p>Clique em <strong>Simular</strong>. O relógio é virtual, em minutos, e a mesma <strong>Semente</strong> repete a mesma execução. Há quatro formas de usar:</p>
+      <div class="table-wrap"><table><thead><tr><th scope="col">Opção</th><th scope="col">Para quê</th></tr></thead><tbody>
+        <tr><th scope="row">Executar</th><td>Ver as fichas animadas, do início ao fim.</td></tr>
+        <tr><th scope="row">Passo a passo</th><td>Avançar uma ficha por clique, lendo o que aconteceu, a regra da norma e o que vem depois.</td></tr>
+        <tr><th scope="row">Decidir eu mesmo</th><td>Escolher o caminho em cada gateway.</td></tr>
+        <tr><th scope="row">Muitas execuções</th><td>Rodar muitos casos e ver tempos, filas e gargalos.</td></tr>
+      </tbody></table></div>
+      <p>Para quem está aprendendo, o <strong>Passo a passo</strong> é o melhor começo. Durações e efeitos ficam em cada atividade (<code>random(5, 15)</code>, <code>exponential(10)</code>, <code>normal(10, 2)</code>). Probabilidades ficam nos fluxos, e a capacidade fica em cada raia.</p>
+      <h3>Um experimento com filas</h3>
+      <p>Abra o exemplo <strong>Central de atendimento</strong>, com 2 atendentes e 1 especialista. Na aba <strong>Muitas execuções</strong>, rode 500 casos com uma chegada a cada 3 minutos em média. A tabela mostra o tempo de ciclo médio em 20 sementes, com a margem de 95%:</p>
+      <div class="table-wrap"><table><thead><tr><th scope="col">Atendentes</th><th scope="col">Especialistas</th><th scope="col">Tempo de ciclo (min)</th><th scope="col">Ocupação dos atendentes</th><th scope="col">Ocupação dos especialistas</th></tr></thead><tbody>
+        <tr><th scope="row">2</th><td>1</td><td>280 ± 24</td><td>96%</td><td>93%</td></tr>
+        <tr><th scope="row">2</th><td>2</td><td>247 ± 22</td><td>100%</td><td>48%</td></tr>
+        <tr><th scope="row">3</th><td>1</td><td>74 ± 15</td><td>68%</td><td>96%</td></tr>
+        <tr><th scope="row">3</th><td>2</td><td>19 ± 1</td><td>82%</td><td>57%</td></tr>
+      </tbody></table></div>
+      <p>As duas raias começam muito ocupadas, mas dobrar os especialistas muda pouco: as margens se sobrepõem. Um atendente a mais faz o tempo cair muito, porque todo chamado passa por eles. Só com os dois reforços o tempo fica perto do trabalho em si. Isso é só um modelo, com números inventados para o exemplo: serve para comparar hipóteses, não para medir o processo real.</p>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="cenarios-pt" aria-labelledby="h-cenarios-pt">
+      <h2 id="h-cenarios-pt">Cenários de teste</h2>
+      <p>Simular mostra o que acontece. Testar confere se é o que <em>deveria</em> acontecer. Na aba <strong>Cenários de teste</strong>, cada cenário define entradas e resultado esperado, e o app dá o veredito.</p>
+      <figure>
+        <img src="rc_images/BPMNCenario.svg" alt="Dado que o valor é 800 e o comprovante é válido; quando o gateway segue pela condição; então o caso termina em Reembolso pago e passa por Aprovar reembolso. O resultado mostra uma conferência que passou e outra que falhou." loading="lazy">
+        <figcaption>Um cenário de teste tem três partes e dá um veredito</figcaption>
+      </figure>
+      <p>O exemplo <strong>Pedido online</strong> já traz três cenários. Clique em <strong>Rodar todos</strong> e abra os detalhes. Depois experimente:</p>
+      <ul>
+        <li><strong>Sugerir cenários:</strong> cria um cenário por caminho que acrescenta cobertura. Ele força as decisões e preenche o esperado com o que aconteceu, então revise se aquilo é mesmo o certo.</li>
+        <li><strong>Cobertura:</strong> o que nunca executou fica tracejado no diagrama. Cobertura de 100% não prova que o processo está correto: só diz que cada elemento rodou ao menos uma vez.</li>
+        <li><strong>Repetições:</strong> roda com várias sementes e aponta a que falhou, para modelos com sorteios.</li>
+        <li><strong>Salvar execução como cenário:</strong> guarda uma execução manual terminada, para repetir depois.</li>
+      </ul>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="verificar-pt" aria-labelledby="h-verificar-pt">
+      <h2 id="h-verificar-pt">Verificar o modelo</h2>
+      <p>A aba <strong>Verificar</strong> confere o modelo em dois níveis:</p>
+      <ul>
+        <li><strong>Regras da norma:</strong> eventos permitidos em cada posição, conexões das Tabelas 7.3 e 7.4, fluxo padrão com condição e outras. Clicar no item leva ao elemento. <sup><a href="#ref-1-pt">[1]</a></sup></li>
+        <li><strong>Análise de fichas:</strong> o botão <strong>Analisar</strong> percorre os estados possíveis de cada escopo e aponta impasses, laços sem saída, falta de sincronização e o que nunca executa. Ela supõe que qualquer caminho é possível, ignorando os dados. Por isso, pode acusar um caminho que seus dados nunca percorrem.</li>
+      </ul>
+      <p>A importação do app foi conferida com 12 arquivos da suíte de intercâmbio do grupo MIWG, e os arquivos reexportados passaram no esquema XSD oficial. <sup><a href="#ref-8-pt">[8]</a></sup> Isso não é certificação: o app não é certificado pela OMG e não é um motor de produção. Diagramas de conversa e de coreografia ficam de fora. Os limites completos estão na Ajuda do app.</p>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="ia-pt" aria-labelledby="h-ia-pt">
+      <h2 id="h-ia-pt">Prompts de IA</h2>
+      <p>Uma IA ajuda a sair da página em branco, a achar lacunas e a escrever cenários. Ela também erra com segurança: inventa regras, esquece exceções e pode gerar XML inválido. Trate a saída como rascunho de um colega apressado. Para escrever prompts melhores, veja o <a href="PromptTutorial.html">tutorial de prompts</a>.</p>
+      <figure>
+        <img src="rc_images/BPMNIA.svg" alt="Seis passos: descrever o processo, a IA gera o XML, importar no app, conferir em Verificar, simular com cenários de teste e revisar com quem conhece o processo, voltando à IA se for preciso. Descrever e revisar são tarefas humanas." loading="lazy">
+        <figcaption>A IA entra no rascunho e na revisão. O app confere, e você decide</figcaption>
+      </figure>
+      <blockquote><p><strong>Antes de colar:</strong> processos internos podem conter nomes, valores e regras sigilosas. Troque por dados fictícios e siga a política da sua organização para uso de IA. O app não envia nada para a rede, mas o serviço de IA recebe o que você colar nele.</p></blockquote>
+      <p>Troque os trechos entre colchetes e cole na ferramenta de IA que você usa.</p>
+      <h3>1. Entrevistar antes de desenhar</h3>
+      <p>Faz a IA descobrir o que falta, em vez de supor. É o melhor começo quando o processo ainda está na cabeça das pessoas.</p>
+      <div class="promptbox"><button type="button" class="copy" data-copy="prompt-pt-1" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-pt-1">Você é um analista de processos experiente em BPMN 2.0.2.
+Quero modelar este processo: [descreva em poucas frases].
+
+Antes de propor qualquer diagrama, me entreviste:
+- Faça uma pergunta por vez e espere minha resposta.
+- Cubra: o que inicia o processo, quem participa, as etapas, as decisões e seus critérios, as exceções, os prazos, as esperas, os sistemas e o que indica o fim.
+- Pergunte principalmente sobre o que dá errado, não só sobre o caminho feliz.
+- Não invente respostas. Se eu não souber, registre como pendência.
+
+Ao final, entregue: resumo do processo, tabela de atividades (atividade, responsável, entrada, saída), lista de decisões com critérios e lista de pendências.</code></pre></div>
+      <h3>2. Transformar um texto em estrutura</h3>
+      <p>Para atas, procedimentos ou transcrições. Pede a origem de cada item, o que facilita conferir.</p>
+      <div class="promptbox"><button type="button" class="copy" data-copy="prompt-pt-2" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-pt-2">A partir do texto abaixo, extraia a estrutura de um processo para BPMN.
+
+Regras:
+- Use só o que está no texto. Para cada item, cite o trecho de origem.
+- Marque como [SUPOSIÇÃO] tudo que você deduziu.
+- Liste as contradições e o que falta saber.
+
+Entregue: participantes, atividades em ordem, decisões (pergunta, opções, critério), eventos (o que inicia, termina, interrompe ou espera) e pendências.
+
+Texto:
+&quot;&quot;&quot;
+[cole aqui, sem dados sensíveis]
+&quot;&quot;&quot;</code></pre></div>
+      <h3>3. Gerar o BPMN para o BPMN Simulator</h3>
+      <p>Gera um arquivo que o app abre, arruma e simula. Cole a resposta em <strong>Arquivo → Ver ou colar XML</strong> e clique em <strong>Aplicar XML</strong>. Depois vá a <strong>Verificar</strong>.</p>
+      <div class="promptbox"><button type="button" class="copy" data-copy="prompt-pt-3" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-pt-3">Gere um documento BPMN 2.0 XML, válido no esquema da OMG, para este processo:
+[descreva o processo ou cole a estrutura].
+
+Formato obrigatório:
+- Raiz &lt;definitions&gt; com targetNamespace e estes namespaces:
+  xmlns=&quot;http://www.omg.org/spec/BPMN/20100524/MODEL&quot;
+  xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;
+  xmlns:sim=&quot;https://giovanipm.github.io/ns/bpmn-simulator&quot;
+- Um &lt;process&gt; com isExecutable=&quot;false&quot;. Se houver mais de um participante, use &lt;collaboration&gt; com &lt;participant&gt; e &lt;messageFlow&gt;, com um processo para cada participante.
+- Não gere &lt;bpmndi:BPMNDiagram&gt;: o app arruma o desenho.
+- IDs únicos e legíveis. Cada nó com &lt;incoming&gt; e &lt;outgoing&gt;, nessa ordem, antes das definições de evento.
+- Em todo gateway exclusivo que decide, um fluxo padrão com o atributo default, e condições nos outros fluxos com &lt;conditionExpression xsi:type=&quot;tFormalExpression&quot;&gt;.
+- Feche caminhos paralelos com gateway paralelo. Não use evento intermediário de captura sem definição de evento.
+
+Para a simulação, use extensionElements, antes de &lt;incoming&gt;:
+- No processo: &lt;sim:config init=&quot;campo = expressão&quot;/&gt;, com &amp;#10; entre as linhas.
+- Nas atividades: &lt;sim:config duration=&quot;random(5, 15)&quot;/&gt;, em minutos.
+- Nas condições, use campos e os operadores: &gt; &gt;= &lt; &lt;= == != and or not.
+- Funções disponíveis: random(a, b), exponential(m), normal(m, d), chance(p), round(x, d).
+
+Responda só com o XML. No fim, dentro de um comentário XML, liste as suposições que você fez.</code></pre></div>
+      <h3>4. Revisar um modelo</h3>
+      <p>Copie o XML em <strong>Ver ou colar XML</strong>. A IA olha o sentido do processo, que as regras automáticas não enxergam.</p>
+      <div class="promptbox"><button type="button" class="copy" data-copy="prompt-pt-4" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-pt-4">Revise este processo BPMN como um analista experiente.
+
+Confira, nesta ordem:
+1. Sentido de negócio: etapas ausentes, responsáveis estranhos, exceções sem tratamento.
+2. Fluxo: impasses, caminhos sem fim, gateways que abrem de um tipo e fecham de outro.
+3. Clareza: nomes de atividade com verbo e objeto, decisões em forma de pergunta.
+4. Norma BPMN 2.0.2: conexões proibidas e eventos fora de posição.
+
+Para cada problema, informe: id do elemento, problema, por que importa, correção sugerida e gravidade (alta, média, baixa). Separe o que é certeza do que é suspeita. Não invente regras do negócio: se depender delas, faça uma pergunta.
+
+XML:
+&quot;&quot;&quot;
+[cole aqui]
+&quot;&quot;&quot;</code></pre></div>
+      <h3>5. Explicar o processo em linguagem simples</h3>
+      <p>Bom para validar com quem faz o trabalho e não lê BPMN.</p>
+      <div class="promptbox"><button type="button" class="copy" data-copy="prompt-pt-5" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-pt-5">Explique o processo abaixo para [público, como: equipe de atendimento], sem termos de BPMN.
+
+Entregue:
+- Em duas frases: para que serve e quando começa.
+- O passo a passo, indicando quem faz o quê.
+- Cada decisão, como pergunta, e o que acontece em cada resposta.
+- O que acontece quando algo dá errado ou atrasa.
+- Cinco perguntas para eu confirmar com a equipe se o desenho corresponde ao trabalho real.
+
+Descreva só o que está no modelo. Se algo estiver ambíguo, diga isso.
+
+XML:
+&quot;&quot;&quot;
+[cole aqui]
+&quot;&quot;&quot;</code></pre></div>
+      <h3>6. Propor cenários de teste</h3>
+      <p>A tabela resultante vira cenários na aba <strong>Cenários de teste</strong>. Use os ids reais do modelo.</p>
+      <div class="promptbox"><button type="button" class="copy" data-copy="prompt-pt-6" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-pt-6">Proponha cenários de teste para o processo BPMN abaixo.
+
+Cubra: caminho principal, cada saída de cada decisão, valores no limite das condições, eventos de borda ocorrendo e não ocorrendo, e combinações que parecem arriscadas.
+
+Para cada cenário, uma linha de tabela com:
+- Nome
+- Dado que: dados do caso, no formato campo = valor
+- Quando: decisões forçadas e eventos que ocorrem ou não
+- Então: elementos por onde passa e por onde não passa (com o id), e como o caso termina
+- Por que este cenário importa
+
+Marque com [REVISAR] os resultados esperados que dependem de uma regra de negócio não escrita no modelo. Prefira poucos cenários que revelem erros a muitos parecidos.
+
+XML:
+&quot;&quot;&quot;
+[cole aqui]
+&quot;&quot;&quot;</code></pre></div>
+      <h3>7. Estimar parâmetros de simulação</h3>
+      <p>Sem dados reais, qualquer número é hipótese. Este prompt pede para deixar isso visível.</p>
+      <div class="promptbox"><button type="button" class="copy" data-copy="prompt-pt-7" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-pt-7">Quero simular este processo BPMN e preciso de durações, probabilidades e capacidades.
+
+Dados reais que tenho: [cole médias, volumes ou escreva &quot;nenhum&quot;].
+
+Para cada atividade e decisão, proponha:
+- Valor em minutos, em uma destas formas: número, random(a, b), exponential(m) ou normal(m, d). Justifique a escolha.
+- Origem: [DADO], se veio do que informei, ou [HIPÓTESE], se é estimativa.
+- Como obter o dado real.
+
+Depois, liste as três hipóteses que mais podem mudar o resultado, para eu testá-las primeiro.
+
+XML:
+&quot;&quot;&quot;
+[cole aqui]
+&quot;&quot;&quot;</code></pre></div>
+      <h3>8. Interpretar os resultados</h3>
+      <p>Cole os números da aba <strong>Muitas execuções</strong> para discutir hipóteses, e não para obter um veredito.</p>
+      <div class="promptbox"><button type="button" class="copy" data-copy="prompt-pt-8" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-pt-8">Estes são os resultados de uma simulação de um processo BPMN. Os números vêm de um modelo com parâmetros estimados, não do processo real.
+
+Processo: [descrição curta]
+Parâmetros: [capacidades, durações e chegadas]
+Resultados: [tempo de ciclo, ocupação por raia, filas por atividade]
+
+Faça o seguinte:
+1. Aponte o provável gargalo, usando os números.
+2. Sugira no máximo três mudanças para testar, mudando uma coisa de cada vez, com o que você espera que aconteça.
+3. Diga o que os dados não permitem concluir.
+4. Indique o que medir no processo real antes de decidir.
+
+Não recomende investimento com base só nessa simulação.</code></pre></div>
+      <h3>O que foi testado nestes prompts</h3>
+      <p>O formato pedido no prompt 3 foi testado de fato: um XML nesse formato, escrito pelo Claude para um processo de reembolso, passou no esquema XSD da OMG, abriu no app, foi arrumado automaticamente e simulou até o fim. Os prompts não foram testados em outros modelos de IA, e as respostas mudam a cada vez. Por isso, a conferência em <strong>Verificar</strong> e nos cenários continua necessária.</p>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="praticas-pt" aria-labelledby="h-praticas-pt">
+      <h2 id="h-praticas-pt">Boas práticas e erros comuns</h2>
+      <div class="table-wrap"><table><thead><tr><th scope="col">Evite</th><th scope="col">Prefira</th></tr></thead><tbody>
+        <tr><th scope="row">Nome vago: "Processar"</th><td>Verbo e objeto: "Conferir comprovante"</td></tr>
+        <tr><th scope="row">Gateway sem nome</th><td>Uma pergunta: "Comprovante válido?"</td></tr>
+        <tr><th scope="row">Abrir com X e fechar com +</th><td>Fechar com o mesmo tipo que abriu</td></tr>
+        <tr><th scope="row">Decisão dentro de uma tarefa</th><td>Tarefa para decidir e gateway para desviar</td></tr>
+        <tr><th scope="row">Fluxo de sequência entre pools</th><td>Fluxo de mensagem entre participantes</td></tr>
+        <tr><th scope="row">Só o caminho feliz</th><td>Prazos e erros com eventos de borda</td></tr>
+        <tr><th scope="row">Diagrama enorme</th><td>Subprocessos para esconder o detalhe</td></tr>
+        <tr><th scope="row">Excesso de símbolos raros</th><td>Os elementos que seu leitor conhece</td></tr>
+        <tr><th scope="row">Confiar na simulação como medida</th><td>Usá-la para comparar hipóteses</td></tr>
+        <tr><th scope="row">Aceitar o diagrama da IA sem conferir</th><td>Verificar, testar e validar com quem faz o trabalho</td></tr>
+      </tbody></table></div>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="revisao-pt" aria-labelledby="h-revisao-pt">
+      <h2 id="h-revisao-pt">Revisão rápida</h2>
+      <p>Tente responder antes de abrir.</p>
+      <div class="quiz">
+        <details><summary>1. Um processo recebeu 30 pedidos hoje. Quantas instâncias existem?</summary><p>Trinta: cada pedido é uma execução do mesmo processo.</p></details>
+        <details><summary>2. Qual a diferença entre fluxo de sequência e fluxo de mensagem?</summary><p>O de sequência dá a ordem dentro de um processo. O de mensagem é a comunicação entre participantes diferentes.</p></details>
+        <details><summary>3. Um gateway exclusivo abre dois caminhos e um paralelo os fecha. O que acontece?</summary><p>Impasse: só uma ficha chega, e a junção paralela espera duas.</p></details>
+        <details><summary>4. Um gateway exclusivo não tem condição verdadeira nem fluxo padrão. E agora?</summary><p>A norma prevê uma exceção. No app, o caso termina com erro e o log explica o motivo.</p></details>
+        <details><summary>5. Uma borda tracejada em evento de borda significa o quê?</summary><p>Que ele não interrompe: a atividade continua e uma nova ficha sai pelo evento.</p></details>
+        <details><summary>6. Os cenários deram 100% de cobertura. O processo está correto?</summary><p>Não necessariamente. Cada elemento rodou ao menos uma vez, mas nem todas as combinações foram testadas, e o esperado pode estar errado.</p></details>
+        <details><summary>7. A IA gerou um diagrama sem erros na aba Verificar. Posso publicar?</summary><p>Ainda não. A aba confere a forma, não o sentido. Faltam os testes e a validação com quem conhece o trabalho.</p></details>
+      </div>
+      <p><a class="launch" href="bpmn-simulator.html">Abrir o BPMN Simulator <span aria-hidden="true">→</span></a></p>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="referencias-pt" aria-labelledby="h-referencias-pt">
+      <h2 id="h-referencias-pt">Referências</h2>
+      <ol class="refs">
+        <li id="ref-1-pt">Object Management Group. <a href="https://www.omg.org/spec/BPMN/2.0.2/" rel="noopener">Business Process Model and Notation, versão 2.0.2</a> (formal/13-12-09). Fonte das definições, tabelas e regras citadas, além das datas das versões 1.1, 1.2 e 2.0.2.</li>
+        <li id="ref-2-pt">Object Management Group. <a href="https://www.omg.org/spec/BPMN/1.0/" rel="noopener">BPMN 1.0</a>: publicação formal em março de 2007, com copyright da BPMI.org de 2004.</li>
+        <li id="ref-3-pt">BPMI.org. <a href="https://www.omg.org/bpmn/Documents/Press_Release_5-4-04.htm" rel="noopener">Comunicado de lançamento do BPMN 1.0</a>, de 4 de maio de 2004. O cabeçalho traz 2004, e a linha da cidade traz 2003, um erro de digitação do original.</li>
+        <li id="ref-4-pt">Object Management Group. <a href="https://www.omg.org/spec/BPMN/2.0/" rel="noopener">BPMN 2.0</a>: a OMG data de dezembro de 2010. A Wikipédia [5] cita janeiro de 2011.</li>
+        <li id="ref-5-pt">Wikipédia. <a href="https://en.wikipedia.org/wiki/Business_Process_Model_and_Notation" rel="noopener">Business Process Model and Notation</a>. Fonte da fusão em 2005 e da mudança de nome na versão 2.0. As páginas atuais da OMG usam o nome novo também para a versão 1.0.</li>
+        <li id="ref-6-pt">Trisotech. <a href="https://www.trisotech.com/bpmn-introduction-and-history/" rel="noopener">BPMN Introduction and History</a>. Fonte secundária, de um fabricante, para o mês da fusão (junho de 2005).</li>
+        <li id="ref-7-pt">ISO e IEC. <a href="https://www.iso.org/standard/62652.html" rel="noopener">ISO/IEC 19510:2013</a>; <a href="https://webstore.iec.ch/publication/10695" rel="noopener">registro na IEC</a>. Publicada em julho de 2013. As fontes divergem sobre a correspondência: a ISO indica a versão 2.0.1 da OMG, e a Trisotech [6], a 2.0.2.</li>
+        <li id="ref-8-pt">BPMN Model Interchange Working Group. <a href="https://github.com/bpmn-miwg/bpmn-miwg-test-suite" rel="noopener">Suíte de testes de intercâmbio</a>, usada para conferir a importação do app.</li>
+      </ol>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== EN ===================== -->
+<div id="en" role="tabpanel" aria-labelledby="tab-en" lang="en" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projects</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>BPMN Simulator: from the first sketch to testing the process</h1>
+      <p class="dek">What BPMN is, where it came from, how to read and draw a process, how to simulate and test it, and how to use AI without losing control of the result.</p>
+      <div class="byline">
+        <span>By <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Published on <time datetime="2026-10-31">October 31, 2026</time></span>
+        <span class="credit">Reviewed and formatted using Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-en">
+    <h2 id="toc-en">In this tutorial</h2>
+    <ol>
+      <li><a href="#intro-en">What BPMN is</a></li>
+      <li><a href="#historia-en">A brief history</a></li>
+      <li><a href="#definicoes-en">Key definitions</a></li>
+      <li><a href="#elementos-en">The elements of the notation</a></li>
+      <li><a href="#ficha-en">How the token moves</a></li>
+      <li><a href="#tela-en">The app screen</a></li>
+      <li><a href="#primeiro-en">Your first process</a></li>
+      <li><a href="#simular-en">Simulating</a></li>
+      <li><a href="#cenarios-en">Test scenarios</a></li>
+      <li><a href="#verificar-en">Checking the model</a></li>
+      <li><a href="#ia-en">AI prompts</a></li>
+      <li><a href="#praticas-en">Good practices and common mistakes</a></li>
+      <li><a href="#revisao-en">Quick review</a></li>
+      <li><a href="#referencias-en">References</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="intro-en" aria-labelledby="h-intro-en">
+      <h2 id="h-intro-en">What BPMN is</h2>
+      <p><strong>BPMN</strong> (Business Process Model and Notation) is a standard graphical language for describing business processes: who does what, in what order, with which decisions, and what happens when something goes off plan.</p>
+      <p>The standard states its own goal: to be understandable by everyone involved, from the analysts who make the first draft to the developers who implement it and the people who manage the process. It calls this a bridge between design and implementation. <sup><a href="#ref-1-en">[1]</a></sup></p>
+      <p>You don’t need to know every symbol to begin. Events, tasks, gateways and sequence flows already cover a good part of most diagrams. This tutorial follows that order and uses the <strong>BPMN Simulator</strong>, an app in a single HTML file: nothing is sent over the network, and your diagrams stay in your browser.</p>
+      <p><a class="launch" href="bpmn-simulator.html#en">Open the BPMN Simulator <span aria-hidden="true">→</span></a></p>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="historia-en" aria-labelledby="h-historia-en">
+      <h2 id="h-historia-en">A brief history</h2>
+      <p>BPMN grew out of the need for a common notation between analysts and technology. The timeline below shows the milestones, with the dates from the sources consulted.</p>
+      <figure>
+        <img src="rc_images/BPMNHistoria-en.svg" alt="May 2004: BPMI.org publishes BPMN 1.0. June 2005: BPMI merges with the OMG. March 2007: formal OMG version 1.0. January 2008 and 2009: versions 1.1 and 1.2. December 2010: version 2.0. July 2013: ISO/IEC 19510. January 2014: version 2.0.2." loading="lazy">
+        <figcaption>From the first version, in 2004, to the current OMG version</figcaption>
+      </figure>
+      <ul>
+        <li><strong>2004.</strong> The Business Process Management Initiative (BPMI.org) announces BPMN 1.0, then called <em>Business Process Modeling Notation</em>. Stephen White, of IBM, chaired the working group. At least 20 companies committed to supporting the notation. <sup><a href="#ref-3-en">[3]</a></sup></li>
+        <li><strong>2005.</strong> BPMI merges with the Object Management Group (OMG), which takes over the standard. <sup><a href="#ref-5-en">[5]</a></sup><sup><a href="#ref-6-en">[6]</a></sup></li>
+        <li><strong>2007 to 2009.</strong> The OMG lists formal version 1.0 in March 2007, 1.1 in January 2008 and 1.2 in January 2009. <sup><a href="#ref-2-en">[2]</a></sup><sup><a href="#ref-1-en">[1]</a></sup></li>
+        <li><strong>2010.</strong> BPMN 2.0 adds execution semantics and an interchange format that includes the diagram. The name changes to <em>Model and Notation</em>, keeping the acronym. <sup><a href="#ref-4-en">[4]</a></sup><sup><a href="#ref-5-en">[5]</a></sup></li>
+        <li><strong>2013.</strong> The standard is also published as ISO/IEC 19510. <sup><a href="#ref-7-en">[7]</a></sup></li>
+        <li><strong>2014.</strong> Version 2.0.2, published in January, is the current one at the OMG. The only change it declares from the previous version is in clause 15. <sup><a href="#ref-1-en">[1]</a></sup></li>
+      </ul>
+      <p>Sources do not always agree on the details, and the differences are noted in the references. The app follows version 2.0.2.</p>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="definicoes-en" aria-labelledby="h-definicoes-en">
+      <h2 id="h-definicoes-en">Key definitions</h2>
+      <div class="table-wrap"><table><thead><tr><th scope="col">Term</th><th scope="col">What it means</th></tr></thead><tbody>
+        <tr><th scope="row">Process</th><td>A sequence of activities to reach a result, such as paying a reimbursement.</td></tr>
+        <tr><th scope="row">Instance (case)</th><td>One run of the process. If 30 orders come in today, that is 30 instances.</td></tr>
+        <tr><th scope="row">Token</th><td>An imaginary marker that travels the diagram and shows where the run is. The standard calls it a theoretical concept. <sup><a href="#ref-1-en">[1]</a></sup></td></tr>
+        <tr><th scope="row">Activity</th><td>Work done by a person or a system. It can be a task (atomic) or a sub-process (with inner steps).</td></tr>
+        <tr><th scope="row">Event</th><td>Something that happens: an order arrives, a deadline expires, an error occurs.</td></tr>
+        <tr><th scope="row">Gateway</th><td>A point where the flow splits or merges. It does no work and decides nothing on its own: it applies a rule.</td></tr>
+        <tr><th scope="row">Sequence flow</th><td>Solid arrow: the order within one process.</td></tr>
+        <tr><th scope="row">Message flow</th><td>Dashed arrow: communication between different participants.</td></tr>
+        <tr><th scope="row">Pool</th><td>A participant in the process, such as a company or a customer.</td></tr>
+        <tr><th scope="row">Lane</th><td>A division of a pool, usually by role or department.</td></tr>
+        <tr><th scope="row">Collaboration</th><td>A diagram with two or more pools exchanging messages.</td></tr>
+        <tr><th scope="row">Black box</th><td>A pool with no visible process: we know it exists, not how it works.</td></tr>
+        <tr><th scope="row">Boundary event</th><td>An event attached to an activity, for what may occur while it runs.</td></tr>
+        <tr><th scope="row">Compensation</th><td>Undoing what has already been completed, such as canceling a booked flight.</td></tr>
+        <tr><th scope="row">Conformance</th><td>Levels the standard defines for tools. The app follows the Descriptive and Analytic sub-classes. <sup><a href="#ref-1-en">[1]</a></sup></td></tr>
+      </tbody></table></div>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="elementos-en" aria-labelledby="h-elementos-en">
+      <h2 id="h-elementos-en">The elements of the notation</h2>
+      <p>Almost every diagram uses four families of elements. The shape shows the family, and the inner icon shows the type.</p>
+      <figure>
+        <img src="rc_images/BPMNElementos-en.svg" alt="Events are circles: start, intermediate catch, intermediate throw and end. Activities are rounded rectangles: task, user task, sub-process and call activity. Gateways are diamonds: exclusive, parallel, inclusive and event-based. Connections and organization: sequence flow, message flow, association, data object, pool and lanes." loading="lazy">
+        <figcaption>The four families of elements found in almost every diagram</figcaption>
+      </figure>
+      <h3>Events</h3>
+      <p>The border shows the position: thin at the start, double in the middle and thick at the end. The icon shows the trigger or the result. A hollow icon <em>catches</em> something, and a filled one <em>throws</em>. The app offers only the combinations allowed by Table 10.93 of the standard. <sup><a href="#ref-1-en">[1]</a></sup></p>
+      <figure>
+        <img src="rc_images/BPMNEventos-en.svg" alt="A table of six event types (none, message, timer, error, signal and terminate) in six positions: start, catch, boundary, non-interrupting boundary, throw and end. A dash marks a combination the standard does not provide for." loading="lazy">
+        <figcaption>Part of Table 10.93: not every event exists in every position</figcaption>
+      </figure>
+      <h3>Activities</h3>
+      <p>A task is the unit of work, and the icon in the corner shows its type: user, service, manual, send, receive, script or business rule. A <strong>+</strong> at the bottom marks a collapsed sub-process. Three bars mark multiple instances, and a circular arrow marks a loop.</p>
+      <h3>Gateways</h3>
+      <p>The symbol inside the diamond completely changes the behavior. Always ask: how many tokens leave, and how many does the join wait for?</p>
+      <figure>
+        <img src="rc_images/BPMNGateways-en.svg" alt="Exclusive: the token takes a single path. Parallel: one token on each path, and the join waits for all of them. Inclusive: one token for each true condition, and the join waits only for those that can still arrive." loading="lazy">
+        <figcaption>The same diamond shape, with three different rules</figcaption>
+      </figure>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="ficha-en" aria-labelledby="h-ficha-en">
+      <h2 id="h-ficha-en">How the token moves</h2>
+      <p>Execution becomes easy to understand when you follow one token. The start event creates it. It follows the arrows, stays in an activity for as long as the work lasts and, at a gateway, obeys the rule of that type. The end event consumes it, and the instance ends when no tokens or running activities remain. <sup><a href="#ref-1-en">[1]</a></sup></p>
+      <p>This explains the most common beginner’s mistake: opening paths with one type of gateway and closing them with another.</p>
+      <figure>
+        <img src="rc_images/BPMNImpasse-en.svg" alt="On the left, an exclusive gateway opens two paths and a parallel one closes them: only one token arrives and the join waits forever. On the right, parallel opens and parallel closes: both tokens arrive and the process ends." loading="lazy">
+        <figcaption>Opening with one type of gateway and closing with another can block the process</figcaption>
+      </figure>
+      <p>The reverse also causes trouble: if a parallel gateway opens and an exclusive one closes, each token passes through alone and whatever follows runs twice. The standard also covers a condition that does not hold: at an exclusive gateway with no true condition and no default flow, an exception occurs (Table 13.2). <sup><a href="#ref-1-en">[1]</a></sup></p>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="tela-en" aria-labelledby="h-tela-en">
+      <h2 id="h-tela-en">The app screen</h2>
+      <figure>
+        <img src="rc_images/BPMNTela-en.svg" alt="The element palette on the left, the diagram list below it, the canvas in the center, the File, Arrange and Simulate buttons on top and, on the right, the Properties and Check tabs." loading="lazy">
+        <figcaption>The parts of the BPMN Simulator screen</figcaption>
+      </figure>
+      <p>Select an element to see the actions beside it: append the next step, connect or delete. Double-click or press F2 to write the name. The app itself picks the connection type according to the standard and refuses forbidden links, showing the reason, such as a sequence flow leaving an end event.</p>
+      <p>The <strong>File</strong> menu has five ready-made samples to explore before drawing. <strong>Employee onboarding</strong> shows sub-processes, and <strong>Service desk</strong> shows queues.</p>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="primeiro-en" aria-labelledby="h-primeiro-en">
+      <h2 id="h-primeiro-en">Your first process</h2>
+      <p>Let’s draw a short version of this reimbursement. Do each step in the app, with no rush:</p>
+      <figure>
+        <img src="rc_images/BPMNExemplo-en.svg" alt="After the expense is submitted, someone checks the receipt. With no valid receipt, the request is declined. With one, amounts above 500 go through approval; then the reimbursement is paid." loading="lazy">
+        <figcaption>The reimbursement process, drawn by the app itself</figcaption>
+      </figure>
+      <ol>
+        <li>Open the <a href="bpmn-simulator.html#en">BPMN Simulator</a> and drag a <strong>Start event</strong> onto the canvas. Double-click it and write <em>Expense submitted</em>.</li>
+        <li>With the event selected, click <strong>Append task</strong> in the panel beside it and write <em>Check receipt</em>.</li>
+        <li>With the task selected, click <strong>Append gateway</strong> and name it <em>Valid receipt?</em>. A question works well as the name of a decision gateway.</li>
+        <li>From the gateway, append the task <em>Pay reimbursement</em> and, after it, an end event <em>Reimbursement paid</em>.</li>
+        <li>Select the gateway again and append another end event: <em>Request declined</em>.</li>
+        <li>Click the arrow that goes to <em>Pay reimbursement</em>. In <strong>Properties</strong>, enter the name <em>Yes</em> and the <strong>Condition</strong> <code>comprovante_ok</code>.</li>
+        <li>Click the other arrow, enter the name <em>No</em> and tick <strong>Is the default flow</strong>. A small slash appears at the start of the arrow.</li>
+        <li>Click the empty area and, under <strong>Initial data</strong>, write <code>comprovante_ok = chance(0.9)</code>. In each case, the receipt has a 90% chance of being valid.</li>
+        <li>Open the <strong>Check</strong> tab. There should be no standard errors. If there are, click the item to go to the element.</li>
+      </ol>
+      <p>To save, use <strong>File → Save .bpmn</strong>. The file follows the standard’s BPMN 2.0 XML format, and other compatible tools can open it.</p>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="simular-en" aria-labelledby="h-simular-en">
+      <h2 id="h-simular-en">Simulating</h2>
+      <p>Click <strong>Simulate</strong>. The clock is virtual, in minutes, and the same <strong>Seed</strong> repeats the same run. There are four ways to use it:</p>
+      <div class="table-wrap"><table><thead><tr><th scope="col">Option</th><th scope="col">What for</th></tr></thead><tbody>
+        <tr><th scope="row">Run</th><td>Watch the tokens animated, from start to end.</td></tr>
+        <tr><th scope="row">Step by step</th><td>Advance one token per click, reading what happened, the rule from the standard and what comes next.</td></tr>
+        <tr><th scope="row">Decide myself</th><td>Choose the path at each gateway.</td></tr>
+        <tr><th scope="row">Many runs</th><td>Run many cases and see times, queues and bottlenecks.</td></tr>
+      </tbody></table></div>
+      <p>If you are learning, <strong>Step by step</strong> is the best start. Durations and effects are set on each activity (<code>random(5, 15)</code>, <code>exponential(10)</code>, <code>normal(10, 2)</code>). Probabilities are set on the flows, and capacity on each lane.</p>
+      <h3>An experiment with queues</h3>
+      <p>Open the <strong>Service desk</strong> sample, with 2 agents and 1 specialist. In the <strong>Many runs</strong> tab, run 500 cases with one arrival every 3 minutes on average. The table shows the mean cycle time over 20 seeds, with the 95% margin:</p>
+      <div class="table-wrap"><table><thead><tr><th scope="col">Agents</th><th scope="col">Specialists</th><th scope="col">Cycle time (min)</th><th scope="col">Agent utilization</th><th scope="col">Specialist utilization</th></tr></thead><tbody>
+        <tr><th scope="row">2</th><td>1</td><td>280 ± 24</td><td>96%</td><td>93%</td></tr>
+        <tr><th scope="row">2</th><td>2</td><td>247 ± 22</td><td>100%</td><td>48%</td></tr>
+        <tr><th scope="row">3</th><td>1</td><td>74 ± 15</td><td>68%</td><td>96%</td></tr>
+        <tr><th scope="row">3</th><td>2</td><td>19 ± 1</td><td>82%</td><td>57%</td></tr>
+      </tbody></table></div>
+      <p>Both lanes start out very busy, but doubling the specialists changes little: the margins overlap. One more agent brings the time down sharply, because every ticket goes through them. Only with both additions does the time get close to the work itself. This is only a model, with numbers made up for the example: use it to compare hypotheses, not to measure the real process.</p>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="cenarios-en" aria-labelledby="h-cenarios-en">
+      <h2 id="h-cenarios-en">Test scenarios</h2>
+      <p>Simulating shows what happens. Testing checks whether it is what <em>should</em> happen. In the <strong>Test scenarios</strong> tab, each scenario sets the inputs and the expected result, and the app gives the verdict.</p>
+      <figure>
+        <img src="rc_images/BPMNCenario-en.svg" alt="Given the amount is 800 and the receipt is valid; when the gateway follows the condition; then the case ends at Reimbursement paid and goes through Approve reimbursement. The result shows one check that passed and one that failed." loading="lazy">
+        <figcaption>A test scenario has three parts and gives a verdict</figcaption>
+      </figure>
+      <p>The <strong>Online order</strong> sample already has three scenarios. Click <strong>Run all</strong> and open the details. Then try:</p>
+      <ul>
+        <li><strong>Suggest scenarios:</strong> creates a scenario for each path that adds coverage. It forces the decisions and fills in the expected result with what happened, so check that it is really correct.</li>
+        <li><strong>Coverage:</strong> what never ran is dashed on the diagram. 100% coverage does not prove the process is correct: it only says each element ran at least once.</li>
+        <li><strong>Runs:</strong> runs with several seeds and points out the one that failed, for models with random draws.</li>
+        <li><strong>Save run as scenario:</strong> keeps a finished manual run, to repeat later.</li>
+      </ul>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="verificar-en" aria-labelledby="h-verificar-en">
+      <h2 id="h-verificar-en">Checking the model</h2>
+      <p>The <strong>Check</strong> tab reviews the model on two levels:</p>
+      <ul>
+        <li><strong>Rules of the standard:</strong> events allowed in each position, connections from Tables 7.3 and 7.4, a default flow with a condition and others. Clicking an item takes you to the element. <sup><a href="#ref-1-en">[1]</a></sup></li>
+        <li><strong>Token analysis:</strong> the <strong>Analyze</strong> button walks through the possible states of each scope and points out deadlocks, endless loops, lack of synchronization and what never runs. It assumes any path is possible and ignores the data, so it can flag a path your data never takes.</li>
+      </ul>
+      <p>The app’s import was checked with 12 files from the MIWG group’s interchange suite, and the re-exported files passed the official XSD schema. <sup><a href="#ref-8-en">[8]</a></sup> This is not certification: the app is not certified by the OMG and is not a production engine. Conversation and choreography diagrams are out of scope. The full limits are in the app’s Help.</p>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="ia-en" aria-labelledby="h-ia-en">
+      <h2 id="h-ia-en">AI prompts</h2>
+      <p>AI helps you get past the blank page, find gaps and write scenarios. It also makes mistakes with confidence: it invents rules, forgets exceptions and may produce invalid XML. Treat its output as a draft from a colleague in a hurry. To write better prompts, see the <a href="PromptTutorial.html#en">prompts tutorial</a>.</p>
+      <figure>
+        <img src="rc_images/BPMNIA-en.svg" alt="Six steps: describe the process, the AI generates the XML, import it into the app, run Check, simulate with test scenarios and review with those who know the process, going back to the AI if needed. Describing and reviewing are human tasks." loading="lazy">
+        <figcaption>AI helps with the draft and the review. The app checks, and you decide</figcaption>
+      </figure>
+      <blockquote><p><strong>Before pasting:</strong> internal processes may contain confidential names, amounts and rules. Replace them with fictitious data and follow your organization’s AI policy. The app sends nothing over the network, but the AI service receives whatever you paste into it.</p></blockquote>
+      <p>Replace the parts in square brackets and paste into the AI tool you use.</p>
+      <h3>1. Interview before drawing</h3>
+      <p>Makes the AI find out what is missing instead of assuming. It is the best start when the process is still in people’s heads.</p>
+      <div class="promptbox"><button type="button" class="copy" data-copy="prompt-en-1" data-done="Copied">Copy</button><pre class="code"><code id="prompt-en-1">You are a process analyst experienced in BPMN 2.0.2.
+I want to model this process: [describe it in a few sentences].
+
+Before proposing any diagram, interview me:
+- Ask one question at a time and wait for my answer.
+- Cover: what starts the process, who takes part, the steps, the decisions and their criteria, the exceptions, the deadlines, the waits, the systems and what marks the end.
+- Ask mainly about what goes wrong, not only about the happy path.
+- Do not invent answers. If I don't know, record it as an open item.
+
+At the end, deliver: a summary of the process, a table of activities (activity, owner, input, output), a list of decisions with criteria and a list of open items.</code></pre></div>
+      <h3>2. Turn a text into structure</h3>
+      <p>For minutes, procedures or transcripts. It asks for the origin of each item, which makes checking easier.</p>
+      <div class="promptbox"><button type="button" class="copy" data-copy="prompt-en-2" data-done="Copied">Copy</button><pre class="code"><code id="prompt-en-2">From the text below, extract the structure of a process for BPMN.
+
+Rules:
+- Use only what is in the text. For each item, quote the source passage.
+- Mark as [ASSUMPTION] anything you inferred.
+- List contradictions and what is still unknown.
+
+Deliver: participants, activities in order, decisions (question, options, criterion), events (what starts, ends, interrupts or waits) and open items.
+
+Text:
+&quot;&quot;&quot;
+[paste here, with no sensitive data]
+&quot;&quot;&quot;</code></pre></div>
+      <h3>3. Generate BPMN for the BPMN Simulator</h3>
+      <p>Generates a file the app opens, lays out and simulates. Paste the answer into <strong>File → View or paste XML</strong> and click <strong>Apply XML</strong>. Then go to <strong>Check</strong>.</p>
+      <div class="promptbox"><button type="button" class="copy" data-copy="prompt-en-3" data-done="Copied">Copy</button><pre class="code"><code id="prompt-en-3">Generate a BPMN 2.0 XML document, valid against the OMG schema, for this process:
+[describe the process or paste the structure].
+
+Required format:
+- Root &lt;definitions&gt; with targetNamespace and these namespaces:
+  xmlns=&quot;http://www.omg.org/spec/BPMN/20100524/MODEL&quot;
+  xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;
+  xmlns:sim=&quot;https://giovanipm.github.io/ns/bpmn-simulator&quot;
+- One &lt;process&gt; with isExecutable=&quot;false&quot;. If there is more than one participant, use &lt;collaboration&gt; with &lt;participant&gt; and &lt;messageFlow&gt;, with one process for each participant.
+- Do not generate &lt;bpmndi:BPMNDiagram&gt;: the app lays out the drawing.
+- Unique, readable IDs. Each node with &lt;incoming&gt; and &lt;outgoing&gt;, in that order, before the event definitions.
+- At every exclusive gateway that decides, a default flow with the default attribute, and conditions on the other flows with &lt;conditionExpression xsi:type=&quot;tFormalExpression&quot;&gt;.
+- Close parallel paths with a parallel gateway. Do not use an intermediate catch event without an event definition.
+
+For the simulation, use extensionElements, before &lt;incoming&gt;:
+- On the process: &lt;sim:config init=&quot;field = expression&quot;/&gt;, with &amp;#10; between lines.
+- On activities: &lt;sim:config duration=&quot;random(5, 15)&quot;/&gt;, in minutes.
+- In conditions, use fields and the operators: &gt; &gt;= &lt; &lt;= == != and or not.
+- Available functions: random(a, b), exponential(m), normal(m, d), chance(p), round(x, d).
+
+Reply only with the XML. At the end, inside an XML comment, list the assumptions you made.</code></pre></div>
+      <h3>4. Review a model</h3>
+      <p>Copy the XML from <strong>View or paste XML</strong>. The AI looks at the meaning of the process, which automatic rules cannot see.</p>
+      <div class="promptbox"><button type="button" class="copy" data-copy="prompt-en-4" data-done="Copied">Copy</button><pre class="code"><code id="prompt-en-4">Review this BPMN process as an experienced analyst.
+
+Check, in this order:
+1. Business sense: missing steps, odd owners, unhandled exceptions.
+2. Flow: deadlocks, paths with no end, gateways that open with one type and close with another.
+3. Clarity: activity names with a verb and an object, decisions phrased as questions.
+4. BPMN 2.0.2 standard: forbidden connections and events out of position.
+
+For each problem, give: element id, problem, why it matters, suggested fix and severity (high, medium, low). Separate what is certain from what is a suspicion. Do not invent business rules: if something depends on them, ask a question.
+
+XML:
+&quot;&quot;&quot;
+[paste here]
+&quot;&quot;&quot;</code></pre></div>
+      <h3>5. Explain the process in plain language</h3>
+      <p>Good for validating with those who do the work and don’t read BPMN.</p>
+      <div class="promptbox"><button type="button" class="copy" data-copy="prompt-en-5" data-done="Copied">Copy</button><pre class="code"><code id="prompt-en-5">Explain the process below to [audience, such as: the customer service team], with no BPMN terms.
+
+Deliver:
+- In two sentences: what it is for and when it starts.
+- The step by step, showing who does what.
+- Each decision, as a question, and what happens with each answer.
+- What happens when something goes wrong or runs late.
+- Five questions for me to confirm with the team whether the drawing matches the real work.
+
+Describe only what is in the model. If something is ambiguous, say so.
+
+XML:
+&quot;&quot;&quot;
+[paste here]
+&quot;&quot;&quot;</code></pre></div>
+      <h3>6. Propose test scenarios</h3>
+      <p>The resulting table becomes scenarios in the <strong>Test scenarios</strong> tab. Use the model’s real ids.</p>
+      <div class="promptbox"><button type="button" class="copy" data-copy="prompt-en-6" data-done="Copied">Copy</button><pre class="code"><code id="prompt-en-6">Propose test scenarios for the BPMN process below.
+
+Cover: the main path, each outcome of each decision, values at the limit of the conditions, boundary events occurring and not occurring, and combinations that look risky.
+
+For each scenario, one table row with:
+- Name
+- Given: case data, in the format field = value
+- When: forced decisions and events that occur or not
+- Then: elements it goes through and does not go through (with the id), and how the case ends
+- Why this scenario matters
+
+Mark with [REVIEW] the expected results that depend on a business rule not written in the model. Prefer a few scenarios that reveal errors to many similar ones.
+
+XML:
+&quot;&quot;&quot;
+[paste here]
+&quot;&quot;&quot;</code></pre></div>
+      <h3>7. Estimate simulation parameters</h3>
+      <p>Without real data, any number is a hypothesis. This prompt asks to keep that visible.</p>
+      <div class="promptbox"><button type="button" class="copy" data-copy="prompt-en-7" data-done="Copied">Copy</button><pre class="code"><code id="prompt-en-7">I want to simulate this BPMN process and need durations, probabilities and capacities.
+
+Real data I have: [paste averages, volumes or write &quot;none&quot;].
+
+For each activity and decision, propose:
+- A value in minutes, in one of these forms: a number, random(a, b), exponential(m) or normal(m, d). Justify the choice.
+- Origin: [DATA], if it came from what I provided, or [HYPOTHESIS], if it is an estimate.
+- How to obtain the real figure.
+
+Then list the three hypotheses most likely to change the result, so I can test them first.
+
+XML:
+&quot;&quot;&quot;
+[paste here]
+&quot;&quot;&quot;</code></pre></div>
+      <h3>8. Interpret the results</h3>
+      <p>Paste the figures from the <strong>Many runs</strong> tab to discuss hypotheses, not to get a verdict.</p>
+      <div class="promptbox"><button type="button" class="copy" data-copy="prompt-en-8" data-done="Copied">Copy</button><pre class="code"><code id="prompt-en-8">These are the results of a simulation of a BPMN process. The figures come from a model with estimated parameters, not from the real process.
+
+Process: [short description]
+Parameters: [capacities, durations and arrivals]
+Results: [cycle time, utilization per lane, queues per activity]
+
+Do the following:
+1. Point out the likely bottleneck, using the figures.
+2. Suggest at most three changes to test, changing one thing at a time, with what you expect to happen.
+3. Say what the data does not allow us to conclude.
+4. State what to measure in the real process before deciding.
+
+Do not recommend investment based on this simulation alone.</code></pre></div>
+      <h3>What was tested in these prompts</h3>
+      <p>The format requested in prompt 3 was actually tested: an XML in that format, written by Claude for a reimbursement process, passed the OMG XSD schema, opened in the app, was laid out automatically and simulated to the end. The prompts were not tested on other AI models, and answers vary each time. So checking in <strong>Check</strong> and with scenarios is still necessary.</p>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="praticas-en" aria-labelledby="h-praticas-en">
+      <h2 id="h-praticas-en">Good practices and common mistakes</h2>
+      <div class="table-wrap"><table><thead><tr><th scope="col">Avoid</th><th scope="col">Prefer</th></tr></thead><tbody>
+        <tr><th scope="row">A vague name: "Process"</th><td>Verb and object: "Check receipt"</td></tr>
+        <tr><th scope="row">An unnamed gateway</th><td>A question: "Valid receipt?"</td></tr>
+        <tr><th scope="row">Opening with X and closing with +</th><td>Closing with the type that opened</td></tr>
+        <tr><th scope="row">A decision hidden inside a task</th><td>A task to decide and a gateway to branch</td></tr>
+        <tr><th scope="row">A sequence flow between pools</th><td>A message flow between participants</td></tr>
+        <tr><th scope="row">Only the happy path</th><td>Deadlines and errors with boundary events</td></tr>
+        <tr><th scope="row">A huge diagram</th><td>Sub-processes to hide the detail</td></tr>
+        <tr><th scope="row">Too many rare symbols</th><td>The elements your reader knows</td></tr>
+        <tr><th scope="row">Trusting the simulation as a measurement</th><td>Using it to compare hypotheses</td></tr>
+        <tr><th scope="row">Accepting the AI’s diagram unchecked</th><td>Checking, testing and validating with those who do the work</td></tr>
+      </tbody></table></div>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="revisao-en" aria-labelledby="h-revisao-en">
+      <h2 id="h-revisao-en">Quick review</h2>
+      <p>Try to answer before opening.</p>
+      <div class="quiz">
+        <details><summary>1. A process received 30 orders today. How many instances are there?</summary><p>Thirty: each order is one run of the same process.</p></details>
+        <details><summary>2. What is the difference between a sequence flow and a message flow?</summary><p>A sequence flow gives the order within a process. A message flow is communication between different participants.</p></details>
+        <details><summary>3. An exclusive gateway opens two paths and a parallel one closes them. What happens?</summary><p>Deadlock: only one token arrives, and the parallel join waits for two.</p></details>
+        <details><summary>4. An exclusive gateway has no true condition and no default flow. What now?</summary><p>The standard calls for an exception. In the app, the case ends with an error and the log explains why.</p></details>
+        <details><summary>5. What does a dashed border on a boundary event mean?</summary><p>That it does not interrupt: the activity continues and a new token leaves through the event.</p></details>
+        <details><summary>6. The scenarios reached 100% coverage. Is the process correct?</summary><p>Not necessarily. Each element ran at least once, but not all combinations were tested, and the expected result may be wrong.</p></details>
+        <details><summary>7. The AI generated a diagram with no errors in the Check tab. Can I publish it?</summary><p>Not yet. The tab checks the form, not the meaning. The tests and the validation with those who know the work are still missing.</p></details>
+      </div>
+      <p><a class="launch" href="bpmn-simulator.html#en">Open the BPMN Simulator <span aria-hidden="true">→</span></a></p>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="referencias-en" aria-labelledby="h-referencias-en">
+      <h2 id="h-referencias-en">References</h2>
+      <ol class="refs">
+        <li id="ref-1-en">Object Management Group. <a href="https://www.omg.org/spec/BPMN/2.0.2/" rel="noopener">Business Process Model and Notation, version 2.0.2</a> (formal/13-12-09). Source of the definitions, tables and rules cited, and of the dates of versions 1.1, 1.2 and 2.0.2.</li>
+        <li id="ref-2-en">Object Management Group. <a href="https://www.omg.org/spec/BPMN/1.0/" rel="noopener">BPMN 1.0</a>: formal publication in March 2007, with a 2004 BPMI.org copyright.</li>
+        <li id="ref-3-en">BPMI.org. <a href="https://www.omg.org/bpmn/Documents/Press_Release_5-4-04.htm" rel="noopener">BPMN 1.0 release announcement</a>, May 4, 2004. The header says 2004 and the dateline says 2003, a typo in the original.</li>
+        <li id="ref-4-en">Object Management Group. <a href="https://www.omg.org/spec/BPMN/2.0/" rel="noopener">BPMN 2.0</a>: the OMG dates it December 2010. Wikipedia [5] says January 2011.</li>
+        <li id="ref-5-en">Wikipedia. <a href="https://en.wikipedia.org/wiki/Business_Process_Model_and_Notation" rel="noopener">Business Process Model and Notation</a>. Source of the 2005 merger and of the name change at version 2.0. Current OMG pages also use the new name for version 1.0.</li>
+        <li id="ref-6-en">Trisotech. <a href="https://www.trisotech.com/bpmn-introduction-and-history/" rel="noopener">BPMN Introduction and History</a>. A secondary source, from a vendor, for the month of the merger (June 2005).</li>
+        <li id="ref-7-en">ISO and IEC. <a href="https://www.iso.org/standard/62652.html" rel="noopener">ISO/IEC 19510:2013</a>; <a href="https://webstore.iec.ch/publication/10695" rel="noopener">IEC record</a>. Published in July 2013. Sources differ on the match: ISO points to OMG version 2.0.1, and Trisotech [6] to 2.0.2.</li>
+        <li id="ref-8-en">BPMN Model Interchange Working Group. <a href="https://github.com/bpmn-miwg/bpmn-miwg-test-suite" rel="noopener">Interchange test suite</a>, used to check the app’s import.</li>
+      </ol>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== IT ===================== -->
+<div id="it" role="tabpanel" aria-labelledby="tab-it" lang="it" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Progetti</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>BPMN Simulator: dal primo disegno al test del processo</h1>
+      <p class="dek">Che cos’è il BPMN, da dove viene, come leggere e disegnare un processo, come simularlo e testarlo, e come usare l’IA senza perdere il controllo del risultato.</p>
+      <div class="byline">
+        <span>Di <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Pubblicato il <time datetime="2026-10-31">31 ottobre 2026</time></span>
+        <span class="credit">Rivisto e formattato con Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-it">
+    <h2 id="toc-it">In questo tutorial</h2>
+    <ol>
+      <li><a href="#intro-it">Che cos’è il BPMN</a></li>
+      <li><a href="#historia-it">Una breve storia</a></li>
+      <li><a href="#definicoes-it">Definizioni essenziali</a></li>
+      <li><a href="#elementos-it">Gli elementi della notazione</a></li>
+      <li><a href="#ficha-it">Come si muove il token</a></li>
+      <li><a href="#tela-it">La schermata dell’app</a></li>
+      <li><a href="#primeiro-it">Il tuo primo processo</a></li>
+      <li><a href="#simular-it">Simulare</a></li>
+      <li><a href="#cenarios-it">Scenari di test</a></li>
+      <li><a href="#verificar-it">Verificare il modello</a></li>
+      <li><a href="#ia-it">Prompt di IA</a></li>
+      <li><a href="#praticas-it">Buone pratiche ed errori comuni</a></li>
+      <li><a href="#revisao-it">Ripasso rapido</a></li>
+      <li><a href="#referencias-it">Riferimenti</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="intro-it" aria-labelledby="h-intro-it">
+      <h2 id="h-intro-it">Che cos’è il BPMN</h2>
+      <p>Il <strong>BPMN</strong> (Business Process Model and Notation) è un linguaggio grafico standard per descrivere i processi aziendali: chi fa cosa, in quale ordine, con quali decisioni e che cosa succede quando qualcosa va diversamente dal previsto.</p>
+      <p>La norma stessa ne definisce l’obiettivo: essere comprensibile a tutti gli interessati, dagli analisti che fanno la prima bozza agli sviluppatori che implementano e alle persone che gestiscono il processo. La chiama un ponte tra il disegno e l’implementazione. <sup><a href="#ref-1-it">[1]</a></sup></p>
+      <p>Non serve conoscere tutti i simboli per iniziare. Eventi, attività, gateway e flussi di sequenza coprono già buona parte dei diagrammi. Questo tutorial segue quest’ordine e usa il <strong>BPMN Simulator</strong>, un’app in un unico file HTML: nulla viene inviato in rete e i diagrammi restano nel tuo browser.</p>
+      <p><a class="launch" href="bpmn-simulator.html#it">Apri il BPMN Simulator <span aria-hidden="true">→</span></a></p>
+      <a class="back" href="#top">↑ Torna su</a>
+    </section>
+
+    <section id="historia-it" aria-labelledby="h-historia-it">
+      <h2 id="h-historia-it">Una breve storia</h2>
+      <p>Il BPMN nasce dal bisogno di una notazione comune tra analisti e tecnologia. La cronologia qui sotto riporta le tappe, con le date delle fonti consultate.</p>
+      <figure>
+        <img src="rc_images/BPMNHistoria-it.svg" alt="Maggio 2004: BPMI.org pubblica il BPMN 1.0. Giugno 2005: BPMI si fonde con OMG. Marzo 2007: versione 1.0 formale di OMG. Gennaio 2008 e 2009: versioni 1.1 e 1.2. Dicembre 2010: versione 2.0. Luglio 2013: ISO/IEC 19510. Gennaio 2014: versione 2.0.2." loading="lazy">
+        <figcaption>Dalla prima versione, nel 2004, alla versione attuale di OMG</figcaption>
+      </figure>
+      <ul>
+        <li><strong>2004.</strong> La Business Process Management Initiative (BPMI.org) annuncia il BPMN 1.0, allora chiamato <em>Business Process Modeling Notation</em>. Stephen White, di IBM, presiedeva il gruppo di lavoro. Almeno 20 aziende si impegnarono a supportare la notazione. <sup><a href="#ref-3-it">[3]</a></sup></li>
+        <li><strong>2005.</strong> BPMI si fonde con l’Object Management Group (OMG), che assume la gestione della norma. <sup><a href="#ref-5-it">[5]</a></sup><sup><a href="#ref-6-it">[6]</a></sup></li>
+        <li><strong>Dal 2007 al 2009.</strong> OMG registra la versione 1.0 formale nel marzo 2007, la 1.1 nel gennaio 2008 e la 1.2 nel gennaio 2009. <sup><a href="#ref-2-it">[2]</a></sup><sup><a href="#ref-1-it">[1]</a></sup></li>
+        <li><strong>2010.</strong> Il BPMN 2.0 aggiunge la semantica di esecuzione e un formato di interscambio che include il diagramma. Il nome diventa <em>Model and Notation</em>, mantenendo la sigla. <sup><a href="#ref-4-it">[4]</a></sup><sup><a href="#ref-5-it">[5]</a></sup></li>
+        <li><strong>2013.</strong> La norma viene pubblicata anche come ISO/IEC 19510. <sup><a href="#ref-7-it">[7]</a></sup></li>
+        <li><strong>2014.</strong> La versione 2.0.2, pubblicata a gennaio, è quella attuale presso OMG. L’unica modifica dichiarata rispetto alla precedente riguarda la clausola 15. <sup><a href="#ref-1-it">[1]</a></sup></li>
+      </ul>
+      <p>Le fonti non sempre concordano sui dettagli, e le differenze sono annotate nei riferimenti. L’app segue la versione 2.0.2.</p>
+      <a class="back" href="#top">↑ Torna su</a>
+    </section>
+
+    <section id="definicoes-it" aria-labelledby="h-definicoes-it">
+      <h2 id="h-definicoes-it">Definizioni essenziali</h2>
+      <div class="table-wrap"><table><thead><tr><th scope="col">Termine</th><th scope="col">Che cosa significa</th></tr></thead><tbody>
+        <tr><th scope="row">Processo</th><td>Sequenza di attività per raggiungere un risultato, come pagare un rimborso.</td></tr>
+        <tr><th scope="row">Istanza (caso)</th><td>Un’esecuzione del processo. Se oggi entrano 30 ordini, sono 30 istanze.</td></tr>
+        <tr><th scope="row">Token</th><td>Segnaposto immaginario che percorre il diagramma e mostra dove si trova l’esecuzione. La norma lo chiama concetto teorico. <sup><a href="#ref-1-it">[1]</a></sup></td></tr>
+        <tr><th scope="row">Attività</th><td>Lavoro svolto da una persona o da un sistema. Può essere un’attività atomica o un sottoprocesso (con passi interni).</td></tr>
+        <tr><th scope="row">Evento</th><td>Qualcosa che accade: arriva un ordine, scade un termine, si verifica un errore.</td></tr>
+        <tr><th scope="row">Gateway</th><td>Punto in cui il flusso si divide o si unisce. Non svolge lavoro e non decide da solo: applica una regola.</td></tr>
+        <tr><th scope="row">Flusso di sequenza</th><td>Freccia continua: l’ordine all’interno di un processo.</td></tr>
+        <tr><th scope="row">Flusso di messaggi</th><td>Freccia tratteggiata: comunicazione tra partecipanti diversi.</td></tr>
+        <tr><th scope="row">Pool</th><td>Un partecipante al processo, come un’azienda o un cliente.</td></tr>
+        <tr><th scope="row">Corsia</th><td>Divisione di un pool, di solito per ruolo o reparto.</td></tr>
+        <tr><th scope="row">Collaborazione</th><td>Diagramma con due o più pool che si scambiano messaggi.</td></tr>
+        <tr><th scope="row">Scatola nera</th><td>Pool senza processo visibile: sappiamo che esiste, non come lavora.</td></tr>
+        <tr><th scope="row">Evento di bordo</th><td>Evento agganciato a un’attività, per ciò che può accadere mentre è in corso.</td></tr>
+        <tr><th scope="row">Compensazione</th><td>Annullare ciò che è già stato completato, come disdire un volo prenotato.</td></tr>
+        <tr><th scope="row">Conformità</th><td>Livelli che la norma definisce per gli strumenti. L’app segue le sottoclassi Descrittiva e Analitica. <sup><a href="#ref-1-it">[1]</a></sup></td></tr>
+      </tbody></table></div>
+      <a class="back" href="#top">↑ Torna su</a>
+    </section>
+
+    <section id="elementos-it" aria-labelledby="h-elementos-it">
+      <h2 id="h-elementos-it">Gli elementi della notazione</h2>
+      <p>Quasi ogni diagramma usa quattro famiglie di elementi. La forma indica la famiglia, e l’icona interna indica il tipo.</p>
+      <figure>
+        <img src="rc_images/BPMNElementos-it.svg" alt="Gli eventi sono cerchi: inizio, intermedio di ricezione, intermedio di invio e fine. Le attività sono rettangoli arrotondati: attività, attività utente, sottoprocesso e attività di chiamata. I gateway sono rombi: esclusivo, parallelo, inclusivo e basato su eventi. Collegamenti e organizzazione: flusso di sequenza, flusso di messaggi, associazione, oggetto dati, pool e corsie." loading="lazy">
+        <figcaption>Le quattro famiglie di elementi presenti in quasi ogni diagramma</figcaption>
+      </figure>
+      <h3>Eventi</h3>
+      <p>Il bordo indica la posizione: sottile all’inizio, doppio nel mezzo e spesso alla fine. L’icona indica il trigger o il risultato. L’icona vuota <em>riceve</em> qualcosa, quella piena <em>invia</em>. L’app offre solo le combinazioni consentite dalla Tabella 10.93 della norma. <sup><a href="#ref-1-it">[1]</a></sup></p>
+      <figure>
+        <img src="rc_images/BPMNEventos-it.svg" alt="Tabella con sei tipi di evento (nessuno, messaggio, timer, errore, segnale e terminazione) in sei posizioni: inizio, ricezione, bordo, bordo non interrompente, invio e fine. Il trattino indica una combinazione non prevista dalla norma." loading="lazy">
+        <figcaption>Parte della Tabella 10.93: non ogni evento esiste in ogni posizione</figcaption>
+      </figure>
+      <h3>Attività</h3>
+      <p>L’attività è l’unità di lavoro, e l’icona nell’angolo ne indica il tipo: utente, servizio, manuale, invio, ricezione, script o regola di business. Il <strong>+</strong> in basso indica un sottoprocesso compresso. Tre barre indicano istanze multiple, e la freccia circolare indica una ripetizione.</p>
+      <h3>Gateway</h3>
+      <p>Il simbolo dentro il rombo cambia completamente il comportamento. Chiediti sempre: quanti token escono e quanti ne attende l’unione?</p>
+      <figure>
+        <img src="rc_images/BPMNGateways-it.svg" alt="Esclusivo: il token prende un solo percorso. Parallelo: un token per ogni percorso, e l’unione li attende tutti. Inclusivo: un token per ogni condizione vera, e l’unione attende solo quelli che possono ancora arrivare." loading="lazy">
+        <figcaption>La stessa forma a rombo, con tre regole diverse</figcaption>
+      </figure>
+      <a class="back" href="#top">↑ Torna su</a>
+    </section>
+
+    <section id="ficha-it" aria-labelledby="h-ficha-it">
+      <h2 id="h-ficha-it">Come si muove il token</h2>
+      <p>L’esecuzione diventa facile da capire se segui un token. L’evento di inizio lo crea. Il token segue le frecce, resta nell’attività per tutta la durata del lavoro e, al gateway, obbedisce alla regola di quel tipo. L’evento di fine lo consuma, e l’istanza termina quando non restano token né attività in corso. <sup><a href="#ref-1-it">[1]</a></sup></p>
+      <p>Da qui nasce l’errore più comune dei principianti: aprire i percorsi con un tipo di gateway e chiuderli con un altro.</p>
+      <figure>
+        <img src="rc_images/BPMNImpasse-it.svg" alt="A sinistra, un gateway esclusivo apre due percorsi e uno parallelo li chiude: arriva un solo token e l’unione attende per sempre. A destra, parallelo apre e parallelo chiude: arrivano entrambi i token e il processo termina." loading="lazy">
+        <figcaption>Aprire con un tipo di gateway e chiudere con un altro può bloccare il processo</figcaption>
+      </figure>
+      <p>Anche il contrario crea problemi: se un parallelo apre e un esclusivo chiude, ogni token passa da solo e ciò che segue viene eseguito due volte. La norma tratta anche il caso di una condizione non soddisfatta: in un gateway esclusivo senza condizione vera e senza flusso predefinito si verifica un’eccezione (Tabella 13.2). <sup><a href="#ref-1-it">[1]</a></sup></p>
+      <a class="back" href="#top">↑ Torna su</a>
+    </section>
+
+    <section id="tela-it" aria-labelledby="h-tela-it">
+      <h2 id="h-tela-it">La schermata dell’app</h2>
+      <figure>
+        <img src="rc_images/BPMNTela-it.svg" alt="La tavolozza degli elementi a sinistra, l’elenco del diagramma sotto di essa, l’area di disegno al centro, i pulsanti File, Disponi e Simula in alto e, a destra, le schede Proprietà e Verifica." loading="lazy">
+        <figcaption>Le parti della schermata del BPMN Simulator</figcaption>
+      </figure>
+      <p>Seleziona un elemento per vedere le azioni accanto: aggiungere il passo successivo, collegare o eliminare. Con doppio clic o F2 scrivi il nome. L’app stessa sceglie il tipo di collegamento secondo la norma e rifiuta, mostrando il motivo, i collegamenti vietati, come un flusso di sequenza che esce da un evento di fine.</p>
+      <p>Nel menu <strong>File</strong> ci sono cinque esempi pronti da esplorare prima di disegnare. <strong>Assunzione del dipendente</strong> mostra i sottoprocessi, e <strong>Centro assistenza</strong> mostra le code.</p>
+      <a class="back" href="#top">↑ Torna su</a>
+    </section>
+
+    <section id="primeiro-it" aria-labelledby="h-primeiro-it">
+      <h2 id="h-primeiro-it">Il tuo primo processo</h2>
+      <p>Disegniamo una versione breve di questo rimborso. Fai ogni passo nell’app, senza fretta:</p>
+      <figure>
+        <img src="rc_images/BPMNExemplo-it.svg" alt="Dopo l’invio della spesa, qualcuno verifica la ricevuta. Senza ricevuta valida, la richiesta è rifiutata. Con la ricevuta, gli importi sopra 500 passano per l’approvazione; poi il rimborso viene pagato." loading="lazy">
+        <figcaption>Il processo di rimborso, disegnato dall’app stessa</figcaption>
+      </figure>
+      <ol>
+        <li>Apri il <a href="bpmn-simulator.html#it">BPMN Simulator</a> e trascina un <strong>Evento di inizio</strong> sull’area di disegno. Con doppio clic, scrivi <em>Spesa inviata</em>.</li>
+        <li>Con l’evento selezionato, fai clic su <strong>Aggiungi attività</strong> nel pannello accanto e scrivi <em>Verificare ricevuta</em>.</li>
+        <li>Con l’attività selezionata, fai clic su <strong>Aggiungi gateway</strong> e chiamalo <em>Ricevuta valida?</em>. Una domanda funziona bene come nome di un gateway di decisione.</li>
+        <li>Dal gateway, aggiungi l’attività <em>Pagare rimborso</em> e, dopo di essa, un evento di fine <em>Rimborso pagato</em>.</li>
+        <li>Seleziona di nuovo il gateway e aggiungi un altro evento di fine: <em>Richiesta rifiutata</em>.</li>
+        <li>Fai clic sulla freccia verso <em>Pagare rimborso</em>. In <strong>Proprietà</strong>, scrivi il nome <em>Sì</em> e la <strong>Condizione</strong> <code>comprovante_ok</code>.</li>
+        <li>Fai clic sull’altra freccia, scrivi il nome <em>No</em> e seleziona <strong>È il flusso predefinito</strong>. All’origine della freccia appare una barretta.</li>
+        <li>Fai clic sull’area vuota e, in <strong>Dati iniziali</strong>, scrivi <code>comprovante_ok = chance(0.9)</code>. In ogni caso, la ricevuta ha il 90% di probabilità di essere valida.</li>
+        <li>Apri la scheda <strong>Verifica</strong>. Non dovrebbero esserci errori di norma. Se ci sono, fai clic sulla voce per andare all’elemento.</li>
+      </ol>
+      <p>Per salvare, usa <strong>File → Salva .bpmn</strong>. Il file segue il formato BPMN 2.0 XML della norma, e altri strumenti compatibili possono aprirlo.</p>
+      <a class="back" href="#top">↑ Torna su</a>
+    </section>
+
+    <section id="simular-it" aria-labelledby="h-simular-it">
+      <h2 id="h-simular-it">Simulare</h2>
+      <p>Fai clic su <strong>Simula</strong>. L’orologio è virtuale, in minuti, e lo stesso <strong>Seme</strong> ripete la stessa esecuzione. Ci sono quattro modi di usarlo:</p>
+      <div class="table-wrap"><table><thead><tr><th scope="col">Opzione</th><th scope="col">A che serve</th></tr></thead><tbody>
+        <tr><th scope="row">Esegui</th><td>Vedere i token animati, dall’inizio alla fine.</td></tr>
+        <tr><th scope="row">Passo dopo passo</th><td>Avanzare di un token per clic, leggendo cosa è successo, la regola della norma e cosa viene dopo.</td></tr>
+        <tr><th scope="row">Decido io</th><td>Scegliere il percorso a ogni gateway.</td></tr>
+        <tr><th scope="row">Molte esecuzioni</th><td>Eseguire molti casi e vedere tempi, code e colli di bottiglia.</td></tr>
+      </tbody></table></div>
+      <p>Per chi sta imparando, <strong>Passo dopo passo</strong> è il miglior inizio. Durate ed effetti si impostano su ogni attività (<code>random(5, 15)</code>, <code>exponential(10)</code>, <code>normal(10, 2)</code>). Le probabilità si impostano sui flussi, e la capacità su ogni corsia.</p>
+      <h3>Un esperimento con le code</h3>
+      <p>Apri l’esempio <strong>Centro assistenza</strong>, con 2 operatori e 1 specialista. Nella scheda <strong>Molte esecuzioni</strong>, esegui 500 casi con un arrivo ogni 3 minuti in media. La tabella mostra il tempo di ciclo medio su 20 semi, con il margine del 95%:</p>
+      <div class="table-wrap"><table><thead><tr><th scope="col">Operatori</th><th scope="col">Specialisti</th><th scope="col">Tempo di ciclo (min)</th><th scope="col">Occupazione operatori</th><th scope="col">Occupazione specialisti</th></tr></thead><tbody>
+        <tr><th scope="row">2</th><td>1</td><td>280 ± 24</td><td>96%</td><td>93%</td></tr>
+        <tr><th scope="row">2</th><td>2</td><td>247 ± 22</td><td>100%</td><td>48%</td></tr>
+        <tr><th scope="row">3</th><td>1</td><td>74 ± 15</td><td>68%</td><td>96%</td></tr>
+        <tr><th scope="row">3</th><td>2</td><td>19 ± 1</td><td>82%</td><td>57%</td></tr>
+      </tbody></table></div>
+      <p>Le due corsie partono molto occupate, ma raddoppiare gli specialisti cambia poco: i margini si sovrappongono. Un operatore in più fa scendere molto il tempo, perché tutti i ticket passano da loro. Solo con entrambi i rinforzi il tempo si avvicina a quello del lavoro stesso. È solo un modello, con numeri inventati per l’esempio: serve a confrontare ipotesi, non a misurare il processo reale.</p>
+      <a class="back" href="#top">↑ Torna su</a>
+    </section>
+
+    <section id="cenarios-it" aria-labelledby="h-cenarios-it">
+      <h2 id="h-cenarios-it">Scenari di test</h2>
+      <p>Simulare mostra ciò che accade. Testare verifica se è ciò che <em>dovrebbe</em> accadere. Nella scheda <strong>Scenari di test</strong>, ogni scenario definisce gli ingressi e il risultato atteso, e l’app dà il verdetto.</p>
+      <figure>
+        <img src="rc_images/BPMNCenario-it.svg" alt="Dato che l’importo è 800 e la ricevuta è valida; quando il gateway segue la condizione; allora il caso termina in Rimborso pagato e passa da Approvare rimborso. Il risultato mostra una verifica passata e una fallita." loading="lazy">
+        <figcaption>Uno scenario di test ha tre parti e dà un verdetto</figcaption>
+      </figure>
+      <p>L’esempio <strong>Ordine online</strong> ha già tre scenari. Fai clic su <strong>Esegui tutti</strong> e apri i dettagli. Poi prova:</p>
+      <ul>
+        <li><strong>Suggerisci scenari:</strong> crea uno scenario per ogni percorso che aumenta la copertura. Forza le decisioni e compila l’atteso con ciò che è successo, quindi verifica che sia davvero corretto.</li>
+        <li><strong>Copertura:</strong> ciò che non è mai stato eseguito è tratteggiato nel diagramma. Una copertura del 100% non prova che il processo sia corretto: dice solo che ogni elemento è stato eseguito almeno una volta.</li>
+        <li><strong>Ripetizioni:</strong> esegue con più semi e indica quello che ha fallito, per i modelli con estrazioni casuali.</li>
+        <li><strong>Salva esecuzione come scenario:</strong> conserva un’esecuzione manuale terminata, da ripetere in seguito.</li>
+      </ul>
+      <a class="back" href="#top">↑ Torna su</a>
+    </section>
+
+    <section id="verificar-it" aria-labelledby="h-verificar-it">
+      <h2 id="h-verificar-it">Verificare il modello</h2>
+      <p>La scheda <strong>Verifica</strong> controlla il modello su due livelli:</p>
+      <ul>
+        <li><strong>Regole della norma:</strong> eventi consentiti in ogni posizione, collegamenti delle Tabelle 7.3 e 7.4, flusso predefinito con condizione e altre. Il clic sulla voce porta all’elemento. <sup><a href="#ref-1-it">[1]</a></sup></li>
+        <li><strong>Analisi dei token:</strong> il pulsante <strong>Analizza</strong> percorre gli stati possibili di ogni ambito e segnala stalli, cicli senza uscita, mancata sincronizzazione e ciò che non viene mai eseguito. Suppone che ogni percorso sia possibile e ignora i dati, quindi può segnalare un percorso che i tuoi dati non prendono mai.</li>
+      </ul>
+      <p>L’importazione dell’app è stata verificata con 12 file della suite di interscambio del gruppo MIWG, e i file riesportati hanno superato lo schema XSD ufficiale. <sup><a href="#ref-8-it">[8]</a></sup> Questa non è una certificazione: l’app non è certificata da OMG e non è un motore di produzione. I diagrammi di conversazione e coreografia sono esclusi. I limiti completi sono nella Guida dell’app.</p>
+      <a class="back" href="#top">↑ Torna su</a>
+    </section>
+
+    <section id="ia-it" aria-labelledby="h-ia-it">
+      <h2 id="h-ia-it">Prompt di IA</h2>
+      <p>L’IA aiuta a superare la pagina bianca, a trovare lacune e a scrivere scenari. Ma sbaglia anche con sicurezza: inventa regole, dimentica eccezioni e può generare XML non valido. Considera il risultato come la bozza di un collega di fretta. Per scrivere prompt migliori, vedi il <a href="PromptTutorial.html#it">tutorial sui prompt</a>.</p>
+      <figure>
+        <img src="rc_images/BPMNIA-it.svg" alt="Sei passi: descrivere il processo, l’IA genera l’XML, importarlo nell’app, usare Verifica, simulare con scenari di test e rivedere con chi conosce il processo, tornando all’IA se serve. Descrivere e rivedere sono compiti umani." loading="lazy">
+        <figcaption>L’IA aiuta nella bozza e nella revisione. L’app verifica, e tu decidi</figcaption>
+      </figure>
+      <blockquote><p><strong>Prima di incollare:</strong> i processi interni possono contenere nomi, importi e regole riservati. Sostituiscili con dati fittizi e segui la politica della tua organizzazione sull’uso dell’IA. L’app non invia nulla in rete, ma il servizio di IA riceve ciò che vi incolli.</p></blockquote>
+      <p>Sostituisci le parti tra parentesi quadre e incolla nello strumento di IA che usi.</p>
+      <h3>1. Intervistare prima di disegnare</h3>
+      <p>Fa sì che l’IA scopra ciò che manca invece di supporlo. È il miglior inizio quando il processo è ancora nella testa delle persone.</p>
+      <div class="promptbox"><button type="button" class="copy" data-copy="prompt-it-1" data-done="Copiato">Copia</button><pre class="code"><code id="prompt-it-1">Sei un analista di processi esperto di BPMN 2.0.2.
+Voglio modellare questo processo: [descrivilo in poche frasi].
+
+Prima di proporre qualsiasi diagramma, intervistami:
+- Fai una domanda alla volta e attendi la mia risposta.
+- Copri: cosa avvia il processo, chi partecipa, i passi, le decisioni e i loro criteri, le eccezioni, le scadenze, le attese, i sistemi e cosa indica la fine.
+- Chiedi soprattutto ciò che va storto, non solo il percorso ideale.
+- Non inventare risposte. Se non lo so, registralo come punto aperto.
+
+Alla fine, consegna: riassunto del processo, tabella delle attività (attività, responsabile, ingresso, uscita), elenco delle decisioni con i criteri ed elenco dei punti aperti.</code></pre></div>
+      <h3>2. Trasformare un testo in struttura</h3>
+      <p>Per verbali, procedure o trascrizioni. Chiede l’origine di ogni voce, il che facilita la verifica.</p>
+      <div class="promptbox"><button type="button" class="copy" data-copy="prompt-it-2" data-done="Copiato">Copia</button><pre class="code"><code id="prompt-it-2">Dal testo seguente, estrai la struttura di un processo per BPMN.
+
+Regole:
+- Usa solo ciò che è nel testo. Per ogni voce, cita il passaggio di origine.
+- Segna come [IPOTESI] tutto ciò che hai dedotto.
+- Elenca le contraddizioni e ciò che manca.
+
+Consegna: partecipanti, attività in ordine, decisioni (domanda, opzioni, criterio), eventi (cosa avvia, termina, interrompe o attende) e punti aperti.
+
+Testo:
+&quot;&quot;&quot;
+[incolla qui, senza dati sensibili]
+&quot;&quot;&quot;</code></pre></div>
+      <h3>3. Generare il BPMN per il BPMN Simulator</h3>
+      <p>Genera un file che l’app apre, dispone e simula. Incolla la risposta in <strong>File → Vedi o incolla XML</strong> e fai clic su <strong>Applica XML</strong>. Poi vai su <strong>Verifica</strong>.</p>
+      <div class="promptbox"><button type="button" class="copy" data-copy="prompt-it-3" data-done="Copiato">Copia</button><pre class="code"><code id="prompt-it-3">Genera un documento BPMN 2.0 XML, valido secondo lo schema OMG, per questo processo:
+[descrivi il processo o incolla la struttura].
+
+Formato obbligatorio:
+- Radice &lt;definitions&gt; con targetNamespace e questi namespace:
+  xmlns=&quot;http://www.omg.org/spec/BPMN/20100524/MODEL&quot;
+  xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;
+  xmlns:sim=&quot;https://giovanipm.github.io/ns/bpmn-simulator&quot;
+- Un &lt;process&gt; con isExecutable=&quot;false&quot;. Se c'è più di un partecipante, usa &lt;collaboration&gt; con &lt;participant&gt; e &lt;messageFlow&gt;, con un processo per ogni partecipante.
+- Non generare &lt;bpmndi:BPMNDiagram&gt;: l'app dispone il disegno.
+- ID unici e leggibili. Ogni nodo con &lt;incoming&gt; e &lt;outgoing&gt;, in quest'ordine, prima delle definizioni di evento.
+- In ogni gateway esclusivo che decide, un flusso predefinito con l'attributo default, e condizioni sugli altri flussi con &lt;conditionExpression xsi:type=&quot;tFormalExpression&quot;&gt;.
+- Chiudi i percorsi paralleli con un gateway parallelo. Non usare un evento intermedio di ricezione senza definizione di evento.
+
+Per la simulazione, usa extensionElements, prima di &lt;incoming&gt;:
+- Sul processo: &lt;sim:config init=&quot;campo = espressione&quot;/&gt;, con &amp;#10; tra le righe.
+- Sulle attività: &lt;sim:config duration=&quot;random(5, 15)&quot;/&gt;, in minuti.
+- Nelle condizioni, usa campi e gli operatori: &gt; &gt;= &lt; &lt;= == != and or not.
+- Funzioni disponibili: random(a, b), exponential(m), normal(m, d), chance(p), round(x, d).
+
+Rispondi solo con l'XML. Alla fine, dentro un commento XML, elenca le ipotesi che hai fatto.</code></pre></div>
+      <h3>4. Rivedere un modello</h3>
+      <p>Copia l’XML da <strong>Vedi o incolla XML</strong>. L’IA guarda il senso del processo, che le regole automatiche non vedono.</p>
+      <div class="promptbox"><button type="button" class="copy" data-copy="prompt-it-4" data-done="Copiato">Copia</button><pre class="code"><code id="prompt-it-4">Rivedi questo processo BPMN come un analista esperto.
+
+Controlla, in quest'ordine:
+1. Senso di business: passi mancanti, responsabili strani, eccezioni non gestite.
+2. Flusso: stalli, percorsi senza fine, gateway che aprono con un tipo e chiudono con un altro.
+3. Chiarezza: nomi di attività con verbo e oggetto, decisioni in forma di domanda.
+4. Norma BPMN 2.0.2: collegamenti vietati ed eventi fuori posizione.
+
+Per ogni problema, indica: id dell'elemento, problema, perché è importante, correzione suggerita e gravità (alta, media, bassa). Separa ciò che è certo da ciò che è un sospetto. Non inventare regole di business: se dipende da esse, fai una domanda.
+
+XML:
+&quot;&quot;&quot;
+[incolla qui]
+&quot;&quot;&quot;</code></pre></div>
+      <h3>5. Spiegare il processo in modo semplice</h3>
+      <p>Utile per validare con chi fa il lavoro e non legge il BPMN.</p>
+      <div class="promptbox"><button type="button" class="copy" data-copy="prompt-it-5" data-done="Copiato">Copia</button><pre class="code"><code id="prompt-it-5">Spiega il processo seguente a [pubblico, ad esempio: il team di assistenza], senza termini BPMN.
+
+Consegna:
+- In due frasi: a cosa serve e quando inizia.
+- Il passo dopo passo, indicando chi fa cosa.
+- Ogni decisione, come domanda, e cosa succede con ogni risposta.
+- Cosa succede quando qualcosa va storto o è in ritardo.
+- Cinque domande per confermare con il team se il disegno corrisponde al lavoro reale.
+
+Descrivi solo ciò che è nel modello. Se qualcosa è ambiguo, dillo.
+
+XML:
+&quot;&quot;&quot;
+[incolla qui]
+&quot;&quot;&quot;</code></pre></div>
+      <h3>6. Proporre scenari di test</h3>
+      <p>La tabella risultante diventa scenari nella scheda <strong>Scenari di test</strong>. Usa gli id reali del modello.</p>
+      <div class="promptbox"><button type="button" class="copy" data-copy="prompt-it-6" data-done="Copiato">Copia</button><pre class="code"><code id="prompt-it-6">Proponi scenari di test per il processo BPMN seguente.
+
+Copri: il percorso principale, ogni uscita di ogni decisione, valori al limite delle condizioni, eventi di bordo che avvengono e non avvengono, e combinazioni che sembrano rischiose.
+
+Per ogni scenario, una riga di tabella con:
+- Nome
+- Dato che: dati del caso, nel formato campo = valore
+- Quando: decisioni forzate ed eventi che avvengono o no
+- Allora: elementi da cui passa e da cui non passa (con l'id), e come termina il caso
+- Perché questo scenario è importante
+
+Segna con [RIVEDERE] i risultati attesi che dipendono da una regola di business non scritta nel modello. Preferisci pochi scenari che rivelano errori a molti simili.
+
+XML:
+&quot;&quot;&quot;
+[incolla qui]
+&quot;&quot;&quot;</code></pre></div>
+      <h3>7. Stimare i parametri di simulazione</h3>
+      <p>Senza dati reali, ogni numero è un’ipotesi. Questo prompt chiede di renderlo visibile.</p>
+      <div class="promptbox"><button type="button" class="copy" data-copy="prompt-it-7" data-done="Copiato">Copia</button><pre class="code"><code id="prompt-it-7">Voglio simulare questo processo BPMN e mi servono durate, probabilità e capacità.
+
+Dati reali che ho: [incolla medie, volumi o scrivi &quot;nessuno&quot;].
+
+Per ogni attività e decisione, proponi:
+- Un valore in minuti, in una di queste forme: numero, random(a, b), exponential(m) o normal(m, d). Giustifica la scelta.
+- Origine: [DATO], se viene da ciò che ho fornito, o [IPOTESI], se è una stima.
+- Come ottenere il dato reale.
+
+Poi elenca le tre ipotesi che possono cambiare di più il risultato, così le testo per prime.
+
+XML:
+&quot;&quot;&quot;
+[incolla qui]
+&quot;&quot;&quot;</code></pre></div>
+      <h3>8. Interpretare i risultati</h3>
+      <p>Incolla i numeri della scheda <strong>Molte esecuzioni</strong> per discutere ipotesi, non per ottenere un verdetto.</p>
+      <div class="promptbox"><button type="button" class="copy" data-copy="prompt-it-8" data-done="Copiato">Copia</button><pre class="code"><code id="prompt-it-8">Questi sono i risultati di una simulazione di un processo BPMN. I numeri vengono da un modello con parametri stimati, non dal processo reale.
+
+Processo: [breve descrizione]
+Parametri: [capacità, durate e arrivi]
+Risultati: [tempo di ciclo, occupazione per corsia, code per attività]
+
+Fai quanto segue:
+1. Indica il probabile collo di bottiglia, usando i numeri.
+2. Suggerisci al massimo tre cambiamenti da testare, cambiando una cosa alla volta, con ciò che ti aspetti che accada.
+3. Di' cosa i dati non permettono di concludere.
+4. Indica cosa misurare nel processo reale prima di decidere.
+
+Non raccomandare investimenti basandoti solo su questa simulazione.</code></pre></div>
+      <h3>Cosa è stato testato in questi prompt</h3>
+      <p>Il formato richiesto nel prompt 3 è stato testato davvero: un XML in quel formato, scritto da Claude per un processo di rimborso, ha superato lo schema XSD di OMG, si è aperto nell’app, è stato disposto automaticamente e simulato fino alla fine. I prompt non sono stati testati su altri modelli di IA, e le risposte cambiano ogni volta. Perciò il controllo in <strong>Verifica</strong> e con gli scenari resta necessario.</p>
+      <a class="back" href="#top">↑ Torna su</a>
+    </section>
+
+    <section id="praticas-it" aria-labelledby="h-praticas-it">
+      <h2 id="h-praticas-it">Buone pratiche ed errori comuni</h2>
+      <div class="table-wrap"><table><thead><tr><th scope="col">Evita</th><th scope="col">Preferisci</th></tr></thead><tbody>
+        <tr><th scope="row">Nome vago: "Elaborare"</th><td>Verbo e oggetto: "Verificare ricevuta"</td></tr>
+        <tr><th scope="row">Gateway senza nome</th><td>Una domanda: "Ricevuta valida?"</td></tr>
+        <tr><th scope="row">Aprire con X e chiudere con +</th><td>Chiudere con lo stesso tipo che ha aperto</td></tr>
+        <tr><th scope="row">Decisione nascosta in un’attività</th><td>Un’attività per decidere e un gateway per deviare</td></tr>
+        <tr><th scope="row">Flusso di sequenza tra pool</th><td>Flusso di messaggi tra partecipanti</td></tr>
+        <tr><th scope="row">Solo il percorso ideale</th><td>Scadenze ed errori con eventi di bordo</td></tr>
+        <tr><th scope="row">Diagramma enorme</th><td>Sottoprocessi per nascondere il dettaglio</td></tr>
+        <tr><th scope="row">Troppi simboli rari</th><td>Gli elementi che il lettore conosce</td></tr>
+        <tr><th scope="row">Prendere la simulazione come misura</th><td>Usarla per confrontare ipotesi</td></tr>
+        <tr><th scope="row">Accettare il diagramma dell’IA senza controllo</th><td>Verificare, testare e validare con chi fa il lavoro</td></tr>
+      </tbody></table></div>
+      <a class="back" href="#top">↑ Torna su</a>
+    </section>
+
+    <section id="revisao-it" aria-labelledby="h-revisao-it">
+      <h2 id="h-revisao-it">Ripasso rapido</h2>
+      <p>Prova a rispondere prima di aprire.</p>
+      <div class="quiz">
+        <details><summary>1. Un processo ha ricevuto 30 ordini oggi. Quante istanze ci sono?</summary><p>Trenta: ogni ordine è un’esecuzione dello stesso processo.</p></details>
+        <details><summary>2. Qual è la differenza tra flusso di sequenza e flusso di messaggi?</summary><p>Quello di sequenza dà l’ordine in un processo. Quello di messaggi è la comunicazione tra partecipanti diversi.</p></details>
+        <details><summary>3. Un gateway esclusivo apre due percorsi e uno parallelo li chiude. Che succede?</summary><p>Stallo: arriva un solo token, e l’unione parallela ne attende due.</p></details>
+        <details><summary>4. Un gateway esclusivo non ha condizione vera né flusso predefinito. E ora?</summary><p>La norma prevede un’eccezione. Nell’app, il caso termina con errore e il registro spiega il motivo.</p></details>
+        <details><summary>5. Che cosa significa il bordo tratteggiato in un evento di bordo?</summary><p>Che non interrompe: l’attività continua e un nuovo token esce dall’evento.</p></details>
+        <details><summary>6. Gli scenari hanno dato il 100% di copertura. Il processo è corretto?</summary><p>Non necessariamente. Ogni elemento è stato eseguito almeno una volta, ma non tutte le combinazioni sono state testate, e l’atteso può essere sbagliato.</p></details>
+        <details><summary>7. L’IA ha generato un diagramma senza errori nella scheda Verifica. Posso pubblicarlo?</summary><p>Non ancora. La scheda controlla la forma, non il senso. Mancano i test e la validazione con chi conosce il lavoro.</p></details>
+      </div>
+      <p><a class="launch" href="bpmn-simulator.html#it">Apri il BPMN Simulator <span aria-hidden="true">→</span></a></p>
+      <a class="back" href="#top">↑ Torna su</a>
+    </section>
+
+    <section id="referencias-it" aria-labelledby="h-referencias-it">
+      <h2 id="h-referencias-it">Riferimenti</h2>
+      <ol class="refs">
+        <li id="ref-1-it">Object Management Group. <a href="https://www.omg.org/spec/BPMN/2.0.2/" rel="noopener">Business Process Model and Notation, versione 2.0.2</a> (formal/13-12-09). Fonte delle definizioni, tabelle e regole citate, e delle date delle versioni 1.1, 1.2 e 2.0.2.</li>
+        <li id="ref-2-it">Object Management Group. <a href="https://www.omg.org/spec/BPMN/1.0/" rel="noopener">BPMN 1.0</a>: pubblicazione formale nel marzo 2007, con copyright di BPMI.org del 2004.</li>
+        <li id="ref-3-it">BPMI.org. <a href="https://www.omg.org/bpmn/Documents/Press_Release_5-4-04.htm" rel="noopener">Annuncio del BPMN 1.0</a>, 4 maggio 2004. L’intestazione riporta 2004 e la riga con la città riporta 2003, un refuso dell’originale.</li>
+        <li id="ref-4-it">Object Management Group. <a href="https://www.omg.org/spec/BPMN/2.0/" rel="noopener">BPMN 2.0</a>: OMG lo data dicembre 2010. Wikipedia [5] indica gennaio 2011.</li>
+        <li id="ref-5-it">Wikipedia. <a href="https://en.wikipedia.org/wiki/Business_Process_Model_and_Notation" rel="noopener">Business Process Model and Notation</a>. Fonte della fusione del 2005 e del cambio di nome alla versione 2.0. Le pagine attuali di OMG usano il nuovo nome anche per la versione 1.0.</li>
+        <li id="ref-6-it">Trisotech. <a href="https://www.trisotech.com/bpmn-introduction-and-history/" rel="noopener">BPMN Introduction and History</a>. Fonte secondaria, di un produttore, per il mese della fusione (giugno 2005).</li>
+        <li id="ref-7-it">ISO e IEC. <a href="https://www.iso.org/standard/62652.html" rel="noopener">ISO/IEC 19510:2013</a>; <a href="https://webstore.iec.ch/publication/10695" rel="noopener">scheda IEC</a>. Pubblicata nel luglio 2013. Le fonti divergono sulla corrispondenza: ISO indica la versione 2.0.1 di OMG, e Trisotech [6] la 2.0.2.</li>
+        <li id="ref-8-it">BPMN Model Interchange Working Group. <a href="https://github.com/bpmn-miwg/bpmn-miwg-test-suite" rel="noopener">Suite di test di interscambio</a>, usata per verificare l’importazione dell’app.</li>
+      </ol>
+      <a class="back" href="#top">↑ Torna su</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== ES ===================== -->
+<div id="es" role="tabpanel" aria-labelledby="tab-es" lang="es" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Proyectos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>BPMN Simulator: del primer dibujo a la prueba del proceso</h1>
+      <p class="dek">Qué es BPMN, de dónde viene, cómo leer y dibujar un proceso, cómo simularlo y probarlo, y cómo usar IA sin perder el control del resultado.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado el <time datetime="2026-10-31">31 de octubre de 2026</time></span>
+        <span class="credit">Revisado y formateado con Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-es">
+    <h2 id="toc-es">En este tutorial</h2>
+    <ol>
+      <li><a href="#intro-es">Qué es BPMN</a></li>
+      <li><a href="#historia-es">Una breve historia</a></li>
+      <li><a href="#definicoes-es">Definiciones esenciales</a></li>
+      <li><a href="#elementos-es">Los elementos de la notación</a></li>
+      <li><a href="#ficha-es">Cómo se mueve la ficha</a></li>
+      <li><a href="#tela-es">La pantalla de la app</a></li>
+      <li><a href="#primeiro-es">Tu primer proceso</a></li>
+      <li><a href="#simular-es">Simular</a></li>
+      <li><a href="#cenarios-es">Escenarios de prueba</a></li>
+      <li><a href="#verificar-es">Verificar el modelo</a></li>
+      <li><a href="#ia-es">Prompts de IA</a></li>
+      <li><a href="#praticas-es">Buenas prácticas y errores comunes</a></li>
+      <li><a href="#revisao-es">Repaso rápido</a></li>
+      <li><a href="#referencias-es">Referencias</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="intro-es" aria-labelledby="h-intro-es">
+      <h2 id="h-intro-es">Qué es BPMN</h2>
+      <p><strong>BPMN</strong> (Business Process Model and Notation) es un lenguaje gráfico estándar para describir procesos de negocio: quién hace qué, en qué orden, con qué decisiones y qué ocurre cuando algo se sale de lo previsto.</p>
+      <p>La propia norma define el objetivo: ser comprensible para todos los implicados, desde los analistas que hacen el primer borrador hasta los desarrolladores que implementan y las personas que gestionan el proceso. Lo llama un puente entre el diseño y la implementación. <sup><a href="#ref-1-es">[1]</a></sup></p>
+      <p>No necesitas conocer todos los símbolos para empezar. Eventos, tareas, gateways y flujos de secuencia ya cubren buena parte de los diagramas. Este tutorial sigue ese orden y usa el <strong>BPMN Simulator</strong>, una app en un único archivo HTML: nada se envía a la red, y los diagramas quedan en tu navegador.</p>
+      <p><a class="launch" href="bpmn-simulator.html#es">Abrir el BPMN Simulator <span aria-hidden="true">→</span></a></p>
+      <a class="back" href="#top">↑ Volver arriba</a>
+    </section>
+
+    <section id="historia-es" aria-labelledby="h-historia-es">
+      <h2 id="h-historia-es">Una breve historia</h2>
+      <p>BPMN nació de la necesidad de una notación común entre analistas y tecnología. La cronología de abajo muestra los hitos, con las fechas de las fuentes consultadas.</p>
+      <figure>
+        <img src="rc_images/BPMNHistoria-es.svg" alt="Mayo de 2004: BPMI.org publica BPMN 1.0. Junio de 2005: BPMI se fusiona con la OMG. Marzo de 2007: versión 1.0 formal de la OMG. Enero de 2008 y 2009: versiones 1.1 y 1.2. Diciembre de 2010: versión 2.0. Julio de 2013: ISO/IEC 19510. Enero de 2014: versión 2.0.2." loading="lazy">
+        <figcaption>De la primera versión, en 2004, a la versión actual de la OMG</figcaption>
+      </figure>
+      <ul>
+        <li><strong>2004.</strong> La Business Process Management Initiative (BPMI.org) anuncia BPMN 1.0, entonces llamado <em>Business Process Modeling Notation</em>. Stephen White, de IBM, presidía el grupo de trabajo. Al menos 20 empresas se comprometieron a dar soporte a la notación. <sup><a href="#ref-3-es">[3]</a></sup></li>
+        <li><strong>2005.</strong> BPMI se fusiona con el Object Management Group (OMG), que pasa a mantener la norma. <sup><a href="#ref-5-es">[5]</a></sup><sup><a href="#ref-6-es">[6]</a></sup></li>
+        <li><strong>De 2007 a 2009.</strong> La OMG registra la versión 1.0 formal en marzo de 2007, la 1.1 en enero de 2008 y la 1.2 en enero de 2009. <sup><a href="#ref-2-es">[2]</a></sup><sup><a href="#ref-1-es">[1]</a></sup></li>
+        <li><strong>2010.</strong> BPMN 2.0 añade semántica de ejecución y un formato de intercambio que incluye el diagrama. El nombre cambia a <em>Model and Notation</em>, manteniendo la sigla. <sup><a href="#ref-4-es">[4]</a></sup><sup><a href="#ref-5-es">[5]</a></sup></li>
+        <li><strong>2013.</strong> La norma se publica también como ISO/IEC 19510. <sup><a href="#ref-7-es">[7]</a></sup></li>
+        <li><strong>2014.</strong> La versión 2.0.2, publicada en enero, es la actual en la OMG. El único cambio declarado respecto a la anterior está en la cláusula 15. <sup><a href="#ref-1-es">[1]</a></sup></li>
+      </ul>
+      <p>Las fuentes no siempre coinciden en los detalles, y las diferencias están anotadas en las referencias. La app sigue la versión 2.0.2.</p>
+      <a class="back" href="#top">↑ Volver arriba</a>
+    </section>
+
+    <section id="definicoes-es" aria-labelledby="h-definicoes-es">
+      <h2 id="h-definicoes-es">Definiciones esenciales</h2>
+      <div class="table-wrap"><table><thead><tr><th scope="col">Término</th><th scope="col">Qué significa</th></tr></thead><tbody>
+        <tr><th scope="row">Proceso</th><td>Secuencia de actividades para lograr un resultado, como pagar un reembolso.</td></tr>
+        <tr><th scope="row">Instancia (caso)</th><td>Una ejecución del proceso. Si hoy entran 30 pedidos, son 30 instancias.</td></tr>
+        <tr><th scope="row">Ficha (token)</th><td>Marcador imaginario que recorre el diagrama y muestra dónde está la ejecución. La norma lo llama concepto teórico. <sup><a href="#ref-1-es">[1]</a></sup></td></tr>
+        <tr><th scope="row">Actividad</th><td>Trabajo hecho por una persona o un sistema. Puede ser una tarea (atómica) o un subproceso (con pasos internos).</td></tr>
+        <tr><th scope="row">Evento</th><td>Algo que ocurre: llega un pedido, vence un plazo, se produce un error.</td></tr>
+        <tr><th scope="row">Gateway</th><td>Punto donde el flujo se divide o se une. No hace trabajo ni decide por sí mismo: aplica una regla.</td></tr>
+        <tr><th scope="row">Flujo de secuencia</th><td>Flecha continua: el orden dentro de un proceso.</td></tr>
+        <tr><th scope="row">Flujo de mensaje</th><td>Flecha punteada: comunicación entre participantes distintos.</td></tr>
+        <tr><th scope="row">Pool</th><td>Un participante del proceso, como una empresa o un cliente.</td></tr>
+        <tr><th scope="row">Carril</th><td>División de un pool, normalmente por rol o departamento.</td></tr>
+        <tr><th scope="row">Colaboración</th><td>Diagrama con dos o más pools que intercambian mensajes.</td></tr>
+        <tr><th scope="row">Caja negra</th><td>Pool sin proceso visible: sabemos que existe, no cómo trabaja.</td></tr>
+        <tr><th scope="row">Evento de borde</th><td>Evento sujeto a una actividad, para lo que puede ocurrir mientras se ejecuta.</td></tr>
+        <tr><th scope="row">Compensación</th><td>Deshacer lo ya completado, como cancelar un vuelo reservado.</td></tr>
+        <tr><th scope="row">Conformidad</th><td>Niveles que la norma define para las herramientas. La app sigue las subclases Descriptiva y Analítica. <sup><a href="#ref-1-es">[1]</a></sup></td></tr>
+      </tbody></table></div>
+      <a class="back" href="#top">↑ Volver arriba</a>
+    </section>
+
+    <section id="elementos-es" aria-labelledby="h-elementos-es">
+      <h2 id="h-elementos-es">Los elementos de la notación</h2>
+      <p>Casi todo diagrama usa cuatro familias de elementos. La forma indica la familia, y el icono interno indica el tipo.</p>
+      <figure>
+        <img src="rc_images/BPMNElementos-es.svg" alt="Los eventos son círculos: inicio, intermedio de captura, intermedio de disparo y fin. Las actividades son rectángulos redondeados: tarea, tarea de usuario, subproceso y actividad de llamada. Los gateways son rombos: exclusivo, paralelo, inclusivo y basado en eventos. Conexiones y organización: flujo de secuencia, flujo de mensaje, asociación, objeto de datos, pool y carriles." loading="lazy">
+        <figcaption>Las cuatro familias de elementos presentes en casi todo diagrama</figcaption>
+      </figure>
+      <h3>Eventos</h3>
+      <p>El borde indica la posición: fino al inicio, doble en medio y grueso al final. El icono indica el disparador o el resultado. El icono hueco <em>captura</em> algo, y el relleno <em>dispara</em>. La app solo ofrece las combinaciones permitidas por la Tabla 10.93 de la norma. <sup><a href="#ref-1-es">[1]</a></sup></p>
+      <figure>
+        <img src="rc_images/BPMNEventos-es.svg" alt="Tabla con seis tipos de evento (ninguno, mensaje, temporizador, error, señal y terminación) en seis posiciones: inicio, captura, borde, borde sin interrupción, disparo y fin. El guion indica una combinación que la norma no prevé." loading="lazy">
+        <figcaption>Parte de la Tabla 10.93: no todo evento existe en toda posición</figcaption>
+      </figure>
+      <h3>Actividades</h3>
+      <p>La tarea es la unidad de trabajo, y el icono de la esquina indica el tipo: usuario, servicio, manual, envío, recepción, script o regla de negocio. El <strong>+</strong> abajo indica un subproceso contraído. Tres barras indican instancias múltiples, y la flecha circular indica repetición.</p>
+      <h3>Gateways</h3>
+      <p>El símbolo dentro del rombo cambia por completo el comportamiento. Pregúntate siempre: ¿cuántas fichas salen y cuántas espera la unión?</p>
+      <figure>
+        <img src="rc_images/BPMNGateways-es.svg" alt="Exclusivo: la ficha sigue un solo camino. Paralelo: una ficha en cada camino, y la unión las espera a todas. Inclusivo: una ficha por cada condición verdadera, y la unión espera solo a las que aún pueden llegar." loading="lazy">
+        <figcaption>La misma forma de rombo, con tres reglas distintas</figcaption>
+      </figure>
+      <a class="back" href="#top">↑ Volver arriba</a>
+    </section>
+
+    <section id="ficha-es" aria-labelledby="h-ficha-es">
+      <h2 id="h-ficha-es">Cómo se mueve la ficha</h2>
+      <p>La ejecución se entiende fácilmente si sigues una ficha. El evento de inicio la crea. Sigue las flechas, permanece en la actividad mientras dura el trabajo y, en el gateway, obedece la regla de ese tipo. El evento de fin la consume, y la instancia termina cuando no quedan fichas ni actividades en curso. <sup><a href="#ref-1-es">[1]</a></sup></p>
+      <p>De ahí viene el error más común de los principiantes: abrir caminos con un tipo de gateway y cerrarlos con otro.</p>
+      <figure>
+        <img src="rc_images/BPMNImpasse-es.svg" alt="A la izquierda, un gateway exclusivo abre dos caminos y uno paralelo los cierra: solo llega una ficha y la unión espera para siempre. A la derecha, paralelo abre y paralelo cierra: llegan las dos fichas y el proceso termina." loading="lazy">
+        <figcaption>Abrir con un tipo de gateway y cerrar con otro puede bloquear el proceso</figcaption>
+      </figure>
+      <p>Lo contrario también causa problemas: si un paralelo abre y un exclusivo cierra, cada ficha pasa sola y lo que sigue se ejecuta dos veces. La norma también trata el caso de una condición que no se cumple: en un gateway exclusivo sin condición verdadera y sin flujo predeterminado, se produce una excepción (Tabla 13.2). <sup><a href="#ref-1-es">[1]</a></sup></p>
+      <a class="back" href="#top">↑ Volver arriba</a>
+    </section>
+
+    <section id="tela-es" aria-labelledby="h-tela-es">
+      <h2 id="h-tela-es">La pantalla de la app</h2>
+      <figure>
+        <img src="rc_images/BPMNTela-es.svg" alt="La paleta de elementos a la izquierda, la lista del diagrama debajo, el área de dibujo en el centro, los botones Archivo, Organizar y Simular arriba y, a la derecha, las pestañas Propiedades y Verificar." loading="lazy">
+        <figcaption>Las partes de la pantalla del BPMN Simulator</figcaption>
+      </figure>
+      <p>Selecciona un elemento para ver las acciones a su lado: añadir el siguiente paso, conectar o eliminar. Con doble clic o F2 escribes el nombre. La propia app elige el tipo de conexión según la norma y rechaza, mostrando el motivo, las conexiones prohibidas, como un flujo de secuencia que sale de un evento de fin.</p>
+      <p>En el menú <strong>Archivo</strong> hay cinco ejemplos listos para explorar antes de dibujar. <strong>Alta de empleado</strong> muestra subprocesos, y <strong>Centro de atención</strong> muestra colas.</p>
+      <a class="back" href="#top">↑ Volver arriba</a>
+    </section>
+
+    <section id="primeiro-es" aria-labelledby="h-primeiro-es">
+      <h2 id="h-primeiro-es">Tu primer proceso</h2>
+      <p>Vamos a dibujar una versión corta de este reembolso. Haz cada paso en la app, sin prisa:</p>
+      <figure>
+        <img src="rc_images/BPMNExemplo-es.svg" alt="Tras enviar el gasto, alguien revisa el comprobante. Sin comprobante válido, la solicitud se rechaza. Con él, los importes superiores a 500 pasan por aprobación; después se paga el reembolso." loading="lazy">
+        <figcaption>El proceso de reembolso, dibujado por la propia app</figcaption>
+      </figure>
+      <ol>
+        <li>Abre el <a href="bpmn-simulator.html#es">BPMN Simulator</a> y arrastra un <strong>Evento de inicio</strong> al área de dibujo. Con doble clic, escribe <em>Gasto enviado</em>.</li>
+        <li>Con el evento seleccionado, haz clic en <strong>Añadir tarea</strong> en el panel de al lado y escribe <em>Revisar comprobante</em>.</li>
+        <li>Con la tarea seleccionada, haz clic en <strong>Añadir gateway</strong> y llámalo <em>¿Comprobante válido?</em>. Una pregunta funciona bien como nombre de un gateway de decisión.</li>
+        <li>Desde el gateway, añade la tarea <em>Pagar reembolso</em> y, después de ella, un evento de fin <em>Reembolso pagado</em>.</li>
+        <li>Selecciona de nuevo el gateway y añade otro evento de fin: <em>Solicitud rechazada</em>.</li>
+        <li>Haz clic en la flecha que va a <em>Pagar reembolso</em>. En <strong>Propiedades</strong>, escribe el nombre <em>Sí</em> y la <strong>Condición</strong> <code>comprovante_ok</code>.</li>
+        <li>Haz clic en la otra flecha, escribe el nombre <em>No</em> y marca <strong>Es el flujo predeterminado</strong>. Aparece una barrita en el origen de la flecha.</li>
+        <li>Haz clic en el área vacía y, en <strong>Datos iniciales</strong>, escribe <code>comprovante_ok = chance(0.9)</code>. En cada caso, el comprobante tiene un 90% de probabilidad de ser válido.</li>
+        <li>Abre la pestaña <strong>Verificar</strong>. No debería haber errores de norma. Si los hay, haz clic en el elemento de la lista para ir a él.</li>
+      </ol>
+      <p>Para guardar, usa <strong>Archivo → Guardar .bpmn</strong>. El archivo sigue el formato BPMN 2.0 XML de la norma, y otras herramientas compatibles pueden abrirlo.</p>
+      <a class="back" href="#top">↑ Volver arriba</a>
+    </section>
+
+    <section id="simular-es" aria-labelledby="h-simular-es">
+      <h2 id="h-simular-es">Simular</h2>
+      <p>Haz clic en <strong>Simular</strong>. El reloj es virtual, en minutos, y la misma <strong>Semilla</strong> repite la misma ejecución. Hay cuatro formas de usarlo:</p>
+      <div class="table-wrap"><table><thead><tr><th scope="col">Opción</th><th scope="col">Para qué</th></tr></thead><tbody>
+        <tr><th scope="row">Ejecutar</th><td>Ver las fichas animadas, del inicio al fin.</td></tr>
+        <tr><th scope="row">Paso a paso</th><td>Avanzar una ficha por clic, leyendo lo que pasó, la regla de la norma y lo que viene después.</td></tr>
+        <tr><th scope="row">Decidir yo</th><td>Elegir el camino en cada gateway.</td></tr>
+        <tr><th scope="row">Muchas ejecuciones</th><td>Ejecutar muchos casos y ver tiempos, colas y cuellos de botella.</td></tr>
+      </tbody></table></div>
+      <p>Si estás aprendiendo, <strong>Paso a paso</strong> es el mejor comienzo. Las duraciones y los efectos se definen en cada actividad (<code>random(5, 15)</code>, <code>exponential(10)</code>, <code>normal(10, 2)</code>). Las probabilidades se definen en los flujos, y la capacidad en cada carril.</p>
+      <h3>Un experimento con colas</h3>
+      <p>Abre el ejemplo <strong>Centro de atención</strong>, con 2 agentes y 1 especialista. En la pestaña <strong>Muchas ejecuciones</strong>, ejecuta 500 casos con una llegada cada 3 minutos de media. La tabla muestra el tiempo de ciclo medio en 20 semillas, con el margen del 95%:</p>
+      <div class="table-wrap"><table><thead><tr><th scope="col">Agentes</th><th scope="col">Especialistas</th><th scope="col">Tiempo de ciclo (min)</th><th scope="col">Ocupación de agentes</th><th scope="col">Ocupación de especialistas</th></tr></thead><tbody>
+        <tr><th scope="row">2</th><td>1</td><td>280 ± 24</td><td>96%</td><td>93%</td></tr>
+        <tr><th scope="row">2</th><td>2</td><td>247 ± 22</td><td>100%</td><td>48%</td></tr>
+        <tr><th scope="row">3</th><td>1</td><td>74 ± 15</td><td>68%</td><td>96%</td></tr>
+        <tr><th scope="row">3</th><td>2</td><td>19 ± 1</td><td>82%</td><td>57%</td></tr>
+      </tbody></table></div>
+      <p>Los dos carriles empiezan muy ocupados, pero duplicar los especialistas cambia poco: los márgenes se solapan. Un agente más hace bajar mucho el tiempo, porque todos los tickets pasan por ellos. Solo con los dos refuerzos el tiempo se acerca al del trabajo en sí. Esto es solo un modelo, con números inventados para el ejemplo: sirve para comparar hipótesis, no para medir el proceso real.</p>
+      <a class="back" href="#top">↑ Volver arriba</a>
+    </section>
+
+    <section id="cenarios-es" aria-labelledby="h-cenarios-es">
+      <h2 id="h-cenarios-es">Escenarios de prueba</h2>
+      <p>Simular muestra lo que ocurre. Probar comprueba si es lo que <em>debería</em> ocurrir. En la pestaña <strong>Escenarios de prueba</strong>, cada escenario define las entradas y el resultado esperado, y la app da el veredicto.</p>
+      <figure>
+        <img src="rc_images/BPMNCenario-es.svg" alt="Dado que el importe es 800 y el comprobante es válido; cuando el gateway sigue la condición; entonces el caso termina en Reembolso pagado y pasa por Aprobar reembolso. El resultado muestra una comprobación que pasó y otra que falló." loading="lazy">
+        <figcaption>Un escenario de prueba tiene tres partes y da un veredicto</figcaption>
+      </figure>
+      <p>El ejemplo <strong>Pedido en línea</strong> ya trae tres escenarios. Haz clic en <strong>Ejecutar todos</strong> y abre los detalles. Después prueba:</p>
+      <ul>
+        <li><strong>Sugerir escenarios:</strong> crea un escenario por cada camino que añade cobertura. Fuerza las decisiones y rellena lo esperado con lo que ocurrió, así que revisa que sea realmente lo correcto.</li>
+        <li><strong>Cobertura:</strong> lo que nunca se ejecutó queda punteado en el diagrama. Una cobertura del 100% no demuestra que el proceso sea correcto: solo dice que cada elemento se ejecutó al menos una vez.</li>
+        <li><strong>Repeticiones:</strong> ejecuta con varias semillas e indica la que falló, para modelos con sorteos.</li>
+        <li><strong>Guardar ejecución como escenario:</strong> conserva una ejecución manual terminada, para repetirla después.</li>
+      </ul>
+      <a class="back" href="#top">↑ Volver arriba</a>
+    </section>
+
+    <section id="verificar-es" aria-labelledby="h-verificar-es">
+      <h2 id="h-verificar-es">Verificar el modelo</h2>
+      <p>La pestaña <strong>Verificar</strong> revisa el modelo en dos niveles:</p>
+      <ul>
+        <li><strong>Reglas de la norma:</strong> eventos permitidos en cada posición, conexiones de las Tablas 7.3 y 7.4, flujo predeterminado con condición y otras. Al hacer clic en el elemento de la lista vas a él. <sup><a href="#ref-1-es">[1]</a></sup></li>
+        <li><strong>Análisis de fichas:</strong> el botón <strong>Analizar</strong> recorre los estados posibles de cada ámbito e indica bloqueos, bucles sin salida, falta de sincronización y lo que nunca se ejecuta. Supone que cualquier camino es posible e ignora los datos, así que puede señalar un camino que tus datos nunca recorren.</li>
+      </ul>
+      <p>La importación de la app se comprobó con 12 archivos de la suite de intercambio del grupo MIWG, y los archivos reexportados pasaron el esquema XSD oficial. <sup><a href="#ref-8-es">[8]</a></sup> Esto no es una certificación: la app no está certificada por la OMG y no es un motor de producción. Los diagramas de conversación y de coreografía quedan fuera. Los límites completos están en la Ayuda de la app.</p>
+      <a class="back" href="#top">↑ Volver arriba</a>
+    </section>
+
+    <section id="ia-es" aria-labelledby="h-ia-es">
+      <h2 id="h-ia-es">Prompts de IA</h2>
+      <p>Una IA ayuda a salir de la página en blanco, a encontrar lagunas y a escribir escenarios. También se equivoca con seguridad: inventa reglas, olvida excepciones y puede generar XML no válido. Trata el resultado como el borrador de un colega con prisa. Para escribir mejores prompts, mira el <a href="PromptTutorial.html#es">tutorial de prompts</a>.</p>
+      <figure>
+        <img src="rc_images/BPMNIA-es.svg" alt="Seis pasos: describir el proceso, la IA genera el XML, importarlo en la app, usar Verificar, simular con escenarios de prueba y revisar con quien conoce el proceso, volviendo a la IA si hace falta. Describir y revisar son tareas humanas." loading="lazy">
+        <figcaption>La IA ayuda en el borrador y la revisión. La app verifica, y tú decides</figcaption>
+      </figure>
+      <blockquote><p><strong>Antes de pegar:</strong> los procesos internos pueden contener nombres, importes y reglas confidenciales. Sustitúyelos por datos ficticios y sigue la política de tu organización sobre el uso de IA. La app no envía nada a la red, pero el servicio de IA recibe lo que pegues en él.</p></blockquote>
+      <p>Sustituye las partes entre corchetes y pega en la herramienta de IA que uses.</p>
+      <h3>1. Entrevistar antes de dibujar</h3>
+      <p>Hace que la IA descubra lo que falta en lugar de suponerlo. Es el mejor comienzo cuando el proceso aún está en la cabeza de las personas.</p>
+      <div class="promptbox"><button type="button" class="copy" data-copy="prompt-es-1" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-es-1">Eres un analista de procesos con experiencia en BPMN 2.0.2.
+Quiero modelar este proceso: [descríbelo en pocas frases].
+
+Antes de proponer ningún diagrama, entrevístame:
+- Haz una pregunta cada vez y espera mi respuesta.
+- Cubre: qué inicia el proceso, quién participa, los pasos, las decisiones y sus criterios, las excepciones, los plazos, las esperas, los sistemas y qué indica el fin.
+- Pregunta sobre todo por lo que sale mal, no solo por el camino ideal.
+- No inventes respuestas. Si no lo sé, regístralo como pendiente.
+
+Al final, entrega: resumen del proceso, tabla de actividades (actividad, responsable, entrada, salida), lista de decisiones con criterios y lista de pendientes.</code></pre></div>
+      <h3>2. Convertir un texto en estructura</h3>
+      <p>Para actas, procedimientos o transcripciones. Pide el origen de cada elemento, lo que facilita la comprobación.</p>
+      <div class="promptbox"><button type="button" class="copy" data-copy="prompt-es-2" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-es-2">A partir del texto siguiente, extrae la estructura de un proceso para BPMN.
+
+Reglas:
+- Usa solo lo que está en el texto. Para cada elemento, cita el fragmento de origen.
+- Marca como [SUPOSICIÓN] todo lo que hayas deducido.
+- Enumera las contradicciones y lo que falta saber.
+
+Entrega: participantes, actividades en orden, decisiones (pregunta, opciones, criterio), eventos (qué inicia, termina, interrumpe o espera) y pendientes.
+
+Texto:
+&quot;&quot;&quot;
+[pega aquí, sin datos sensibles]
+&quot;&quot;&quot;</code></pre></div>
+      <h3>3. Generar el BPMN para el BPMN Simulator</h3>
+      <p>Genera un archivo que la app abre, organiza y simula. Pega la respuesta en <strong>Archivo → Ver o pegar XML</strong> y haz clic en <strong>Aplicar XML</strong>. Después ve a <strong>Verificar</strong>.</p>
+      <div class="promptbox"><button type="button" class="copy" data-copy="prompt-es-3" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-es-3">Genera un documento BPMN 2.0 XML, válido según el esquema de la OMG, para este proceso:
+[describe el proceso o pega la estructura].
+
+Formato obligatorio:
+- Raíz &lt;definitions&gt; con targetNamespace y estos namespaces:
+  xmlns=&quot;http://www.omg.org/spec/BPMN/20100524/MODEL&quot;
+  xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot;
+  xmlns:sim=&quot;https://giovanipm.github.io/ns/bpmn-simulator&quot;
+- Un &lt;process&gt; con isExecutable=&quot;false&quot;. Si hay más de un participante, usa &lt;collaboration&gt; con &lt;participant&gt; y &lt;messageFlow&gt;, con un proceso para cada participante.
+- No generes &lt;bpmndi:BPMNDiagram&gt;: la app organiza el dibujo.
+- ID únicos y legibles. Cada nodo con &lt;incoming&gt; y &lt;outgoing&gt;, en ese orden, antes de las definiciones de evento.
+- En todo gateway exclusivo que decide, un flujo predeterminado con el atributo default, y condiciones en los otros flujos con &lt;conditionExpression xsi:type=&quot;tFormalExpression&quot;&gt;.
+- Cierra los caminos paralelos con un gateway paralelo. No uses un evento intermedio de captura sin definición de evento.
+
+Para la simulación, usa extensionElements, antes de &lt;incoming&gt;:
+- En el proceso: &lt;sim:config init=&quot;campo = expresión&quot;/&gt;, con &amp;#10; entre las líneas.
+- En las actividades: &lt;sim:config duration=&quot;random(5, 15)&quot;/&gt;, en minutos.
+- En las condiciones, usa campos y los operadores: &gt; &gt;= &lt; &lt;= == != and or not.
+- Funciones disponibles: random(a, b), exponential(m), normal(m, d), chance(p), round(x, d).
+
+Responde solo con el XML. Al final, dentro de un comentario XML, enumera las suposiciones que hiciste.</code></pre></div>
+      <h3>4. Revisar un modelo</h3>
+      <p>Copia el XML de <strong>Ver o pegar XML</strong>. La IA mira el sentido del proceso, que las reglas automáticas no ven.</p>
+      <div class="promptbox"><button type="button" class="copy" data-copy="prompt-es-4" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-es-4">Revisa este proceso BPMN como un analista con experiencia.
+
+Comprueba, en este orden:
+1. Sentido de negocio: pasos ausentes, responsables extraños, excepciones sin tratar.
+2. Flujo: bloqueos, caminos sin fin, gateways que abren con un tipo y cierran con otro.
+3. Claridad: nombres de actividad con verbo y objeto, decisiones en forma de pregunta.
+4. Norma BPMN 2.0.2: conexiones prohibidas y eventos fuera de posición.
+
+Para cada problema, indica: id del elemento, problema, por qué importa, corrección sugerida y gravedad (alta, media, baja). Separa lo que es certeza de lo que es sospecha. No inventes reglas de negocio: si algo depende de ellas, haz una pregunta.
+
+XML:
+&quot;&quot;&quot;
+[pega aquí]
+&quot;&quot;&quot;</code></pre></div>
+      <h3>5. Explicar el proceso en lenguaje sencillo</h3>
+      <p>Bueno para validar con quien hace el trabajo y no lee BPMN.</p>
+      <div class="promptbox"><button type="button" class="copy" data-copy="prompt-es-5" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-es-5">Explica el proceso siguiente a [público, por ejemplo: el equipo de atención], sin términos de BPMN.
+
+Entrega:
+- En dos frases: para qué sirve y cuándo empieza.
+- El paso a paso, indicando quién hace qué.
+- Cada decisión, como pregunta, y qué ocurre con cada respuesta.
+- Qué ocurre cuando algo sale mal o se retrasa.
+- Cinco preguntas para confirmar con el equipo si el dibujo corresponde al trabajo real.
+
+Describe solo lo que está en el modelo. Si algo es ambiguo, dilo.
+
+XML:
+&quot;&quot;&quot;
+[pega aquí]
+&quot;&quot;&quot;</code></pre></div>
+      <h3>6. Proponer escenarios de prueba</h3>
+      <p>La tabla resultante se convierte en escenarios en la pestaña <strong>Escenarios de prueba</strong>. Usa los id reales del modelo.</p>
+      <div class="promptbox"><button type="button" class="copy" data-copy="prompt-es-6" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-es-6">Propón escenarios de prueba para el proceso BPMN siguiente.
+
+Cubre: el camino principal, cada salida de cada decisión, valores en el límite de las condiciones, eventos de borde que ocurren y que no ocurren, y combinaciones que parezcan arriesgadas.
+
+Para cada escenario, una fila de tabla con:
+- Nombre
+- Dado que: datos del caso, en el formato campo = valor
+- Cuando: decisiones forzadas y eventos que ocurren o no
+- Entonces: elementos por los que pasa y por los que no pasa (con el id), y cómo termina el caso
+- Por qué importa este escenario
+
+Marca con [REVISAR] los resultados esperados que dependan de una regla de negocio no escrita en el modelo. Prefiere pocos escenarios que revelen errores a muchos parecidos.
+
+XML:
+&quot;&quot;&quot;
+[pega aquí]
+&quot;&quot;&quot;</code></pre></div>
+      <h3>7. Estimar parámetros de simulación</h3>
+      <p>Sin datos reales, cualquier número es una hipótesis. Este prompt pide dejarlo a la vista.</p>
+      <div class="promptbox"><button type="button" class="copy" data-copy="prompt-es-7" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-es-7">Quiero simular este proceso BPMN y necesito duraciones, probabilidades y capacidades.
+
+Datos reales que tengo: [pega medias, volúmenes o escribe &quot;ninguno&quot;].
+
+Para cada actividad y decisión, propón:
+- Un valor en minutos, en una de estas formas: número, random(a, b), exponential(m) o normal(m, d). Justifica la elección.
+- Origen: [DATO], si viene de lo que indiqué, o [HIPÓTESIS], si es una estimación.
+- Cómo obtener el dato real.
+
+Después, enumera las tres hipótesis que más pueden cambiar el resultado, para probarlas primero.
+
+XML:
+&quot;&quot;&quot;
+[pega aquí]
+&quot;&quot;&quot;</code></pre></div>
+      <h3>8. Interpretar los resultados</h3>
+      <p>Pega los números de la pestaña <strong>Muchas ejecuciones</strong> para discutir hipótesis, no para obtener un veredicto.</p>
+      <div class="promptbox"><button type="button" class="copy" data-copy="prompt-es-8" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-es-8">Estos son los resultados de una simulación de un proceso BPMN. Los números vienen de un modelo con parámetros estimados, no del proceso real.
+
+Proceso: [descripción breve]
+Parámetros: [capacidades, duraciones y llegadas]
+Resultados: [tiempo de ciclo, ocupación por carril, colas por actividad]
+
+Haz lo siguiente:
+1. Indica el probable cuello de botella, usando los números.
+2. Sugiere como máximo tres cambios para probar, cambiando una cosa cada vez, con lo que esperas que ocurra.
+3. Di qué no permiten concluir los datos.
+4. Indica qué medir en el proceso real antes de decidir.
+
+No recomiendes inversiones basándote solo en esta simulación.</code></pre></div>
+      <h3>Qué se probó en estos prompts</h3>
+      <p>El formato pedido en el prompt 3 se probó de verdad: un XML en ese formato, escrito por Claude para un proceso de reembolso, pasó el esquema XSD de la OMG, se abrió en la app, se organizó automáticamente y se simuló hasta el final. Los prompts no se probaron en otros modelos de IA, y las respuestas cambian cada vez. Por eso, la comprobación en <strong>Verificar</strong> y con escenarios sigue siendo necesaria.</p>
+      <a class="back" href="#top">↑ Volver arriba</a>
+    </section>
+
+    <section id="praticas-es" aria-labelledby="h-praticas-es">
+      <h2 id="h-praticas-es">Buenas prácticas y errores comunes</h2>
+      <div class="table-wrap"><table><thead><tr><th scope="col">Evita</th><th scope="col">Prefiere</th></tr></thead><tbody>
+        <tr><th scope="row">Nombre vago: "Procesar"</th><td>Verbo y objeto: "Revisar comprobante"</td></tr>
+        <tr><th scope="row">Gateway sin nombre</th><td>Una pregunta: "¿Comprobante válido?"</td></tr>
+        <tr><th scope="row">Abrir con X y cerrar con +</th><td>Cerrar con el mismo tipo que abrió</td></tr>
+        <tr><th scope="row">Decisión escondida en una tarea</th><td>Una tarea para decidir y un gateway para desviar</td></tr>
+        <tr><th scope="row">Flujo de secuencia entre pools</th><td>Flujo de mensaje entre participantes</td></tr>
+        <tr><th scope="row">Solo el camino ideal</th><td>Plazos y errores con eventos de borde</td></tr>
+        <tr><th scope="row">Diagrama enorme</th><td>Subprocesos para ocultar el detalle</td></tr>
+        <tr><th scope="row">Demasiados símbolos raros</th><td>Los elementos que tu lector conoce</td></tr>
+        <tr><th scope="row">Tomar la simulación como medida</th><td>Usarla para comparar hipótesis</td></tr>
+        <tr><th scope="row">Aceptar el diagrama de la IA sin revisar</th><td>Verificar, probar y validar con quien hace el trabajo</td></tr>
+      </tbody></table></div>
+      <a class="back" href="#top">↑ Volver arriba</a>
+    </section>
+
+    <section id="revisao-es" aria-labelledby="h-revisao-es">
+      <h2 id="h-revisao-es">Repaso rápido</h2>
+      <p>Intenta responder antes de abrir.</p>
+      <div class="quiz">
+        <details><summary>1. Un proceso recibió 30 pedidos hoy. ¿Cuántas instancias hay?</summary><p>Treinta: cada pedido es una ejecución del mismo proceso.</p></details>
+        <details><summary>2. ¿Qué diferencia hay entre flujo de secuencia y flujo de mensaje?</summary><p>El de secuencia da el orden dentro de un proceso. El de mensaje es la comunicación entre participantes distintos.</p></details>
+        <details><summary>3. Un gateway exclusivo abre dos caminos y uno paralelo los cierra. ¿Qué ocurre?</summary><p>Bloqueo: solo llega una ficha, y la unión paralela espera dos.</p></details>
+        <details><summary>4. Un gateway exclusivo no tiene condición verdadera ni flujo predeterminado. ¿Y ahora?</summary><p>La norma prevé una excepción. En la app, el caso termina con error y el registro explica el motivo.</p></details>
+        <details><summary>5. ¿Qué significa un borde punteado en un evento de borde?</summary><p>Que no interrumpe: la actividad continúa y una nueva ficha sale por el evento.</p></details>
+        <details><summary>6. Los escenarios dieron 100% de cobertura. ¿El proceso es correcto?</summary><p>No necesariamente. Cada elemento se ejecutó al menos una vez, pero no se probaron todas las combinaciones, y lo esperado puede ser erróneo.</p></details>
+        <details><summary>7. La IA generó un diagrama sin errores en la pestaña Verificar. ¿Puedo publicarlo?</summary><p>Todavía no. La pestaña comprueba la forma, no el sentido. Faltan las pruebas y la validación con quien conoce el trabajo.</p></details>
+      </div>
+      <p><a class="launch" href="bpmn-simulator.html#es">Abrir el BPMN Simulator <span aria-hidden="true">→</span></a></p>
+      <a class="back" href="#top">↑ Volver arriba</a>
+    </section>
+
+    <section id="referencias-es" aria-labelledby="h-referencias-es">
+      <h2 id="h-referencias-es">Referencias</h2>
+      <ol class="refs">
+        <li id="ref-1-es">Object Management Group. <a href="https://www.omg.org/spec/BPMN/2.0.2/" rel="noopener">Business Process Model and Notation, versión 2.0.2</a> (formal/13-12-09). Fuente de las definiciones, tablas y reglas citadas, y de las fechas de las versiones 1.1, 1.2 y 2.0.2.</li>
+        <li id="ref-2-es">Object Management Group. <a href="https://www.omg.org/spec/BPMN/1.0/" rel="noopener">BPMN 1.0</a>: publicación formal en marzo de 2007, con copyright de BPMI.org de 2004.</li>
+        <li id="ref-3-es">BPMI.org. <a href="https://www.omg.org/bpmn/Documents/Press_Release_5-4-04.htm" rel="noopener">Anuncio de BPMN 1.0</a>, 4 de mayo de 2004. El encabezado dice 2004 y la línea de la ciudad dice 2003, una errata del original.</li>
+        <li id="ref-4-es">Object Management Group. <a href="https://www.omg.org/spec/BPMN/2.0/" rel="noopener">BPMN 2.0</a>: la OMG lo fecha en diciembre de 2010. Wikipedia [5] cita enero de 2011.</li>
+        <li id="ref-5-es">Wikipedia. <a href="https://en.wikipedia.org/wiki/Business_Process_Model_and_Notation" rel="noopener">Business Process Model and Notation</a>. Fuente de la fusión de 2005 y del cambio de nombre en la versión 2.0. Las páginas actuales de la OMG usan el nombre nuevo también para la versión 1.0.</li>
+        <li id="ref-6-es">Trisotech. <a href="https://www.trisotech.com/bpmn-introduction-and-history/" rel="noopener">BPMN Introduction and History</a>. Fuente secundaria, de un fabricante, para el mes de la fusión (junio de 2005).</li>
+        <li id="ref-7-es">ISO e IEC. <a href="https://www.iso.org/standard/62652.html" rel="noopener">ISO/IEC 19510:2013</a>; <a href="https://webstore.iec.ch/publication/10695" rel="noopener">registro en IEC</a>. Publicada en julio de 2013. Las fuentes difieren sobre la correspondencia: ISO indica la versión 2.0.1 de la OMG, y Trisotech [6], la 2.0.2.</li>
+        <li id="ref-8-es">BPMN Model Interchange Working Group. <a href="https://github.com/bpmn-miwg/bpmn-miwg-test-suite" rel="noopener">Suite de pruebas de intercambio</a>, usada para comprobar la importación de la app.</li>
+      </ol>
+      <a class="back" href="#top">↑ Volver arriba</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span>Giovani Perotto Mesquita · Porto Alegre, RS</span>
+    <span><a href="projects.html" data-projects data-foot="0">Projetos</a> · <a href="resume.html" data-resume data-foot="1">Currículo</a> · <a href="contact.html" data-contact data-foot="2">Contato</a></span>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('.lang [role="option"]'));
+    var titles = {"pt":"BPMN Simulator: tutorial · Giovani Perotto Mesquita","en":"BPMN Simulator: tutorial · Giovani Perotto Mesquita","it":"BPMN Simulator: tutorial · Giovani Perotto Mesquita","es":"BPMN Simulator: tutorial · Giovani Perotto Mesquita"};
+    var foots = {"pt": ["Projetos", "Currículo", "Contato"], "en": ["Projects", "Resume", "Contact"], "it": ["Progetti", "Curriculum", "Contatti"], "es": ["Proyectos", "Currículum", "Contacto"]};
+    var langs = { pt: 'pt-BR', en: 'en', it: 'it', es: 'es' };
+    var bar = document.querySelector('.progress');
+    var article = document.querySelector('[role="tabpanel"]:not([hidden]) article');
+
+    function show(id, focus) {
+      tabs.forEach(function (t) {
+        var on = t.getAttribute('aria-controls') === id;
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+        if (on && focus) t.focus();
+      });
+      document.documentElement.lang = langs[id];
+      document.title = titles[id];
+      var suffix = id === 'pt' ? '' : '#' + id;
+      [['data-home', 'index.html'], ['data-about', 'about.html'], ['data-resume', 'resume.html'], ['data-projects', 'projects.html'], ['data-contact', 'contact.html']].forEach(function (p) {
+        document.querySelectorAll('[' + p[0] + ']').forEach(function (a) { a.href = p[1] + suffix; });
+      });
+      document.querySelectorAll('[data-foot]').forEach(function (a) { a.textContent = foots[id][+a.getAttribute('data-foot')]; });
+      article = document.querySelector('#' + id + ' article');
+      if (history.replaceState) history.replaceState(null, '', id === 'pt' ? location.pathname : '#' + id);
+      progress();
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () { show(t.getAttribute('aria-controls')); });
+      t.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (d) { e.preventDefault(); show(tabs[(i + d + tabs.length) % tabs.length].getAttribute('aria-controls'), true); }
+      });
+    });
+
+    // barra de progresso de leitura
+    function progress() {
+      if (!article) return;
+      var r = article.getBoundingClientRect();
+      var total = r.height - window.innerHeight;
+      var p = total > 0 ? Math.min(Math.max(-r.top / total, 0), 1) : 1;
+      bar.style.width = (p * 100) + '%';
+    }
+    window.addEventListener('scroll', progress, { passive: true });
+    window.addEventListener('resize', progress);
+
+    // destaca a seção atual no índice
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          var panel = e.target.closest('[role="tabpanel"]');
+          panel.querySelectorAll('.toc a').forEach(function (a) {
+            if (a.getAttribute('href') === '#' + e.target.id) a.setAttribute('aria-current', 'true');
+            else a.removeAttribute('aria-current');
+          });
+        });
+      }, { rootMargin: '-20% 0px -70% 0px' });
+      document.querySelectorAll('article section[id]').forEach(function (s) { io.observe(s); });
+    }
+
+    var h = (location.hash || '').replace('#', '');
+    var m = h.match(/^(?:.*-)?(en|it|es)$/);
+    if (m) {
+      show(m[1]);
+      if (h !== m[1]) { var el = document.getElementById(h); if (el) el.scrollIntoView(); if (history.replaceState) history.replaceState(null, '', '#' + h); }
+    } else progress();
+  })();
+</script>
+<script>
+  // seletor de idioma em combobox: abre a lista, sincroniza o botão e fecha
+  (function () {
+    var box = document.querySelector('.lang'); if (!box) return;
+    var btn = box.querySelector('.lang-current'), list = box.querySelector('.lang-list'), now = btn.querySelector('.lang-now');
+    var opts = Array.prototype.slice.call(list.querySelectorAll('[role="option"]'));
+    var menu = {
+      pt: { index: 'Início', about: 'Sobre', resume: 'Currículo', projects: 'Projetos', contact: 'Contato' },
+      en: { index: 'Home', about: 'About', resume: 'Resume', projects: 'Projects', contact: 'Contact' },
+      it: { index: 'Home', about: 'Chi sono', resume: 'Curriculum', projects: 'Progetti', contact: 'Contatti' },
+      es: { index: 'Inicio', about: 'Sobre mí', resume: 'Currículum', projects: 'Proyectos', contact: 'Contacto' }
+    };
+    function translate(id) {
+      document.querySelectorAll('.nav ul a').forEach(function (l) {
+        var k = (l.getAttribute('href') || '').split('#')[0].replace('.html', '');
+        if (menu[id] && menu[id][k]) l.textContent = menu[id][k];
+      });
+      // links do menu para as páginas principais levam o idioma selecionado
+      var suf = id === 'pt' ? '' : '#' + id;
+      document.querySelectorAll('.nav a[href]').forEach(function (l) {
+        var m = l.getAttribute('href').match(/^(index|about|resume|projects|contact)\.html(#(pt|en|it|es))?$/);
+        if (m) l.setAttribute('href', m[1] + '.html' + suf);
+      });
+    }
+    function sync() {
+      var sel = opts.filter(function (o) { return o.getAttribute('aria-selected') === 'true'; })[0] || opts[0];
+      now.innerHTML = sel.querySelector('.flag').outerHTML + sel.getAttribute('data-code');
+      btn.setAttribute('aria-label', btn.getAttribute('data-label') + ': ' + sel.textContent.trim());
+      translate(sel.getAttribute('aria-controls'));
+      return sel;
+    }
+    function open() { list.hidden = false; btn.setAttribute('aria-expanded', 'true'); sync().focus(); }
+    function close(back) { list.hidden = true; btn.setAttribute('aria-expanded', 'false'); if (back) btn.focus(); }
+    btn.addEventListener('click', function () { if (list.hidden) open(); else close(); });
+    btn.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); open(); }
+      else if (e.key === 'Escape') close();
+    });
+    opts.forEach(function (o, i) {
+      o.addEventListener('click', function () { sync(); close(true); });
+      o.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0;
+        if (d) { e.preventDefault(); opts[(i + d + opts.length) % opts.length].focus(); }
+        else if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); opts[e.key === 'Home' ? 0 : opts.length - 1].focus(); }
+        else if (e.key === 'Escape') { e.preventDefault(); close(true); }
+        else if (e.key === 'Tab') close();
+      });
+    });
+    document.addEventListener('click', function (e) { if (!box.contains(e.target)) close(); });
+    new MutationObserver(sync).observe(list, { attributes: true, subtree: true, attributeFilter: ['aria-selected'] });
+    sync();
+  })();
+</script>
+<script>
+document.addEventListener('click', function (e) {
+  var b = e.target.closest && e.target.closest('[data-copy]');
+  if (!b) return;
+  var code = document.getElementById(b.getAttribute('data-copy')), old = b.textContent;
+  function done() { b.textContent = b.getAttribute('data-done'); setTimeout(function () { b.textContent = old; }, 1500); }
+  function fallback() { var r = document.createRange(); r.selectNodeContents(code); var s = getSelection(); s.removeAllRanges(); s.addRange(r); try { document.execCommand('copy'); done(); } catch (x) {} }
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code.textContent).then(done, fallback); else fallback();
+});
+</script>
+</body>
+</html>
