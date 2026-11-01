@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>DFD Simulator: tutorial · Giovani Perotto Mesquita</title>
-<meta name="description" content="Tutorial do DFD Simulator, app em um único arquivo HTML para desenhar diagramas de fluxo de dados e simular a sua execução: elementos, roteiro passo a passo, regras, níveis, verificação, leitura de filas e gargalos, atalhos e solução de problemas. Disponível em português, inglês, italiano e espanhol.">
+<meta name="description" content="Tutorial do DFD Simulator, app em um único arquivo HTML para desenhar diagramas de fluxo de dados e simular a sua execução: elementos, roteiro passo a passo, regras, níveis, verificação, leitura de filas e gargalos, prompts de IA, atalhos e solução de problemas. Disponível em português, inglês, italiano e espanhol.">
 <meta name="author" content="Giovani Perotto Mesquita">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -238,6 +238,10 @@
   .launch { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--sans); font-weight: 600; font-size: 1rem; background: var(--accent-strong); color: var(--surface); text-decoration: none; padding: 0.65rem 1.2rem; border-radius: 10px; }
   .launch:hover { background: var(--navy-deep); color: #FFFFFF; }
   kbd { font-family: var(--sans); font-size: 0.85em; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 0.05em 0.4em; white-space: nowrap; }
+  .promptbox { position: relative; margin: 1rem 0 1.6rem; }
+  .promptbox pre.code { margin: 0; padding-top: 2.6rem; max-height: 420px; overflow: auto; }
+  .promptbox pre.code code { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .promptbox .copy { position: absolute; top: 8px; right: 14px; z-index: 1; font: 600 0.8rem var(--sans); color: #2B1B3D; background: #FFB703; border: 0; border-radius: 6px; padding: 0.3rem 0.65rem; cursor: pointer; }
 </style>
 </head>
 <body id="top">
@@ -302,6 +306,7 @@
       <li><a href="#resultados-pt">Ler os resultados</a></li>
       <li><a href="#experimentos-pt">Experimentos com os exemplos</a></li>
       <li><a href="#arquivos-pt">Salvar, abrir e exportar</a></li>
+      <li><a href="#ia-pt">Prompts de IA</a></li>
       <li><a href="#atalhos-pt">Atalhos de teclado</a></li>
       <li><a href="#problemas-pt">Limitações e solução de problemas</a></li>
       <li><a href="#revisao-pt">Revisão rápida</a></li>
@@ -702,6 +707,200 @@ ok = exists(products) &amp;&amp; products.stock &gt;= qty</code></pre>
 <aside class="note"><p>O modelo fica apenas no armazenamento do navegador até você salvar o JSON. Limpar os dados do navegador apaga esse modelo. Salve uma cópia de trabalhos importantes.</p></aside>
 </section>
 
+<section id="ia-pt" aria-labelledby="h-ia-pt">
+<h2 id="h-ia-pt">Prompts de IA</h2>
+<p>Uma IA ajuda a levantar quem envia e recebe cada dado, a montar o primeiro diagrama, a escrever regras e a ler filas e gargalos. Ela também erra com segurança: inventa fluxos, chuta tempos e explica números que não leu. Trate a saída como rascunho de um colega apressado. Para escrever prompts melhores, veja o <a href="PromptTutorial.html">tutorial de prompts</a>.</p>
+<figure>
+<img src="rc_images/DFDSimulatorIA.svg" alt="Seis passos: você descreve o sistema, a IA monta o rascunho, o app verifica e simula, o app repete as rodadas, a IA ajuda a ler os números e você decide a mudança. Da decisão, volta-se às rodadas para comparar com a referência." loading="lazy">
+<figcaption>A IA acelera o rascunho e a leitura. Os números vêm das rodadas no app, e a decisão é sua.</figcaption>
+</figure>
+<blockquote><p><strong>Antes de colar:</strong> diagramas e registros podem conter nomes, valores e regras sigilosas. Troque por dados fictícios e siga a política da sua organização para uso de IA. O app não envia nada para a rede, mas o serviço de IA recebe o que você colar nele.</p></blockquote>
+<p>Troque os trechos entre colchetes e cole na ferramenta de IA que você usa. Os prompts seguem a ordem do trabalho, mas cada um funciona sozinho.</p>
+<h3>1. Entrevistar antes de desenhar</h3>
+<p>Faz a IA descobrir o que falta, em vez de supor. É o melhor começo quando o sistema ainda está na cabeça das pessoas.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-pt-1" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-pt-1">Você é um analista de sistemas experiente em diagramas de fluxo de dados.
+Quero modelar este sistema: [descreva em poucas frases].
+
+Antes de propor qualquer diagrama, me entreviste:
+- Faça uma pergunta por vez e espere minha resposta.
+- Cubra: quem envia e quem recebe dados de fora do sistema, o que cada dado contém, o que cada processo faz com ele, o que precisa ficar guardado, quem lê o que foi guardado, as condições que mudam o caminho, os erros e recusas, o volume de chegada e quanto tempo cada processo leva.
+- Pergunte principalmente sobre o que dá errado, não só sobre o caminho feliz.
+- Não invente respostas. Se eu não souber, registre como pendência.
+
+Ao final, entregue tabelas de: entidades externas; processos (nome com verbo, entradas, saídas, regra, duração, capacidade); depósitos (campos e chave); fluxos (origem, destino, nome, campos, condição); e a lista de pendências.</code></pre></div>
+<h3>2. Transformar um texto em elementos</h3>
+<p>Para requisitos, atas e procedimentos. Pede a origem de cada item, o que facilita conferir.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-pt-2" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-pt-2">A partir do texto abaixo, extraia os elementos de um diagrama de fluxo de dados.
+
+Texto:
+[cole os requisitos, a ata ou o procedimento]
+
+Entregue:
+1. Entidades externas, processos e depósitos, cada um com o trecho do texto que o sustenta.
+2. Fluxos: origem, destino, nome e campos. Todo fluxo precisa ter um processo em uma das pontas.
+3. Regras e condições citadas, e em qual processo ou fluxo cada uma se aplica.
+4. Lacunas: dados que aparecem sem origem, dados guardados que ninguém lê, processos sem entrada ou sem saída, e contradições.
+5. Perguntas para esclarecer cada lacuna.
+
+Não preencha lacunas por conta própria. O que não estiver no texto vai para as perguntas.</code></pre></div>
+<h3>3. Gerar o modelo em JSON</h3>
+<p>Transforma o que você reuniu em um arquivo que o app abre, em vez de desenhar elemento por elemento. Gera só o nível principal; depois, detalhe no app os processos que precisarem.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-pt-3" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-pt-3">Gere um modelo em JSON para o DFD Simulator, a partir das informações no fim.
+
+Responda só com o JSON, sem comentários e sem cercas de código.
+
+Formato:
+- Raiz: "name", "notation" ("yd" ou "gs"), "seed" e "diagrams". Gere só "diagrams.root", com "id": "root", "parent": null, "nodes" e "flows". Não gere subdiagramas.
+- Elemento: "id", "type" (entity, process ou store), "name", "x", "y" e, se fizer sentido, "desc".
+- entity: "gen" (campos, um por linha, separados por \n; seq é o número da emissão), "interval" (número ou expressão, em texto; 0 só emite por clique), "limit" e "start".
+- process: "k" (número único), "rules" (campo = expressão, um por linha), "duration" (expressão, em texto), "capacity" e "queueLimit" (0 é sem limite).
+- store: "k" (número único), "key" (campo-chave) e "initial" (texto com uma lista JSON de objetos).
+- Fluxo: "id", "from", "to", "name" e, conforme o caso:
+  - saindo de processo: "guard" (condição; "else" vale quando nenhuma outra é verdadeira) e "fields" (campos que passam, separados por vírgula);
+  - para depósito: "op" (insert, upsert ou delete);
+  - vindo de depósito: "filter" (como id == in.id), "alias" (nome nas regras), "readAll" e "consume";
+  - em qualquer um: "transit" (tempo de trânsito).
+
+Regras:
+- Todo elemento e todo fluxo precisa de "id". Todo fluxo precisa ter um processo em uma das pontas.
+- Posições: x de 120 a 1300 e y de 70 a 600, com ao menos 240 de distância na horizontal e 150 na vertical. Entidades nas laterais, processos no centro e depósitos acima ou abaixo deles.
+- Expressões aceitam + - * / %, comparações, and, or, not, condição ? a : b, round, floor, ceil, min, max, abs, exists, coalesce, if, count, sum, avg, random(a, b), randint(a, b), exponential(média), normal(média, desvio), chance(p) e pick(a, b). Use ponto no decimal. Não use outras funções.
+- Uma condição não enxerga o registro lido: grave o resultado em um campo nas regras e use esse campo.
+- Use os mesmos nomes de campo em todos os elementos, porque o app não avisa quando um nome está errado.
+- Dê um "limit" maior que 0 às entidades com "interval", para a simulação terminar.
+- Em "desc", diga se os tempos foram informados por mim ou são hipótese sua. Não invente fontes.
+
+Exemplo do formato:
+{
+  "name": "Pizzaria",
+  "notation": "yd",
+  "seed": 1,
+  "diagrams": {"root": {"id": "root", "parent": null,
+    "nodes": [
+      {"id": "c", "type": "entity", "name": "Cliente", "x": 120, "y": 240, "gen": "id = seq\nqty = randint(1, 3)", "interval": "3", "limit": 6},
+      {"id": "p", "type": "process", "name": "Registrar pedido", "x": 400, "y": 240, "k": 1, "rules": "total = qty * 40", "duration": "2", "capacity": 1},
+      {"id": "d", "type": "store", "name": "Pedidos", "x": 400, "y": 70, "k": 1, "key": "id"},
+      {"id": "k", "type": "entity", "name": "Cozinha", "x": 680, "y": 240}
+    ],
+    "flows": [
+      {"id": "f1", "from": "c", "to": "p", "name": "pedido"},
+      {"id": "f2", "from": "p", "to": "d", "name": "pedido registrado"},
+      {"id": "f3", "from": "p", "to": "k", "name": "comanda", "fields": "id, qty"}
+    ]
+  }}
+}
+
+Informações:
+[cole o resultado do prompt 1 ou 2, ou descreva o sistema]</code></pre></div>
+<h3>4. Estimar tempos e capacidades</h3>
+<p>Filas dependem de tempos. Este prompt deixa claro o que é hipótese e devolve expressões que o app aceita.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-pt-4" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-pt-4">Preciso de tempos iniciais para simular este sistema. Não tenho medições.
+
+Sistema:
+[cole as tabelas ou o JSON do modelo]
+Unidade de tempo: [escolha uma só para todo o modelo]
+
+Para cada entidade e processo, entregue uma tabela com: mínimo, mais provável, máximo, em que você se baseou, como eu mediria o valor real e sua confiança (baixa, média ou alta).
+
+Regras:
+- Tudo é hipótese até eu confirmar. Diga isso claramente.
+- Não cite estudos ou números de mercado que você não possa indicar com precisão. Sem base, diga "sem base" e dê só a faixa.
+- Devolva o texto exato para os campos do app, usando só random(a, b), exponential(média) ou normal(média, desvio): Emitir a cada (entidade), Duração, Capacidade e Limite da fila (processo), Tempo de trânsito (fluxo).
+- Para cada processo, compare o tempo que ele leva com o intervalo de chegada, considerando a capacidade, e aponte onde deve formar fila.
+- Aponte as 3 estimativas que mais podem mudar o resultado e que eu deveria medir primeiro.</code></pre></div>
+<h3>5. Revisar o diagrama</h3>
+<p>Procura o que a aba Verificar não vê: dados que saem de um processo sem nunca terem entrado, e fluxos que faltam.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-pt-5" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-pt-5">Revise este diagrama de fluxo de dados como um analista de sistemas experiente.
+
+Modelo:
+[cole o JSON ou as tabelas]
+
+Procure:
+- Processos que produzem dados que não recebem: campos que saem sem entrar nem serem calculados.
+- Dados recebidos que nenhum processo usa.
+- Depósitos gravados que ninguém lê, ou lidos sem nada gravar, e leituras cujo filtro não acha o registro.
+- Fluxos que faltam: erros, recusas, respostas à entidade de origem.
+- Condições que deixam o dado sem saída, e fluxos sem else onde deveria haver um.
+- Fluxos com nome vago, processos sem verbo e campos com nomes diferentes para o mesmo dado.
+- Leituras e gravações do mesmo registro por processos simultâneos, que podem causar atualização perdida.
+
+Entregue uma tabela com: elemento, problema, por que importa, sugestão e gravidade (alta, média ou baixa). Não reescreva o modelo. Não confirme que está certo só porque não achou problemas: diga o que não dá para avaliar sem mais dados.</code></pre></div>
+<h3>6. Escrever regras e condições</h3>
+<p>Devolve o texto dos campos, respeitando o que cada um enxerga. Uma condição, por exemplo, não vê o registro lido.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-pt-6" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-pt-6">Escreva regras e condições para o DFD Simulator.
+
+Modelo:
+[cole o JSON ou descreva os elementos e os campos]
+O que preciso que aconteça:
+[descreva em linguagem comum]
+
+Para cada campo, entregue o texto exato e onde colar: Dados gerados (entidade), Regras e Duração (processo), Condição e Campos que passam (fluxo que sai do processo), Filtro de leitura e Nome nas regras (fluxo vindo de depósito).
+
+Regras:
+- Regras e dados gerados têm uma atribuição por linha, campo = expressão, e cada linha pode usar a anterior.
+- Dados gerados enxergam seq, t e as linhas anteriores. Regras e duração enxergam os campos do dado, os registros lidos pelo Nome nas regras e t. Condição enxerga os campos do dado que sai e t. Filtro enxerga os campos do registro, in.campo e t.
+- Uma condição não enxerga o registro lido: grave o resultado em um campo, como ok = exists(produto).
+- Se mais de uma condição for verdadeira, cada fluxo recebe uma cópia. Se nenhuma for e não houver else, o dado é descartado: diga como tratar esse caso.
+- Use só funções que existem: round, floor, ceil, abs, min, max, exists, coalesce, if, count, sum, avg, minof, maxof, len, upper, lower, concat, contains, random, randint, exponential, normal, chance e pick.
+- Campo inexistente vale null, sem erro: confira os nomes e aponte os que você supôs.
+- Dê um exemplo de dado de entrada e o resultado esperado, para eu conferir na simulação.</code></pre></div>
+<h3>7. Ler os resultados da simulação</h3>
+<p>Depois de repetir as rodadas, copie as tabelas e cole no prompt, com o modelo.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-pt-7" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-pt-7">Ajude-me a interpretar esta simulação. Os números vêm de um modelo, não de medições.
+
+Modelo:
+[cole o JSON ou descreva os elementos]
+Resultados:
+[cole as tabelas das abas Estatísticas e Cenários, informando quantas rodadas foram]
+
+Entregue:
+1. O que os resultados dizem, em até 5 frases, comparando média, mediana e 95%.
+2. O provável gargalo, com fila máxima, espera média e ocupação, e por que os outros processos não são.
+3. O que os descartados e rejeitados indicam.
+4. O que é padrão e o que pode ser acaso: use a margem e a faixa entre menor e maior. Com uma rodada só, diga que ainda não dá para concluir.
+5. O que eu não posso concluir: hipóteses frágeis e limitações do modelo.
+
+Regras:
+- Use só números que estão nas tabelas, sem criar novos. Se faltar um dado, diga que falta.
+- Separe o que foi calculado da sua interpretação. Não afirme causas no mundo real: apresente como hipótese a confirmar.</code></pre></div>
+<h3>8. Planejar os próximos cenários</h3>
+<p>Transforma o diagnóstico em uma lista curta de testes, para comparar com a referência uma mudança por vez.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-pt-8" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-pt-8">Com base nesta simulação, planeje os próximos cenários.
+
+Modelo:
+[cole o JSON ou descreva os elementos]
+Resultados:
+[cole as tabelas das abas Estatísticas e Cenários]
+Objetivo: [por exemplo, entregar 95% em até 10 unidades de tempo]
+Restrições: [o que não pode mudar]
+
+Proponha até 5 alternativas e, para cada uma, entregue:
+- O que muda no modelo: o elemento, o campo (Capacidade, Duração, Limite da fila, Emitir a cada, Condição ou um fluxo novo) e o valor exato.
+- O efeito esperado, como hipótese, e a medida que o confirmaria.
+- O que seria preciso para fazer a mudança no mundo real, e o risco.
+
+Regras:
+- Cada alternativa muda uma coisa só, para o efeito ser atribuível.
+- Comece pelo gargalo. Avise quando aliviar um processo pode só mover a fila para o seguinte.
+- Não prometa ganhos em números: o resultado sai da simulação.
+
+Termine com o passo a passo no app: repetir 30 rodadas, guardar como referência, voltar a editar, fazer a mudança, simular, repetir e ler a coluna Leitura. Inclua uma tabela vazia para eu preencher: alternativa, medida, referência, atual e leitura.</code></pre></div>
+<h3>Como abrir o JSON gerado no prompt 3</h3><ol><li>Copie a resposta da IA para um editor de texto e salve com a extensão <code>.json</code>, por exemplo <code>sistema.json</code>.</li><li>No app, use <strong>Arquivo ▾</strong> → <strong>Abrir modelo (.json)…</strong>, ou arraste o arquivo para a janela. Se já houver um modelo, confirme a substituição; salve antes o que quiser manter.</li><li>Clique em <strong>Ajustar</strong> e arraste o que ficar mal posicionado: o app não organiza o diagrama sozinho.</li><li>Abra a aba <strong>Verificar</strong> e confira cada item.</li></ol><h3>Como levar os resultados para a IA</h3><p>O app não gera relatório da simulação. Para os prompts 7 e 8, selecione com o mouse a tabela da aba <strong>Estatísticas</strong> ou <strong>Cenários</strong>, copie e cole no prompt. Em <strong>Registro</strong>, <strong>Baixar CSV</strong> exporta os eventos.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Sintoma</th><th scope="col">Causa</th><th scope="col">Solução</th></tr></thead>
+<tbody>
+<tr><td>“Não foi possível abrir”, com erro de JSON</td><td>A resposta tem texto ou as cercas <code>```</code> em volta do JSON.</td><td>Salve só do primeiro <code>{</code> ao último <code>}</code>.</td></tr>
+<tr><td>“o arquivo não é um modelo deste app”</td><td>Falta <code>diagrams.root</code>.</td><td>Peça para a IA corrigir conforme o formato do prompt.</td></tr>
+<tr><td>Elementos amontoados em um ponto</td><td>Faltam <code>x</code> e <code>y</code>.</td><td>Arraste os elementos, ou peça as posições.</td></tr>
+<tr><td>Faltam elementos ou fluxos</td><td>O app ignora elementos e fluxos sem <code>id</code>, e fluxos com pontas que não existem. A aba <strong>Verificar</strong> costuma apontar o que sobrou.</td><td>Compare com o JSON e peça a correção.</td></tr>
+<tr><td>“liga entidade e depósito diretamente”, e a simulação não inicia</td><td>A IA ligou uma entidade direto a um depósito.</td><td>Peça um processo entre os dois.</td></tr>
+<tr><td>Contas dão 0 ou vazio, sem erro</td><td>O nome do campo difere entre os elementos. Campo inexistente vale <code>null</code>, e o app não avisa.</td><td>Clique em um dado em trânsito e confira os campos.</td></tr>
+</tbody>
+</table></div>
+<aside class="note"><p>A IA não executa o seu sistema. Os números vêm das rodadas no app e valem para os tempos e as regras informados. Se estes forem chutes da IA, o resultado também será.</p></aside>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
 <section id="atalhos-pt" aria-labelledby="h-atalhos-pt">
 <h2 id="h-atalhos-pt">Atalhos de teclado</h2>
 <div class="table-wrap"><table>
@@ -761,6 +960,7 @@ ok = exists(products) &amp;&amp; products.stock &gt;= qty</code></pre>
 <details><summary>4. Como usar um registro lido em uma condição?</summary><p>Grave o valor em um campo nas regras, como <code>ok = exists(products)</code>, e use <code>ok</code> na condição.</p></details>
 <details><summary>5. Um fluxo foi criado no processo pai. O que muda no subdiagrama?</summary><p>Surge um elemento tracejado com esse fluxo, e a aba <strong>Verificar</strong> aponta o balanceamento até ele ser ligado.</p></details>
 <details><summary>6. Por que a simulação repete os mesmos valores aleatórios?</summary><p>Porque usa a mesma <strong>Semente aleatória</strong>. Isso permite comparar cenários; troque a semente para ver outra sequência.</p></details>
+<details><summary>7. A IA estimou os tempos e a aba Estatísticas apontou um gargalo. Ele está confirmado?</summary><p>Não. O resultado segue os tempos informados. Confirme com dados reais, repita com outras sementes e compare a mudança com uma referência antes de agir.</p></details>
 </div>
 <a class="back" href="#top">↑ Voltar ao topo</a>
 </section>
@@ -816,6 +1016,7 @@ ok = exists(products) &amp;&amp; products.stock &gt;= qty</code></pre>
       <li><a href="#resultados-en">Reading the results</a></li>
       <li><a href="#experimentos-en">Experiments with the samples</a></li>
       <li><a href="#arquivos-en">Saving, opening and exporting</a></li>
+      <li><a href="#ia-en">AI prompts</a></li>
       <li><a href="#atalhos-en">Keyboard shortcuts</a></li>
       <li><a href="#problemas-en">Limitations and troubleshooting</a></li>
       <li><a href="#revisao-en">Quick review</a></li>
@@ -1216,6 +1417,200 @@ ok = exists(products) &amp;&amp; products.stock &gt;= qty</code></pre>
 <aside class="note"><p>The model stays only in the browser's storage until you save the JSON. Clearing browser data deletes it. Save a copy of important work.</p></aside>
 </section>
 
+<section id="ia-en" aria-labelledby="h-ia-en">
+<h2 id="h-ia-en">AI prompts</h2>
+<p>An AI helps you find out who sends and receives each piece of data, build the first diagram, write rules and read queues and bottlenecks. It also makes confident mistakes: it invents flows, guesses times and explains numbers it has not read. Treat its output as a draft from a colleague in a hurry. To write better prompts, see the <a href="PromptTutorial.html#en">prompt tutorial</a>.</p>
+<figure>
+<img src="rc_images/DFDSimulatorIA-en.svg" alt="Six steps: you describe the system, the AI builds the draft, the app checks and simulates, the app repeats the runs, the AI helps read the numbers and you decide the change. From the decision, you go back to the runs to compare with the baseline." loading="lazy">
+<figcaption>The AI speeds up the draft and the reading. The numbers come from the runs in the app, and the decision is yours.</figcaption>
+</figure>
+<blockquote><p><strong>Before pasting:</strong> diagrams and records may contain confidential names, figures and rules. Replace them with made-up data and follow your organization's AI policy. The app sends nothing over the network, but the AI service receives whatever you paste into it.</p></blockquote>
+<p>Replace the parts in brackets and paste into the AI tool you use. The prompts follow the order of the work, but each one works on its own.</p>
+<h3>1. Interview before drawing</h3>
+<p>Makes the AI find out what is missing instead of assuming. It is the best start when the system is still in people's heads.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-en-1" data-done="Copied">Copy</button><pre class="code"><code id="prompt-en-1">You are a systems analyst experienced with data flow diagrams.
+I want to model this system: [describe in a few sentences].
+
+Before proposing any diagram, interview me:
+- Ask one question at a time and wait for my answer.
+- Cover: who sends and receives data from outside the system, what each piece of data contains, what each process does with it, what must be kept, who reads what was kept, the conditions that change the path, the errors and refusals, the arrival volume and how long each process takes.
+- Ask mainly about what goes wrong, not just the happy path.
+- Do not invent answers. If I do not know, record it as an open item.
+
+At the end, deliver tables of: external entities; processes (name with a verb, inputs, outputs, rule, duration, capacity); stores (fields and key); flows (source, target, name, fields, condition); and the list of open items.</code></pre></div>
+<h3>2. Turn a text into elements</h3>
+<p>For requirements, minutes and procedures. It asks for the source of each item, which makes checking easier.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-en-2" data-done="Copied">Copy</button><pre class="code"><code id="prompt-en-2">From the text below, extract the elements of a data flow diagram.
+
+Text:
+[paste the requirements, minutes or procedure]
+
+Deliver:
+1. External entities, processes and stores, each with the passage of the text that supports it.
+2. Flows: source, target, name and fields. Every flow must have a process at one end.
+3. Rules and conditions mentioned, and which process or flow each one applies to.
+4. Gaps: data appearing with no source, stored data nobody reads, processes with no input or no output, and contradictions.
+5. Questions to clarify each gap.
+
+Do not fill gaps on your own. Whatever is not in the text goes to the questions.</code></pre></div>
+<h3>3. Generate the model as JSON</h3>
+<p>Turns what you gathered into a file the app opens, instead of drawing element by element. It generates only the main level; then detail in the app the processes that need it.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-en-3" data-done="Copied">Copy</button><pre class="code"><code id="prompt-en-3">Generate a model as JSON for DFD Simulator, from the information at the end.
+
+Answer with the JSON only, no comments and no code fences.
+
+Format:
+- Root: "name", "notation" ("yd" or "gs"), "seed" and "diagrams". Generate only "diagrams.root", with "id": "root", "parent": null, "nodes" and "flows". Do not generate subdiagrams.
+- Element: "id", "type" (entity, process or store), "name", "x", "y" and, where it makes sense, "desc".
+- entity: "gen" (fields, one per line, separated by \n; seq is the emission number), "interval" (a number or expression, as text; 0 emits only on click), "limit" and "start".
+- process: "k" (unique number), "rules" (field = expression, one per line), "duration" (expression, as text), "capacity" and "queueLimit" (0 is no limit).
+- store: "k" (unique number), "key" (key field) and "initial" (text with a JSON list of objects).
+- Flow: "id", "from", "to", "name" and, depending on the case:
+  - leaving a process: "guard" (condition; "else" applies when no other is true) and "fields" (fields passed, separated by commas);
+  - to a store: "op" (insert, upsert or delete);
+  - from a store: "filter" (such as id == in.id), "alias" (name in rules), "readAll" and "consume";
+  - on any flow: "transit" (transit time).
+
+Rules:
+- Every element and every flow needs an "id". Every flow must have a process at one end.
+- Positions: x from 120 to 1300 and y from 70 to 600, at least 240 apart horizontally and 150 vertically. Entities on the sides, processes in the center and stores above or below them.
+- Expressions accept + - * / %, comparisons, and, or, not, condition ? a : b, round, floor, ceil, min, max, abs, exists, coalesce, if, count, sum, avg, random(a, b), randint(a, b), exponential(mean), normal(mean, sd), chance(p) and pick(a, b). Use a point for decimals. Do not use other functions.
+- A condition does not see the record read: write the result to a field in the rules and use that field.
+- Use the same field names in all elements, because the app gives no warning when a name is wrong.
+- Give entities with an "interval" a "limit" above 0, so the simulation ends.
+- In "desc", say whether the times came from me or are your assumption. Do not invent sources.
+
+Format example:
+{
+  "name": "Pizzeria",
+  "notation": "yd",
+  "seed": 1,
+  "diagrams": {"root": {"id": "root", "parent": null,
+    "nodes": [
+      {"id": "c", "type": "entity", "name": "Customer", "x": 120, "y": 240, "gen": "id = seq\nqty = randint(1, 3)", "interval": "3", "limit": 6},
+      {"id": "p", "type": "process", "name": "Register order", "x": 400, "y": 240, "k": 1, "rules": "total = qty * 40", "duration": "2", "capacity": 1},
+      {"id": "d", "type": "store", "name": "Orders", "x": 400, "y": 70, "k": 1, "key": "id"},
+      {"id": "k", "type": "entity", "name": "Kitchen", "x": 680, "y": 240}
+    ],
+    "flows": [
+      {"id": "f1", "from": "c", "to": "p", "name": "order"},
+      {"id": "f2", "from": "p", "to": "d", "name": "registered order"},
+      {"id": "f3", "from": "p", "to": "k", "name": "kitchen ticket", "fields": "id, qty"}
+    ]
+  }}
+}
+
+Information:
+[paste the result of prompt 1 or 2, or describe the system]</code></pre></div>
+<h3>4. Estimate times and capacities</h3>
+<p>Queues depend on times. This prompt makes clear what is an assumption and returns expressions the app accepts.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-en-4" data-done="Copied">Copy</button><pre class="code"><code id="prompt-en-4">I need initial times to simulate this system. I have no measurements.
+
+System:
+[paste the tables or the model JSON]
+Time unit: [choose one for the whole model]
+
+For each entity and process, deliver a table with: minimum, most likely, maximum, what you based it on, how I would measure the real value and your confidence (low, medium or high).
+
+Rules:
+- Everything is an assumption until I confirm it. Say so clearly.
+- Do not cite studies or market figures you cannot point to precisely. With no basis, say "no basis" and give only the range.
+- Return the exact text for the app's fields, using only random(a, b), exponential(mean) or normal(mean, sd): Emit every (entity), Duration, Capacity and Queue limit (process), Transit time (flow).
+- For each process, compare the time it takes with the arrival interval, considering the capacity, and point out where a queue should form.
+- Point out the 3 estimates most likely to change the result, which I should measure first.</code></pre></div>
+<h3>5. Review the diagram</h3>
+<p>Looks for what the Check tab cannot see: data leaving a process without ever coming in, and missing flows.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-en-5" data-done="Copied">Copy</button><pre class="code"><code id="prompt-en-5">Review this data flow diagram as an experienced systems analyst.
+
+Model:
+[paste the JSON or the tables]
+
+Look for:
+- Processes producing data they do not receive: fields going out without coming in or being calculated.
+- Data received that no process uses.
+- Stores written that nobody reads, or read with nothing writing them, and reads whose filter does not find the record.
+- Missing flows: errors, refusals, replies to the source entity.
+- Conditions that leave data with no way out, and flows with no else where one should be.
+- Flows with vague names, processes with no verb and fields with different names for the same data.
+- Reads and writes of the same record by simultaneous processes, which can cause a lost update.
+
+Deliver a table with: element, problem, why it matters, suggestion and severity (high, medium or low). Do not rewrite the model. Do not confirm it is right just because you found no problems: say what cannot be assessed without more data.</code></pre></div>
+<h3>6. Write rules and conditions</h3>
+<p>Returns the text for the fields, respecting what each one can see. A condition, for example, does not see the record read.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-en-6" data-done="Copied">Copy</button><pre class="code"><code id="prompt-en-6">Write rules and conditions for DFD Simulator.
+
+Model:
+[paste the JSON or describe the elements and fields]
+What I need to happen:
+[describe in plain language]
+
+For each field, deliver the exact text and where to paste it: Generated data (entity), Rules and Duration (process), Condition and Fields passed (flow leaving the process), Read filter and Name in rules (flow from a store).
+
+Rules:
+- Rules and generated data have one assignment per line, field = expression, and each line can use the previous one.
+- Generated data sees seq, t and the previous lines. Rules and duration see the data fields, the records read through Name in rules and t. A condition sees the fields of the outgoing data and t. A filter sees the record fields, in.field and t.
+- A condition does not see the record read: write the result to a field, such as ok = exists(product).
+- If more than one condition is true, each flow gets a copy. If none is and there is no else, the data is discarded: say how to handle that case.
+- Use only functions that exist: round, floor, ceil, abs, min, max, exists, coalesce, if, count, sum, avg, minof, maxof, len, upper, lower, concat, contains, random, randint, exponential, normal, chance and pick.
+- A missing field is null, with no error: check the names and point out those you assumed.
+- Give an example of input data and the expected result, so I can check it in the simulation.</code></pre></div>
+<h3>7. Read the simulation results</h3>
+<p>After repeating the runs, copy the tables and paste them into the prompt, with the model.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-en-7" data-done="Copied">Copy</button><pre class="code"><code id="prompt-en-7">Help me interpret this simulation. The numbers come from a model, not measurements.
+
+Model:
+[paste the JSON or describe the elements]
+Results:
+[paste the tables from the Statistics and Scenarios tabs, saying how many runs there were]
+
+Deliver:
+1. What the results say, in up to 5 sentences, comparing mean, median and 95%.
+2. The likely bottleneck, with maximum queue, average wait and utilization, and why the other processes are not.
+3. What the discarded and rejected items indicate.
+4. What is a pattern and what may be chance: use the margin and the range between lowest and highest. With a single run, say it is too early to conclude.
+5. What I cannot conclude: weak assumptions and model limitations.
+
+Rules:
+- Use only numbers in the tables, and create no new ones. If a figure is missing, say so.
+- Separate what was calculated from your interpretation. Do not assert real-world causes: present them as hypotheses to confirm.</code></pre></div>
+<h3>8. Plan the next scenarios</h3>
+<p>Turns the diagnosis into a short list of tests, to compare with the baseline one change at a time.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-en-8" data-done="Copied">Copy</button><pre class="code"><code id="prompt-en-8">Based on this simulation, plan the next scenarios.
+
+Model:
+[paste the JSON or describe the elements]
+Results:
+[paste the tables from the Statistics and Scenarios tabs]
+Objective: [for example, deliver 95% within 10 time units]
+Constraints: [what cannot change]
+
+Propose up to 5 alternatives and, for each one, deliver:
+- What changes in the model: the element, the field (Capacity, Duration, Queue limit, Emit every, Condition or a new flow) and the exact value.
+- The expected effect, as a hypothesis, and the measure that would confirm it.
+- What the change would take in the real world, and the risk.
+
+Rules:
+- Each alternative changes one thing only, so the effect can be attributed.
+- Start with the bottleneck. Warn when relieving one process may just move the queue to the next.
+- Do not promise gains in numbers: the result comes from the simulation.
+
+End with the steps in the app: repeat 30 runs, save as baseline, go back to editing, make the change, simulate, repeat and read the Reading column. Include an empty table for me to fill in: alternative, measure, baseline, current and reading.</code></pre></div>
+<h3>How to open the JSON from prompt 3</h3><ol><li>Copy the AI's answer into a text editor and save it with the <code>.json</code> extension, for example <code>system.json</code>.</li><li>In the app, use <strong>File ▾</strong> → <strong>Open model (.json)…</strong>, or drag the file onto the window. If there is already a model, confirm the replacement; save first whatever you want to keep.</li><li>Click <strong>Fit</strong> and drag whatever is badly placed: the app does not arrange the diagram by itself.</li><li>Open the <strong>Check</strong> tab and review each item.</li></ol><h3>How to take the results to the AI</h3><p>The app does not generate a simulation report. For prompts 7 and 8, select the table on the <strong>Statistics</strong> or <strong>Scenarios</strong> tab with the mouse, copy it and paste it into the prompt. In <strong>Log</strong>, <strong>Download CSV</strong> exports the events.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Symptom</th><th scope="col">Cause</th><th scope="col">Fix</th></tr></thead>
+<tbody>
+<tr><td>“Could not open”, with a JSON error</td><td>The answer has text or <code>```</code> fences around the JSON.</td><td>Save only from the first <code>{</code> to the last <code>}</code>.</td></tr>
+<tr><td>“the file is not a model from this app”</td><td><code>diagrams.root</code> is missing.</td><td>Ask the AI to fix it according to the prompt's format.</td></tr>
+<tr><td>Elements piled up at one point</td><td><code>x</code> and <code>y</code> are missing.</td><td>Drag the elements, or ask for the positions.</td></tr>
+<tr><td>Elements or flows are missing</td><td>The app ignores elements and flows with no <code>id</code>, and flows whose ends do not exist. The <strong>Check</strong> tab usually points out what is left.</td><td>Compare with the JSON and ask for the fix.</td></tr>
+<tr><td>“connects an entity and a store directly”, and the simulation does not start</td><td>The AI connected an entity straight to a store.</td><td>Ask for a process between them.</td></tr>
+<tr><td>Calculations give 0 or empty, with no error</td><td>The field name differs between elements. A missing field is <code>null</code>, and the app gives no warning.</td><td>Click a data item in transit and check the fields.</td></tr>
+</tbody>
+</table></div>
+<aside class="note"><p>The AI does not run your system. The numbers come from the runs in the app and hold for the times and rules entered. If those are the AI's guesses, so is the result.</p></aside>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
 <section id="atalhos-en" aria-labelledby="h-atalhos-en">
 <h2 id="h-atalhos-en">Keyboard shortcuts</h2>
 <div class="table-wrap"><table>
@@ -1275,6 +1670,7 @@ ok = exists(products) &amp;&amp; products.stock &gt;= qty</code></pre>
 <details><summary>4. How do I use a record read in a condition?</summary><p>Write the value to a field in the rules, such as <code>ok = exists(products)</code>, and use <code>ok</code> in the condition.</p></details>
 <details><summary>5. A flow was created on the parent process. What changes in the sub-diagram?</summary><p>A dashed element appears with that flow, and the <strong>Check</strong> tab flags balancing until it is connected.</p></details>
 <details><summary>6. Why does the simulation repeat the same random values?</summary><p>Because it uses the same <strong>Random seed</strong>. This lets you compare scenarios; change the seed to see another sequence.</p></details>
+<details><summary>7. The AI estimated the times and the Statistics tab points to a bottleneck. Is it confirmed?</summary><p>No. The result follows the times entered. Confirm with real data, repeat with other seeds and compare the change with a baseline before acting.</p></details>
 </div>
 <a class="back" href="#top">↑ Back to top</a>
 </section>
@@ -1330,6 +1726,7 @@ ok = exists(products) &amp;&amp; products.stock &gt;= qty</code></pre>
       <li><a href="#resultados-it">Leggere i risultati</a></li>
       <li><a href="#experimentos-it">Esperimenti con gli esempi</a></li>
       <li><a href="#arquivos-it">Salvare, aprire ed esportare</a></li>
+      <li><a href="#ia-it">Prompt di IA</a></li>
       <li><a href="#atalhos-it">Scorciatoie da tastiera</a></li>
       <li><a href="#problemas-it">Limiti e risoluzione dei problemi</a></li>
       <li><a href="#revisao-it">Ripasso rapido</a></li>
@@ -1730,6 +2127,200 @@ ok = exists(products) &amp;&amp; products.stock &gt;= qty</code></pre>
 <aside class="note"><p>Il modello resta solo nella memoria del browser finché non salvi il JSON. Cancellare i dati del browser lo elimina. Salva una copia dei lavori importanti.</p></aside>
 </section>
 
+<section id="ia-it" aria-labelledby="h-ia-it">
+<h2 id="h-ia-it">Prompt di IA</h2>
+<p>Un'IA aiuta a scoprire chi invia e riceve ogni dato, a creare il primo diagramma, a scrivere regole e a leggere code e colli di bottiglia. Sbaglia anche con sicurezza: inventa flussi, tira a indovinare i tempi e spiega numeri che non ha letto. Tratta il risultato come la bozza di un collega di fretta. Per scrivere prompt migliori, vedi il <a href="PromptTutorial.html#it">tutorial sui prompt</a>.</p>
+<figure>
+<img src="rc_images/DFDSimulatorIA-it.svg" alt="Sei passi: tu descrivi il sistema, l'IA crea la bozza, l'app verifica e simula, l'app ripete le esecuzioni, l'IA aiuta a leggere i numeri e tu decidi la modifica. Dalla decisione si torna alle esecuzioni per confrontare con il riferimento." loading="lazy">
+<figcaption>L'IA accelera la bozza e la lettura. I numeri vengono dalle esecuzioni nell'app, e la decisione è tua.</figcaption>
+</figure>
+<blockquote><p><strong>Prima di incollare:</strong> diagrammi e record possono contenere nomi, valori e regole riservati. Sostituiscili con dati fittizi e segui la politica della tua organizzazione sull'uso dell'IA. L'app non invia nulla in rete, ma il servizio di IA riceve ciò che vi incolli.</p></blockquote>
+<p>Sostituisci le parti tra parentesi quadre e incolla nello strumento di IA che usi. I prompt seguono l'ordine del lavoro, ma ognuno funziona da solo.</p>
+<h3>1. Intervistare prima di disegnare</h3>
+<p>Fa scoprire all'IA ciò che manca, invece di supporlo. È l'inizio migliore quando il sistema è ancora nella testa delle persone.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-it-1" data-done="Copiato">Copia</button><pre class="code"><code id="prompt-it-1">Sei un analista di sistemi esperto di diagrammi di flusso dei dati.
+Voglio modellare questo sistema: [descrivilo in poche frasi].
+
+Prima di proporre qualsiasi diagramma, intervistami:
+- Fai una domanda alla volta e aspetta la mia risposta.
+- Copri: chi invia e riceve dati dall'esterno del sistema, cosa contiene ogni dato, cosa ne fa ogni processo, cosa va conservato, chi legge ciò che è conservato, le condizioni che cambiano il percorso, gli errori e i rifiuti, il volume di arrivo e quanto tempo richiede ogni processo.
+- Chiedi soprattutto ciò che va storto, non solo il percorso ideale.
+- Non inventare risposte. Se non lo so, registralo come punto aperto.
+
+Alla fine, consegna tabelle di: entità esterne; processi (nome con verbo, ingressi, uscite, regola, durata, capacità); archivi (campi e chiave); flussi (origine, destinazione, nome, campi, condizione); e l'elenco dei punti aperti.</code></pre></div>
+<h3>2. Trasformare un testo in elementi</h3>
+<p>Per requisiti, verbali e procedure. Chiede l'origine di ogni voce, il che facilita il controllo.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-it-2" data-done="Copiato">Copia</button><pre class="code"><code id="prompt-it-2">Dal testo qui sotto, estrai gli elementi di un diagramma di flusso dei dati.
+
+Testo:
+[incolla i requisiti, il verbale o la procedura]
+
+Consegna:
+1. Entità esterne, processi e archivi, ciascuno con il brano che lo sostiene.
+2. Flussi: origine, destinazione, nome e campi. Ogni flusso deve avere un processo a un'estremità.
+3. Regole e condizioni citate, e a quale processo o flusso si applica ciascuna.
+4. Lacune: dati che appaiono senza origine, dati conservati che nessuno legge, processi senza ingresso o senza uscita, e contraddizioni.
+5. Domande per chiarire ogni lacuna.
+
+Non colmare le lacune da solo. Ciò che non è nel testo va nelle domande.</code></pre></div>
+<h3>3. Generare il modello in JSON</h3>
+<p>Trasforma ciò che hai raccolto in un file che l'app apre, invece di disegnare elemento per elemento. Genera solo il livello principale; poi dettaglia nell'app i processi che lo richiedono.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-it-3" data-done="Copiato">Copia</button><pre class="code"><code id="prompt-it-3">Genera un modello in JSON per DFD Simulator, dalle informazioni alla fine.
+
+Rispondi solo con il JSON, senza commenti e senza delimitatori di codice.
+
+Formato:
+- Radice: "name", "notation" ("yd" o "gs"), "seed" e "diagrams". Genera solo "diagrams.root", con "id": "root", "parent": null, "nodes" e "flows". Non generare sottodiagrammi.
+- Elemento: "id", "type" (entity, process o store), "name", "x", "y" e, se ha senso, "desc".
+- entity: "gen" (campi, uno per riga, separati da \n; seq è il numero dell'emissione), "interval" (numero o espressione, come testo; 0 emette solo con un clic), "limit" e "start".
+- process: "k" (numero unico), "rules" (campo = espressione, una per riga), "duration" (espressione, come testo), "capacity" e "queueLimit" (0 è senza limite).
+- store: "k" (numero unico), "key" (campo chiave) e "initial" (testo con un elenco JSON di oggetti).
+- Flusso: "id", "from", "to", "name" e, secondo il caso:
+  - in uscita da un processo: "guard" (condizione; "else" vale quando nessun'altra è vera) e "fields" (campi trasmessi, separati da virgole);
+  - verso un archivio: "op" (insert, upsert o delete);
+  - da un archivio: "filter" (come id == in.id), "alias" (nome nelle regole), "readAll" e "consume";
+  - su qualsiasi flusso: "transit" (tempo di transito).
+
+Regole:
+- Ogni elemento e ogni flusso richiede un "id". Ogni flusso deve avere un processo a un'estremità.
+- Posizioni: x da 120 a 1300 e y da 70 a 600, ad almeno 240 di distanza in orizzontale e 150 in verticale. Entità ai lati, processi al centro e archivi sopra o sotto di essi.
+- Le espressioni accettano + - * / %, confronti, and, or, not, condizione ? a : b, round, floor, ceil, min, max, abs, exists, coalesce, if, count, sum, avg, random(a, b), randint(a, b), exponential(media), normal(media, dev), chance(p) e pick(a, b). Usa il punto per i decimali. Non usare altre funzioni.
+- Una condizione non vede il record letto: scrivi il risultato in un campo nelle regole e usa quel campo.
+- Usa gli stessi nomi di campo in tutti gli elementi, perché l'app non avvisa quando un nome è sbagliato.
+- Dai un "limit" maggiore di 0 alle entità con "interval", perché la simulazione finisca.
+- In "desc", indica se i tempi vengono da me o sono una tua ipotesi. Non inventare fonti.
+
+Esempio del formato:
+{
+  "name": "Pizzeria",
+  "notation": "yd",
+  "seed": 1,
+  "diagrams": {"root": {"id": "root", "parent": null,
+    "nodes": [
+      {"id": "c", "type": "entity", "name": "Cliente", "x": 120, "y": 240, "gen": "id = seq\nqty = randint(1, 3)", "interval": "3", "limit": 6},
+      {"id": "p", "type": "process", "name": "Registrare ordine", "x": 400, "y": 240, "k": 1, "rules": "total = qty * 40", "duration": "2", "capacity": 1},
+      {"id": "d", "type": "store", "name": "Ordini", "x": 400, "y": 70, "k": 1, "key": "id"},
+      {"id": "k", "type": "entity", "name": "Cucina", "x": 680, "y": 240}
+    ],
+    "flows": [
+      {"id": "f1", "from": "c", "to": "p", "name": "ordine"},
+      {"id": "f2", "from": "p", "to": "d", "name": "ordine registrato"},
+      {"id": "f3", "from": "p", "to": "k", "name": "comanda", "fields": "id, qty"}
+    ]
+  }}
+}
+
+Informazioni:
+[incolla il risultato del prompt 1 o 2, o descrivi il sistema]</code></pre></div>
+<h3>4. Stimare tempi e capacità</h3>
+<p>Le code dipendono dai tempi. Questo prompt chiarisce cosa è ipotesi e restituisce espressioni che l'app accetta.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-it-4" data-done="Copiato">Copia</button><pre class="code"><code id="prompt-it-4">Mi servono tempi iniziali per simulare questo sistema. Non ho misure.
+
+Sistema:
+[incolla le tabelle o il JSON del modello]
+Unità di tempo: [scegline una sola per tutto il modello]
+
+Per ogni entità e processo, consegna una tabella con: minimo, più probabile, massimo, su cosa ti sei basato, come misurerei il valore reale e la tua fiducia (bassa, media o alta).
+
+Regole:
+- Tutto è ipotesi finché non lo confermo. Dillo chiaramente.
+- Non citare studi o numeri di mercato che non puoi indicare con precisione. Senza base, scrivi "senza base" e dai solo l'intervallo.
+- Restituisci il testo esatto per i campi dell'app, usando solo random(a, b), exponential(media) o normal(media, dev): Emetti ogni (entità), Durata, Capacità e Limite della coda (processo), Tempo di transito (flusso).
+- Per ogni processo, confronta il tempo che richiede con l'intervallo di arrivo, considerando la capacità, e indica dove dovrebbe formarsi una coda.
+- Indica le 3 stime che più possono cambiare il risultato e che dovrei misurare per prime.</code></pre></div>
+<h3>5. Rivedere il diagramma</h3>
+<p>Cerca ciò che la scheda Verifica non vede: dati che escono da un processo senza mai essere entrati, e flussi mancanti.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-it-5" data-done="Copiato">Copia</button><pre class="code"><code id="prompt-it-5">Rivedi questo diagramma di flusso dei dati come un analista di sistemi esperto.
+
+Modello:
+[incolla il JSON o le tabelle]
+
+Cerca:
+- Processi che producono dati che non ricevono: campi che escono senza entrare né essere calcolati.
+- Dati ricevuti che nessun processo usa.
+- Archivi scritti che nessuno legge, o letti senza che nulla li scriva, e letture il cui filtro non trova il record.
+- Flussi mancanti: errori, rifiuti, risposte all'entità di origine.
+- Condizioni che lasciano il dato senza uscita, e flussi senza else dove dovrebbe esserci.
+- Flussi con nomi vaghi, processi senza verbo e campi con nomi diversi per lo stesso dato.
+- Letture e scritture dello stesso record da parte di processi simultanei, che possono causare un aggiornamento perso.
+
+Consegna una tabella con: elemento, problema, perché conta, suggerimento e gravità (alta, media o bassa). Non riscrivere il modello. Non confermare che è giusto solo perché non hai trovato problemi: di' cosa non si può valutare senza altri dati.</code></pre></div>
+<h3>6. Scrivere regole e condizioni</h3>
+<p>Restituisce il testo dei campi, rispettando ciò che ognuno vede. Una condizione, ad esempio, non vede il record letto.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-it-6" data-done="Copiato">Copia</button><pre class="code"><code id="prompt-it-6">Scrivi regole e condizioni per DFD Simulator.
+
+Modello:
+[incolla il JSON o descrivi gli elementi e i campi]
+Cosa deve succedere:
+[descrivilo in linguaggio comune]
+
+Per ogni campo, consegna il testo esatto e dove incollarlo: Dati generati (entità), Regole e Durata (processo), Condizione e Campi trasmessi (flusso in uscita dal processo), Filtro di lettura e Nome nelle regole (flusso da un archivio).
+
+Regole:
+- Regole e dati generati hanno un'assegnazione per riga, campo = espressione, e ogni riga può usare la precedente.
+- I dati generati vedono seq, t e le righe precedenti. Regole e durata vedono i campi del dato, i record letti tramite Nome nelle regole e t. Una condizione vede i campi del dato in uscita e t. Un filtro vede i campi del record, in.campo e t.
+- Una condizione non vede il record letto: scrivi il risultato in un campo, come ok = exists(prodotto).
+- Se più di una condizione è vera, ogni flusso riceve una copia. Se nessuna lo è e non c'è else, il dato viene scartato: indica come gestire questo caso.
+- Usa solo funzioni esistenti: round, floor, ceil, abs, min, max, exists, coalesce, if, count, sum, avg, minof, maxof, len, upper, lower, concat, contains, random, randint, exponential, normal, chance e pick.
+- Un campo inesistente vale null, senza errori: controlla i nomi e indica quelli che hai supposto.
+- Dai un esempio di dato in ingresso e il risultato atteso, così posso controllarlo nella simulazione.</code></pre></div>
+<h3>7. Leggere i risultati della simulazione</h3>
+<p>Dopo aver ripetuto le esecuzioni, copia le tabelle e incollale nel prompt, con il modello.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-it-7" data-done="Copiato">Copia</button><pre class="code"><code id="prompt-it-7">Aiutami a interpretare questa simulazione. I numeri vengono da un modello, non da misure.
+
+Modello:
+[incolla il JSON o descrivi gli elementi]
+Risultati:
+[incolla le tabelle delle schede Statistiche e Scenari, indicando quante esecuzioni sono state fatte]
+
+Consegna:
+1. Cosa dicono i risultati, in massimo 5 frasi, confrontando media, mediana e 95%.
+2. Il probabile collo di bottiglia, con coda massima, attesa media e occupazione, e perché gli altri processi non lo sono.
+3. Cosa indicano gli scartati e i rifiutati.
+4. Cosa è regolare e cosa può essere caso: usa il margine e l'intervallo tra minimo e massimo. Con una sola esecuzione, di' che è presto per concludere.
+5. Cosa non posso concludere: ipotesi fragili e limiti del modello.
+
+Regole:
+- Usa solo numeri presenti nelle tabelle, senza crearne di nuovi. Se manca un dato, dillo.
+- Separa ciò che è stato calcolato dalla tua interpretazione. Non affermare cause nel mondo reale: presentale come ipotesi da confermare.</code></pre></div>
+<h3>8. Pianificare i prossimi scenari</h3>
+<p>Trasforma la diagnosi in un breve elenco di prove, per confrontare con il riferimento una modifica alla volta.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-it-8" data-done="Copiato">Copia</button><pre class="code"><code id="prompt-it-8">In base a questa simulazione, pianifica i prossimi scenari.
+
+Modello:
+[incolla il JSON o descrivi gli elementi]
+Risultati:
+[incolla le tabelle delle schede Statistiche e Scenari]
+Obiettivo: [ad esempio, consegnare il 95% entro 10 unità di tempo]
+Vincoli: [cosa non può cambiare]
+
+Proponi fino a 5 alternative e, per ognuna, consegna:
+- Cosa cambia nel modello: l'elemento, il campo (Capacità, Durata, Limite della coda, Emetti ogni, Condizione o un nuovo flusso) e il valore esatto.
+- L'effetto atteso, come ipotesi, e la misura che lo confermerebbe.
+- Cosa servirebbe per fare la modifica nel mondo reale, e il rischio.
+
+Regole:
+- Ogni alternativa cambia una sola cosa, perché l'effetto sia attribuibile.
+- Inizia dal collo di bottiglia. Avvisa quando alleggerire un processo può solo spostare la coda al successivo.
+- Non promettere guadagni in numeri: il risultato viene dalla simulazione.
+
+Concludi con i passi nell'app: ripetere 30 esecuzioni, salvare come riferimento, tornare a modificare, fare la modifica, simulare, ripetere e leggere la colonna Lettura. Includi una tabella vuota da compilare: alternativa, misura, riferimento, attuale e lettura.</code></pre></div>
+<h3>Come aprire il JSON del prompt 3</h3><ol><li>Copia la risposta dell'IA in un editor di testo e salvala con l'estensione <code>.json</code>, ad esempio <code>sistema.json</code>.</li><li>Nell'app, usa <strong>File ▾</strong> → <strong>Apri modello (.json)…</strong>, o trascina il file nella finestra. Se c'è già un modello, conferma la sostituzione; salva prima ciò che vuoi conservare.</li><li>Fai clic su <strong>Adatta</strong> e trascina ciò che è mal posizionato: l'app non dispone il diagramma da sola.</li><li>Apri la scheda <strong>Verifica</strong> e controlla ogni voce.</li></ol><h3>Come portare i risultati all'IA</h3><p>L'app non genera un rapporto della simulazione. Per i prompt 7 e 8, seleziona con il mouse la tabella della scheda <strong>Statistiche</strong> o <strong>Scenari</strong>, copiala e incollala nel prompt. In <strong>Registro</strong>, <strong>Scarica CSV</strong> esporta gli eventi.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Sintomo</th><th scope="col">Causa</th><th scope="col">Soluzione</th></tr></thead>
+<tbody>
+<tr><td>“Impossibile aprire”, con un errore JSON</td><td>La risposta ha testo o i delimitatori <code>```</code> attorno al JSON.</td><td>Salva solo dalla prima <code>{</code> all'ultima <code>}</code>.</td></tr>
+<tr><td>“il file non è un modello di questa app”</td><td>Manca <code>diagrams.root</code>.</td><td>Chiedi all'IA di correggere secondo il formato del prompt.</td></tr>
+<tr><td>Elementi ammucchiati in un punto</td><td>Mancano <code>x</code> e <code>y</code>.</td><td>Trascina gli elementi, o chiedi le posizioni.</td></tr>
+<tr><td>Mancano elementi o flussi</td><td>L'app ignora elementi e flussi senza <code>id</code>, e flussi con estremità inesistenti. La scheda <strong>Verifica</strong> di solito indica ciò che resta.</td><td>Confronta con il JSON e chiedi la correzione.</td></tr>
+<tr><td>“collega direttamente entità e archivio”, e la simulazione non parte</td><td>L'IA ha collegato un'entità direttamente a un archivio.</td><td>Chiedi un processo tra i due.</td></tr>
+<tr><td>I calcoli danno 0 o vuoto, senza errori</td><td>Il nome del campo è diverso tra gli elementi. Un campo inesistente vale <code>null</code>, e l'app non avvisa.</td><td>Fai clic su un dato in transito e controlla i campi.</td></tr>
+</tbody>
+</table></div>
+<aside class="note"><p>L'IA non esegue il tuo sistema. I numeri vengono dalle esecuzioni nell'app e valgono per i tempi e le regole inseriti. Se questi sono tentativi dell'IA, lo è anche il risultato.</p></aside>
+<a class="back" href="#top">↑ Torna all'inizio</a>
+</section>
+
 <section id="atalhos-it" aria-labelledby="h-atalhos-it">
 <h2 id="h-atalhos-it">Scorciatoie da tastiera</h2>
 <div class="table-wrap"><table>
@@ -1789,6 +2380,7 @@ ok = exists(products) &amp;&amp; products.stock &gt;= qty</code></pre>
 <details><summary>4. Come si usa un record letto in una condizione?</summary><p>Scrivi il valore in un campo nelle regole, come <code>ok = exists(products)</code>, e usa <code>ok</code> nella condizione.</p></details>
 <details><summary>5. È stato creato un flusso sul processo padre. Che cosa cambia nel sottodiagramma?</summary><p>Compare un elemento tratteggiato con quel flusso, e la scheda <strong>Verifica</strong> segnala il bilanciamento finché non viene collegato.</p></details>
 <details><summary>6. Perché la simulazione ripete gli stessi valori casuali?</summary><p>Perché usa lo stesso <strong>Seme casuale</strong>. Così si possono confrontare scenari; cambia il seme per vedere un'altra sequenza.</p></details>
+<details><summary>7. L'IA ha stimato i tempi e la scheda Statistiche indica un collo di bottiglia. È confermato?</summary><p>No. Il risultato segue i tempi inseriti. Conferma con dati reali, ripeti con altri semi e confronta la modifica con un riferimento prima di agire.</p></details>
 </div>
 <a class="back" href="#top">↑ Torna su</a>
 </section>
@@ -1844,6 +2436,7 @@ ok = exists(products) &amp;&amp; products.stock &gt;= qty</code></pre>
       <li><a href="#resultados-es">Leer los resultados</a></li>
       <li><a href="#experimentos-es">Experimentos con los ejemplos</a></li>
       <li><a href="#arquivos-es">Guardar, abrir y exportar</a></li>
+      <li><a href="#ia-es">Prompts de IA</a></li>
       <li><a href="#atalhos-es">Atajos de teclado</a></li>
       <li><a href="#problemas-es">Limitaciones y solución de problemas</a></li>
       <li><a href="#revisao-es">Repaso rápido</a></li>
@@ -2244,6 +2837,200 @@ ok = exists(products) &amp;&amp; products.stock &gt;= qty</code></pre>
 <aside class="note"><p>El modelo queda solo en el almacenamiento del navegador hasta que guardes el JSON. Borrar los datos del navegador lo elimina. Guarda una copia de los trabajos importantes.</p></aside>
 </section>
 
+<section id="ia-es" aria-labelledby="h-ia-es">
+<h2 id="h-ia-es">Prompts de IA</h2>
+<p>Una IA ayuda a descubrir quién envía y recibe cada dato, a montar el primer diagrama, a escribir reglas y a leer colas y cuellos de botella. También se equivoca con seguridad: inventa flujos, adivina tiempos y explica números que no ha leído. Trata el resultado como el borrador de un colega con prisa. Para escribir mejores prompts, mira el <a href="PromptTutorial.html#es">tutorial de prompts</a>.</p>
+<figure>
+<img src="rc_images/DFDSimulatorIA-es.svg" alt="Seis pasos: tú describes el sistema, la IA monta el borrador, la aplicación verifica y simula, la aplicación repite las rondas, la IA ayuda a leer los números y tú decides el cambio. Desde la decisión se vuelve a las rondas para comparar con la referencia." loading="lazy">
+<figcaption>La IA acelera el borrador y la lectura. Los números vienen de las rondas en la aplicación, y la decisión es tuya.</figcaption>
+</figure>
+<blockquote><p><strong>Antes de pegar:</strong> los diagramas y registros pueden contener nombres, valores y reglas confidenciales. Cámbialos por datos ficticios y sigue la política de tu organización sobre el uso de IA. La aplicación no envía nada a la red, pero el servicio de IA recibe lo que pegues en él.</p></blockquote>
+<p>Cambia las partes entre corchetes y pega en la herramienta de IA que uses. Los prompts siguen el orden del trabajo, pero cada uno funciona por sí solo.</p>
+<h3>1. Entrevistar antes de dibujar</h3>
+<p>Hace que la IA descubra lo que falta, en vez de suponerlo. Es el mejor comienzo cuando el sistema aún está en la cabeza de las personas.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-es-1" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-es-1">Eres un analista de sistemas con experiencia en diagramas de flujo de datos.
+Quiero modelar este sistema: [descríbelo en pocas frases].
+
+Antes de proponer ningún diagrama, entrevístame:
+- Haz una pregunta cada vez y espera mi respuesta.
+- Cubre: quién envía y recibe datos desde fuera del sistema, qué contiene cada dato, qué hace cada proceso con él, qué debe guardarse, quién lee lo guardado, las condiciones que cambian el camino, los errores y rechazos, el volumen de llegada y cuánto tiempo lleva cada proceso.
+- Pregunta sobre todo por lo que sale mal, no solo por el camino feliz.
+- No inventes respuestas. Si no lo sé, regístralo como pendiente.
+
+Al final, entrega tablas de: entidades externas; procesos (nombre con verbo, entradas, salidas, regla, duración, capacidad); almacenes (campos y clave); flujos (origen, destino, nombre, campos, condición); y la lista de pendientes.</code></pre></div>
+<h3>2. Convertir un texto en elementos</h3>
+<p>Para requisitos, actas y procedimientos. Pide el origen de cada elemento, lo que facilita comprobarlo.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-es-2" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-es-2">A partir del texto siguiente, extrae los elementos de un diagrama de flujo de datos.
+
+Texto:
+[pega los requisitos, el acta o el procedimiento]
+
+Entrega:
+1. Entidades externas, procesos y almacenes, cada uno con el pasaje que lo sustenta.
+2. Flujos: origen, destino, nombre y campos. Todo flujo debe tener un proceso en uno de sus extremos.
+3. Reglas y condiciones citadas, y a qué proceso o flujo se aplica cada una.
+4. Lagunas: datos que aparecen sin origen, datos guardados que nadie lee, procesos sin entrada o sin salida, y contradicciones.
+5. Preguntas para aclarar cada laguna.
+
+No rellenes lagunas por tu cuenta. Lo que no esté en el texto va a las preguntas.</code></pre></div>
+<h3>3. Generar el modelo en JSON</h3>
+<p>Convierte lo que reuniste en un archivo que la aplicación abre, en vez de dibujar elemento por elemento. Genera solo el nivel principal; después, detalla en la aplicación los procesos que lo necesiten.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-es-3" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-es-3">Genera un modelo en JSON para DFD Simulator, a partir de la información del final.
+
+Responde solo con el JSON, sin comentarios y sin marcas de código.
+
+Formato:
+- Raíz: "name", "notation" ("yd" o "gs"), "seed" y "diagrams". Genera solo "diagrams.root", con "id": "root", "parent": null, "nodes" y "flows". No generes subdiagramas.
+- Elemento: "id", "type" (entity, process o store), "name", "x", "y" y, si tiene sentido, "desc".
+- entity: "gen" (campos, uno por línea, separados por \n; seq es el número de la emisión), "interval" (número o expresión, como texto; 0 solo emite con un clic), "limit" y "start".
+- process: "k" (número único), "rules" (campo = expresión, una por línea), "duration" (expresión, como texto), "capacity" y "queueLimit" (0 es sin límite).
+- store: "k" (número único), "key" (campo clave) e "initial" (texto con una lista JSON de objetos).
+- Flujo: "id", "from", "to", "name" y, según el caso:
+  - saliendo de un proceso: "guard" (condición; "else" vale cuando ninguna otra es verdadera) y "fields" (campos que pasan, separados por comas);
+  - hacia un almacén: "op" (insert, upsert o delete);
+  - desde un almacén: "filter" (como id == in.id), "alias" (nombre en las reglas), "readAll" y "consume";
+  - en cualquier flujo: "transit" (tiempo de tránsito).
+
+Reglas:
+- Todo elemento y todo flujo necesita un "id". Todo flujo debe tener un proceso en uno de sus extremos.
+- Posiciones: x de 120 a 1300 e y de 70 a 600, con al menos 240 de distancia en horizontal y 150 en vertical. Entidades en los lados, procesos en el centro y almacenes encima o debajo de ellos.
+- Las expresiones aceptan + - * / %, comparaciones, and, or, not, condición ? a : b, round, floor, ceil, min, max, abs, exists, coalesce, if, count, sum, avg, random(a, b), randint(a, b), exponential(media), normal(media, desv), chance(p) y pick(a, b). Usa punto para los decimales. No uses otras funciones.
+- Una condición no ve el registro leído: graba el resultado en un campo en las reglas y usa ese campo.
+- Usa los mismos nombres de campo en todos los elementos, porque la aplicación no avisa cuando un nombre está mal.
+- Da un "limit" mayor que 0 a las entidades con "interval", para que la simulación termine.
+- En "desc", indica si los tiempos los di yo o son una hipótesis tuya. No inventes fuentes.
+
+Ejemplo del formato:
+{
+  "name": "Pizzería",
+  "notation": "yd",
+  "seed": 1,
+  "diagrams": {"root": {"id": "root", "parent": null,
+    "nodes": [
+      {"id": "c", "type": "entity", "name": "Cliente", "x": 120, "y": 240, "gen": "id = seq\nqty = randint(1, 3)", "interval": "3", "limit": 6},
+      {"id": "p", "type": "process", "name": "Registrar pedido", "x": 400, "y": 240, "k": 1, "rules": "total = qty * 40", "duration": "2", "capacity": 1},
+      {"id": "d", "type": "store", "name": "Pedidos", "x": 400, "y": 70, "k": 1, "key": "id"},
+      {"id": "k", "type": "entity", "name": "Cocina", "x": 680, "y": 240}
+    ],
+    "flows": [
+      {"id": "f1", "from": "c", "to": "p", "name": "pedido"},
+      {"id": "f2", "from": "p", "to": "d", "name": "pedido registrado"},
+      {"id": "f3", "from": "p", "to": "k", "name": "comanda", "fields": "id, qty"}
+    ]
+  }}
+}
+
+Información:
+[pega el resultado del prompt 1 o 2, o describe el sistema]</code></pre></div>
+<h3>4. Estimar tiempos y capacidades</h3>
+<p>Las colas dependen de los tiempos. Este prompt deja claro qué es hipótesis y devuelve expresiones que la aplicación acepta.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-es-4" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-es-4">Necesito tiempos iniciales para simular este sistema. No tengo mediciones.
+
+Sistema:
+[pega las tablas o el JSON del modelo]
+Unidad de tiempo: [elige una sola para todo el modelo]
+
+Para cada entidad y proceso, entrega una tabla con: mínimo, más probable, máximo, en qué te basaste, cómo mediría el valor real y tu confianza (baja, media o alta).
+
+Reglas:
+- Todo es hipótesis hasta que yo lo confirme. Dilo claramente.
+- No cites estudios ni cifras de mercado que no puedas indicar con precisión. Sin base, di "sin base" y da solo el rango.
+- Devuelve el texto exacto para los campos de la aplicación, usando solo random(a, b), exponential(media) o normal(media, desv): Emitir cada (entidad), Duración, Capacidad y Límite de la cola (proceso), Tiempo de tránsito (flujo).
+- Para cada proceso, compara el tiempo que lleva con el intervalo de llegada, considerando la capacidad, y señala dónde debería formarse una cola.
+- Señala las 3 estimaciones que más pueden cambiar el resultado y que debería medir primero.</code></pre></div>
+<h3>5. Revisar el diagrama</h3>
+<p>Busca lo que la pestaña Verificar no ve: datos que salen de un proceso sin haber entrado nunca, y flujos que faltan.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-es-5" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-es-5">Revisa este diagrama de flujo de datos como un analista de sistemas experimentado.
+
+Modelo:
+[pega el JSON o las tablas]
+
+Busca:
+- Procesos que producen datos que no reciben: campos que salen sin entrar ni calcularse.
+- Datos recibidos que ningún proceso usa.
+- Almacenes escritos que nadie lee, o leídos sin que nada los escriba, y lecturas cuyo filtro no encuentra el registro.
+- Flujos que faltan: errores, rechazos, respuestas a la entidad de origen.
+- Condiciones que dejan el dato sin salida, y flujos sin else donde debería haberlo.
+- Flujos con nombres vagos, procesos sin verbo y campos con nombres distintos para el mismo dato.
+- Lecturas y escrituras del mismo registro por procesos simultáneos, que pueden causar una actualización perdida.
+
+Entrega una tabla con: elemento, problema, por qué importa, sugerencia y gravedad (alta, media o baja). No reescribas el modelo. No confirmes que está bien solo porque no hallaste problemas: di qué no se puede evaluar sin más datos.</code></pre></div>
+<h3>6. Escribir reglas y condiciones</h3>
+<p>Devuelve el texto de los campos, respetando lo que cada uno ve. Una condición, por ejemplo, no ve el registro leído.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-es-6" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-es-6">Escribe reglas y condiciones para DFD Simulator.
+
+Modelo:
+[pega el JSON o describe los elementos y campos]
+Lo que necesito que ocurra:
+[descríbelo en lenguaje común]
+
+Para cada campo, entrega el texto exacto y dónde pegarlo: Datos generados (entidad), Reglas y Duración (proceso), Condición y Campos que pasan (flujo que sale del proceso), Filtro de lectura y Nombre en las reglas (flujo desde un almacén).
+
+Reglas:
+- Las reglas y los datos generados tienen una asignación por línea, campo = expresión, y cada línea puede usar la anterior.
+- Los datos generados ven seq, t y las líneas anteriores. Las reglas y la duración ven los campos del dato, los registros leídos por Nombre en las reglas y t. Una condición ve los campos del dato que sale y t. Un filtro ve los campos del registro, in.campo y t.
+- Una condición no ve el registro leído: graba el resultado en un campo, como ok = exists(producto).
+- Si más de una condición es verdadera, cada flujo recibe una copia. Si ninguna lo es y no hay else, el dato se descarta: di cómo tratar ese caso.
+- Usa solo funciones que existen: round, floor, ceil, abs, min, max, exists, coalesce, if, count, sum, avg, minof, maxof, len, upper, lower, concat, contains, random, randint, exponential, normal, chance y pick.
+- Un campo inexistente vale null, sin error: revisa los nombres y señala los que supusiste.
+- Da un ejemplo de dato de entrada y el resultado esperado, para que lo compruebe en la simulación.</code></pre></div>
+<h3>7. Leer los resultados de la simulación</h3>
+<p>Después de repetir las rondas, copia las tablas y pégalas en el prompt, con el modelo.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-es-7" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-es-7">Ayúdame a interpretar esta simulación. Los números vienen de un modelo, no de mediciones.
+
+Modelo:
+[pega el JSON o describe los elementos]
+Resultados:
+[pega las tablas de las pestañas Estadísticas y Escenarios, indicando cuántas rondas hubo]
+
+Entrega:
+1. Qué dicen los resultados, en hasta 5 frases, comparando media, mediana y 95%.
+2. El probable cuello de botella, con cola máxima, espera media y ocupación, y por qué los otros procesos no lo son.
+3. Qué indican los descartados y rechazados.
+4. Qué es patrón y qué puede ser azar: usa el margen y el rango entre menor y mayor. Con una sola ronda, di que aún no se puede concluir.
+5. Qué no puedo concluir: hipótesis frágiles y limitaciones del modelo.
+
+Reglas:
+- Usa solo números que estén en las tablas, sin crear otros. Si falta un dato, dilo.
+- Separa lo calculado de tu interpretación. No afirmes causas en el mundo real: preséntalas como hipótesis por confirmar.</code></pre></div>
+<h3>8. Planificar los próximos escenarios</h3>
+<p>Convierte el diagnóstico en una lista corta de pruebas, para comparar con la referencia un cambio cada vez.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-es-8" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-es-8">Con base en esta simulación, planifica los próximos escenarios.
+
+Modelo:
+[pega el JSON o describe los elementos]
+Resultados:
+[pega las tablas de las pestañas Estadísticas y Escenarios]
+Objetivo: [por ejemplo, entregar el 95% en hasta 10 unidades de tiempo]
+Restricciones: [lo que no puede cambiar]
+
+Propón hasta 5 alternativas y, para cada una, entrega:
+- Qué cambia en el modelo: el elemento, el campo (Capacidad, Duración, Límite de la cola, Emitir cada, Condición o un flujo nuevo) y el valor exacto.
+- El efecto esperado, como hipótesis, y la medida que lo confirmaría.
+- Qué haría falta para hacer el cambio en el mundo real, y el riesgo.
+
+Reglas:
+- Cada alternativa cambia una sola cosa, para que el efecto sea atribuible.
+- Empieza por el cuello de botella. Avisa cuando aliviar un proceso pueda solo mover la cola al siguiente.
+- No prometas ganancias en números: el resultado sale de la simulación.
+
+Termina con los pasos en la aplicación: repetir 30 rondas, guardar como referencia, volver a editar, hacer el cambio, simular, repetir y leer la columna Lectura. Incluye una tabla vacía para rellenar: alternativa, medida, referencia, actual y lectura.</code></pre></div>
+<h3>Cómo abrir el JSON del prompt 3</h3><ol><li>Copia la respuesta de la IA en un editor de texto y guárdala con la extensión <code>.json</code>, por ejemplo <code>sistema.json</code>.</li><li>En la aplicación, usa <strong>Archivo ▾</strong> → <strong>Abrir modelo (.json)…</strong>, o arrastra el archivo a la ventana. Si ya hay un modelo, confirma la sustitución; guarda antes lo que quieras conservar.</li><li>Haz clic en <strong>Ajustar</strong> y arrastra lo que quede mal colocado: la aplicación no organiza el diagrama sola.</li><li>Abre la pestaña <strong>Verificar</strong> y revisa cada elemento.</li></ol><h3>Cómo llevar los resultados a la IA</h3><p>La aplicación no genera un informe de la simulación. Para los prompts 7 y 8, selecciona con el ratón la tabla de la pestaña <strong>Estadísticas</strong> o <strong>Escenarios</strong>, cópiala y pégala en el prompt. En <strong>Registro</strong>, <strong>Descargar CSV</strong> exporta los eventos.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Síntoma</th><th scope="col">Causa</th><th scope="col">Solución</th></tr></thead>
+<tbody>
+<tr><td>“No se pudo abrir”, con un error de JSON</td><td>La respuesta tiene texto o las marcas <code>```</code> alrededor del JSON.</td><td>Guarda solo desde la primera <code>{</code> hasta la última <code>}</code>.</td></tr>
+<tr><td>“el archivo no es un modelo de esta aplicación”</td><td>Falta <code>diagrams.root</code>.</td><td>Pide a la IA que corrija según el formato del prompt.</td></tr>
+<tr><td>Elementos amontonados en un punto</td><td>Faltan <code>x</code> e <code>y</code>.</td><td>Arrastra los elementos, o pide las posiciones.</td></tr>
+<tr><td>Faltan elementos o flujos</td><td>La aplicación ignora elementos y flujos sin <code>id</code>, y flujos con extremos que no existen. La pestaña <strong>Verificar</strong> suele señalar lo que queda.</td><td>Compara con el JSON y pide la corrección.</td></tr>
+<tr><td>“conecta directamente entidad y almacén”, y la simulación no inicia</td><td>La IA conectó una entidad directamente a un almacén.</td><td>Pide un proceso entre ambos.</td></tr>
+<tr><td>Los cálculos dan 0 o vacío, sin error</td><td>El nombre del campo difiere entre los elementos. Un campo inexistente vale <code>null</code>, y la aplicación no avisa.</td><td>Haz clic en un dato en tránsito y revisa los campos.</td></tr>
+</tbody>
+</table></div>
+<aside class="note"><p>La IA no ejecuta tu sistema. Los números vienen de las rondas en la aplicación y valen para los tiempos y las reglas indicados. Si son conjeturas de la IA, el resultado también lo es.</p></aside>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
 <section id="atalhos-es" aria-labelledby="h-atalhos-es">
 <h2 id="h-atalhos-es">Atajos de teclado</h2>
 <div class="table-wrap"><table>
@@ -2303,6 +3090,7 @@ ok = exists(products) &amp;&amp; products.stock &gt;= qty</code></pre>
 <details><summary>4. ¿Cómo se usa un registro leído en una condición?</summary><p>Escribe el valor en un campo en las reglas, como <code>ok = exists(products)</code>, y usa <code>ok</code> en la condición.</p></details>
 <details><summary>5. Se creó un flujo en el proceso padre. ¿Qué cambia en el subdiagrama?</summary><p>Aparece un elemento discontinuo con ese flujo, y la pestaña <strong>Verificar</strong> señala el balanceo hasta que se conecte.</p></details>
 <details><summary>6. ¿Por qué la simulación repite los mismos valores aleatorios?</summary><p>Porque usa la misma <strong>Semilla aleatoria</strong>. Eso permite comparar escenarios; cambia la semilla para ver otra secuencia.</p></details>
+<details><summary>7. La IA estimó los tiempos y la pestaña Estadísticas señala un cuello de botella. ¿Está confirmado?</summary><p>No. El resultado sigue los tiempos indicados. Confirma con datos reales, repite con otras semillas y compara el cambio con una referencia antes de actuar.</p></details>
 </div>
 <a class="back" href="#top">↑ Volver al inicio</a>
 </section>
@@ -2453,6 +3241,16 @@ ok = exists(products) &amp;&amp; products.stock &gt;= qty</code></pre>
     new MutationObserver(sync).observe(list, { attributes: true, subtree: true, attributeFilter: ['aria-selected'] });
     sync();
   })();
+</script>
+<script>
+document.addEventListener('click', function (e) {
+  var b = e.target.closest && e.target.closest('[data-copy]');
+  if (!b) return;
+  var code = document.getElementById(b.getAttribute('data-copy')), old = b.textContent;
+  function done() { b.textContent = b.getAttribute('data-done'); setTimeout(function () { b.textContent = old; }, 1500); }
+  function fallback() { var r = document.createRange(); r.selectNodeContents(code); var s = getSelection(); s.removeAllRanges(); s.addRange(r); try { document.execCommand('copy'); done(); } catch (x) {} }
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code.textContent).then(done, fallback); else fallback();
+});
 </script>
 </body>
 </html>
