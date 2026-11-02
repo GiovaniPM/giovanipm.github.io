@@ -1,0 +1,1720 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Nenhum dado sai deste arquivo: sem rede e sem eval. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; base-uri 'none'; form-action 'none'">
+<title>JDE Log Insights</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230f5e9c'/%3E%3Cpath d='M3 12V8m3.3 4V4m3.4 8V7M13 12V5' stroke='white' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#f2f4f6;--panel:#fff;--panel2:#f7f8fa;--text:#1a2026;--muted:#59636c;--line:#d7dce1;--line2:#e8ebee;
+  --accent:#0f5e9c;--accent-text:#fff;--accent-soft:#e3eef7;--danger:#b3261e;--danger-soft:#fbe9e7;--warn:#8a5a00;--warn-soft:#fdf3dc;--ok:#1f7a3d;--ok-soft:#e2f3e7;--ch-err:#b3261e;--ch-act:#0f5e9c;--c-ube:#efe8f8;--c-ube-t:#5b2a86;
+  --mono:ui-monospace,"Cascadia Code","Cascadia Mono",Consolas,"SF Mono",Menlo,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color-scheme:light;
+}
+:root[data-theme=dark]{
+  --bg:#14171a;--panel:#1b1f23;--panel2:#21262a;--text:#e5e8ea;--muted:#a0a8ae;--line:#343a40;--line2:#2a2f34;
+  --accent:#5aa9e6;--accent-text:#0d1a24;--accent-soft:#1d3346;--danger:#ef8a80;--danger-soft:#3b211f;--warn:#e3b45a;--warn-soft:#352a14;--ok:#6cc98a;--ok-soft:#1c3522;--ch-err:#e66767;--ch-act:#3987e5;--c-ube:#2a2240;--c-ube-t:#c3a6f0;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font:14px/1.45 var(--sans);color:var(--text);background:var(--bg);display:grid;grid-template-rows:auto minmax(0,1fr);overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+button{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:5px 11px;cursor:pointer;white-space:nowrap}
+button:hover:not(:disabled){background:var(--panel2);border-color:var(--muted)}
+button:disabled{opacity:.45;cursor:default}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-text);font-weight:600}
+button.primary:hover:not(:disabled){background:var(--accent);filter:brightness(1.08)}
+button.link{border:none;background:none;color:var(--accent);padding:0;text-align:left;white-space:normal}
+button.link:hover:not(:disabled){background:none;text-decoration:underline}
+input[type=text],input[type=search],input[type=number],select,textarea{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:5px 8px;min-width:0}
+a{color:var(--accent)}
+code,.mono{font-family:var(--mono);font-size:12.5px}
+.muted{color:var(--muted)}.spacer{flex:1}.hidden{display:none!important}
+#topbar{display:flex;align-items:center;gap:6px;padding:7px 12px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+#brand{font-weight:650;display:flex;align-items:center;gap:7px;white-space:nowrap;margin-right:6px}
+#main{overflow:auto;min-height:0;min-width:0}
+.page{max-width:1240px;margin:0 auto;padding:14px 14px 40px;display:flex;flex-direction:column;gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:12px 14px;min-width:0}
+.card h2{font-size:15px;margin:0 0 8px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+/* início */
+#start{max-width:760px;margin:0 auto;padding:30px 14px 40px;display:flex;flex-direction:column;gap:14px}
+#start h1{font-size:24px;margin:0}
+#drop{border:2px dashed var(--line);border-radius:12px;padding:32px 16px;text-align:center;background:var(--panel)}
+#drop.over{border-color:var(--accent);background:var(--accent-soft)}
+#start ul{margin:6px 0 0;padding-left:20px}
+/* progresso */
+#prog{max-width:520px;margin:60px auto;padding:0 14px;display:flex;flex-direction:column;gap:10px}
+.bar{height:9px;background:var(--line2);border-radius:5px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent)}
+/* cabeçalho do resultado */
+.notice{background:var(--warn-soft);border:1px solid var(--warn);border-radius:8px;padding:7px 11px;font-size:13px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:8px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:9px 12px;min-width:0}
+.tile b{display:block;font-size:20px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.tile span{font-size:12px;color:var(--muted)}
+#tabs{display:flex;gap:2px;overflow-x:auto;border-bottom:1px solid var(--line)}
+#tabs button{border:1px solid transparent;border-bottom:none;border-radius:7px 7px 0 0;background:none;color:var(--muted);margin-bottom:-1px;flex:none}
+#tabs button[aria-selected=true]{background:var(--panel);border-color:var(--line);border-bottom-color:var(--panel);color:var(--text);font-weight:600}
+#tabs button b{font-weight:600;font-size:11px;margin-left:4px;background:var(--line2);border-radius:8px;padding:0 6px;color:var(--text)}
+/* insights */
+.ins{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 10px;padding:10px 12px;border:1px solid var(--line);border-left-width:4px;border-radius:0 8px 8px 0;background:var(--panel)}
+.ins.crit{border-left-color:var(--danger)}.ins.warn{border-left-color:var(--warn)}.ins.info{border-left-color:var(--accent)}.ins.good{border-left-color:var(--ok)}
+.ins .sev{font-size:11px;font-weight:700;border-radius:5px;padding:1px 7px;height:max-content;white-space:nowrap}
+.ins.crit .sev{color:var(--danger);background:var(--danger-soft)}.ins.warn .sev{color:var(--warn);background:var(--warn-soft)}.ins.info .sev{color:var(--accent);background:var(--accent-soft)}.ins.good .sev{color:var(--ok);background:var(--ok-soft)}
+.ins h3{font-size:14px;margin:0;font-weight:650;overflow-wrap:anywhere}
+.ins p{grid-column:2;margin:2px 0 0;overflow-wrap:anywhere}
+.ins .act{grid-column:2;margin-top:4px;display:flex;gap:12px;flex-wrap:wrap;font-size:13px}
+#insights{display:flex;flex-direction:column;gap:7px}
+/* tabelas */
+.table-wrap{overflow:auto;border:1px solid var(--line2);border-radius:7px;max-height:66vh}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{position:sticky;top:0;background:var(--panel2);text-align:left;font-weight:600;border-bottom:1px solid var(--line);white-space:nowrap;padding:0;z-index:1}
+th button{border:none;background:none;width:100%;text-align:inherit;padding:6px 9px;font-weight:600;border-radius:0}
+th.num,td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+td{padding:5px 9px;border-bottom:1px solid var(--line2);vertical-align:top}
+td.wide{min-width:280px;max-width:560px;overflow-wrap:anywhere}
+td.m{font-family:var(--mono);font-size:12px}
+tr.go{cursor:pointer}tr.go:hover td{background:var(--panel2)}
+.lv{font-size:11px;font-weight:700;white-space:nowrap}
+.lv.fatal,.lv.error{color:var(--danger)}.lv.warn{color:var(--warn)}
+.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+.tools input[type=search]{flex:1 1 200px}
+.chip{display:inline-flex;gap:6px;align-items:center;background:var(--accent-soft);border-radius:12px;padding:2px 10px;font-size:12px}
+.chip button{border:none;background:none;padding:0 2px;color:inherit}
+.cap{font-size:12px;color:var(--muted);margin-top:6px}
+/* gráfico */
+.chart{position:relative}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart text{font-size:11px;fill:var(--muted)}
+.flow-tools{display:flex;gap:6px 12px;flex-wrap:wrap;align-items:center;font-size:13px}
+.flow-tools label{display:inline-flex;gap:5px;align-items:center}
+.flow-wrap{overflow:auto;max-height:72vh;border:1px solid var(--line2);border-radius:7px;background:var(--panel)}
+.flow-wrap svg{display:block}
+.flow-leg{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--muted)}
+.flow-leg i{display:inline-block;width:12px;height:12px;border-radius:3px;border:1.5px solid;margin-right:4px;vertical-align:-2px}
+#flow-info{display:flex;gap:6px 12px;flex-wrap:wrap;align-items:center;background:var(--panel2);border:1px solid var(--line2);border-radius:7px;padding:7px 11px;min-height:36px;font-size:13px;overflow-wrap:anywhere}
+#flow-info b{font-weight:650}
+.chart .grid{stroke:var(--line2)}
+.chart .hit{fill:transparent;cursor:pointer}
+.chart .hit:focus{outline:none}
+.chart g.b:hover .hit,.chart .hit:focus-visible{fill:var(--line2);fill-opacity:.7}
+#tip{position:fixed;z-index:50;background:var(--text);color:var(--panel);border-radius:6px;padding:4px 8px;font-size:12px;pointer-events:none;white-space:nowrap}
+/* conteúdo */
+.ct-tools{display:flex;gap:6px 10px;flex-wrap:wrap;align-items:center;font-size:13px}
+.ct-tools label{display:inline-flex;gap:5px;align-items:center}
+.ct-tools input[type=search]{width:220px;max-width:100%}
+.ct-tools input[type=number]{width:136px}
+.ct-leg .tg0{display:none}
+.ct-tools select{max-width:230px}
+.ct-leg{display:flex;flex-wrap:wrap;gap:5px}
+.ct-leg button{display:inline-flex;gap:6px;align-items:center;font-size:12px;padding:2px 8px;border-radius:12px;white-space:nowrap}
+.ct-leg button[aria-pressed=true]{outline:2px solid var(--accent);outline-offset:0;font-weight:650}
+.ct-leg button:disabled{opacity:.5}
+.ct-tg{font:700 10px/1 var(--mono);padding:2px 4px;border-radius:3px;min-width:26px;text-align:center;display:inline-block}
+.ct-view{position:relative;height:66vh;min-height:300px;overflow:auto;border:1px solid var(--line);border-radius:7px;background:var(--panel);outline-offset:-2px}
+.ct-spacer{width:1px}
+.ct-rows{position:absolute;left:0;top:0;min-width:100%;width:max-content;font:12px/20px var(--mono)}
+.ct-ln{display:flex;height:20px;white-space:pre;cursor:pointer;border-left:3px solid transparent}
+.ct-ln:hover{filter:brightness(.97)}
+.ct-ln.sel{box-shadow:inset 0 0 0 2px var(--accent)}
+.ct-no{flex:none;width:64px;text-align:right;padding-right:8px;color:var(--muted);user-select:none;position:sticky;left:0;background:inherit}
+.ct-ln .ct-tg{flex:none;margin:3px 7px 3px 0;height:14px;width:30px}
+.ct-tx{flex:none;padding-right:14px}
+.ct-tx mark{background:#ffd54a;color:#1a1a1a;border-radius:2px}
+.ct-gap{flex:none;font-size:11px;font-weight:700;margin:2px 7px 2px 0;padding:0 5px;line-height:16px;border-radius:8px;background:var(--warn);color:var(--panel)}
+.ct-ln,.ct-ln .ct-no{background:var(--panel)}
+.k1,.k1 .ct-no{background:var(--danger);color:var(--panel)}.k1{border-left-color:var(--danger)}.k1 .ct-no{color:var(--panel)}.k1 .ct-tx{font-weight:700}
+.k2,.k2 .ct-no{background:var(--danger-soft)}.k2{border-left-color:var(--danger)}
+.k3,.k3 .ct-no,.k10,.k10 .ct-no{background:var(--warn-soft)}.k3,.k10{border-left-color:var(--warn)}
+.k4,.k4 .ct-no{background:var(--accent-soft)}.k4{border-left-color:var(--accent)}
+.k5,.k5 .ct-no{background:var(--ok-soft)}.k5{border-left-color:var(--ok)}
+.k9,.k9 .ct-no{background:var(--c-ube)}.k9{border-left-color:var(--c-ube-t)}
+.k6 .ct-tx,.k7 .ct-tx,.k8 .ct-tx{color:var(--muted)}
+.tg1{background:var(--panel);color:var(--danger);box-shadow:inset 0 0 0 1px var(--danger)}.tg2{background:var(--danger);color:var(--panel)}.tg3,.tg10{background:var(--warn);color:var(--panel)}.tg4{background:var(--accent);color:var(--accent-text)}.tg5{background:var(--ok);color:var(--panel)}.tg9{background:var(--c-ube-t);color:var(--panel)}.tg6,.tg7,.tg8,.tg11{background:var(--line2);color:var(--muted)}.tg0{visibility:hidden}.tg11{visibility:visible}
+#ct-info{display:flex;gap:6px 12px;flex-wrap:wrap;align-items:center;font-size:13px;min-height:30px;overflow-wrap:anywhere}
+/* contexto do log */
+#ctx{font:12px/1.5 var(--mono);white-space:pre;overflow:auto;max-height:60vh;background:var(--panel2);border:1px solid var(--line2);border-radius:6px;padding:6px 0;margin:0}
+#ctx span{display:block;padding:0 10px;min-width:max-content}
+#ctx span.cur{background:var(--warn-soft);font-weight:600}
+/* diálogos */
+dialog{border:1px solid var(--line);border-radius:9px;background:var(--panel);color:var(--text);padding:0;width:min(860px,96vw);max-height:90vh;box-shadow:0 12px 40px rgba(0,0,0,.3)}
+dialog::backdrop{background:rgba(0,0,0,.4)}
+.dlg{display:flex;flex-direction:column;max-height:90vh}
+.dlg header{padding:11px 16px;font-weight:650;border-bottom:1px solid var(--line2);overflow-wrap:anywhere}
+.dlg .b{padding:12px 16px;overflow:auto;flex:1;display:flex;flex-direction:column;gap:8px;min-height:0}
+.dlg footer{padding:9px 16px;border-top:1px solid var(--line2);display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.dlg h4{margin:6px 0 0;font-size:13px}
+.dlg p{margin:0;overflow-wrap:anywhere}
+.dlg ul{margin:0;padding-left:20px}
+.dlg pre.q{font:12px/1.5 var(--mono);white-space:pre-wrap;overflow-wrap:anywhere;background:var(--panel2);border:1px solid var(--line2);border-radius:6px;padding:8px 10px;margin:0}
+dl.kv{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:2px 12px;margin:0}
+dl.kv dt{color:var(--muted)}dl.kv dd{margin:0;overflow-wrap:anywhere}
+.kb{background:var(--accent-soft);border-radius:7px;padding:8px 11px}
+#toasts{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;display:flex;flex-direction:column;gap:6px;z-index:60;max-width:92vw}
+.toast{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--ok);border-radius:6px;padding:7px 11px;box-shadow:0 4px 18px rgba(0,0,0,.2)}
+.toast.err{border-left-color:var(--danger)}
+@media (max-width:640px){
+  .page{padding:10px 8px 30px}
+  .ins{grid-template-columns:minmax(0,1fr)}
+  .ins p,.ins .act{grid-column:1}
+  td.wide{min-width:200px}
+}
+@media print{#topbar,#tabs,.tools,.act{display:none!important}body{display:block;overflow:visible}#main{overflow:visible}.table-wrap{max-height:none}}
+</style>
+<style id="flow-css">
+.fl-n{cursor:pointer;outline:none}
+.fl-n rect{fill:var(--panel);stroke:var(--muted);stroke-width:1.5}
+.fl-n text{font-size:12px;fill:var(--text)}
+.fl-n .nm{font-weight:650}
+.fl-n .mt{font-size:11px;fill:var(--muted)}
+.fl-n.e rect{fill:var(--panel2);stroke:var(--text)}
+.fl-n.b rect{fill:var(--accent-soft);stroke:var(--accent)}
+.fl-n.t rect{fill:var(--ok-soft);stroke:var(--ok)}
+.fl-n.x rect{fill:var(--danger-soft);stroke:var(--danger)}
+.fl-n.slow rect{stroke:var(--warn);stroke-width:3}
+.fl-n:hover rect{stroke-width:2.5}
+.fl-n:focus-visible rect,.fl-n.sel rect{stroke-width:4}
+.fl-h{font-size:11px;font-weight:700;fill:var(--muted)}
+.fl-e{fill:none;stroke:var(--muted);marker-end:url(#fl-arrow)}
+.fl-e.x{stroke:var(--danger);marker-end:url(#fl-arrow-x)}
+.fl-e.back{stroke-dasharray:5 4}
+.fl-hit{fill:none;stroke:transparent;stroke-width:10}
+.dim{opacity:.16}
+#fl-arrow path{fill:var(--muted)}
+#fl-arrow-x path{fill:var(--danger)}
+</style>
+</head>
+<body>
+<div id="topbar">
+  <div id="brand"><svg width="18" height="18" viewBox="0 0 16 16" aria-hidden="true"><rect width="16" height="16" rx="3" fill="#0f5e9c"/><path d="M3 12V8m3.3 4V4m3.4 8V7M13 12V5" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>JDE Log Insights</div>
+  <button id="b-open" class="primary" data-tx="open"></button>
+  <button id="b-paste" data-tx="paste"></button>
+  <button id="b-report" class="hidden" data-tx="report"></button>
+  <span class="spacer"></span>
+  <select id="lang" data-aria="lang"><option value="pt">PT</option><option value="en">EN</option><option value="it">IT</option><option value="es">ES</option></select>
+  <button id="b-help" data-aria="help" data-title="help">?</button>
+  <button id="b-theme" data-aria="theme" data-title="theme">◐</button>
+  <input id="file-in" type="file" multiple class="hidden">
+</div>
+<div id="main"></div>
+<div id="toasts" aria-live="polite"></div>
+<script>
+'use strict';
+/* ========== textos ========== */
+const LANGS=['pt','en','it','es'],HTML_LANG={pt:'pt-BR',en:'en',it:'it',es:'es'},LOCALE={pt:'pt-BR',en:'en-US',it:'it-IT',es:'es-ES'};
+const I18N={
+open:['Abrir logs','Open logs','Apri log','Abrir logs'],paste:['Colar texto','Paste text','Incolla testo','Pegar texto'],report:['Relatório','Report','Report','Informe'],lang:['Idioma','Language','Lingua','Idioma'],help:['Ajuda','Help','Guida','Ayuda'],theme:['Tema claro ou escuro','Light or dark theme','Tema chiaro o scuro','Tema claro u oscuro'],
+startT:['Transforme um log do JD Edwards em respostas','Turn a JD Edwards log into answers','Trasforma un log di JD Edwards in risposte','Convierte un log de JD Edwards en respuestas'],
+startD:['Solte aqui um ou vários arquivos do EnterpriseOne. O app agrupa os erros, mede funções de negócio e SQL, acha pausas e diz por onde começar.','Drop one or more EnterpriseOne files here. The app groups errors, measures business functions and SQL, finds pauses and tells you where to start.','Trascina qui uno o più file di EnterpriseOne. L\'app raggruppa gli errori, misura funzioni di business e SQL, trova le pause e indica da dove iniziare.','Suelta aquí uno o varios archivos de EnterpriseOne. La aplicación agrupa los errores, mide funciones de negocio y SQL, encuentra pausas e indica por dónde empezar.'],
+dropT:['Solte os arquivos aqui','Drop the files here','Trascina qui i file','Suelta los archivos aquí'],sample:['Ver um exemplo','See a sample','Vedi un esempio','Ver un ejemplo'],
+privT:['Seus dados ficam aqui','Your data stays here','I tuoi dati restano qui','Tus datos se quedan aquí'],
+priv:['O log é lido só neste navegador: o arquivo bloqueia conexões de rede e não guarda o conteúdo do log.','The log is read only in this browser: the file blocks network connections and does not store the log contents.','Il log viene letto solo in questo browser: il file blocca le connessioni di rete e non conserva il contenuto del log.','El log se lee solo en este navegador: el archivo bloquea las conexiones de red y no guarda el contenido del log.'],
+fmtT:['O que ele lê','What it reads','Cosa legge','Qué lee'],
+fmt1:['jde.log e jde_<processo>.log: erros e falhas','jde.log and jde_<process>.log: errors and faults','jde.log e jde_<processo>.log: errori e guasti','jde.log y jde_<proceso>.log: errores y fallos'],
+fmt2:['jdedebug.log e jdedebug_<processo>.log: chamadas, SQL e tempos','jdedebug.log and jdedebug_<process>.log: calls, SQL and timing','jdedebug.log e jdedebug_<processo>.log: chiamate, SQL e tempi','jdedebug.log y jdedebug_<proceso>.log: llamadas, SQL y tiempos'],
+fmt3:['Logs de UBE, como R014021_XJDE0001_D990312_T161854215.log','UBE logs, such as R014021_XJDE0001_D990312_T161854215.log','Log di UBE, come R014021_XJDE0001_D990312_T161854215.log','Logs de UBE, como R014021_XJDE0001_D990312_T161854215.log'],
+reading:['Lendo {0}…','Reading {0}…','Lettura di {0}…','Leyendo {0}…'],cancel:['Cancelar','Cancel','Annulla','Cancelar'],close:['Fechar','Close','Chiudi','Cerrar'],analyze:['Analisar','Analyze','Analizza','Analizar'],
+pasteT:['Colar um trecho do log','Paste part of a log','Incolla parte di un log','Pegar parte de un log'],pastePh:['Cole aqui as linhas do log','Paste the log lines here','Incolla qui le righe del log','Pega aquí las líneas del log'],
+empty:['O arquivo está vazio.','The file is empty.','Il file è vuoto.','El archivo está vacío.'],readErr:['Não consegui ler {0}.','Could not read {0}.','Impossibile leggere {0}.','No pude leer {0}.'],
+demoNote:['Exemplo com dados fictícios, montado a partir de trechos públicos de log. Não representa nenhum sistema real.','Sample with made-up data, built from public log excerpts. It does not represent any real system.','Esempio con dati fittizi, costruito da estratti pubblici di log. Non rappresenta alcun sistema reale.','Ejemplo con datos ficticios, creado a partir de fragmentos públicos de log. No representa ningún sistema real.'],
+lowFmt:['Reconheci o formato de só {0} das linhas. Só as palavras de erro foram procuradas no restante.','I recognized the format of only {0} of the lines. The rest was only searched for error words.','Ho riconosciuto il formato solo del {0} delle righe. Nel resto ho cercato solo parole di errore.','Reconocí el formato de solo {0} de las líneas. En el resto solo busqué palabras de error.'],
+tLines:['linhas','lines','righe','líneas'],tPeriod:['período do log','log period','periodo del log','periodo del log'],tErr:['erros e falhas','errors and faults','errori e guasti','errores y fallos'],tKinds:['tipos de erro','error types','tipi di errore','tipos de error'],tBsfn:['chamadas de BSFN','BSFN calls','chiamate BSFN','llamadas de BSFN'],tSql:['comandos SQL','SQL statements','istruzioni SQL','sentencias SQL'],tProc:['processos','processes','processi','procesos'],
+tabI:['Insights','Insights','Insights','Insights'],tabE:['Erros','Errors','Errori','Errores'],tabB:['BSFN','BSFN','BSFN','BSFN'],tabS:['SQL','SQL','SQL','SQL'],tabG:['Pausas','Pauses','Pause','Pausas'],tabC:['Contexto','Context','Contesto','Contexto'],tabF:['Fluxo','Flow','Flusso','Flujo'],tabT:['Conteúdo','Content','Contenuto','Contenido'],ctHow:['O log inteiro, linha a linha, com uma cor e uma etiqueta por tipo de evento. Clique em um tipo para ver só as linhas dele. O arquivo é lido aos poucos, então a rolagem funciona em logs muito grandes.','The whole log, line by line, with a color and a tag per event type. Click a type to see only its lines. The file is read piece by piece, so scrolling works on very large logs.','L\'intero log, riga per riga, con un colore e un\'etichetta per tipo di evento. Fai clic su un tipo per vedere solo le sue righe. Il file viene letto a poco a poco, quindi lo scorrimento funziona su log molto grandi.','El log entero, línea a línea, con un color y una etiqueta por tipo de evento. Haz clic en un tipo para ver solo sus líneas. El archivo se lee poco a poco, así que el desplazamiento funciona en logs muy grandes.'],ctFile:['Arquivo','File','File','Archivo'],ctFind:['Buscar no arquivo','Search the file','Cerca nel file','Buscar en el archivo'],ctPrev:['Resultado anterior','Previous result','Risultato precedente','Resultado anterior'],ctNext:['Próximo resultado','Next result','Risultato successivo','Siguiente resultado'],ctGo:['Ir para a linha','Go to line','Vai alla riga','Ir a la línea'],ctPrevE:['◀ Erro anterior','◀ Previous error','◀ Errore precedente','◀ Error anterior'],ctNextE:['Próximo erro ▶','Next error ▶','Errore successivo ▶','Siguiente error ▶'],ctAll:['Mostrar tudo','Show all','Mostra tutto','Mostrar todo'],ctPos:['Linha {0} de {1}','Line {0} of {1}','Riga {0} di {1}','Línea {0} de {1}'],ctFiltered:['{0} de {1} linhas com o filtro','{0} of {1} lines with the filter','{0} di {1} righe con il filtro','{0} de {1} líneas con el filtro'],ctNoHit:['Nada encontrado para "{0}".','Nothing found for "{0}".','Nessun risultato per "{0}".','No se encontró nada para "{0}".'],ctSearching:['Buscando, linha {0}…','Searching, line {0}…','Ricerca, riga {0}…','Buscando, línea {0}…'],ctWrapped:['A busca chegou ao fim do arquivo e recomeçou.','The search reached the end of the file and restarted.','La ricerca è arrivata alla fine del file ed è ricominciata.','La búsqueda llegó al final del archivo y volvió a empezar.'],ctNoErr:['Não há outro erro nessa direção.','There is no other error in that direction.','Non ci sono altri errori in quella direzione.','No hay otro error en esa dirección.'],ctEmpty:['Nenhuma linha com esse filtro.','No lines with this filter.','Nessuna riga con questo filtro.','Ninguna línea con este filtro.'],ctOpen:['Abrir em Conteúdo','Open in Content','Apri in Contenuto','Abrir en Contenido'],ctCut:['linha cortada aqui, use Copiar para o texto inteiro','line cut here, use Copy for the full text','riga tagliata qui, usa Copia per il testo intero','línea cortada aquí, usa Copiar para el texto completo'],ctPick:['Clique em uma linha para selecioná-la.','Click a line to select it.','Fai clic su una riga per selezionarla.','Haz clic en una línea para seleccionarla.'],ctList:['Tipos de evento','Event types','Tipi di evento','Tipos de evento'],ctView:['Conteúdo do log','Log content','Contenuto del log','Contenido del log'],k4:['Chamada e retorno de BSFN','BSFN call and return','Chiamata e ritorno BSFN','Llamada y retorno de BSFN'],k5:['Comando SQL','SQL statement','Istruzione SQL','Sentencia SQL'],k6:['Leitura de linhas','Row fetch','Lettura di righe','Lectura de filas'],k7:['Parâmetros','Parameters','Parametri','Parámetros'],k8:['Chamada de API','API call','Chiamata API','Llamada de API'],k9:['UBE','UBE','UBE','UBE'],k10:['Retorno ≠ 0','Return ≠ 0','Ritorno ≠ 0','Retorno ≠ 0'],k11:['Pausa','Pause','Pausa','Pausa'],k0:['Outras linhas','Other lines','Altre righe','Otras líneas'],dtFit:['Ajustar','Fit','Adatta','Ajustar'],dtSvg:['Baixar SVG','Download SVG','Scarica SVG','Descargar SVG'],dtIn:['Aumentar o zoom','Zoom in','Aumenta lo zoom','Aumentar el zoom'],dtOut:['Diminuir o zoom','Zoom out','Riduci lo zoom','Reducir el zoom'],flHow:['Quem chama quem neste log, somando todas as execuções. Quanto mais grossa a ligação, mais vezes ela ocorreu. Clique em um bloco para destacar o caminho dele.','Who calls whom in this log, adding up all runs. The thicker the link, the more often it occurred. Click a block to highlight its path.','Chi chiama chi in questo log, sommando tutte le esecuzioni. Più il collegamento è spesso, più volte si è verificato. Fai clic su un blocco per evidenziarne il percorso.','Quién llama a quién en este log, sumando todas las ejecuciones. Cuanto más grueso el enlace, más veces ocurrió. Haz clic en un bloque para destacar su camino.'],flShow:['Mostrar','Show','Mostra','Mostrar'],flBlocks:['{0} blocos','{0} blocks','{0} blocchi','{0} bloques'],flAll:['todos','all','tutti','todos'],flTables:['Tabelas','Tables','Tabelle','Tablas'],flErrors:['Erros','Errors','Errori','Errores'],flHidden:['{0} de {1} blocos aparecem, os mais importantes de cada tipo. Ligações que passam por blocos ocultos não são desenhadas.','{0} of {1} blocks are shown, the most important of each type. Links through hidden blocks are not drawn.','Sono visibili {0} blocchi su {1}, i più importanti di ogni tipo. I collegamenti attraverso blocchi nascosti non sono disegnati.','Se muestran {0} de {1} bloques, los más importantes de cada tipo. Los enlaces que pasan por bloques ocultos no se dibujan.'],flEntry:['Entrada','Entry','Ingresso','Entrada'],flBsfn:['BSFN, nível {0}','BSFN, level {0}','BSFN, livello {0}','BSFN, nivel {0}'],flTable:['Tabelas','Tables','Tabelle','Tablas'],flErr:['Erros','Errors','Errori','Errores'],flErrN:['Erros, sequência {0}','Errors, sequence {0}','Errori, sequenza {0}','Errores, secuencia {0}'],flProc:['Processo {0}','Process {0}','Processo {0}','Proceso {0}'],flSlow:['Passou do limite de lentidão','Went over the slowness limit','Ha superato il limite di lentezza','Superó el límite de lentitud'],flBack:['Volta (recursão ou erro repetido)','Goes back (recursion or repeated error)','Ritorno (ricorsione o errore ripetuto)','Vuelta (recursión o error repetido)'],flEmpty:['Nada para desenhar: este log não tem chamadas, SQL nem erros.','Nothing to draw: this log has no calls, SQL or errors.','Niente da disegnare: questo log non ha chiamate, SQL né errori.','Nada que dibujar: este log no tiene llamadas, SQL ni errores.'],flPick:['Selecione um bloco para ver os números dele.','Select a block to see its figures.','Seleziona un blocco per vederne i numeri.','Selecciona un bloque para ver sus cifras.'],flOpen:['Abrir detalhes','Open details','Apri dettagli','Abrir detalles'],flClear:['Limpar seleção','Clear selection','Cancella selezione','Limpiar selección'],flList:['Ver as ligações como tabela','View the links as a table','Vedi i collegamenti come tabella','Ver los enlaces como tabla'],flFrom:['De','From','Da','De'],flTo:['Para','To','A','A'],flErrs:['{0} erro(s)','{0} error(s)','{0} errore/i','{0} error(es)'],flCalls:['{0} chamada(s)','{0} call(s)','{0} chiamata/e','{0} llamada(s)'],flSqls:['{0} SQL','{0} SQL','{0} SQL','{0} SQL'],flRows:['{0} linha(s) lida(s)','{0} row(s) read','{0} riga/he lette','{0} fila(s) leída(s)'],flTimes:['{0} vez(es)','{0} time(s)','{0} volta/e','{0} vez/veces'],
+sevcrit:['Crítico','Critical','Critico','Crítico'],sevwarn:['Atenção','Attention','Attenzione','Atención'],sevinfo:['Informação','Information','Informazione','Información'],sevgood:['Sem problema','No problem','Nessun problema','Sin problema'],
+insHow:['Os insights são sinais calculados a partir do texto do log, para orientar a investigação. Confirme a causa antes de agir.','Insights are signals computed from the log text, to guide the investigation. Confirm the cause before acting.','Gli insight sono segnali calcolati dal testo del log, per guidare l\'indagine. Conferma la causa prima di agire.','Los insights son señales calculadas a partir del texto del log, para orientar la investigación. Confirma la causa antes de actuar.'],
+thr:['Considerar lento a partir de','Treat as slow from','Considera lento da','Considerar lento a partir de'],thrS:['segundos','seconds','secondi','segundos'],
+chErr:['Erros e falhas por intervalo','Errors and faults per interval','Errori e guasti per intervallo','Errores y fallos por intervalo'],chLines:['Linhas de log por intervalo','Log lines per interval','Righe di log per intervallo','Líneas de log por intervalo'],chEach:['Cada barra: {0}. Clique em uma barra para ver os erros daquele intervalo.','Each bar: {0}. Click a bar to see that interval\'s errors.','Ogni barra: {0}. Fai clic su una barra per vedere gli errori di quell\'intervallo.','Cada barra: {0}. Haz clic en una barra para ver los errores de ese intervalo.'],chTable:['Ver como tabela','View as table','Vedi come tabella','Ver como tabla'],chNoTime:['Este log não tem horários, então não há linha do tempo.','This log has no timestamps, so there is no timeline.','Questo log non ha orari, quindi non c\'è una linea temporale.','Este log no tiene horas, así que no hay línea de tiempo.'],
+filter:['Filtrar','Filter','Filtra','Filtrar'],csv:['Baixar CSV','Download CSV','Scarica CSV','Descargar CSV'],showing:['Mostrando {0} de {1}. Filtre para ver os outros.','Showing {0} of {1}. Filter to see the rest.','Mostrati {0} di {1}. Filtra per vedere gli altri.','Mostrando {0} de {1}. Filtra para ver los demás.'],none:['Nada para mostrar.','Nothing to show.','Niente da mostrare.','Nada que mostrar.'],all:['Todos','All','Tutti','Todos'],
+cLevel:['Nível','Level','Livello','Nivel'],cCat:['Área','Area','Area','Área'],cCode:['Código','Code','Codice','Código'],cMsg:['Mensagem','Message','Messaggio','Mensaje'],cCount:['Vezes','Count','Volte','Veces'],cFirst:['Primeira','First','Prima','Primera'],cLast:['Última','Last','Ultima','Última'],cProc:['Processos','Processes','Processi','Procesos'],
+lvfatal:['Fatal','Fatal','Fatale','Fatal'],lverror:['Erro','Error','Errore','Error'],lvwarn:['Alerta','Warning','Avviso','Alerta'],
+catdb:['Banco de dados','Database','Database','Base de datos'],catnet:['Rede','Network','Rete','Red'],catbsfn:['Função de negócio','Business function','Funzione di business','Función de negocio'],catsec:['Acesso','Access','Accesso','Acceso'],catcrash:['Falha do processo','Process failure','Guasto del processo','Fallo del proceso'],catother:['Outros','Other','Altro','Otros'],
+range:['Intervalo: {0}','Interval: {0}','Intervallo: {0}','Intervalo: {0}'],clear:['Limpar','Clear','Cancella','Limpiar'],
+cName:['Nome','Name','Nome','Nombre'],cCalls:['Chamadas','Calls','Chiamate','Llamadas'],cTotal:['Tempo total','Total time','Tempo totale','Tiempo total'],cSelf:['Tempo próprio','Own time','Tempo proprio','Tiempo propio'],cAvg:['Média','Average','Media','Media'],cMax:['Máximo','Maximum','Massimo','Máximo'],cBad:['Retorno ≠ 0','Return ≠ 0','Ritorno ≠ 0','Retorno ≠ 0'],
+bsfnNote:['Tempo total: da chamada ao retorno. Tempo próprio: sem as BSFN chamadas por ela. É tempo de relógio com o log ligado: inclui espera de banco e rede.','Total time: from call to return. Own time: without the BSFNs it calls. It is wall-clock time with logging on: it includes database and network waits.','Tempo totale: dalla chiamata al ritorno. Tempo proprio: senza le BSFN che chiama. È tempo reale con il log attivo: include le attese di database e rete.','Tiempo total: de la llamada al retorno. Tiempo propio: sin las BSFN que llama. Es tiempo de reloj con el log activo: incluye esperas de base de datos y red.'],
+noBsfn:['Nenhuma chamada de BSFN neste log. O jdedebug.log é o arquivo que registra essas chamadas.','No BSFN calls in this log. The jdedebug.log file is the one that records them.','Nessuna chiamata BSFN in questo log. Il file jdedebug.log è quello che le registra.','Ninguna llamada de BSFN en este log. El archivo jdedebug.log es el que las registra.'],
+cType:['Tipo','Type','Tipo','Tipo'],cTable:['Tabela','Table','Tabella','Tabla'],cStmt:['Comando, sem os valores','Statement, without values','Istruzione, senza valori','Sentencia, sin valores'],cRows:['Linhas lidas','Rows read','Righe lette','Filas leídas'],cTime:['Tempo aprox.','Approx. time','Tempo appross.','Tiempo aprox.'],noWhere:['sem WHERE','no WHERE','senza WHERE','sin WHERE'],
+sqlNote:['Valores são retirados para agrupar comandos iguais. O tempo vai do comando até a última busca e inclui o processamento entre as buscas, então é uma aproximação.','Values are removed to group identical statements. Time runs from the statement to the last fetch and includes processing between fetches, so it is an approximation.','I valori vengono rimossi per raggruppare le istruzioni uguali. Il tempo va dall\'istruzione all\'ultima lettura e include l\'elaborazione tra le letture, quindi è un\'approssimazione.','Los valores se quitan para agrupar sentencias iguales. El tiempo va de la sentencia a la última lectura e incluye el procesamiento entre lecturas, así que es una aproximación.'],
+noSql:['Nenhum comando SQL neste log. O jdedebug.log é o arquivo que os registra.','No SQL statements in this log. The jdedebug.log file is the one that records them.','Nessuna istruzione SQL in questo log. Il file jdedebug.log è quello che le registra.','Ninguna sentencia SQL en este log. El archivo jdedebug.log es el que las registra.'],
+cGap:['Pausa','Pause','Pausa','Pausa'],cAt:['Início','Start','Inizio','Inicio'],cThread:['Processo/thread','Process/thread','Processo/thread','Proceso/hilo'],cBefore:['Última linha antes','Last line before','Ultima riga prima','Última línea antes'],cAfter:['Primeira linha depois','First line after','Prima riga dopo','Primera línea después'],
+gapNote:['Pausa: tempo sem linhas no mesmo processo e thread. Pode ser trabalho lento, espera por banco ou rede, ou só a falta de atividade do usuário.','Pause: time without lines in the same process and thread. It can be slow work, a database or network wait, or just no user activity.','Pausa: tempo senza righe nello stesso processo e thread. Può essere lavoro lento, attesa di database o rete, o solo inattività dell\'utente.','Pausa: tiempo sin líneas en el mismo proceso e hilo. Puede ser trabajo lento, espera de base de datos o red, o solo falta de actividad del usuario.'],
+noGap:['Nenhuma pausa a partir de {0}.','No pauses from {0}.','Nessuna pausa da {0}.','Ninguna pausa a partir de {0}.'],
+ctxApps:['Aplicações e relatórios','Applications and reports','Applicazioni e report','Aplicaciones e informes'],ctxTables:['Tabelas','Tables','Tabelle','Tablas'],ctxThreads:['Processos e threads','Processes and threads','Processi e thread','Procesos e hilos'],ctxFiles:['Arquivos lidos','Files read','File letti','Archivos leídos'],ctxApis:['Chamadas de API mais frequentes','Most frequent API calls','Chiamate API più frequenti','Llamadas de API más frecuentes'],
+cFile:['Arquivo','File','File','Archivo'],cSize:['Tamanho','Size','Dimensione','Tamaño'],cKind:['Conteúdo','Contents','Contenuto','Contenido'],cLines:['Linhas','Lines','Righe','Líneas'],cErrors:['Erros','Errors','Errori','Errores'],cOpen:['Aberturas','Opens','Aperture','Aperturas'],cUsers:['Usuários','Users','Utenti','Usuarios'],cVer:['Versões','Versions','Versioni','Versiones'],cApp:['Aplicação','Application','Applicazione','Aplicación'],
+kindjde:['erros (jde.log)','errors (jde.log)','errori (jde.log)','errores (jde.log)'],kinddbg:['depuração (jdedebug)','debug (jdedebug)','debug (jdedebug)','depuración (jdedebug)'],kindube:['UBE','UBE','UBE','UBE'],kindother:['não identificado','not identified','non identificato','no identificado'],
+meaning:['O que a fonte diz','What the source says','Cosa dice la fonte','Qué dice la fuente'],source:['Fonte','Source','Fonte','Fuente'],kbNone:['Este código não está na base do app. Procure a mensagem no My Oracle Support ou no aplicativo P92002, que traz as mensagens de erro do sistema.','This code is not in the app\'s base. Look the message up in My Oracle Support or in the P92002 application, which holds the system\'s error messages.','Questo codice non è nella base dell\'app. Cerca il messaggio in My Oracle Support o nell\'applicazione P92002, che contiene i messaggi di errore del sistema.','Este código no está en la base de la aplicación. Busca el mensaje en My Oracle Support o en la aplicación P92002, que contiene los mensajes de error del sistema.'],
+occ:['Ocorrências de exemplo','Sample occurrences','Occorrenze di esempio','Ocurrencias de ejemplo'],after:['Costuma vir logo depois de','Usually comes right after','Di solito viene subito dopo','Suele venir justo después de'],viewLog:['Ver no log','View in log','Vedi nel log','Ver en el log'],linen:['linha {0}','line {0}','riga {0}','línea {0}'],lineOf:['{0}, linha {1}','{0}, line {1}','{0}, riga {1}','{0}, línea {1}'],callers:['Chamada por','Called by','Chiamata da','Llamada por'],slowest:['Execução mais lenta','Slowest run','Esecuzione più lenta','Ejecución más lenta'],firstAt:['Primeira execução','First run','Prima esecuzione','Primera ejecución'],stmt:['Comando','Statement','Istruzione','Sentencia'],
+copy:['Copiar','Copy','Copia','Copiar'],copied:['Copiado.','Copied.','Copiato.','Copiado.'],saved:['Arquivo gerado.','File created.','File creato.','Archivo generado.'],
+repT:['Relatório','Report','Report','Informe'],repD:['O relatório traz os insights e os principais números. Revise antes de enviar: ele pode conter nomes de usuários, servidores e tabelas.','The report has the insights and the main figures. Review it before sending: it may contain user, server and table names.','Il report contiene gli insight e i numeri principali. Rivedilo prima di inviarlo: può contenere nomi di utenti, server e tabelle.','El informe trae los insights y las cifras principales. Revísalo antes de enviarlo: puede contener nombres de usuarios, servidores y tablas.'],mask:['Ocultar usuários, servidores, IPs, caminhos e valores entre aspas','Hide users, servers, IPs, paths and quoted values','Nascondi utenti, server, IP, percorsi e valori tra virgolette','Ocultar usuarios, servidores, IP, rutas y valores entre comillas'],maskNote:['A ocultação segue padrões conhecidos e pode deixar passar algo.','Hiding follows known patterns and may miss something.','L\'oscuramento segue schemi noti e può lasciar passare qualcosa.','La ocultación sigue patrones conocidos y puede dejar pasar algo.'],dlMd:['Baixar .md','Download .md','Scarica .md','Descargar .md'],
+repSum:['Resumo','Summary','Riepilogo','Resumen'],repTopE:['Principais erros','Top errors','Errori principali','Errores principales'],repTopB:['BSFN mais demoradas','Slowest BSFNs','BSFN più lente','BSFN más lentas'],repTopS:['SQL mais demorado','Slowest SQL','SQL più lento','SQL más lento'],repTopG:['Maiores pausas','Longest pauses','Pause più lunghe','Pausas más largas'],repAbout:['Sinais calculados a partir do texto do log por JDE Log Insights. Confirme a causa antes de agir.','Signals computed from the log text by JDE Log Insights. Confirm the cause before acting.','Segnali calcolati dal testo del log da JDE Log Insights. Conferma la causa prima di agire.','Señales calculadas a partir del texto del log por JDE Log Insights. Confirma la causa antes de actuar.'],
+/* insights */
+goErr:['Ver o erro','See the error','Vedi l\'errore','Ver el error'],goErrs:['Ver os erros','See the errors','Vedi gli errori','Ver los errores'],goB:['Ver em BSFN','See in BSFN','Vedi in BSFN','Ver en BSFN'],goS:['Ver em SQL','See in SQL','Vedi in SQL','Ver en SQL'],goG:['Ver em Pausas','See in Pauses','Vedi in Pause','Ver en Pausas'],goC:['Ver em Contexto','See in Context','Vedi in Contesto','Ver en Contexto'],
+iFatalT:['O processo sofreu uma falha grave','The process had a severe failure','Il processo ha avuto un guasto grave','El proceso sufrió un fallo grave'],iFatalB:['"{0}" apareceu {1} vez(es), a primeira em {2}. Procure os arquivos *.dmp.log ao lado do log, que trazem a pilha de chamadas das threads.','"{0}" appeared {1} time(s), first at {2}. Look for the *.dmp.log files next to the log, which hold the threads\' call stacks.','"{0}" è apparso {1} volta/e, la prima alle {2}. Cerca i file *.dmp.log accanto al log, che contengono lo stack delle chiamate dei thread.','"{0}" apareció {1} vez/veces, la primera a las {2}. Busca los archivos *.dmp.log junto al log, que traen la pila de llamadas de los hilos.'],
+iConnT:['O banco de dados ficou fora de alcance','The database was out of reach','Il database non era raggiungibile','La base de datos quedó fuera de alcance'],iConnB:['{0}: {1} vez(es), de {2} a {3}. {4}','{0}: {1} time(s), from {2} to {3}. {4}','{0}: {1} volta/e, da {2} a {3}. {4}','{0}: {1} vez/veces, de {2} a {3}. {4}'],
+iTopT:['Um único erro responde por {0} das ocorrências','One error accounts for {0} of occurrences','Un solo errore rappresenta il {0} delle occorrenze','Un solo error representa el {0} de las ocurrencias'],iTopB:['Comece por "{0}": {1} de {2} ocorrências, em {3} tipos de erro.','Start with "{0}": {1} of {2} occurrences, across {3} error types.','Inizia da "{0}": {1} di {2} occorrenze, su {3} tipi di errore.','Empieza por "{0}": {1} de {2} ocurrencias, en {3} tipos de error.'],
+iKindsT:['{0} tipos de erro no log','{0} error types in the log','{0} tipi di errore nel log','{0} tipos de error en el log'],iKindsB:['{1} ocorrências no total. A mais frequente é "{0}".','{1} occurrences in total. The most frequent is "{0}".','{1} occorrenze in totale. La più frequente è "{0}".','{1} ocurrencias en total. La más frecuente es "{0}".'],
+iChainT:['"{0}" costuma ser consequência de "{1}"','"{0}" is usually a consequence of "{1}"','"{0}" è di solito una conseguenza di "{1}"','"{0}" suele ser consecuencia de "{1}"'],iChainB:['Em {2} de {3} vezes, "{0}" veio até 1 segundo depois de "{1}" na mesma thread. Investigue primeiro "{1}".','In {2} of {3} cases, "{0}" came up to 1 second after "{1}" on the same thread. Investigate "{1}" first.','In {2} casi su {3}, "{0}" è arrivato fino a 1 secondo dopo "{1}" nello stesso thread. Indaga prima "{1}".','En {2} de {3} casos, "{0}" llegó hasta 1 segundo después de "{1}" en el mismo hilo. Investiga primero "{1}".'],
+iPeakT:['Pico de erros em {0}','Error peak at {0}','Picco di errori alle {0}','Pico de errores a las {0}'],iPeakB:['{1} erros nesse minuto, contra uma mediana de {2} por minuto com erro. Veja o que mudou nesse momento.','{1} errors in that minute, against a median of {2} per minute with errors. Check what changed at that moment.','{1} errori in quel minuto, contro una mediana di {2} per minuto con errori. Verifica cosa è cambiato in quel momento.','{1} errores en ese minuto, frente a una mediana de {2} por minuto con errores. Mira qué cambió en ese momento.'],
+iProcT:['Os erros se concentram no processo {0}','Errors concentrate in process {0}','Gli errori si concentrano nel processo {0}','Los errores se concentran en el proceso {0}'],iProcB:['{1} dos erros vêm desse processo, entre {2} com erro. Isso aponta para algo específico dele, e não para o servidor inteiro.','{1} of the errors come from this process, among {2} with errors. This points to something specific to it, not the whole server.','Il {1} degli errori proviene da questo processo, tra {2} con errori. Indica qualcosa di specifico, non l\'intero server.','El {1} de los errores viene de este proceso, entre {2} con errores. Apunta a algo específico de él, no a todo el servidor.'],
+iTblT:['A tabela {0} aparece em {1} erros','Table {0} appears in {1} errors','La tabella {0} compare in {1} errori','La tabla {0} aparece en {1} errores'],iTblB:['É a tabela mais citada nas mensagens de erro. Confira o mapeamento de dados e o acesso a ela.','It is the table most cited in error messages. Check its data mapping and access.','È la tabella più citata nei messaggi di errore. Controlla la mappatura dei dati e l\'accesso.','Es la tabla más citada en los mensajes de error. Revisa su mapeo de datos y el acceso.'],
+iSlowBT:['{0} levou {1} em uma execução','{0} took {1} in one run','{0} ha impiegato {1} in un\'esecuzione','{0} tardó {1} en una ejecución'],iSlowBB:['Foram {2} chamada(s), com {3} de tempo próprio no total e média de {4}. Quando o total é bem maior que o tempo próprio, o tempo está nas BSFN chamadas por ela.','There were {2} call(s), with {3} of own time in total and an average of {4}. When the total is much larger than the own time, the time is in the BSFNs it calls.','Ci sono state {2} chiamata/e, con {3} di tempo proprio in totale e media di {4}. Quando il totale è molto maggiore del tempo proprio, il tempo è nelle BSFN che chiama.','Hubo {2} llamada(s), con {3} de tiempo propio en total y media de {4}. Cuando el total es mucho mayor que el tiempo propio, el tiempo está en las BSFN que llama.'],
+iSelfT:['{0} concentra {1} do tempo próprio das BSFN','{0} holds {1} of the BSFNs\' own time','{0} concentra il {1} del tempo proprio delle BSFN','{0} concentra el {1} del tiempo propio de las BSFN'],iSelfB:['{2} em {3} chamada(s). Melhorar essa função é o que mais pode reduzir o tempo medido neste log.','{2} in {3} call(s). Improving this function is what can most reduce the time measured in this log.','{2} in {3} chiamata/e. Migliorare questa funzione è ciò che può ridurre di più il tempo misurato in questo log.','{2} en {3} llamada(s). Mejorar esta función es lo que más puede reducir el tiempo medido en este log.'],
+iRcT:['{0} chamada(s) de BSFN retornaram valor diferente de 0','{0} BSFN call(s) returned a value other than 0','{0} chiamata/e BSFN hanno restituito un valore diverso da 0','{0} llamada(s) de BSFN devolvieron un valor distinto de 0'],iRcB:['A mais frequente é {1}, com {2}. Confira se o retorno é tratado por quem chama.','The most frequent is {1}, with {2}. Check whether the caller handles the return.','La più frequente è {1}, con {2}. Verifica che il chiamante gestisca il ritorno.','La más frecuente es {1}, con {2}. Comprueba si quien llama trata el retorno.'],
+iOpenT:['{0} chamada(s) de BSFN sem retorno no log','{0} BSFN call(s) with no return in the log','{0} chiamata/e BSFN senza ritorno nel log','{0} llamada(s) de BSFN sin retorno en el log'],iOpenB:['A última foi {1}, em {2}. O log pode ter sido cortado, ou o processo pode ter parado durante a chamada.','The last was {1}, at {2}. The log may have been cut, or the process may have stopped during the call.','L\'ultima è stata {1}, alle {2}. Il log potrebbe essere stato tagliato, o il processo fermato durante la chiamata.','La última fue {1}, a las {2}. El log puede haberse cortado, o el proceso puede haberse detenido durante la llamada.'],
+iRepT:['O mesmo SQL rodou {0} vezes','The same SQL ran {0} times','Lo stesso SQL è stato eseguito {0} volte','El mismo SQL se ejecutó {0} veces'],iRepB:['Em {1}, com tempo aproximado de {2} no total. Repetição assim pode indicar leitura dentro de um laço, em que um cache ou uma leitura única ajudaria.','On {1}, with an approximate total of {2}. Such repetition may mean a read inside a loop, where a cache or a single read would help.','Su {1}, con un tempo totale approssimato di {2}. Una ripetizione simile può indicare una lettura in un ciclo, dove aiuterebbe una cache o una lettura unica.','En {1}, con un tiempo aproximado de {2} en total. Una repetición así puede indicar una lectura dentro de un bucle, donde ayudaría una caché o una lectura única.'],
+iRowsT:['Uma leitura de {0} trouxe {1} linhas','A read on {0} returned {1} rows','Una lettura su {0} ha restituito {1} righe','Una lectura de {0} trajo {1} filas'],iRowsB:['Foram {2} em média por execução, em {3} execução(ões). Confira se todos os registros são necessários e se o filtro aproveita um índice.','An average of {2} per run, in {3} run(s). Check whether every record is needed and whether the filter uses an index.','In media {2} per esecuzione, in {3} esecuzione/i. Verifica se servono tutti i record e se il filtro usa un indice.','Fueron {2} de media por ejecución, en {3} ejecución(es). Comprueba si hacen falta todos los registros y si el filtro aprovecha un índice.'],
+iSlowST:['Um SQL em {0} levou cerca de {1}','A SQL on {0} took about {1}','Un SQL su {0} ha impiegato circa {1}','Un SQL en {0} tardó cerca de {1}'],iSlowSB:['{2} execução(ões) e {3} linha(s) lidas. Um intervalo longo entre o comando e a primeira busca costuma apontar para o banco, mais do que para a lógica.','{2} run(s) and {3} row(s) read. A long interval between the statement and the first fetch tends to point to the database rather than the logic.','{2} esecuzione/i e {3} riga/he lette. Un intervallo lungo tra l\'istruzione e la prima lettura indica di solito il database più che la logica.','{2} ejecución(es) y {3} fila(s) leídas. Un intervalo largo entre la sentencia y la primera lectura suele apuntar a la base de datos más que a la lógica.'],
+iNoWT:['{0} comando(s) sem WHERE','{0} statement(s) without WHERE','{0} istruzione/i senza WHERE','{0} sentencia(s) sin WHERE'],iNoWB:['Em tabelas pequenas isso é normal. Confira {1}, o mais executado.','On small tables this is normal. Check {1}, the most executed.','Sulle tabelle piccole è normale. Controlla {1}, la più eseguita.','En tablas pequeñas es normal. Revisa {1}, la más ejecutada.'],
+iGapT:['Pausa de {0} no processo {1}','Pause of {0} in process {1}','Pausa di {0} nel processo {1}','Pausa de {0} en el proceso {1}'],iGapB:['Depois de "{2}", a linha seguinte só veio às {3}: "{4}". {5} pausa(s) a partir do limite.','After "{2}", the next line only came at {3}: "{4}". {5} pause(s) over the limit.','Dopo "{2}", la riga seguente è arrivata solo alle {3}: "{4}". {5} pausa/e oltre il limite.','Después de "{2}", la línea siguiente solo llegó a las {3}: "{4}". {5} pausa(s) a partir del límite.'],
+iBackT:['{0} linha(s) fora de ordem no tempo','{0} line(s) out of time order','{0} riga/he fuori ordine temporale','{0} línea(s) fuera de orden en el tiempo'],iBackB:['Na mesma thread, o horário voltou atrás. Tempos medidos perto desses pontos podem não ser exatos.','On the same thread, the time went backwards. Times measured near these points may not be exact.','Nello stesso thread, l\'orario è tornato indietro. I tempi misurati vicino a questi punti possono non essere esatti.','En el mismo hilo, la hora retrocedió. Los tiempos medidos cerca de estos puntos pueden no ser exactos.'],
+iNoErrT:['Nenhum erro encontrado','No errors found','Nessun errore trovato','No se encontraron errores'],iNoErrB:['Nenhuma das {0} linhas tem um código ou uma palavra de erro que o app reconheça.','None of the {0} lines has an error code or word the app recognizes.','Nessuna delle {0} righe ha un codice o una parola di errore che l\'app riconosca.','Ninguna de las {0} líneas tiene un código o una palabra de error que la aplicación reconozca.'],
+iNoPerfT:['Este log não permite medir desempenho','This log does not allow measuring performance','Questo log non permette di misurare le prestazioni','Este log no permite medir el rendimiento'],iNoPerfB:['Não há chamadas de BSFN nem SQL. Para medir, reproduza o problema com Output=FILE na seção [DEBUG] do jde.ini e abra o jdedebug gerado. Volte a configuração depois, porque o log fica grande e pesa no processo.','There are no BSFN calls or SQL. To measure, reproduce the problem with Output=FILE in the [DEBUG] section of jde.ini and open the jdedebug it creates. Revert the setting afterwards, because the log gets large and weighs on the process.','Non ci sono chiamate BSFN né SQL. Per misurare, riproduci il problema con Output=FILE nella sezione [DEBUG] di jde.ini e apri il jdedebug generato. Ripristina poi l\'impostazione, perché il log diventa grande e pesa sul processo.','No hay llamadas de BSFN ni SQL. Para medir, reproduce el problema con Output=FILE en la sección [DEBUG] de jde.ini y abre el jdedebug generado. Revierte la configuración después, porque el log crece y pesa en el proceso.'],
+iUbeOkT:['O UBE terminou com sucesso','The UBE finished successfully','L\'UBE è terminato con successo','El UBE terminó con éxito'],iUbeOkB:['{0} linhas de UBE, nível de detalhe até {1}.','{0} UBE lines, detail level up to {1}.','{0} righe di UBE, livello di dettaglio fino a {1}.','{0} líneas de UBE, nivel de detalle hasta {1}.'],
+iUbeNoT:['Não encontrei o fim do UBE','I did not find the end of the UBE','Non ho trovato la fine dell\'UBE','No encontré el final del UBE'],iUbeNoB:['Há {0} linhas de UBE, mas nenhuma diz "UBE Job Finished Successfully". O job pode ter parado, ou o nível do log (até {1}) pode não registrar esse fim.','There are {0} UBE lines, but none says "UBE Job Finished Successfully". The job may have stopped, or the log level (up to {1}) may not record that end.','Ci sono {0} righe di UBE, ma nessuna dice "UBE Job Finished Successfully". Il job può essersi fermato, o il livello del log (fino a {1}) può non registrare quella fine.','Hay {0} líneas de UBE, pero ninguna dice "UBE Job Finished Successfully". El trabajo puede haberse detenido, o el nivel del log (hasta {1}) puede no registrar ese final.'],
+iMemT:['Memória do processo chegou a {0} MB','Process memory reached {0} MB','La memoria del processo ha raggiunto {0} MB','La memoria del proceso llegó a {0} MB'],iMemB:['Valor do despejo de memória mais alto do log, com {1} despejo(s) iniciados pelo usuário.','The highest value in the log\'s memory dumps, with {1} user-initiated dump(s).','Valore più alto nei dump di memoria del log, con {1} dump avviati dall\'utente.','Valor más alto de los volcados de memoria del log, con {1} volcado(s) iniciados por el usuario.'],
+iEnvT:['O log cita {0} esquemas de dados: {1}','The log cites {0} data schemas: {1}','Il log cita {0} schemi di dati: {1}','El log cita {0} esquemas de datos: {1}'],iEnvB:['Confira se o acesso a todos eles era esperado neste ambiente.','Check whether access to all of them was expected in this environment.','Verifica se l\'accesso a tutti era previsto in questo ambiente.','Comprueba si se esperaba el acceso a todos en este entorno.'],
+iAppT:['{0} é a aplicação com mais chamadas de BSFN','{0} is the application with the most BSFN calls','{0} è l\'applicazione con più chiamate BSFN','{0} es la aplicación con más llamadas de BSFN'],iAppB:['{1} de {2} chamadas. Serve de ponto de partida para repetir o cenário.','{1} of {2} calls. Use it as a starting point to repeat the scenario.','{1} di {2} chiamate. Serve come punto di partenza per ripetere lo scenario.','{1} de {2} llamadas. Sirve de punto de partida para repetir el escenario.'],
+helpLoad:['Como obter os logs','How to get the logs','Come ottenere i log','Cómo obtener los logs'],
+help1:['No servidor, o jde.log fica no local definido por JobFile, na seção [DEBUG] do jde.ini, com nome como jde_442.log.','On the server, jde.log is where JobFile says, in the [DEBUG] section of jde.ini, with a name such as jde_442.log.','Sul server, jde.log si trova dove indica JobFile, nella sezione [DEBUG] di jde.ini, con un nome come jde_442.log.','En el servidor, jde.log está donde indica JobFile, en la sección [DEBUG] de jde.ini, con un nombre como jde_442.log.'],
+help2:['O jdedebug.log só traz chamadas, SQL e tempos com a depuração ligada, por exemplo Output=FILE em [DEBUG]. Reproduza o problema, copie os arquivos e desligue de novo.','jdedebug.log only has calls, SQL and timing with debugging on, for example Output=FILE in [DEBUG]. Reproduce the problem, copy the files and turn it off again.','jdedebug.log contiene chiamate, SQL e tempi solo con il debug attivo, ad esempio Output=FILE in [DEBUG]. Riproduci il problema, copia i file e disattivalo di nuovo.','jdedebug.log solo trae llamadas, SQL y tiempos con la depuración activa, por ejemplo Output=FILE en [DEBUG]. Reproduce el problema, copia los archivos y desactívala de nuevo.'],
+help3:['Logs de UBE ficam na fila de impressão (PrintQueue). O nível de detalhe vem de UBEDebugLevel, na seção [UBE].','UBE logs are in the print queue (PrintQueue). The detail level comes from UBEDebugLevel, in the [UBE] section.','I log di UBE sono nella coda di stampa (PrintQueue). Il livello di dettaglio dipende da UBEDebugLevel, nella sezione [UBE].','Los logs de UBE están en la cola de impresión (PrintQueue). El nivel de detalle viene de UBEDebugLevel, en la sección [UBE].'],
+helpLim:['Limites','Limits','Limiti','Límites'],
+lim1:['Foi testado com logs fictícios, baseados em trechos públicos. Variações de versão, idioma e plataforma podem não ser reconhecidas: o app avisa quando reconhece poucas linhas.','It was tested with made-up logs, based on public excerpts. Version, language and platform variations may not be recognized: the app warns when it recognizes few lines.','È stato provato con log fittizi, basati su estratti pubblici. Variazioni di versione, lingua e piattaforma possono non essere riconosciute: l\'app avvisa quando riconosce poche righe.','Se probó con logs ficticios, basados en fragmentos públicos. Las variaciones de versión, idioma y plataforma pueden no reconocerse: la aplicación avisa cuando reconoce pocas líneas.'],
+lim2:['A detecção de erro usa códigos e palavras. Pode marcar uma linha normal como erro, ou deixar passar um erro escrito de outro jeito.','Error detection uses codes and words. It may flag a normal line as an error, or miss an error worded differently.','Il rilevamento degli errori usa codici e parole. Può segnalare una riga normale come errore, o non vedere un errore scritto in altro modo.','La detección de errores usa códigos y palabras. Puede marcar una línea normal como error, o pasar por alto un error escrito de otra forma.'],
+lim3:['Os logs não trazem o ano, então só dia e hora são mostrados. Sem data na linha, só a hora.','Logs do not include the year, so only day and time are shown. With no date on the line, only the time.','I log non riportano l\'anno, quindi vengono mostrati solo giorno e ora. Senza data nella riga, solo l\'ora.','Los logs no traen el año, así que solo se muestran día y hora. Sin fecha en la línea, solo la hora.'],
+lim4:['Não lê arquivos compactados: extraia o .zip antes.','It does not read compressed files: extract the .zip first.','Non legge file compressi: estrai prima lo .zip.','No lee archivos comprimidos: extrae el .zip antes.'],
+helpSrc:['Fontes consultadas','Sources consulted','Fonti consultate','Fuentes consultadas'],
+};
+const SRC={
+srv:['Oracle, Troubleshooting the Enterprise Server','https://docs.oracle.com/cd/E24705_01/doc.91/e24259/troubleshoot_e1_server.htm'],
+wks:['Oracle, Troubleshooting the Workstation','https://docs.oracle.com/cd/E17984_01/doc.898/e14718/troubleshoot_wrkstation.htm'],
+log:['Oracle, jde.log','https://docs.oracle.com/en/applications/jd-edwards/development-tools/9.2.x/eotev/jde-log.html'],
+lp:['Oracle, LogParse Output Files','https://docs.oracle.com/en/applications/jd-edwards/cross-product/9.2/eoism/logparse-output-files-for-the-enterprise-server.html'],
+cs:['Dong\'s Page, Slow Performance in P4116','https://sohigh99.github.io/dmseo/jde/docs/1523038.html'],
+bp:['Vincenzo Caserta, BSFN performance measurement','https://vincenzocaserta.it/en/jd-edwards-en/development/bsfn-ner-development/jde-bsfn-performance-measurement-logs-timings'],
+};
+const ora=n=>['Oracle, ORA-'+n,'https://docs.oracle.com/error-help/db/ora-'+n+'/'];
+/* base de mensagens: só o que as fontes dizem */
+const KB=[
+{re:/JDENET_SendM[sS]g\s*Failed\s*Error\s*=\s*12\b/i,src:SRC.srv,m:['O servidor JDENET está parado e precisa ser reiniciado.','The JDENET server is down and must be restarted.','Il server JDENET è fermo e deve essere riavviato.','El servidor JDENET está detenido y debe reiniciarse.']},
+{re:/JDENET_SendM[sS]g\s*Failed\s*Error\s*=\s*8\b/i,src:SRC.srv,m:['Pode ser uma porta TCP/IP de serviço incorreta, ou o servidor corporativo não ter esse JDENET.','It may be a wrong TCP/IP service port, or the enterprise server may not have that JDENET.','Può essere una porta TCP/IP di servizio errata, o il server aziendale può non avere quel JDENET.','Puede ser un puerto TCP/IP de servicio incorrecto, o que el servidor empresarial no tenga ese JDENET.']},
+{re:/JDENET_SendM[sS]g\s*Failed\s*Error\s*=\s*(?:5|11)\b/i,src:SRC.srv,m:['A mensagem vai para a porta certa, mas o JDENET do servidor corporativo pode estar parado.','The message goes to the right port, but the enterprise server\'s JDENET may be down.','Il messaggio va alla porta giusta, ma il JDENET del server aziendale può essere fermo.','El mensaje va al puerto correcto, pero el JDENET del servidor empresarial puede estar detenido.']},
+{re:/Could not find symbol/i,src:SRC.srv,m:['Pode significar que a função de negócio não foi compilada no servidor corporativo.','It may mean the business function did not build on the enterprise server.','Può significare che la funzione di business non è stata compilata sul server aziendale.','Puede significar que la función de negocio no se compiló en el servidor empresarial.']},
+{re:/CALLBSFN\.DLL Load Lib failed/i,src:SRC.wks,m:['O objeto pode não existir na estação. Confira o arquivo e reinstale do servidor de implantação, ou copie a DLL de uma estação que funcione.','The object may not exist on the workstation. Check the file and reinstall from the deployment server, or copy the DLL from a working workstation.','L\'oggetto può non esistere sulla postazione. Controlla il file e reinstalla dal server di distribuzione, o copia la DLL da una postazione funzionante.','El objeto puede no existir en la estación. Revisa el archivo y reinstala desde el servidor de implantación, o copia la DLL de una estación que funcione.']},
+{re:/Attempt to add (?:form|grid) record failed/i,src:SRC.wks,m:['Em geral é registro duplicado. O jde.log traz o detalhe da tabela.','It is usually a duplicate record. The jde.log has the table detail.','Di solito è un record duplicato. Il jde.log riporta il dettaglio della tabella.','Suele ser un registro duplicado. El jde.log trae el detalle de la tabla.']},
+{re:/Table not in library/i,src:SRC.wks,m:['A tabela não está no local indicado. Se não existe, é preciso gerá-la. Se mudou de lugar, ajuste a fonte de dados.','The table is not in the given location. If it does not exist, generate it. If it moved, change the data source.','La tabella non è nel luogo indicato. Se non esiste, va generata. Se è stata spostata, cambia l\'origine dati.','La tabla no está en el lugar indicado. Si no existe, hay que generarla. Si cambió de lugar, ajusta la fuente de datos.']},
+{re:/Not Binding Column Data Types/i,src:SRC.wks,m:['A linha está em uso, e outro programa tem um bloqueio sobre ela. Só dá para usá-la quando ele liberar.','The row is in use and another program has a lock on it. It can only be used once that program releases it.','La riga è in uso e un altro programma la tiene bloccata. Si può usare solo quando viene rilasciata.','La fila está en uso y otro programa la tiene bloqueada. Solo se puede usar cuando la libere.']},
+{re:/\bORA-00001\b/,src:ora('00001'),m:['Um comando duplicou um valor coberto por restrição única, índice único ou chave primária.','A statement duplicated a value covered by a unique constraint, unique index or primary key.','Un\'istruzione ha duplicato un valore coperto da un vincolo univoco, un indice univoco o una chiave primaria.','Una sentencia duplicó un valor cubierto por una restricción única, un índice único o una clave primaria.']},
+{re:/\bORA-00054\b/,src:ora('00054'),m:['Outra sessão mantém o bloqueio. Tente de novo. Se persistir, encontre a sessão que o mantém.','Another session holds the lock. Retry. If it persists, find the session holding it.','Un\'altra sessione mantiene il blocco. Riprova. Se persiste, trova la sessione che lo mantiene.','Otra sesión mantiene el bloqueo. Reintenta. Si persiste, busca la sesión que lo mantiene.']},
+{re:/\bORA-00060\b/,src:ora('00060'),m:['Transações ficaram esperando umas pelas outras (deadlock). O arquivo de trace mostra quais e sobre quais recursos.','Transactions waited on each other (deadlock). The trace file shows which ones and on which resources.','Le transazioni si sono attese a vicenda (deadlock). Il file di trace mostra quali e su quali risorse.','Las transacciones se esperaron entre sí (deadlock). El archivo de trace muestra cuáles y sobre qué recursos.']},
+{re:/\bORA-00257\b/,src:ora('00257'),m:['O arquivamento do redo log falhou, em geral por falta de espaço no destino. Veja o alert log.','Redo log archiving failed, usually because the destination is out of space. Check the alert log.','L\'archiviazione del redo log non è riuscita, di solito per mancanza di spazio nella destinazione. Controlla l\'alert log.','El archivado del redo log falló, en general por falta de espacio en el destino. Mira el alert log.']},
+{re:/\bORA-00904\b/,src:ora('00904'),m:['O nome de coluna informado é inválido. Confira a grafia.','The column name given is invalid. Check the spelling.','Il nome di colonna indicato non è valido. Controlla la grafia.','El nombre de columna indicado no es válido. Revisa la grafía.']},
+{re:/\bORA-00942\b/,src:ora('00942'),m:['A tabela ou visão não existe, ou um sinônimo aponta para uma que não existe. Confira a grafia, o esquema e o acesso concedido.','The table or view does not exist, or a synonym points to one that does not. Check the spelling, the schema and the access granted.','La tabella o vista non esiste, o un sinonimo punta a una che non esiste. Controlla grafia, schema e accesso concesso.','La tabla o vista no existe, o un sinónimo apunta a una que no existe. Revisa la grafía, el esquema y el acceso concedido.']},
+{re:/\bORA-01000\b/,src:ora('01000'),m:['A sessão abriu mais cursores que OPEN_CURSORS permite, por vazamento de cursores ou necessidade real. Feche os que não são mais usados ou aumente o limite.','The session opened more cursors than OPEN_CURSORS allows, through cursor leaks or real need. Close unused ones or raise the limit.','La sessione ha aperto più cursori di quanti OPEN_CURSORS ne consenta, per perdite di cursori o reale necessità. Chiudi quelli inutilizzati o aumenta il limite.','La sesión abrió más cursores de los que permite OPEN_CURSORS, por fugas de cursores o necesidad real. Cierra los que no se usan o aumenta el límite.']},
+{re:/\bORA-01017\b/,src:ora('01017'),m:['Credencial inválida, ou usuário sem autorização para acessar o banco.','Invalid credential, or the user is not authorized to access the database.','Credenziale non valida, o utente non autorizzato ad accedere al database.','Credencial no válida, o usuario sin autorización para acceder a la base de datos.']},
+{re:/\bORA-01555\b/,src:ora('01555'),m:['Dados de rollback necessários a uma leitura consistente foram sobrescritos. Com gestão automática de undo, aumente undo_retention.','Rollback records needed for a consistent read were overwritten. With automatic undo management, increase undo_retention.','I dati di rollback necessari per una lettura coerente sono stati sovrascritti. Con la gestione automatica dell\'undo, aumenta undo_retention.','Se sobrescribieron datos de rollback necesarios para una lectura consistente. Con gestión automática de undo, aumenta undo_retention.']},
+{re:/\bORA-01653\b/,src:ora('01653'),m:['O tablespace não pôde crescer durante uma inclusão ou alteração. Aumente ou acrescente um datafile, ou ative AUTOEXTEND.','The tablespace could not grow during an insert or update. Resize or add a datafile, or enable AUTOEXTEND.','Il tablespace non ha potuto crescere durante un inserimento o una modifica. Ridimensiona o aggiungi un datafile, o attiva AUTOEXTEND.','El tablespace no pudo crecer durante una inserción o actualización. Amplía o añade un datafile, o activa AUTOEXTEND.']},
+{re:/\bORA-03113\b/,src:ora('03113'),m:['A conexão entre cliente e servidor caiu, por queda da instância, erro fatal de um processo do servidor ou interrupção de rede. Veja o alert log e a rede.','The client-server connection broke, through an instance outage, a fatal server process error or a network interruption. Check the alert log and the network.','La connessione tra client e server si è interrotta, per un fermo dell\'istanza, un errore fatale di un processo del server o un\'interruzione di rete. Controlla l\'alert log e la rete.','La conexión entre cliente y servidor se cortó, por caída de la instancia, error fatal de un proceso del servidor o interrupción de red. Mira el alert log y la red.']},
+{re:/\bORA-03114\b/,src:ora('03114'),m:['Não há conexão com o banco, em geral depois de um ORA-03113. Veja o alert log e a rede.','There is no connection to the database, usually after an ORA-03113. Check the alert log and the network.','Non c\'è connessione al database, di solito dopo un ORA-03113. Controlla l\'alert log e la rete.','No hay conexión con la base de datos, en general tras un ORA-03113. Mira el alert log y la red.']},
+{re:/\bORA-04031\b/,src:ora('04031'),m:['Faltou memória compartilhada no banco. Avalie aumentar a SGA ou o pool afetado.','The database ran out of shared memory. Consider increasing the SGA or the affected pool.','Il database ha esaurito la memoria condivisa. Valuta di aumentare la SGA o il pool interessato.','La base de datos se quedó sin memoria compartida. Valora aumentar la SGA o el pool afectado.']},
+{re:/\bORA-12154\b/,src:ora('12154'),m:['O identificador de conexão não foi resolvido. Confira a string de conexão e o tnsnames.ora.','The connect identifier could not be resolved. Check the connection string and tnsnames.ora.','L\'identificatore di connessione non è stato risolto. Controlla la stringa di connessione e tnsnames.ora.','No se resolvió el identificador de conexión. Revisa la cadena de conexión y tnsnames.ora.']},
+{re:/\bORA-12170\b/,src:ora('12170'),m:['A conexão não terminou no tempo previsto, por atraso de rede ou de sistema, firewall ou falta de conectividade.','The connection did not complete in time, due to network or system delays, a firewall or no connectivity.','La connessione non si è completata in tempo, per ritardi di rete o di sistema, firewall o mancanza di connettività.','La conexión no terminó a tiempo, por retrasos de red o de sistema, firewall o falta de conectividad.']},
+{re:/\bORA-12514\b/,src:ora('12514'),m:['O listener não conhece o serviço pedido. Pode ser temporário logo após a inicialização. Confira o SERVICE_NAME com lsnrctl services.','The listener does not know the requested service. It may be temporary right after startup. Check SERVICE_NAME with lsnrctl services.','Il listener non conosce il servizio richiesto. Può essere temporaneo subito dopo l\'avvio. Controlla SERVICE_NAME con lsnrctl services.','El listener no conoce el servicio pedido. Puede ser temporal justo tras el inicio. Revisa SERVICE_NAME con lsnrctl services.']},
+{re:/\bORA-12541\b/,src:ora('12541'),m:['Não há listener em execução no host e na porta indicados. Confira com lsnrctl status.','No listener is running on the given host and port. Check with lsnrctl status.','Nessun listener in esecuzione sull\'host e sulla porta indicati. Controlla con lsnrctl status.','No hay listener en ejecución en el host y el puerto indicados. Revisa con lsnrctl status.']},
+];
+const CONN=/\bORA-(?:03113|03114|12154|12170|12514|12541)\b/;
+const HELPSRC=[SRC.log,SRC.srv,SRC.wks,SRC.lp,SRC.cs,SRC.bp,['Oracle Database Error Help','https://docs.oracle.com/error-help/db/']];
+let LANG='pt';
+const li=()=>LANGS.indexOf(LANG);
+function t(key,...a){const e=I18N[key];let s=e?e[li()]:key;a.forEach((v,i)=>{s=s.split('{'+i+'}').join(String(v))});return s}
+
+/* ========== utilitários ========== */
+const $=(q,r=document)=>r.querySelector(q),$$=(q,r=document)=>[...r.querySelectorAll(q)];
+function h(tag,attrs,...kids){
+  const e=document.createElement(tag);
+  for(const k in attrs||{}){
+    const v=attrs[k];if(v==null||v===false)continue;
+    if(k.startsWith('on'))e.addEventListener(k.slice(2),v);
+    else if(k==='class')e.className=v;
+    else if(v===true)e.setAttribute(k,'');
+    else e.setAttribute(k,v);
+  }
+  const add=c=>{if(c==null||c===false)return;if(Array.isArray(c))c.forEach(add);else e.append(c)};
+  kids.forEach(add);
+  return e;
+}
+const store={get(k){try{return localStorage.getItem('jdelog.'+k)}catch{return null}},set(k,v){try{localStorage.setItem('jdelog.'+k,v)}catch{}}};
+const nf=(n,d=0)=>Number(n).toLocaleString(LOCALE[LANG],{maximumFractionDigits:d});
+const pct=x=>nf(x*100)+'%';
+function fmtMs(ms){
+  if(ms==null||!isFinite(ms))return'–';
+  if(ms<1)return nf(ms,2)+' ms';
+  if(ms<1000)return nf(ms)+' ms';
+  if(ms<60000)return nf(ms/1000,ms<10000?2:1)+' s';
+  if(ms<3600000)return Math.floor(ms/60000)+' min '+Math.round(ms%60000/1000)+' s';
+  return Math.floor(ms/3600000)+' h '+Math.round(ms%3600000/60000)+' min';
+}
+function fmtSize(b){return b<1024?b+' B':b<1048576?nf(b/1024)+' KB':b<1073741824?nf(b/1048576,1)+' MB':nf(b/1073741824,2)+' GB'}
+const p2=n=>String(n).padStart(2,'0');
+function fmtTs(ms,short){
+  if(ms==null)return'–';
+  const d=new Date(ms),hms=p2(d.getUTCHours())+':'+p2(d.getUTCMinutes())+':'+p2(d.getUTCSeconds());
+  const time=short?hms:hms+'.'+String(d.getUTCMilliseconds()).padStart(3,'0');
+  if(S.run&&S.run.noDate)return time;
+  return d.toLocaleDateString(LOCALE[LANG],{day:'2-digit',month:'short',timeZone:'UTC'})+' '+time;
+}
+function toast(msg,err){const e=h('div',{class:'toast'+(err?' err':'')},msg);$('#toasts').append(e);setTimeout(()=>e.remove(),err?6000:2600)}
+function download(data,name,type){const u=URL.createObjectURL(new Blob([data],{type}));const a=h('a',{href:u,download:name});document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000)}
+async function copyText(x){try{await navigator.clipboard.writeText(x);toast(t('copied'))}catch{toast(x.slice(0,80),true)}}
+function modal({title,body,actions}){
+  const back=document.activeElement;
+  const d=h('dialog');
+  const close=()=>{d.close();d.remove();if(back&&back.isConnected)back.focus()};
+  const foot=(actions||[]).map(a=>h('button',{class:a.primary?'primary':'',onclick(){if(a.run&&a.run(close)===false)return;if(!a.keep)close()}},a.label));
+  foot.push(h('button',{class:(actions&&actions.length)?'':'primary',onclick:close},t('close')));
+  d.append(h('div',{class:'dlg'},h('header',null,title),h('div',{class:'b'},body),h('footer',null,foot)));
+  d.addEventListener('cancel',e=>{e.preventDefault();close()});
+  document.body.append(d);d.showModal();return d;
+}
+
+/* ========== leitura e análise ========== */
+const MON={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+const RX={
+  ube:/^--UBE--\[(\d+)\]--\s*(?:(\d+)\/(\d+)\s+)?(.*)$/,
+  /* 14024/7684 FOREIGN_THREAD   Tue Oct 07 11:06:40.862000 dbperfrq.c449 mensagem */
+  jde:/^\s*(\d+)\/(\d+)(?:\/\S+)?\s+(.*?)\s*(?:[A-Z][a-z]{2}\s+)?(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2})\s+(\d\d):(\d\d):(\d\d)(?:\.(\d+))?\s*(.*)$/,
+  /* Apr 5 16:31:22.423254 jdb_utl1.c13553 - 5504/5 WRK:... mensagem | Jun 06 08:42:14 ** 3732/3584 mensagem */
+  dbg:/^\s*(?:[A-Z][a-z]{2}\s+)?(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2})\s+(\d\d):(\d\d):(\d\d)(?:\.(\d+))?\s+(.*)$/,
+  dbgRest:/^(.*?)(?:-|\*\*+)\s+(\d+)(?:\/(\d+))?\s+(.*)$/,
+  /* 11:06:09.230119 mensagem */
+  time:/^\s*(\d\d):(\d\d):(\d\d)\.(\d+)\s+(?:(\d+)\/(\d+)\s+)?(.*)$/,
+  iso:/^\s*(\d{4})-(\d\d)-(\d\d)[T ](\d\d):(\d\d):(\d\d)(?:[.,](\d+))?\S*\s+(.*)$/,
+  src:/^(\S+\.(?:c|cpp|cxx|h|hxx)\d+)\s*(?:-\s*)?(.*)$/i,
+  threadPad:/^(WRK:\S+(?:\s\S+)*?)\s{2,}(.*)$/,
+  thread:/^(WRK:\S+|\w+_THREAD|UNKNOWN)\s+(.*)$/,
+  appTh:/_([PRV]\d{3,}\w*)\b/,
+  call:/Calling Business [Ff]unction\s+(\S+)(?:\s+from\s+(\S+))?(?:\s+for\s+(\S+?)\.?(?=\s|$))?(?:\s*Application Name\s*\[([^\]]*)\])?(?:,?\s*Version\s*\[([^\]]*)\])?/,
+  ret:/Return value is\s+(-?\d+)\s+for\s+(\S+?)\.?(?=\s|$)/,
+  bsfnEnter:/\bEnter BSFN\b[:\s]*(\w+)/,bsfnRet:/\bReturn BSFN\b[:\s]*(\w+)/,
+  jdertIn:/\bEntering JDERT:\s*(\w+)/,jdertOut:/\bExiting JDERT:\s*(\w+)/,
+  ubeBsfn:/--ER: Line\(\d+\): Processing BSFN\s*:\s*(\S+)/,
+  sel:/^SELECT\b.+\bFROM\b/i,ins:/^INSERT\s+INTO\b/i,upd:/^UPDATE\s+\S+.*\bSET\b/i,del:/^DELETE\s+FROM\b/i,
+  fetch:/^(?:Entering JDB_Fetch\w*|(?:ORACLE\s+)?DBFetch\b|Fetched the record|No More Data found)/i,
+  fetched:/^Fetched the record/i,nomore:/^No More Data found/i,
+  api:/^Entering\s+(\w+)/,tbl:/\bF\d{4,}[A-Z0-9]*\b/g,schema:/\b([A-Z][A-Z0-9_]{2,})\.F\d{4,}/g,
+  open:/JDB_OpenTable\(Table\s*=\s*(\w+)\)/,
+  code:/\b([A-Z]{2,5}\d{6,8})\b/,ora:/\bORA-\d{5}\b/,net:/JDENET_SendM[sS]g\s*Failed\s*Error\s*=\s*\d+/i,
+  fatal:/\bACCESS VIOLATION\b|\bSIGSEGV\b|\bcore dump(?:ed)?\b|\bout of memory\b|\bfatal\b/i,
+  bad:/\bfail(?:ed|ure|s)?\b|\berrors?\b|\bunable\b|\bcould not\b|\bcannot\b|\bcan't\b|\bdenied\b|\bexception\b|\btimed?\s?out\b|\binvalid\b|\bnot authorized\b|Load Lib failed/i,
+  warn:/\bwarning\b|\bnot found\b|\bretry(?:ing)?\b/i,
+  notErr:/^(?:IN->|OUT->|Entering\b|Calling Business|Return value is|Fetched the record|No More Data|(?:ORACLE\s+)?DBFetch|\*{3,}|[A-Z]+,Ptr=)/,
+  ok:/\b(?:no|0|zero|without)\s+errors?\b|\berrors?\s*[=:]\s*0\b|\bLogErrors\b|\berror\s?handler\b|\bsuccess(?:ful(?:ly)?)?\b/i,
+  exitFail:/^Exiting\s+(\w+).*\bfail/i,exit:/^Exiting\b/,
+  mem:/Memory Usage\s*=\s*(\d+)\s*MB/i,dump:/User initiated process dump/i,
+  ubeEnd:/UBE Job Finished Successfully/i,ubeSec:/Process(?:ing)? Do Section for (.+)$/i,
+};
+function newRun(){return{files:[],lines:0,bytes:0,recs:0,recog:0,other:0,noDate:false,tsMin:null,tsMax:null,sec:new Map(),groups:new Map(),errTotal:0,threads:new Map(),pids:new Set(),bsfn:new Map(),bsfnCalls:0,bsfnOrphan:0,bsfnOpen:[],bsfnBad:0,sql:new Map(),sqlCount:0,gaps:[],gapFloor:50,gapOver:0,apis:new Map(),apps:new Map(),tables:new Map(),schemas:new Map(),users:new Set(),hosts:new Set(),backwards:0,flow:new Map(),flowN:0,memMax:0,dumps:0,ube:{lines:0,level:0,done:false,sections:new Map()},demo:false,cancel:false,truncated:0}}
+const bump=(m,k,n=1)=>m.set(k,(m.get(k)||0)+n);
+/* ligações do mapa da aba Fluxo */
+function fEdge(R,a,b){
+  const id=a+'\u0001'+b;let e=R.flow.get(id);
+  if(!e){if(R.flow.size>=20000)return null;e={a,b,n:0,ms:0,rows:0,ord:R.flowN++};R.flow.set(id,e)}
+  e.n++;return e;
+}
+function entryOf(R,th,rec){
+  if(th.entry)return th.entry;
+  const f=R.files[rec.file];
+  th.entry=f&&f.report?'e:'+f.report:rec.pid?'e:#'+rec.pid:'e:~'+(f?f.name:'?');
+  return th.entry;
+}
+const flowSrc=(R,th,rec)=>{const top=th.stack[th.stack.length-1];return top?'b:'+top.name:entryOf(R,th,rec)};
+function tsOf(st,mon,day,h_,mi,s,frac){
+  let ms=Date.UTC(2024,mon,day,h_,mi,s)+(frac?parseFloat('0.'+frac)*1000:0)+st.yearAdd;
+  if(st.lastTs!=null&&ms<st.lastTs-15552000000){st.yearAdd+=31622400000;ms+=31622400000}
+  return ms;
+}
+function parseHeader(st,line,R){
+  const c=line.charCodeAt(0);
+  if(c===45&&line.startsWith('--UBE--')){const m=RX.ube.exec(line);if(m)return{fmt:'ube',level:+m[1],pid:m[2]||null,tid:m[3]||null,ts:null,thread:null,msg:m[4]}}
+  if((c>=48&&c<=57)||c===32||c===9){
+    let m=RX.time.exec(line);
+    if(m){
+      let ms=Date.UTC(2024,0,1,+m[1],+m[2],+m[3])+parseFloat('0.'+m[4])*1000+st.dayAdd;
+      if(st.lastTs!=null&&ms<st.lastTs-43200000){st.dayAdd+=86400000;ms+=86400000}
+      if(!st.dated)R.noDate=true;
+      return{fmt:'time',ts:ms,pid:m[5]||null,tid:m[6]||null,thread:null,msg:m[7]};
+    }
+    if(line.indexOf('/')>0&&line.length>20){
+      m=RX.jde.exec(line);
+      if(m){
+        st.dated=true;
+        const ts=tsOf(st,MON[m[4]],+m[5],+m[6],+m[7],+m[8],m[9]);
+        let msg=m[10],sr=RX.src.exec(msg);if(sr)msg=sr[2];
+        return{fmt:'jde',ts,pid:m[1],tid:m[2],thread:m[3]||null,msg};
+      }
+    }
+    m=RX.iso.exec(line);
+    if(m){st.dated=true;return{fmt:'iso',ts:Date.UTC(2024,+m[2]-1,+m[3],+m[4],+m[5],+m[6])+(m[7]?parseFloat('0.'+m[7])*1000:0)+st.yearAdd,pid:null,tid:null,thread:null,msg:m[8]}}
+  }
+  if((c>=65&&c<=90)||c===32||c===9){
+    const m=RX.dbg.exec(line);
+    if(m){
+      st.dated=true;
+      const ts=tsOf(st,MON[m[1]],+m[2],+m[3],+m[4],+m[5],m[6]);
+      let rest=m[7],pid=null,tid=null,thread=null;
+      const r=RX.dbgRest.exec(rest);
+      if(r){pid=r[2];tid=r[3]||null;rest=r[4]}
+      let th=RX.threadPad.exec(rest)||RX.thread.exec(rest);
+      if(th){thread=th[1];rest=th[2]}
+      return{fmt:'dbg',ts,pid,tid,thread,msg:rest.replace(/^\*+\s*/,'')};
+    }
+  }
+  return null;
+}
+function normMsg(s){
+  return s.replace(/'[^']*'/g,"'?'").replace(/"[^"]*"/g,'"?"').replace(/\b0x[0-9a-f]+\b/gi,'#').replace(/\b[0-9A-F]{8,}\b/g,'#').replace(/\d+(?:\.\d+)?/g,'#').replace(/\s+/g,' ').trim().slice(0,160);
+}
+function catOf(m){
+  if(/\bORA-01017\b|sign-?on|password|logon|authenti|credential|not authorized|permission/i.test(m))return'sec';
+  if(/ACCESS VIOLATION|SIGSEGV|core dump|out of memory/i.test(m))return'crash';
+  if(/JDENET|socket|\bnet\b|\bORA-(?:03113|03114|12154|12170|12514|12541)\b|TNS|listener/i.test(m))return'net';
+  if(/\b(?:ORA-|OCI\d|JDB\d|JDB_|ODBC|tablespace|deadlock|SELECT|INSERT|UPDATE|DELETE)/i.test(m))return'db';
+  if(/\b(?:COB\d|BSFN|business function|CALLBSFN|jdeCallObject|callobject|BMD)|Load Lib|Could not find symbol/i.test(m))return'bsfn';
+  return'other';
+}
+function severityOf(msg,fmt){
+  if(RX.notErr.test(msg)&&!RX.ora.test(msg))return null;
+  const ora=RX.ora.test(msg),code=RX.code.test(msg);
+  if(RX.fatal.test(msg))return'fatal';
+  if(RX.exitFail.test(msg))return'warn';
+  if(RX.exit.test(msg))return null;
+  if(!ora&&!code&&RX.ok.test(msg))return null;
+  if(ora||RX.net.test(msg)||RX.bad.test(msg))return'error';
+  if(code)return'warn';
+  if(RX.warn.test(msg)&&(fmt==='jde'||fmt==='other'))return'warn';
+  return null;
+}
+function addError(R,msg,rec,lv,th){
+  R.errTotal++;
+  const oraM=RX.ora.exec(msg),codeM=RX.code.exec(msg),netM=RX.net.exec(msg);
+  const code=oraM?oraM[0]:netM?netM[0].replace(/\s+/g,' '):codeM?codeM[1]:'';
+  const fp=normMsg(msg);
+  let key=code+'|'+fp;
+  if(R.groups.size>=5000&&!R.groups.has(key))key='*|*';
+  let g=R.groups.get(key);
+  if(!g){g={key,code:key==='*|*'?'':code,level:lv,cat:catOf(msg),msg:msg.slice(0,600),count:0,first:null,last:null,sec:new Map(),pids:new Set(),files:new Set(),tables:new Set(),samples:[],after:new Map(),afterN:0};R.groups.set(key,g)}
+  g.count++;
+  if(rec.ts!=null){if(g.first==null||rec.ts<g.first)g.first=rec.ts;if(g.last==null||rec.ts>g.last)g.last=rec.ts;bump(g.sec,Math.floor(rec.ts/1000))}
+  if(rec.pid&&g.pids.size<200)g.pids.add(rec.pid);
+  g.files.add(rec.file);
+  const sample={file:rec.file,line:rec.line,off:rec.off,ts:rec.ts,thread:th?th.key:''};
+  if(g.samples.length<5)g.samples.push(sample);else g.samples[4]=sample;
+  for(const m of msg.matchAll(RX.tbl)){if(g.tables.size<20)g.tables.add(m[0]);tbl(R,m[0]).errors++}
+  if(th){
+    const le=th.lastErr;
+    if(le&&rec.ts!=null&&le.ts!=null&&rec.ts-le.ts<=1000&&le.key!==key){bump(g.after,le.key);g.afterN++;fEdge(R,'x:'+le.key,'x:'+key)}
+    else fEdge(R,flowSrc(R,th,rec),'x:'+key);
+    th.lastErr={key,ts:rec.ts};th.errors++;
+  }
+}
+const tbl=(R,n)=>{let x=R.tables.get(n);if(!x){x={name:n,open:0,sql:0,rows:0,errors:0};R.tables.set(n,x)}return x};
+function sqlFp(s){return s.replace(/'(?:[^']|'')*'/g,'?').replace(/\b\d+(?:\.\d+)?\b/g,'?').replace(/\bIN\s*\(\s*\?(?:\s*,\s*\?)*\s*\)/gi,'IN (?)').replace(/\s+/g,' ').trim().slice(0,900)}
+function closeSql(th,end){
+  const c=th.curSql;if(!c)return;
+  th.curSql=null;
+  const stop=c.fetchTs!=null?c.fetchTs:end;
+  if(c.start!=null&&stop!=null&&stop>=c.start){
+    const d=stop-c.start;c.agg.total+=d;c.agg.timed++;if(c.edge)c.edge.ms+=d;
+    if(d>c.agg.max){c.agg.max=d;c.agg.slow={file:c.file,line:c.line,off:c.off,ts:c.start}}
+  }
+  c.agg.rows+=c.rows;if(c.edge)c.edge.rows+=c.rows;
+  if(c.rows>c.agg.maxRows)c.agg.maxRows=c.rows;
+  if(c.agg.tb)tbl(c.R,c.agg.tb).rows+=c.rows;
+}
+function addSql(R,msg,rec,th){
+  const type=RX.sel.test(msg)?'SELECT':RX.ins.test(msg)?'INSERT':RX.upd.test(msg)?'UPDATE':'DELETE';
+  R.sqlCount++;
+  const fp=sqlFp(msg);
+  let a=R.sql.get(fp);
+  if(!a){
+    if(R.sql.size>=20000)return;
+    const tbs=[...new Set([...msg.matchAll(RX.tbl)].map(m=>m[0]))];
+    a={fp,type,tb:tbs[0]||'',tables:tbs,count:0,total:0,timed:0,max:0,rows:0,maxRows:0,noWhere:type!=='INSERT'&&!/\bWHERE\b/i.test(msg),first:{file:rec.file,line:rec.line,off:rec.off,ts:rec.ts},slow:null};
+    R.sql.set(fp,a);
+    a.tables.forEach(x=>tbl(R,x));
+  }
+  a.count++;
+  a.tables.forEach(x=>tbl(R,x).sql++);
+  for(const m of msg.matchAll(RX.schema))bump(R.schemas,m[1]);
+  th.curSql={agg:a,R,start:rec.ts,rows:0,fetchTs:null,file:rec.file,line:rec.line,off:rec.off,edge:a.tb?fEdge(R,flowSrc(R,th,rec),'t:'+a.tb):null};
+}
+function bsfnOf(R,n){let b=R.bsfn.get(n);if(!b){b={name:n,calls:0,total:0,self:0,max:0,timed:0,bad:0,badVals:new Map(),callers:new Map(),apps:new Set(),first:null,slow:null,open:0};R.bsfn.set(n,b)}return b}
+function appOf(R,n){let a=R.apps.get(n);if(!a){a={name:n,calls:0,versions:new Set(),users:new Set(),lines:0};R.apps.set(n,a)}return a}
+function pushCall(R,th,name,rec,caller,user,app,ver){
+  const b=bsfnOf(R,name);
+  b.calls++;R.bsfnCalls++;
+  if(caller&&b.callers.size<30)bump(b.callers,caller);
+  if(!b.first)b.first={file:rec.file,line:rec.line,off:rec.off,ts:rec.ts};
+  if(app){b.apps.add(app);const a=appOf(R,app);a.calls++;if(ver)a.versions.add(ver);if(user)a.users.add(user)}
+  if(user)R.users.add(user);
+  if(app&&!th.appKnown){th.entry='e:'+app;th.appKnown=true}
+  const edge=fEdge(R,flowSrc(R,th,rec),'b:'+name);
+  th.stack.push({name,ts:rec.ts,file:rec.file,line:rec.line,off:rec.off,child:0,edge});
+  if(th.stack.length>2000)th.stack.shift();
+}
+function popCall(R,th,name,rc,rec){
+  let i=th.stack.length-1;
+  while(i>=0&&th.stack[i].name!==name)i--;
+  if(i<0){R.bsfnOrphan++;if(rc!=null&&rc!==0){const b=bsfnOf(R,name);b.bad++;R.bsfnBad++;bump(b.badVals,rc)}return}
+  while(th.stack.length-1>i){const x=th.stack.pop();bsfnOf(R,x.name).open++;R.bsfnOpen.push({name:x.name,file:x.file,line:x.line,off:x.off,ts:x.ts})}
+  const it=th.stack.pop(),b=bsfnOf(R,name);
+  if(rc!=null&&rc!==0){b.bad++;R.bsfnBad++;bump(b.badVals,rc)}
+  if(it.ts!=null&&rec.ts!=null&&rec.ts>=it.ts){
+    const d=rec.ts-it.ts;
+    b.timed++;
+    if(!th.stack.some(x=>x.name===name))b.total+=d;
+    b.self+=Math.max(0,d-it.child);
+    if(d>b.max){b.max=d;b.slow={file:it.file,line:it.line,off:it.off,ts:it.ts}}
+    if(it.edge)it.edge.ms+=d;
+    const p=th.stack[th.stack.length-1];if(p)p.child+=d;
+  }
+}
+/* tipo de cada linha, para a aba Conteúdo */
+const K={fatal:1,error:2,warn:3,bsfn:4,sql:5,fetch:6,param:7,api:8,ube:9,bad:10};
+const KTAG=['','FAT','ERR','WRN','BSF','SQL','FET','PAR','API','UBE','RET','GAP'];
+function markLines(f,a,b,k){
+  if(!k||!f)return;
+  if(b>=f.kinds.length){const n=new Uint8Array(Math.max(b+1,f.kinds.length*2));n.set(f.kinds);f.kinds=n}
+  for(let i=a;i<=b;i++)f.kinds[i]=k;
+}
+function flush(R,rec){
+  if(!rec)return;
+  const k=flushCore(R,rec);
+  markLines(R.files[rec.file],rec.line,rec.endLine||rec.line,k);
+}
+function flushCore(R,rec){
+  R.recs++;
+  const msg=(rec.parts?rec.parts.join(' '):rec.msg).replace(/\s+/g,' ').trim();
+  const key=rec.file+':'+(rec.pid?rec.pid+'/'+(rec.tid||''):'');
+  let th=R.threads.get(key);
+  if(!th){th={key,file:rec.file,pid:rec.pid,tid:rec.tid,name:rec.thread||'',lines:0,errors:0,first:null,lastTs:null,stack:[],curSql:null,lastErr:null,last:null,sqlN:0};R.threads.set(key,th)}
+  th.lines++;
+  if(rec.thread&&!th.name)th.name=rec.thread;
+  if(rec.pid)R.pids.add(rec.pid);
+  if(rec.ts!=null){
+    if(R.tsMin==null||rec.ts<R.tsMin)R.tsMin=rec.ts;
+    if(R.tsMax==null||rec.ts>R.tsMax)R.tsMax=rec.ts;
+    bump(R.sec,Math.floor(rec.ts/1000));
+    if(th.first==null)th.first=rec.ts;
+    if(th.last){
+      const gap=rec.ts-th.last.ts;
+      if(gap<-0.5){R.backwards++}
+      else if(gap>=R.gapFloor){
+        R.gapOver++;
+        R.gaps.push({ms:gap,pid:rec.pid,tid:rec.tid,thread:th.name,file:rec.file,ts:th.last.ts,fromLine:th.last.line,fromOff:th.last.off,fromMsg:th.last.msg,toLine:rec.line,toOff:rec.off,toTs:rec.ts,toMsg:msg.slice(0,220)});
+        if(R.gaps.length>800){R.gaps.sort((a,b)=>b.ms-a.ms);R.gaps.length=400;R.gapFloor=R.gaps[399].ms}
+      }
+    }
+    th.last={ts:rec.ts,line:rec.line,off:rec.off,msg:msg.slice(0,220)};
+    th.lastTs=rec.ts;
+  }
+  if(rec.thread){const am=RX.appTh.exec(rec.thread);if(am){appOf(R,am[1]).lines++;if(!th.appKnown){th.entry='e:'+am[1];th.appKnown=true}}}
+  if(!msg)return rec.fmt==='ube'?K.ube:0;
+  if(msg.charCodeAt(0)===73&&msg.startsWith('IN->')||msg.charCodeAt(0)===79&&msg.startsWith('OUT->')){if(th.curSql&&rec.ts!=null)closeSql(th,rec.ts);return K.param}
+  if(rec.fmt==='ube'){
+    R.ube.lines++;if(rec.level>R.ube.level)R.ube.level=rec.level;
+    const sc=RX.ubeSec.exec(msg);if(sc)bump(R.ube.sections,sc[1].trim());
+    const ub=RX.ubeBsfn.exec(msg);if(ub){const b=bsfnOf(R,ub[1]);b.calls++;R.bsfnCalls++;fEdge(R,flowSrc(R,th,rec),'b:'+ub[1]);if(!b.first)b.first={file:rec.file,line:rec.line,off:rec.off,ts:rec.ts}}
+  }
+  if(RX.ubeEnd.test(msg))R.ube.done=true;
+  /* busca de linhas do SQL aberto */
+  if(RX.fetch.test(msg)){
+    const c=th.curSql;
+    if(c){if(rec.ts!=null)c.fetchTs=rec.ts;if(RX.fetched.test(msg))c.rows++;if(RX.nomore.test(msg))closeSql(th,rec.ts)}
+    const am=RX.api.exec(msg);if(am)bump(R.apis,am[1]);
+    return K.fetch;
+  }
+  if(th.curSql)closeSql(th,rec.ts);
+  let m;
+  if(msg.indexOf('Business')>=0&&(m=RX.call.exec(msg))){pushCall(R,th,m[1],rec,m[2],m[3],m[4],m[5]);return K.bsfn}
+  if(msg.startsWith('Return value')&&(m=RX.ret.exec(msg))){popCall(R,th,m[2],+m[1],rec);return +m[1]!==0?K.bad:K.bsfn}
+  if((m=RX.jdertIn.exec(msg))||(m=RX.bsfnEnter.exec(msg))){pushCall(R,th,m[1],rec);return K.bsfn}
+  if((m=RX.jdertOut.exec(msg))||(m=RX.bsfnRet.exec(msg))){popCall(R,th,m[1],null,rec);return K.bsfn}
+  if(RX.sel.test(msg)||RX.ins.test(msg)||RX.upd.test(msg)||RX.del.test(msg)){addSql(R,msg,rec,th);return K.sql}
+  if((m=RX.open.exec(msg))){tbl(R,m[1]).open++}
+  if(msg.charCodeAt(0)===69&&(m=RX.api.exec(msg))){bump(R.apis,m[1])}
+  const mem=RX.mem.exec(msg);if(mem&&+mem[1]>R.memMax)R.memMax=+mem[1];
+  if(RX.dump.test(msg)){R.dumps++;return 0}
+  for(const hm of msg.matchAll(/\b(?:DBServer|Machine)=([\w.-]+)/g))R.hosts.add(hm[1]);
+  for(const um of msg.matchAll(/\b(?:User|DBUser)=([\w.-]+)/g))R.users.add(um[1]);
+  const lv=severityOf(msg,rec.fmt);
+  if(lv){addError(R,msg,rec,lv,th);return K[lv]}
+  if(rec.fmt==='ube')return K.ube;
+  return /^(?:Entering|Exiting)\b/.test(msg)?K.api:0;
+}
+function feedLine(R,st,no,off,line){
+  R.lines++;
+  if((no-1)%256===0)st.info.idx.push(off);
+  if(line.length>65536){line=line.slice(0,65536);R.truncated++}
+  if(!line.trim())return;
+  const hd=parseHeader(st,line,R);
+  if(hd){
+    flush(R,st.cur);
+    hd.file=st.idx;hd.line=no;hd.off=off;hd.parts=hd.msg?[hd.msg]:[];
+    st.cur=hd;if(hd.ts!=null)st.lastTs=hd.ts;
+    st.counts[hd.fmt]=(st.counts[hd.fmt]||0)+1;
+    R.recog++;
+    return;
+  }
+  const c=st.cur;
+  if(c&&c.fmt!=='other'&&c.parts.length<60){c.parts.push(line.trim());c.endLine=no;R.recog++;return}
+  flush(R,c);
+  R.other++;
+  st.cur={fmt:'other',ts:null,pid:null,tid:null,thread:null,file:st.idx,line:no,off,msg:line};
+}
+function fileKind(name,c){
+  if(/^R\w+_\w+_D\d{6}_T\d+/i.test(name)||c.ube)return'ube';
+  if(/jdedebug/i.test(name))return'dbg';
+  if(/\bjde(?:_\w+)?\.log$/i.test(name))return'jde';
+  if(c.jde&&!c.dbg&&!c.time)return'jde';
+  if(c.dbg||c.time)return'dbg';
+  return'other';
+}
+const CHUNK=4194304;
+async function readFile(R,file,idx,onProg){
+  const st={idx,cur:null,yearAdd:0,dayAdd:0,lastTs:null,dated:false,counts:{},enc:'utf-8',info:null};
+  const info={name:file.name,size:file.size,blob:file,enc:'utf-8',lines:0,kind:'other',idx,report:(/^(R\w+?)_\w+?_D\d{6}_T\d+/i.exec(file.name)||[])[1]||null,lineIdx:0};
+  info.idx=[];info.kinds=new Uint8Array(4096);info.fileIdx=idx;st.info=info;
+  R.files.push(info);
+  const start=R.lines;
+  let pos=0,no=0,step=1;
+  while(pos<file.size){
+    if(R.cancel)return;
+    const buf=new Uint8Array(await file.slice(pos,pos+CHUNK).arrayBuffer());
+    if(pos===0){
+      if(buf[0]===0xFF&&buf[1]===0xFE)st.enc='utf-16le';
+      else if(buf.length>3&&buf[1]===0&&buf[3]===0)st.enc='utf-16le';
+      if(st.enc==='utf-16le')step=2;
+    }
+    const atEnd=pos+buf.length>=file.size;
+    let end=buf.length;
+    if(!atEnd){
+      let i=buf.lastIndexOf(10);
+      while(i>=0&&step===2&&(i%2!==0||buf[i+1]!==0))i=buf.lastIndexOf(10,i-1);
+      if(i>=0)end=i+(step===2?2:1);
+      else if(step===2)end-=end%2;
+    }
+    const part=buf.subarray(0,end);
+    let text;
+    if(st.enc==='utf-8'){
+      try{text=new TextDecoder('utf-8',{fatal:true}).decode(part)}
+      catch{st.enc='windows-1252'}
+    }
+    if(text==null)text=new TextDecoder(st.enc).decode(part);
+    info.enc=st.enc;
+    const lines=text.split('\n');
+    if(lines[lines.length-1]==='')lines.pop();
+    let from=0;
+    for(let k=0;k<lines.length;k++){
+      let l=lines[k];
+      if(l.charCodeAt(l.length-1)===13)l=l.slice(0,-1);
+      feedLine(R,st,++no,pos+from,l);
+      let nx=part.indexOf(10,from);
+      while(nx>=0&&step===2&&(nx%2!==0||part[nx+1]!==0))nx=part.indexOf(10,nx+1);
+      from=nx<0?part.length:nx+step;
+    }
+    pos+=end;
+    onProg(end);
+    await new Promise(r=>setTimeout(r,0));
+  }
+  flush(R,st.cur);st.cur=null;
+  info.lines=R.lines-start;
+  info.kind=fileKind(file.name,st.counts);
+  const rm=/^(R\w+?)_(\w+?)_D(\d{6})_T(\d+)/i.exec(file.name);
+  if(rm){const a=appOf(R,rm[1]);a.versions.add(rm[2]);a.lines+=info.lines}
+}
+function finish(R){
+  for(const th of R.threads.values()){
+    if(th.curSql)closeSql(th,th.lastTs);
+    for(const x of th.stack){bsfnOf(R,x.name).open++;R.bsfnOpen.push({name:x.name,file:x.file,line:x.line,off:x.off,ts:x.ts})}
+    th.stack=[];
+  }
+  R.groupsA=[...R.groups.values()].sort((a,b)=>b.count-a.count);
+  R.bsfnA=[...R.bsfn.values()];
+  R.sqlA=[...R.sql.values()];
+  R.gaps.sort((a,b)=>b.ms-a.ms);if(R.gaps.length>400)R.gaps.length=400;
+  R.threadsA=[...R.threads.values()].filter(x=>x.pid);
+}
+
+/* ========== insights ========== */
+function cut(s,n=90){s=String(s);return s.length>n?s.slice(0,n-1)+'…':s}
+const gName=g=>g.code||cut(g.msg,70);
+function buildInsights(R,th){
+  const I=[],add=(sev,title,body,go)=>I.push({sev,title,body,go});
+  const gs=R.groupsA,total=R.errTotal;
+  const goE=q=>({tab:'errors',q,lab:'goErr'});
+  /* falha grave */
+  for(const g of gs.filter(x=>x.level==='fatal').slice(0,3))add('crit',t('iFatalT'),t('iFatalB',cut(g.msg,120),nf(g.count),fmtTs(g.first)),goE(g.code||g.msg.slice(0,30)));
+  /* conexão */
+  const conn=gs.filter(g=>CONN.test(g.code));
+  if(conn.length){
+    const c=conn.reduce((a,g)=>a+g.count,0),f=Math.min(...conn.map(g=>g.first??Infinity)),l=Math.max(...conn.map(g=>g.last??-Infinity));
+    const kb=kbFor(conn[0]);
+    add('crit',t('iConnT'),t('iConnB',[...new Set(conn.map(g=>g.code))].join(', '),nf(c),fmtTs(f,true),fmtTs(l,true),kb?kb.m[li()]:''),{tab:'errors',q:conn[0].code,lab:'goErrs'});
+  }
+  /* concentração */
+  if(gs.length){
+    const top=gs[0],sh=top.count/total;
+    if(gs.length>1&&sh>=.3&&top.count>=3&&!conn.includes(top))add(sh>=.5&&top.level!=='warn'?'crit':'warn',t('iTopT',pct(sh)),t('iTopB',cut(gName(top)),nf(top.count),nf(total),nf(gs.length)),goE(top.code||top.msg.slice(0,30)));
+    else if(!conn.length||gs.length>conn.length)add(top.level==='warn'?'info':'warn',t('iKindsT',nf(gs.length)),t('iKindsB',cut(gName(top)),nf(total)),{tab:'errors',q:'',lab:'goErrs'});
+  }
+  /* cadeia */
+  const chains=[];
+  for(const g of gs){if(g.afterN<3)continue;let best=null,n=0;for(const[k,v]of g.after)if(v>n){n=v;best=k}const a=best&&R.groups.get(best);if(a&&n/g.count>=.5&&n>=3)chains.push({g,a,n})}
+  chains.sort((x,y)=>y.n-x.n);
+  for(const c of chains.slice(0,2))add('warn',t('iChainT',cut(gName(c.g),50),cut(gName(c.a),50)),t('iChainB',cut(gName(c.g),50),cut(gName(c.a),50),nf(c.n),nf(c.g.count)),goE(c.a.code||c.a.msg.slice(0,30)));
+  /* pico por minuto */
+  const perMin=new Map();
+  for(const g of gs)for(const[s,n]of g.sec)bump(perMin,Math.floor(s/60),n);
+  if(perMin.size>=4){
+    const vals=[...perMin.values()].sort((a,b)=>a-b),med=vals[Math.floor(vals.length/2)];
+    let bm=0,bn=0;for(const[m,n]of perMin)if(n>bn){bn=n;bm=m}
+    if(bn>=10&&bn>=5*med)add('warn',t('iPeakT',fmtTs(bm*60000,true)),t('iPeakB','',nf(bn),nf(med)),{tab:'errors',q:'',lab:'goErrs',range:[bm*60,bm*60+60]});
+  }
+  /* processo */
+  const byPid=new Map();
+  for(const x of R.threads.values())if(x.pid&&x.errors)bump(byPid,x.pid,x.errors);
+  if(byPid.size>1){
+    let tp=null,tn=0,sum=0;for(const[p,n]of byPid){sum+=n;if(n>tn){tn=n;tp=p}}
+    if(tn/sum>=.7&&tn>=5)add('warn',t('iProcT',tp),t('iProcB','',pct(tn/sum),nf(byPid.size)),{tab:'ctx',lab:'goC'});
+  }
+  /* tabela */
+  const tb=[...R.tables.values()].filter(x=>x.errors).sort((a,b)=>b.errors-a.errors)[0];
+  if(tb&&tb.errors>=3)add('warn',t('iTblT',tb.name,nf(tb.errors)),t('iTblB'),goE(tb.name));
+  /* BSFN */
+  const bs=R.bsfnA.filter(b=>b.timed);
+  const slowB=[...bs].sort((a,b)=>b.max-a.max)[0];
+  if(slowB&&slowB.max>=th.bsfn)add('warn',t('iSlowBT',slowB.name,fmtMs(slowB.max)),t('iSlowBB','','',nf(slowB.calls),fmtMs(slowB.self),fmtMs(slowB.total/Math.max(1,slowB.timed))),{tab:'bsfn',q:slowB.name,lab:'goB'});
+  const selfSum=bs.reduce((a,b)=>a+b.self,0);
+  const topSelf=[...bs].sort((a,b)=>b.self-a.self)[0];
+  if(topSelf&&bs.length>1&&selfSum>=th.bsfn&&topSelf.self/selfSum>=.4&&topSelf!==slowB)add('info',t('iSelfT',topSelf.name,pct(topSelf.self/selfSum)),t('iSelfB','','',fmtMs(topSelf.self),nf(topSelf.calls)),{tab:'bsfn',q:topSelf.name,lab:'goB'});
+  if(R.bsfnBad){const b=[...R.bsfnA].sort((a,c)=>c.bad-a.bad)[0];add('warn',t('iRcT',nf(R.bsfnBad)),t('iRcB','',b.name,nf(b.bad)),{tab:'bsfn',q:b.name,lab:'goB'})}
+  if(R.bsfnOpen.length){const o=R.bsfnOpen[R.bsfnOpen.length-1];add('warn',t('iOpenT',nf(R.bsfnOpen.length)),t('iOpenB','',o.name,fmtTs(o.ts,true)),{tab:'bsfn',q:o.name,lab:'goB'})}
+  /* SQL */
+  const ss=R.sqlA;
+  const rep=[...ss].sort((a,b)=>b.count-a.count)[0];
+  if(rep&&rep.count>=50)add(rep.count>=500?'crit':'warn',t('iRepT',nf(rep.count)),t('iRepB','',rep.tb||rep.type,fmtMs(rep.total)),{tab:'sql',q:rep.tb,lab:'goS'});
+  const big=[...ss].sort((a,b)=>b.maxRows-a.maxRows)[0];
+  if(big&&big.maxRows>=1000)add(big.maxRows>=10000?'crit':'warn',t('iRowsT',big.tb||big.type,nf(big.maxRows)),t('iRowsB','','',nf(big.rows/Math.max(1,big.count)),nf(big.count)),{tab:'sql',q:big.tb,lab:'goS'});
+  const slowS=[...ss].sort((a,b)=>b.max-a.max)[0];
+  if(slowS&&slowS.max>=th.sql&&slowS!==big&&slowS!==rep)add('warn',t('iSlowST',slowS.tb||slowS.type,fmtMs(slowS.max)),t('iSlowSB','','',nf(slowS.count),nf(slowS.rows)),{tab:'sql',q:slowS.tb,lab:'goS'});
+  const nw=ss.filter(s=>s.noWhere&&s.tb).sort((a,b)=>b.count-a.count);
+  if(nw.length)add('info',t('iNoWT',nf(nw.length)),t('iNoWB','',nw[0].tb),{tab:'sql',q:t('noWhere'),lab:'goS'});
+  /* pausas */
+  const over=R.gaps.filter(g=>g.ms>=th.gap);
+  if(over.length){const g=over[0];add(g.ms>=30000?'warn':'info',t('iGapT',fmtMs(g.ms),g.pid||'?'),t('iGapB','','',cut(g.fromMsg,70),fmtTs(g.toTs,true),cut(g.toMsg,70),nf(over.length)),{tab:'gaps',lab:'goG'})}
+  /* UBE */
+  if(R.ube.lines){if(R.ube.done)add('good',t('iUbeOkT'),t('iUbeOkB',nf(R.ube.lines),R.ube.level));else add('warn',t('iUbeNoT'),t('iUbeNoB',nf(R.ube.lines),R.ube.level))}
+  /* contexto */
+  if(R.schemas.size>1)add('info',t('iEnvT',R.schemas.size,[...R.schemas.keys()].slice(0,5).join(', ')),t('iEnvB'),{tab:'sql',q:'',lab:'goS'});
+  if(R.memMax)add('info',t('iMemT',nf(R.memMax)),t('iMemB','',nf(R.dumps)));
+  const apps=[...R.apps.values()].filter(a=>a.calls).sort((a,b)=>b.calls-a.calls);
+  if(apps.length)add('info',t('iAppT',apps[0].name),t('iAppB','',nf(apps[0].calls),nf(R.bsfnCalls)),{tab:'ctx',lab:'goC'});
+  if(R.backwards)add('info',t('iBackT',nf(R.backwards)),t('iBackB'));
+  if(!R.bsfnCalls&&!R.sqlCount&&!R.ube.lines)add('info',t('iNoPerfT'),t('iNoPerfB'));
+  if(!gs.length)add('good',t('iNoErrT'),t('iNoErrB',nf(R.lines)),null);
+  const rank={crit:0,warn:1,info:2,good:3};
+  return I.map((x,i)=>[x,i]).sort((a,b)=>rank[a[0].sev]-rank[b[0].sev]||a[1]-b[1]).map(x=>x[0]);
+}
+function kbFor(g){const s=g.code+' '+g.msg;return KB.find(k=>k.re.test(s))||null}
+
+/* ========== exemplo fictício ========== */
+function demoFiles(){
+  const us=(s,n)=>s+'.'+String(n).padStart(6,'0');
+  const j=[];const jl=(p,th,time,micro,src,msg)=>{j.push(`${p} ${th.padEnd(38)} Tue Mar 12 ${us(time,micro)}\t${src}`);j.push('\t'+msg);j.push('')};
+  jl('4412/5120','MAIN_THREAD','08:00:03',120000,'jdeinit.c311','JDE process started for environment DEMOPROD');
+  for(let i=0;i<4;i++)jl('4412/5120','WRK:Starting jdeCallObject','08:'+p2(10+i*3)+':21',410000+i,'jdb_ctl.c5206','JDB9900168 - Failed to initialize db request');
+  for(let i=0;i<22;i++){
+    const s=p2(i*2);
+    jl('4412/5344','FOREIGN_THREAD','09:17:'+s,220000+i,'dbperfrq.c449','OCI0000179 - Error - ORA-03113: end-of-file on communication channel');
+    jl('4412/5344','FOREIGN_THREAD','09:17:'+s,410000+i,'jdb_drvm.c908','JDB9900401 - Failed to execute db request');
+  }
+  for(let i=0;i<6;i++){
+    jl('4412/6020','WRK:JDE_000BDB60_P4310','09:4'+i+':12',55000+i,'dbinitrq.c1021','OCI0000178 - Unable to execute - SELECT T0.PDDOCO FROM DEMODTA.F4311 T0 WHERE ( T0.PDDOCO = '+(1000+i)+' )');
+    jl('4412/6020','WRK:JDE_000BDB60_P4310','09:4'+i+':12',80000+i,'dbinitrq.c1044','OCI0000179 - Error - ORA-00942: table or view does not exist');
+  }
+  jl('4412/6188','WRK:Free Remote Env','10:02:40',90000,'jdeknet.c2211','JDENET_SendMsg Failed Error=12');
+  jl('4412/6188','WRK:Free Remote Env','10:02:44',91000,'callbsfn.c918','Could not find symbol in the CDEMO.DLL.');
+  const d=[];const dl=(tm,tid,th,msg)=>d.push(`Mar 12 ${tm} - 7788/${tid} ${th.padEnd(34)} ${msg}`);
+  let sec=0,us_=0;const clock=(adv)=>{us_+=adv;while(us_>=1000000){us_-=1000000;sec++}const m=Math.floor(sec/60);return'11:'+p2(6+m)+':'+p2(sec%60)+'.'+String(us_).padStart(6,'0')};
+  const TH='WRK:JDE_000BDB60_P4116';
+  dl(clock(100),4400,TH,'Calling Business function F4111EndDocument from P4116 for DEMOUSER. Application Name [P4116], Version [ZJDE0001] (BSFNLevel = 2)');
+  dl(clock(50),4400,TH,'IN->[ 1] mnShortItemNumber [9999]');
+  dl(clock(80),4400,TH,'Calling Business function AverageCostUpdate from F4111EndDocument for DEMOUSER. Application Name [P4116], Version [ZJDE0001] (BSFNLevel = 3)');
+  dl(clock(40),4400,TH,'Entering JDB_OpenTable(Table = F41021)');
+  dl(clock(40),4400,TH,'Entering JDB_FetchKeyed (hRequest 06D96B58)');
+  dl(clock(90),4400,TH,"SELECT LIITM, LIMCU, LILOCN, LILOTN, LIPQOH FROM DEMODTA.F41021 WHERE ( LIITM = 9999.000000 AND LIMCU = ' M30' )");
+  dl(clock(30000),4400,TH,'ORACLE DBFetch conn=09F9AA08 requ=09E4BAB8 maxrows=100');
+  for(let i=0;i<4000;i++){dl(clock(300),4400,TH,'Fetched the record');dl(clock(40),4400,TH,'Entering JDB_FetchMatchingKey (hRequest 06D96B58)')}
+  dl(clock(30),4400,TH,'No More Data found');
+  dl(clock(30),4400,TH,'Entering JDB_CloseTable(Table = F41021)');
+  dl(clock(15000),4400,TH,'Return value is 0 for AverageCostUpdate. (BSFNLevel = 3)');
+  for(let i=0;i<120;i++){
+    dl(clock(90),4400,TH,'Calling Business function GetItemMasterDescription from F4111EndDocument for DEMOUSER. Application Name [P4116], Version [ZJDE0001] (BSFNLevel = 3)');
+    dl(clock(60),4400,TH,'SELECT IMLITM, IMDSC1 FROM DEMODTA.F4101 WHERE ( IMITM = '+(2000+i)+'.000000 )');
+    dl(clock(2500),4400,TH,'Fetched the record');
+    dl(clock(70),4400,TH,'Return value is '+(i%40===39?'2':'0')+' for GetItemMasterDescription. (BSFNLevel = 3)');
+  }
+  dl(clock(50),4400,TH,'SELECT DRSY, DRRT, DRKY, DRDL01 FROM DEMOCTL.F0005');
+  dl(clock(7400000),4400,TH,'Fetched the record');
+  dl(clock(100),4400,TH,'Entering JDB_CloseTable(Table = F0005)');
+  dl(clock(800),4400,TH,'Return value is 0 for F4111EndDocument. (BSFNLevel = 2)');
+  dl(clock(100),4400,TH,'Calling Business function F4211FSEndDoc from P4116 for DEMOUSER. Application Name [P4116], Version [ZJDE0001] (BSFNLevel = 2)');
+  const u=[];
+  for(const x of['Process Init Section','InitSection for Item Ledger Report']) u.push('--UBE--[2]-- 355/392 '+x);
+  u.push('--UBE--[4]-- 355/392 SELECT T0.ILITM, T0.ILMCU FROM DEMODTA.F4111 T0 WHERE ( T0.ILMCU = \' M30\' )','ORDER BY T0.ILITM ASC');
+  u.push('--UBE--[2]-- 355/392 Process Do Section for Item Ledger Report','--UBE--[4]-- 355/392 --ER: Line(1): Processing BSFN : GetCompanyAndReportDesc','--UBE--[4]-- 355/392 --ER: Line(1): Done Processing BSFN : GetCompanyAndReportDesc','--UBE--[6]-- Successfully Finishing Engine','UBE Job Finished Successfully.');
+  return[new File([j.join('\n')+'\n'],'jde_4412.log'),new File([d.join('\n')+'\n'],'jdedebug_7788.log'),new File([u.join('\n')+'\n'],'R41542_XDEMO001_D240312_T110500.log')];
+}
+
+/* ========== estado e carga ========== */
+const S={run:null,tab:'ins',q:{errors:'',bsfn:'',sql:''},range:null,sort:{},th:{bsfn:1000,sql:1000,gap:1000},busy:null,lvl:'',cat:''};
+async function loadFiles(list,demo){
+  const files=[...list];if(!files.length)return;
+  const total=files.reduce((a,f)=>a+f.size,0);
+  if(!total){toast(t('empty'),true);return}
+  const R=newRun();R.bytes=total;R.demo=!!demo;
+  if(S.busy)S.busy.cancel=true;
+  S.busy=R;
+  let done=0;const started=performance.now();
+  const paint=(name)=>{
+    const box=$('#main');
+    const bar=$('#prog .bar i');
+    if(bar){bar.style.width=(total?done/total*100:0)+'%';$('#prog .n').textContent=t('reading',name)+' '+fmtSize(done)+' / '+fmtSize(total);return}
+    box.replaceChildren(h('div',{id:'prog',role:'status'},h('div',{class:'n'},t('reading',name)),h('div',{class:'bar'},h('i',{style:'width:0'})),h('div',null,h('button',{onclick(){R.cancel=true}},t('cancel')))));
+  };
+  paint(files[0].name);
+  try{
+    for(let i=0;i<files.length;i++){
+      await readFile(R,files[i],i,n=>{done+=n;paint(files[i].name)});
+      if(R.cancel)break;
+    }
+  }catch(e){toast(t('readErr',files[0].name),true);R.cancel=true}
+  if(S.busy!==R)return;
+  S.busy=null;
+  if(R.cancel){renderAll();return}
+  finish(R);
+  R.ms=performance.now()-started;
+  S.run=R;S.tab='ins';S.q={errors:'',bsfn:'',sql:''};S.range=null;S.lvl='';S.cat='';S.sort={};S.fl=null;S.ct=null;
+  renderAll();
+}
+
+/* ========== tabela genérica ========== */
+function dataTable(id,cols,rows,{onRow,def,limit=500,name}={}){
+  const wrap=h('div',null);
+  const sort=S.sort[id]||def||[cols[0].k,1];
+  const val=(c,r)=>c.v?c.v(r):r[c.k];
+  const draw=()=>{
+    const col=cols.find(c=>c.k===sort[0])||cols[0];
+    const data=[...rows].sort((a,b)=>{const x=val(col,a),y=val(col,b);if(x==null||y==null)return x==null?(y==null?0:1):-1;return(typeof x==='string'?x.localeCompare(String(y)):x-y)*sort[1]});
+    const shown=data.slice(0,limit);
+    const thead=h('tr',null,cols.map(c=>{
+      const on=sort[0]===c.k;
+      return h('th',{class:c.num?'num':null,scope:'col','aria-sort':on?(sort[1]>0?'ascending':'descending'):null},h('button',{onclick(){if(sort[0]===c.k)sort[1]=-sort[1];else{sort[0]=c.k;sort[1]=c.num?-1:1}S.sort[id]=sort;draw()}},c.l+(on?(sort[1]>0?' ▲':' ▼'):'')));
+    }));
+    const body=h('tbody');
+    for(const r of shown){
+      const tr=h('tr',{class:onRow?'go':null,onclick:onRow?(e)=>{if(!e.target.closest('button'))onRow(r)}:null});
+      cols.forEach((c,i)=>{
+        const txt=c.f?c.f(r):val(c,r);
+        const content=i===(cols.findIndex(x=>x.main))&&onRow?h('button',{class:'link',onclick(){onRow(r)}},txt):txt;
+        tr.append(h('td',{class:[c.num?'num':'',c.wide?'wide':'',c.mono?'m':''].join(' ').trim()||null},content));
+      });
+      body.append(tr);
+    }
+    wrap.replaceChildren(rows.length?h('div',{class:'table-wrap',tabindex:'0'},h('table',null,h('thead',null,thead),body)):h('div',{class:'muted'},t('none')));
+    if(rows.length>limit)wrap.append(h('div',{class:'cap'},t('showing',nf(limit),nf(rows.length))));
+  };
+  draw();
+  wrap.csv=()=>{
+    const esc=v=>{let s=v==null?'':String(v);if(/^[=+\-@\t\r]/.test(s))s="'"+s;return /[",;\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s};
+    return'﻿'+[cols.map(c=>esc(c.l)).join(';')].concat(rows.map(r=>cols.map(c=>{const x=c.csv?c.csv(r):val(c,r);return esc(typeof x==='number'?Math.round(x*1000)/1000:x)}).join(';'))).join('\r\n');
+  };
+  wrap.name=name||id;
+  return wrap;
+}
+function tools(id,q,on,extra,table){
+  const inp=h('input',{type:'search',placeholder:t('filter'),'aria-label':t('filter'),value:q||''});
+  inp.addEventListener('input',()=>on(inp.value));
+  return h('div',{class:'tools'},inp,extra||null,table?h('button',{onclick(){const x=table();download(x.csv(),x.name+'.csv','text/csv;charset=utf-8');toast(t('saved'))}},t('csv')):null);
+}
+
+/* ========== telas ========== */
+function renderAll(){
+  applyStatic();
+  const box=$('#main');
+  $('#b-report').classList.toggle('hidden',!S.run);
+  if(!S.run){renderStart(box);return}
+  renderResult(box);
+}
+function applyStatic(){
+  document.documentElement.lang=HTML_LANG[LANG];$('#lang').value=LANG;
+  $$('[data-tx]').forEach(e=>{e.textContent=t(e.dataset.tx)});
+  $$('[data-aria]').forEach(e=>e.setAttribute('aria-label',t(e.dataset.aria)));
+  $$('[data-title]').forEach(e=>{e.title=t(e.dataset.title)});
+}
+function renderStart(box){
+  box.replaceChildren(h('div',{id:'start'},
+    h('h1',null,t('startT')),h('p',{style:'margin:0'},t('startD')),
+    h('div',{id:'drop'},h('p',{style:'margin:0 0 10px;font-weight:600'},t('dropT')),h('div',{class:'row',style:'justify-content:center'},h('button',{class:'primary',onclick(){$('#file-in').click()}},t('open')),h('button',{onclick:pasteDialog},t('paste')),h('button',{id:'b-sample',onclick(){loadFiles(demoFiles(),true)}},t('sample')))),
+    h('div',{class:'card'},h('h2',null,t('fmtT')),h('ul',null,h('li',null,t('fmt1')),h('li',null,t('fmt2')),h('li',null,t('fmt3')))),
+    h('div',{class:'card'},h('h2',null,t('privT')),h('div',null,t('priv')))));
+}
+function renderResult(box){
+  const R=S.run;
+  const span=R.tsMax!=null?R.tsMax-R.tsMin:null;
+  const tiles=[[nf(R.lines),t('tLines')],[span!=null?fmtMs(span):'–',t('tPeriod')],[nf(R.errTotal),t('tErr')],[nf(R.groupsA.length),t('tKinds')],[nf(R.bsfnCalls),t('tBsfn')],[nf(R.sqlCount),t('tSql')],[nf(R.pids.size),t('tProc')]];
+  const tabs=[['ins','tabI',null],['errors','tabE',R.groupsA.length],['bsfn','tabB',R.bsfnA.length],['sql','tabS',R.sqlA.length],['gaps','tabG',R.gaps.filter(g=>g.ms>=S.th.gap).length],['ctx','tabC',null],['flow','tabF',null],['content','tabT',null]];
+  const tabBtns=tabs.map(([k,l,n])=>h('button',{role:'tab',id:'tab-'+k,'aria-selected':S.tab===k?'true':'false','aria-controls':'panel',tabindex:S.tab===k?'0':'-1',onclick(){go(k)}},t(l),n!=null?h('b',null,nf(n)):null));
+  const tablist=h('div',{id:'tabs',role:'tablist'},tabBtns);
+  tablist.addEventListener('keydown',e=>{
+    const i=tabs.findIndex(x=>x[0]===S.tab);
+    let n=null;if(e.key==='ArrowRight')n=(i+1)%tabs.length;else if(e.key==='ArrowLeft')n=(i-1+tabs.length)%tabs.length;else if(e.key==='Home')n=0;else if(e.key==='End')n=tabs.length-1;
+    if(n!=null){e.preventDefault();go(tabs[n][0]);$('#tab-'+tabs[n][0]).focus()}
+  });
+  const recogPct=R.lines?R.recog/(R.recog+R.other||1):1;
+  const panel=h('div',{id:'panel',role:'tabpanel','aria-labelledby':'tab-'+S.tab,style:'display:flex;flex-direction:column;gap:12px;min-width:0'});
+  box.replaceChildren(h('div',{class:'page'},
+    R.demo?h('div',{class:'notice',id:'demo-note'},t('demoNote')):null,
+    recogPct<.6?h('div',{class:'notice',id:'low-note'},t('lowFmt',pct(recogPct))):null,
+    h('div',{class:'tiles'},tiles.map(([a,b])=>h('div',{class:'tile'},h('b',null,a),h('span',null,b)))),
+    tablist,panel));
+  ({ins:panelInsights,errors:panelErrors,bsfn:panelBsfn,sql:panelSql,gaps:panelGaps,ctx:panelCtx,flow:panelFlow,content:panelContent})[S.tab](panel);
+}
+function go(tab,opt){
+  S.tab=tab;
+  if(opt){if(opt.q!=null&&S.q[tab]!==undefined)S.q[tab]=opt.q;if(opt.range!==undefined)S.range=opt.range}
+  renderResult($('#main'));
+  $('#main').scrollTop=0;
+}
+/* insights */
+function panelInsights(p){
+  const R=S.run,list=buildInsights(R,S.th);
+  const num=(k)=>{const i=h('input',{type:'number',min:'0.1',step:'0.5',style:'width:80px',value:String(S.th[k]/1000),'aria-label':t('thr')});i.addEventListener('change',()=>{const v=parseFloat(i.value);if(v>0){S.th.bsfn=S.th.sql=S.th.gap=v*1000;store.set('th',String(v));renderResult($('#main'))}});return i};
+  p.append(h('div',{class:'row'},h('span',{class:'muted',style:'flex:1 1 300px;font-size:13px'},t('insHow')),h('label',{class:'row',style:'font-size:13px'},t('thr'),num('gap'),t('thrS'))));
+  p.append(h('div',{id:'insights'},list.map(x=>h('div',{class:'ins '+x.sev},h('span',{class:'sev'},t('sev'+x.sev)),h('h3',null,x.title),h('p',null,x.body),
+    x.go?h('div',{class:'act'},h('button',{class:'link',onclick(){go(x.go.tab,x.go)}},t(x.go.lab))):null))));
+  if(R.tsMax!=null&&R.tsMax>R.tsMin){
+    const c=h('div',{class:'card'});p.append(c);
+    charts(c);
+  }else p.append(h('div',{class:'muted'},t('chNoTime')));
+}
+function bucketSize(span){for(const s of[1,2,5,10,30,60,120,300,600,1800,3600,7200,21600,43200,86400])if(span/s<=60)return s;return 172800}
+function charts(c){
+  const R=S.run,s0=Math.floor(R.tsMin/1000),s1=Math.floor(R.tsMax/1000);
+  const b=bucketSize(s1-s0+1),start=Math.floor(s0/b)*b,n=Math.ceil((s1-start+1)/b);
+  const err=new Array(n).fill(0),lin=new Array(n).fill(0);
+  for(const g of R.groupsA)for(const[s,x]of g.sec)err[Math.floor((s-start)/b)]+=x;
+  for(const[s,x]of R.sec)lin[Math.floor((s-start)/b)]+=x;
+  const lab=i=>fmtTs((start+i*b)*1000,true);
+  const multiDay=s1-s0>=86400;
+  const tick=i=>{const d=new Date((start+i*b)*1000),hm=p2(d.getUTCHours())+':'+p2(d.getUTCMinutes())+(b<60?':'+p2(d.getUTCSeconds()):'');return multiDay&&!R.noDate?d.toLocaleDateString(LOCALE[LANG],{day:'2-digit',month:'short',timeZone:'UTC'})+' '+hm:hm};
+  const hint=b<60?nf(b)+' s':b<3600?nf(b/60)+' min':nf(b/3600)+' h';
+  c.append(h('h2',null,t('chErr')),bars(err,lab,'var(--ch-err)',i=>{go('errors',{q:'',range:[start+i*b,start+(i+1)*b]})},t('chErr'),tick));
+  c.append(h('div',{class:'cap'},t('chEach',hint)));
+  c.append(h('h2',{style:'margin-top:12px'},t('chLines')),bars(lin,lab,'var(--ch-act)',null,t('chLines'),tick));
+  c.append(h('details',{style:'margin-top:8px'},h('summary',{style:'cursor:pointer'},t('chTable')),
+    h('div',{class:'table-wrap',style:'max-height:280px;margin-top:6px'},h('table',null,h('thead',null,h('tr',null,h('th',{style:'padding:6px 9px'},t('cAt')),h('th',{class:'num',style:'padding:6px 9px'},t('tErr')),h('th',{class:'num',style:'padding:6px 9px'},t('tLines')))),h('tbody',null,err.map((e,i)=>h('tr',null,h('td',null,lab(i)),h('td',{class:'num'},nf(e)),h('td',{class:'num'},nf(lin[i])))))))));
+}
+const SVGNS='http://www.w3.org/2000/svg';
+function sv(tag,attrs,...kids){const e=document.createElementNS(SVGNS,tag);for(const k in attrs)if(attrs[k]!=null)e.setAttribute(k,attrs[k]);kids.forEach(c=>c!=null&&e.append(c));return e}
+function bars(vals,lab,color,click,title,tick){
+  const W=1000,H=150,L=46,R_=6,T=8,B=22,n=vals.length,max=Math.max(1,...vals);
+  const nice=(()=>{const p=Math.pow(10,Math.floor(Math.log10(max)));for(const m of[1,2,5,10])if(m*p>=max)return m*p;return 10*p})();
+  const y=v=>T+(H-T-B)*(1-v/nice),bw=(W-L-R_)/n;
+  const svg=sv('svg',{viewBox:`0 0 ${W} ${H}`,role:'group','aria-label':title});
+  for(const f of[0,.5,1]){const v=nice*f;svg.append(sv('line',{class:'grid',x1:L,x2:W-R_,y1:y(v),y2:y(v)}),sv('text',{x:L-6,y:y(v)+4,'text-anchor':'end'},nf(v)))}
+  const tip=(e,i)=>{let d=$('#tip');if(!d){d=h('div',{id:'tip'});document.body.append(d)}d.textContent=lab(i)+': '+nf(vals[i]);const r=e.getBoundingClientRect?e.getBoundingClientRect():{left:e.clientX,top:e.clientY,width:0};d.style.left=Math.max(4,Math.min(innerWidth-d.offsetWidth-4,r.left+r.width/2-d.offsetWidth/2))+'px';d.style.top=Math.max(4,r.top-30)+'px'};
+  const untip=()=>{const d=$('#tip');if(d)d.remove()};
+  vals.forEach((v,i)=>{
+    const x=L+i*bw,w=Math.max(1,bw-2),yy=y(v),hh=H-B-yy,r=Math.min(4,w/2,hh);
+    const g=sv('g',{class:'b'});
+    const hit=sv('rect',{class:'hit',x,y:T,width:bw,height:H-T-B,tabindex:click?'0':null,role:click?'button':null,'aria-label':click?lab(i)+': '+nf(v):null});
+    g.append(hit);
+    if(v>0)g.append(sv('path',{fill:color,'pointer-events':'none',d:`M${x+1} ${H-B}V${yy+r}Q${x+1} ${yy} ${x+1+r} ${yy}H${x+1+w-r}Q${x+1+w} ${yy} ${x+1+w} ${yy+r}V${H-B}Z`}));
+    hit.addEventListener('pointerenter',()=>tip(hit,i));hit.addEventListener('pointerleave',untip);hit.addEventListener('focus',()=>tip(hit,i));hit.addEventListener('blur',untip);
+    if(click&&v>0){hit.addEventListener('click',()=>{untip();click(i)});hit.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();untip();click(i)}})}
+    svg.append(g);
+  });
+  const every=Math.max(1,Math.ceil(n/8));
+  for(let i=0;i<n;i+=every)svg.append(sv('text',{x:L+i*bw,y:H-6},tick(i)));
+  return h('div',{class:'chart'},svg);
+}
+/* erros */
+function panelErrors(p){
+  const R=S.run;
+  const body=h('div');
+  let table=null;
+  const lvN=l=>t('lv'+l),catN=c=>t('cat'+c);
+  const inRange=g=>{if(!S.range)return g.count;let n=0;for(const[s,x]of g.sec)if(s>=S.range[0]&&s<S.range[1])n+=x;return n};
+  const draw=()=>{
+    const q=S.q.errors.trim().toLowerCase();
+    const rows=R.groupsA.map(g=>({g,n:inRange(g)})).filter(({g,n})=>n>0&&(!S.lvl||g.level===S.lvl)&&(!S.cat||g.cat===S.cat)&&(!q||(g.code+' '+g.msg+' '+[...g.tables].join(' ')).toLowerCase().includes(q)));
+    table=dataTable('errors',[
+      {k:'lv',l:t('cLevel'),v:r=>({fatal:3,error:2,warn:1})[r.g.level],f:r=>h('span',{class:'lv '+r.g.level},lvN(r.g.level))},
+      {k:'cat',l:t('cCat'),v:r=>catN(r.g.cat),f:r=>catN(r.g.cat)},
+      {k:'code',l:t('cCode'),v:r=>r.g.code,mono:true},
+      {k:'msg',l:t('cMsg'),v:r=>r.g.msg,f:r=>cut(r.g.msg,220),wide:true,main:true,mono:true},
+      {k:'n',l:t('cCount'),v:r=>r.n,f:r=>nf(r.n),num:true},
+      {k:'first',l:t('cFirst'),v:r=>r.g.first,f:r=>fmtTs(r.g.first),num:true,csv:r=>fmtTs(r.g.first)},
+      {k:'last',l:t('cLast'),v:r=>r.g.last,f:r=>fmtTs(r.g.last),num:true,csv:r=>fmtTs(r.g.last)},
+      {k:'pids',l:t('cProc'),v:r=>r.g.pids.size,f:r=>nf(r.g.pids.size),num:true},
+    ],rows,{def:['n',-1],onRow:r=>errorDetail(r.g),name:'jde-erros'});
+    body.replaceChildren(table);
+  };
+  const lvl=h('select',{'aria-label':t('cLevel'),onchange(){S.lvl=lvl.value;draw()}},h('option',{value:''},t('cLevel')+': '+t('all')),['fatal','error','warn'].map(l=>h('option',{value:l,selected:S.lvl===l},lvN(l))));
+  const cat=h('select',{'aria-label':t('cCat'),onchange(){S.cat=cat.value;draw()}},h('option',{value:''},t('cCat')+': '+t('all')),['db','net','bsfn','sec','crash','other'].map(c=>h('option',{value:c,selected:S.cat===c},catN(c))));
+  p.append(tools('errors',S.q.errors,v=>{S.q.errors=v;draw()},[lvl,cat],()=>table));
+  if(S.range)p.append(h('div',null,h('span',{class:'chip'},t('range',fmtTs(S.range[0]*1000,true)+' – '+fmtTs(S.range[1]*1000,true)),h('button',{'aria-label':t('clear'),title:t('clear'),onclick(){S.range=null;renderResult($('#main'))}},'×'))));
+  p.append(body);
+  draw();
+}
+function sampleBtn(s){
+  const R=S.run,f=R.files[s.file];
+  return h('li',null,(s.ts!=null?fmtTs(s.ts)+' · ':'')+t('lineOf',f?f.name:'?',nf(s.line))+' ',h('button',{class:'link',onclick(){viewLog(s.file,s.off,s.line)}},t('viewLog')));
+}
+function errorDetail(g){
+  const R=S.run,kb=kbFor(g);
+  const after=[...g.after.entries()].sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k,n])=>{const a=R.groups.get(k);return a?gName(a)+' ('+nf(n)+')':''}).filter(Boolean);
+  modal({title:gName(g),body:[
+    h('pre',{class:'q'},g.msg),
+    kb?h('div',{class:'kb'},h('b',null,t('meaning')+': '),kb.m[li()],' ',h('a',{href:kb.src[1],target:'_blank',rel:'noopener noreferrer'},t('source')+': '+kb.src[0])):h('div',{class:'muted'},t('kbNone')),
+    h('dl',{class:'kv'},h('dt',null,t('cCount')),h('dd',null,nf(g.count)),h('dt',null,t('cFirst')),h('dd',null,fmtTs(g.first)),h('dt',null,t('cLast')),h('dd',null,fmtTs(g.last)),h('dt',null,t('cProc')),h('dd',null,[...g.pids].slice(0,12).join(', ')||'–'),g.tables.size?h('dt',null,t('ctxTables')):null,g.tables.size?h('dd',null,[...g.tables].join(', ')):null,after.length?h('dt',null,t('after')):null,after.length?h('dd',null,after.join('; ')):null),
+    h('h4',null,t('occ')),h('ul',null,g.samples.map(sampleBtn)),
+  ]});
+}
+async function viewLog(file,off,line){
+  const R=S.run,f=R.files[file];if(!f)return;
+  const step=f.enc==='utf-16le'?2:1;
+  let from=Math.max(0,off-6000);if(step===2)from-=from%2;
+  let buf;
+  try{buf=new Uint8Array(await f.blob.slice(from,off+12000).arrayBuffer())}
+  catch{toast(t('readErr',f.name),true);return}
+  const text=new TextDecoder(f.enc).decode(buf);
+  let ls=text.split('\n');
+  const before=new TextDecoder(f.enc).decode(buf.subarray(0,off-from));
+  let curIdx=before.split('\n').length-1;
+  if(from>0){ls=ls.slice(1);curIdx--}
+  if(off+12000<f.size)ls=ls.slice(0,-1);
+  const lo=Math.max(0,curIdx-25),hi=Math.min(ls.length,curIdx+45);
+  const pre=h('pre',{id:'ctx',tabindex:'0'});
+  for(let i=lo;i<hi;i++)pre.append(h('span',{class:i===curIdx?'cur':null},String(line+i-curIdx).padStart(7,' ')+'  '+ls[i].replace(/\r$/,'')));
+  modal({title:t('lineOf',f.name,nf(line)),body:pre,actions:[{label:t('ctOpen'),run(){ctOpenAt(file,line);$$('dialog').forEach(d=>{const b=$$('footer button',d).pop();if(b)b.click()})}}]});
+  const c=$('span.cur',pre);if(c)pre.scrollTop=c.offsetTop-pre.clientHeight/3;
+}
+/* BSFN */
+function panelBsfn(p){
+  const R=S.run,body=h('div');let table=null;
+  if(!R.bsfnA.length){p.append(h('div',{class:'card muted'},t('noBsfn')));return}
+  const draw=()=>{
+    const q=S.q.bsfn.trim().toLowerCase();
+    const rows=R.bsfnA.filter(b=>!q||b.name.toLowerCase().includes(q));
+    table=dataTable('bsfn',[
+      {k:'name',l:t('cName'),main:true,mono:true},
+      {k:'calls',l:t('cCalls'),f:b=>nf(b.calls),num:true},
+      {k:'total',l:t('cTotal'),f:b=>b.timed?fmtMs(b.total):'–',num:true},
+      {k:'self',l:t('cSelf'),f:b=>b.timed?fmtMs(b.self):'–',num:true},
+      {k:'avg',l:t('cAvg'),v:b=>b.timed?b.total/b.timed:null,f:b=>b.timed?fmtMs(b.total/b.timed):'–',num:true},
+      {k:'max',l:t('cMax'),f:b=>b.timed?fmtMs(b.max):'–',num:true},
+      {k:'bad',l:t('cBad'),f:b=>nf(b.bad),num:true},
+    ],rows,{def:['self',-1],onRow:bsfnDetail,name:'jde-bsfn'});
+    body.replaceChildren(table);
+  };
+  p.append(h('div',{class:'cap',style:'margin:0'},t('bsfnNote')));
+  p.append(tools('bsfn',S.q.bsfn,v=>{S.q.bsfn=v;draw()},null,()=>table));
+  p.append(body);draw();
+}
+function bsfnDetail(b){
+  const cl=[...b.callers.entries()].sort((a,c)=>c[1]-a[1]).slice(0,10).map(([k,n])=>k+' ('+nf(n)+')').join(', ');
+  const bv=[...b.badVals.entries()].map(([k,n])=>k+' ('+nf(n)+')').join(', ');
+  modal({title:b.name,body:[
+    h('dl',{class:'kv'},h('dt',null,t('cCalls')),h('dd',null,nf(b.calls)),h('dt',null,t('cTotal')),h('dd',null,fmtMs(b.total)),h('dt',null,t('cSelf')),h('dd',null,fmtMs(b.self)),h('dt',null,t('cMax')),h('dd',null,fmtMs(b.max)),cl?h('dt',null,t('callers')):null,cl?h('dd',null,cl):null,b.apps.size?h('dt',null,t('cApp')):null,b.apps.size?h('dd',null,[...b.apps].join(', ')):null,bv?h('dt',null,t('cBad')):null,bv?h('dd',null,bv):null),
+    b.slow?[h('h4',null,t('slowest')),h('ul',null,sampleBtn(b.slow))]:null,
+    b.first?[h('h4',null,t('firstAt')),h('ul',null,sampleBtn(b.first))]:null,
+  ]});
+}
+/* SQL */
+function panelSql(p){
+  const R=S.run,body=h('div');let table=null;
+  if(!R.sqlA.length){p.append(h('div',{class:'card muted'},t('noSql')));return}
+  const draw=()=>{
+    const q=S.q.sql.trim().toLowerCase(),nw=t('noWhere').toLowerCase();
+    const rows=R.sqlA.filter(s=>!q||s.fp.toLowerCase().includes(q)||(q===nw&&s.noWhere));
+    table=dataTable('sql',[
+      {k:'type',l:t('cType')},{k:'tb',l:t('cTable'),mono:true},
+      {k:'fp',l:t('cStmt'),f:s=>cut(s.fp,200)+(s.noWhere?' ['+t('noWhere')+']':''),wide:true,main:true,mono:true},
+      {k:'count',l:t('cCount'),f:s=>nf(s.count),num:true},
+      {k:'rows',l:t('cRows'),f:s=>nf(s.rows),num:true},
+      {k:'total',l:t('cTime'),f:s=>s.timed?fmtMs(s.total):'–',num:true},
+      {k:'max',l:t('cMax'),f:s=>s.timed?fmtMs(s.max):'–',num:true},
+    ],rows,{def:['total',-1],onRow:sqlDetail,name:'jde-sql'});
+    body.replaceChildren(table);
+  };
+  p.append(h('div',{class:'cap',style:'margin:0'},t('sqlNote')));
+  p.append(tools('sql',S.q.sql,v=>{S.q.sql=v;draw()},null,()=>table));
+  p.append(body);draw();
+}
+function sqlDetail(s){
+  modal({title:s.type+(s.tb?' '+s.tb:''),body:[
+    h('h4',null,t('stmt')),h('pre',{class:'q'},s.fp),
+    h('dl',{class:'kv'},h('dt',null,t('cCount')),h('dd',null,nf(s.count)),h('dt',null,t('cRows')),h('dd',null,nf(s.rows)),h('dt',null,t('cTime')),h('dd',null,fmtMs(s.total)),h('dt',null,t('cMax')),h('dd',null,fmtMs(s.max))),
+    s.slow?[h('h4',null,t('slowest')),h('ul',null,sampleBtn(s.slow))]:null,
+    h('h4',null,t('firstAt')),h('ul',null,sampleBtn(s.first)),
+  ],actions:[{label:t('copy'),keep:true,run(){copyText(s.fp)}}]});
+}
+/* pausas */
+function panelGaps(p){
+  const R=S.run;
+  const rows=R.gaps.filter(g=>g.ms>=S.th.gap);
+  p.append(h('div',{class:'cap',style:'margin:0'},t('gapNote')));
+  if(!rows.length){p.append(h('div',{class:'card muted'},t('noGap',fmtMs(S.th.gap))));return}
+  const open=g=>{const f=R.files[g.file];modal({title:t('cGap')+': '+fmtMs(g.ms),body:[
+    h('h4',null,t('cBefore')),h('pre',{class:'q'},g.fromMsg),h('ul',null,sampleBtn({file:g.file,line:g.fromLine,off:g.fromOff,ts:g.ts})),
+    h('h4',null,t('cAfter')),h('pre',{class:'q'},g.toMsg),h('ul',null,sampleBtn({file:g.file,line:g.toLine,off:g.toOff,ts:g.toTs})),
+  ]})};
+  const tb=dataTable('gaps',[
+    {k:'ms',l:t('cGap'),f:g=>fmtMs(g.ms),num:true},
+    {k:'ts',l:t('cAt'),f:g=>fmtTs(g.ts),num:true,csv:g=>fmtTs(g.ts)},
+    {k:'pid',l:t('cThread'),v:g=>(g.pid||'')+(g.tid?'/'+g.tid:''),mono:true},
+    {k:'fromMsg',l:t('cBefore'),f:g=>cut(g.fromMsg,110),wide:true,main:true,mono:true},
+    {k:'toMsg',l:t('cAfter'),f:g=>cut(g.toMsg,110),wide:true,mono:true},
+  ],rows,{def:['ms',-1],onRow:open,name:'jde-pausas'});
+  p.append(h('div',{class:'tools'},h('span',{class:'spacer'}),h('button',{onclick(){download(tb.csv(),tb.name+'.csv','text/csv;charset=utf-8');toast(t('saved'))}},t('csv'))));
+  p.append(tb);
+}
+/* contexto */
+function panelCtx(p){
+  const R=S.run;
+  const sec=(title,el)=>p.append(h('div',{class:'card'},h('h2',null,title),el));
+  sec(t('ctxFiles'),dataTable('files',[
+    {k:'name',l:t('cFile'),mono:true},{k:'kind',l:t('cKind'),v:f=>t('kind'+f.kind)},{k:'size',l:t('cSize'),f:f=>fmtSize(f.size),num:true},{k:'lines',l:t('cLines'),f:f=>nf(f.lines),num:true},
+  ],R.files,{def:['size',-1]}));
+  const apps=[...R.apps.values()];
+  if(apps.length)sec(t('ctxApps'),dataTable('apps',[
+    {k:'name',l:t('cApp'),mono:true},{k:'calls',l:t('cCalls'),f:a=>nf(a.calls),num:true},{k:'lines',l:t('cLines'),f:a=>nf(a.lines),num:true},{k:'ver',l:t('cVer'),v:a=>[...a.versions].join(', ')},{k:'usr',l:t('cUsers'),v:a=>[...a.users].join(', ')},
+  ],apps,{def:['calls',-1]}));
+  const tbs=[...R.tables.values()];
+  if(tbs.length)sec(t('ctxTables'),dataTable('tables',[
+    {k:'name',l:t('cTable'),mono:true},{k:'sql',l:t('tSql'),f:x=>nf(x.sql),num:true},{k:'open',l:t('cOpen'),f:x=>nf(x.open),num:true},{k:'rows',l:t('cRows'),f:x=>nf(x.rows),num:true},{k:'errors',l:t('cErrors'),f:x=>nf(x.errors),num:true},
+  ],tbs,{def:['sql',-1]}));
+  if(R.threadsA.length)sec(t('ctxThreads'),dataTable('threads',[
+    {k:'pt',l:t('cThread'),v:x=>x.pid+(x.tid?'/'+x.tid:''),mono:true},{k:'name',l:t('cName'),mono:true},{k:'lines',l:t('cLines'),f:x=>nf(x.lines),num:true},{k:'errors',l:t('cErrors'),f:x=>nf(x.errors),num:true},{k:'first',l:t('cFirst'),f:x=>fmtTs(x.first),num:true},{k:'lastTs',l:t('cLast'),f:x=>fmtTs(x.lastTs),num:true},
+  ],R.threadsA,{def:['errors',-1]}));
+  const apis=[...R.apis.entries()].map(([name,n])=>({name,n}));
+  if(apis.length)sec(t('ctxApis'),dataTable('apis',[{k:'name',l:t('cName'),mono:true},{k:'n',l:t('cCount'),f:x=>nf(x.n),num:true}],apis,{def:['n',-1],limit:30}));
+}
+/* conteúdo: visor virtual. O arquivo não fica na memória: lê só as páginas visíveis */
+const CT={LH:20,PAGE:256,MAXH:10000000,CUT:2000};
+function ctState(){
+  if(!S.ct)S.ct={file:0,on:new Set(),top:0,sel:null,q:'',view:null,cache:new Map(),token:0,find:0,msg:''};
+  return S.ct;
+}
+function ctCount(f){
+  if(f.kCount)return f.kCount;
+  const c=new Array(11).fill(0),n=Math.min(f.lines,f.kinds.length-1);
+  for(let i=1;i<=n;i++)c[f.kinds[i]]++;
+  c[0]+=Math.max(0,f.lines-n);
+  f.kCount=c;return c;
+}
+function ctPauses(f){
+  const m=new Map();
+  for(const g of S.run.gaps)if(g.file===f.fileIdx&&g.ms>=S.th.gap)m.set(g.toLine,g.ms);
+  return m;
+}
+function ctBuildView(f){
+  const c=ctState();
+  if(!c.on.size){c.view=null;return}
+  const pa=c.on.has(11)?ctPauses(f):null,on=new Uint8Array(12);
+  for(const k of c.on)on[k]=1;
+  let n=0;
+  for(let i=1;i<=f.lines;i++)if(on[i<f.kinds.length?f.kinds[i]:0]||(pa&&pa.has(i)))n++;
+  const v=new Int32Array(n);let j=0;
+  for(let i=1;i<=f.lines;i++)if(on[i<f.kinds.length?f.kinds[i]:0]||(pa&&pa.has(i)))v[j++]=i;
+  c.view=v;
+}
+async function ctPage(f,p){
+  const c=ctState(),key=f.fileIdx+':'+p;
+  let got=c.cache.get(key);
+  if(got)return got;
+  const a=f.idx[p],b=p+1<f.idx.length?f.idx[p+1]:f.size;
+  const buf=await f.blob.slice(a,b).arrayBuffer();
+  const ls=new TextDecoder(f.enc).decode(buf).split('\n').map(x=>x.charCodeAt(x.length-1)===13?x.slice(0,-1):x);
+  if(c.cache.size>400)c.cache.delete(c.cache.keys().next().value);
+  c.cache.set(key,ls);
+  return ls;
+}
+async function ctLine(f,n){const p=(n-1)>>8,ls=await ctPage(f,p);return ls[(n-1)-p*CT.PAGE]??''}
+function ctTotal(f){const c=ctState();return c.view?c.view.length:f.lines}
+function ctLineAt(i){const c=ctState();return c.view?c.view[i]:i+1}
+function ctIndexOf(n){
+  const c=ctState();if(!c.view)return n-1;
+  let lo=0,hi=c.view.length-1;
+  while(lo<hi){const m=(lo+hi)>>1;if(c.view[m]<n)lo=m+1;else hi=m}
+  return lo;
+}
+/* posição da rolagem e linha do topo: acima do limite do navegador, a barra vira proporcional */
+function ctGeom(f,box){
+  const T=ctTotal(f),full=T*CT.LH,H=box.clientHeight,V=Math.max(1,Math.floor(H/CT.LH));
+  const sp=Math.min(full,CT.MAXH);
+  return{T,H,V,sp,scaled:full>CT.MAXH};
+}
+function ctSetTop(f,box,i,keepScroll){
+  const c=ctState(),g=ctGeom(f,box);
+  c.top=Math.max(0,Math.min(Math.max(0,g.T-g.V),Math.round(i)));
+  if(!keepScroll){
+    c.ignore=true;
+    box.scrollTop=g.scaled?c.top/Math.max(1,g.T-g.V)*(g.sp-g.H):c.top*CT.LH;
+  }
+  ctRender(f,box);
+}
+async function ctRender(f,box){
+  const c=ctState(),token=++c.token,g=ctGeom(f,box);
+  const rows=$('.ct-rows',box),sp=$('.ct-spacer',box);
+  if(sp.style.height!==g.sp+'px')sp.style.height=g.sp+'px';
+  const first=c.top,last=Math.min(g.T,first+g.V+2);
+  const pos=$('#ct-pos');
+  if(pos)pos.textContent=g.T?(c.view?t('ctFiltered',nf(g.T),nf(f.lines))+' · ':'')+t('ctPos',nf(ctLineAt(first)),nf(f.lines)):t('ctEmpty');
+  const need=[];for(let i=first;i<last;i++)need.push(ctLineAt(i));
+  const pages=new Set(need.map(n=>(n-1)>>8));
+  try{await Promise.all([...pages].map(p=>ctPage(f,p)))}
+  catch{if(token===c.token)ctInfo(f,t('readErr',f.name));return}
+  if(token!==c.token)return;
+  const pa=c.pa||(c.pa=ctPauses(f)),ql=c.q.trim().toLowerCase();
+  const frag=document.createDocumentFragment();
+  for(const n of need){
+    const k=n<f.kinds.length?f.kinds[n]:0,p=(n-1)>>8,raw=c.cache.get(f.fileIdx+':'+p)?.[(n-1)-p*CT.PAGE]??'';
+    const cutLine=raw.length>CT.CUT,tx=cutLine?raw.slice(0,CT.CUT):raw;
+    const row=h('div',{class:'ct-ln k'+k+(c.sel===n?' sel':''),'data-n':n});
+    row.append(h('span',{class:'ct-no'},String(n)),h('span',{class:'ct-tg tg'+k},KTAG[k]||'·'));
+    if(pa.has(n))row.append(h('span',{class:'ct-gap',title:t('k11')},'⏸ '+fmtMs(pa.get(n))));
+    const span=h('span',{class:'ct-tx'});
+    if(ql){
+      const low=tx.toLowerCase();let from=0,at;
+      while((at=low.indexOf(ql,from))>=0&&from<tx.length){span.append(tx.slice(from,at),h('mark',null,tx.slice(at,at+ql.length)));from=at+ql.length}
+      span.append(tx.slice(from));
+    }else span.textContent=tx;
+    if(cutLine)span.append(h('em',{class:'muted'},' … '+t('ctCut')));
+    row.append(span);
+    frag.append(row);
+  }
+  rows.replaceChildren(frag);
+  rows.style.top=(g.scaled?box.scrollTop:first*CT.LH)+'px';
+}
+function ctSelect(f,box,n){
+  const c=ctState();c.sel=n;
+  $$('.ct-ln',box).forEach(r=>r.classList.toggle('sel',+r.dataset.n===n));
+  ctInfo(f);
+}
+async function ctInfo(f,msg){
+  const c=ctState(),box=$('#ct-info');if(!box)return;
+  if(msg!==undefined)c.msg=msg;
+  const n=c.sel;
+  const parts=[];
+  if(n){const k=n<f.kinds.length?f.kinds[n]:0;parts.push(h('b',null,t('lineOf',f.name,nf(n))),h('span',{class:'muted'},ctKindName(k)),h('button',{onclick:async()=>{try{copyText(await ctLine(f,n))}catch{ctInfo(f,t('readErr',f.name))}}},t('copy')))}
+  else parts.push(h('span',{class:'muted'},t('ctPick')));
+  if(c.msg)parts.push(h('span',{role:'status'},c.msg));
+  box.replaceChildren(...parts);
+}
+function ctKindName(k){return k===1?t('lvfatal'):k===2?t('lverror'):k===3?t('lvwarn'):t('k'+k)}
+/* leva uma linha para dentro da área visível */
+function ctShow(f,box,n,select=true){
+  const c=ctState(),i=ctIndexOf(n),g=ctGeom(f,box);
+  if(i<c.top||i>=c.top+g.V)ctSetTop(f,box,i-Math.floor(g.V/3));else ctRender(f,box);
+  if(select){c.sel=n;ctInfo(f);setTimeout(()=>$$('.ct-ln',box).forEach(r=>r.classList.toggle('sel',+r.dataset.n===n)),0)}
+}
+function ctJumpErr(f,box,dir){
+  const c=ctState(),start=c.sel||ctLineAt(c.top),K_=f.kinds;
+  for(let n=start+dir;n>=1&&n<=f.lines;n+=dir){
+    const k=n<K_.length?K_[n]:0;
+    if(k===1||k===2){
+      if(c.view&&!c.on.has(k)){c.on.add(k);ctBuildView(f);ctDrawLegend(f,box)}
+      ctInfo(f,'');ctShow(f,box,n);return;
+    }
+  }
+  ctInfo(f,t('ctNoErr'));
+}
+/* busca no arquivo inteiro, em blocos, sem travar a tela */
+async function ctFind(f,box,dir){
+  const c=ctState(),q=c.q.trim().toLowerCase();if(!q)return;
+  const id=++c.find,start=c.sel||ctLineAt(c.top),BL=16;
+  const pages=f.idx.length;let wrapped=false,done=0;
+  let p=(start-1)>>8;
+  const match=async(pg)=>{
+    const a=f.idx[pg],lastP=pg+BL<pages?pg+BL:pages,b=lastP<pages?f.idx[lastP]:f.size;
+    const text=new TextDecoder(f.enc).decode(await f.blob.slice(a,b).arrayBuffer()).split('\n');
+    return text;
+  };
+  const ok=n=>{if(!c.view)return true;const i=ctIndexOf(n);return c.view[i]===n};
+  try{
+  if(dir>0){
+    let n0=start+1;
+    for(let pg=(n0-1)>>8;;){
+      if(pg>=pages){if(wrapped)break;wrapped=true;pg=0;n0=1;continue}
+      const ls=await match(pg);if(id!==c.find)return;
+      const base=pg*CT.PAGE+1;
+      for(let j=0;j<ls.length;j++){const n=base+j;if(n<n0||n>f.lines)continue;if(wrapped&&n>start)break;if(ls[j].toLowerCase().includes(q)&&ok(n)){ctInfo(f,wrapped?t('ctWrapped'):'');ctShow(f,box,n);return}}
+      if(wrapped&&base+ls.length>start)break;
+      pg+=BL;
+      if(++done%4===0){ctInfo(f,t('ctSearching',nf(Math.min(f.lines,pg*CT.PAGE))));await new Promise(r=>setTimeout(r,0));if(id!==c.find)return}
+    }
+  }else{
+    let n0=start-1;
+    for(let pg=Math.max(0,((n0-1)>>8)-BL+1);;){
+      const ls=await match(pg);if(id!==c.find)return;
+      const base=pg*CT.PAGE+1;
+      for(let j=ls.length-1;j>=0;j--){const n=base+j;if(n>n0||n>f.lines)continue;if(wrapped&&n<start)break;if(ls[j].toLowerCase().includes(q)&&ok(n)){ctInfo(f,wrapped?t('ctWrapped'):'');ctShow(f,box,n);return}}
+      if(pg===0){if(wrapped)break;wrapped=true;n0=f.lines;pg=Math.max(0,pages-BL);continue}
+      if(wrapped&&base<=start)break;
+      pg=Math.max(0,pg-BL);
+      if(++done%4===0){ctInfo(f,t('ctSearching',nf(pg*CT.PAGE)));await new Promise(r=>setTimeout(r,0));if(id!==c.find)return}
+    }
+  }
+  ctInfo(f,t('ctNoHit',c.q));
+  }catch{ctInfo(f,t('readErr',f.name))}
+}
+function ctDrawLegend(f,box){
+  const c=ctState(),leg=$('#ct-leg');if(!leg)return;
+  const cnt=ctCount(f),pa=ctPauses(f);
+  const item=(k,name,n)=>h('button',{'aria-pressed':c.on.has(k)?'true':'false',disabled:!n&&!c.on.has(k),title:name,onclick(){
+    if(c.on.has(k))c.on.delete(k);else c.on.add(k);
+    ctBuildView(f);c.top=0;ctDrawLegend(f,box);
+    if(c.sel&&(!c.view||c.view[ctIndexOf(c.sel)]===c.sel))ctShow(f,box,c.sel,false);else ctSetTop(f,box,0);
+  }},h('span',{class:'ct-tg tg'+k},KTAG[k]||'·'),name+' ',h('span',{class:'muted'},nf(n)));
+  const list=[1,2,3,10,4,5,6,7,8,9].map(k=>item(k,ctKindName(k),cnt[k]));
+  list.push(item(11,t('k11'),pa.size),item(0,t('k0'),cnt[0]));
+  if(c.on.size)list.push(h('button',{onclick(){c.on.clear();ctBuildView(f);ctDrawLegend(f,box);if(c.sel)ctShow(f,box,c.sel,false);else ctSetTop(f,box,0)}},t('ctAll')));
+  leg.replaceChildren(...list);
+}
+function ctOpenAt(file,line){
+  const c=ctState();
+  if(c.file!==file){c.file=file;c.on.clear();c.view=null;c.pa=null;c.top=0}
+  c.sel=line;c.pendingLine=line;c.msg='';
+  go('content');
+}
+function panelContent(p){
+  const R=S.run,c=ctState();
+  if(c.file>=R.files.length)c.file=0;
+  const f=R.files[c.file];
+  c.pa=null;
+  p.append(h('div',{class:'cap',style:'margin:0'},t('ctHow')));
+  const box=h('div',{class:'ct-view',tabindex:'0',role:'region','aria-label':t('ctView')},h('div',{class:'ct-spacer'}),h('div',{class:'ct-rows'}));
+  const sel=h('select',{'aria-label':t('ctFile'),onchange(){c.file=+sel.value;c.on.clear();c.view=null;c.top=0;c.sel=null;c.msg='';renderResult($('#main'))}},R.files.map((x,i)=>h('option',{value:i,selected:i===c.file},x.name)));
+  const q=h('input',{type:'search',placeholder:t('ctFind'),'aria-label':t('ctFind'),value:c.q});
+  q.addEventListener('input',()=>{c.q=q.value;c.find++;ctRender(f,box)});
+  q.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();ctFind(f,box,e.shiftKey?-1:1)}});
+  const go_=h('input',{type:'number',min:'1',max:String(f.lines),placeholder:t('ctGo'),'aria-label':t('ctGo')});
+  const doGo=()=>{const v=parseInt(go_.value,10);if(v>=1&&v<=f.lines){if(c.view&&c.view[ctIndexOf(v)]!==v){c.on.clear();ctBuildView(f);ctDrawLegend(f,box)}ctInfo(f,'');ctShow(f,box,v)}};
+  go_.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();doGo()}});
+  p.append(h('div',{class:'ct-tools'},R.files.length>1?h('label',null,t('ctFile'),sel):null,q,
+    h('button',{'aria-label':t('ctPrev'),title:t('ctPrev'),onclick(){ctFind(f,box,-1)}},'▲'),h('button',{'aria-label':t('ctNext'),title:t('ctNext'),onclick(){ctFind(f,box,1)}},'▼'),
+    go_,h('button',{onclick:doGo},t('ctGo')),
+    h('button',{onclick(){ctJumpErr(f,box,-1)}},t('ctPrevE')),h('button',{onclick(){ctJumpErr(f,box,1)}},t('ctNextE')),
+    h('span',{id:'ct-pos',class:'muted'})));
+  p.append(h('div',{id:'ct-leg',class:'ct-leg',role:'group','aria-label':t('ctList')}));
+  p.append(h('div',{id:'ct-info'}),box);
+  ctBuildView(f);
+  ctDrawLegend(f,box);
+  const g0=ctGeom(f,box);$('.ct-spacer',box).style.height=g0.sp+'px';
+  box.addEventListener('scroll',()=>{
+    if(c.ignore){c.ignore=false;return}
+    const g=ctGeom(f,box),i=g.scaled?box.scrollTop/Math.max(1,g.sp-g.H)*(g.T-g.V):Math.floor(box.scrollTop/CT.LH);
+    ctSetTop(f,box,i,true);
+  },{passive:true});
+  box.addEventListener('wheel',e=>{
+    const g=ctGeom(f,box);
+    if(!g.scaled||e.ctrlKey||Math.abs(e.deltaX)>Math.abs(e.deltaY))return;
+    e.preventDefault();
+    const d=e.deltaMode===1?e.deltaY:e.deltaMode===2?e.deltaY*g.V:e.deltaY/CT.LH;
+    ctSetTop(f,box,c.top+Math.round(d)||c.top+Math.sign(d));
+  },{passive:false});
+  box.addEventListener('click',e=>{const r=e.target.closest('.ct-ln');if(r&&!getSelection().toString())ctSelect(f,box,+r.dataset.n)});
+  box.addEventListener('keydown',e=>{
+    const g=ctGeom(f,box),m={ArrowDown:1,ArrowUp:-1,PageDown:g.V-1,PageUp:1-g.V}[e.key];
+    if(m!=null){e.preventDefault();ctSetTop(f,box,c.top+m)}
+    else if(e.key==='Home'){e.preventDefault();ctSetTop(f,box,0)}
+    else if(e.key==='End'){e.preventDefault();ctSetTop(f,box,g.T)}
+  });
+  if(c.ro)c.ro.disconnect();
+  if(window.ResizeObserver){c.ro=new ResizeObserver(()=>{if(box.isConnected)ctRender(f,box)});c.ro.observe(box)}
+  ctInfo(f);
+  if(c.pendingLine){const n=c.pendingLine;c.pendingLine=null;if(c.view&&c.view[ctIndexOf(n)]!==n){c.on.clear();ctBuildView(f);ctDrawLegend(f,box)}ctShow(f,box,n)}
+  else ctSetTop(f,box,c.top);
+}
+/* fluxo */
+const FL={W:196,H:46,GX:72,GY:10,TOP:30,M:12};
+const flCtx=document.createElement('canvas').getContext('2d');
+function flCut(x,max){
+  if(flCtx.measureText(x).width<=max)return x;
+  let n=x.length;while(n>1&&flCtx.measureText(x.slice(0,n)+'…').width>max)n--;
+  return x.slice(0,n)+'…';
+}
+/* monta os blocos a partir das ligações, escolhe os mais importantes e define as colunas */
+function flowModel(R,o){
+  const all=[...R.flow.values()].filter(e=>e.a!==e.b&&(o.tables||(e.a[0]!=='t'&&e.b[0]!=='t'))&&(o.errors||(e.a[0]!=='x'&&e.b[0]!=='x')));
+  const nodes=new Map();
+  const node=id=>{
+    let n=nodes.get(id);if(n)return n;
+    const type=id[0],key=id.slice(2);n={id,type,key,in:0,out:0,ord:1e12,score:0,slow:false};
+    if(type==='e'){n.name=key[0]==='#'?t('flProc',key.slice(1)):key[0]==='~'?key.slice(1):key}
+    else if(type==='b'){const b=R.bsfn.get(key);n.name=key;n.bsfn=b;n.score=(b?b.total:0)+(b?b.calls:0);n.slow=!!b&&b.max>=S.th.bsfn;n.metric=b?(t('flCalls',nf(b.calls))+(b.timed?' · '+fmtMs(b.total):'')):''}
+    else if(type==='t'){const x=R.tables.get(key);n.name=key;n.score=x?x.sql+x.rows:0;n.metric=x?t('flSqls',nf(x.sql))+' · '+t('flRows',nf(x.rows)):''}
+    else{const g=R.groups.get(key);n.name=g?gName(g):key;n.group=g;n.score=g?g.count:0;n.metric=g?t('flTimes',nf(g.count)):''}
+    nodes.set(id,n);return n;
+  };
+  for(const e of all){const a=node(e.a),b=node(e.b);a.out+=e.n;b.in+=e.n;a.ord=Math.min(a.ord,e.ord);b.ord=Math.min(b.ord,e.ord);if(e.b[0]==='t'&&e.ms>=S.th.sql)b.slow=true}
+  for(const n of nodes.values())if(n.type==='e'){
+    const sum=k=>all.filter(e=>e.a===n.id&&e.b[0]===k).reduce((a,e)=>a+e.n,0),c=sum('b'),q=sum('t'),x=sum('x');
+    n.score=n.out;n.metric=[c?t('flCalls',nf(c)):'',q?t('flSqls',nf(q)):'',x?t('flErrs',nf(x)):''].filter(Boolean).join(' · ');
+  }
+  /* escolha: revezando entre os tipos, para nenhum sumir */
+  const total=nodes.size,by={e:[],b:[],t:[],x:[]};
+  for(const n of nodes.values())by[n.type].push(n);
+  for(const k in by)by[k].sort((a,b)=>b.score-a.score||a.ord-b.ord);
+  const max=Math.min(o.max,400),keep=new Set();let idx=0,more=true;
+  while(keep.size<max&&more){more=false;for(const k of['e','x','b','t']){if(by[k][idx]&&keep.size<max){keep.add(by[k][idx].id);more=true}}idx++}
+  const edges=all.filter(e=>keep.has(e.a)&&keep.has(e.b)).map(e=>({...e}));
+  /* colunas: caminho mais longo; ligação que fecha um ciclo vira "volta" */
+  const depth=new Map();
+  const walk=type=>{
+    const adj=new Map();for(const e of edges)if(e.a[0]===type&&e.b[0]===type){if(!adj.has(e.a))adj.set(e.a,[]);adj.get(e.a).push(e)}
+    const state=new Map();
+    const dfs=id=>{
+      state.set(id,1);let d=depth.get(id)||0;
+      for(const e of adj.get(id)||[]){
+        if(state.get(e.b)===1){e.back=true;continue}
+        if(!state.has(e.b))dfs(e.b);
+      }
+      state.set(id,2);
+    };
+    const ids=[...keep].filter(x=>x[0]===type).sort((a,b)=>nodes.get(a).ord-nodes.get(b).ord);
+    for(const id of ids)if(!state.has(id))dfs(id);
+    /* com as voltas fora, o grafo não tem ciclo: calcula a profundidade */
+    const memo=new Map(),inc=new Map();
+    for(const e of edges)if(e.a[0]===type&&e.b[0]===type&&!e.back){if(!inc.has(e.b))inc.set(e.b,[]);inc.get(e.b).push(e.a)}
+    const d=id=>{if(memo.has(id))return memo.get(id);memo.set(id,0);const v=(inc.get(id)||[]).reduce((m,p)=>Math.max(m,d(p)+1),0);memo.set(id,v);return v};
+    for(const id of ids)depth.set(id,d(id));
+  };
+  walk('b');walk('x');
+  const maxOf=type=>{let m=-1;for(const id of keep)if(id[0]===type)m=Math.max(m,depth.get(id));return m};
+  const bD=maxOf('b'),xD=maxOf('x'),hasE=[...keep].some(x=>x[0]==='e'),hasT=[...keep].some(x=>x[0]==='t');
+  const heads=[];let col=0;const colOf={};
+  if(hasE){colOf.e=col++;heads.push(t('flEntry'))}
+  colOf.b=col;for(let i=0;i<=bD;i++){heads.push(t('flBsfn',i+1));col++}
+  if(hasT){colOf.t=col++;heads.push(t('flTable'))}
+  colOf.x=col;for(let i=0;i<=xD;i++){heads.push(xD>0?t('flErrN',i+1):t('flErr'));col++}
+  const cols=heads.map(()=>[]);
+  for(const id of keep){const n=nodes.get(id);n.col=n.type==='e'?colOf.e:n.type==='t'?colOf.t:colOf[n.type]+depth.get(id);cols[n.col].push(n)}
+  /* ordem vertical: primeira ocorrência, depois aproxima cada bloco dos vizinhos */
+  cols.forEach(c=>{c.sort((a,b)=>a.ord-b.ord);c.forEach((n,i)=>{n.pos=i-(c.length-1)/2})});
+  const nb=new Map();for(const id of keep)nb.set(id,{p:[],s:[]});
+  for(const e of edges){if(e.back)continue;nb.get(e.b).p.push(nodes.get(e.a));nb.get(e.a).s.push(nodes.get(e.b))}
+  const sweep=(c,dir)=>{
+    const sc=n=>{const l=nb.get(n.id)[dir];return l.length?l.reduce((a,x)=>a+x.pos,0)/l.length:n.pos};
+    c.map(n=>[n,sc(n)]).sort((a,b)=>a[1]-b[1]).forEach(([n],i)=>{c[i]=n;n.pos=i-(c.length-1)/2});
+  };
+  for(let i=0;i<4;i++){for(const c of cols)sweep(c,'p');for(const c of [...cols].reverse())sweep(c,'s')}
+  const tallest=Math.max(1,...cols.map(c=>c.length));
+  const{W,H,GX,GY,TOP,M}=FL,mid=TOP+M+(tallest*(H+GY)-GY)/2;
+  cols.forEach((c,i)=>c.forEach(n=>{n.x=M+i*(W+GX);n.y=mid+n.pos*(H+GY)-H/2}));
+  return{nodes,edges,keep,total,heads,cols,w:M*2+cols.length*W+Math.max(0,cols.length-1)*GX,h:TOP+M*2+tallest*(H+GY)-GY,shown:keep.size};
+}
+function flowSvg(m){
+  const{W,H,TOP}=FL;
+  const fam=getComputedStyle(document.body).fontFamily;
+  const svg=sv('svg',{id:'flow-svg',xmlns:SVGNS,viewBox:'0 0 '+m.w+' '+m.h,width:Math.round(m.w*S.fl.z),height:Math.round(m.h*S.fl.z),role:'group','aria-label':t('tabF'),'font-family':fam});
+  const arrow=(id)=>sv('marker',{id,viewBox:'0 0 8 8',refX:'7',refY:'4',markerWidth:'6',markerHeight:'6',orient:'auto-start-reverse',markerUnits:'userSpaceOnUse'},sv('path',{d:'M0 0L8 4L0 8Z'}));
+  svg.append(sv('defs',{},arrow('fl-arrow'),arrow('fl-arrow-x')));
+  m.heads.forEach((x,i)=>svg.append(sv('text',{class:'fl-h',x:FL.M+i*(W+FL.GX),y:18},x)));
+  const eg=sv('g',{}),ng=sv('g',{});svg.append(eg,ng);
+  for(const e of m.edges){
+    const a=m.nodes.get(e.a),b=m.nodes.get(e.b);
+    const x1=a.x+W,y1=a.y+H/2,x2=b.x,y2=b.y+H/2;
+    const d=e.back?'M'+(a.x)+' '+y1+'C'+(a.x-40)+' '+(y1+60)+' '+(x2+W+40)+' '+(y2+60)+' '+(x2+W)+' '+y2:'M'+x1+' '+y1+'C'+(x1+36)+' '+y1+' '+(x2-36)+' '+y2+' '+(x2-2)+' '+y2;
+    const lb=a.name+' → '+b.name+': '+t('flTimes',nf(e.n))+(e.ms?' · '+fmtMs(e.ms):'')+(e.rows?' · '+t('flRows',nf(e.rows)):'');
+    const w=e.b[0]==='x'?Math.min(2,1+Math.log10(e.n)*.5):Math.min(5,1+Math.log10(e.n)*1.4);
+    const g=sv('g',{class:'fl-eg','data-a':e.a,'data-b':e.b,'data-back':e.back?'1':null},sv('path',{class:'fl-e'+(e.b[0]==='x'?' x':'')+(e.back?' back':''),d,'stroke-width':w.toFixed(1)}),sv('path',{class:'fl-hit',d}));
+    g.addEventListener('pointerenter',ev=>flTip(ev,lb));g.addEventListener('pointermove',ev=>flTip(ev,lb));g.addEventListener('pointerleave',flUntip);
+    eg.append(g);
+  }
+  flCtx.font='650 12px '+fam;
+  for(const n of m.nodes.values()){
+    if(!m.keep.has(n.id))continue;
+    const g=sv('g',{class:'fl-n '+n.type+(n.slow?' slow':''),transform:'translate('+n.x+' '+n.y+')',tabindex:'0',role:'button','data-id':n.id,'aria-label':n.name+(n.metric?', '+n.metric:'')+(n.slow?', '+t('flSlow'):'')},sv('title',{},n.name));
+    g.append(sv('rect',{width:W,height:H,rx:n.type==='e'?4:n.type==='x'?14:8}));
+    g.append(sv('text',{class:'nm',x:9,y:19},flCut(n.name,W-18)));
+    flCtx.font='11px '+fam;
+    g.append(sv('text',{class:'mt',x:9,y:35},flCut((n.slow?'⏱ ':'')+(n.metric||''),W-18)));
+    flCtx.font='650 12px '+fam;
+    g.addEventListener('click',()=>flSelect(n.id));
+    g.addEventListener('keydown',ev=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();flSelect(n.id,true)}else if(ev.key==='Escape'){flSelect(null)}});
+    g.addEventListener('pointerenter',()=>flHi(n.id));
+    g.addEventListener('pointerleave',()=>flHi(S.fl.sel));
+    ng.append(g);
+  }
+  return svg;
+}
+function flTip(ev,x){let d=$('#tip');if(!d){d=h('div',{id:'tip'});document.body.append(d)}d.textContent=x;d.style.left=Math.max(4,Math.min(innerWidth-d.offsetWidth-4,ev.clientX+10))+'px';d.style.top=Math.max(4,ev.clientY-30)+'px'}
+function flUntip(){const d=$('#tip');if(d)d.remove()}
+/* destaca o que vem antes e depois do bloco */
+function flHi(id){
+  const svg=$('#flow-svg');if(!svg)return;
+  const eg=$$('.fl-eg',svg),nodes=$$('.fl-n',svg);
+  if(!id){eg.concat(nodes).forEach(x=>x.classList.remove('dim'));return}
+  const up=new Set([id]),down=new Set([id]);
+  const ls=eg.map(e=>[e.dataset.a,e.dataset.b,e]);
+  const fw=ls.filter(x=>!x[2].dataset.back);
+  for(let ch=true;ch;){ch=false;for(const[a,b]of fw){if(down.has(a)&&!down.has(b)){down.add(b);ch=true}if(up.has(b)&&!up.has(a)){up.add(a);ch=true}}}
+  for(const[a,b,e]of ls)e.classList.toggle('dim',!!e.dataset.back||!((down.has(a)&&down.has(b))||(up.has(a)&&up.has(b))));
+  nodes.forEach(n=>n.classList.toggle('dim',!(up.has(n.dataset.id)||down.has(n.dataset.id))));
+}
+function flSelect(id,kb){
+  S.fl.sel=S.fl.sel===id?null:id;
+  flUntip();
+  const svg=$('#flow-svg');
+  $$('.fl-n',svg).forEach(n=>n.classList.toggle('sel',n.dataset.id===S.fl.sel));
+  flHi(S.fl.sel);
+  flInfo();
+}
+function flInfo(){
+  const box=$('#flow-info');if(!box)return;
+  const R=S.run,m=S.fl.model,n=S.fl.sel&&m.nodes.get(S.fl.sel);
+  if(!n){box.replaceChildren(h('span',{class:'muted'},t('flPick')));return}
+  const inE=m.edges.filter(e=>e.b===n.id).length,outE=m.edges.filter(e=>e.a===n.id).length;
+  const open=()=>{if(n.type==='b'&&n.bsfn)bsfnDetail(n.bsfn);else if(n.type==='x'&&n.group)errorDetail(n.group);else if(n.type==='t')go('sql',{q:n.key});else go('ctx')};
+  box.replaceChildren(...[h('b',null,n.name),h('span',null,n.metric||''),n.slow?h('span',null,'⏱ '+t('flSlow')):null,h('span',{class:'muted'},t('flFrom')+': '+nf(inE)+' · '+t('flTo')+': '+nf(outE)),h('span',{class:'spacer'}),h('button',{onclick:open},t('flOpen')),h('button',{onclick(){flSelect(S.fl.sel)}},t('flClear'))].filter(Boolean));
+}
+function panelFlow(p){
+  const R=S.run;
+  S.fl=S.fl||{max:60,tables:true,errors:true,z:null,sel:null};
+  const redraw=()=>renderResult($('#main'));
+  const m=flowModel(R,S.fl);S.fl.model=m;
+  if(S.fl.z==null)S.fl.z=Math.max(.75,Math.min(1,Math.floor((p.clientWidth-4)/m.w*100)/100));
+  if(S.fl.sel&&!m.keep.has(S.fl.sel))S.fl.sel=null;
+  p.append(h('div',{class:'cap',style:'margin:0'},t('flHow')));
+  if(!R.flow.size){p.append(h('div',{class:'card muted'},t('flEmpty')));return}
+  const sel=h('select',{'aria-label':t('flShow'),onchange(){S.fl.max=+sel.value;redraw()}},[30,60,120,400].map(v=>h('option',{value:v,selected:S.fl.max===v},v===400?t('flAll'):t('flBlocks',v))));
+  const cb=(k,lab)=>{const c=h('input',{type:'checkbox',onchange(){S.fl[k]=c.checked;S.fl.sel=null;redraw()}});c.checked=S.fl[k];return h('label',null,c,lab)};
+  const zoom=z=>{S.fl.z=Math.max(.3,Math.min(1.6,Math.round(z*100)/100));redraw()};
+  const wrap=h('div',{class:'flow-wrap',tabindex:'0'});
+  p.append(h('div',{class:'flow-tools'},h('label',null,t('flShow'),sel),cb('tables',t('flTables')),cb('errors',t('flErrors')),
+    h('button',{'aria-label':t('dtOut'),title:t('dtOut'),onclick(){zoom(S.fl.z-.1)}},'−'),h('span',null,Math.round(S.fl.z*100)+'%'),h('button',{'aria-label':t('dtIn'),title:t('dtIn'),onclick(){zoom(S.fl.z+.1)}},'+'),
+    h('button',{onclick(){zoom((wrap.clientWidth-4)/m.w)}},t('dtFit')),
+    h('button',{onclick(){download(flowSvgText(m),'jde-fluxo.svg','image/svg+xml;charset=utf-8');toast(t('saved'))}},t('dtSvg'))));
+  if(m.total>m.shown)p.append(h('div',{class:'cap',style:'margin:0'},t('flHidden',nf(m.shown),nf(m.total))));
+  const chip=(l,fill,st)=>h('span',null,h('i',{style:'background:var('+fill+');border-color:var('+st+')'}),l);
+  p.append(h('div',{class:'flow-leg'},chip(t('flEntry'),'--panel2','--text'),chip('BSFN','--accent-soft','--accent'),chip(t('flTable'),'--ok-soft','--ok'),chip(t('flErr'),'--danger-soft','--danger'),h('span',null,'⏱ '+t('flSlow')),h('span',null,'╌ '+t('flBack'))));
+  p.append(h('div',{id:'flow-info'}),wrap);
+  wrap.append(flowSvg(m));
+  if(S.fl.sel){$$('.fl-n',wrap).forEach(n=>n.classList.toggle('sel',n.dataset.id===S.fl.sel));flHi(S.fl.sel)}
+  flInfo();
+  /* ligações, também como tabela */
+  const name=id=>{const n=m.nodes.get(id);return n?n.name:id};
+  const rows=m.edges.map(e=>({from:name(e.a),to:name(e.b),n:e.n,ms:e.ms||null,rows:e.rows||null}));
+  const tb=dataTable('flow',[{k:'from',l:t('flFrom'),mono:true},{k:'to',l:t('flTo'),mono:true},{k:'n',l:t('cCount'),f:x=>nf(x.n),num:true},{k:'ms',l:t('cTime'),f:x=>x.ms==null?'–':fmtMs(x.ms),num:true},{k:'rows',l:t('cRows'),f:x=>x.rows==null?'–':nf(x.rows),num:true}],rows,{def:['n',-1],name:'jde-fluxo'});
+  p.append(h('details',null,h('summary',{style:'cursor:pointer'},t('flList')),h('div',{style:'margin-top:6px'},tb)));
+}
+function flowSvgText(m){
+  const svg=$('#flow-svg').cloneNode(true),cs=getComputedStyle(document.documentElement);
+  svg.setAttribute('width',m.w);svg.setAttribute('height',m.h);svg.setAttribute('role','img');
+  svg.querySelectorAll('[tabindex]').forEach(e=>{e.removeAttribute('tabindex');e.removeAttribute('role')});
+  svg.querySelectorAll('.dim,.sel').forEach(e=>e.classList.remove('dim','sel'));
+  const css=$('#flow-css').textContent.replace(/var\((--[\w-]+)\)/g,(_,v)=>cs.getPropertyValue(v).trim());
+  svg.prepend(sv('style',{},css),sv('rect',{width:m.w,height:m.h,fill:cs.getPropertyValue('--panel').trim()}));
+  return new XMLSerializer().serializeToString(svg);
+}
+/* relatório */
+function maskText(R,s){
+  let o=String(s);
+  const map=[...R.users,...R.hosts].filter(x=>x&&x.length>2).sort((a,b)=>b.length-a.length);
+  for(const u of map)o=o.split(u).join('<...>');
+  return o.replace(/\b\d{1,3}(?:\.\d{1,3}){3}\b/g,'<ip>').replace(/\b(DBServer|Machine|DBUser|User|TNSDB)=\S+/g,'$1=<...>').replace(/[A-Za-z]:\\[^\s"']+/g,'<path>').replace(/'[^']*'/g,"'?'").replace(/"[^"]*"/g,'"?"');
+}
+function buildReport(mask){
+  const R=S.run,m=s=>mask?maskText(R,s):String(s),md=s=>m(s).replace(/\|/g,'\\|').replace(/\r?\n/g,' ');
+  const L=[];
+  L.push('# JDE Log Insights','');
+  L.push(t('repAbout'),'');
+  if(R.demo)L.push('> '+t('demoNote'),'');
+  L.push('## '+t('repSum'),'');
+  L.push('- '+t('ctxFiles')+': '+R.files.map(f=>mask?t('kind'+f.kind):f.name).join(', '));
+  L.push('- '+t('tLines')+': '+nf(R.lines));
+  if(R.tsMax!=null)L.push('- '+t('tPeriod')+': '+fmtTs(R.tsMin,true)+' – '+fmtTs(R.tsMax,true)+' ('+fmtMs(R.tsMax-R.tsMin)+')');
+  L.push('- '+t('tErr')+': '+nf(R.errTotal)+' ('+nf(R.groupsA.length)+' '+t('tKinds')+')');
+  L.push('- '+t('tBsfn')+': '+nf(R.bsfnCalls),'- '+t('tSql')+': '+nf(R.sqlCount),'');
+  L.push('## '+t('tabI'),'');
+  for(const x of buildInsights(R,S.th))L.push('- **'+t('sev'+x.sev)+': '+m(x.title)+'** '+m(x.body));
+  L.push('');
+  const top=(title,head,rows)=>{if(!rows.length)return;L.push('## '+title,'','| '+head.join(' | ')+' |','|'+head.map(()=>' --- ').join('|')+'|');rows.forEach(r=>L.push('| '+r.map(md).join(' | ')+' |'));L.push('')};
+  top(t('repTopE'),[t('cCode'),t('cMsg'),t('cCount'),t('cFirst')],R.groupsA.slice(0,10).map(g=>[g.code,cut(g.msg,160),nf(g.count),fmtTs(g.first)]));
+  top(t('repTopB'),[t('cName'),t('cCalls'),t('cTotal'),t('cSelf'),t('cMax')],R.bsfnA.filter(b=>b.timed).sort((a,b)=>b.self-a.self).slice(0,10).map(b=>[b.name,nf(b.calls),fmtMs(b.total),fmtMs(b.self),fmtMs(b.max)]));
+  top(t('repTopS'),[t('cStmt'),t('cCount'),t('cRows'),t('cTime')],[...R.sqlA].sort((a,b)=>b.total-a.total).slice(0,10).map(s=>[cut(s.fp,200),nf(s.count),nf(s.rows),fmtMs(s.total)]));
+  top(t('repTopG'),[t('cGap'),t('cAt'),t('cBefore'),t('cAfter')],R.gaps.filter(g=>g.ms>=S.th.gap).slice(0,10).map(g=>[fmtMs(g.ms),fmtTs(g.ts),cut(g.fromMsg,100),cut(g.toMsg,100)]));
+  return L.join('\n')+'\n';
+}
+function reportDialog(){
+  if(!S.run)return;
+  const chk=h('input',{type:'checkbox'});
+  const ta=h('textarea',{class:'mono',rows:16,readonly:true,'aria-label':t('repT'),style:'width:100%;font:12px/1.5 var(--mono)'});
+  const draw=()=>{ta.value=buildReport(chk.checked)};
+  chk.addEventListener('change',draw);draw();
+  modal({title:t('repT'),body:[h('p',null,t('repD')),h('label',{class:'row'},chk,t('mask')),h('div',{class:'cap',style:'margin:0'},t('maskNote')),ta],actions:[
+    {label:t('copy'),keep:true,run(){copyText(ta.value)}},
+    {label:t('dlMd'),primary:true,keep:true,run(){download(ta.value,'jde-log-insights.md','text/markdown;charset=utf-8');toast(t('saved'))}},
+  ]});
+}
+function pasteDialog(){
+  const ta=h('textarea',{class:'mono',rows:14,placeholder:t('pastePh'),'aria-label':t('pasteT'),style:'width:100%'});
+  modal({title:t('pasteT'),body:ta,actions:[{label:t('analyze'),primary:true,run(){if(!ta.value.trim())return false;loadFiles([new File([ta.value],'log.txt')])}}]});
+  ta.focus();
+}
+function helpDialog(){
+  modal({title:t('help'),body:[
+    h('h4',null,t('helpLoad')),h('ul',null,h('li',null,t('help1')),h('li',null,t('help2')),h('li',null,t('help3'))),
+    h('h4',null,t('helpLim')),h('ul',null,h('li',null,t('lim1')),h('li',null,t('lim2')),h('li',null,t('lim3')),h('li',null,t('lim4'))),
+    h('h4',null,t('helpSrc')),h('ul',null,HELPSRC.map(([l,u])=>h('li',null,h('a',{href:u,target:'_blank',rel:'noopener noreferrer'},l)))),
+  ]});
+}
+/* ========== início ========== */
+function setLang(l,keep){
+  LANG=LANGS.includes(l)?l:'pt';store.set('lang',LANG);
+  if(!keep){const want=LANG==='pt'?'':'#'+LANG;if(location.hash!==want)history.replaceState(null,'',location.pathname+location.search+want)}
+  renderAll();
+}
+function setTheme(x){document.documentElement.dataset.theme=x;store.set('theme',x)}
+$('#b-open').addEventListener('click',()=>$('#file-in').click());
+$('#b-paste').addEventListener('click',pasteDialog);
+$('#b-report').addEventListener('click',reportDialog);
+$('#b-help').addEventListener('click',helpDialog);
+$('#b-theme').addEventListener('click',()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark'));
+$('#lang').addEventListener('change',e=>setLang(e.target.value));
+$('#file-in').addEventListener('change',e=>{const f=[...e.target.files];e.target.value='';loadFiles(f)});
+window.addEventListener('dragover',e=>{e.preventDefault();const d=$('#drop');if(d)d.classList.add('over')});
+window.addEventListener('dragleave',e=>{if(!e.relatedTarget){const d=$('#drop');if(d)d.classList.remove('over')}});
+window.addEventListener('drop',e=>{e.preventDefault();const d=$('#drop');if(d)d.classList.remove('over');if(e.dataTransfer&&e.dataTransfer.files.length)loadFiles(e.dataTransfer.files)});
+window.addEventListener('hashchange',()=>{const l=location.hash.slice(1);if(LANGS.includes(l)||!l)setLang(l||'pt',true)});
+(function boot(){
+  const hl=location.hash.slice(1),nav=(navigator.language||'pt').slice(0,2).toLowerCase();
+  LANG=LANGS.includes(hl)?hl:(store.get('lang')||(LANGS.includes(nav)?nav:'pt'));
+  setTheme(store.get('theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'));
+  const th=parseFloat(store.get('th'));if(th>0)S.th.bsfn=S.th.sql=S.th.gap=th*1000;
+  renderAll();
+})();
+</script>
+</body>
+</html>

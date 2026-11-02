@@ -1,0 +1,2304 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>JDE Log Insights: tutorial · Giovani Perotto Mesquita</title>
+<meta name="description" content="Tutorial do JDE Log Insights, app em um único arquivo HTML que lê logs do JD Edwards EnterpriseOne: os tipos de log, como obtê-los, roteiro completo com dados de exemplo, insights, erros, BSFN, SQL, pausas, mapa do fluxo, relatório e prompts de IA. Disponível em português, inglês, italiano e espanhol.">
+<meta name="author" content="Giovani Perotto Mesquita">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Paleta alegre: roxo e magenta vibrantes, amarelo-girassol, verde-água e coral */
+    --bg: #FFF7EC;
+    --surface: #FFFFFF;
+    --ink: #2B1B3D;
+    --text: #3E3350;
+    --muted: #756986;
+    --line: #F1E2CF;
+    --accent: #0E8074;
+    --accent-soft: #E2F6F2;
+    --accent-strong: #5B2A86;
+    --navy: #5B2A86;
+    --navy-deep: #C2185B;
+    --on-navy: #FFFFFF;
+    --on-navy-muted: #FCE4F0;
+    --gold: #FFB703;
+    --gold-ink: #B35300;
+    --gold-soft: #FFF1C9;
+    --coral: #FF6B6B;
+    --sky: #3A86FF;
+    --mint: #2A9D8F;
+    --pink: #EF476F;
+    --sans: "Hanken Grotesk", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1A1328; --surface: #241A36; --ink: #F7F0FF; --text: #E2D8F0; --muted: #A898C0;
+      --line: #3A2D52; --accent: #5FD3C4; --accent-soft: #1D3A38; --accent-strong: #C9A7F5;
+      --navy: #3D1A5C; --navy-deep: #7A1240; --gold: #FFC94D; --gold-ink: #FFC94D; --gold-soft: #3A2E12;
+      --coral: #FF8A8A; --sky: #6FA8FF; --mint: #4CC3B3; --pink: #FF6F91;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 4px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 1.5rem; }
+
+  /* navegação */
+  .nav {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: saturate(160%) blur(10px); -webkit-backdrop-filter: saturate(160%) blur(10px);
+    border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px);
+  }
+  .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 58px; gap: 1rem; }
+  .brand { font-family: var(--serif); font-weight: 600; color: var(--accent-strong); text-decoration: none; font-size: 1.05rem; }
+  .nav ul { list-style: none; display: flex; gap: 1.4rem; margin: 0; padding: 0; }
+  .nav ul a { color: var(--muted); text-decoration: none; font-size: 0.93rem; font-weight: 500; }
+  .nav ul a:hover, .nav ul a[aria-current="page"] { color: var(--ink); }
+  .nav-right { display: flex; align-items: center; gap: 1rem; }
+  .lang { position: relative; }
+  .lang button { font: inherit; cursor: pointer; }
+  .lang .flag { width: 18px; height: 12px; border-radius: 2px; flex: none; box-shadow: 0 0 0 1px rgba(0,0,0,.12); }
+  .lang-current { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.8rem; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 0.3rem 0.5rem 0.3rem 0.55rem; }
+  .lang-current:hover { border-color: var(--muted); }
+  .lang-now { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .lang .chev { width: 12px; height: 12px; color: var(--muted); transition: transform .15s ease; }
+  .lang-current[aria-expanded="true"] .chev { transform: rotate(180deg); }
+  .lang-list { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; min-width: 10.5rem; padding: 0.3rem; display: grid; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 12px 30px rgba(0,0,0,.18); }
+  .lang-list[hidden] { display: none; }
+  .lang-list [role="option"] { display: flex; align-items: center; gap: 0.6rem; width: 100%; text-align: left; font-size: 0.9rem; font-weight: 500; color: var(--ink); background: none; border: 0; border-radius: 6px; padding: 0.45rem 0.6rem; }
+  .lang-list [role="option"]:hover, .lang-list [role="option"]:focus-visible { background: color-mix(in srgb, var(--muted) 14%, transparent); }
+  .lang-list [role="option"][aria-selected="true"] { color: var(--accent-strong); font-weight: 600; }
+  .lang-list [role="option"][aria-selected="true"]::after { content: "✓"; margin-left: auto; }
+  @media (max-width: 480px) { .lang-now { font-size: 0; gap: 0; } }
+  [hidden] { display: none !important; }
+  .progress { position: absolute; left: 0; bottom: -1px; height: 3px; width: 0; background: linear-gradient(90deg, var(--coral), var(--gold), var(--mint)); }
+
+  /* abertura */
+  .hero-band {
+    background:
+      radial-gradient(900px 420px at 85% -10%, rgba(255,255,255,.07), transparent 60%),
+      linear-gradient(160deg, var(--navy) 0%, var(--navy-deep) 100%);
+    border-top: 4px solid var(--gold); color: var(--on-navy);
+  }
+  .hero { padding: 3.5rem 0 3.5rem; max-width: 820px; }
+  .crumb { margin: 0 0 1.4rem; font-size: 0.92rem; }
+  .crumb a { color: var(--on-navy-muted); text-decoration: none; }
+  .crumb a:hover { color: var(--gold); }
+  .eyebrow { color: var(--gold); font-weight: 600; font-size: 1rem; margin: 0 0 0.7rem; }
+  h1 { font-family: var(--serif); font-weight: 600; color: var(--on-navy); font-size: clamp(2.3rem, 5.5vw, 3.8rem); line-height: 1.05; letter-spacing: -0.025em; margin: 0; }
+  .dek { font-family: var(--serif); font-style: italic; font-size: clamp(1.1rem, 2.2vw, 1.35rem); color: var(--on-navy-muted); margin: 1.1rem 0 1.6rem; max-width: 58ch; }
+  .byline { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; font-size: 0.92rem; color: var(--on-navy-muted); }
+  .byline strong { color: var(--on-navy); font-weight: 600; }
+  .byline .credit { margin-left: auto; font-style: italic; }
+
+  /* layout do artigo */
+  .layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 3rem; padding: 3rem 0 4rem; align-items: start; }
+  .toc { position: sticky; top: 82px; font-size: 0.92rem; max-height: calc(100vh - 100px); overflow-y: auto; }
+  .toc h2 { font-family: var(--sans); font-size: 0.85rem; font-weight: 600; color: var(--muted); margin: 0 0 0.7rem; border: 0; padding: 0; }
+  .toc ol { list-style: none; margin: 0; padding: 0; counter-reset: toc; border-left: 2px solid var(--line); }
+  .toc li { counter-increment: toc; }
+  .toc a { display: block; padding: 0.3rem 0 0.3rem 1rem; margin-left: -2px; border-left: 2px solid transparent; color: var(--muted); text-decoration: none; line-height: 1.35; }
+  .toc a::before { content: counter(toc) ". "; color: var(--gold-ink); font-weight: 600; }
+  .toc a:hover { color: var(--ink); }
+  .toc a[aria-current="true"] { color: var(--accent-strong); border-left-color: var(--gold); font-weight: 600; }
+
+  article { background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: var(--radius); padding: 3rem clamp(1.25rem, 4vw, 3.5rem); min-width: 0; }
+  article section + section { margin-top: 3.2rem; }
+  article h2 { font-family: var(--serif); font-weight: 600; color: var(--ink); font-size: clamp(1.5rem, 2.8vw, 1.9rem); letter-spacing: -0.015em; line-height: 1.2; margin: 0 0 1.1rem; padding-left: 0.9rem; border-left: 3px solid var(--gold); }
+  article h3 { font-family: var(--sans); font-size: 1.1rem; font-weight: 600; color: var(--ink); margin: 2rem 0 0.8rem; }
+  article p, article li { font-family: var(--serif); font-size: 1.12rem; line-height: 1.7; color: var(--text); }
+  article p { margin: 0 0 1.1rem; max-width: 68ch; }
+  article ul, article ol { margin: 0 0 1.1rem; padding-left: 1.4rem; max-width: 68ch; }
+  article li { margin-bottom: 0.3rem; }
+  article strong { color: var(--ink); }
+  sup a { font-family: var(--sans); font-size: 0.72rem; font-weight: 700; text-decoration: none; padding: 0 0.15em; }
+
+  figure { margin: 2rem 0; }
+  figure img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: #FFF7EC; }
+  figcaption { margin-top: 0.6rem; font-size: 0.9rem; color: var(--muted); text-align: center; font-family: var(--sans); line-height: 1.5; }
+
+  blockquote { margin: 1.5rem 0; padding: 1.2rem 1.5rem; background: var(--accent-soft); border-left: 3px solid var(--gold); border-radius: 0 10px 10px 0; }
+  blockquote p { font-size: 1.05rem; margin: 0 0 0.8rem; }
+  blockquote p:last-child { margin-bottom: 0; }
+  blockquote.pull p { font-size: clamp(1.15rem, 2.3vw, 1.35rem); font-style: italic; line-height: 1.45; color: var(--ink); }
+  blockquote cite { font-family: var(--sans); font-size: 0.88rem; font-style: normal; color: var(--muted); }
+
+  /* tabelas */
+  .table-wrap { overflow-x: auto; margin: 1.5rem 0; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-family: var(--sans); font-size: 0.95rem; }
+  th, td { text-align: left; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.5; }
+  thead th { background: var(--gold-soft); color: var(--ink); font-weight: 600; }
+  tbody th { color: var(--ink); font-weight: 600; }
+  tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
+  td code, th code { font-size: 0.9em; }
+
+  /* mitos */
+  .myths { list-style: none; padding: 0; margin: 1.5rem 0; max-width: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
+  .myths li { margin: 0; padding: 1rem 1.2rem; border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: 10px; }
+  .myths li:nth-child(4n+2) { border-top-color: var(--sky); }
+  .myths li:nth-child(4n+3) { border-top-color: var(--mint); }
+  .myths li:nth-child(4n+4) { border-top-color: var(--gold); }
+  .myths h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+  .myths p { margin: 0; font-size: 1rem; line-height: 1.6; }
+
+  /* para fixar */
+  .recap { margin: 1.8rem 0 0; padding: 1.1rem 1.4rem; background: var(--gold-soft); border-left: 4px solid var(--mint); border-radius: 0 10px 10px 0; }
+  .recap h3 { margin: 0 0 0.5rem; font-size: 0.85rem; letter-spacing: .05em; text-transform: uppercase; color: var(--gold-ink); }
+  .recap ul { margin: 0; padding-left: 1.2rem; }
+  .recap li { font-family: var(--sans); font-size: 0.98rem; line-height: 1.55; margin-bottom: 0.25rem; }
+
+  /* revisão rápida */
+  .quiz { display: grid; gap: 0.7rem; margin: 1.5rem 0; }
+  .quiz details { border: 1px solid var(--line); border-left: 4px solid var(--sky); border-radius: 0 10px 10px 0; padding: 0.8rem 1.1rem; }
+  .quiz details:nth-child(3n+2) { border-left-color: var(--pink); }
+  .quiz details:nth-child(3n+3) { border-left-color: var(--mint); }
+  .quiz summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); line-height: 1.45; }
+  .quiz details[open] summary { margin-bottom: 0.5rem; }
+  .quiz p { margin: 0; font-size: 1.02rem; }
+
+  .refs { font-family: var(--sans); padding-left: 1.4rem; margin: 0; }
+  .refs li { font-family: var(--sans); font-size: 0.92rem; line-height: 1.55; margin-bottom: 0.7rem; word-break: break-word; }
+  .refs li:target { background: var(--gold-soft); border-radius: 6px; }
+
+  .back { display: inline-block; margin-top: 1rem; font-family: var(--sans); font-size: 0.85rem; text-decoration: none; }
+
+  footer { background: var(--navy-deep); color: var(--on-navy-muted); border-top: 3px solid var(--gold); padding: 1.5rem 0 calc(1.5rem + env(safe-area-inset-bottom, 0px)); font-size: 0.88rem; }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1.5rem; }
+  footer a { color: var(--on-navy); text-decoration: none; }
+  footer a:hover { color: var(--gold); }
+
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+    .toc { position: static; max-height: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.2rem 1.4rem; }
+  }
+  @media (max-width: 760px) {
+    .myths { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .nav ul { display: none; }
+    .hero { padding: 2.5rem 0; }
+    .wrap { padding: 0 1rem; }
+    article p, article li { font-size: 1.05rem; }
+    th, td { padding: 0.6rem 0.7rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  @media print {
+    .nav, .toc, footer, .back, .crumb { display: none !important; }
+    body { background: #fff; }
+    .hero-band { background: none; color: #111; border: 0; }
+    .hero-band h1 { color: #5B2A86; }
+    .dek, .byline, .byline strong { color: #333; }
+    .layout { display: block; padding: 0; }
+    article { border: 0; padding: 0; }
+    .table-wrap { overflow: visible; }
+    figure, blockquote, .myths li, .recap, .quiz details, tr { break-inside: avoid; }
+  }
+
+  /* blocos de código (Gherkin) */
+  pre.code { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: #2B1B3D; color: #F7F0FF; border-radius: 10px; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.92rem; line-height: 1.6; tab-size: 2; }
+  pre.code code { font-family: inherit; white-space: pre; }
+  pre.code .k { color: #FFB703; font-weight: 700; }
+  pre.code .s { color: #5FD3C4; font-weight: 700; }
+  pre.code .c { color: #A898C0; }
+  pre.code .p { color: #C9A7F5; }
+  article code { font-family: Consolas, "Courier New", monospace; font-size: 0.92em; }
+  article :not(pre) > code { background: var(--accent-soft); color: var(--ink); padding: 0.05em 0.35em; border-radius: 4px; }
+
+  /* fórmulas */
+  pre.formula { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.95rem; line-height: 1.5; }
+
+  /* glossário */
+  dl.glossary { margin: 1.2rem 0; display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  dl.glossary dt, dl.glossary dd { margin: 0; padding: 0.65rem 0.9rem; border-bottom: 1px solid var(--line); font-family: var(--sans); font-size: 0.95rem; line-height: 1.5; }
+  dl.glossary dt { font-weight: 600; color: var(--ink); background: color-mix(in srgb, var(--gold-soft) 60%, var(--surface)); }
+  dl.glossary dd { color: var(--text); }
+  dl.glossary dt:nth-last-of-type(1), dl.glossary dd:last-of-type { border-bottom: 0; }
+  @media (max-width: 720px) { dl.glossary { grid-template-columns: 1fr; } dl.glossary dt { border-bottom: 0; padding-bottom: 0.2rem; } }
+
+  /* figuras geradas pelo PlantUML e código recolhível */
+  figure.puml img { width: auto; max-width: 100%; margin: 0 auto; background: #FFFFFF; padding: 12px; }
+  details.codebox { margin: 1rem 0 1.5rem; border: 1px solid var(--line); border-radius: 10px; padding: 0.6rem 1rem; }
+  details.codebox summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); }
+  details.codebox pre.code { max-height: 480px; overflow: auto; }
+
+  /* nota de atenção */
+  aside.note { margin: 1.2rem 0 1.5rem; padding: 0.8rem 1.1rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; }
+  aside.note p { margin: 0; }
+
+  /* link para o simulador e teclas */
+  .launch { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--sans); font-weight: 600; font-size: 1rem; background: var(--accent-strong); color: var(--surface); text-decoration: none; padding: 0.65rem 1.2rem; border-radius: 10px; }
+  .launch:hover { background: var(--navy-deep); color: #FFFFFF; }
+  kbd { font-family: var(--sans); font-size: 0.85em; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 0.05em 0.4em; white-space: nowrap; }
+  .promptbox { position: relative; margin: 1rem 0 1.6rem; }
+  .promptbox pre.code { margin: 0; padding-top: 2.6rem; max-height: 420px; overflow: auto; }
+  .promptbox pre.code code { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .promptbox .copy { position: absolute; top: 8px; right: 14px; z-index: 1; font: 600 0.8rem var(--sans); color: #2B1B3D; background: #FFB703; border: 0; border-radius: 6px; padding: 0.3rem 0.65rem; cursor: pointer; }
+</style>
+</head>
+<body id="top">
+
+<nav class="nav" aria-label="Navegação do site">
+  <div class="wrap">
+    <a class="brand" href="index.html" data-home>Giovani Perotto Mesquita</a>
+    <div class="nav-right">
+      <ul>
+        <li><a href="index.html" data-home>Início</a></li>
+        <li><a href="about.html" data-about>Sobre</a></li>
+        <li><a href="resume.html" data-resume>Currículo</a></li>
+        <li><a href="projects.html" data-projects aria-current="page">Projetos</a></li>
+        <li><a href="contact.html" data-contact>Contato</a></li>
+      </ul>
+      <div class="lang">
+        <button type="button" class="lang-current" aria-haspopup="listbox" aria-expanded="false" aria-controls="lang-list" data-label="Idioma / Language / Lingua" aria-label="Idioma / Language / Lingua: Português"><span class="lang-now"><svg class="flag" viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009C3B"/><path d="M10 1.6 18.4 7 10 12.4 1.6 7z" fill="#FEDF00"/><circle cx="10" cy="7" r="3.3" fill="#002776"/><path d="M6.8 6.3c2.1-.6 4.5-.2 6.4 1" stroke="#fff" stroke-width=".7" fill="none"/></svg>PT</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="lang-list" id="lang-list" role="listbox" aria-label="Idioma / Language / Lingua" hidden>
+          <button type="button" role="option" id="tab-pt" aria-controls="pt" aria-selected="true" lang="pt-BR" data-code="PT"><svg class="flag" viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009C3B"/><path d="M10 1.6 18.4 7 10 12.4 1.6 7z" fill="#FEDF00"/><circle cx="10" cy="7" r="3.3" fill="#002776"/><path d="M6.8 6.3c2.1-.6 4.5-.2 6.4 1" stroke="#fff" stroke-width=".7" fill="none"/></svg><span>Português</span></button>
+          <button type="button" role="option" id="tab-en" aria-controls="en" aria-selected="false" lang="en" tabindex="-1" data-code="EN"><svg class="flag" viewBox="0 0 19 10" aria-hidden="true"><rect width="19" height="10" fill="#B22234"/><rect y="0.769" width="19" height="0.769" fill="#fff"/><rect y="2.308" width="19" height="0.769" fill="#fff"/><rect y="3.846" width="19" height="0.769" fill="#fff"/><rect y="5.385" width="19" height="0.769" fill="#fff"/><rect y="6.923" width="19" height="0.769" fill="#fff"/><rect y="8.462" width="19" height="0.769" fill="#fff"/><rect width="7.6" height="5.385" fill="#3C3B6E"/></svg><span>English</span></button>
+          <button type="button" role="option" id="tab-it" aria-controls="it" aria-selected="false" lang="it" tabindex="-1" data-code="IT"><svg class="flag" viewBox="0 0 3 2" aria-hidden="true"><rect width="1" height="2" fill="#009246"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#CE2B37"/></svg><span>Italiano</span></button>
+          <button type="button" role="option" id="tab-es" aria-controls="es" aria-selected="false" lang="es" tabindex="-1" data-code="ES"><svg class="flag" viewBox="0 0 750 500" aria-hidden="true"><rect width="750" height="500" fill="#AA151B"/><rect y="125" width="750" height="250" fill="#F1BF00"/></svg><span>Español</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="progress" aria-hidden="true"></div>
+</nav>
+
+<!-- ===================== PT ===================== -->
+<div id="pt" role="tabpanel" aria-labelledby="tab-pt" lang="pt-BR">
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projetos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>JDE Log Insights: tutorial</h1>
+      <p class="dek">Como transformar um jde.log ou um jdedebug.log em respostas, sem instalar nada: erros agrupados, funções e SQL lentos, pausas e um mapa do que aconteceu.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado em <time datetime="2026-11-01">01/11/2026</time></span>
+        <span class="credit">Revisado e formatado usando Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-pt">
+    <h2 id="toc-pt">Índice</h2>
+    <ol>
+      <li><a href="#intro-pt">O que é o JDE Log Insights</a></li>
+      <li><a href="#logs-pt">Os logs do JD Edwards</a></li>
+      <li><a href="#obter-pt">Como obter os logs</a></li>
+      <li><a href="#roteiro-pt">Roteiro: investigando o exemplo</a></li>
+      <li><a href="#ins-pt">Como ler os insights</a></li>
+      <li><a href="#err-pt">Erros</a></li>
+      <li><a href="#bsfn-pt">BSFN</a></li>
+      <li><a href="#sql-pt">SQL</a></li>
+      <li><a href="#gaps-pt">Pausas</a></li>
+      <li><a href="#ctx-pt">Contexto</a></li>
+      <li><a href="#flow-pt">Fluxo</a></li>
+      <li><a href="#content-pt">Conteúdo</a></li>
+      <li><a href="#rep-pt">Relatório e privacidade</a></li>
+      <li><a href="#met-pt">Um método para o log real</a></li>
+      <li><a href="#ia-pt">Prompts de IA</a></li>
+      <li><a href="#lim-pt">Erros comuns e limitações</a></li>
+      <li><a href="#rev-pt">Revisão rápida</a></li>
+      <li><a href="#ref-pt">Referências</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-pt" aria-labelledby="h-intro-pt">
+<h2 id="h-intro-pt">O que é o JDE Log Insights</h2>
+<p>Um log do JD Edwards EnterpriseOne pode ter milhões de linhas, e a resposta costuma estar em poucas delas. O JDE Log Insights lê esses arquivos e mostra por onde começar: agrupa os erros, mede funções de negócio (BSFN) e SQL, encontra pausas e desenha o que chamou o quê. <sup><a href="#ref-1-pt">[1]</a></sup></p>
+<p>É um único arquivo HTML, sem instalação nem conta.</p>
+<p><a class="launch" href="jde-log-insights.html">Abrir o JDE Log Insights <span aria-hidden="true">→</span></a></p>
+<figure>
+<img src="rc_images/JDELogInsightsInicio.png" alt="Tela inicial do JDE Log Insights, com a área para soltar arquivos, os botões Abrir logs, Colar texto e Ver um exemplo, e as explicações do que ele lê" width="1600" height="900" loading="lazy">
+<figcaption>A tela inicial. Solte os arquivos ou abra o exemplo.</figcaption>
+</figure>
+<h3>Como o app trata os seus dados</h3>
+<ul>
+<li><strong>Nada sai do seu computador.</strong> O arquivo bloqueia conexões de rede. Logs costumam trazer usuários, servidores e SQL, então isso importa.</li>
+<li><strong>O log não fica guardado.</strong> Ao fechar a página, a análise some. O app só guarda idioma, tema e o limite de lentidão.</li>
+</ul>
+<aside class="note"><p>O app aponta sinais para orientar a investigação, a partir do texto do log. Ele não corrige nada, não acessa o servidor e não é uma ferramenta da Oracle.</p></aside>
+</section>
+<section id="logs-pt" aria-labelledby="h-logs-pt">
+<h2 id="h-logs-pt">Os logs do JD Edwards</h2>
+<p>Cada arquivo responde a uma pergunta diferente. A documentação da Oracle separa assim: <sup><a href="#ref-2-pt">[2]</a></sup> <sup><a href="#ref-3-pt">[3]</a></sup> <sup><a href="#ref-4-pt">[4]</a></sup></p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Arquivo</th><th scope="col">Exemplo de nome</th><th scope="col">O que traz</th><th scope="col">Melhor para</th></tr></thead>
+<tbody>
+<tr><th scope="row">jde.log</th><td><code>jde_442.log</code></td><td>Erros fatais e falhas</td><td>Saber o que deu errado</td></tr>
+<tr><th scope="row">jdedebug.log</th><td><code>jdedebug_442.log</code></td><td>Chamadas de API, SQL e tempos. A Oracle avisa que ele não serve para acompanhar erros</td><td>Saber onde o tempo foi</td></tr>
+<tr><th scope="row">Log de UBE</th><td><code>R014021_XJDE0001_D990312_T161854215.log</code></td><td>Seções, objetos, regras de evento e SQL de um relatório em lote</td><td>Acompanhar um UBE</td></tr>
+</tbody>
+</table></div>
+<figure>
+<img src="rc_images/JDELogInsightsAnatomia.svg" alt="Duas linhas de exemplo. No jde.log, a linha traz processo e thread, nome da thread, data e hora e arquivo-fonte, seguidos da mensagem. No jdedebug, traz data e hora, processo e thread, nome da thread com a aplicação e a mensagem, como um comando SQL." loading="lazy">
+<figcaption>As partes de cada linha. A mensagem do jde.log pode vir na mesma linha ou na seguinte.</figcaption>
+</figure>
+<p>O número no nome é o ID do processo, então um servidor gera vários arquivos. Abra juntos os do mesmo processo: o app lê todos de uma vez e diz o que identificou em cada um.</p>
+</section>
+<section id="obter-pt" aria-labelledby="h-obter-pt">
+<h2 id="h-obter-pt">Como obter os logs</h2>
+<p>O local do jde.log e do jdedebug.log vem de <code>JobFile</code> e <code>DebugFile</code>, na seção <code>[DEBUG]</code> do <code>jde.ini</code>. <sup><a href="#ref-3-pt">[3]</a></sup> O jdedebug só traz chamadas, SQL e tempos com a depuração ligada:</p>
+<pre class="code"><code>[DEBUG]
+Output=FILE
+LogErrors=1</code></pre>
+<ol>
+<li>Ligue a depuração na máquina certa. Para reproduzir o problema, isole um único kernel ou processo, para os logs não se misturarem. <sup><a href="#ref-7-pt">[7]</a></sup></li>
+<li>Reproduza o problema uma vez e copie os arquivos. Eles podem ser sobrescritos na sessão seguinte: a Oracle descreve os dois comportamentos, sobrescrever e acrescentar, conforme o servidor e a estação. <sup><a href="#ref-3-pt">[3]</a></sup> <sup><a href="#ref-4-pt">[4]</a></sup></li>
+<li>Volte <code>Output</code> ao valor anterior. O log cresce rápido e pesa no processo: um autor estima de 2% a 5% a mais de tempo. <sup><a href="#ref-7-pt">[7]</a></sup></li>
+</ol>
+<p>Logs de UBE ficam na fila de impressão (PrintQueue), e o nível de detalhe vem de <code>UBEDebugLevel</code>, na seção <code>[UBE]</code>. <sup><a href="#ref-3-pt">[3]</a></sup></p>
+</section>
+<section id="roteiro-pt" aria-labelledby="h-roteiro-pt">
+<h2 id="h-roteiro-pt">Roteiro: investigando o exemplo</h2>
+<p>Use os dados de exemplo: são fictícios, montados a partir de trechos públicos de log, e o resultado abaixo é o que você verá. O caso tem de tudo: uma conexão perdida com o banco, uma leitura enorme e um SQL lento.</p>
+<h3>1. Abra o exemplo e leia o primeiro insight</h3>
+<ol>
+<li>Abra o app e clique em <strong>Ver um exemplo</strong>.</li>
+<li>Confira os totais do topo: 8.693 linhas, 62 ocorrências de erro em 7 tipos, 124 chamadas de BSFN e 123 comandos SQL.</li>
+<li>Leia o primeiro cartão, marcado como <strong>Crítico</strong>: <strong>O banco de dados ficou fora de alcance</strong>. O ORA-03113 apareceu 22 vezes, de 12 de mar. 09:17:00 a 12 de mar. 09:17:42.</li>
+</ol>
+<figure>
+<img src="rc_images/JDELogInsightsInsights.png" alt="Aba Insights com os totais do log e os cartões ordenados por gravidade, com o alerta crítico de banco de dados no topo" width="1600" height="900" loading="lazy">
+<figcaption>Os insights vêm em ordem de gravidade, cada um com a evidência e o link para ela.</figcaption>
+</figure>
+<h3>2. Abra o erro e veja a linha original</h3>
+<ol>
+<li>No primeiro cartão, clique em <strong>Ver os erros</strong>. A aba <strong>Erros</strong> abre já filtrada.</li>
+<li>Clique na mensagem do ORA-03113. O detalhe traz o que a fonte diz sobre o erro e o link para ela.</li>
+<li>Em <strong>Ocorrências de exemplo</strong>, clique em <strong>Ver no log</strong> para conferir o trecho original, com a linha marcada.</li>
+</ol>
+<figure>
+<img src="rc_images/JDELogInsightsErro.png" alt="Janela de detalhe do erro ORA-03113, com a mensagem, a explicação da Oracle, as contagens e as ocorrências de exemplo" width="1600" height="900" loading="lazy">
+<figcaption>O detalhe do erro traz o significado segundo a Oracle e onde ele ocorreu.</figcaption>
+</figure>
+<figure>
+<img src="rc_images/JDELogInsightsLog.png" alt="Janela com o trecho original do arquivo jde_4412.log e a linha do erro destacada" width="1600" height="900" loading="lazy">
+<figcaption>Ver no log abre o arquivo no ponto certo. Confira sempre a linha original.</figcaption>
+</figure>
+<p>De volta aos insights, outro cartão diz que o JDB9900401 costuma ser consequência do ORA-03113. Foram 22 ocorrências, sempre até 1 segundo depois, na mesma thread. Por isso a investigação começa pelo ORA-03113.</p>
+<h3>3. Procure onde o tempo foi</h3>
+<ol>
+<li>Abra a aba <strong>BSFN</strong>. A tabela vem ordenada por <strong>Tempo próprio</strong>.</li>
+<li>F4111EndDocument levou 9,13 s no total, e 7,41 s são tempo próprio dela. Logo, o tempo não está nas funções que ela chama.</li>
+</ol>
+<figure>
+<img src="rc_images/JDELogInsightsBsfn.png" alt="Aba BSFN com a tabela de funções, chamadas, tempo total, tempo próprio, média, máximo e retornos diferentes de zero" width="1600" height="900" loading="lazy">
+<figcaption>O tempo próprio mostra onde o tempo foi gasto de fato.</figcaption>
+</figure>
+<h3>4. Descubra o SQL responsável</h3>
+<ol>
+<li>Abra a aba <strong>SQL</strong>. O primeiro comando é uma leitura de F0005, sem WHERE, de cerca de 7,4 s.</li>
+<li>Veja os outros dois sinais: uma leitura de F41021 trouxe 4.000 linhas, e o comando em F4101 rodou 120 vezes.</li>
+</ol>
+<figure>
+<img src="rc_images/JDELogInsightsSql.png" alt="Aba SQL com os comandos agrupados, a tabela, o número de execuções, as linhas lidas e o tempo aproximado" width="1600" height="900" loading="lazy">
+<figcaption>Comandos iguais ficam juntos, sem os valores. Aqui estão a leitura lenta e a repetida.</figcaption>
+</figure>
+<h3>5. Veja o caminho no mapa</h3>
+<ol>
+<li>Abra a aba <strong>Fluxo</strong> e clique no bloco F41021.</li>
+<li>O mapa destaca o caminho: P4116 chama F4111EndDocument, que chama AverageCostUpdate, que lê F41021. Agora você sabe qual tela leva a essa leitura.</li>
+</ol>
+<figure>
+<img src="rc_images/JDELogInsightsFluxo.png" alt="Aba Fluxo com colunas de entrada, BSFN, tabelas e erros, e o caminho de P4116 até F41021 em destaque" width="1600" height="900" loading="lazy">
+<figcaption>O caminho até a tabela fica em destaque, e o restante, apagado.</figcaption>
+</figure>
+<h3>6. Gere o relatório</h3>
+<ol>
+<li>Clique em <strong>Relatório</strong> e marque <strong>Ocultar usuários, servidores, IPs, caminhos e valores entre aspas</strong>.</li>
+<li>Revise o texto e use <strong>Copiar</strong> ou <strong>Baixar .md</strong>.</li>
+</ol>
+<figure>
+<img src="rc_images/JDELogInsightsRelatorio.png" alt="Janela do relatório em Markdown, com a opção de ocultar usuários, servidores, IPs, caminhos e valores marcada" width="1600" height="900" loading="lazy">
+<figcaption>O relatório pode ocultar dados antes de ser enviado. Revise mesmo assim.</figcaption>
+</figure>
+<p>Resultado: em poucos minutos você tem uma hipótese para cada problema. Conexão com o banco perdida às 09:17, com um erro que é consequência de outro; uma leitura sem filtro; e uma função chamada 120 vezes. Falta confirmar cada uma com o DBA e com quem conhece o código.</p>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+<section id="ins-pt" aria-labelledby="h-ins-pt">
+<h2 id="h-ins-pt">Como ler os insights</h2>
+<p>Os cartões são regras simples sobre os números do log, e estas são as condições exatas. Um sinal não é uma causa: ele diz onde olhar.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Sinal</th><th scope="col">Quando aparece</th><th scope="col">O que fazer primeiro</th></tr></thead>
+<tbody>
+<tr><th scope="row">Falha grave</th><td>Mensagem com ACCESS VIOLATION, SIGSEGV, core dump, out of memory ou fatal</td><td>Procure o .dmp.log: ele lista as threads no momento da queda. A Oracle indica começar pela que tem jdeLogCallStack. No IBM i, as pilhas ficam no jde.log. <sup><a href="#ref-3-pt">[3]</a></sup></td></tr>
+<tr><th scope="row">Banco fora de alcance</th><td>ORA-03113, 03114, 12154, 12170, 12514 ou 12541</td><td>O detalhe do erro traz a orientação da Oracle para cada código, como alert log, rede ou listener. <sup><a href="#ref-8-pt">[8]</a></sup></td></tr>
+<tr><th scope="row">Erro dominante</th><td>Um erro responde por 30% ou mais das ocorrências, em ao menos 3 vezes</td><td>Comece por ele</td></tr>
+<tr><th scope="row">Erro consequência</th><td>B veio até 1 s depois de A, na mesma thread, em ao menos metade das vezes e 3 ocorrências</td><td>Investigue A primeiro</td></tr>
+<tr><th scope="row">Pico</th><td>Um minuto com 10 erros ou mais, e 5 vezes a mediana dos minutos com erro</td><td>Veja o que mudou naquele horário</td></tr>
+<tr><th scope="row">Processo concentrado</th><td>Um processo com 70% dos erros, em ao menos 5</td><td>Suspeite do que só ele faz</td></tr>
+<tr><th scope="row">SQL repetido</th><td>Mesmo comando 50 vezes ou mais</td><td>Procure leitura dentro de laço</td></tr>
+<tr><th scope="row">Leitura grande</th><td>Uma execução com 1.000 linhas ou mais</td><td>Confira o filtro e os índices</td></tr>
+<tr><th scope="row">BSFN, SQL ou pausa lentos</th><td>Passam do limite ajustável, de 1 s por padrão</td><td>Abra a aba correspondente</td></tr>
+</tbody>
+</table></div>
+<p>Abaixo dos cartões, dois gráficos mostram os erros e as linhas de log ao longo do tempo. Clique em uma barra de erro para ver só os erros daquele intervalo. <strong>Ver como tabela</strong> traz os mesmos números em tabela.</p>
+<figure>
+<img src="rc_images/JDELogInsightsGrafico.png" alt="Dois gráficos de barras: erros por intervalo, com um pico às 09:15, e linhas de log por intervalo, concentradas no fim" width="1600" height="900" loading="lazy">
+<figcaption>O pico de erros salta aos olhos. As linhas de log mostram quando a depuração estava ativa.</figcaption>
+</figure>
+</section>
+<section id="err-pt" aria-labelledby="h-err-pt">
+<h2 id="h-err-pt">Erros</h2>
+<p>O app agrupa mensagens que só mudam nos valores, e o mesmo erro com números diferentes conta como um só. Filtre por <strong>Nível</strong> e <strong>Área</strong>, ou digite um trecho, como o nome de uma tabela.</p>
+<ul>
+<li><strong><strong>Fatal</strong></strong>, <strong><strong>Erro</strong></strong> e <strong><strong>Alerta</strong></strong> vêm de códigos e palavras da mensagem, como <code>ORA-00942</code>, <code>OCI0000178</code> e <code>failed</code>.</li>
+<li><strong><strong>O que a fonte diz</strong>:</strong> o app tem uma pequena base, só com textos da Oracle, cada um com o link da fonte. <sup><a href="#ref-3-pt">[3]</a></sup> <sup><a href="#ref-4-pt">[4]</a></sup> <sup><a href="#ref-8-pt">[8]</a></sup></li>
+<li><strong>Código fora da base:</strong> procure no My Oracle Support ou no aplicativo P92002, que traz as mensagens de erro do sistema. <sup><a href="#ref-4-pt">[4]</a></sup></li>
+</ul>
+</section>
+<section id="bsfn-pt" aria-labelledby="h-bsfn-pt">
+<h2 id="h-bsfn-pt">BSFN</h2>
+<p>O app junta cada chamada ao seu retorno, por thread, e calcula dois tempos:</p>
+<ul>
+<li><strong><strong>Tempo total</strong>:</strong> da chamada ao retorno, incluindo as funções chamadas por ela.</li>
+<li><strong><strong>Tempo próprio</strong>:</strong> o total menos o tempo das funções filhas. É onde você deve olhar primeiro. <sup><a href="#ref-7-pt">[7]</a></sup></li>
+<li><strong><strong>Retorno ≠ 0</strong>:</strong> chamadas que retornaram valor diferente de 0. O app só conta; confira como quem chama trata esse retorno.</li>
+</ul>
+<aside class="note"><p>É tempo de relógio, com o log ligado. Inclui espera de banco, rede e o próprio custo do log, então serve para comparar partes da mesma execução, não para prometer um tempo em produção. <sup><a href="#ref-7-pt">[7]</a></sup></p></aside>
+</section>
+<section id="sql-pt" aria-labelledby="h-sql-pt">
+<h2 id="h-sql-pt">SQL</h2>
+<p>O app retira os valores, para juntar comandos iguais, e soma execuções, linhas lidas e tempo. Assim, valores de clientes não ficam guardados na tabela.</p>
+<ul>
+<li><strong>Linhas lidas:</strong> conta as linhas "Fetched the record" depois de cada comando. Um estudo de caso de P4116 mostra esse padrão: 40 mil linhas lidas em uma única chamada de função. <sup><a href="#ref-6-pt">[6]</a></sup></li>
+<li><strong><strong>Tempo aprox.</strong>:</strong> vai do comando até a última busca, então inclui o que a aplicação fez entre as buscas.</li>
+<li><strong>Pista:</strong> um intervalo longo entre o comando e a primeira busca costuma apontar para o banco, mais do que para a lógica. <sup><a href="#ref-7-pt">[7]</a></sup></li>
+</ul>
+</section>
+<section id="gaps-pt" aria-labelledby="h-gaps-pt">
+<h2 id="h-gaps-pt">Pausas</h2>
+<p>Pausa é o tempo sem novas linhas no mesmo processo e na mesma thread. A Oracle sugere o jdedebug justamente para ver o ponto em que a execução normal parou. <sup><a href="#ref-3-pt">[3]</a></sup> Cada linha da tabela mostra o que veio antes e depois.</p>
+<figure>
+<img src="rc_images/JDELogInsightsPausas.png" alt="Aba Pausas com a tabela de pausas, o início, o processo e as linhas antes e depois" width="1600" height="900" loading="lazy">
+<figcaption>A maior pausa do exemplo, com as linhas antes e depois.</figcaption>
+</figure>
+<aside class="note"><p>Pausa não é lentidão por si só. Pode ser uma query longa, ou só uma pessoa que demorou para clicar. Leia a linha seguinte antes de concluir.</p></aside>
+</section>
+<section id="ctx-pt" aria-labelledby="h-ctx-pt">
+<h2 id="h-ctx-pt">Contexto</h2>
+<p>A aba <strong>Contexto</strong> responde "o que estava rodando?": arquivos lidos e o tipo de cada um, aplicações e relatórios, tabelas, processos e threads, e as chamadas de API mais frequentes.</p>
+</section>
+<section id="flow-pt" aria-labelledby="h-flow-pt">
+<h2 id="h-flow-pt">Fluxo</h2>
+<p>A aba <strong>Fluxo</strong> desenha quem chama quem, somando todas as execuções: entrada, BSFN por nível, tabelas e erros em sequência. Em um jde.log puro, mostra processo → erro → erro seguinte.</p>
+<ul>
+<li>Quanto mais grossa a ligação, mais vezes ela ocorreu.</li>
+<li>⏱ marca o que passou do limite de lentidão, e a linha tracejada, uma volta, como recursão.</li>
+<li>Ao clicar em um bloco, o caminho dele fica em destaque e <strong>Abrir detalhes</strong> leva ao detalhe.</li>
+<li><strong>Ver as ligações como tabela</strong> traz as mesmas ligações em texto, e <strong>Baixar SVG</strong> salva a imagem.</li>
+</ul>
+<aside class="note"><p>O mapa não mostra a ordem no tempo. Ele mostra até 400 blocos, avisa quando há mais e não desenha ligações que passam por blocos ocultos.</p></aside>
+</section>
+<section id="content-pt" aria-labelledby="h-content-pt">
+<h2 id="h-content-pt">Conteúdo</h2>
+<p>A aba <strong>Conteúdo</strong> mostra o log inteiro, linha a linha, com uma cor e uma etiqueta para cada tipo de evento: erros, retornos diferentes de 0, BSFN, SQL, leitura de linhas, parâmetros, API e UBE. Use-a quando os resumos já disseram onde olhar e você quer ler o que aconteceu ao redor.</p>
+<figure>
+<img src="rc_images/JDELogInsightsConteudo.png" alt="Aba Conteúdo com as linhas do log coloridas por tipo de evento, a etiqueta de cada uma, os tipos com as contagens e a busca" width="1600" height="900" loading="lazy">
+<figcaption>Cada tipo de evento tem cor e etiqueta. A linha selecionada fica marcada.</figcaption>
+</figure>
+<ul>
+<li><strong>Filtrar:</strong> clique em um tipo para ver só as linhas dele. Clicar em outro soma, e <strong>Mostrar tudo</strong> desfaz.</li>
+<li><strong>Pausas:</strong> ⏸ marca a linha que veio depois de uma pausa acima do limite.</li>
+<li><strong>Navegar:</strong> use a busca, <strong>Ir para a linha</strong>, <strong>Próximo erro ▶</strong> e as setas. Em <strong>Ver no log</strong>, o botão <strong>Abrir em Conteúdo</strong> traz você para cá.</li>
+<li><strong>Copiar:</strong> linhas com mais de 2.000 caracteres são cortadas na tela, e <strong>Copiar</strong> traz o texto inteiro.</li>
+</ul>
+<aside class="note"><p>A cor vem da mesma regra de palavras e códigos das outras abas. Uma linha sem formato próprio herda o tipo da linha anterior. Com vários arquivos, escolha um por vez: eles não são misturados. O app lê o arquivo do disco enquanto você rola, então mantenha-o no lugar.</p></aside>
+</section>
+<section id="rep-pt" aria-labelledby="h-rep-pt">
+<h2 id="h-rep-pt">Relatório e privacidade</h2>
+<p><strong>Relatório</strong> gera um texto em Markdown com os insights e os principais números, para anexar a um chamado. Antes de enviar para alguém ou para uma IA, marque <strong>Ocultar usuários, servidores, IPs, caminhos e valores entre aspas</strong>.</p>
+<aside class="note"><p>A ocultação segue padrões conhecidos e pode deixar passar algo. Revise o texto: um nome de tabela ou de relatório também pode dizer muito.</p></aside>
+</section>
+<section id="met-pt" aria-labelledby="h-met-pt">
+<h2 id="h-met-pt">Um método para o log real</h2>
+<p>Com um problema real, esta ordem evita perder tempo:</p>
+<ol>
+<li><strong>Comece pelo jde.log.</strong> Se houver falha grave ou queda de conexão, resolva isso antes de medir desempenho.</li>
+<li><strong>Reproduza com depuração</strong> em um único processo, e abra o jdedebug.</li>
+<li><strong>Siga o tempo:</strong> <strong>BSFN</strong> por tempo próprio, depois <strong>SQL</strong> e <strong>Pausas</strong>.</li>
+<li><strong>Confirme na linha original</strong> com <strong>Ver no log</strong> e com quem conhece o código e o banco.</li>
+<li><strong>Corrija e meça de novo.</strong> Um autor sugere 10 ou mais execuções e usar a mediana, porque uma só engana. <sup><a href="#ref-7-pt">[7]</a></sup></li>
+</ol>
+<figure>
+<img src="rc_images/JDELogInsightsMetodo.svg" alt="Fluxo em seis etapas: abrir o jde.log e ver os erros; resolver falhas graves; reproduzir com depuração; seguir o tempo; confirmar na linha original; corrigir e medir de novo. Uma seta tracejada volta da última etapa para a reprodução." loading="lazy">
+<figcaption>O app acelera a análise. A decisão continua sendo da equipe.</figcaption>
+</figure>
+<p>Para logs muito grandes ou análise oficial, a Oracle oferece o LogParse, no Performance Workbench do Server Manager, que gera resumo, CSV de BSFN e tabelas e pausas. <sup><a href="#ref-5-pt">[5]</a></sup> O JDE Log Insights é uma alternativa rápida, sem servidor, não um substituto.</p>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+<section id="ia-pt" aria-labelledby="h-ia-pt">
+<h2 id="h-ia-pt">Prompts de IA</h2>
+<p>Com os sinais em mãos, ainda falta interpretar: o que esse código quer dizer, qual erro veio primeiro, o que perguntar ao DBA. Uma IA ajuda a organizar hipóteses e a preparar a conversa. Ela também erra com segurança: inventa causas, cita notas de suporte que não existem e supõe como é a sua customização. Trate a saída como rascunho de um colega apressado. Para escrever prompts melhores, veja o <a href="PromptTutorial.html">tutorial de prompts</a>.</p>
+<figure>
+<img src="rc_images/JDELogInsightsIA.svg" alt="Seis passos: o app gera o relatório com dados ocultos, você revisa o que vai sair, a IA propõe hipóteses com evidências, o app confere a linha original, você confirma com o DBA e o desenvolvimento e depois corrige e mede. Da correção, volta-se à IA com o novo log." loading="lazy">
+<figcaption>A IA organiza as hipóteses. A prova está na linha original e na equipe.</figcaption>
+</figure>
+<blockquote><p><strong>Antes de colar:</strong> logs podem trazer usuários, servidores, SQL e valores de clientes. O app não envia nada para a rede, mas o serviço de IA recebe tudo o que você colar nele. Use <strong>Ocultar usuários, servidores, IPs, caminhos e valores entre aspas</strong>, revise o texto e siga a política da sua organização para uso de IA.</p></blockquote>
+<p>Troque os trechos entre colchetes e cole na ferramenta de IA que você usa. Os prompts seguem a ordem da investigação, mas cada um funciona sozinho.</p>
+<h3>1. Priorizar o que o relatório mostra</h3>
+<p>Em <strong>Relatório</strong>, marque <strong>Ocultar usuários, servidores, IPs, caminhos e valores entre aspas</strong>, use <strong>Copiar</strong> e cole o texto no fim do prompt.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-pt-1" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-pt-1">Você é um analista experiente em JD Edwards EnterpriseOne.
+Abaixo está o relatório de uma ferramenta que lê logs do sistema.
+
+Contexto do problema: [o que o usuário viu, quando, em qual aplicação]
+
+Com base só no relatório:
+1. Liste de 3 a 5 hipóteses, da mais provável à menos provável.
+2. Para cada uma, cite o número ou a linha do relatório que a sustenta e diga o que a derrubaria.
+3. Diga o que devo olhar primeiro e quem na equipe pode confirmar.
+4. Separe o que é fato no relatório do que é suposição sua.
+
+Não invente códigos, tabelas, notas de suporte nem características do meu ambiente. Se faltar dado, diga qual.
+
+Relatório:
+[cole o relatório]</code></pre></div>
+<h3>2. Explicar um erro</h3>
+<p>Abra o erro na aba <strong>Erros</strong> e use <strong>Ver no log</strong> para copiar a mensagem e as linhas ao redor, trocando dados sensíveis. Depois, compare a resposta com o que a Oracle diz sobre o código. <sup><a href="#ref-8-pt">[8]</a></sup></p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-pt-2" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-pt-2">Explique este erro de um log do JD Edwards EnterpriseOne para quem não é especialista.
+
+Versão do sistema e banco: [ex.: Tools 9.2, Oracle, ou "não sei"]
+O que estava sendo feito: [aplicação, UBE ou ação]
+
+Mensagem e linhas ao redor:
+[cole o trecho]
+
+Responda:
+1. O que a mensagem diz, em linguagem simples.
+2. Causas possíveis, com o que confirma ou descarta cada uma.
+3. Onde verificar e quem normalmente verifica.
+4. Quais partes da sua resposta vêm de documentação e quais são dedução. Se não conhece o código, diga, em vez de adivinhar.</code></pre></div>
+<h3>3. Separar causa de consequência</h3>
+<p>Na aba <strong>Erros</strong>, use <strong>Baixar CSV</strong> e cole a tabela. Antes de colar, troque usuários, servidores e valores, porque o CSV não oculta dados. O prompt pede que a IA diga o que abrir no log para confirmar cada ligação.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-pt-3" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-pt-3">A tabela abaixo lista os erros agrupados de um log do JD Edwards EnterpriseOne, com contagem, primeira e última ocorrência.
+
+Identifique:
+1. Quais erros parecem a origem e quais parecem consequência, usando a ordem no tempo e o tipo de mensagem.
+2. Erros que ocorreram no mesmo período e podem ter a mesma causa.
+3. Por qual erro começar, e por quê.
+
+A tabela não mostra a thread nem o texto completo. Diga o que eu preciso abrir no log para confirmar cada ligação. Não trate coincidência no tempo como prova.
+
+Tabela:
+[cole o CSV]</code></pre></div>
+<h3>4. Entender onde a BSFN gasta tempo</h3>
+<p>Na aba <strong>BSFN</strong>, use <strong>Baixar CSV</strong> e cole a tabela. Em tempo de relógio, a diferença entre total e próprio indica onde descer. <sup><a href="#ref-7-pt">[7]</a></sup></p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-pt-4" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-pt-4">A tabela abaixo traz as funções de negócio (BSFN) medidas em um jdedebug do JD Edwards EnterpriseOne: chamadas, tempo total, tempo próprio, média, máximo e retornos diferentes de 0. Os tempos são de relógio, com o log ligado.
+
+Cenário medido: [o que foi executado, e quantas vezes]
+Tempo que o usuário percebeu: [ex.: 40 s]
+
+1. Quais funções merecem atenção primeiro, e por quê.
+2. Onde o tempo total é bem maior que o próprio, e o que isso indica.
+3. Sinais de chamada repetida demais.
+4. Que perguntas fazer a quem conhece o código.
+
+Não diga o que uma função faz por dentro, a menos que eu informe. Se um nome sugerir algo, marque como suposição.
+
+Tabela:
+[cole o CSV]</code></pre></div>
+<h3>5. Analisar um SQL</h3>
+<p>Abra o comando na aba <strong>SQL</strong> e use <strong>Copiar</strong>: o texto vem sem os valores. Acrescente as colunas da linha, como execuções e linhas lidas. <sup><a href="#ref-7-pt">[7]</a></sup></p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-pt-5" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-pt-5">Analise este SQL de um log do JD Edwards EnterpriseOne. Os valores foram retirados.
+
+Comando:
+[cole o comando]
+
+Execuções: [número]
+Linhas lidas: [número]
+Tempo aproximado (inclui o que a aplicação fez entre as buscas): [tempo]
+Banco: [ex.: Oracle, SQL Server]
+Tamanho da tabela: [linhas, ou "não sei"]
+
+Responda:
+1. O que chama a atenção: repetição, volume, falta de filtro.
+2. O que pedir ao DBA para confirmar, como plano de execução e índices existentes.
+3. Duas ou três melhorias a avaliar na aplicação e no banco, com o risco de cada uma.
+
+Não invente nomes de índices ou de colunas. Não recomende alterar tabelas padrão do JD Edwards sem dizer o impacto.</code></pre></div>
+<h3>6. Interpretar uma pausa</h3>
+<p>Abra a pausa na aba <strong>Pausas</strong> e copie as linhas antes e depois, trocando dados sensíveis. A resposta deve dizer o que falta para decidir, não só dar um palpite.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-pt-6" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-pt-6">Em um log do JD Edwards EnterpriseOne, houve uma pausa de [tempo] na mesma thread.
+
+Última linha antes:
+[cole]
+
+Primeira linha depois:
+[cole]
+
+Como o log foi gerado: [ex.: usuário usando a tela, UBE, carga automática]
+
+Liste o que pode explicar essa pausa, como trabalho sem registro, espera de banco ou rede, ou falta de atividade do usuário. Para cada explicação, diga o que observar para confirmar ou descartar. Se as linhas não permitem decidir, diga isso.</code></pre></div>
+<h3>7. Planejar a próxima medição</h3>
+<p>Pede um plano curto para reproduzir e comparar, seguindo o método deste tutorial. Revise qualquer mudança no <code>jde.ini</code> com quem administra o servidor. <sup><a href="#ref-3-pt">[3]</a></sup> <sup><a href="#ref-7-pt">[7]</a></sup></p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-pt-7" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-pt-7">Quero medir um problema de desempenho no JD Edwards EnterpriseOne e comparar antes e depois de uma correção.
+
+Problema: [o que está lento]
+Ambiente disponível para teste: [ex.: homologação, um kernel isolado]
+O que já sei: [cole os principais achados]
+
+Monte um plano curto:
+1. Como reproduzir o mesmo cenário, sempre igual.
+2. Quais logs coletar e como isolar o processo, para eles não se misturarem.
+3. Quantas execuções fazer e como comparar, usando a mediana.
+4. O que pode distorcer a medida, como o próprio log, o cache e outros usuários.
+5. Como desfazer as configurações de depuração ao terminar.
+
+Marque o que precisa de confirmação do administrador do sistema. Se não tiver certeza do nome de um parâmetro, diga.</code></pre></div>
+<h3>8. Escrever o chamado</h3>
+<p>Separa fatos de hipóteses, para o chamado não afirmar o que ninguém provou. Se a IA citar um documento de suporte, confira se ele existe.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-pt-8" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-pt-8">Escreva um chamado para [DBA, desenvolvimento ou suporte] a partir do relatório abaixo.
+
+O que aconteceu para o usuário: [descreva]
+Impacto: [quem foi afetado, desde quando]
+O que já foi tentado: [descreva]
+
+Estrutura:
+1. Resumo em duas frases.
+2. Fatos observados, com horários e números do relatório.
+3. Hipóteses, marcadas como hipóteses.
+4. O que peço que seja verificado.
+5. Anexos a enviar.
+
+Não acrescente fatos, causas nem prazos. Mantenha as partes ocultas como estão.
+
+Relatório:
+[cole o relatório]</code></pre></div>
+<h3>Como conferir a resposta</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">O que a IA fez</th><th scope="col">Por que desconfiar</th><th scope="col">O que fazer</th></tr></thead>
+<tbody>
+<tr><td>Citou uma tabela, BSFN ou código que não está no que você colou</td><td>Pode ter inventado</td><td>Peça o trecho exato que sustenta a afirmação, e procure no app</td></tr>
+<tr><td>Explicou um código ORA ou JDE</td><td>Pode estar errado ou ser de outra versão</td><td>Compare com a Oracle: o detalhe do erro no app traz a fonte quando a conhece</td></tr>
+<tr><td>Citou uma nota de suporte</td><td>Referências podem não existir</td><td>Procure o número no My Oracle Support antes de repassar</td></tr>
+<tr><td>Afirmou uma causa com certeza</td><td>Log mostra sintoma e ordem, não intenção</td><td>Peça o que derrubaria a hipótese e confirme com <strong>Ver no log</strong></td></tr>
+<tr><td>Recomendou índice, parâmetro ou mudança no jde.ini</td><td>Pode ter efeito em todo o ambiente</td><td>Avalie com o DBA ou o administrador e teste fora de produção</td></tr>
+</tbody>
+</table></div>
+<aside class="note"><p>A resposta da IA não muda o que o log prova. Antes de agir, volte à linha original e confirme com quem conhece o código e o banco.</p></aside>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+<section id="lim-pt" aria-labelledby="h-lim-pt">
+<h2 id="h-lim-pt">Erros comuns e limitações</h2>
+<h3>Erros de leitura</h3>
+<ul>
+<li><strong>Concluir pela contagem.</strong> O erro mais frequente pode ser consequência de outro, mais raro.</li>
+<li><strong>Confundir pausa com lentidão.</strong> Leia as linhas ao redor.</li>
+<li><strong>Medir uma execução só.</strong> Tempos variam, e o log pesa.</li>
+<li><strong>Abrir só o jde.log e procurar tempos.</strong> Quem registra chamadas e SQL é o jdedebug.</li>
+</ul>
+<h3>Limitações</h3>
+<ul>
+<li><strong>Só logs fictícios.</strong> O app foi testado com logs montados a partir de trechos públicos, nunca com um log de produção. Versões, idiomas e plataformas podem variar: ele avisa quando reconhece menos de 60% das linhas, e nesse caso só procura palavras de erro.</li>
+<li><strong>Detecção por palavras.</strong> Pode marcar uma linha normal como erro, ou deixar passar um erro escrito de outro jeito.</li>
+<li><strong>Sem ano.</strong> Os logs não trazem o ano, então só dia e hora aparecem.</li>
+<li><strong>Arquivos compactados</strong> não são lidos: extraia o .zip antes.</li>
+<li><strong>Tamanho:</strong> testamos até 501 MB, lidos em cerca de 10 s em um computador de mesa, com o Chromium. Outros equipamentos variam.</li>
+<li><strong>Navegadores:</strong> Firefox, Safari e celulares reais não foram testados.</li>
+</ul>
+</section>
+<section id="rev-pt" aria-labelledby="h-rev-pt">
+<h2 id="h-rev-pt">Revisão rápida</h2>
+<p>Tente responder antes de abrir cada pergunta.</p>
+<div class="quiz">
+<details><summary>1. Qual arquivo olhar para saber por que algo deu erro?</summary><p>O jde.log, com erros fatais e falhas. O jdedebug traz chamadas, SQL e tempos, e a Oracle avisa que ele não serve para acompanhar erros.</p></details>
+<details><summary>2. JDB9900401 aparece logo depois de ORA-03113 em todas as vezes. Por onde começar?</summary><p>Pelo ORA-03113. O outro provavelmente é consequência.</p></details>
+<details><summary>3. Uma BSFN tem tempo total alto e tempo próprio baixo. O que isso indica?</summary><p>Que o tempo está nas funções que ela chama. Desça até a filha com maior tempo próprio.</p></details>
+<details><summary>4. Uma pausa de 10 minutos prova que o sistema está lento?</summary><p>Não. Pode ser só falta de atividade. Leia as linhas antes e depois dela.</p></details>
+<details><summary>5. O mesmo SQL rodou 500 vezes. O que suspeitar?</summary><p>De uma leitura dentro de um laço, em que um cache ou uma leitura única ajudaria.</p></details>
+<details><summary>6. O log sai do computador quando você o abre no app?</summary><p>Não. O arquivo bloqueia a rede e o conteúdo do log não fica guardado.</p></details>
+<details><summary>7. O relatório com dados ocultos pode ser enviado sem revisão?</summary><p>Não. A ocultação segue padrões e pode deixar passar algo.</p></details>
+<details><summary>8. A IA diz com segurança qual é a causa do problema. O que fazer antes de agir?</summary><p>Peça o trecho que sustenta a afirmação, confira a linha original com Ver no log e confirme com quem conhece o código e o banco. A IA pode inventar causas e referências.</p></details>
+</div>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+<section id="ref-pt" aria-labelledby="h-ref-pt">
+<h2 id="h-ref-pt">Referências</h2>
+<ol class="refs">
+<li id="ref-1-pt"><strong>Giovani Perotto Mesquita</strong>, “JDE Log Insights”, app em um único arquivo HTML, <a href="jde-log-insights.html">giovanipm.github.io/jde-log-insights.html</a>.</li>
+<li id="ref-2-pt"><strong>Oracle</strong>, “jde.log”, JD Edwards EnterpriseOne Tools, documentação, consultado em 01/11/2026, <a href="https://docs.oracle.com/en/applications/jd-edwards/development-tools/9.2.x/eotev/jde-log.html" rel="noopener">docs.oracle.com</a>. A página afirma que o jde.log fica sempre na raiz da unidade principal. A página [3] diz que o local vem de JobFile. Seguimos a [3], mais específica.</li>
+<li id="ref-3-pt"><strong>Oracle</strong>, “Troubleshooting the Enterprise Server”, documentação, consultado em 01/11/2026, <a href="https://docs.oracle.com/cd/E24705_01/doc.91/e24259/troubleshoot_e1_server.htm" rel="noopener">docs.oracle.com</a>. A página descreve o jde.log do servidor como sobrescrito a cada sessão e, em servidor Windows, como acrescentado ao final.</li>
+<li id="ref-4-pt"><strong>Oracle</strong>, “Troubleshooting the Workstation”, documentação, consultado em 01/11/2026, <a href="https://docs.oracle.com/cd/E17984_01/doc.898/e14718/troubleshoot_wrkstation.htm" rel="noopener">docs.oracle.com</a>.</li>
+<li id="ref-5-pt"><strong>Oracle</strong>, “LogParse Output Files for the Enterprise Server”, documentação, consultado em 01/11/2026, <a href="https://docs.oracle.com/en/applications/jd-edwards/cross-product/9.2/eoism/logparse-output-files-for-the-enterprise-server.html" rel="noopener">docs.oracle.com</a>.</li>
+<li id="ref-6-pt"><strong>Dong's Page</strong>, “Case Study: Slow Performance in P4116”, estudo de caso publicado em blog pessoal, consultado em 01/11/2026, <a href="https://sohigh99.github.io/dmseo/jde/docs/1523038.html" rel="noopener">sohigh99.github.io</a>.</li>
+<li id="ref-7-pt"><strong>Vincenzo Caserta</strong>, “JD Edwards BSFN performance measurement with logs and timings”, artigo técnico; os 2% a 5% e as 10 execuções são recomendações do autor, não da Oracle, consultado em 01/11/2026, <a href="https://vincenzocaserta.it/en/jd-edwards-en/development/bsfn-ner-development/jde-bsfn-performance-measurement-logs-timings" rel="noopener">vincenzocaserta.it</a>.</li>
+<li id="ref-8-pt"><strong>Oracle</strong>, “Oracle Database Error Help”, páginas das mensagens ORA citadas no app, consultado em 01/11/2026, <a href="https://docs.oracle.com/error-help/db/" rel="noopener">docs.oracle.com/error-help/db</a>.</li>
+</ol>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== EN ===================== -->
+<div id="en" role="tabpanel" aria-labelledby="tab-en" lang="en" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html#en" data-projects>← Projects</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>JDE Log Insights: tutorial</h1>
+      <p class="dek">How to turn a jde.log or a jdedebug.log into answers, with nothing to install: grouped errors, slow functions and SQL, pauses and a map of what happened.</p>
+      <div class="byline">
+        <span>By <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Published on <time datetime="2026-11-01">1 November 2026</time></span>
+        <span class="credit">Reviewed and formatted using Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-en">
+    <h2 id="toc-en">Contents</h2>
+    <ol>
+      <li><a href="#intro-en">What JDE Log Insights is</a></li>
+      <li><a href="#logs-en">The JD Edwards logs</a></li>
+      <li><a href="#obter-en">How to get the logs</a></li>
+      <li><a href="#roteiro-en">Walkthrough: investigating the sample</a></li>
+      <li><a href="#ins-en">How to read the insights</a></li>
+      <li><a href="#err-en">Errors</a></li>
+      <li><a href="#bsfn-en">BSFN</a></li>
+      <li><a href="#sql-en">SQL</a></li>
+      <li><a href="#gaps-en">Pauses</a></li>
+      <li><a href="#ctx-en">Context</a></li>
+      <li><a href="#flow-en">Flow</a></li>
+      <li><a href="#content-en">Content</a></li>
+      <li><a href="#rep-en">Report and privacy</a></li>
+      <li><a href="#met-en">A method for a real log</a></li>
+      <li><a href="#ia-en">AI prompts</a></li>
+      <li><a href="#lim-en">Common mistakes and limitations</a></li>
+      <li><a href="#rev-en">Quick review</a></li>
+      <li><a href="#ref-en">References</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-en" aria-labelledby="h-intro-en">
+<h2 id="h-intro-en">What JDE Log Insights is</h2>
+<p>A JD Edwards EnterpriseOne log can have millions of lines, and the answer is usually in a few of them. JDE Log Insights reads these files and shows where to start: it groups errors, measures business functions (BSFN) and SQL, finds pauses and draws what called what. <sup><a href="#ref-1-en">[1]</a></sup></p>
+<p>It is a single HTML file, with no installation or account.</p>
+<p><a class="launch" href="jde-log-insights.html#en">Open JDE Log Insights <span aria-hidden="true">→</span></a></p>
+<figure>
+<img src="rc_images/JDELogInsightsInicio-en.png" alt="JDE Log Insights start screen, with the drop area, the Open logs, Paste text and See a sample buttons, and the explanation of what it reads" width="1600" height="900" loading="lazy">
+<figcaption>The start screen. Drop the files or open the sample.</figcaption>
+</figure>
+<h3>How the app handles your data</h3>
+<ul>
+<li><strong>Nothing leaves your computer.</strong> The file blocks network connections. Logs often contain users, servers and SQL, so this matters.</li>
+<li><strong>The log is not stored.</strong> When you close the page, the analysis is gone. The app only stores the language, the theme and the slowness limit.</li>
+</ul>
+<aside class="note"><p>The app points out signals to guide the investigation, based on the log text. It does not fix anything, does not access the server and is not an Oracle tool.</p></aside>
+</section>
+<section id="logs-en" aria-labelledby="h-logs-en">
+<h2 id="h-logs-en">The JD Edwards logs</h2>
+<p>Each file answers a different question. Oracle's documentation splits them like this: <sup><a href="#ref-2-en">[2]</a></sup> <sup><a href="#ref-3-en">[3]</a></sup> <sup><a href="#ref-4-en">[4]</a></sup></p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">File</th><th scope="col">Sample name</th><th scope="col">What it holds</th><th scope="col">Best for</th></tr></thead>
+<tbody>
+<tr><th scope="row">jde.log</th><td><code>jde_442.log</code></td><td>Fatal errors and faults</td><td>Learning what went wrong</td></tr>
+<tr><th scope="row">jdedebug.log</th><td><code>jdedebug_442.log</code></td><td>API calls, SQL and timing. Oracle warns that it is not used to track errors</td><td>Learning where the time went</td></tr>
+<tr><th scope="row">UBE log</th><td><code>R014021_XJDE0001_D990312_T161854215.log</code></td><td>Sections, objects, event rules and SQL of a batch report</td><td>Following a UBE</td></tr>
+</tbody>
+</table></div>
+<figure>
+<img src="rc_images/JDELogInsightsAnatomia-en.svg" alt="Two sample lines. In jde.log, the line has process and thread, thread name, date and time and source file, followed by the message. In jdedebug, it has date and time, process and thread, thread name with the application and the message, such as a SQL statement." loading="lazy">
+<figcaption>The parts of each line. The jde.log message may come on the same line or the next.</figcaption>
+</figure>
+<p>The number in the name is the process ID, so a server produces several files. Open those of the same process together: the app reads them all at once and says what it identified in each.</p>
+</section>
+<section id="obter-en" aria-labelledby="h-obter-en">
+<h2 id="h-obter-en">How to get the logs</h2>
+<p>The location of jde.log and jdedebug.log comes from <code>JobFile</code> and <code>DebugFile</code>, in the <code>[DEBUG]</code> section of <code>jde.ini</code>. <sup><a href="#ref-3-en">[3]</a></sup> jdedebug only holds calls, SQL and timing with debugging on:</p>
+<pre class="code"><code>[DEBUG]
+Output=FILE
+LogErrors=1</code></pre>
+<ol>
+<li>Turn debugging on where it counts. To reproduce the problem, isolate a single kernel or process, so the logs do not mix. <sup><a href="#ref-7-en">[7]</a></sup></li>
+<li>Reproduce the problem once and copy the files. They may be overwritten in the next session: Oracle describes both behaviors, overwrite and append, depending on the server and workstation. <sup><a href="#ref-3-en">[3]</a></sup> <sup><a href="#ref-4-en">[4]</a></sup></li>
+<li>Set <code>Output</code> back to its previous value. The log grows fast and weighs on the process: one author estimates 2% to 5% more time. <sup><a href="#ref-7-en">[7]</a></sup></li>
+</ol>
+<p>UBE logs are in the print queue (PrintQueue), and the detail level comes from <code>UBEDebugLevel</code>, in the <code>[UBE]</code> section. <sup><a href="#ref-3-en">[3]</a></sup></p>
+</section>
+<section id="roteiro-en" aria-labelledby="h-roteiro-en">
+<h2 id="h-roteiro-en">Walkthrough: investigating the sample</h2>
+<p>Use the sample data: it is made up, built from public log excerpts, and the results below are what you will see. The case has it all: a lost database connection, a huge read and a slow SQL.</p>
+<h3>1. Open the sample and read the first insight</h3>
+<ol>
+<li>Open the app and click <strong>See a sample</strong>.</li>
+<li>Check the totals at the top: 8,693 lines, 62 error occurrences across 7 types, 124 BSFN calls and 123 SQL statements.</li>
+<li>Read the first card, marked <strong>Critical</strong>: <strong>The database was out of reach</strong>. ORA-03113 appeared 22 times, from Mar 12 09:17:00 to Mar 12 09:17:42.</li>
+</ol>
+<figure>
+<img src="rc_images/JDELogInsightsInsights-en.png" alt="Insights tab with the log totals and the cards ordered by severity, with the critical database alert on top" width="1600" height="900" loading="lazy">
+<figcaption>Insights come in order of severity, each with the evidence and a link to it.</figcaption>
+</figure>
+<h3>2. Open the error and see the original line</h3>
+<ol>
+<li>On the first card, click <strong>See the errors</strong>. The <strong>Errors</strong> tab opens already filtered.</li>
+<li>Click the ORA-03113 message. The detail has what the source says about the error, with a link to it.</li>
+<li>Under <strong>Sample occurrences</strong>, click <strong>View in log</strong> to check the original passage, with the line marked.</li>
+</ol>
+<figure>
+<img src="rc_images/JDELogInsightsErro-en.png" alt="ORA-03113 error detail window, with the message, Oracle's explanation, the counts and sample occurrences" width="1600" height="900" loading="lazy">
+<figcaption>The error detail has the meaning according to Oracle and where it occurred.</figcaption>
+</figure>
+<figure>
+<img src="rc_images/JDELogInsightsLog-en.png" alt="Window with the original passage of the jde_4412.log file and the error line highlighted" width="1600" height="900" loading="lazy">
+<figcaption>View in log opens the file at the right place. Always check the original line.</figcaption>
+</figure>
+<p>Back on the insights, another card says JDB9900401 is usually a consequence of ORA-03113. There were 22 occurrences, always up to 1 second later, on the same thread. So the investigation starts with ORA-03113.</p>
+<h3>3. Find where the time went</h3>
+<ol>
+<li>Open the <strong>BSFN</strong> tab. The table comes sorted by <strong>Own time</strong>.</li>
+<li>F4111EndDocument took 9.13 s in total, of which 7.41 s is its own time. So the time is not in the functions it calls.</li>
+</ol>
+<figure>
+<img src="rc_images/JDELogInsightsBsfn-en.png" alt="BSFN tab with the table of functions, calls, total time, own time, average, maximum and non-zero returns" width="1600" height="900" loading="lazy">
+<figcaption>Own time shows where the time was actually spent.</figcaption>
+</figure>
+<h3>4. Find the SQL responsible</h3>
+<ol>
+<li>Open the <strong>SQL</strong> tab. The first statement is a read of F0005, with no WHERE, of about 7.4 s.</li>
+<li>See the other two signals: a read of F41021 returned 4,000 rows, and the statement on F4101 ran 120 times.</li>
+</ol>
+<figure>
+<img src="rc_images/JDELogInsightsSql-en.png" alt="SQL tab with grouped statements, the table, the number of runs, rows read and approximate time" width="1600" height="900" loading="lazy">
+<figcaption>Identical statements are grouped, without values. Here are the slow read and the repeated one.</figcaption>
+</figure>
+<h3>5. See the path on the map</h3>
+<ol>
+<li>Open the <strong>Flow</strong> tab and click the F41021 block.</li>
+<li>The map highlights the path: P4116 calls F4111EndDocument, which calls AverageCostUpdate, which reads F41021. Now you know which screen leads to this read.</li>
+</ol>
+<figure>
+<img src="rc_images/JDELogInsightsFluxo-en.png" alt="Flow tab with entry, BSFN, table and error columns, and the path from P4116 to F41021 highlighted" width="1600" height="900" loading="lazy">
+<figcaption>The path to the table stands out and the rest fades.</figcaption>
+</figure>
+<h3>6. Create the report</h3>
+<ol>
+<li>Click <strong>Report</strong> and tick <strong>Hide users, servers, IPs, paths and quoted values</strong>.</li>
+<li>Review the text and use <strong>Copy</strong> or <strong>Download .md</strong>.</li>
+</ol>
+<figure>
+<img src="rc_images/JDELogInsightsRelatorio-en.png" alt="Markdown report window, with the option to hide users, servers, IPs, paths and values ticked" width="1600" height="900" loading="lazy">
+<figcaption>The report can hide data before sending. Review it anyway.</figcaption>
+</figure>
+<p>Result: in a few minutes you have a hypothesis for each problem. Database connection lost at 09:17, with one error that is a consequence of another; a read with no filter; and a function called 120 times. It remains to confirm each with the DBA and with whoever knows the code.</p>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+<section id="ins-en" aria-labelledby="h-ins-en">
+<h2 id="h-ins-en">How to read the insights</h2>
+<p>The cards are simple rules on the log's figures, and these are the exact conditions. A signal is not a cause: it says where to look.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Signal</th><th scope="col">When it appears</th><th scope="col">What to do first</th></tr></thead>
+<tbody>
+<tr><th scope="row">Severe failure</th><td>A message with ACCESS VIOLATION, SIGSEGV, core dump, out of memory or fatal</td><td>Look for the .dmp.log: it lists the threads at the time of the crash. Oracle says to start with the one holding jdeLogCallStack. On IBM i, the stacks are in jde.log. <sup><a href="#ref-3-en">[3]</a></sup></td></tr>
+<tr><th scope="row">Database out of reach</th><td>ORA-03113, 03114, 12154, 12170, 12514 or 12541</td><td>The error detail has Oracle's advice for each code, such as the alert log, the network or the listener. <sup><a href="#ref-8-en">[8]</a></sup></td></tr>
+<tr><th scope="row">Dominant error</th><td>One error accounts for 30% or more of occurrences, at least 3 times</td><td>Start with it</td></tr>
+<tr><th scope="row">Consequence error</th><td>B came up to 1 s after A, on the same thread, at least half the time and in 3 occurrences</td><td>Investigate A first</td></tr>
+<tr><th scope="row">Peak</th><td>A minute with 10 errors or more, and 5 times the median of minutes with errors</td><td>See what changed at that time</td></tr>
+<tr><th scope="row">Concentrated process</th><td>One process with 70% of the errors, at least 5</td><td>Suspect what only it does</td></tr>
+<tr><th scope="row">Repeated SQL</th><td>Same statement 50 times or more</td><td>Look for a read inside a loop</td></tr>
+<tr><th scope="row">Large read</th><td>One run with 1,000 rows or more</td><td>Check the filter and the indexes</td></tr>
+<tr><th scope="row">Slow BSFN, SQL or pause</th><td>Over the adjustable limit, 1 s by default</td><td>Open the matching tab</td></tr>
+</tbody>
+</table></div>
+<p>Below the cards, two charts show errors and log lines over time. Click an error bar to see only that interval's errors. <strong>View as table</strong> has the same figures in a table.</p>
+<figure>
+<img src="rc_images/JDELogInsightsGrafico-en.png" alt="Two bar charts: errors per interval, with a peak at 09:15, and log lines per interval, concentrated at the end" width="1600" height="900" loading="lazy">
+<figcaption>The error peak stands out. The log lines show when debugging was on.</figcaption>
+</figure>
+</section>
+<section id="err-en" aria-labelledby="h-err-en">
+<h2 id="h-err-en">Errors</h2>
+<p>The app groups messages that differ only in their values, so the same error with different numbers counts as one. Filter by <strong>Level</strong> and <strong>Area</strong>, or type a fragment, such as a table name.</p>
+<ul>
+<li><strong><strong>Fatal</strong></strong>, <strong><strong>Error</strong></strong> and <strong><strong>Warning</strong></strong> come from codes and words in the message, such as <code>ORA-00942</code>, <code>OCI0000178</code> and <code>failed</code>.</li>
+<li><strong><strong>What the source says</strong>:</strong> the app has a small base, only with Oracle's texts, each with a link to the source. <sup><a href="#ref-3-en">[3]</a></sup> <sup><a href="#ref-4-en">[4]</a></sup> <sup><a href="#ref-8-en">[8]</a></sup></li>
+<li><strong>Code outside the base:</strong> look it up in My Oracle Support or in the P92002 application, which holds the system's error messages. <sup><a href="#ref-4-en">[4]</a></sup></li>
+</ul>
+</section>
+<section id="bsfn-en" aria-labelledby="h-bsfn-en">
+<h2 id="h-bsfn-en">BSFN</h2>
+<p>The app matches each call to its return, by thread, and computes two times:</p>
+<ul>
+<li><strong><strong>Total time</strong>:</strong> from call to return, including the functions it calls.</li>
+<li><strong><strong>Own time</strong>:</strong> the total minus the time of child functions. This is where to look first. <sup><a href="#ref-7-en">[7]</a></sup></li>
+<li><strong><strong>Return ≠ 0</strong>:</strong> calls that returned a value other than 0. The app only counts them; check how the caller handles this return.</li>
+</ul>
+<aside class="note"><p>It is wall-clock time, with logging on. It includes database and network waits and the cost of the log itself, so it serves to compare parts of the same run, not to promise a production time. <sup><a href="#ref-7-en">[7]</a></sup></p></aside>
+</section>
+<section id="sql-en" aria-labelledby="h-sql-en">
+<h2 id="h-sql-en">SQL</h2>
+<p>The app removes values, to group identical statements, and adds up runs, rows read and time. This way, customer values are not kept in the table.</p>
+<ul>
+<li><strong>Rows read:</strong> counts the "Fetched the record" lines after each statement. A P4116 case study shows this pattern: 40,000 rows read in a single function call. <sup><a href="#ref-6-en">[6]</a></sup></li>
+<li><strong><strong>Approx. time</strong>:</strong> runs from the statement to the last fetch, so it includes what the application did between fetches.</li>
+<li><strong>Hint:</strong> a long interval between the statement and the first fetch tends to point to the database rather than the logic. <sup><a href="#ref-7-en">[7]</a></sup></li>
+</ul>
+</section>
+<section id="gaps-en" aria-labelledby="h-gaps-en">
+<h2 id="h-gaps-en">Pauses</h2>
+<p>A pause is the time without new lines in the same process and thread. Oracle suggests jdedebug precisely to see the point where normal execution stopped. <sup><a href="#ref-3-en">[3]</a></sup> Each table row shows what came before and after.</p>
+<figure>
+<img src="rc_images/JDELogInsightsPausas-en.png" alt="Pauses tab with the table of pauses, the start, the process and the lines before and after" width="1600" height="900" loading="lazy">
+<figcaption>The longest pause in the sample, with the lines before and after.</figcaption>
+</figure>
+<aside class="note"><p>A pause is not slowness in itself. It can be a long query, or just a person who took a while to click. Read the next line before concluding.</p></aside>
+</section>
+<section id="ctx-en" aria-labelledby="h-ctx-en">
+<h2 id="h-ctx-en">Context</h2>
+<p>The <strong>Context</strong> tab answers "what was running?": files read and the kind of each, applications and reports, tables, processes and threads, and the most frequent API calls.</p>
+</section>
+<section id="flow-en" aria-labelledby="h-flow-en">
+<h2 id="h-flow-en">Flow</h2>
+<p>The <strong>Flow</strong> tab draws who calls whom, adding up all runs: entry, BSFN by level, tables and errors in sequence. On a plain jde.log, it shows process → error → next error.</p>
+<ul>
+<li>The thicker the link, the more often it occurred.</li>
+<li>⏱ marks what went over the slowness limit, and a dashed line, a loop back, such as recursion.</li>
+<li>When you click a block, its path is highlighted and <strong>Open details</strong> leads to the detail.</li>
+<li><strong>View the links as a table</strong> has the same links as text, and <strong>Download SVG</strong> saves the image.</li>
+</ul>
+<aside class="note"><p>The map does not show the order in time. It shows up to 400 blocks, warns when there are more and does not draw links through hidden blocks.</p></aside>
+</section>
+<section id="content-en" aria-labelledby="h-content-en">
+<h2 id="h-content-en">Content</h2>
+<p>The <strong>Content</strong> tab shows the whole log, line by line, with a color and a tag for each event type: errors, returns other than 0, BSFN, SQL, row fetches, parameters, API and UBE. Use it when the summaries have told you where to look and you want to read what happened around it.</p>
+<figure>
+<img src="rc_images/JDELogInsightsConteudo-en.png" alt="Content tab with the log lines colored by event type, each line's tag, the types with their counts and the search" width="1600" height="900" loading="lazy">
+<figcaption>Each event type has a color and a tag. The selected line is marked.</figcaption>
+</figure>
+<ul>
+<li><strong>Filter:</strong> click a type to see only its lines. Clicking another adds it, and <strong>Show all</strong> undoes it.</li>
+<li><strong>Pauses:</strong> ⏸ marks the line that came after a pause over the limit.</li>
+<li><strong>Navigate:</strong> use the search, <strong>Go to line</strong>, <strong>Next error ▶</strong> and the arrow keys. In <strong>View in log</strong>, the <strong>Open in Content</strong> button brings you here.</li>
+<li><strong>Copy:</strong> lines over 2,000 characters are cut on screen, and <strong>Copy</strong> brings the full text.</li>
+</ul>
+<aside class="note"><p>The color comes from the same rule of words and codes as the other tabs. A line with no format of its own inherits the type of the previous line. With several files, choose one at a time: they are not mixed. The app reads the file from disk as you scroll, so keep it in place.</p></aside>
+</section>
+<section id="rep-en" aria-labelledby="h-rep-en">
+<h2 id="h-rep-en">Report and privacy</h2>
+<p><strong>Report</strong> creates a Markdown text with the insights and the main figures, to attach to a ticket. Before sending it to someone or to an AI, tick <strong>Hide users, servers, IPs, paths and quoted values</strong>.</p>
+<aside class="note"><p>Hiding follows known patterns and may miss something. Review the text: a table or report name can also say a lot.</p></aside>
+</section>
+<section id="met-en" aria-labelledby="h-met-en">
+<h2 id="h-met-en">A method for a real log</h2>
+<p>With a real problem, this order avoids wasted time:</p>
+<ol>
+<li><strong>Start with jde.log.</strong> If there is a severe failure or a lost connection, solve that before measuring performance.</li>
+<li><strong>Reproduce with debugging</strong> in a single process, and open the jdedebug.</li>
+<li><strong>Follow the time:</strong> <strong>BSFN</strong> by own time, then <strong>SQL</strong> and <strong>Pauses</strong>.</li>
+<li><strong>Confirm on the original line</strong> with <strong>View in log</strong> and with whoever knows the code and the database.</li>
+<li><strong>Fix and measure again.</strong> One author suggests 10 or more runs and using the median, because a single run misleads. <sup><a href="#ref-7-en">[7]</a></sup></li>
+</ol>
+<figure>
+<img src="rc_images/JDELogInsightsMetodo-en.svg" alt="Six-step flow: open jde.log and see the errors; solve severe failures; reproduce with debugging; follow the time; confirm on the original line; fix and measure again. A dashed arrow goes back from the last step to reproducing." loading="lazy">
+<figcaption>The app speeds up the analysis. The decision is still the team's.</figcaption>
+</figure>
+<p>For very large logs or official analysis, Oracle offers LogParse, in the Server Manager Performance Workbench, which creates a summary, CSV files of BSFN and tables, and timing gaps. <sup><a href="#ref-5-en">[5]</a></sup> JDE Log Insights is a quick alternative, with no server, not a replacement.</p>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+<section id="ia-en" aria-labelledby="h-ia-en">
+<h2 id="h-ia-en">AI prompts</h2>
+<p>With the signals in hand, you still have to interpret them: what this code means, which error came first, what to ask the DBA. An AI helps organize hypotheses and prepare the conversation. It also makes confident mistakes: it invents causes, cites support notes that do not exist and assumes how your customization works. Treat its output as a draft from a colleague in a hurry. To write better prompts, see the <a href="PromptTutorial.html#en">prompt tutorial</a>.</p>
+<figure>
+<img src="rc_images/JDELogInsightsIA-en.svg" alt="Six steps: the app creates the report with hidden data, you review what goes out, the AI proposes hypotheses with evidence, the app checks the original line, you confirm with the DBA and development, then fix and measure. From the fix, you go back to the AI with the new log." loading="lazy">
+<figcaption>The AI organizes the hypotheses. The proof is in the original line and in the team.</figcaption>
+</figure>
+<blockquote><p><strong>Before pasting:</strong> logs may hold users, servers, SQL and customer values. The app sends nothing over the network, but the AI service receives whatever you paste into it. Use <strong>Hide users, servers, IPs, paths and quoted values</strong>, review the text and follow your organization's AI policy.</p></blockquote>
+<p>Replace the parts in brackets and paste into the AI tool you use. The prompts follow the order of the investigation, but each one works on its own.</p>
+<h3>1. Prioritize what the report shows</h3>
+<p>In <strong>Report</strong>, tick <strong>Hide users, servers, IPs, paths and quoted values</strong>, use <strong>Copy</strong> and paste the text at the end of the prompt.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-en-1" data-done="Copied">Copy</button><pre class="code"><code id="prompt-en-1">You are an analyst experienced in JD Edwards EnterpriseOne.
+Below is the report from a tool that reads the system's logs.
+
+Problem context: [what the user saw, when, in which application]
+
+Based only on the report:
+1. List 3 to 5 hypotheses, from most to least likely.
+2. For each, cite the figure or line of the report that supports it and say what would rule it out.
+3. Say what I should look at first and who on the team can confirm it.
+4. Separate what is fact in the report from what is your assumption.
+
+Do not invent codes, tables, support notes or features of my environment. If data is missing, say which.
+
+Report:
+[paste the report]</code></pre></div>
+<h3>2. Explain an error</h3>
+<p>Open the error in the <strong>Errors</strong> tab and use <strong>View in log</strong> to copy the message and the surrounding lines, replacing sensitive data. Then compare the answer with what Oracle says about the code. <sup><a href="#ref-8-en">[8]</a></sup></p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-en-2" data-done="Copied">Copy</button><pre class="code"><code id="prompt-en-2">Explain this error from a JD Edwards EnterpriseOne log to a non-specialist.
+
+System and database version: [e.g. Tools 9.2, Oracle, or "I don't know"]
+What was being done: [application, UBE or action]
+
+Message and surrounding lines:
+[paste the passage]
+
+Answer:
+1. What the message says, in plain language.
+2. Possible causes, with what confirms or rules out each one.
+3. Where to check and who usually checks it.
+4. Which parts of your answer come from documentation and which are deduction. If you do not know the code, say so instead of guessing.</code></pre></div>
+<h3>3. Separate cause from consequence</h3>
+<p>In the <strong>Errors</strong> tab, use <strong>Download CSV</strong> and paste the table. Before pasting, replace users, servers and values, because the CSV does not hide data. The prompt asks the AI to say what to open in the log to confirm each link.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-en-3" data-done="Copied">Copy</button><pre class="code"><code id="prompt-en-3">The table below lists the grouped errors of a JD Edwards EnterpriseOne log, with count, first and last occurrence.
+
+Identify:
+1. Which errors seem to be the origin and which seem to be consequences, using the order in time and the type of message.
+2. Errors that occurred in the same period and may share a cause.
+3. Which error to start with, and why.
+
+The table does not show the thread or the full text. Say what I need to open in the log to confirm each link. Do not treat coincidence in time as proof.
+
+Table:
+[paste the CSV]</code></pre></div>
+<h3>4. Understand where a BSFN spends time</h3>
+<p>In the <strong>BSFN</strong> tab, use <strong>Download CSV</strong> and paste the table. In wall-clock time, the difference between total and own points to where to go down. <sup><a href="#ref-7-en">[7]</a></sup></p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-en-4" data-done="Copied">Copy</button><pre class="code"><code id="prompt-en-4">The table below has the business functions (BSFN) measured in a JD Edwards EnterpriseOne jdedebug: calls, total time, own time, average, maximum and returns other than 0. Times are wall-clock, with logging on.
+
+Measured scenario: [what was run, and how many times]
+Time the user perceived: [e.g. 40 s]
+
+1. Which functions deserve attention first, and why.
+2. Where total time is much larger than own time, and what that indicates.
+3. Signs of calls repeated too often.
+4. What to ask whoever knows the code.
+
+Do not say what a function does internally unless I tell you. If a name suggests something, mark it as an assumption.
+
+Table:
+[paste the CSV]</code></pre></div>
+<h3>5. Analyze a SQL</h3>
+<p>Open the statement in the <strong>SQL</strong> tab and use <strong>Copy</strong>: the text comes without values. Add the row's columns, such as runs and rows read. <sup><a href="#ref-7-en">[7]</a></sup></p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-en-5" data-done="Copied">Copy</button><pre class="code"><code id="prompt-en-5">Analyze this SQL from a JD Edwards EnterpriseOne log. Values were removed.
+
+Statement:
+[paste the statement]
+
+Runs: [number]
+Rows read: [number]
+Approximate time (includes what the application did between fetches): [time]
+Database: [e.g. Oracle, SQL Server]
+Table size: [rows, or "I don't know"]
+
+Answer:
+1. What stands out: repetition, volume, missing filter.
+2. What to ask the DBA to confirm, such as the execution plan and existing indexes.
+3. Two or three improvements to evaluate in the application and the database, with the risk of each.
+
+Do not invent index or column names. Do not recommend changing standard JD Edwards tables without stating the impact.</code></pre></div>
+<h3>6. Interpret a pause</h3>
+<p>Open the pause in the <strong>Pauses</strong> tab and copy the lines before and after, replacing sensitive data. The answer should say what is missing to decide, not just guess.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-en-6" data-done="Copied">Copy</button><pre class="code"><code id="prompt-en-6">In a JD Edwards EnterpriseOne log, there was a pause of [time] on the same thread.
+
+Last line before:
+[paste]
+
+First line after:
+[paste]
+
+How the log was created: [e.g. user on the screen, UBE, automatic load]
+
+List what could explain this pause, such as unlogged work, a database or network wait, or no user activity. For each explanation, say what to observe to confirm or rule it out. If the lines do not allow a decision, say so.</code></pre></div>
+<h3>7. Plan the next measurement</h3>
+<p>Asks for a short plan to reproduce and compare, following this tutorial's method. Review any change to <code>jde.ini</code> with whoever runs the server. <sup><a href="#ref-3-en">[3]</a></sup> <sup><a href="#ref-7-en">[7]</a></sup></p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-en-7" data-done="Copied">Copy</button><pre class="code"><code id="prompt-en-7">I want to measure a performance problem in JD Edwards EnterpriseOne and compare before and after a fix.
+
+Problem: [what is slow]
+Environment available for testing: [e.g. QA, an isolated kernel]
+What I already know: [paste the main findings]
+
+Build a short plan:
+1. How to reproduce the same scenario, always the same way.
+2. Which logs to collect and how to isolate the process, so they do not mix.
+3. How many runs to do and how to compare them, using the median.
+4. What can distort the measurement, such as the log itself, the cache and other users.
+5. How to undo the debug settings when finished.
+
+Mark what needs confirmation from the system administrator. If you are not sure of a parameter name, say so.</code></pre></div>
+<h3>8. Write the ticket</h3>
+<p>Separates facts from hypotheses, so the ticket does not state what nobody has proved. If the AI cites a support document, check that it exists.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-en-8" data-done="Copied">Copy</button><pre class="code"><code id="prompt-en-8">Write a ticket for [DBA, development or support] from the report below.
+
+What happened for the user: [describe]
+Impact: [who was affected, since when]
+What was already tried: [describe]
+
+Structure:
+1. Two-sentence summary.
+2. Observed facts, with times and figures from the report.
+3. Hypotheses, marked as hypotheses.
+4. What I am asking to be checked.
+5. Attachments to send.
+
+Do not add facts, causes or deadlines. Keep the hidden parts as they are.
+
+Report:
+[paste the report]</code></pre></div>
+<h3>How to check the answer</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">What the AI did</th><th scope="col">Why to be wary</th><th scope="col">What to do</th></tr></thead>
+<tbody>
+<tr><td>Cited a table, BSFN or code that is not in what you pasted</td><td>It may have invented it</td><td>Ask for the exact passage that supports the claim, and search for it in the app</td></tr>
+<tr><td>Explained an ORA or JDE code</td><td>It may be wrong or from another version</td><td>Compare with Oracle: the error detail in the app has the source when it knows it</td></tr>
+<tr><td>Cited a support note</td><td>References may not exist</td><td>Look the number up in My Oracle Support before passing it on</td></tr>
+<tr><td>Stated a cause with certainty</td><td>A log shows symptoms and order, not intent</td><td>Ask what would rule the hypothesis out and confirm with <strong>View in log</strong></td></tr>
+<tr><td>Recommended an index, a parameter or a jde.ini change</td><td>It may affect the whole environment</td><td>Evaluate it with the DBA or administrator and test outside production</td></tr>
+</tbody>
+</table></div>
+<aside class="note"><p>The AI's answer does not change what the log proves. Before acting, go back to the original line and confirm with whoever knows the code and the database.</p></aside>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+<section id="lim-en" aria-labelledby="h-lim-en">
+<h2 id="h-lim-en">Common mistakes and limitations</h2>
+<h3>Reading mistakes</h3>
+<ul>
+<li><strong>Concluding from the count.</strong> The most frequent error may be a consequence of a rarer one.</li>
+<li><strong>Confusing a pause with slowness.</strong> Read the surrounding lines.</li>
+<li><strong>Measuring a single run.</strong> Times vary, and the log weighs.</li>
+<li><strong>Opening only jde.log and looking for times.</strong> jdedebug is the one that records calls and SQL.</li>
+</ul>
+<h3>Limitations</h3>
+<ul>
+<li><strong>Made-up logs only.</strong> The app was tested with logs built from public excerpts, never with a production log. Versions, languages and platforms may vary: it warns when it recognizes under 60% of the lines, and then only searches for error words.</li>
+<li><strong>Detection by words.</strong> It may flag a normal line as an error, or miss an error worded differently.</li>
+<li><strong>No year.</strong> Logs do not include the year, so only day and time appear.</li>
+<li><strong>Compressed files</strong> are not read: extract the .zip first.</li>
+<li><strong>Size:</strong> we tested up to 501 MB, read in about 10 s on a desktop computer, in Chromium. Other machines vary.</li>
+<li><strong>Browsers:</strong> Firefox, Safari and real phones were not tested.</li>
+</ul>
+</section>
+<section id="rev-en" aria-labelledby="h-rev-en">
+<h2 id="h-rev-en">Quick review</h2>
+<p>Try to answer before opening each question.</p>
+<div class="quiz">
+<details><summary>1. Which file should you check to learn why something failed?</summary><p>jde.log, with fatal errors and faults. jdedebug has calls, SQL and timing, and Oracle warns that it is not used to track errors.</p></details>
+<details><summary>2. JDB9900401 appears right after ORA-03113 every time. Where do you start?</summary><p>With ORA-03113. The other is probably a consequence.</p></details>
+<details><summary>3. A BSFN has a high total time and a low own time. What does it mean?</summary><p>That the time is in the functions it calls. Go down to the child with the highest own time.</p></details>
+<details><summary>4. Does a 10-minute pause prove the system is slow?</summary><p>No. It may just be no activity. Read the lines before and after it.</p></details>
+<details><summary>5. The same SQL ran 500 times. What do you suspect?</summary><p>A read inside a loop, where a cache or a single read would help.</p></details>
+<details><summary>6. Does the log leave your computer when you open it in the app?</summary><p>No. The file blocks the network and the log contents are not stored.</p></details>
+<details><summary>7. Can the report with hidden data be sent without review?</summary><p>No. Hiding follows patterns and may miss something.</p></details>
+<details><summary>8. The AI states with confidence what caused the problem. What do you do before acting?</summary><p>Ask for the passage that supports the claim, check the original line with View in log and confirm with whoever knows the code and the database. The AI may invent causes and references.</p></details>
+</div>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+<section id="ref-en" aria-labelledby="h-ref-en">
+<h2 id="h-ref-en">References</h2>
+<ol class="refs">
+<li id="ref-1-en"><strong>Giovani Perotto Mesquita</strong>, “JDE Log Insights”, single-file HTML app, <a href="jde-log-insights.html#en">giovanipm.github.io/jde-log-insights.html</a>.</li>
+<li id="ref-2-en"><strong>Oracle</strong>, “jde.log”, JD Edwards EnterpriseOne Tools, documentation, accessed 1 November 2026, <a href="https://docs.oracle.com/en/applications/jd-edwards/development-tools/9.2.x/eotev/jde-log.html" rel="noopener">docs.oracle.com</a>. This page says jde.log is always in the root of the primary drive. Page [3] says the location comes from JobFile. We follow [3], which is more specific.</li>
+<li id="ref-3-en"><strong>Oracle</strong>, “Troubleshooting the Enterprise Server”, documentation, accessed 1 November 2026, <a href="https://docs.oracle.com/cd/E24705_01/doc.91/e24259/troubleshoot_e1_server.htm" rel="noopener">docs.oracle.com</a>. This page describes the server jde.log as overwritten each session and, on a Windows server, as appended.</li>
+<li id="ref-4-en"><strong>Oracle</strong>, “Troubleshooting the Workstation”, documentation, accessed 1 November 2026, <a href="https://docs.oracle.com/cd/E17984_01/doc.898/e14718/troubleshoot_wrkstation.htm" rel="noopener">docs.oracle.com</a>.</li>
+<li id="ref-5-en"><strong>Oracle</strong>, “LogParse Output Files for the Enterprise Server”, documentation, accessed 1 November 2026, <a href="https://docs.oracle.com/en/applications/jd-edwards/cross-product/9.2/eoism/logparse-output-files-for-the-enterprise-server.html" rel="noopener">docs.oracle.com</a>.</li>
+<li id="ref-6-en"><strong>Dong's Page</strong>, “Case Study: Slow Performance in P4116”, case study on a personal blog, accessed 1 November 2026, <a href="https://sohigh99.github.io/dmseo/jde/docs/1523038.html" rel="noopener">sohigh99.github.io</a>.</li>
+<li id="ref-7-en"><strong>Vincenzo Caserta</strong>, “JD Edwards BSFN performance measurement with logs and timings”, technical article; the 2% to 5% and the 10 runs are the author's advice, not Oracle's, accessed 1 November 2026, <a href="https://vincenzocaserta.it/en/jd-edwards-en/development/bsfn-ner-development/jde-bsfn-performance-measurement-logs-timings" rel="noopener">vincenzocaserta.it</a>.</li>
+<li id="ref-8-en"><strong>Oracle</strong>, “Oracle Database Error Help”, pages of the ORA messages cited in the app, accessed 1 November 2026, <a href="https://docs.oracle.com/error-help/db/" rel="noopener">docs.oracle.com/error-help/db</a>.</li>
+</ol>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== IT ===================== -->
+<div id="it" role="tabpanel" aria-labelledby="tab-it" lang="it" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html#it" data-projects>← Progetti</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>JDE Log Insights: tutorial</h1>
+      <p class="dek">Come trasformare un jde.log o un jdedebug.log in risposte, senza installare nulla: errori raggruppati, funzioni e SQL lenti, pause e una mappa di ciò che è successo.</p>
+      <div class="byline">
+        <span>Di <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Pubblicato il <time datetime="2026-11-01">01/11/2026</time></span>
+        <span class="credit">Rivisto e formattato con Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-it">
+    <h2 id="toc-it">Indice</h2>
+    <ol>
+      <li><a href="#intro-it">Che cos'è JDE Log Insights</a></li>
+      <li><a href="#logs-it">I log di JD Edwards</a></li>
+      <li><a href="#obter-it">Come ottenere i log</a></li>
+      <li><a href="#roteiro-it">Percorso: indagare sull'esempio</a></li>
+      <li><a href="#ins-it">Come leggere gli insight</a></li>
+      <li><a href="#err-it">Errori</a></li>
+      <li><a href="#bsfn-it">BSFN</a></li>
+      <li><a href="#sql-it">SQL</a></li>
+      <li><a href="#gaps-it">Pause</a></li>
+      <li><a href="#ctx-it">Contesto</a></li>
+      <li><a href="#flow-it">Flusso</a></li>
+      <li><a href="#content-it">Contenuto</a></li>
+      <li><a href="#rep-it">Report e privacy</a></li>
+      <li><a href="#met-it">Un metodo per il log reale</a></li>
+      <li><a href="#ia-it">Prompt di IA</a></li>
+      <li><a href="#lim-it">Errori comuni e limiti</a></li>
+      <li><a href="#rev-it">Ripasso rapido</a></li>
+      <li><a href="#ref-it">Riferimenti</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-it" aria-labelledby="h-intro-it">
+<h2 id="h-intro-it">Che cos'è JDE Log Insights</h2>
+<p>Un log di JD Edwards EnterpriseOne può avere milioni di righe, e la risposta di solito è in poche di esse. JDE Log Insights legge questi file e mostra da dove iniziare: raggruppa gli errori, misura le funzioni di business (BSFN) e gli SQL, trova le pause e disegna cosa ha chiamato cosa. <sup><a href="#ref-1-it">[1]</a></sup></p>
+<p>È un unico file HTML, senza installazione né account.</p>
+<p><a class="launch" href="jde-log-insights.html#it">Apri JDE Log Insights <span aria-hidden="true">→</span></a></p>
+<figure>
+<img src="rc_images/JDELogInsightsInicio-it.png" alt="Schermata iniziale di JDE Log Insights, con l'area per trascinare i file, i pulsanti Apri log, Incolla testo e Vedi un esempio, e la spiegazione di cosa legge" width="1600" height="900" loading="lazy">
+<figcaption>La schermata iniziale. Trascina i file o apri l'esempio.</figcaption>
+</figure>
+<h3>Come l'app tratta i tuoi dati</h3>
+<ul>
+<li><strong>Nulla esce dal tuo computer.</strong> Il file blocca le connessioni di rete. I log contengono spesso utenti, server e SQL, quindi è importante.</li>
+<li><strong>Il log non viene conservato.</strong> Chiudendo la pagina, l'analisi sparisce. L'app conserva solo lingua, tema e limite di lentezza.</li>
+</ul>
+<aside class="note"><p>L'app segnala indizi per guidare l'indagine, a partire dal testo del log. Non corregge nulla, non accede al server e non è uno strumento di Oracle.</p></aside>
+</section>
+<section id="logs-it" aria-labelledby="h-logs-it">
+<h2 id="h-logs-it">I log di JD Edwards</h2>
+<p>Ogni file risponde a una domanda diversa. La documentazione di Oracle li distingue così: <sup><a href="#ref-2-it">[2]</a></sup> <sup><a href="#ref-3-it">[3]</a></sup> <sup><a href="#ref-4-it">[4]</a></sup></p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">File</th><th scope="col">Esempio di nome</th><th scope="col">Cosa contiene</th><th scope="col">Ideale per</th></tr></thead>
+<tbody>
+<tr><th scope="row">jde.log</th><td><code>jde_442.log</code></td><td>Errori fatali e guasti</td><td>Sapere cosa è andato storto</td></tr>
+<tr><th scope="row">jdedebug.log</th><td><code>jdedebug_442.log</code></td><td>Chiamate API, SQL e tempi. Oracle avverte che non serve a seguire gli errori</td><td>Sapere dove è finito il tempo</td></tr>
+<tr><th scope="row">Log di UBE</th><td><code>R014021_XJDE0001_D990312_T161854215.log</code></td><td>Sezioni, oggetti, regole di evento e SQL di un report batch</td><td>Seguire un UBE</td></tr>
+</tbody>
+</table></div>
+<figure>
+<img src="rc_images/JDELogInsightsAnatomia-it.svg" alt="Due righe di esempio. Nel jde.log, la riga riporta processo e thread, nome del thread, data e ora e file sorgente, seguiti dal messaggio. Nel jdedebug, riporta data e ora, processo e thread, nome del thread con l'applicazione e il messaggio, come un'istruzione SQL." loading="lazy">
+<figcaption>Le parti di ogni riga. Il messaggio del jde.log può stare sulla stessa riga o su quella dopo.</figcaption>
+</figure>
+<p>Il numero nel nome è l'ID del processo, quindi un server genera più file. Apri insieme quelli dello stesso processo: l'app li legge tutti insieme e indica cosa ha identificato in ciascuno.</p>
+</section>
+<section id="obter-it" aria-labelledby="h-obter-it">
+<h2 id="h-obter-it">Come ottenere i log</h2>
+<p>La posizione di jde.log e jdedebug.log dipende da <code>JobFile</code> e <code>DebugFile</code>, nella sezione <code>[DEBUG]</code> di <code>jde.ini</code>. <sup><a href="#ref-3-it">[3]</a></sup> jdedebug contiene chiamate, SQL e tempi solo con il debug attivo:</p>
+<pre class="code"><code>[DEBUG]
+Output=FILE
+LogErrors=1</code></pre>
+<ol>
+<li>Attiva il debug dove serve. Per riprodurre il problema, isola un solo kernel o processo, così i log non si mescolano. <sup><a href="#ref-7-it">[7]</a></sup></li>
+<li>Riproduci il problema una volta e copia i file. Possono essere sovrascritti nella sessione seguente: Oracle descrive entrambi i comportamenti, sovrascrivere e accodare, secondo il server e la postazione. <sup><a href="#ref-3-it">[3]</a></sup> <sup><a href="#ref-4-it">[4]</a></sup></li>
+<li>Riporta <code>Output</code> al valore precedente. Il log cresce in fretta e pesa sul processo: un autore stima dal 2% al 5% di tempo in più. <sup><a href="#ref-7-it">[7]</a></sup></li>
+</ol>
+<p>I log di UBE sono nella coda di stampa (PrintQueue), e il livello di dettaglio dipende da <code>UBEDebugLevel</code>, nella sezione <code>[UBE]</code>. <sup><a href="#ref-3-it">[3]</a></sup></p>
+</section>
+<section id="roteiro-it" aria-labelledby="h-roteiro-it">
+<h2 id="h-roteiro-it">Percorso: indagare sull'esempio</h2>
+<p>Usa i dati di esempio: sono fittizi, costruiti da estratti pubblici di log, e i risultati qui sotto sono quelli che vedrai. Il caso ha di tutto: una connessione persa con il database, una lettura enorme e un SQL lento.</p>
+<h3>1. Apri l'esempio e leggi il primo insight</h3>
+<ol>
+<li>Apri l'app e fai clic su <strong>Vedi un esempio</strong>.</li>
+<li>Controlla i totali in alto: 8693 righe, 62 occorrenze di errore in 7 tipi, 124 chiamate BSFN e 123 istruzioni SQL.</li>
+<li>Leggi la prima scheda, segnata come <strong>Critico</strong>: <strong>Il database non era raggiungibile</strong>. ORA-03113 è apparso 22 volte, da 12 mar 09:17:00 a 12 mar 09:17:42.</li>
+</ol>
+<figure>
+<img src="rc_images/JDELogInsightsInsights-it.png" alt="Scheda Insights con i totali del log e le schede ordinate per gravità, con l'avviso critico del database in alto" width="1600" height="900" loading="lazy">
+<figcaption>Gli insight sono in ordine di gravità, ciascuno con la prova e il collegamento.</figcaption>
+</figure>
+<h3>2. Apri l'errore e guarda la riga originale</h3>
+<ol>
+<li>Sulla prima scheda, fai clic su <strong>Vedi gli errori</strong>. La scheda <strong>Errori</strong> si apre già filtrata.</li>
+<li>Fai clic sul messaggio di ORA-03113. Il dettaglio riporta cosa dice la fonte sull'errore, con il collegamento.</li>
+<li>In <strong>Occorrenze di esempio</strong>, fai clic su <strong>Vedi nel log</strong> per controllare il brano originale, con la riga segnata.</li>
+</ol>
+<figure>
+<img src="rc_images/JDELogInsightsErro-it.png" alt="Finestra di dettaglio dell'errore ORA-03113, con il messaggio, la spiegazione di Oracle, i conteggi e le occorrenze di esempio" width="1600" height="900" loading="lazy">
+<figcaption>Il dettaglio dell'errore riporta il significato secondo Oracle e dove è avvenuto.</figcaption>
+</figure>
+<figure>
+<img src="rc_images/JDELogInsightsLog-it.png" alt="Finestra con il brano originale del file jde_4412.log e la riga dell'errore evidenziata" width="1600" height="900" loading="lazy">
+<figcaption>Vedi nel log apre il file nel punto giusto. Controlla sempre la riga originale.</figcaption>
+</figure>
+<p>Tornando agli insight, un'altra scheda dice che JDB9900401 è di solito una conseguenza di ORA-03113. Ci sono state 22 occorrenze, sempre entro 1 secondo, nello stesso thread. Per questo l'indagine parte da ORA-03113.</p>
+<h3>3. Cerca dove è finito il tempo</h3>
+<ol>
+<li>Apri la scheda <strong>BSFN</strong>. La tabella è ordinata per <strong>Tempo proprio</strong>.</li>
+<li>F4111EndDocument ha impiegato 9,13 s in totale, di cui 7,41 s di tempo proprio. Quindi il tempo non è nelle funzioni che chiama.</li>
+</ol>
+<figure>
+<img src="rc_images/JDELogInsightsBsfn-it.png" alt="Scheda BSFN con la tabella di funzioni, chiamate, tempo totale, tempo proprio, media, massimo e ritorni diversi da zero" width="1600" height="900" loading="lazy">
+<figcaption>Il tempo proprio mostra dove il tempo è stato davvero speso.</figcaption>
+</figure>
+<h3>4. Trova l'SQL responsabile</h3>
+<ol>
+<li>Apri la scheda <strong>SQL</strong>. La prima istruzione è una lettura di F0005, senza WHERE, di circa 7,4 s.</li>
+<li>Guarda gli altri due segnali: una lettura di F41021 ha restituito 4000 righe, e l'istruzione su F4101 è stata eseguita 120 volte.</li>
+</ol>
+<figure>
+<img src="rc_images/JDELogInsightsSql-it.png" alt="Scheda SQL con le istruzioni raggruppate, la tabella, il numero di esecuzioni, le righe lette e il tempo approssimato" width="1600" height="900" loading="lazy">
+<figcaption>Le istruzioni uguali sono unite, senza i valori. Ecco la lettura lenta e quella ripetuta.</figcaption>
+</figure>
+<h3>5. Guarda il percorso sulla mappa</h3>
+<ol>
+<li>Apri la scheda <strong>Flusso</strong> e fai clic sul blocco F41021.</li>
+<li>La mappa evidenzia il percorso: P4116 chiama F4111EndDocument, che chiama AverageCostUpdate, che legge F41021. Ora sai quale schermata porta a questa lettura.</li>
+</ol>
+<figure>
+<img src="rc_images/JDELogInsightsFluxo-it.png" alt="Scheda Flusso con le colonne di ingresso, BSFN, tabelle ed errori, e il percorso da P4116 a F41021 evidenziato" width="1600" height="900" loading="lazy">
+<figcaption>Il percorso verso la tabella è evidenziato, e il resto sbiadisce.</figcaption>
+</figure>
+<h3>6. Crea il report</h3>
+<ol>
+<li>Fai clic su <strong>Report</strong> e seleziona <strong>Nascondi utenti, server, IP, percorsi e valori tra virgolette</strong>.</li>
+<li>Rivedi il testo e usa <strong>Copia</strong> o <strong>Scarica .md</strong>.</li>
+</ol>
+<figure>
+<img src="rc_images/JDELogInsightsRelatorio-it.png" alt="Finestra del report in Markdown, con l'opzione di nascondere utenti, server, IP, percorsi e valori selezionata" width="1600" height="900" loading="lazy">
+<figcaption>Il report può nascondere dati prima dell'invio. Rivedilo comunque.</figcaption>
+</figure>
+<p>Risultato: in pochi minuti hai un'ipotesi per ogni problema. Connessione al database persa alle 09:17, con un errore conseguenza di un altro; una lettura senza filtro; e una funzione chiamata 120 volte. Resta da confermare ciascuna con il DBA e con chi conosce il codice.</p>
+<a class="back" href="#top">↑ Torna all'inizio</a>
+</section>
+<section id="ins-it" aria-labelledby="h-ins-it">
+<h2 id="h-ins-it">Come leggere gli insight</h2>
+<p>Le schede sono regole semplici sui numeri del log, e queste sono le condizioni esatte. Un segnale non è una causa: indica dove guardare.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Segnale</th><th scope="col">Quando appare</th><th scope="col">Cosa fare prima</th></tr></thead>
+<tbody>
+<tr><th scope="row">Guasto grave</th><td>Messaggio con ACCESS VIOLATION, SIGSEGV, core dump, out of memory o fatal</td><td>Cerca il .dmp.log: elenca i thread al momento del crash. Oracle indica di iniziare da quello con jdeLogCallStack. Su IBM i, gli stack sono nel jde.log. <sup><a href="#ref-3-it">[3]</a></sup></td></tr>
+<tr><th scope="row">Database non raggiungibile</th><td>ORA-03113, 03114, 12154, 12170, 12514 o 12541</td><td>Il dettaglio dell'errore riporta il consiglio di Oracle per ogni codice, come alert log, rete o listener. <sup><a href="#ref-8-it">[8]</a></sup></td></tr>
+<tr><th scope="row">Errore dominante</th><td>Un errore rappresenta il 30% o più delle occorrenze, almeno 3 volte</td><td>Inizia da quello</td></tr>
+<tr><th scope="row">Errore conseguenza</th><td>B è arrivato fino a 1 s dopo A, nello stesso thread, almeno metà delle volte e in 3 occorrenze</td><td>Indaga prima A</td></tr>
+<tr><th scope="row">Picco</th><td>Un minuto con 10 errori o più, e 5 volte la mediana dei minuti con errori</td><td>Verifica cosa è cambiato a quell'ora</td></tr>
+<tr><th scope="row">Processo concentrato</th><td>Un processo con il 70% degli errori, almeno 5</td><td>Sospetta ciò che fa solo lui</td></tr>
+<tr><th scope="row">SQL ripetuto</th><td>Stessa istruzione 50 volte o più</td><td>Cerca una lettura in un ciclo</td></tr>
+<tr><th scope="row">Lettura grande</th><td>Un'esecuzione con 1.000 righe o più</td><td>Controlla filtro e indici</td></tr>
+<tr><th scope="row">BSFN, SQL o pausa lenti</th><td>Oltre il limite regolabile, 1 s di default</td><td>Apri la scheda corrispondente</td></tr>
+</tbody>
+</table></div>
+<p>Sotto le schede, due grafici mostrano errori e righe di log nel tempo. Fai clic su una barra di errore per vedere solo gli errori di quell'intervallo. <strong>Vedi come tabella</strong> riporta gli stessi numeri in tabella.</p>
+<figure>
+<img src="rc_images/JDELogInsightsGrafico-it.png" alt="Due grafici a barre: errori per intervallo, con un picco alle 09:15, e righe di log per intervallo, concentrate alla fine" width="1600" height="900" loading="lazy">
+<figcaption>Il picco di errori salta all'occhio. Le righe di log mostrano quando il debug era attivo.</figcaption>
+</figure>
+</section>
+<section id="err-it" aria-labelledby="h-err-it">
+<h2 id="h-err-it">Errori</h2>
+<p>L'app raggruppa i messaggi che cambiano solo nei valori, quindi lo stesso errore con numeri diversi conta come uno solo. Filtra per <strong>Livello</strong> e <strong>Area</strong>, o digita una parte, come il nome di una tabella.</p>
+<ul>
+<li><strong><strong>Fatale</strong></strong>, <strong><strong>Errore</strong></strong> e <strong><strong>Avviso</strong></strong> derivano da codici e parole del messaggio, come <code>ORA-00942</code>, <code>OCI0000178</code> e <code>failed</code>.</li>
+<li><strong><strong>Cosa dice la fonte</strong>:</strong> l'app ha una piccola base, solo con testi di Oracle, ciascuno con il collegamento alla fonte. <sup><a href="#ref-3-it">[3]</a></sup> <sup><a href="#ref-4-it">[4]</a></sup> <sup><a href="#ref-8-it">[8]</a></sup></li>
+<li><strong>Codice fuori dalla base:</strong> cercalo in My Oracle Support o nell'applicazione P92002, che contiene i messaggi di errore del sistema. <sup><a href="#ref-4-it">[4]</a></sup></li>
+</ul>
+</section>
+<section id="bsfn-it" aria-labelledby="h-bsfn-it">
+<h2 id="h-bsfn-it">BSFN</h2>
+<p>L'app abbina ogni chiamata al suo ritorno, per thread, e calcola due tempi:</p>
+<ul>
+<li><strong><strong>Tempo totale</strong>:</strong> dalla chiamata al ritorno, incluse le funzioni che chiama.</li>
+<li><strong><strong>Tempo proprio</strong>:</strong> il totale meno il tempo delle funzioni figlie. È qui che devi guardare prima. <sup><a href="#ref-7-it">[7]</a></sup></li>
+<li><strong><strong>Ritorno ≠ 0</strong>:</strong> chiamate che hanno restituito un valore diverso da 0. L'app le conta soltanto; verifica come il chiamante gestisce il ritorno.</li>
+</ul>
+<aside class="note"><p>È tempo reale, con il log attivo. Include attese di database e rete e il costo del log stesso, quindi serve a confrontare parti della stessa esecuzione, non a promettere un tempo in produzione. <sup><a href="#ref-7-it">[7]</a></sup></p></aside>
+</section>
+<section id="sql-it" aria-labelledby="h-sql-it">
+<h2 id="h-sql-it">SQL</h2>
+<p>L'app rimuove i valori, per unire le istruzioni uguali, e somma esecuzioni, righe lette e tempo. Così i valori dei clienti non restano nella tabella.</p>
+<ul>
+<li><strong>Righe lette:</strong> conta le righe "Fetched the record" dopo ogni istruzione. Un caso di studio su P4116 mostra questo schema: 40.000 righe lette in una sola chiamata di funzione. <sup><a href="#ref-6-it">[6]</a></sup></li>
+<li><strong><strong>Tempo appross.</strong>:</strong> va dall'istruzione all'ultima lettura, quindi include ciò che l'applicazione ha fatto tra le letture.</li>
+<li><strong>Indizio:</strong> un intervallo lungo tra l'istruzione e la prima lettura indica di solito il database più che la logica. <sup><a href="#ref-7-it">[7]</a></sup></li>
+</ul>
+</section>
+<section id="gaps-it" aria-labelledby="h-gaps-it">
+<h2 id="h-gaps-it">Pause</h2>
+<p>La pausa è il tempo senza nuove righe nello stesso processo e thread. Oracle suggerisce jdedebug proprio per vedere il punto in cui l'esecuzione normale si è fermata. <sup><a href="#ref-3-it">[3]</a></sup> Ogni riga della tabella mostra cosa è venuto prima e dopo.</p>
+<figure>
+<img src="rc_images/JDELogInsightsPausas-it.png" alt="Scheda Pause con la tabella delle pause, l'inizio, il processo e le righe prima e dopo" width="1600" height="900" loading="lazy">
+<figcaption>La pausa più lunga dell'esempio, con le righe prima e dopo.</figcaption>
+</figure>
+<aside class="note"><p>La pausa non è di per sé lentezza. Può essere una query lunga, o solo una persona che ha tardato a fare clic. Leggi la riga seguente prima di concludere.</p></aside>
+</section>
+<section id="ctx-it" aria-labelledby="h-ctx-it">
+<h2 id="h-ctx-it">Contesto</h2>
+<p>La scheda <strong>Contesto</strong> risponde a "cosa stava girando?": file letti e tipo di ciascuno, applicazioni e report, tabelle, processi e thread, e le chiamate API più frequenti.</p>
+</section>
+<section id="flow-it" aria-labelledby="h-flow-it">
+<h2 id="h-flow-it">Flusso</h2>
+<p>La scheda <strong>Flusso</strong> disegna chi chiama chi, sommando tutte le esecuzioni: ingresso, BSFN per livello, tabelle ed errori in sequenza. In un jde.log puro, mostra processo → errore → errore seguente.</p>
+<ul>
+<li>Più il collegamento è spesso, più volte si è verificato.</li>
+<li>⏱ segna ciò che ha superato il limite di lentezza, e la linea tratteggiata, un ritorno, come la ricorsione.</li>
+<li>Facendo clic su un blocco, il suo percorso è evidenziato e <strong>Apri dettagli</strong> porta al dettaglio.</li>
+<li><strong>Vedi i collegamenti come tabella</strong> riporta gli stessi collegamenti in testo, e <strong>Scarica SVG</strong> salva l'immagine.</li>
+</ul>
+<aside class="note"><p>La mappa non mostra l'ordine nel tempo. Mostra fino a 400 blocchi, avvisa quando ce ne sono di più e non disegna i collegamenti attraverso blocchi nascosti.</p></aside>
+</section>
+<section id="content-it" aria-labelledby="h-content-it">
+<h2 id="h-content-it">Contenuto</h2>
+<p>La scheda <strong>Contenuto</strong> mostra l'intero log, riga per riga, con un colore e un'etichetta per ogni tipo di evento: errori, ritorni diversi da 0, BSFN, SQL, lettura di righe, parametri, API e UBE. Usala quando i riepiloghi ti hanno già detto dove guardare e vuoi leggere cosa è successo intorno.</p>
+<figure>
+<img src="rc_images/JDELogInsightsConteudo-it.png" alt="Scheda Contenuto con le righe del log colorate per tipo di evento, l'etichetta di ciascuna, i tipi con i conteggi e la ricerca" width="1600" height="900" loading="lazy">
+<figcaption>Ogni tipo di evento ha un colore e un'etichetta. La riga selezionata è segnata.</figcaption>
+</figure>
+<ul>
+<li><strong>Filtrare:</strong> fai clic su un tipo per vedere solo le sue righe. Facendo clic su un altro si somma, e <strong>Mostra tutto</strong> annulla.</li>
+<li><strong>Pause:</strong> ⏸ segna la riga venuta dopo una pausa oltre il limite.</li>
+<li><strong>Navigare:</strong> usa la ricerca, <strong>Vai alla riga</strong>, <strong>Errore successivo ▶</strong> e le frecce. In <strong>Vedi nel log</strong>, il pulsante <strong>Apri in Contenuto</strong> ti porta qui.</li>
+<li><strong>Copiare:</strong> le righe oltre 2.000 caratteri sono tagliate sullo schermo, e <strong>Copia</strong> porta il testo intero.</li>
+</ul>
+<aside class="note"><p>Il colore deriva dalla stessa regola di parole e codici delle altre schede. Una riga senza formato proprio eredita il tipo della riga precedente. Con più file, scegline uno alla volta: non vengono mescolati. L'app legge il file dal disco mentre scorri, quindi lascialo al suo posto.</p></aside>
+</section>
+<section id="rep-it" aria-labelledby="h-rep-it">
+<h2 id="h-rep-it">Report e privacy</h2>
+<p><strong>Report</strong> crea un testo in Markdown con gli insight e i numeri principali, da allegare a un ticket. Prima di inviarlo a qualcuno o a un'IA, seleziona <strong>Nascondi utenti, server, IP, percorsi e valori tra virgolette</strong>.</p>
+<aside class="note"><p>L'oscuramento segue schemi noti e può lasciar passare qualcosa. Rivedi il testo: anche il nome di una tabella o di un report può dire molto.</p></aside>
+</section>
+<section id="met-it" aria-labelledby="h-met-it">
+<h2 id="h-met-it">Un metodo per il log reale</h2>
+<p>Con un problema reale, quest'ordine evita perdite di tempo:</p>
+<ol>
+<li><strong>Inizia dal jde.log.</strong> Se c'è un guasto grave o una connessione persa, risolvili prima di misurare le prestazioni.</li>
+<li><strong>Riproduci con il debug</strong> in un solo processo, e apri il jdedebug.</li>
+<li><strong>Segui il tempo:</strong> <strong>BSFN</strong> per tempo proprio, poi <strong>SQL</strong> e <strong>Pause</strong>.</li>
+<li><strong>Conferma sulla riga originale</strong> con <strong>Vedi nel log</strong> e con chi conosce codice e database.</li>
+<li><strong>Correggi e misura di nuovo.</strong> Un autore suggerisce 10 o più esecuzioni e di usare la mediana, perché una sola inganna. <sup><a href="#ref-7-it">[7]</a></sup></li>
+</ol>
+<figure>
+<img src="rc_images/JDELogInsightsMetodo-it.svg" alt="Flusso in sei passi: aprire il jde.log e vedere gli errori; risolvere i guasti gravi; riprodurre con il debug; seguire il tempo; confermare sulla riga originale; correggere e misurare di nuovo. Una freccia tratteggiata torna dall'ultimo passo alla riproduzione." loading="lazy">
+<figcaption>L'app accelera l'analisi. La decisione resta del team.</figcaption>
+</figure>
+<p>Per log molto grandi o per l'analisi ufficiale, Oracle offre LogParse, nel Performance Workbench di Server Manager, che genera riepilogo, CSV di BSFN e tabelle, e pause. <sup><a href="#ref-5-it">[5]</a></sup> JDE Log Insights è un'alternativa rapida, senza server, non un sostituto.</p>
+<a class="back" href="#top">↑ Torna all'inizio</a>
+</section>
+<section id="ia-it" aria-labelledby="h-ia-it">
+<h2 id="h-ia-it">Prompt di IA</h2>
+<p>Con i segnali in mano, resta da interpretarli: cosa significa questo codice, quale errore è venuto prima, cosa chiedere al DBA. Un'IA aiuta a organizzare le ipotesi e a preparare la conversazione. Sbaglia anche con sicurezza: inventa cause, cita note di supporto che non esistono e suppone come sia la tua personalizzazione. Tratta il risultato come la bozza di un collega di fretta. Per scrivere prompt migliori, vedi il <a href="PromptTutorial.html#it">tutorial sui prompt</a>.</p>
+<figure>
+<img src="rc_images/JDELogInsightsIA-it.svg" alt="Sei passi: l'app crea il report con i dati nascosti, tu rivedi cosa esce, l'IA propone ipotesi con prove, l'app controlla la riga originale, tu confermi con il DBA e lo sviluppo, poi correggi e misuri. Dalla correzione, si torna all'IA con il nuovo log." loading="lazy">
+<figcaption>L'IA organizza le ipotesi. La prova è nella riga originale e nel team.</figcaption>
+</figure>
+<blockquote><p><strong>Prima di incollare:</strong> i log possono contenere utenti, server, SQL e valori di clienti. L'app non invia nulla in rete, ma il servizio di IA riceve tutto ciò che incolli. Usa <strong>Nascondi utenti, server, IP, percorsi e valori tra virgolette</strong>, rivedi il testo e segui la politica della tua organizzazione sull'uso dell'IA.</p></blockquote>
+<p>Sostituisci le parti tra parentesi quadre e incolla nello strumento di IA che usi. I prompt seguono l'ordine dell'indagine, ma ciascuno funziona da solo.</p>
+<h3>1. Dare priorità a ciò che mostra il report</h3>
+<p>In <strong>Report</strong>, seleziona <strong>Nascondi utenti, server, IP, percorsi e valori tra virgolette</strong>, usa <strong>Copia</strong> e incolla il testo alla fine del prompt.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-it-1" data-done="Copiato">Copia</button><pre class="code"><code id="prompt-it-1">Sei un analista esperto di JD Edwards EnterpriseOne.
+Qui sotto c'è il report di uno strumento che legge i log del sistema.
+
+Contesto del problema: [cosa ha visto l'utente, quando, in quale applicazione]
+
+Basandoti solo sul report:
+1. Elenca da 3 a 5 ipotesi, dalla più alla meno probabile.
+2. Per ciascuna, cita il numero o la riga del report che la sostiene e di' cosa la smentirebbe.
+3. Di' cosa devo guardare prima e chi nel team può confermare.
+4. Separa ciò che è un fatto nel report da ciò che è una tua supposizione.
+
+Non inventare codici, tabelle, note di supporto né caratteristiche del mio ambiente. Se manca un dato, di' quale.
+
+Report:
+[incolla il report]</code></pre></div>
+<h3>2. Spiegare un errore</h3>
+<p>Apri l'errore nella scheda <strong>Errori</strong> e usa <strong>Vedi nel log</strong> per copiare il messaggio e le righe intorno, sostituendo i dati sensibili. Poi confronta la risposta con ciò che dice Oracle sul codice. <sup><a href="#ref-8-it">[8]</a></sup></p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-it-2" data-done="Copiato">Copia</button><pre class="code"><code id="prompt-it-2">Spiega questo errore di un log di JD Edwards EnterpriseOne a chi non è specialista.
+
+Versione del sistema e del database: [es.: Tools 9.2, Oracle, o "non lo so"]
+Cosa si stava facendo: [applicazione, UBE o azione]
+
+Messaggio e righe intorno:
+[incolla il brano]
+
+Rispondi:
+1. Cosa dice il messaggio, in parole semplici.
+2. Cause possibili, con ciò che conferma o esclude ciascuna.
+3. Dove verificare e chi di solito verifica.
+4. Quali parti della risposta vengono dalla documentazione e quali sono deduzioni. Se non conosci il codice, dillo invece di indovinare.</code></pre></div>
+<h3>3. Separare causa e conseguenza</h3>
+<p>Nella scheda <strong>Errori</strong>, usa <strong>Scarica CSV</strong> e incolla la tabella. Prima di incollare, sostituisci utenti, server e valori, perché il CSV non nasconde i dati. Il prompt chiede all'IA di dire cosa aprire nel log per confermare ogni collegamento.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-it-3" data-done="Copiato">Copia</button><pre class="code"><code id="prompt-it-3">La tabella qui sotto elenca gli errori raggruppati di un log di JD Edwards EnterpriseOne, con conteggio, prima e ultima occorrenza.
+
+Identifica:
+1. Quali errori sembrano l'origine e quali conseguenze, usando l'ordine nel tempo e il tipo di messaggio.
+2. Errori avvenuti nello stesso periodo che possono avere la stessa causa.
+3. Da quale errore iniziare, e perché.
+
+La tabella non mostra il thread né il testo completo. Di' cosa devo aprire nel log per confermare ogni collegamento. Non trattare la coincidenza nel tempo come una prova.
+
+Tabella:
+[incolla il CSV]</code></pre></div>
+<h3>4. Capire dove una BSFN spende tempo</h3>
+<p>Nella scheda <strong>BSFN</strong>, usa <strong>Scarica CSV</strong> e incolla la tabella. In tempo reale, la differenza tra totale e proprio indica dove scendere. <sup><a href="#ref-7-it">[7]</a></sup></p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-it-4" data-done="Copiato">Copia</button><pre class="code"><code id="prompt-it-4">La tabella qui sotto riporta le funzioni di business (BSFN) misurate in un jdedebug di JD Edwards EnterpriseOne: chiamate, tempo totale, tempo proprio, media, massimo e ritorni diversi da 0. I tempi sono reali, con il log attivo.
+
+Scenario misurato: [cosa è stato eseguito, e quante volte]
+Tempo percepito dall'utente: [es.: 40 s]
+
+1. Quali funzioni meritano attenzione prima, e perché.
+2. Dove il tempo totale è molto maggiore di quello proprio, e cosa indica.
+3. Segni di chiamate ripetute troppo.
+4. Quali domande fare a chi conosce il codice.
+
+Non dire cosa fa una funzione all'interno, a meno che io lo indichi. Se un nome suggerisce qualcosa, segnalo come supposizione.
+
+Tabella:
+[incolla il CSV]</code></pre></div>
+<h3>5. Analizzare un SQL</h3>
+<p>Apri l'istruzione nella scheda <strong>SQL</strong> e usa <strong>Copia</strong>: il testo arriva senza i valori. Aggiungi le colonne della riga, come esecuzioni e righe lette. <sup><a href="#ref-7-it">[7]</a></sup></p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-it-5" data-done="Copiato">Copia</button><pre class="code"><code id="prompt-it-5">Analizza questo SQL di un log di JD Edwards EnterpriseOne. I valori sono stati rimossi.
+
+Istruzione:
+[incolla l'istruzione]
+
+Esecuzioni: [numero]
+Righe lette: [numero]
+Tempo approssimato (include ciò che l'applicazione ha fatto tra le letture): [tempo]
+Database: [es.: Oracle, SQL Server]
+Dimensione della tabella: [righe, o "non lo so"]
+
+Rispondi:
+1. Cosa salta all'occhio: ripetizione, volume, filtro mancante.
+2. Cosa chiedere al DBA di confermare, come il piano di esecuzione e gli indici esistenti.
+3. Due o tre miglioramenti da valutare nell'applicazione e nel database, con il rischio di ciascuno.
+
+Non inventare nomi di indici o colonne. Non raccomandare di modificare le tabelle standard di JD Edwards senza indicare l'impatto.</code></pre></div>
+<h3>6. Interpretare una pausa</h3>
+<p>Apri la pausa nella scheda <strong>Pause</strong> e copia le righe prima e dopo, sostituendo i dati sensibili. La risposta deve dire cosa manca per decidere, non solo tirare a indovinare.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-it-6" data-done="Copiato">Copia</button><pre class="code"><code id="prompt-it-6">In un log di JD Edwards EnterpriseOne, c'è stata una pausa di [tempo] nello stesso thread.
+
+Ultima riga prima:
+[incolla]
+
+Prima riga dopo:
+[incolla]
+
+Come è stato generato il log: [es.: utente sulla schermata, UBE, carico automatico]
+
+Elenca cosa può spiegare questa pausa, come lavoro non registrato, attesa di database o rete, o inattività dell'utente. Per ogni spiegazione, di' cosa osservare per confermarla o escluderla. Se le righe non permettono di decidere, dillo.</code></pre></div>
+<h3>7. Pianificare la prossima misura</h3>
+<p>Chiede un piano breve per riprodurre e confrontare, seguendo il metodo di questo tutorial. Rivedi ogni modifica a <code>jde.ini</code> con chi amministra il server. <sup><a href="#ref-3-it">[3]</a></sup> <sup><a href="#ref-7-it">[7]</a></sup></p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-it-7" data-done="Copiato">Copia</button><pre class="code"><code id="prompt-it-7">Voglio misurare un problema di prestazioni in JD Edwards EnterpriseOne e confrontare prima e dopo una correzione.
+
+Problema: [cosa è lento]
+Ambiente disponibile per il test: [es.: collaudo, un kernel isolato]
+Cosa so già: [incolla i risultati principali]
+
+Prepara un piano breve:
+1. Come riprodurre lo stesso scenario, sempre uguale.
+2. Quali log raccogliere e come isolare il processo, perché non si mescolino.
+3. Quante esecuzioni fare e come confrontarle, usando la mediana.
+4. Cosa può falsare la misura, come il log stesso, la cache e altri utenti.
+5. Come annullare le impostazioni di debug alla fine.
+
+Segnala cosa richiede conferma dall'amministratore di sistema. Se non sei sicuro del nome di un parametro, dillo.</code></pre></div>
+<h3>8. Scrivere il ticket</h3>
+<p>Separa fatti e ipotesi, perché il ticket non affermi ciò che nessuno ha provato. Se l'IA cita un documento di supporto, verifica che esista.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-it-8" data-done="Copiato">Copia</button><pre class="code"><code id="prompt-it-8">Scrivi un ticket per [DBA, sviluppo o supporto] a partire dal report qui sotto.
+
+Cosa è successo per l'utente: [descrivi]
+Impatto: [chi è stato colpito, da quando]
+Cosa è già stato provato: [descrivi]
+
+Struttura:
+1. Riepilogo in due frasi.
+2. Fatti osservati, con orari e numeri del report.
+3. Ipotesi, segnate come ipotesi.
+4. Cosa chiedo di verificare.
+5. Allegati da inviare.
+
+Non aggiungere fatti, cause né scadenze. Mantieni le parti nascoste così come sono.
+
+Report:
+[incolla il report]</code></pre></div>
+<h3>Come controllare la risposta</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Cosa ha fatto l'IA</th><th scope="col">Perché diffidare</th><th scope="col">Cosa fare</th></tr></thead>
+<tbody>
+<tr><td>Ha citato una tabella, BSFN o codice che non è in ciò che hai incollato</td><td>Può averlo inventato</td><td>Chiedi il brano esatto che sostiene l'affermazione, e cercalo nell'app</td></tr>
+<tr><td>Ha spiegato un codice ORA o JDE</td><td>Può essere sbagliato o di un'altra versione</td><td>Confronta con Oracle: il dettaglio dell'errore nell'app riporta la fonte quando la conosce</td></tr>
+<tr><td>Ha citato una nota di supporto</td><td>I riferimenti possono non esistere</td><td>Cerca il numero in My Oracle Support prima di inoltrarlo</td></tr>
+<tr><td>Ha affermato una causa con certezza</td><td>Il log mostra sintomi e ordine, non intenzioni</td><td>Chiedi cosa smentirebbe l'ipotesi e conferma con <strong>Vedi nel log</strong></td></tr>
+<tr><td>Ha raccomandato un indice, un parametro o una modifica a jde.ini</td><td>Può avere effetto su tutto l'ambiente</td><td>Valuta con il DBA o l'amministratore e prova fuori dalla produzione</td></tr>
+</tbody>
+</table></div>
+<aside class="note"><p>La risposta dell'IA non cambia ciò che il log prova. Prima di agire, torna alla riga originale e conferma con chi conosce il codice e il database.</p></aside>
+<a class="back" href="#top">↑ Torna all'inizio</a>
+</section>
+<section id="lim-it" aria-labelledby="h-lim-it">
+<h2 id="h-lim-it">Errori comuni e limiti</h2>
+<h3>Errori di lettura</h3>
+<ul>
+<li><strong>Concludere dal conteggio.</strong> L'errore più frequente può essere conseguenza di uno più raro.</li>
+<li><strong>Confondere pausa e lentezza.</strong> Leggi le righe intorno.</li>
+<li><strong>Misurare una sola esecuzione.</strong> I tempi variano, e il log pesa.</li>
+<li><strong>Aprire solo il jde.log e cercare i tempi.</strong> Chiamate e SQL sono registrati dal jdedebug.</li>
+</ul>
+<h3>Limiti</h3>
+<ul>
+<li><strong>Solo log fittizi.</strong> L'app è stata provata con log costruiti da estratti pubblici, mai con un log di produzione. Versioni, lingue e piattaforme possono variare: avvisa quando riconosce meno del 60% delle righe, e allora cerca solo parole di errore.</li>
+<li><strong>Rilevamento per parole.</strong> Può segnalare una riga normale come errore, o non vedere un errore scritto in altro modo.</li>
+<li><strong>Senza anno.</strong> I log non riportano l'anno, quindi appaiono solo giorno e ora.</li>
+<li><strong>I file compressi</strong> non vengono letti: estrai prima lo .zip.</li>
+<li><strong>Dimensione:</strong> abbiamo provato fino a 501 MB, letti in circa 10 s su un computer fisso, in Chromium. Altre macchine variano.</li>
+<li><strong>Browser:</strong> Firefox, Safari e telefoni reali non sono stati provati.</li>
+</ul>
+</section>
+<section id="rev-it" aria-labelledby="h-rev-it">
+<h2 id="h-rev-it">Ripasso rapido</h2>
+<p>Prova a rispondere prima di aprire ogni domanda.</p>
+<div class="quiz">
+<details><summary>1. Quale file guardare per sapere perché qualcosa è fallito?</summary><p>Il jde.log, con errori fatali e guasti. Il jdedebug contiene chiamate, SQL e tempi, e Oracle avverte che non serve a seguire gli errori.</p></details>
+<details><summary>2. JDB9900401 appare subito dopo ORA-03113 ogni volta. Da dove iniziare?</summary><p>Da ORA-03113. L'altro è probabilmente una conseguenza.</p></details>
+<details><summary>3. Una BSFN ha tempo totale alto e tempo proprio basso. Cosa indica?</summary><p>Che il tempo è nelle funzioni che chiama. Scendi alla figlia con il tempo proprio più alto.</p></details>
+<details><summary>4. Una pausa di 10 minuti prova che il sistema è lento?</summary><p>No. Può essere solo inattività. Leggi le righe prima e dopo.</p></details>
+<details><summary>5. Lo stesso SQL è stato eseguito 500 volte. Cosa sospettare?</summary><p>Una lettura in un ciclo, dove aiuterebbe una cache o una lettura unica.</p></details>
+<details><summary>6. Il log esce dal computer quando lo apri nell'app?</summary><p>No. Il file blocca la rete e il contenuto del log non viene conservato.</p></details>
+<details><summary>7. Il report con i dati nascosti può essere inviato senza revisione?</summary><p>No. L'oscuramento segue schemi e può lasciar passare qualcosa.</p></details>
+<details><summary>8. L'IA dice con sicurezza qual è la causa del problema. Cosa fare prima di agire?</summary><p>Chiedi il brano che sostiene l'affermazione, controlla la riga originale con Vedi nel log e conferma con chi conosce il codice e il database. L'IA può inventare cause e riferimenti.</p></details>
+</div>
+<a class="back" href="#top">↑ Torna all'inizio</a>
+</section>
+<section id="ref-it" aria-labelledby="h-ref-it">
+<h2 id="h-ref-it">Riferimenti</h2>
+<ol class="refs">
+<li id="ref-1-it"><strong>Giovani Perotto Mesquita</strong>, “JDE Log Insights”, app in un unico file HTML, <a href="jde-log-insights.html#it">giovanipm.github.io/jde-log-insights.html</a>.</li>
+<li id="ref-2-it"><strong>Oracle</strong>, “jde.log”, JD Edwards EnterpriseOne Tools, documentazione, consultato il 01/11/2026, <a href="https://docs.oracle.com/en/applications/jd-edwards/development-tools/9.2.x/eotev/jde-log.html" rel="noopener">docs.oracle.com</a>. Questa pagina afferma che jde.log è sempre nella radice dell'unità principale. La pagina [3] dice che la posizione dipende da JobFile. Seguiamo la [3], più specifica.</li>
+<li id="ref-3-it"><strong>Oracle</strong>, “Troubleshooting the Enterprise Server”, documentazione, consultato il 01/11/2026, <a href="https://docs.oracle.com/cd/E24705_01/doc.91/e24259/troubleshoot_e1_server.htm" rel="noopener">docs.oracle.com</a>. Questa pagina descrive il jde.log del server come sovrascritto a ogni sessione e, su server Windows, come accodato.</li>
+<li id="ref-4-it"><strong>Oracle</strong>, “Troubleshooting the Workstation”, documentazione, consultato il 01/11/2026, <a href="https://docs.oracle.com/cd/E17984_01/doc.898/e14718/troubleshoot_wrkstation.htm" rel="noopener">docs.oracle.com</a>.</li>
+<li id="ref-5-it"><strong>Oracle</strong>, “LogParse Output Files for the Enterprise Server”, documentazione, consultato il 01/11/2026, <a href="https://docs.oracle.com/en/applications/jd-edwards/cross-product/9.2/eoism/logparse-output-files-for-the-enterprise-server.html" rel="noopener">docs.oracle.com</a>.</li>
+<li id="ref-6-it"><strong>Dong's Page</strong>, “Case Study: Slow Performance in P4116”, caso di studio su un blog personale, consultato il 01/11/2026, <a href="https://sohigh99.github.io/dmseo/jde/docs/1523038.html" rel="noopener">sohigh99.github.io</a>.</li>
+<li id="ref-7-it"><strong>Vincenzo Caserta</strong>, “JD Edwards BSFN performance measurement with logs and timings”, articolo tecnico; il 2-5% e le 10 esecuzioni sono consigli dell'autore, non di Oracle, consultato il 01/11/2026, <a href="https://vincenzocaserta.it/en/jd-edwards-en/development/bsfn-ner-development/jde-bsfn-performance-measurement-logs-timings" rel="noopener">vincenzocaserta.it</a>.</li>
+<li id="ref-8-it"><strong>Oracle</strong>, “Oracle Database Error Help”, pagine dei messaggi ORA citati nell'app, consultato il 01/11/2026, <a href="https://docs.oracle.com/error-help/db/" rel="noopener">docs.oracle.com/error-help/db</a>.</li>
+</ol>
+<a class="back" href="#top">↑ Torna all'inizio</a>
+</section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== ES ===================== -->
+<div id="es" role="tabpanel" aria-labelledby="tab-es" lang="es" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html#es" data-projects>← Proyectos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>JDE Log Insights: tutorial</h1>
+      <p class="dek">Cómo convertir un jde.log o un jdedebug.log en respuestas, sin instalar nada: errores agrupados, funciones y SQL lentos, pausas y un mapa de lo que ocurrió.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado el <time datetime="2026-11-01">01/11/2026</time></span>
+        <span class="credit">Revisado y formateado con Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-es">
+    <h2 id="toc-es">Índice</h2>
+    <ol>
+      <li><a href="#intro-es">Qué es JDE Log Insights</a></li>
+      <li><a href="#logs-es">Los logs de JD Edwards</a></li>
+      <li><a href="#obter-es">Cómo obtener los logs</a></li>
+      <li><a href="#roteiro-es">Recorrido: investigar el ejemplo</a></li>
+      <li><a href="#ins-es">Cómo leer los insights</a></li>
+      <li><a href="#err-es">Errores</a></li>
+      <li><a href="#bsfn-es">BSFN</a></li>
+      <li><a href="#sql-es">SQL</a></li>
+      <li><a href="#gaps-es">Pausas</a></li>
+      <li><a href="#ctx-es">Contexto</a></li>
+      <li><a href="#flow-es">Flujo</a></li>
+      <li><a href="#content-es">Contenido</a></li>
+      <li><a href="#rep-es">Informe y privacidad</a></li>
+      <li><a href="#met-es">Un método para el log real</a></li>
+      <li><a href="#ia-es">Prompts de IA</a></li>
+      <li><a href="#lim-es">Errores comunes y limitaciones</a></li>
+      <li><a href="#rev-es">Repaso rápido</a></li>
+      <li><a href="#ref-es">Referencias</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-es" aria-labelledby="h-intro-es">
+<h2 id="h-intro-es">Qué es JDE Log Insights</h2>
+<p>Un log de JD Edwards EnterpriseOne puede tener millones de líneas, y la respuesta suele estar en unas pocas. JDE Log Insights lee estos archivos y muestra por dónde empezar: agrupa los errores, mide las funciones de negocio (BSFN) y el SQL, encuentra pausas y dibuja qué llamó a qué. <sup><a href="#ref-1-es">[1]</a></sup></p>
+<p>Es un único archivo HTML, sin instalación ni cuenta.</p>
+<p><a class="launch" href="jde-log-insights.html#es">Abrir JDE Log Insights <span aria-hidden="true">→</span></a></p>
+<figure>
+<img src="rc_images/JDELogInsightsInicio-es.png" alt="Pantalla inicial de JDE Log Insights, con el área para soltar archivos, los botones Abrir logs, Pegar texto y Ver un ejemplo, y la explicación de lo que lee" width="1600" height="900" loading="lazy">
+<figcaption>La pantalla inicial. Suelta los archivos o abre el ejemplo.</figcaption>
+</figure>
+<h3>Cómo trata la aplicación tus datos</h3>
+<ul>
+<li><strong>Nada sale de tu ordenador.</strong> El archivo bloquea las conexiones de red. Los logs suelen traer usuarios, servidores y SQL, así que esto importa.</li>
+<li><strong>El log no se guarda.</strong> Al cerrar la página, el análisis desaparece. La aplicación solo guarda el idioma, el tema y el límite de lentitud.</li>
+</ul>
+<aside class="note"><p>La aplicación señala indicios para orientar la investigación, a partir del texto del log. No corrige nada, no accede al servidor y no es una herramienta de Oracle.</p></aside>
+</section>
+<section id="logs-es" aria-labelledby="h-logs-es">
+<h2 id="h-logs-es">Los logs de JD Edwards</h2>
+<p>Cada archivo responde a una pregunta distinta. La documentación de Oracle los separa así: <sup><a href="#ref-2-es">[2]</a></sup> <sup><a href="#ref-3-es">[3]</a></sup> <sup><a href="#ref-4-es">[4]</a></sup></p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Archivo</th><th scope="col">Ejemplo de nombre</th><th scope="col">Qué trae</th><th scope="col">Ideal para</th></tr></thead>
+<tbody>
+<tr><th scope="row">jde.log</th><td><code>jde_442.log</code></td><td>Errores fatales y fallos</td><td>Saber qué salió mal</td></tr>
+<tr><th scope="row">jdedebug.log</th><td><code>jdedebug_442.log</code></td><td>Llamadas de API, SQL y tiempos. Oracle avisa de que no sirve para seguir errores</td><td>Saber dónde se fue el tiempo</td></tr>
+<tr><th scope="row">Log de UBE</th><td><code>R014021_XJDE0001_D990312_T161854215.log</code></td><td>Secciones, objetos, reglas de evento y SQL de un informe por lotes</td><td>Seguir un UBE</td></tr>
+</tbody>
+</table></div>
+<figure>
+<img src="rc_images/JDELogInsightsAnatomia-es.svg" alt="Dos líneas de ejemplo. En jde.log, la línea trae proceso e hilo, nombre del hilo, fecha y hora y archivo fuente, seguidos del mensaje. En jdedebug, trae fecha y hora, proceso e hilo, nombre del hilo con la aplicación y el mensaje, como una sentencia SQL." loading="lazy">
+<figcaption>Las partes de cada línea. El mensaje del jde.log puede venir en la misma línea o en la siguiente.</figcaption>
+</figure>
+<p>El número del nombre es el ID del proceso, así que un servidor genera varios archivos. Abre juntos los del mismo proceso: la aplicación los lee todos a la vez e indica qué identificó en cada uno.</p>
+</section>
+<section id="obter-es" aria-labelledby="h-obter-es">
+<h2 id="h-obter-es">Cómo obtener los logs</h2>
+<p>La ubicación de jde.log y jdedebug.log viene de <code>JobFile</code> y <code>DebugFile</code>, en la sección <code>[DEBUG]</code> de <code>jde.ini</code>. <sup><a href="#ref-3-es">[3]</a></sup> jdedebug solo trae llamadas, SQL y tiempos con la depuración activa:</p>
+<pre class="code"><code>[DEBUG]
+Output=FILE
+LogErrors=1</code></pre>
+<ol>
+<li>Activa la depuración donde haga falta. Para reproducir el problema, aísla un solo kernel o proceso, para que los logs no se mezclen. <sup><a href="#ref-7-es">[7]</a></sup></li>
+<li>Reproduce el problema una vez y copia los archivos. Pueden sobrescribirse en la sesión siguiente: Oracle describe los dos comportamientos, sobrescribir y añadir, según el servidor y la estación. <sup><a href="#ref-3-es">[3]</a></sup> <sup><a href="#ref-4-es">[4]</a></sup></li>
+<li>Vuelve <code>Output</code> al valor anterior. El log crece rápido y pesa en el proceso: un autor estima entre un 2% y un 5% más de tiempo. <sup><a href="#ref-7-es">[7]</a></sup></li>
+</ol>
+<p>Los logs de UBE están en la cola de impresión (PrintQueue), y el nivel de detalle viene de <code>UBEDebugLevel</code>, en la sección <code>[UBE]</code>. <sup><a href="#ref-3-es">[3]</a></sup></p>
+</section>
+<section id="roteiro-es" aria-labelledby="h-roteiro-es">
+<h2 id="h-roteiro-es">Recorrido: investigar el ejemplo</h2>
+<p>Usa los datos de ejemplo: son ficticios, creados a partir de fragmentos públicos de log, y los resultados de abajo son los que verás. El caso lo tiene todo: una conexión perdida con la base de datos, una lectura enorme y un SQL lento.</p>
+<h3>1. Abre el ejemplo y lee el primer insight</h3>
+<ol>
+<li>Abre la aplicación y haz clic en <strong>Ver un ejemplo</strong>.</li>
+<li>Mira los totales de arriba: 8693 líneas, 62 ocurrencias de error en 7 tipos, 124 llamadas de BSFN y 123 sentencias SQL.</li>
+<li>Lee la primera tarjeta, marcada como <strong>Crítico</strong>: <strong>La base de datos quedó fuera de alcance</strong>. ORA-03113 apareció 22 veces, de 12 mar 09:17:00 a 12 mar 09:17:42.</li>
+</ol>
+<figure>
+<img src="rc_images/JDELogInsightsInsights-es.png" alt="Pestaña Insights con los totales del log y las tarjetas ordenadas por gravedad, con la alerta crítica de base de datos arriba" width="1600" height="900" loading="lazy">
+<figcaption>Los insights van por orden de gravedad, cada uno con la evidencia y el enlace.</figcaption>
+</figure>
+<h3>2. Abre el error y mira la línea original</h3>
+<ol>
+<li>En la primera tarjeta, haz clic en <strong>Ver los errores</strong>. La pestaña <strong>Errores</strong> se abre ya filtrada.</li>
+<li>Haz clic en el mensaje de ORA-03113. El detalle trae lo que dice la fuente sobre el error, con el enlace.</li>
+<li>En <strong>Ocurrencias de ejemplo</strong>, haz clic en <strong>Ver en el log</strong> para comprobar el fragmento original, con la línea marcada.</li>
+</ol>
+<figure>
+<img src="rc_images/JDELogInsightsErro-es.png" alt="Ventana de detalle del error ORA-03113, con el mensaje, la explicación de Oracle, los recuentos y las ocurrencias de ejemplo" width="1600" height="900" loading="lazy">
+<figcaption>El detalle del error trae el significado según Oracle y dónde ocurrió.</figcaption>
+</figure>
+<figure>
+<img src="rc_images/JDELogInsightsLog-es.png" alt="Ventana con el fragmento original del archivo jde_4412.log y la línea del error destacada" width="1600" height="900" loading="lazy">
+<figcaption>Ver en el log abre el archivo en el punto correcto. Comprueba siempre la línea original.</figcaption>
+</figure>
+<p>De vuelta en los insights, otra tarjeta dice que JDB9900401 suele ser consecuencia de ORA-03113. Hubo 22 ocurrencias, siempre hasta 1 segundo después, en el mismo hilo. Por eso la investigación empieza por ORA-03113.</p>
+<h3>3. Busca dónde se fue el tiempo</h3>
+<ol>
+<li>Abre la pestaña <strong>BSFN</strong>. La tabla viene ordenada por <strong>Tiempo propio</strong>.</li>
+<li>F4111EndDocument tardó 9,13 s en total, de los que 7,41 s son tiempo propio. Luego el tiempo no está en las funciones que llama.</li>
+</ol>
+<figure>
+<img src="rc_images/JDELogInsightsBsfn-es.png" alt="Pestaña BSFN con la tabla de funciones, llamadas, tiempo total, tiempo propio, media, máximo y retornos distintos de cero" width="1600" height="900" loading="lazy">
+<figcaption>El tiempo propio muestra dónde se gastó el tiempo de verdad.</figcaption>
+</figure>
+<h3>4. Encuentra el SQL responsable</h3>
+<ol>
+<li>Abre la pestaña <strong>SQL</strong>. La primera sentencia es una lectura de F0005, sin WHERE, de cerca de 7,4 s.</li>
+<li>Mira las otras dos señales: una lectura de F41021 trajo 4000 filas, y la sentencia en F4101 se ejecutó 120 veces.</li>
+</ol>
+<figure>
+<img src="rc_images/JDELogInsightsSql-es.png" alt="Pestaña SQL con las sentencias agrupadas, la tabla, el número de ejecuciones, las filas leídas y el tiempo aproximado" width="1600" height="900" loading="lazy">
+<figcaption>Las sentencias iguales van juntas, sin los valores. Aquí están la lectura lenta y la repetida.</figcaption>
+</figure>
+<h3>5. Mira el camino en el mapa</h3>
+<ol>
+<li>Abre la pestaña <strong>Flujo</strong> y haz clic en el bloque F41021.</li>
+<li>El mapa destaca el camino: P4116 llama a F4111EndDocument, que llama a AverageCostUpdate, que lee F41021. Ahora sabes qué pantalla lleva a esa lectura.</li>
+</ol>
+<figure>
+<img src="rc_images/JDELogInsightsFluxo-es.png" alt="Pestaña Flujo con columnas de entrada, BSFN, tablas y errores, y el camino de P4116 a F41021 destacado" width="1600" height="900" loading="lazy">
+<figcaption>El camino hasta la tabla queda destacado, y el resto, apagado.</figcaption>
+</figure>
+<h3>6. Genera el informe</h3>
+<ol>
+<li>Haz clic en <strong>Informe</strong> y marca <strong>Ocultar usuarios, servidores, IP, rutas y valores entre comillas</strong>.</li>
+<li>Revisa el texto y usa <strong>Copiar</strong> o <strong>Descargar .md</strong>.</li>
+</ol>
+<figure>
+<img src="rc_images/JDELogInsightsRelatorio-es.png" alt="Ventana del informe en Markdown, con la opción de ocultar usuarios, servidores, IP, rutas y valores marcada" width="1600" height="900" loading="lazy">
+<figcaption>El informe puede ocultar datos antes de enviarlo. Revísalo de todos modos.</figcaption>
+</figure>
+<p>Resultado: en pocos minutos tienes una hipótesis para cada problema. Conexión con la base de datos perdida a las 09:17, con un error consecuencia de otro; una lectura sin filtro; y una función llamada 120 veces. Falta confirmar cada una con el DBA y con quien conoce el código.</p>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+<section id="ins-es" aria-labelledby="h-ins-es">
+<h2 id="h-ins-es">Cómo leer los insights</h2>
+<p>Las tarjetas son reglas simples sobre las cifras del log, y estas son las condiciones exactas. Una señal no es una causa: indica dónde mirar.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Señal</th><th scope="col">Cuándo aparece</th><th scope="col">Qué hacer primero</th></tr></thead>
+<tbody>
+<tr><th scope="row">Fallo grave</th><td>Mensaje con ACCESS VIOLATION, SIGSEGV, core dump, out of memory o fatal</td><td>Busca el .dmp.log: lista los hilos en el momento de la caída. Oracle indica empezar por el que tiene jdeLogCallStack. En IBM i, las pilas están en el jde.log. <sup><a href="#ref-3-es">[3]</a></sup></td></tr>
+<tr><th scope="row">Base de datos fuera de alcance</th><td>ORA-03113, 03114, 12154, 12170, 12514 o 12541</td><td>El detalle del error trae la orientación de Oracle para cada código, como alert log, red o listener. <sup><a href="#ref-8-es">[8]</a></sup></td></tr>
+<tr><th scope="row">Error dominante</th><td>Un error representa el 30% o más de las ocurrencias, al menos 3 veces</td><td>Empieza por él</td></tr>
+<tr><th scope="row">Error consecuencia</th><td>B llegó hasta 1 s después de A, en el mismo hilo, al menos la mitad de las veces y en 3 ocurrencias</td><td>Investiga primero A</td></tr>
+<tr><th scope="row">Pico</th><td>Un minuto con 10 errores o más, y 5 veces la mediana de los minutos con error</td><td>Mira qué cambió a esa hora</td></tr>
+<tr><th scope="row">Proceso concentrado</th><td>Un proceso con el 70% de los errores, al menos 5</td><td>Sospecha de lo que solo él hace</td></tr>
+<tr><th scope="row">SQL repetido</th><td>La misma sentencia 50 veces o más</td><td>Busca una lectura dentro de un bucle</td></tr>
+<tr><th scope="row">Lectura grande</th><td>Una ejecución con 1.000 filas o más</td><td>Revisa el filtro y los índices</td></tr>
+<tr><th scope="row">BSFN, SQL o pausa lentos</th><td>Superan el límite ajustable, 1 s por defecto</td><td>Abre la pestaña correspondiente</td></tr>
+</tbody>
+</table></div>
+<p>Debajo de las tarjetas, dos gráficos muestran los errores y las líneas de log a lo largo del tiempo. Haz clic en una barra de error para ver solo los errores de ese intervalo. <strong>Ver como tabla</strong> trae las mismas cifras en una tabla.</p>
+<figure>
+<img src="rc_images/JDELogInsightsGrafico-es.png" alt="Dos gráficos de barras: errores por intervalo, con un pico a las 09:15, y líneas de log por intervalo, concentradas al final" width="1600" height="900" loading="lazy">
+<figcaption>El pico de errores salta a la vista. Las líneas de log muestran cuándo estaba activa la depuración.</figcaption>
+</figure>
+</section>
+<section id="err-es" aria-labelledby="h-err-es">
+<h2 id="h-err-es">Errores</h2>
+<p>La aplicación agrupa los mensajes que solo cambian en los valores, así que el mismo error con números distintos cuenta como uno. Filtra por <strong>Nivel</strong> y <strong>Área</strong>, o escribe un fragmento, como el nombre de una tabla.</p>
+<ul>
+<li><strong><strong>Fatal</strong></strong>, <strong><strong>Error</strong></strong> y <strong><strong>Alerta</strong></strong> vienen de códigos y palabras del mensaje, como <code>ORA-00942</code>, <code>OCI0000178</code> y <code>failed</code>.</li>
+<li><strong><strong>Qué dice la fuente</strong>:</strong> la aplicación tiene una pequeña base, solo con textos de Oracle, cada uno con el enlace a la fuente. <sup><a href="#ref-3-es">[3]</a></sup> <sup><a href="#ref-4-es">[4]</a></sup> <sup><a href="#ref-8-es">[8]</a></sup></li>
+<li><strong>Código fuera de la base:</strong> búscalo en My Oracle Support o en la aplicación P92002, que contiene los mensajes de error del sistema. <sup><a href="#ref-4-es">[4]</a></sup></li>
+</ul>
+</section>
+<section id="bsfn-es" aria-labelledby="h-bsfn-es">
+<h2 id="h-bsfn-es">BSFN</h2>
+<p>La aplicación une cada llamada a su retorno, por hilo, y calcula dos tiempos:</p>
+<ul>
+<li><strong><strong>Tiempo total</strong>:</strong> de la llamada al retorno, incluidas las funciones que llama.</li>
+<li><strong><strong>Tiempo propio</strong>:</strong> el total menos el tiempo de las funciones hijas. Es donde debes mirar primero. <sup><a href="#ref-7-es">[7]</a></sup></li>
+<li><strong><strong>Retorno ≠ 0</strong>:</strong> llamadas que devolvieron un valor distinto de 0. La aplicación solo las cuenta; comprueba cómo trata ese retorno quien llama.</li>
+</ul>
+<aside class="note"><p>Es tiempo de reloj, con el log activo. Incluye esperas de base de datos y red y el coste del propio log, así que sirve para comparar partes de la misma ejecución, no para prometer un tiempo en producción. <sup><a href="#ref-7-es">[7]</a></sup></p></aside>
+</section>
+<section id="sql-es" aria-labelledby="h-sql-es">
+<h2 id="h-sql-es">SQL</h2>
+<p>La aplicación quita los valores, para juntar sentencias iguales, y suma ejecuciones, filas leídas y tiempo. Así, los valores de clientes no quedan en la tabla.</p>
+<ul>
+<li><strong>Filas leídas:</strong> cuenta las líneas "Fetched the record" tras cada sentencia. Un caso de estudio de P4116 muestra este patrón: 40.000 filas leídas en una sola llamada de función. <sup><a href="#ref-6-es">[6]</a></sup></li>
+<li><strong><strong>Tiempo aprox.</strong>:</strong> va de la sentencia a la última lectura, así que incluye lo que la aplicación hizo entre lecturas.</li>
+<li><strong>Pista:</strong> un intervalo largo entre la sentencia y la primera lectura suele apuntar a la base de datos más que a la lógica. <sup><a href="#ref-7-es">[7]</a></sup></li>
+</ul>
+</section>
+<section id="gaps-es" aria-labelledby="h-gaps-es">
+<h2 id="h-gaps-es">Pausas</h2>
+<p>Pausa es el tiempo sin líneas nuevas en el mismo proceso e hilo. Oracle sugiere jdedebug justamente para ver el punto en que la ejecución normal se detuvo. <sup><a href="#ref-3-es">[3]</a></sup> Cada fila de la tabla muestra lo que vino antes y después.</p>
+<figure>
+<img src="rc_images/JDELogInsightsPausas-es.png" alt="Pestaña Pausas con la tabla de pausas, el inicio, el proceso y las líneas antes y después" width="1600" height="900" loading="lazy">
+<figcaption>La pausa más larga del ejemplo, con las líneas antes y después.</figcaption>
+</figure>
+<aside class="note"><p>Una pausa no es lentitud por sí misma. Puede ser una consulta larga, o solo una persona que tardó en hacer clic. Lee la línea siguiente antes de concluir.</p></aside>
+</section>
+<section id="ctx-es" aria-labelledby="h-ctx-es">
+<h2 id="h-ctx-es">Contexto</h2>
+<p>La pestaña <strong>Contexto</strong> responde a "¿qué se estaba ejecutando?": archivos leídos y el tipo de cada uno, aplicaciones e informes, tablas, procesos e hilos, y las llamadas de API más frecuentes.</p>
+</section>
+<section id="flow-es" aria-labelledby="h-flow-es">
+<h2 id="h-flow-es">Flujo</h2>
+<p>La pestaña <strong>Flujo</strong> dibuja quién llama a quién, sumando todas las ejecuciones: entrada, BSFN por nivel, tablas y errores en secuencia. En un jde.log puro, muestra proceso → error → error siguiente.</p>
+<ul>
+<li>Cuanto más grueso el enlace, más veces ocurrió.</li>
+<li>⏱ marca lo que superó el límite de lentitud, y la línea discontinua, una vuelta, como la recursión.</li>
+<li>Al hacer clic en un bloque, su camino queda destacado y <strong>Abrir detalles</strong> lleva al detalle.</li>
+<li><strong>Ver los enlaces como tabla</strong> trae los mismos enlaces en texto, y <strong>Descargar SVG</strong> guarda la imagen.</li>
+</ul>
+<aside class="note"><p>El mapa no muestra el orden en el tiempo. Muestra hasta 400 bloques, avisa cuando hay más y no dibuja los enlaces que pasan por bloques ocultos.</p></aside>
+</section>
+<section id="content-es" aria-labelledby="h-content-es">
+<h2 id="h-content-es">Contenido</h2>
+<p>La pestaña <strong>Contenido</strong> muestra el log entero, línea a línea, con un color y una etiqueta para cada tipo de evento: errores, retornos distintos de 0, BSFN, SQL, lectura de filas, parámetros, API y UBE. Úsala cuando los resúmenes ya te han dicho dónde mirar y quieres leer lo que ocurrió alrededor.</p>
+<figure>
+<img src="rc_images/JDELogInsightsConteudo-es.png" alt="Pestaña Contenido con las líneas del log coloreadas por tipo de evento, la etiqueta de cada una, los tipos con sus recuentos y la búsqueda" width="1600" height="900" loading="lazy">
+<figcaption>Cada tipo de evento tiene color y etiqueta. La línea seleccionada queda marcada.</figcaption>
+</figure>
+<ul>
+<li><strong>Filtrar:</strong> haz clic en un tipo para ver solo sus líneas. Hacer clic en otro suma, y <strong>Mostrar todo</strong> lo deshace.</li>
+<li><strong>Pausas:</strong> ⏸ marca la línea que vino después de una pausa por encima del límite.</li>
+<li><strong>Navegar:</strong> usa la búsqueda, <strong>Ir a la línea</strong>, <strong>Siguiente error ▶</strong> y las flechas. En <strong>Ver en el log</strong>, el botón <strong>Abrir en Contenido</strong> te trae aquí.</li>
+<li><strong>Copiar:</strong> las líneas de más de 2.000 caracteres se cortan en pantalla, y <strong>Copiar</strong> trae el texto completo.</li>
+</ul>
+<aside class="note"><p>El color viene de la misma regla de palabras y códigos de las otras pestañas. Una línea sin formato propio hereda el tipo de la línea anterior. Con varios archivos, elige uno cada vez: no se mezclan. La aplicación lee el archivo del disco mientras desplazas, así que mantenlo en su sitio.</p></aside>
+</section>
+<section id="rep-es" aria-labelledby="h-rep-es">
+<h2 id="h-rep-es">Informe y privacidad</h2>
+<p><strong>Informe</strong> genera un texto en Markdown con los insights y las cifras principales, para adjuntar a una incidencia. Antes de enviarlo a alguien o a una IA, marca <strong>Ocultar usuarios, servidores, IP, rutas y valores entre comillas</strong>.</p>
+<aside class="note"><p>La ocultación sigue patrones conocidos y puede dejar pasar algo. Revisa el texto: el nombre de una tabla o de un informe también puede decir mucho.</p></aside>
+</section>
+<section id="met-es" aria-labelledby="h-met-es">
+<h2 id="h-met-es">Un método para el log real</h2>
+<p>Con un problema real, este orden evita perder tiempo:</p>
+<ol>
+<li><strong>Empieza por el jde.log.</strong> Si hay un fallo grave o una conexión perdida, resuélvelo antes de medir el rendimiento.</li>
+<li><strong>Reproduce con depuración</strong> en un solo proceso, y abre el jdedebug.</li>
+<li><strong>Sigue el tiempo:</strong> <strong>BSFN</strong> por tiempo propio, después <strong>SQL</strong> y <strong>Pausas</strong>.</li>
+<li><strong>Confirma en la línea original</strong> con <strong>Ver en el log</strong> y con quien conoce el código y la base de datos.</li>
+<li><strong>Corrige y mide de nuevo.</strong> Un autor sugiere 10 o más ejecuciones y usar la mediana, porque una sola engaña. <sup><a href="#ref-7-es">[7]</a></sup></li>
+</ol>
+<figure>
+<img src="rc_images/JDELogInsightsMetodo-es.svg" alt="Flujo de seis pasos: abrir el jde.log y ver los errores; resolver los fallos graves; reproducir con depuración; seguir el tiempo; confirmar en la línea original; corregir y medir de nuevo. Una flecha discontinua vuelve del último paso a la reproducción." loading="lazy">
+<figcaption>La aplicación acelera el análisis. La decisión sigue siendo del equipo.</figcaption>
+</figure>
+<p>Para logs muy grandes o análisis oficial, Oracle ofrece LogParse, en el Performance Workbench de Server Manager, que genera resumen, CSV de BSFN y tablas, y pausas. <sup><a href="#ref-5-es">[5]</a></sup> JDE Log Insights es una alternativa rápida, sin servidor, no un sustituto.</p>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+<section id="ia-es" aria-labelledby="h-ia-es">
+<h2 id="h-ia-es">Prompts de IA</h2>
+<p>Con las señales en la mano, aún falta interpretarlas: qué significa este código, qué error vino primero, qué preguntar al DBA. Una IA ayuda a organizar hipótesis y a preparar la conversación. También se equivoca con seguridad: inventa causas, cita notas de soporte que no existen y supone cómo es tu personalización. Trata el resultado como el borrador de un colega con prisa. Para escribir mejores prompts, mira el <a href="PromptTutorial.html#es">tutorial de prompts</a>.</p>
+<figure>
+<img src="rc_images/JDELogInsightsIA-es.svg" alt="Seis pasos: la aplicación genera el informe con datos ocultos, tú revisas lo que sale, la IA propone hipótesis con evidencias, la aplicación comprueba la línea original, tú confirmas con el DBA y desarrollo, y después corriges y mides. De la corrección, se vuelve a la IA con el nuevo log." loading="lazy">
+<figcaption>La IA organiza las hipótesis. La prueba está en la línea original y en el equipo.</figcaption>
+</figure>
+<blockquote><p><strong>Antes de pegar:</strong> los logs pueden traer usuarios, servidores, SQL y valores de clientes. La aplicación no envía nada a la red, pero el servicio de IA recibe todo lo que pegues. Usa <strong>Ocultar usuarios, servidores, IP, rutas y valores entre comillas</strong>, revisa el texto y sigue la política de tu organización sobre el uso de IA.</p></blockquote>
+<p>Cambia las partes entre corchetes y pega en la herramienta de IA que uses. Los prompts siguen el orden de la investigación, pero cada uno funciona por sí solo.</p>
+<h3>1. Priorizar lo que muestra el informe</h3>
+<p>En <strong>Informe</strong>, marca <strong>Ocultar usuarios, servidores, IP, rutas y valores entre comillas</strong>, usa <strong>Copiar</strong> y pega el texto al final del prompt.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-es-1" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-es-1">Eres un analista con experiencia en JD Edwards EnterpriseOne.
+Abajo está el informe de una herramienta que lee los logs del sistema.
+
+Contexto del problema: [qué vio el usuario, cuándo, en qué aplicación]
+
+Basándote solo en el informe:
+1. Enumera de 3 a 5 hipótesis, de la más a la menos probable.
+2. Para cada una, cita la cifra o la línea del informe que la sostiene y di qué la descartaría.
+3. Di qué debo mirar primero y quién del equipo puede confirmarlo.
+4. Separa lo que es un hecho en el informe de lo que es una suposición tuya.
+
+No inventes códigos, tablas, notas de soporte ni características de mi entorno. Si falta un dato, di cuál.
+
+Informe:
+[pega el informe]</code></pre></div>
+<h3>2. Explicar un error</h3>
+<p>Abre el error en la pestaña <strong>Errores</strong> y usa <strong>Ver en el log</strong> para copiar el mensaje y las líneas de alrededor, cambiando los datos sensibles. Después, compara la respuesta con lo que dice Oracle sobre el código. <sup><a href="#ref-8-es">[8]</a></sup></p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-es-2" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-es-2">Explica este error de un log de JD Edwards EnterpriseOne a quien no es especialista.
+
+Versión del sistema y de la base de datos: [ej.: Tools 9.2, Oracle, o "no lo sé"]
+Qué se estaba haciendo: [aplicación, UBE o acción]
+
+Mensaje y líneas de alrededor:
+[pega el fragmento]
+
+Responde:
+1. Qué dice el mensaje, en lenguaje sencillo.
+2. Causas posibles, con lo que confirma o descarta cada una.
+3. Dónde comprobar y quién suele comprobarlo.
+4. Qué partes de tu respuesta vienen de documentación y cuáles son deducción. Si no conoces el código, dilo en lugar de adivinar.</code></pre></div>
+<h3>3. Separar causa y consecuencia</h3>
+<p>En la pestaña <strong>Errores</strong>, usa <strong>Descargar CSV</strong> y pega la tabla. Antes de pegar, cambia usuarios, servidores y valores, porque el CSV no oculta datos. El prompt pide que la IA diga qué abrir en el log para confirmar cada enlace.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-es-3" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-es-3">La tabla de abajo lista los errores agrupados de un log de JD Edwards EnterpriseOne, con recuento, primera y última ocurrencia.
+
+Identifica:
+1. Qué errores parecen el origen y cuáles parecen consecuencia, usando el orden en el tiempo y el tipo de mensaje.
+2. Errores que ocurrieron en el mismo periodo y pueden tener la misma causa.
+3. Por qué error empezar, y por qué.
+
+La tabla no muestra el hilo ni el texto completo. Di qué debo abrir en el log para confirmar cada enlace. No trates la coincidencia en el tiempo como prueba.
+
+Tabla:
+[pega el CSV]</code></pre></div>
+<h3>4. Entender dónde gasta tiempo una BSFN</h3>
+<p>En la pestaña <strong>BSFN</strong>, usa <strong>Descargar CSV</strong> y pega la tabla. En tiempo de reloj, la diferencia entre total y propio indica dónde bajar. <sup><a href="#ref-7-es">[7]</a></sup></p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-es-4" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-es-4">La tabla de abajo trae las funciones de negocio (BSFN) medidas en un jdedebug de JD Edwards EnterpriseOne: llamadas, tiempo total, tiempo propio, media, máximo y retornos distintos de 0. Los tiempos son de reloj, con el log activo.
+
+Escenario medido: [qué se ejecutó, y cuántas veces]
+Tiempo que percibió el usuario: [ej.: 40 s]
+
+1. Qué funciones merecen atención primero, y por qué.
+2. Dónde el tiempo total es mucho mayor que el propio, y qué indica.
+3. Señales de llamadas repetidas de más.
+4. Qué preguntar a quien conoce el código.
+
+No digas qué hace una función por dentro, a menos que yo lo indique. Si un nombre sugiere algo, márcalo como suposición.
+
+Tabla:
+[pega el CSV]</code></pre></div>
+<h3>5. Analizar un SQL</h3>
+<p>Abre la sentencia en la pestaña <strong>SQL</strong> y usa <strong>Copiar</strong>: el texto viene sin los valores. Añade las columnas de la fila, como ejecuciones y filas leídas. <sup><a href="#ref-7-es">[7]</a></sup></p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-es-5" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-es-5">Analiza este SQL de un log de JD Edwards EnterpriseOne. Los valores se quitaron.
+
+Sentencia:
+[pega la sentencia]
+
+Ejecuciones: [número]
+Filas leídas: [número]
+Tiempo aproximado (incluye lo que la aplicación hizo entre lecturas): [tiempo]
+Base de datos: [ej.: Oracle, SQL Server]
+Tamaño de la tabla: [filas, o "no lo sé"]
+
+Responde:
+1. Qué llama la atención: repetición, volumen, falta de filtro.
+2. Qué pedir al DBA que confirme, como el plan de ejecución y los índices existentes.
+3. Dos o tres mejoras que evaluar en la aplicación y en la base de datos, con el riesgo de cada una.
+
+No inventes nombres de índices ni de columnas. No recomiendes alterar tablas estándar de JD Edwards sin indicar el impacto.</code></pre></div>
+<h3>6. Interpretar una pausa</h3>
+<p>Abre la pausa en la pestaña <strong>Pausas</strong> y copia las líneas antes y después, cambiando los datos sensibles. La respuesta debe decir qué falta para decidir, no solo adivinar.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-es-6" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-es-6">En un log de JD Edwards EnterpriseOne, hubo una pausa de [tiempo] en el mismo hilo.
+
+Última línea antes:
+[pega]
+
+Primera línea después:
+[pega]
+
+Cómo se generó el log: [ej.: usuario en la pantalla, UBE, carga automática]
+
+Enumera lo que puede explicar esta pausa, como trabajo sin registro, espera de base de datos o red, o falta de actividad del usuario. Para cada explicación, di qué observar para confirmarla o descartarla. Si las líneas no permiten decidir, dilo.</code></pre></div>
+<h3>7. Planificar la próxima medición</h3>
+<p>Pide un plan corto para reproducir y comparar, siguiendo el método de este tutorial. Revisa cualquier cambio en <code>jde.ini</code> con quien administra el servidor. <sup><a href="#ref-3-es">[3]</a></sup> <sup><a href="#ref-7-es">[7]</a></sup></p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-es-7" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-es-7">Quiero medir un problema de rendimiento en JD Edwards EnterpriseOne y comparar antes y después de una corrección.
+
+Problema: [qué va lento]
+Entorno disponible para pruebas: [ej.: pruebas, un kernel aislado]
+Lo que ya sé: [pega los principales hallazgos]
+
+Prepara un plan corto:
+1. Cómo reproducir el mismo escenario, siempre igual.
+2. Qué logs recoger y cómo aislar el proceso, para que no se mezclen.
+3. Cuántas ejecuciones hacer y cómo compararlas, usando la mediana.
+4. Qué puede distorsionar la medida, como el propio log, la caché y otros usuarios.
+5. Cómo deshacer la configuración de depuración al terminar.
+
+Marca lo que necesita confirmación del administrador del sistema. Si no estás seguro del nombre de un parámetro, dilo.</code></pre></div>
+<h3>8. Escribir la incidencia</h3>
+<p>Separa hechos e hipótesis, para que la incidencia no afirme lo que nadie probó. Si la IA cita un documento de soporte, comprueba que exista.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-es-8" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-es-8">Escribe una incidencia para [DBA, desarrollo o soporte] a partir del informe de abajo.
+
+Qué ocurrió para el usuario: [describe]
+Impacto: [a quién afectó, desde cuándo]
+Qué se intentó ya: [describe]
+
+Estructura:
+1. Resumen en dos frases.
+2. Hechos observados, con horas y cifras del informe.
+3. Hipótesis, marcadas como hipótesis.
+4. Qué pido que se compruebe.
+5. Adjuntos que enviar.
+
+No añadas hechos, causas ni plazos. Mantén las partes ocultas como están.
+
+Informe:
+[pega el informe]</code></pre></div>
+<h3>Cómo comprobar la respuesta</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Qué hizo la IA</th><th scope="col">Por qué desconfiar</th><th scope="col">Qué hacer</th></tr></thead>
+<tbody>
+<tr><td>Citó una tabla, BSFN o código que no está en lo que pegaste</td><td>Puede haberlo inventado</td><td>Pide el fragmento exacto que sostiene la afirmación, y búscalo en la aplicación</td></tr>
+<tr><td>Explicó un código ORA o JDE</td><td>Puede estar mal o ser de otra versión</td><td>Compara con Oracle: el detalle del error en la aplicación trae la fuente cuando la conoce</td></tr>
+<tr><td>Citó una nota de soporte</td><td>Las referencias pueden no existir</td><td>Busca el número en My Oracle Support antes de pasarlo</td></tr>
+<tr><td>Afirmó una causa con certeza</td><td>El log muestra síntomas y orden, no intención</td><td>Pide qué descartaría la hipótesis y confirma con <strong>Ver en el log</strong></td></tr>
+<tr><td>Recomendó un índice, un parámetro o un cambio en jde.ini</td><td>Puede afectar a todo el entorno</td><td>Evalúalo con el DBA o el administrador y prueba fuera de producción</td></tr>
+</tbody>
+</table></div>
+<aside class="note"><p>La respuesta de la IA no cambia lo que el log prueba. Antes de actuar, vuelve a la línea original y confirma con quien conoce el código y la base de datos.</p></aside>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+<section id="lim-es" aria-labelledby="h-lim-es">
+<h2 id="h-lim-es">Errores comunes y limitaciones</h2>
+<h3>Errores de lectura</h3>
+<ul>
+<li><strong>Concluir por el recuento.</strong> El error más frecuente puede ser consecuencia de otro más raro.</li>
+<li><strong>Confundir pausa con lentitud.</strong> Lee las líneas de alrededor.</li>
+<li><strong>Medir una sola ejecución.</strong> Los tiempos varían, y el log pesa.</li>
+<li><strong>Abrir solo el jde.log y buscar tiempos.</strong> Quien registra llamadas y SQL es el jdedebug.</li>
+</ul>
+<h3>Limitaciones</h3>
+<ul>
+<li><strong>Solo logs ficticios.</strong> La aplicación se probó con logs creados a partir de fragmentos públicos, nunca con un log de producción. Versiones, idiomas y plataformas pueden variar: avisa cuando reconoce menos del 60% de las líneas, y entonces solo busca palabras de error.</li>
+<li><strong>Detección por palabras.</strong> Puede marcar una línea normal como error, o pasar por alto un error escrito de otra forma.</li>
+<li><strong>Sin año.</strong> Los logs no traen el año, así que solo aparecen día y hora.</li>
+<li><strong>Los archivos comprimidos</strong> no se leen: extrae el .zip antes.</li>
+<li><strong>Tamaño:</strong> probamos hasta 501 MB, leídos en unos 10 s en un ordenador de sobremesa, en Chromium. Otros equipos varían.</li>
+<li><strong>Navegadores:</strong> Firefox, Safari y móviles reales no se probaron.</li>
+</ul>
+</section>
+<section id="rev-es" aria-labelledby="h-rev-es">
+<h2 id="h-rev-es">Repaso rápido</h2>
+<p>Intenta responder antes de abrir cada pregunta.</p>
+<div class="quiz">
+<details><summary>1. ¿Qué archivo mirar para saber por qué algo falló?</summary><p>El jde.log, con errores fatales y fallos. El jdedebug trae llamadas, SQL y tiempos, y Oracle avisa de que no sirve para seguir errores.</p></details>
+<details><summary>2. JDB9900401 aparece justo después de ORA-03113 todas las veces. ¿Por dónde empezar?</summary><p>Por ORA-03113. El otro probablemente es consecuencia.</p></details>
+<details><summary>3. Una BSFN tiene tiempo total alto y tiempo propio bajo. ¿Qué indica?</summary><p>Que el tiempo está en las funciones que llama. Baja hasta la hija con mayor tiempo propio.</p></details>
+<details><summary>4. ¿Una pausa de 10 minutos prueba que el sistema va lento?</summary><p>No. Puede ser solo falta de actividad. Lee las líneas antes y después.</p></details>
+<details><summary>5. El mismo SQL se ejecutó 500 veces. ¿Qué sospechar?</summary><p>Una lectura dentro de un bucle, donde ayudaría una caché o una lectura única.</p></details>
+<details><summary>6. ¿El log sale del ordenador al abrirlo en la aplicación?</summary><p>No. El archivo bloquea la red y el contenido del log no se guarda.</p></details>
+<details><summary>7. ¿Se puede enviar sin revisar el informe con datos ocultos?</summary><p>No. La ocultación sigue patrones y puede dejar pasar algo.</p></details>
+<details><summary>8. La IA dice con seguridad cuál es la causa del problema. ¿Qué hacer antes de actuar?</summary><p>Pide el fragmento que sostiene la afirmación, comprueba la línea original con Ver en el log y confirma con quien conoce el código y la base de datos. La IA puede inventar causas y referencias.</p></details>
+</div>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+<section id="ref-es" aria-labelledby="h-ref-es">
+<h2 id="h-ref-es">Referencias</h2>
+<ol class="refs">
+<li id="ref-1-es"><strong>Giovani Perotto Mesquita</strong>, “JDE Log Insights”, aplicación en un único archivo HTML, <a href="jde-log-insights.html#es">giovanipm.github.io/jde-log-insights.html</a>.</li>
+<li id="ref-2-es"><strong>Oracle</strong>, “jde.log”, JD Edwards EnterpriseOne Tools, documentación, consultado el 01/11/2026, <a href="https://docs.oracle.com/en/applications/jd-edwards/development-tools/9.2.x/eotev/jde-log.html" rel="noopener">docs.oracle.com</a>. Esta página afirma que jde.log está siempre en la raíz de la unidad principal. La página [3] dice que la ubicación viene de JobFile. Seguimos la [3], más específica.</li>
+<li id="ref-3-es"><strong>Oracle</strong>, “Troubleshooting the Enterprise Server”, documentación, consultado el 01/11/2026, <a href="https://docs.oracle.com/cd/E24705_01/doc.91/e24259/troubleshoot_e1_server.htm" rel="noopener">docs.oracle.com</a>. Esta página describe el jde.log del servidor como sobrescrito en cada sesión y, en servidor Windows, como añadido al final.</li>
+<li id="ref-4-es"><strong>Oracle</strong>, “Troubleshooting the Workstation”, documentación, consultado el 01/11/2026, <a href="https://docs.oracle.com/cd/E17984_01/doc.898/e14718/troubleshoot_wrkstation.htm" rel="noopener">docs.oracle.com</a>.</li>
+<li id="ref-5-es"><strong>Oracle</strong>, “LogParse Output Files for the Enterprise Server”, documentación, consultado el 01/11/2026, <a href="https://docs.oracle.com/en/applications/jd-edwards/cross-product/9.2/eoism/logparse-output-files-for-the-enterprise-server.html" rel="noopener">docs.oracle.com</a>.</li>
+<li id="ref-6-es"><strong>Dong's Page</strong>, “Case Study: Slow Performance in P4116”, caso de estudio en un blog personal, consultado el 01/11/2026, <a href="https://sohigh99.github.io/dmseo/jde/docs/1523038.html" rel="noopener">sohigh99.github.io</a>.</li>
+<li id="ref-7-es"><strong>Vincenzo Caserta</strong>, “JD Edwards BSFN performance measurement with logs and timings”, artículo técnico; el 2-5% y las 10 ejecuciones son consejos del autor, no de Oracle, consultado el 01/11/2026, <a href="https://vincenzocaserta.it/en/jd-edwards-en/development/bsfn-ner-development/jde-bsfn-performance-measurement-logs-timings" rel="noopener">vincenzocaserta.it</a>.</li>
+<li id="ref-8-es"><strong>Oracle</strong>, “Oracle Database Error Help”, páginas de los mensajes ORA citados en la aplicación, consultado el 01/11/2026, <a href="https://docs.oracle.com/error-help/db/" rel="noopener">docs.oracle.com/error-help/db</a>.</li>
+</ol>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+  </article>
+</div>
+</div>
+
+
+<footer>
+  <div class="wrap">
+    <span>Giovani Perotto Mesquita · Porto Alegre, RS</span>
+    <span><a href="projects.html" data-projects data-foot="0">Projetos</a> · <a href="resume.html" data-resume data-foot="1">Currículo</a> · <a href="contact.html" data-contact data-foot="2">Contato</a></span>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('.lang [role="option"]'));
+    var titles = {"pt":"JDE Log Insights: tutorial · Giovani Perotto Mesquita","en":"JDE Log Insights: tutorial · Giovani Perotto Mesquita","it":"JDE Log Insights: tutorial · Giovani Perotto Mesquita","es":"JDE Log Insights: tutorial · Giovani Perotto Mesquita"};
+    var foots = {"pt": ["Projetos", "Currículo", "Contato"], "en": ["Projects", "Resume", "Contact"], "it": ["Progetti", "Curriculum", "Contatti"], "es": ["Proyectos", "Currículum", "Contacto"]};
+    var langs = { pt: 'pt-BR', en: 'en', it: 'it', es: 'es' };
+    var bar = document.querySelector('.progress');
+    var article = document.querySelector('[role="tabpanel"]:not([hidden]) article');
+
+    function show(id, focus) {
+      tabs.forEach(function (t) {
+        var on = t.getAttribute('aria-controls') === id;
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+        if (on && focus) t.focus();
+      });
+      document.documentElement.lang = langs[id];
+      document.title = titles[id];
+      var suffix = id === 'pt' ? '' : '#' + id;
+      [['data-home', 'index.html'], ['data-about', 'about.html'], ['data-resume', 'resume.html'], ['data-projects', 'projects.html'], ['data-contact', 'contact.html']].forEach(function (p) {
+        document.querySelectorAll('[' + p[0] + ']').forEach(function (a) { a.href = p[1] + suffix; });
+      });
+      document.querySelectorAll('[data-foot]').forEach(function (a) { a.textContent = foots[id][+a.getAttribute('data-foot')]; });
+      article = document.querySelector('#' + id + ' article');
+      if (history.replaceState) history.replaceState(null, '', id === 'pt' ? location.pathname : '#' + id);
+      progress();
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () { show(t.getAttribute('aria-controls')); });
+      t.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (d) { e.preventDefault(); show(tabs[(i + d + tabs.length) % tabs.length].getAttribute('aria-controls'), true); }
+      });
+    });
+
+    // barra de progresso de leitura
+    function progress() {
+      if (!article) return;
+      var r = article.getBoundingClientRect();
+      var total = r.height - window.innerHeight;
+      var p = total > 0 ? Math.min(Math.max(-r.top / total, 0), 1) : 1;
+      bar.style.width = (p * 100) + '%';
+    }
+    window.addEventListener('scroll', progress, { passive: true });
+    window.addEventListener('resize', progress);
+
+    // destaca a seção atual no índice
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          var panel = e.target.closest('[role="tabpanel"]');
+          panel.querySelectorAll('.toc a').forEach(function (a) {
+            if (a.getAttribute('href') === '#' + e.target.id) a.setAttribute('aria-current', 'true');
+            else a.removeAttribute('aria-current');
+          });
+        });
+      }, { rootMargin: '-20% 0px -70% 0px' });
+      document.querySelectorAll('article section[id]').forEach(function (s) { io.observe(s); });
+    }
+
+    var h = (location.hash || '').replace('#', '');
+    var m = h.match(/^(?:.*-)?(en|it|es)$/);
+    if (m) {
+      show(m[1]);
+      if (h !== m[1]) { var el = document.getElementById(h); if (el) el.scrollIntoView(); if (history.replaceState) history.replaceState(null, '', '#' + h); }
+    } else progress();
+  })();
+</script>
+<script>
+  // seletor de idioma em combobox: abre a lista, sincroniza o botão e fecha
+  (function () {
+    var box = document.querySelector('.lang'); if (!box) return;
+    var btn = box.querySelector('.lang-current'), list = box.querySelector('.lang-list'), now = btn.querySelector('.lang-now');
+    var opts = Array.prototype.slice.call(list.querySelectorAll('[role="option"]'));
+    var menu = {
+      pt: { index: 'Início', about: 'Sobre', resume: 'Currículo', projects: 'Projetos', contact: 'Contato' },
+      en: { index: 'Home', about: 'About', resume: 'Resume', projects: 'Projects', contact: 'Contact' },
+      it: { index: 'Home', about: 'Chi sono', resume: 'Curriculum', projects: 'Progetti', contact: 'Contatti' },
+      es: { index: 'Inicio', about: 'Sobre mí', resume: 'Currículum', projects: 'Proyectos', contact: 'Contacto' }
+    };
+    function translate(id) {
+      document.querySelectorAll('.nav ul a').forEach(function (l) {
+        var k = (l.getAttribute('href') || '').split('#')[0].replace('.html', '');
+        if (menu[id] && menu[id][k]) l.textContent = menu[id][k];
+      });
+      // links do menu para as páginas principais levam o idioma selecionado
+      var suf = id === 'pt' ? '' : '#' + id;
+      document.querySelectorAll('.nav a[href]').forEach(function (l) {
+        var m = l.getAttribute('href').match(/^(index|about|resume|projects|contact)\.html(#(pt|en|it|es))?$/);
+        if (m) l.setAttribute('href', m[1] + '.html' + suf);
+      });
+    }
+    function sync() {
+      var sel = opts.filter(function (o) { return o.getAttribute('aria-selected') === 'true'; })[0] || opts[0];
+      now.innerHTML = sel.querySelector('.flag').outerHTML + sel.getAttribute('data-code');
+      btn.setAttribute('aria-label', btn.getAttribute('data-label') + ': ' + sel.textContent.trim());
+      translate(sel.getAttribute('aria-controls'));
+      return sel;
+    }
+    function open() { list.hidden = false; btn.setAttribute('aria-expanded', 'true'); sync().focus(); }
+    function close(back) { list.hidden = true; btn.setAttribute('aria-expanded', 'false'); if (back) btn.focus(); }
+    btn.addEventListener('click', function () { if (list.hidden) open(); else close(); });
+    btn.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); open(); }
+      else if (e.key === 'Escape') close();
+    });
+    opts.forEach(function (o, i) {
+      o.addEventListener('click', function () { sync(); close(true); });
+      o.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0;
+        if (d) { e.preventDefault(); opts[(i + d + opts.length) % opts.length].focus(); }
+        else if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); opts[e.key === 'Home' ? 0 : opts.length - 1].focus(); }
+        else if (e.key === 'Escape') { e.preventDefault(); close(true); }
+        else if (e.key === 'Tab') close();
+      });
+    });
+    document.addEventListener('click', function (e) { if (!box.contains(e.target)) close(); });
+    new MutationObserver(sync).observe(list, { attributes: true, subtree: true, attributeFilter: ['aria-selected'] });
+    sync();
+  })();
+</script>
+<script>
+document.addEventListener('click', function (e) {
+  var b = e.target.closest && e.target.closest('[data-copy]');
+  if (!b) return;
+  var code = document.getElementById(b.getAttribute('data-copy')), old = b.textContent;
+  function done() { b.textContent = b.getAttribute('data-done'); setTimeout(function () { b.textContent = old; }, 1500); }
+  function fallback() { var r = document.createRange(); r.selectNodeContents(code); var s = getSelection(); s.removeAllRanges(); s.addRange(r); try { document.execCommand('copy'); done(); } catch (x) {} }
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code.textContent).then(done, fallback); else fallback();
+});
+</script>
+</body>
+</html>
