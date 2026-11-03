@@ -1,0 +1,1876 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>C4 Studio — Diagramas C4 Model</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --panel:#ffffff; --line:#e2e6ec; --text:#1f2933; --muted:#6b7785;
+    --accent:#f08c00; --primary:#1168bd; --dark:#16202c;
+    font-family: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;color:var(--text);background:var(--bg)}
+  button,input,select,textarea{font:inherit;color:inherit}
+  header{height:50px;background:var(--dark);color:#e8edf3;display:flex;align-items:center;gap:12px;padding:0 12px}
+  .logo{font-weight:700;letter-spacing:.3px;white-space:nowrap;display:flex;align-items:center;gap:8px}
+  .logo span.badge{background:var(--primary);border-radius:6px;padding:2px 7px;font-size:13px}
+  #tabs{display:flex;gap:4px;overflow-x:auto;flex:1;min-width:0;align-self:stretch;align-items:flex-end;scrollbar-width:thin}
+  .tab{background:#273444;border:0;border-radius:8px 8px 0 0;padding:7px 12px;cursor:pointer;color:#b8c4d2;white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis;font-size:13px}
+  .tab small{opacity:.65;margin-right:6px;font-size:11px;text-transform:uppercase}
+  .tab.active{background:var(--bg);color:var(--text)}
+  .tab.add{background:transparent;color:#b8c4d2;font-size:18px;padding:4px 10px}
+  .actions{display:flex;gap:6px;align-items:center}
+  .hbtn{background:#273444;border:1px solid #33465b;color:#e8edf3;border-radius:7px;padding:6px 10px;cursor:pointer;font-size:13px;white-space:nowrap}
+  .hbtn:hover{background:#33465b}
+  .hbtn:disabled{opacity:.4;cursor:default}
+  details.menu{position:relative}
+  details.menu summary{list-style:none}
+  details.menu summary::-webkit-details-marker{display:none}
+  details.menu .dd{position:absolute;right:0;top:36px;background:#fff;color:var(--text);border:1px solid var(--line);border-radius:9px;box-shadow:0 10px 30px rgba(0,0,0,.18);min-width:190px;padding:6px;z-index:20}
+  details.menu .dd button{display:block;width:100%;text-align:left;background:none;border:0;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:13px}
+  details.menu .dd button:hover{background:#eef3f9}
+  details.menu .dd hr{border:0;border-top:1px solid var(--line);margin:4px 0}
+
+  #main{display:flex;height:calc(100% - 50px)}
+  #palette{width:190px;background:var(--panel);border-right:1px solid var(--line);padding:12px;overflow:auto;flex-shrink:0}
+  #palette h4,#props h4{margin:4px 0 10px;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted)}
+  .pitem{display:flex;align-items:center;gap:10px;width:100%;background:#fff;border:1px solid var(--line);border-radius:9px;padding:8px;margin-bottom:7px;cursor:grab;text-align:left;font-size:13px}
+  .pitem:hover{border-color:#9db8d6;background:#f7fafd}
+  .pitem svg{flex-shrink:0}
+  .hint{font-size:12px;color:var(--muted);line-height:1.5;margin-top:14px}
+  .hint kbd{background:#eef1f5;border:1px solid #d6dbe2;border-radius:4px;padding:0 4px;font-size:11px}
+
+  #canvasWrap{flex:1;position:relative;overflow:hidden}
+  #svg{width:100%;height:100%;display:block;touch-action:none;user-select:none;-webkit-user-select:none;cursor:default}
+  #svg.panning{cursor:grabbing}
+  [data-role=node]{cursor:move}
+  [data-role=edge]{cursor:pointer}
+  [data-role=resize]{cursor:nwse-resize}
+  [data-role=connect]{cursor:crosshair}
+  #zoombar{position:absolute;right:14px;bottom:14px;display:flex;gap:4px;background:#fff;border:1px solid var(--line);border-radius:9px;padding:4px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+  #zoombar button{border:0;background:none;padding:4px 9px;border-radius:6px;cursor:pointer;font-size:13px}
+  #zoombar button:hover{background:#eef3f9}
+  #zoomLbl{min-width:52px}
+  #empty{position:absolute;inset:0;display:none;align-items:center;justify-content:center;pointer-events:none;color:var(--muted);text-align:center;font-size:14px;line-height:1.6}
+
+  #props{width:290px;background:var(--panel);border-left:1px solid var(--line);padding:14px;overflow:auto;flex-shrink:0}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;font-weight:500}
+  .field input[type=text],.field input[type=number],.field select,.field textarea{width:100%;border:1px solid #d3d9e1;border-radius:7px;padding:7px 9px;font-size:13px;background:#fff}
+  .field textarea{min-height:80px;resize:vertical}
+  .field input:focus,.field select:focus,.field textarea:focus{outline:2px solid #bcd6f2;border-color:#7aa7d9}
+  .row{display:flex;gap:8px}
+  .row>.field{flex:1}
+  .btn{border:1px solid #d3d9e1;background:#fff;border-radius:7px;padding:7px 10px;cursor:pointer;font-size:13px}
+  .btn:hover{background:#f2f6fa}
+  .btn.danger{color:#c92a2a;border-color:#f1c0c0}
+  .btn.danger:hover{background:#fff4f4}
+  .btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .chk{display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:12px}
+  .pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;background:#eef3f9;color:#33557a;margin-bottom:10px}
+  .colorrow{display:flex;gap:6px;align-items:center}
+  .colorrow input[type=color]{width:44px;height:32px;border:1px solid #d3d9e1;border-radius:7px;padding:2px;background:#fff}
+
+  #modal{position:fixed;inset:0;background:rgba(15,23,32,.45);display:none;align-items:center;justify-content:center;z-index:50}
+  #modal .box{background:#fff;border-radius:12px;width:min(760px,92vw);max-height:86vh;display:flex;flex-direction:column;padding:16px;gap:10px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  #modal h3{margin:0;font-size:16px}
+  #modal textarea{flex:1;min-height:360px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;border:1px solid #d3d9e1;border-radius:8px;padding:10px;resize:none}
+  .hbtn.on{background:#2f9e44;border-color:#2f9e44}
+  body.simulating #palette{opacity:.35;pointer-events:none}
+  #simBanner{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:#2f9e44;color:#fff;padding:6px 14px;border-radius:20px;font-size:13px;display:none;box-shadow:0 2px 10px rgba(0,0,0,.15);pointer-events:none;white-space:nowrap}
+  body.simulating #simBanner{display:block}
+  .seg{display:flex;background:#eef1f5;border-radius:8px;padding:3px;margin-bottom:12px}
+  .segb{flex:1;border:0;background:none;padding:6px;border-radius:6px;cursor:pointer;font-size:13px}
+  .segb.on{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12);font-weight:600}
+  .simhint{font-size:12.5px;color:var(--muted);line-height:1.5;margin:0 0 12px}
+  .steps{padding:0;list-style:none;margin:10px 0;font-size:12.5px}
+  .steps li{margin-bottom:9px}
+  .steps b{display:block;color:#2f9e44;font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+  .steps div{padding:3px 0 3px 8px;border-left:2px solid #b2f2bb;line-height:1.4}
+  .steps i{color:var(--muted)}
+  .kpis{display:flex;gap:6px;margin:10px 0}
+  .kpi{flex:1;border-radius:8px;padding:8px 4px;text-align:center;font-size:11px;color:#555;background:#f4f6f9}
+  .kpi b{display:block;font-size:20px;color:#222}
+  .kpi.down b{color:#e03131}.kpi.deg b{color:#e8590c}.kpi.ok b{color:#2f9e44}
+  .tags{margin:4px 0 10px}
+  .tag{display:inline-block;font-size:12px;padding:2px 8px;border-radius:12px;margin:2px;background:#f1f3f5}
+  .tag.down{background:#ffe3e3;color:#c92a2a}.tag.deg{background:#fff4e6;color:#d9480f}.tag.ok{background:#ebfbee;color:#2b8a3e}
+  .sub{font-size:12px;color:var(--muted);font-weight:600;margin-top:8px}
+  .spof{border:1px solid var(--line);border-radius:8px;padding:8px;margin-bottom:6px;cursor:pointer;font-size:12.5px;line-height:1.45}
+  .spof:hover{background:#fff5f5;border-color:#ffc9c9}
+  .spof b{color:#c92a2a}
+  #docModal{position:fixed;inset:0;background:rgba(15,23,32,.45);display:none;align-items:center;justify-content:center;z-index:50}
+  #docModal .box{background:#fff;border-radius:12px;width:min(1100px,95vw);height:90vh;display:flex;flex-direction:column;padding:16px;gap:10px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  #docModal .dochead{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  #docModal h3{margin:0;font-size:16px;flex:1}
+  #docModal select{border:1px solid #d3d9e1;border-radius:7px;padding:6px 8px;font-size:13px}
+  #docModal .chk{margin:0}
+  #docFrame{flex:1;border:1px solid var(--line);border-radius:8px;background:#fff;width:100%}
+  .iconbar{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin:4px 0 8px}
+  .iconbar.two{grid-template-columns:repeat(2,1fr)}.iconbar.four{grid-template-columns:repeat(4,1fr)}
+  .ib{border:1px solid #d3d9e1;background:#fff;border-radius:7px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#33557a;padding:0}
+  .ib:hover{background:#eef3f9;border-color:#9db8d6}.ib:disabled{opacity:.35;cursor:default}
+  .ib svg{width:20px;height:20px;fill:currentColor}
+  .mini{font-size:11.5px;color:var(--muted);margin:-4px 0 8px}
+  .btn:disabled{opacity:.45;cursor:default}
+  #impModal{position:fixed;inset:0;background:rgba(15,23,32,.45);display:none;align-items:center;justify-content:center;z-index:55}
+  #impModal .box{background:#fff;border-radius:12px;width:min(640px,92vw);max-height:84vh;display:flex;flex-direction:column;padding:18px;gap:12px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  #impModal h3{margin:0;font-size:16px}
+  #impList{overflow:auto;border:1px solid var(--line);border-radius:9px;min-height:60px}
+  .imp{display:flex;gap:10px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}
+  .imp:last-child{border-bottom:0}
+  .imp input[type=text]{flex:1;border:1px solid #d3d9e1;border-radius:7px;padding:6px 8px;font-size:13px}
+  .imp .meta{font-size:11.5px;color:var(--muted);white-space:nowrap}
+  .imp .src{font-size:11px;color:var(--muted)}
+  .imp.off{opacity:.5}
+  .btn.primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .btn.primary:hover{background:#0d5aa7}
+  #canvasWrap.dropping::after{content:'Solte o .json para importar os diagramas em novas abas';position:absolute;inset:10px;border:3px dashed #1168bd;border-radius:14px;background:rgba(17,104,189,.07);display:flex;align-items:center;justify-content:center;font-size:16px;color:#1168bd;font-weight:600;pointer-events:none}
+  #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--dark);color:#fff;padding:9px 16px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:60}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><span class="badge">C4</span> Studio</div>
+  <div id="tabs"></div>
+  <div class="actions">
+    <button class="hbtn" id="bUndo" title="Desfazer (Ctrl+Z)">↶</button>
+    <button class="hbtn" id="bRedo" title="Refazer (Ctrl+Shift+Z)">↷</button>
+    <button class="hbtn" id="bSim" title="Simular fluxos de chamadas e falhas">▶ Simular</button>
+    <button class="hbtn" id="bDoc" title="Gerar documentação do diagrama">Documentar</button>
+    <details class="menu" id="mFile">
+      <summary class="hbtn">Arquivo ▾</summary>
+      <div class="dd">
+        <button data-menu="new">Novo projeto</button>
+        <button data-menu="sample">Carregar exemplo</button>
+        <hr>
+        <button data-menu="open">Abrir projeto (.json)…</button>
+        <button data-menu="import">Importar diagramas em novas abas (.json)…</button>
+        <button data-menu="save">Salvar projeto (.json)</button>
+      </div>
+    </details>
+    <details class="menu" id="mExport">
+      <summary class="hbtn">Exportar ▾</summary>
+      <div class="dd">
+        <button data-menu="svg">Imagem SVG</button>
+        <button data-menu="png">Imagem PNG</button>
+        <hr>
+        <button data-menu="puml">Código C4-PlantUML</button>
+      </div>
+    </details>
+  </div>
+</header>
+
+<div id="main">
+  <aside id="palette">
+    <h4>Elementos</h4>
+    <div id="pitems"></div>
+    <div class="hint">
+      Clique ou arraste para o canvas.<br><br>
+      <b>Conectar:</b> selecione um elemento e arraste o círculo laranja até outro.<br>
+      <b>Mover tela:</b> arraste no fundo.<br>
+      <b>Zoom:</b> roda do mouse.<br><br>
+      <kbd>Del</kbd> excluir · <kbd>Ctrl+D</kbd> duplicar<br>
+      <kbd>Ctrl+Z</kbd> desfazer · setas movem<br>
+      <kbd>Alt</kbd> ao arrastar ignora a grade<br>
+      <kbd>Shift</kbd>+clique ou <kbd>Shift</kbd>+arrastar no fundo: seleção múltipla · <kbd>Ctrl+A</kbd> todos<br>
+      <kbd>Ctrl+]</kbd> / <kbd>Ctrl+[</kbd> avançar / recuar
+    </div>
+  </aside>
+
+  <div id="canvasWrap">
+    <svg id="svg" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+          <circle cx="1" cy="1" r="1" fill="#cfd6df"/>
+        </pattern>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#707070"/></marker>
+        <marker id="arrowSel" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#f08c00"/></marker>
+        <marker id="arrowGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f9e44"/></marker>
+        <marker id="arrowRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e03131"/></marker>
+        <marker id="arrowOrange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#f08c00"/></marker>
+      </defs>
+      <rect id="gridRect" width="100%" height="100%" fill="url(#grid)"/>
+      <g id="viewport"></g>
+    </svg>
+    <div id="simBanner">Modo simulação — o diagrama não é alterado · Esc para sair</div>
+    <div id="empty">Diagrama vazio.<br>Adicione elementos pela paleta à esquerda.</div>
+    <div id="zoombar">
+      <button id="zOut" title="Diminuir zoom">−</button>
+      <button id="zoomLbl" title="Zoom 100%">100%</button>
+      <button id="zIn" title="Aumentar zoom">+</button>
+      <button id="zFit" title="Ajustar à tela">Ajustar</button>
+    </div>
+  </div>
+
+  <aside id="props"></aside>
+</div>
+
+<div id="modal"><div class="box">
+  <h3 id="mTitle">C4-PlantUML</h3>
+  <textarea id="mText" readonly spellcheck="false"></textarea>
+  <div class="btns" style="justify-content:flex-end">
+    <button class="btn" id="mCopy">Copiar</button>
+    <button class="btn" id="mDown">Baixar .puml</button>
+    <button class="btn" id="mClose">Fechar</button>
+  </div>
+</div></div>
+<div id="docModal"><div class="box">
+  <div class="dochead">
+    <h3>Documentação</h3>
+    <select id="docScope"><option value="cur">Diagrama atual</option><option value="all">Todos os diagramas do projeto</option></select>
+    <label class="chk"><input type="checkbox" id="docImg" checked> Incluir imagens</label>
+  </div>
+  <iframe id="docFrame" title="Prévia da documentação"></iframe>
+  <div class="btns" style="justify-content:flex-end">
+    <button class="btn" id="docCopy">Copiar Markdown</button>
+    <button class="btn" id="docMd">Baixar Markdown (.md)</button>
+    <button class="btn" id="docHtml">Baixar HTML</button>
+    <button class="btn" id="docPrint">Imprimir / PDF</button>
+    <button class="btn" id="docClose">Fechar</button>
+  </div>
+</div></div>
+<div id="toast"></div>
+<input type="file" id="fileIn" accept=".json,application/json" hidden>
+<input type="file" id="fileImp" accept=".json,application/json" multiple hidden>
+<div id="impModal"><div class="box">
+  <h3>Importar diagramas em novas abas</h3>
+  <p class="simhint" style="margin:0">Escolha quais diagramas incluir. Eles entram como novas abas, e os diagramas atuais não são alterados. Você pode renomear antes de importar.</p>
+  <div class="btns" style="margin:0"><button class="btn" id="impAll">Marcar todos</button><button class="btn" id="impNone">Desmarcar todos</button><button class="btn" id="impMore">Adicionar outro arquivo…</button></div>
+  <div id="impList"></div>
+  <div class="btns" style="justify-content:flex-end">
+    <button class="btn" id="impCancel">Cancelar</button>
+    <button class="btn primary" id="impGo">Importar</button>
+  </div>
+</div></div>
+
+<script>
+(() => {
+'use strict';
+const NS = 'http://www.w3.org/2000/svg';
+const FONT = 'Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+const GRID = 10;
+const $ = s => document.querySelector(s);
+const uid = () => Math.random().toString(36).slice(2, 10);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function el(tag, attrs = {}, parent, text) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) if (attrs[k] != null) e.setAttribute(k, attrs[k]);
+  if (text != null) e.textContent = text;
+  if (parent) parent.appendChild(e);
+  return e;
+}
+
+/* ---------- Tipos C4 ---------- */
+const TYPES = {
+  person:     {label:'Pessoa',             kind:'Pessoa',              fill:'#08427b', stroke:'#052e56', text:'#fff', w:200, h:190, shape:'person'},
+  person_ext: {label:'Pessoa externa',     kind:'Pessoa',              fill:'#686868', stroke:'#4d4d4d', text:'#fff', w:200, h:190, shape:'person'},
+  system:     {label:'Sistema de software',kind:'Sistema de Software', fill:'#1168bd', stroke:'#0b4884', text:'#fff', w:240, h:150},
+  system_ext: {label:'Sistema externo',    kind:'Sistema de Software', fill:'#999999', stroke:'#6b6b6b', text:'#fff', w:240, h:150},
+  container:  {label:'Contêiner',          kind:'Contêiner',           fill:'#438dd5', stroke:'#2e6295', text:'#fff', w:240, h:150, tech:true},
+  database:   {label:'Banco de dados',     kind:'Contêiner',           fill:'#438dd5', stroke:'#2e6295', text:'#fff', w:240, h:160, tech:true, shape:'cylinder'},
+  queue:      {label:'Fila / Tópico',      kind:'Contêiner',           fill:'#438dd5', stroke:'#2e6295', text:'#fff', w:260, h:130, tech:true, shape:'pipe'},
+  webapp:     {label:'App web / mobile',   kind:'Contêiner',           fill:'#438dd5', stroke:'#2e6295', text:'#fff', w:240, h:160, tech:true, shape:'browser'},
+  component:  {label:'Componente',         kind:'Componente',          fill:'#85bbf0', stroke:'#5d82a8', text:'#000', w:230, h:140, tech:true},
+  code:       {label:'Classe / interface', kind:'Classe',              fill:'#ffffff', stroke:'#5d82a8', text:'#1f2933', w:260, h:160, tech:true, shape:'class'},
+  boundary:   {label:'Fronteira',          kind:'Fronteira',           w:640, h:420, shape:'boundary'}
+};
+const LEVELS = {landscape:'Panorama do Sistema', context:'Contexto do Sistema', container:'Contêineres', component:'Componentes', code:'Código', dynamic:'Dinâmico', deployment:'Implantação', other:'Outro'};
+const LEVEL_SHORT = {landscape:'Panorama', context:'Contexto', container:'Contêiner', component:'Componente', code:'Código', dynamic:'Dinâmico', deployment:'Implantação', other:'Outro'};
+
+/* ---------- Estado ---------- */
+const STORE = 'c4studio.project.v1', VSTORE = 'c4studio.views.v1';
+let project, views = {}, sel = null, drag = null, undoStack = [], redoStack = [], pendingSnap = false, hoverTarget = null;
+const cur = () => project.diagrams.find(d => d.id === project.current) || project.diagrams[0];
+const view = () => (views[cur().id] ||= {x: 60, y: 60, k: 1});
+const nodeById = (id, d = cur()) => d.nodes.find(n => n.id === id);
+const snap = v => Math.round(v / GRID) * GRID;
+const selIds = () => sel?.kind === 'node' ? (sel.ids || [sel.id]) : [];
+const selNodes = () => selIds().map(id => nodeById(id)).filter(Boolean);
+function setSel(ids, primary) { ids = [...new Set(ids)]; sel = ids.length ? {kind: 'node', id: primary && ids.includes(primary) ? primary : ids[ids.length - 1], ids} : null; }
+
+function mkNode(type, name, x, y, extra = {}) {
+  const t = TYPES[type];
+  return Object.assign({id: uid(), type, name, tech: '', desc: '', x, y, w: t.w, h: t.h}, extra);
+}
+function mkEdge(from, to, label, tech = '') { return {id: uid(), from: from.id, to: to.id, label, tech, style: 'dashed', both: false}; }
+
+function sampleProject() {
+  const N = (type, name, x, y, extra = {}) => mkNode(type, name, x, y, extra);
+  const E = (a, b, label, tech = '', extra = {}) => Object.assign(mkEdge(a, b, label, tech), extra);
+  const D = (title, level, desc, nodes, edges) => ({id: uid(), title, level, desc, legend: true, nodes, edges});
+  const ds = {
+    cliente: 'Pessoa que compra produtos pela internet.',
+    atendente: 'Funcionário que acompanha pedidos e atende clientes.',
+    loja: 'Permite navegar no catálogo, comprar e acompanhar pedidos.',
+    gw: 'Processa pagamentos com cartão e Pix.',
+    mail: 'Envio transacional de e-mails.',
+    erp: 'Faturamento, estoque e financeiro da empresa.'
+  };
+
+  /* 0. Panorama do Sistema */
+  const L = {
+    cli: N('person', 'Cliente', 0, 300, {desc: ds.cliente}),
+    emp: N('boundary', 'Loja Online S.A.', 360, -20, {w: 1300, h: 580, tech: 'Empresa'}),
+    ate: N('person', 'Atendente', 480, 20, {desc: ds.atendente}),
+    ana: N('person', 'Analista de Estoque', 940, 20, {desc: 'Controla compras e níveis de estoque.'}),
+    loja: N('system', 'Loja Online', 460, 320, {desc: ds.loja}),
+    erp: N('system', 'ERP', 920, 320, {desc: ds.erp}),
+    log: N('system', 'Sistema de Logística', 1380, 320, {desc: 'Separação, embalagem e expedição.'}),
+    gw: N('system_ext', 'Gateway de Pagamento', 460, 720, {desc: ds.gw}),
+    mail: N('system_ext', 'Serviço de E-mail', 920, 720, {desc: ds.mail}),
+    trn: N('system_ext', 'Transportadora', 1380, 720, {desc: 'Coleta e entrega das encomendas.'})
+  };
+  const landscape = D('Loja Online S.A.', 'landscape', 'Todos os sistemas de software da empresa, as pessoas que os usam e os sistemas externos.',
+    [L.emp, L.cli, L.ate, L.ana, L.loja, L.erp, L.log, L.gw, L.mail, L.trn],
+    [E(L.cli, L.loja, 'Compra produtos'), E(L.ate, L.loja, 'Gerencia pedidos'), E(L.ana, L.erp, 'Controla estoque'),
+     E(L.loja, L.erp, 'Envia pedidos faturados', 'HTTPS/JSON'), E(L.erp, L.log, 'Solicita expedição', 'Mensageria'),
+     E(L.loja, L.gw, 'Cobra pagamentos', 'HTTPS/JSON'), E(L.loja, L.mail, 'Envia e-mails', 'SMTP'), E(L.log, L.trn, 'Agenda coletas', 'API REST')]);
+
+  /* 1. Contexto */
+  const C = {
+    cli: N('person', 'Cliente', 160, 0, {desc: ds.cliente}),
+    ate: N('person', 'Atendente', 640, 0, {desc: ds.atendente}),
+    loja: N('system', 'Loja Online', 380, 320, {desc: ds.loja}),
+    gw: N('system_ext', 'Gateway de Pagamento', 0, 620, {desc: ds.gw}),
+    mail: N('system_ext', 'Serviço de E-mail', 380, 620, {desc: ds.mail}),
+    erp: N('system_ext', 'ERP', 760, 620, {desc: ds.erp})
+  };
+  const context = D('Loja Online', 'context', 'O sistema Loja Online, quem o usa e com quais sistemas ele se integra.',
+    Object.values(C),
+    [E(C.cli, C.loja, 'Navega no catálogo e faz pedidos', 'HTTPS'), E(C.ate, C.loja, 'Acompanha e gerencia pedidos', 'HTTPS'),
+     E(C.loja, C.gw, 'Cobra pagamentos', 'HTTPS/JSON'), E(C.loja, C.mail, 'Envia confirmações', 'SMTP'), E(C.loja, C.erp, 'Envia pedidos faturados', 'HTTPS/JSON')]);
+
+  /* 2. Contêineres */
+  const K = {
+    cli: N('person', 'Cliente', 140, -60, {desc: ds.cliente}),
+    gw: N('system_ext', 'Gateway de Pagamento', 580, -40, {desc: ds.gw}),
+    ate: N('person', 'Atendente', 1060, -60, {desc: ds.atendente}),
+    b: N('boundary', 'Loja Online', 80, 240, {w: 1240, h: 790, tech: 'Sistema de Software'}),
+    web: N('webapp', 'Aplicação Web', 120, 300, {tech: 'React', desc: 'Vitrine e carrinho que rodam no navegador.'}),
+    api: N('container', 'API', 580, 300, {h: 160, tech: 'Node.js / Express', desc: 'Regras de negócio expostas via REST.'}),
+    bo: N('webapp', 'Backoffice', 1040, 300, {tech: 'Angular', desc: 'Painel interno de gestão de pedidos.'}),
+    db: N('database', 'Banco de Dados', 580, 580, {tech: 'PostgreSQL', desc: 'Produtos, clientes e pedidos.'}),
+    fila: N('queue', 'Fila de Pedidos', 1040, 590, {w: 240, tech: 'RabbitMQ', desc: 'Eventos de pedidos criados.'}),
+    wrk: N('container', 'Processador de Pedidos', 1040, 830, {tech: 'Node.js', desc: 'Consome eventos, notifica e fatura.'}),
+    mail: N('system_ext', 'Serviço de E-mail', 1520, 600, {desc: ds.mail}),
+    erp: N('system_ext', 'ERP', 1520, 830, {desc: ds.erp})
+  };
+  const containers = D('Loja Online — Contêineres', 'container', 'Aplicações e armazenamentos de dados que compõem a Loja Online.',
+    Object.values(K),
+    [E(K.cli, K.web, 'Usa', 'HTTPS'), E(K.ate, K.bo, 'Gerencia pedidos', 'HTTPS'),
+     E(K.web, K.api, 'Chama a API', 'JSON/HTTPS'), E(K.bo, K.api, 'Chama a API', 'JSON/HTTPS'),
+     E(K.api, K.db, 'Lê e grava', 'SQL/TCP'), E(K.api, K.fila, 'Publica eventos de pedido', 'AMQP'), E(K.api, K.gw, 'Cobra pagamentos', 'HTTPS/JSON'),
+     E(K.wrk, K.fila, 'Consome eventos', 'AMQP'), E(K.wrk, K.mail, 'Envia confirmações', 'SMTP'), E(K.wrk, K.erp, 'Envia pedidos faturados', 'HTTPS/JSON')]);
+
+  /* 3. Componentes (API) */
+  const P = {
+    web: N('webapp', 'Aplicação Web', 100, -120, {tech: 'React', desc: 'Vitrine e carrinho que rodam no navegador.'}),
+    bo: N('webapp', 'Backoffice', 1420, -120, {tech: 'Angular', desc: 'Painel interno de gestão de pedidos.'}),
+    b: N('boundary', 'API', 60, 200, {w: 1230, h: 780, tech: 'Contêiner'}),
+    catC: N('component', 'Controlador de Catálogo', 100, 280, {tech: 'Express Router', desc: 'Endpoints de produtos e busca.'}),
+    pedC: N('component', 'Controlador de Pedidos', 560, 280, {tech: 'Express Router', desc: 'Endpoints de criação e consulta de pedidos.'}),
+    authC: N('component', 'Controlador de Login', 1020, 280, {tech: 'Express Router', desc: 'Login e renovação de sessão.'}),
+    catR: N('component', 'Repositório de Catálogo', 100, 530, {tech: 'Prisma', desc: 'Acesso a produtos e preços.'}),
+    pedS: N('component', 'Serviço de Pedidos', 560, 530, {tech: 'TypeScript', desc: 'Regras de criação, pagamento e cancelamento.'}),
+    seg: N('component', 'Serviço de Segurança', 1020, 530, {tech: 'JWT', desc: 'Emite e valida tokens de acesso.'}),
+    pedR: N('component', 'Repositório de Pedidos', 100, 780, {tech: 'Prisma', desc: 'Persistência de pedidos e itens.'}),
+    pub: N('component', 'Publicador de Eventos', 560, 780, {tech: 'amqplib', desc: 'Publica eventos de domínio na fila.'}),
+    pag: N('component', 'Cliente de Pagamentos', 1020, 780, {tech: 'Axios', desc: 'Integração com o gateway.'}),
+    db: N('database', 'Banco de Dados', -380, 520, {tech: 'PostgreSQL', desc: 'Produtos, clientes e pedidos.'}),
+    fila: N('queue', 'Fila de Pedidos', 550, 1100, {w: 250, tech: 'RabbitMQ', desc: 'Eventos de pedidos criados.'}),
+    gw: N('system_ext', 'Gateway de Pagamento', 1500, 775, {desc: ds.gw})
+  };
+  const components = D('API — Componentes', 'component', 'Componentes internos do contêiner API.',
+    Object.values(P),
+    [E(P.web, P.catC, 'Consulta produtos', 'JSON/HTTPS'), E(P.web, P.pedC, 'Cria pedidos', 'JSON/HTTPS'), E(P.web, P.authC, 'Autentica', 'JSON/HTTPS'),
+     E(P.bo, P.pedC, 'Gerencia pedidos', 'JSON/HTTPS'),
+     E(P.catC, P.catR, 'Usa'), E(P.pedC, P.pedS, 'Usa'), E(P.authC, P.seg, 'Usa'),
+     E(P.pedS, P.pedR, 'Usa'), E(P.pedS, P.pub, 'Usa'), E(P.pedS, P.pag, 'Usa'),
+     E(P.catR, P.db, 'Lê', 'SQL/TCP'), E(P.pedR, P.db, 'Lê e grava', 'SQL/TCP'),
+     E(P.pub, P.fila, 'Publica eventos', 'AMQP'), E(P.pag, P.gw, 'Cobra pagamentos', 'HTTPS/JSON')]);
+
+  /* 4. Código (Serviço de Pedidos) */
+  const X = {
+    svc: N('code', 'PedidoService', 400, 0, {tech: 'Classe', desc: '+ criarPedido(dto): Pedido\n+ cancelar(id): void'}),
+    ped: N('code', 'Pedido', 820, 0, {tech: 'Entidade', desc: '- id, cliente, status, total\n+ pagar(): void'}),
+    item: N('code', 'ItemPedido', 1220, 0, {tech: 'Entidade', desc: '- produto, quantidade, preço'}),
+    repo: N('code', 'PedidoRepository', 0, 300, {tech: 'Interface', desc: '+ salvar(p: Pedido)\n+ buscar(id): Pedido'}),
+    gwI: N('code', 'GatewayPagamento', 400, 300, {tech: 'Interface', desc: '+ cobrar(valor, meio): Recibo'}),
+    pubI: N('code', 'EventPublisher', 820, 300, {tech: 'Interface', desc: '+ publicar(evento): void'}),
+    repoImpl: N('code', 'PrismaPedidoRepository', 0, 580, {tech: 'Classe', desc: 'Implementação com Prisma/PostgreSQL'}),
+    gwImpl: N('code', 'GatewayPagamentoHttp', 400, 580, {tech: 'Classe', desc: 'Chama a API do gateway via HTTPS'}),
+    pubImpl: N('code', 'RabbitEventPublisher', 820, 580, {tech: 'Classe', desc: 'Publica no RabbitMQ'})
+  };
+  const S = {style: 'solid'};
+  const code = D('Serviço de Pedidos — Código', 'code', 'Principais classes e interfaces do componente Serviço de Pedidos.',
+    Object.values(X),
+    [E(X.svc, X.repo, 'usa', '', S), E(X.svc, X.gwI, 'usa', '', S), E(X.svc, X.pubI, 'usa', '', S), E(X.svc, X.ped, 'cria', '', S),
+     E(X.ped, X.item, 'contém 1..*', '', S),
+     E(X.repoImpl, X.repo, 'implementa'), E(X.gwImpl, X.gwI, 'implementa'), E(X.pubImpl, X.pubI, 'implementa')]);
+
+  /* 5. Dinâmico (fluxo de compra) */
+  const Y = {
+    web: N('webapp', 'Aplicação Web', 0, 0, {tech: 'React', desc: 'Vitrine e carrinho.'}),
+    pedC: N('component', 'Controlador de Pedidos', 460, 10, {tech: 'Express Router'}),
+    pedS: N('component', 'Serviço de Pedidos', 920, 10, {tech: 'TypeScript'}),
+    pag: N('component', 'Cliente de Pagamentos', 1380, 10, {tech: 'Axios'}),
+    pub: N('component', 'Publicador de Eventos', 460, 340, {tech: 'amqplib'}),
+    pedR: N('component', 'Repositório de Pedidos', 920, 340, {tech: 'Prisma'}),
+    gw: N('system_ext', 'Gateway de Pagamento', 1375, 335, {desc: ds.gw}),
+    db: N('database', 'Banco de Dados', 915, 650, {tech: 'PostgreSQL'}),
+    fila: N('queue', 'Fila de Pedidos', 450, 660, {w: 250, tech: 'RabbitMQ'})
+  };
+  const dynamic = D('Fluxo de compra', 'dynamic', 'Sequência de chamadas quando o cliente finaliza uma compra.',
+    Object.values(Y),
+    [E(Y.web, Y.pedC, '1. Envia pedido', 'POST /pedidos'), E(Y.pedC, Y.pedS, '2. Cria pedido'), E(Y.pedS, Y.pag, '3. Solicita cobrança'),
+     E(Y.pag, Y.gw, '4. Cobra cartão', 'HTTPS/JSON'), E(Y.pedS, Y.pedR, '5. Salva pedido pago'), E(Y.pedR, Y.db, '6. Grava pedido', 'SQL'),
+     E(Y.pedS, Y.pub, '7. Publica PedidoCriado'), E(Y.pub, Y.fila, '8. Envia evento', 'AMQP')]);
+
+  /* 6. Implantação (produção) */
+  const Z = {
+    gw: N('system_ext', 'Gateway de Pagamento', 500, -340, {desc: ds.gw}),
+    aws: N('boundary', 'Amazon Web Services', 0, 0, {w: 1220, h: 900, tech: 'Nó de implantação: AWS sa-east-1'}),
+    cdn: N('boundary', 'CloudFront + S3', 40, 40, {w: 360, h: 360, tech: 'Nó: CDN'}),
+    ecs: N('boundary', 'Amazon ECS', 460, 40, {w: 720, h: 360, tech: 'Nó: Fargate, 2 instâncias'}),
+    rds: N('boundary', 'Amazon RDS', 460, 520, {w: 320, h: 330, tech: 'Nó: db.t4g.medium'}),
+    mq: N('boundary', 'Amazon MQ', 860, 520, {w: 320, h: 330, tech: 'Nó: mq.m5.large'}),
+    web: N('webapp', 'Aplicação Web', 100, 100, {tech: 'React (estáticos)', desc: 'Vitrine e carrinho.'}),
+    api: N('container', 'API', 500, 100, {tech: 'Node.js / Express', desc: 'Regras de negócio expostas via REST.'}),
+    wrk: N('container', 'Processador de Pedidos', 900, 100, {tech: 'Node.js', desc: 'Consome eventos, notifica e fatura.'}),
+    db: N('database', 'Banco de Dados', 500, 580, {tech: 'PostgreSQL 16', desc: 'Produtos, clientes e pedidos.'}),
+    fila: N('queue', 'Fila de Pedidos', 890, 600, {w: 260, tech: 'RabbitMQ', desc: 'Eventos de pedidos criados.'})
+  };
+  const deployment = D('Produção — Implantação', 'deployment', 'Como os contêineres da Loja Online estão implantados na AWS.',
+    Object.values(Z),
+    [E(Z.web, Z.api, 'Chama a API', 'JSON/HTTPS'), E(Z.api, Z.db, 'Lê e grava', 'SQL/TCP'), E(Z.api, Z.fila, 'Publica eventos', 'AMQP'),
+     E(Z.wrk, Z.fila, 'Consome eventos', 'AMQP'), E(Z.api, Z.gw, 'Cobra pagamentos', 'HTTPS/JSON')]);
+
+  const diagrams = [landscape, context, containers, components, code, dynamic, deployment];
+  return {name: 'Loja Online', diagrams, current: context.id};
+}
+function blankProject() {
+  const d = {id: uid(), title: 'Novo diagrama', level: 'context', desc: '', legend: false, nodes: [], edges: []};
+  return {name: 'Projeto', diagrams: [d], current: d.id};
+}
+function validProject(p) { return p && Array.isArray(p.diagrams) && p.diagrams.length && p.diagrams.every(d => Array.isArray(d.nodes) && Array.isArray(d.edges)); }
+
+/* ---------- Persistência ---------- */
+let saveTimer;
+function save() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try { localStorage.setItem(STORE, JSON.stringify(project)); localStorage.setItem(VSTORE, JSON.stringify(views)); } catch (e) {}
+  }, 250);
+}
+function load() {
+  try {
+    const p = JSON.parse(localStorage.getItem(STORE));
+    views = JSON.parse(localStorage.getItem(VSTORE)) || {};
+    if (validProject(p)) return p;
+  } catch (e) {}
+  return null;
+}
+
+/* ---------- Desfazer ---------- */
+const snapshot = () => JSON.stringify(project);
+function pushUndo(s = snapshot()) { undoStack.push(s); if (undoStack.length > 200) undoStack.shift(); redoStack = []; updUndo(); }
+function undo() { if (!undoStack.length) return; redoStack.push(snapshot()); project = JSON.parse(undoStack.pop()); afterHistory(); }
+function redo() { if (!redoStack.length) return; undoStack.push(snapshot()); project = JSON.parse(redoStack.pop()); afterHistory(); }
+function afterHistory() {
+  if (sel?.kind === 'node') setSel(selIds().filter(id => nodeById(id)), sel.id);
+  else if (sel && !cur().edges.find(e => e.id === sel.id)) sel = null;
+  fullRefresh();
+}
+function updUndo() { $('#bUndo').disabled = !undoStack.length; $('#bRedo').disabled = !redoStack.length; }
+
+/* ---------- Texto ---------- */
+const mctx = document.createElement('canvas').getContext('2d');
+function measure(t, font) { mctx.font = font; return mctx.measureText(t).width; }
+function wrap(text, font, maxW) {
+  mctx.font = font;
+  const out = [];
+  for (const para of String(text ?? '').split('\n')) {
+    const words = para.split(/\s+/).filter(Boolean);
+    if (!words.length) { out.push(''); continue; }
+    let line = words[0];
+    for (let i = 1; i < words.length; i++) {
+      const t = line + ' ' + words[i];
+      if (mctx.measureText(t).width <= maxW) line = t; else { out.push(line); line = words[i]; }
+    }
+    out.push(line);
+  }
+  return out;
+}
+function typeLine(n) {
+  const t = TYPES[n.type];
+  if (n.type === 'boundary') return '[' + (n.tech || 'Sistema de Software') + ']';
+  if (n.type === 'code') return '[' + (n.tech || 'Classe') + ']';
+  return '[' + t.kind + (t.tech && n.tech ? ': ' + n.tech : '') + ']';
+}
+function textBlock(g, lines, x, top, cfg) {
+  lines.forEach((ln, i) => el('text', {x, y: top + i * cfg.lh + cfg.size * 0.82, 'text-anchor': cfg.anchor || 'middle',
+    'font-family': FONT, 'font-size': cfg.size, 'font-weight': cfg.weight || 'normal', fill: cfg.fill, 'font-style': cfg.italic ? 'italic' : null}, g, ln));
+  return lines.length * cfg.lh;
+}
+
+/* ---------- Geometria ---------- */
+function center(n) { return {x: n.x + n.w / 2, y: n.y + n.h / 2}; }
+function clip(n, tx, ty) {
+  const c = center(n), dx = tx - c.x, dy = ty - c.y;
+  if (!dx && !dy) return c;
+  const sx = dx ? (n.w / 2) / Math.abs(dx) : Infinity, sy = dy ? (n.h / 2) / Math.abs(dy) : Infinity;
+  const s = Math.min(sx, sy);
+  return {x: c.x + dx * s, y: c.y + dy * s};
+}
+function contains(b, n) { return n !== b && n.x >= b.x && n.y >= b.y && n.x + n.w <= b.x + b.w && n.y + n.h <= b.y + b.h; }
+
+/* ---------- Renderização ---------- */
+function shadeOf(n) { return n.color || TYPES[n.type].fill; }
+function darken(hex, f = 0.72) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex || ''); if (!m) return '#333';
+  const v = parseInt(m[1], 16);
+  const r = Math.round(((v >> 16) & 255) * f), g = Math.round(((v >> 8) & 255) * f), b = Math.round((v & 255) * f);
+  return '#' + ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1);
+}
+function textColorFor(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex || ''); if (!m) return '#fff';
+  const v = parseInt(m[1], 16), r = (v >> 16) & 255, g = (v >> 8) & 255, b = v & 255;
+  return (0.299 * r + 0.587 * g + 0.114 * b) > 165 ? '#000' : '#fff';
+}
+
+function drawNode(parent, n) {
+  const t = TYPES[n.type] || TYPES.system;
+  const fill = shadeOf(n), stroke = n.color ? darken(n.color) : t.stroke, tc = n.color ? textColorFor(n.color) : t.text;
+  const g = el('g', {transform: `translate(${n.x},${n.y})`, 'data-role': 'node', 'data-id': n.id}, parent);
+  const {w, h} = n;
+  let tx = 0, ty = 0, tw = w, th = h;
+  if (t.shape === 'person') {
+    const r = Math.min(w, h) * 0.2, bodyY = r * 1.7;
+    el('rect', {x: 0, y: bodyY, width: w, height: h - bodyY, rx: Math.min(36, (h - bodyY) / 3), fill, stroke, 'stroke-width': 1.5}, g);
+    el('circle', {cx: w / 2, cy: r, r, fill, stroke, 'stroke-width': 1.5}, g);
+    ty = bodyY + 6; th = h - bodyY - 6;
+  } else if (t.shape === 'cylinder') {
+    const ry = Math.min(16, h / 6);
+    el('path', {d: `M0,${ry} L0,${h - ry} A${w / 2},${ry} 0 0 0 ${w},${h - ry} L${w},${ry} Z`, fill, stroke, 'stroke-width': 1.5}, g);
+    el('ellipse', {cx: w / 2, cy: ry, rx: w / 2, ry, fill, stroke, 'stroke-width': 1.5}, g);
+    ty = ry * 2; th = h - ry * 2.5;
+  } else if (t.shape === 'pipe') {
+    const rx = Math.min(18, w / 8);
+    el('path', {d: `M${rx},0 L${w - rx},0 A${rx},${h / 2} 0 0 1 ${w - rx},${h} L${rx},${h} A${rx},${h / 2} 0 0 1 ${rx},0 Z`, fill, stroke, 'stroke-width': 1.5}, g);
+    el('ellipse', {cx: w - rx, cy: h / 2, rx, ry: h / 2, fill: darken(fill, 0.88), stroke, 'stroke-width': 1.5}, g);
+    tx = rx; tw = w - rx * 3;
+  } else if (t.shape === 'browser') {
+    el('rect', {x: 0, y: 0, width: w, height: h, rx: 10, fill, stroke, 'stroke-width': 1.5}, g);
+    el('line', {x1: 0, y1: 22, x2: w, y2: 22, stroke, 'stroke-width': 1.5}, g);
+    [12, 26, 40].forEach(cx => el('circle', {cx, cy: 11, r: 4, fill: tc, opacity: 0.6}, g));
+    ty = 22; th = h - 22;
+  } else if (t.shape === 'class') {
+    el('rect', {x: 0, y: 0, width: w, height: h, rx: 3, fill, stroke, 'stroke-width': 1.5}, g);
+  } else {
+    el('rect', {x: 0, y: 0, width: w, height: h, rx: 10, fill, stroke, 'stroke-width': 1.5}, g);
+  }
+  // texto
+  const pad = 12, maxW = Math.max(30, tw - pad * 2);
+  const nameL = wrap(n.name || '(sem nome)', `bold 16px ${FONT}`, maxW);
+  const typeL = wrap(typeLine(n), `12px ${FONT}`, maxW);
+  const descL = n.desc ? wrap(n.desc, `13px ${FONT}`, maxW) : [];
+  const total = nameL.length * 20 + 3 + typeL.length * 15 + (descL.length ? 10 + descL.length * 16.5 : 0);
+  let y = ty + Math.max(4, (th - total) / 2);
+  const cx = tx + tw / 2;
+  y += textBlock(g, nameL, cx, y, {size: 16, lh: 20, weight: 'bold', fill: tc});
+  y += 3;
+  y += textBlock(g, typeL, cx, y, {size: 12, lh: 15, fill: tc});
+  if (descL.length) { y += 10; textBlock(g, descL, cx, y, {size: 13, lh: 16.5, fill: tc}); }
+  const sv = simView?.nodes.get(n.id);
+  if (sv) {
+    if (sv.opacity != null) g.setAttribute('opacity', sv.opacity);
+    if (sv.color) el('rect', {x: -7, y: -7, width: w + 14, height: h + 14, rx: 14, fill: 'none', stroke: sv.color, 'stroke-width': 4, 'pointer-events': 'none'}, g);
+    if (sv.cross) {
+      el('line', {x1: 8, y1: 8, x2: w - 8, y2: h - 8, stroke: sv.color, 'stroke-width': 4, 'stroke-linecap': 'round', 'pointer-events': 'none'}, g);
+      el('line', {x1: w - 8, y1: 8, x2: 8, y2: h - 8, stroke: sv.color, 'stroke-width': 4, 'stroke-linecap': 'round', 'pointer-events': 'none'}, g);
+    }
+  }
+  return g;
+}
+
+function drawBoundary(parent, n) {
+  const g = el('g', {transform: `translate(${n.x},${n.y})`, 'data-role': 'node', 'data-id': n.id}, parent);
+  const col = n.color || '#444444';
+  el('rect', {x: 0, y: 0, width: n.w, height: n.h, rx: 6, fill: n.color ? n.color : 'none', 'fill-opacity': n.color ? 0.08 : null, stroke: col, 'stroke-width': 1.5, 'stroke-dasharray': '8 6', 'pointer-events': 'none'}, g);
+  el('rect', {x: 0, y: 0, width: n.w, height: n.h, rx: 6, fill: 'none', stroke: 'transparent', 'stroke-width': 14, 'pointer-events': 'stroke'}, g);
+  const nameL = wrap(n.name || '(sem nome)', `bold 15px ${FONT}`, n.w - 24);
+  const lh = nameL.length * 19 + 16;
+  const top = n.h - lh - 10;
+  el('rect', {x: 6, y: top - 2, width: Math.min(n.w - 12, Math.max(...nameL.map(l => measure(l, `bold 15px ${FONT}`)), measure(typeLine(n), `12px ${FONT}`)) + 12), height: lh + 6, fill: 'transparent'}, g);
+  let y = top;
+  y += textBlock(g, nameL, 12, y, {size: 15, lh: 19, weight: 'bold', fill: col, anchor: 'start'});
+  textBlock(g, [typeLine(n)], 12, y, {size: 12, lh: 15, fill: col, anchor: 'start'});
+  return g;
+}
+
+function edgeGeometry(d) {
+  const groups = {};
+  d.edges.forEach(e => { const k = [e.from, e.to].sort().join('|'); (groups[k] ||= []).push(e); });
+  const res = {};
+  for (const e of d.edges) {
+    const a = nodeById(e.from, d), b = nodeById(e.to, d);
+    if (!a || !b || a === b) continue;
+    const k = [e.from, e.to].sort().join('|'), list = groups[k], i = list.indexOf(e), cnt = list.length;
+    const ca = center(a), cb = center(b);
+    const [p, q] = e.from < e.to ? [ca, cb] : [cb, ca];
+    const dx = q.x - p.x, dy = q.y - p.y, len = Math.hypot(dx, dy) || 1;
+    const off = (i - (cnt - 1) / 2) * 70;
+    const mid = {x: (ca.x + cb.x) / 2, y: (ca.y + cb.y) / 2};
+    const c = {x: mid.x + (-dy / len) * off, y: mid.y + (dx / len) * off};
+    const s = clip(a, off ? c.x : cb.x, off ? c.y : cb.y), t = clip(b, off ? c.x : ca.x, off ? c.y : ca.y);
+    const path = off ? `M${s.x},${s.y} Q${c.x},${c.y} ${t.x},${t.y}` : `M${s.x},${s.y} L${t.x},${t.y}`;
+    const lp = off ? {x: .25 * s.x + .5 * c.x + .25 * t.x, y: .25 * s.y + .5 * c.y + .25 * t.y} : {x: (s.x + t.x) / 2, y: (s.y + t.y) / 2};
+    res[e.id] = {path, lp, s, c: off ? c : null, t};
+  }
+  return res;
+}
+
+function drawEdge(parent, e, geo, selected, grow) {
+  const g = el('g', {'data-role': 'edge', 'data-id': e.id}, parent);
+  let col = selected ? '#f08c00' : '#707070', mk = selected ? 'url(#arrowSel)' : 'url(#arrow)', sw = selected ? 2.2 : 1.6;
+  const sv = simView?.edges.get(e.id);
+  if (sv) {
+    if (sv.color) { col = sv.color; mk = `url(#${sv.marker})`; sw = sv.width; }
+    if (sv.opacity != null) g.setAttribute('opacity', sv.opacity);
+  }
+  el('path', {d: geo.path, fill: 'none', stroke: 'transparent', 'stroke-width': 16, 'pointer-events': 'stroke'}, g);
+  el('path', {d: geo.path, fill: 'none', stroke: col, 'stroke-width': sw, 'stroke-dasharray': e.style === 'solid' ? null : '7 5',
+    'marker-end': mk, 'marker-start': e.both ? mk : null, 'pointer-events': 'none'}, g);
+  const lab = e.label ? wrap(e.label, `13px ${FONT}`, 190) : [];
+  const tec = e.tech ? wrap('[' + e.tech + ']', `11px ${FONT}`, 190) : [];
+  if (!lab.length && !tec.length) return;
+  const wMax = Math.max(...lab.map(l => measure(l, `13px ${FONT}`)), ...tec.map(l => measure(l, `11px ${FONT}`)), 10);
+  const hTot = lab.length * 16 + tec.length * 14;
+  const x0 = geo.lp.x, y0 = geo.lp.y - hTot / 2;
+  el('rect', {x: x0 - wMax / 2 - 5, y: y0 - 3, width: wMax + 10, height: hTot + 6, rx: 4, fill: '#ffffff', 'fill-opacity': 0.92}, g);
+  let y = y0;
+  y += textBlock(g, lab, x0, y, {size: 13, lh: 16, fill: selected ? '#b86600' : '#333'});
+  textBlock(g, tec, x0, y, {size: 11, lh: 14, fill: selected ? '#b86600' : '#666', italic: true});
+  grow(x0 - wMax / 2 - 5, y0 - 3, wMax + 10, hTot + 6);
+}
+
+function drawLegend(parent, d, bx, by) {
+  const used = [...new Set(d.nodes.map(n => n.type))].filter(t => t !== 'boundary');
+  const hasB = d.nodes.some(n => n.type === 'boundary');
+  const g = el('g', {transform: `translate(${bx},${by})`}, parent);
+  el('text', {x: 0, y: 14, 'font-family': FONT, 'font-size': 14, 'font-weight': 'bold', fill: '#333'}, g, 'Legenda');
+  let y = 28;
+  for (const tKey of used) {
+    const t = TYPES[tKey];
+    if (t.shape === 'person') { el('circle', {cx: 17, cy: y + 5, r: 5, fill: t.fill}, g); el('rect', {x: 6, y: y + 10, width: 22, height: 12, rx: 5, fill: t.fill}, g); }
+    else el('rect', {x: 0, y: y + 2, width: 34, height: 20, rx: 4, fill: t.fill, stroke: t.stroke}, g);
+    el('text', {x: 44, y: y + 17, 'font-family': FONT, 'font-size': 12, fill: '#333'}, g, t.label);
+    y += 28;
+  }
+  if (hasB) { el('rect', {x: 0, y: y + 2, width: 34, height: 20, rx: 3, fill: 'none', stroke: '#444', 'stroke-dasharray': '4 3'}, g); el('text', {x: 44, y: y + 17, 'font-family': FONT, 'font-size': 12, fill: '#333'}, g, 'Fronteira'); y += 28; }
+  el('line', {x1: 0, y1: y + 12, x2: 30, y2: y + 12, stroke: '#707070', 'stroke-width': 1.6, 'stroke-dasharray': '7 5', 'marker-end': 'url(#arrow)'}, g);
+  el('text', {x: 44, y: y + 17, 'font-family': FONT, 'font-size': 12, fill: '#333'}, g, 'Relação');
+  y += 28;
+  return {w: 190, h: y};
+}
+
+function nodesBounds(d) {
+  let b = {minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity};
+  d.nodes.forEach(n => { b.minX = Math.min(b.minX, n.x); b.minY = Math.min(b.minY, n.y); b.maxX = Math.max(b.maxX, n.x + n.w); b.maxY = Math.max(b.maxY, n.y + n.h); });
+  return b;
+}
+
+function renderInto(root, d, opts = {}) {
+  simView = (!opts.export && sim) ? computeSimView(d) : null;
+  const b = nodesBounds(d);
+  const grow = (x, y, w, h) => { b.minX = Math.min(b.minX, x); b.minY = Math.min(b.minY, y); b.maxX = Math.max(b.maxX, x + w); b.maxY = Math.max(b.maxY, y + h); };
+  const gB = el('g', {}, root), gE = el('g', {}, root), gN = el('g', {}, root), gS = el('g', {}, root);
+  const bounds = d.nodes.filter(n => n.type === 'boundary').sort((a, c) => c.w * c.h - a.w * a.h);
+  bounds.forEach(n => drawBoundary(gB, n));
+  const geo = edgeGeometry(d);
+  d.edges.forEach(e => geo[e.id] && drawEdge(gE, e, geo[e.id], !opts.export && sel?.kind === 'edge' && sel.id === e.id, grow));
+  d.nodes.filter(n => n.type !== 'boundary').forEach(n => drawNode(gN, n));
+  if (d.legend && d.nodes.length) {
+    const lx = b.maxX + 50, ly = b.minY;
+    const lg = drawLegend(gS, d, lx, ly);
+    grow(lx, ly, lg.w, lg.h);
+  }
+  if (simView) {
+    if (sim.mode === 'flow') for (const a of sim.active) {
+      const gm = geo[a.e.id]; if (!gm) continue;
+      let u = Math.min(1, sim.t || 0); if (a.from !== a.e.from) u = 1 - u;
+      const p = bezier(gm, u);
+      el('circle', {cx: p.x, cy: p.y, r: 9, fill: SIMC.flow, opacity: 0.25, 'pointer-events': 'none'}, gS);
+      el('circle', {cx: p.x, cy: p.y, r: 6.5, fill: SIMC.flow, stroke: '#fff', 'stroke-width': 2.5, 'pointer-events': 'none'}, gS);
+    }
+    for (const [id, s] of simView.nodes) {
+      if (!s.badge) continue;
+      const n = nodeById(id, d); if (!n) continue;
+      const w = measure(s.badge, `bold 12px ${FONT}`) + 18, k = Math.min(2.6, Math.max(1, 0.75 / view().k));
+      const g = el('g', {transform: `translate(${n.x + n.w / 2 - w * k / 2},${n.y - 20 * k}) scale(${k})`, 'pointer-events': 'none'}, gS);
+      el('rect', {width: w, height: 22, rx: 11, fill: s.color, stroke: '#fff', 'stroke-width': 1.5}, g);
+      el('text', {x: w / 2, y: 15, 'text-anchor': 'middle', 'font-family': FONT, 'font-size': 12, 'font-weight': 'bold', fill: '#fff'}, g, s.badge);
+    }
+  }
+  if (!opts.export && !sim) {
+    const sns = selNodes();
+    if (sns.length > 1) {
+      sns.forEach(n => el('rect', {x: n.x - 5, y: n.y - 5, width: n.w + 10, height: n.h + 10, rx: 12, fill: 'none', stroke: '#f08c00', 'stroke-width': n.id === sel.id ? 3 : 2, 'stroke-dasharray': n.id === sel.id ? null : '5 4', 'pointer-events': 'none'}, gS));
+      const bb = bboxOf(sns);
+      el('rect', {x: bb.minX - 14, y: bb.minY - 14, width: bb.maxX - bb.minX + 28, height: bb.maxY - bb.minY + 28, fill: 'none', stroke: '#f08c00', 'stroke-opacity': 0.5, 'stroke-width': 1, 'stroke-dasharray': '2 4', 'pointer-events': 'none'}, gS);
+    } else if (sel?.kind === 'node') {
+      const n = nodeById(sel.id, d);
+      if (n) {
+        el('rect', {x: n.x - 5, y: n.y - 5, width: n.w + 10, height: n.h + 10, rx: 12, fill: 'none', stroke: '#f08c00', 'stroke-width': 2, 'stroke-dasharray': '5 4', 'pointer-events': 'none'}, gS);
+        el('rect', {x: n.x + n.w - 2, y: n.y + n.h - 2, width: 12, height: 12, rx: 2, fill: '#fff', stroke: '#f08c00', 'stroke-width': 2, 'data-role': 'resize', 'data-id': n.id}, gS);
+        if (n.type !== 'boundary') {
+          const cx = n.x + n.w + 20, cy = n.y + n.h / 2;
+          el('line', {x1: n.x + n.w + 5, y1: cy, x2: cx - 8, y2: cy, stroke: '#f08c00', 'stroke-width': 2, 'pointer-events': 'none'}, gS);
+          const hc = el('circle', {cx, cy, r: 9, fill: '#f08c00', stroke: '#fff', 'stroke-width': 2, 'data-role': 'connect', 'data-id': n.id}, gS);
+          el('title', {}, hc, 'Arraste até outro elemento para conectar');
+        }
+      }
+    }
+    if (drag?.mode === 'marquee') {
+      const r = rectOf(drag.start, drag.p);
+      el('rect', {x: r.x, y: r.y, width: r.w, height: r.h, fill: '#f08c00', 'fill-opacity': 0.08, stroke: '#f08c00', 'stroke-width': 1.2 / view().k, 'stroke-dasharray': '4 3', 'pointer-events': 'none'}, gS);
+    }
+    if (drag?.mode === 'connect') {
+      const a = drag.from, tgt = hoverTarget && hoverTarget !== a ? hoverTarget : null;
+      if (tgt) el('rect', {x: tgt.x - 5, y: tgt.y - 5, width: tgt.w + 10, height: tgt.h + 10, rx: 12, fill: 'none', stroke: '#2f9e44', 'stroke-width': 2.5, 'pointer-events': 'none'}, gS);
+      const s = clip(a, drag.p.x, drag.p.y);
+      el('line', {x1: s.x, y1: s.y, x2: drag.p.x, y2: drag.p.y, stroke: '#f08c00', 'stroke-width': 2, 'stroke-dasharray': '6 4', 'marker-end': 'url(#arrowSel)', 'pointer-events': 'none'}, gS);
+    }
+  }
+  return b;
+}
+
+const svg = $('#svg'), vp = $('#viewport');
+function render() {
+  const d = cur(), v = view();
+  vp.setAttribute('transform', `translate(${v.x},${v.y}) scale(${v.k})`);
+  $('#grid').setAttribute('patternTransform', `translate(${v.x},${v.y}) scale(${v.k})`);
+  vp.textContent = '';
+  renderInto(vp, d);
+  $('#zoomLbl').textContent = Math.round(v.k * 100) + '%';
+  $('#empty').style.display = d.nodes.length ? 'none' : 'flex';
+  save();
+}
+
+/* ---------- Abas ---------- */
+function renderTabs() {
+  const box = $('#tabs'); box.innerHTML = '';
+  project.diagrams.forEach(d => {
+    const b = document.createElement('button');
+    b.className = 'tab' + (d.id === cur().id ? ' active' : '');
+    b.innerHTML = `<small>${esc(LEVEL_SHORT[d.level] || '')}</small>${esc(d.title || 'Sem título')}`;
+    b.title = (LEVELS[d.level] || '') + ' — ' + (d.title || '');
+    b.onclick = () => { project.current = d.id; sel = null; if (sim) resetSim(); fullRefresh(); };
+    box.appendChild(b);
+  });
+  const add = document.createElement('button');
+  add.className = 'tab add'; add.textContent = '+'; add.title = 'Novo diagrama';
+  add.onclick = addDiagram;
+  box.appendChild(add);
+}
+function addDiagram() {
+  pushUndo();
+  const prev = cur();
+  const order = ['landscape', 'context', 'container', 'component'];
+  const nextLevel = order[Math.min(order.length - 1, order.indexOf(prev.level) + 1)] || 'container';
+  const d = {id: uid(), title: 'Novo diagrama', level: nextLevel, desc: '', legend: false, nodes: [], edges: []};
+  project.diagrams.push(d); project.current = d.id; sel = null;
+  fullRefresh();
+}
+
+/* ---------- Painel de propriedades ---------- */
+const props = $('#props');
+function opt(v, label, curv) { return `<option value="${esc(v)}"${v === curv ? ' selected' : ''}>${esc(label)}</option>`; }
+function renderProps() {
+  const d = cur();
+  if (sim) { renderSimPanel(); return; }
+  if (selNodes().length > 1) { renderMultiPanel(); return; }
+  if (sel?.kind === 'node' && nodeById(sel.id)) {
+    const n = nodeById(sel.id), t = TYPES[n.type], isB = n.type === 'boundary';
+    const conns = d.edges.filter(e => e.from === n.id || e.to === n.id).length;
+    props.innerHTML = `
+      <h4>${isB ? 'Fronteira' : 'Elemento'}</h4>
+      ${isB ? '' : `<div class="field"><label>Tipo</label><select data-f="type">${Object.keys(TYPES).filter(k => k !== 'boundary').map(k => opt(k, TYPES[k].label, n.type)).join('')}</select></div>`}
+      <div class="field"><label>Nome</label><input type="text" data-f="name" value="${esc(n.name)}"></div>
+      ${isB ? `<div class="field"><label>Tipo da fronteira</label><input type="text" data-f="tech" list="btypes" value="${esc(n.tech)}" placeholder="Sistema de Software">
+                <datalist id="btypes"><option value="Sistema de Software"><option value="Contêiner"><option value="Empresa"><option value="Ambiente"></datalist></div>`
+            : n.type === 'code' ? `<div class="field"><label>Estereótipo</label><input type="text" data-f="tech" value="${esc(n.tech)}" placeholder="Classe, Interface, Entidade…"></div>`
+            : t.tech ? `<div class="field"><label>Tecnologia</label><input type="text" data-f="tech" value="${esc(n.tech)}" placeholder="ex.: Java / Spring Boot"></div>` : ''}
+      ${isB ? '' : `<div class="field"><label>Descrição</label><textarea data-f="desc" placeholder="Responsabilidades do elemento">${esc(n.desc)}</textarea></div>`}
+      <div class="field"><label>Cor ${isB ? 'da fronteira' : 'de fundo'}</label>
+        <div class="colorrow"><input type="color" data-f="color" value="${esc(n.color || (isB ? '#444444' : t.fill))}"><button class="btn" data-act="resetColor">Padrão C4</button></div></div>
+      <div class="row">
+        <div class="field"><label>Largura</label><input type="number" data-f="w" value="${n.w}" min="60" step="10"></div>
+        <div class="field"><label>Altura</label><input type="number" data-f="h" value="${n.h}" min="40" step="10"></div>
+      </div>
+      ${isB ? '' : `<div class="pill">${conns} conexã${conns === 1 ? 'o' : 'ões'}</div>`}
+      <div class="btns">
+        ${isB ? '' : '<button class="btn" data-act="fitText">Ajustar altura ao texto</button>'}
+        <button class="btn" data-act="dup">Duplicar</button>
+        <button class="btn" data-act="copyTo">Copiar para outro diagrama</button>
+        <button class="btn danger" data-act="del">Excluir</button>
+      </div>
+      ${isB ? '' : `<div class="sub" style="margin-top:14px">Sobreposição</div>${zorderBar()}`}
+      <div class="hint">Shift+clique ou Shift+arrastar no fundo seleciona vários elementos para alinhar, distribuir e redimensionar.</div>`;
+  } else if (sel?.kind === 'edge' && d.edges.find(e => e.id === sel.id)) {
+    const e = d.edges.find(x => x.id === sel.id), a = nodeById(e.from), b = nodeById(e.to);
+    props.innerHTML = `
+      <h4>Relação</h4>
+      <div class="pill">${esc(a?.name)} → ${esc(b?.name)}</div>
+      <div class="field"><label>Descrição</label><input type="text" data-f="label" value="${esc(e.label)}" placeholder="ex.: Faz chamadas de API para"></div>
+      <div class="field"><label>Tecnologia / protocolo</label><input type="text" data-f="tech" value="${esc(e.tech)}" placeholder="ex.: JSON/HTTPS"></div>
+      <div class="field"><label>Estilo da linha</label><select data-f="style">${opt('dashed', 'Tracejada (padrão C4)', e.style)}${opt('solid', 'Sólida', e.style)}</select></div>
+      <label class="chk"><input type="checkbox" data-f="both" ${e.both ? 'checked' : ''}> Bidirecional</label>
+      <label class="chk" style="align-items:flex-start"><input type="checkbox" data-f="soft" ${e.soft ? 'checked' : ''} style="margin-top:3px"> <span>Não bloqueante na simulação de falhas<br><small style="color:var(--muted)">Se o destino cair, a origem fica só degradada.</small></span></label>
+      <div class="btns">
+        <button class="btn" data-act="flip">Inverter direção</button>
+        <button class="btn danger" data-act="del">Excluir</button>
+      </div>`;
+  } else {
+    const counts = d.nodes.filter(n => n.type !== 'boundary').length;
+    props.innerHTML = `
+      <h4>Diagrama</h4>
+      <div class="field"><label>Título</label><input type="text" data-f="title" value="${esc(d.title)}"></div>
+      <div class="field"><label>Nível C4</label><select data-f="level">${Object.keys(LEVELS).map(k => opt(k, LEVELS[k], d.level)).join('')}</select></div>
+      <div class="field"><label>Descrição</label><textarea data-f="desc" placeholder="Escopo e propósito do diagrama">${esc(d.desc)}</textarea></div>
+      <div class="field"><label>Notas para a documentação</label><textarea data-f="notes" placeholder="Decisões, premissas, riscos… (entra no documento gerado)">${esc(d.notes)}</textarea></div>
+      <label class="chk"><input type="checkbox" data-f="legend" ${d.legend ? 'checked' : ''}> Mostrar legenda</label>
+      <div class="pill">${counts} elemento${counts === 1 ? '' : 's'} · ${d.edges.length} relaç${d.edges.length === 1 ? 'ão' : 'ões'}</div>
+      ${(() => { const ov = overlapPairs(elNodes(d)).length; return ov ? `<div class="btns" style="margin:0 0 10px"><button class="btn" data-act="fixOverlap">Remover sobreposições (${ov})</button></div>` : ''; })()}
+      <div class="btns">
+        <button class="btn" data-act="selAll">Selecionar todos</button>
+        <button class="btn" data-act="dupDiagram">Duplicar diagrama</button>
+        <button class="btn danger" data-act="delDiagram" ${project.diagrams.length < 2 ? 'disabled' : ''}>Excluir diagrama</button>
+      </div>
+      <div class="hint">
+        <b>Níveis do C4 Model</b><br>
+        1. <b>Contexto</b>: o sistema, seus usuários e sistemas vizinhos.<br>
+        2. <b>Contêineres</b>: aplicações e bancos de dados dentro do sistema.<br>
+        3. <b>Componentes</b>: partes internas de um contêiner.<br>
+        4. <b>Código</b>: classes (geralmente gerado por ferramentas).
+      </div>`;
+  }
+}
+function selTarget() {
+  const d = cur();
+  if (sel?.kind === 'node') return nodeById(sel.id);
+  if (sel?.kind === 'edge') return d.edges.find(e => e.id === sel.id);
+  return d;
+}
+props.addEventListener('focusin', () => { pendingSnap = true; });
+props.addEventListener('input', ev => {
+  const f = ev.target.dataset.f; if (!f) return;
+  const obj = selTarget(); if (!obj) return;
+  if (pendingSnap) { pushUndo(); pendingSnap = false; }
+  let val = ev.target.type === 'checkbox' ? ev.target.checked : ev.target.type === 'number' ? Math.max(+ev.target.min || 0, +ev.target.value || 0) : ev.target.value;
+  obj[f] = val;
+  if (f === 'type') { renderProps(); }
+  if (f === 'title' || f === 'level') renderTabs();
+  render();
+});
+props.addEventListener('click', ev => {
+  const act = ev.target.closest('[data-act]')?.dataset.act; if (!act) return;
+  const d = cur(), obj = selTarget();
+  switch (act) {
+    case 'del': deleteSel(); break;
+    case 'align': case 'dist': case 'space': case 'size': case 'z': case 'fixOverlap': case 'selAll': case 'fitAll': case 'gridSnap':
+      layoutAction(act, ev.target.closest('[data-act]').dataset.arg); break;
+    case 'dup': duplicateSel(); break;
+    case 'resetColor': pushUndo(); delete obj.color; renderProps(); render(); break;
+    case 'flip': pushUndo(); [obj.from, obj.to] = [obj.to, obj.from]; renderProps(); render(); break;
+    case 'fitText': pushUndo(); fitHeight(obj); renderProps(); render(); break;
+    case 'copyTo': copyToDiagram(obj); break;
+    case 'dupDiagram': {
+      pushUndo();
+      const c = JSON.parse(JSON.stringify(d)); c.id = uid(); c.title = d.title + ' (cópia)';
+      project.diagrams.splice(project.diagrams.indexOf(d) + 1, 0, c); project.current = c.id;
+      views[c.id] = {...view()}; fullRefresh(); break;
+    }
+    case 'delDiagram':
+      if (project.diagrams.length < 2) return;
+      if (!confirm(`Excluir o diagrama "${d.title}"?`)) return;
+      pushUndo();
+      project.diagrams = project.diagrams.filter(x => x !== d); project.current = project.diagrams[0].id; sel = null; fullRefresh(); break;
+  }
+});
+function fitHeight(n) {
+  const t = TYPES[n.type];
+  let tw = n.w, extra = 0;
+  if (t.shape === 'pipe') tw = n.w - Math.min(18, n.w / 8) * 3;
+  const maxW = Math.max(30, tw - 24);
+  const total = wrap(n.name || ' ', `bold 16px ${FONT}`, maxW).length * 20 + 3 + wrap(typeLine(n), `12px ${FONT}`, maxW).length * 15 + (n.desc ? 10 + wrap(n.desc, `13px ${FONT}`, maxW).length * 16.5 : 0);
+  if (t.shape === 'person') extra = Math.min(n.w, 200) * 0.2 * 1.7 + 6;
+  if (t.shape === 'cylinder') extra = 40;
+  if (t.shape === 'browser') extra = 22;
+  n.h = snap(Math.max(80, total + 36 + extra));
+}
+function copyToDiagram(n) {
+  const others = project.diagrams.filter(d => d !== cur());
+  if (!others.length) { toast('Crie outro diagrama primeiro (botão + nas abas).'); return; }
+  const list = others.map((d, i) => `${i + 1}. ${d.title}`).join('\n');
+  const ans = prompt('Copiar para qual diagrama?\n' + list, '1');
+  const target = others[(+ans || 0) - 1]; if (!target) return;
+  pushUndo();
+  target.nodes.push({...JSON.parse(JSON.stringify(n)), id: uid()});
+  toast(`Copiado para "${target.title}"`);
+}
+
+/* ---------- Operações ---------- */
+function addNode(type, at) {
+  pushUndo();
+  const t = TYPES[type], v = view(), r = svg.getBoundingClientRect(), d = cur();
+  let p = at;
+  if (!p) {
+    p = {x: (r.width / 2 - v.x) / v.k, y: (r.height / 2 - v.y) / v.k};
+    const k = d.nodes.length % 6; p.x += k * 20; p.y += k * 20;
+  }
+  const defaults = {person: 'Usuário', person_ext: 'Usuário externo', system: 'Sistema', system_ext: 'Sistema externo', container: 'Contêiner', database: 'Banco de dados',
+    queue: 'Fila', webapp: 'Aplicação web', component: 'Componente', code: 'MinhaClasse', boundary: 'Fronteira'};
+  const n = mkNode(type, defaults[type], snap(p.x - t.w / 2), snap(p.y - t.h / 2));
+  if (type === 'boundary') n.tech = d.level === 'component' ? 'Contêiner' : d.level === 'deployment' ? 'Nó de implantação' : d.level === 'landscape' ? 'Empresa' : 'Sistema de Software';
+  if (type === 'code') n.tech = 'Classe';
+  if (type === 'boundary') d.nodes.unshift(n); else d.nodes.push(n);
+  sel = {kind: 'node', id: n.id};
+  render(); renderProps();
+  setTimeout(() => { const i = props.querySelector('[data-f=name]'); i && (i.focus(), i.select()); }, 0);
+}
+function deleteSel() {
+  if (!sel) return;
+  const d = cur();
+  pushUndo();
+  if (sel.kind === 'node') { const ids = new Set(selIds()); d.nodes = d.nodes.filter(n => !ids.has(n.id)); d.edges = d.edges.filter(e => !ids.has(e.from) && !ids.has(e.to)); }
+  else d.edges = d.edges.filter(e => e.id !== sel.id);
+  sel = null; render(); renderProps();
+}
+function duplicateSel() {
+  const ns = selNodes(); if (!ns.length) return;
+  pushUndo();
+  const d = cur(), map = {};
+  const copies = ns.map(n => { const c = {...JSON.parse(JSON.stringify(n)), id: uid(), x: n.x + 30, y: n.y + 30}; map[n.id] = c.id; return c; });
+  copies.forEach(c => c.type === 'boundary' ? d.nodes.unshift(c) : d.nodes.push(c));
+  d.edges.filter(e => map[e.from] && map[e.to]).forEach(e => d.edges.push({...e, id: uid(), from: map[e.from], to: map[e.to]}));
+  setSel(copies.map(c => c.id), map[sel.id]); render(); renderProps();
+}
+function fitView() {
+  const d = cur(), r = svg.getBoundingClientRect(), v = view();
+  if (!d.nodes.length) { Object.assign(v, {x: 60, y: 60, k: 1}); render(); return; }
+  const b = nodesBounds(d);
+  if (d.legend) b.maxX += 240;
+  const w = b.maxX - b.minX + 120, h = b.maxY - b.minY + 120;
+  v.k = Math.max(0.15, Math.min(1.5, Math.min(r.width / w, r.height / h)));
+  v.x = (r.width - (b.maxX - b.minX) * v.k) / 2 - b.minX * v.k;
+  v.y = (r.height - (b.maxY - b.minY) * v.k) / 2 - b.minY * v.k;
+  render();
+}
+function zoomAt(f, mx, my) {
+  const v = view(), r = svg.getBoundingClientRect();
+  if (mx == null) { mx = r.width / 2; my = r.height / 2; }
+  const k = Math.max(0.15, Math.min(4, v.k * f));
+  const wx = (mx - v.x) / v.k, wy = (my - v.y) / v.k;
+  v.k = k; v.x = mx - wx * k; v.y = my - wy * k;
+  render();
+}
+
+/* ---------- Interação no canvas ---------- */
+function toWorld(ev) { const r = svg.getBoundingClientRect(), v = view(); return {x: (ev.clientX - r.left - v.x) / v.k, y: (ev.clientY - r.top - v.y) / v.k}; }
+function nodeAtPoint(ev) {
+  const t = document.elementFromPoint(ev.clientX, ev.clientY)?.closest?.('[data-role=node]');
+  const n = t && nodeById(t.dataset.id);
+  return n && n.type !== 'boundary' ? n : null;
+}
+let spaceDown = false;
+svg.addEventListener('pointerdown', ev => {
+  if (ev.button !== 0 && ev.button !== 1) return;
+  document.querySelectorAll('details.menu[open]').forEach(m => m.open = false);
+  if (document.activeElement && props.contains(document.activeElement)) document.activeElement.blur();
+  const p = toWorld(ev), t = ev.target.closest('[data-role]'), role = t?.dataset.role, id = t?.dataset.id, d = cur();
+  svg.setPointerCapture(ev.pointerId);
+  if (sim) {
+    const n = role === 'node' ? nodeById(id) : null;
+    if (n && n.type !== 'boundary' && ev.button === 0 && !spaceDown) { simClick(n); return; }
+    drag = {mode: 'pan', sx: ev.clientX, sy: ev.clientY, vx: view().x, vy: view().y};
+    svg.classList.add('panning');
+    return;
+  }
+  if (!t && ev.button === 0 && ev.shiftKey && !spaceDown) {
+    drag = {mode: 'marquee', start: p, p, base: selIds()};
+    return;
+  }
+  if (ev.button === 1 || spaceDown || !t) {
+    if (!t && ev.button === 0 && !spaceDown) { sel = null; renderProps(); render(); }
+    drag = {mode: 'pan', sx: ev.clientX, sy: ev.clientY, vx: view().x, vy: view().y};
+    svg.classList.add('panning');
+    return;
+  }
+  if (role === 'connect') { drag = {mode: 'connect', from: nodeById(id), p}; render(); return; }
+  if (role === 'resize') { const n = nodeById(id); drag = {mode: 'resize', n, start: p, w0: n.w, h0: n.h, snap: snapshot(), moved: false}; return; }
+  if (role === 'edge') { sel = {kind: 'edge', id}; renderProps(); render(); return; }
+  if (role === 'node') {
+    const n = nodeById(id), cur0 = selIds();
+    if (ev.shiftKey || ev.ctrlKey || ev.metaKey) {
+      if (cur0.includes(id)) { setSel(cur0.filter(x => x !== id)); renderProps(); render(); return; }
+      setSel([...cur0, id], id);
+    } else if (cur0.includes(id)) setSel(cur0, id);
+    else setSel([id], id);
+    const items = movingItems(selNodes());
+    drag = {mode: 'move', start: p, lead: n, items: items.map(m => ({m, x0: m.x, y0: m.y})), snap: snapshot(), moved: false};
+    renderProps();
+    render();
+  }
+});
+svg.addEventListener('pointermove', ev => {
+  if (!drag) return;
+  const p = toWorld(ev);
+  if (drag.mode === 'pan') { const v = view(); v.x = drag.vx + ev.clientX - drag.sx; v.y = drag.vy + ev.clientY - drag.sy; render(); return; }
+  if (drag.mode === 'connect') { drag.p = p; hoverTarget = nodeAtPoint(ev); render(); return; }
+  if (drag.mode === 'marquee') {
+    drag.p = p;
+    const r = rectOf(drag.start, p);
+    const inside = cur().nodes.filter(n => n.x >= r.x && n.y >= r.y && n.x + n.w <= r.x + r.w && n.y + n.h <= r.y + r.h).map(n => n.id);
+    setSel([...drag.base, ...inside]);
+    render(); return;
+  }
+  const dx = p.x - drag.start.x, dy = p.y - drag.start.y;
+  if (!drag.moved && Math.hypot(dx, dy) * view().k < 3) return;
+  if (!drag.moved) { pushUndo(drag.snap); drag.moved = true; }
+  const sn = ev.altKey ? (v => v) : snap;
+  if (drag.mode === 'move') {
+    const f = drag.items.find(it => it.m === drag.lead) || drag.items[0];
+    const ddx = sn(f.x0 + dx) - f.x0, ddy = sn(f.y0 + dy) - f.y0;
+    drag.items.forEach(it => { it.m.x = it.x0 + ddx; it.m.y = it.y0 + ddy; });
+  } else if (drag.mode === 'resize') {
+    drag.n.w = Math.max(80, sn(drag.w0 + dx)); drag.n.h = Math.max(50, sn(drag.h0 + dy));
+  }
+  render();
+});
+function endDrag(ev) {
+  if (!drag) return;
+  if (drag.mode === 'connect') {
+    const tgt = nodeAtPoint(ev);
+    if (tgt && tgt !== drag.from) {
+      pushUndo();
+      const e = mkEdge(drag.from, tgt, 'Usa');
+      cur().edges.push(e); sel = {kind: 'edge', id: e.id};
+      drag = null; hoverTarget = null; render(); renderProps();
+      setTimeout(() => { const i = props.querySelector('[data-f=label]'); i && (i.focus(), i.select()); }, 0);
+      return;
+    }
+  }
+  if ((drag.moved && drag.mode !== 'pan') || drag.mode === 'marquee') renderProps();
+  drag = null; hoverTarget = null;
+  svg.classList.remove('panning');
+  render();
+}
+svg.addEventListener('pointerup', endDrag);
+svg.addEventListener('pointercancel', endDrag);
+svg.addEventListener('dblclick', ev => {
+  const t = ev.target.closest('[data-role]');
+  if (t) { const i = props.querySelector('[data-f=name],[data-f=label]'); i && (i.focus(), i.select()); }
+  else { const i = props.querySelector('[data-f=title]'); i && (i.focus(), i.select()); }
+});
+svg.addEventListener('wheel', ev => {
+  ev.preventDefault();
+  const r = svg.getBoundingClientRect();
+  zoomAt(Math.exp(-ev.deltaY * (ev.ctrlKey ? 0.01 : 0.0015)), ev.clientX - r.left, ev.clientY - r.top);
+}, {passive: false});
+
+/* Arrastar da paleta */
+const wrapEl = $('#canvasWrap');
+wrapEl.addEventListener('dragover', ev => {
+  if (ev.dataTransfer.types.includes('text/c4type')) ev.preventDefault();
+  else if (ev.dataTransfer.types.includes('Files') && !sim) { ev.preventDefault(); wrapEl.classList.add('dropping'); }
+});
+wrapEl.addEventListener('dragleave', ev => { if (!wrapEl.contains(ev.relatedTarget)) wrapEl.classList.remove('dropping'); });
+wrapEl.addEventListener('drop', ev => {
+  wrapEl.classList.remove('dropping');
+  if (ev.dataTransfer.files?.length && !ev.dataTransfer.types.includes('text/c4type')) {
+    ev.preventDefault(); impPending = []; readImportFiles([...ev.dataTransfer.files]); return;
+  }
+  const type = ev.dataTransfer.getData('text/c4type'); if (!TYPES[type]) return;
+  ev.preventDefault(); addNode(type, toWorld(ev));
+});
+
+/* Teclado */
+document.addEventListener('keydown', ev => {
+  const tag = ev.target.tagName, inField = /INPUT|TEXTAREA|SELECT/.test(tag);
+  const mod = ev.ctrlKey || ev.metaKey;
+  if (ev.key === 'Escape') {
+    if ($('#impModal').style.display === 'flex') closeImport();
+    else if ($('#docModal').style.display === 'flex') closeDoc();
+    else if ($('#modal').style.display === 'flex') closeModal();
+    else if (inField) ev.target.blur();
+    else if (sim) exitSim();
+    else { sel = null; render(); renderProps(); }
+    return;
+  }
+  if (inField) return;
+  if (sim) { if (ev.key === ' ') { spaceDown = true; ev.preventDefault(); } return; }
+  if (mod && ev.key.toLowerCase() === 'z') { ev.preventDefault(); ev.shiftKey ? redo() : undo(); return; }
+  if (mod && ev.key.toLowerCase() === 'y') { ev.preventDefault(); redo(); return; }
+  if (mod && ev.key.toLowerCase() === 'd') { ev.preventDefault(); duplicateSel(); return; }
+  if (mod && ev.key.toLowerCase() === 'a') { ev.preventDefault(); setSel(elNodes(cur()).map(n => n.id)); render(); renderProps(); return; }
+  if (mod && (ev.key === ']' || ev.key === '}')) { ev.preventDefault(); zorder(ev.shiftKey ? 'front' : 'up'); return; }
+  if (mod && (ev.key === '[' || ev.key === '{')) { ev.preventDefault(); zorder(ev.shiftKey ? 'back' : 'down'); return; }
+  if (mod && ev.key.toLowerCase() === 's') { ev.preventDefault(); saveJSON(); return; }
+  if (ev.key === 'Delete' || ev.key === 'Backspace') { ev.preventDefault(); deleteSel(); return; }
+  if (ev.key === ' ') { spaceDown = true; ev.preventDefault(); return; }
+  if (ev.key === '0' && !mod) { fitView(); return; }
+  if (ev.key.startsWith('Arrow') && selNodes().length) {
+    ev.preventDefault();
+    const step = ev.shiftKey ? 50 : GRID;
+    const items = movingItems(selNodes());
+    pushUndo();
+    const dx = ev.key === 'ArrowLeft' ? -step : ev.key === 'ArrowRight' ? step : 0, dy = ev.key === 'ArrowUp' ? -step : ev.key === 'ArrowDown' ? step : 0;
+    items.forEach(m => { m.x += dx; m.y += dy; });
+    render(); renderProps();
+  }
+});
+document.addEventListener('keyup', ev => { if (ev.key === ' ') spaceDown = false; });
+
+/* ---------- Paleta ---------- */
+function paletteIcon(k) {
+  const t = TYPES[k];
+  if (t.shape === 'person') return `<svg width="30" height="26"><circle cx="15" cy="7" r="6" fill="${t.fill}"/><rect x="3" y="13" width="24" height="13" rx="6" fill="${t.fill}"/></svg>`;
+  if (t.shape === 'cylinder') return `<svg width="30" height="26"><path d="M3,5 L3,21 A12,4 0 0 0 27,21 L27,5 Z" fill="${t.fill}"/><ellipse cx="15" cy="5" rx="12" ry="4" fill="${t.fill}" stroke="${t.stroke}"/></svg>`;
+  if (t.shape === 'pipe') return `<svg width="30" height="26"><path d="M7,6 L23,6 A4,7 0 0 1 23,20 L7,20 A4,7 0 0 1 7,6 Z" fill="${t.fill}"/><ellipse cx="23" cy="13" rx="4" ry="7" fill="${t.stroke}"/></svg>`;
+  if (t.shape === 'browser') return `<svg width="30" height="26"><rect x="2" y="3" width="26" height="20" rx="3" fill="${t.fill}"/><line x1="2" y1="8" x2="28" y2="8" stroke="#fff" stroke-opacity=".6"/></svg>`;
+  if (t.shape === 'boundary') return `<svg width="30" height="26"><rect x="2" y="3" width="26" height="20" rx="2" fill="none" stroke="#444" stroke-dasharray="4 3" stroke-width="1.5"/></svg>`;
+  return `<svg width="30" height="26"><rect x="2" y="3" width="26" height="20" rx="4" fill="${t.fill}" stroke="${t.stroke}"/></svg>`;
+}
+function renderPalette() {
+  const box = $('#pitems');
+  box.innerHTML = Object.keys(TYPES).map(k => `<button class="pitem" draggable="true" data-type="${k}">${paletteIcon(k)}<span>${esc(TYPES[k].label)}</span></button>`).join('');
+  box.querySelectorAll('.pitem').forEach(b => {
+    b.addEventListener('click', () => addNode(b.dataset.type));
+    b.addEventListener('dragstart', ev => { ev.dataTransfer.setData('text/c4type', b.dataset.type); ev.dataTransfer.effectAllowed = 'copy'; });
+  });
+}
+
+/* ---------- Exportação ---------- */
+function slug(s) { return (s || 'diagrama').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'diagrama'; }
+function download(data, name, mime) {
+  const blob = data instanceof Blob ? data : new Blob([data], {type: mime});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+function buildSVG(d = cur()) {
+  const s = document.createElementNS(NS, 'svg');
+  s.setAttribute('xmlns', NS);
+  s.innerHTML = svg.querySelector('defs').innerHTML.replace(/<pattern[\s\S]*?<\/pattern>/, '').replace(/^/, '<defs>') + '</defs>';
+  const bg = el('rect', {fill: '#ffffff'}, s);
+  const g = el('g', {}, s);
+  const b = renderInto(g, d, {export: true});
+  if (!isFinite(b.minX)) Object.assign(b, {minX: 0, minY: 0, maxX: 400, maxY: 100});
+  const tw = Math.max(300, b.maxX - b.minX);
+  let y = b.maxY + 40;
+  y += textBlock(g, wrap(`[Diagrama de ${LEVELS[d.level] || 'C4'}] ${d.title || ''}`, `bold 20px ${FONT}`, tw), b.minX, y, {size: 20, lh: 25, weight: 'bold', fill: '#222', anchor: 'start'});
+  if (d.desc) y += 4 + textBlock(g, wrap(d.desc, `14px ${FONT}`, tw), b.minX, y + 4, {size: 14, lh: 18, fill: '#555', anchor: 'start'});
+  const pad = 30, x0 = b.minX - pad, y0 = b.minY - pad, W = Math.ceil(Math.max(b.maxX, b.minX + 300) - b.minX + pad * 2), H = Math.ceil(y - b.minY + pad * 2);
+  s.setAttribute('viewBox', `${x0} ${y0} ${W} ${H}`); s.setAttribute('width', W); s.setAttribute('height', H);
+  Object.entries({x: x0, y: y0, width: W, height: H}).forEach(([k, v]) => bg.setAttribute(k, v));
+  return {str: '<?xml version="1.0" encoding="UTF-8"?>\n' + new XMLSerializer().serializeToString(s), W, H};
+}
+function exportSVG() { download(buildSVG().str, slug(cur().title) + '.svg', 'image/svg+xml'); }
+function exportPNG() {
+  const {str, W, H} = buildSVG(), scale = 2;
+  const img = new Image();
+  img.onload = () => {
+    const c = document.createElement('canvas'); c.width = W * scale; c.height = H * scale;
+    const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+    ctx.drawImage(img, 0, 0, c.width, c.height);
+    c.toBlob(b => download(b, slug(cur().title) + '.png'), 'image/png');
+  };
+  img.onerror = () => toast('Não foi possível gerar o PNG.');
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(str);
+}
+function toPlantUML() {
+  const d = cur();
+  const q = s => '"' + String(s ?? '').replace(/"/g, "'").replace(/\n/g, '\\n') + '"';
+  const alias = n => 'e_' + n.id.replace(/[^a-zA-Z0-9_]/g, '_');
+  const parentOf = n => {
+    let best = null;
+    d.nodes.forEach(b => { if (b.type === 'boundary' && contains(b, n) && (!best || b.w * b.h < best.w * best.h)) best = b; });
+    return best;
+  };
+  const parents = new Map(d.nodes.map(n => [n, parentOf(n)]));
+  const line = (n, ind) => {
+    const a = alias(n);
+    switch (n.type) {
+      case 'person': return `${ind}Person(${a}, ${q(n.name)}, ${q(n.desc)})`;
+      case 'person_ext': return `${ind}Person_Ext(${a}, ${q(n.name)}, ${q(n.desc)})`;
+      case 'system': return `${ind}System(${a}, ${q(n.name)}, ${q(n.desc)})`;
+      case 'system_ext': return `${ind}System_Ext(${a}, ${q(n.name)}, ${q(n.desc)})`;
+      case 'container': case 'webapp': return `${ind}Container(${a}, ${q(n.name)}, ${q(n.tech)}, ${q(n.desc)})`;
+      case 'database': return `${ind}ContainerDb(${a}, ${q(n.name)}, ${q(n.tech)}, ${q(n.desc)})`;
+      case 'queue': return `${ind}ContainerQueue(${a}, ${q(n.name)}, ${q(n.tech)}, ${q(n.desc)})`;
+      case 'component': return `${ind}Component(${a}, ${q(n.name)}, ${q(n.tech)}, ${q(n.desc)})`;
+      case 'code': return `${ind}Component(${a}, ${q(n.name)}, ${q(n.tech || 'Classe')}, ${q(n.desc)})`;
+    }
+  };
+  const emit = (parent, ind) => {
+    const out = [];
+    d.nodes.filter(n => parents.get(n) === parent).forEach(n => {
+      if (n.type === 'boundary') {
+        const tt = (n.tech || 'Sistema de Software').toLowerCase();
+        const fn = tt.startsWith('sistema') ? `System_Boundary(${alias(n)}, ${q(n.name)})` : tt.startsWith('cont') ? `Container_Boundary(${alias(n)}, ${q(n.name)})` : `Boundary(${alias(n)}, ${q(n.name)}, ${q(n.tech)})`;
+        out.push(`${ind}${fn} {`, ...emit(n, ind + '  '), `${ind}}`);
+      } else out.push(line(n, ind));
+    });
+    return out;
+  };
+  const rels = d.edges.filter(e => nodeById(e.from) && nodeById(e.to)).map(e =>
+    `${e.both ? 'BiRel' : 'Rel'}(${alias(nodeById(e.from))}, ${alias(nodeById(e.to))}, ${q(e.label)}${e.tech ? ', ' + q(e.tech) : ''})`);
+  return ['@startuml', '!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml', '',
+    `title [${LEVELS[d.level] || 'C4'}] ${d.title || ''}`, '', ...emit(null, ''), '', ...rels, '', d.legend ? 'SHOW_LEGEND()' : '', '@enduml'].join('\n');
+}
+function openModal(title, text) { $('#mTitle').textContent = title; $('#mText').value = text; $('#modal').style.display = 'flex'; }
+function closeModal() { $('#modal').style.display = 'none'; }
+$('#mClose').onclick = closeModal;
+$('#modal').addEventListener('pointerdown', ev => { if (ev.target.id === 'modal') closeModal(); });
+$('#mCopy').onclick = async () => {
+  try { await navigator.clipboard.writeText($('#mText').value); toast('Copiado!'); }
+  catch (e) { $('#mText').select(); document.execCommand('copy'); toast('Copiado!'); }
+};
+$('#mDown').onclick = () => download($('#mText').value, slug(cur().title) + '.puml', 'text/plain');
+
+/* ---------- Arquivo ---------- */
+function saveJSON() { download(JSON.stringify({format: 'c4studio', version: 1, ...project}, null, 2), slug(project.name || cur().title) + '.c4.json', 'application/json'); }
+$('#fileIn').addEventListener('change', async ev => {
+  const f = ev.target.files[0]; ev.target.value = ''; if (!f) return;
+  try {
+    const p = JSON.parse(await f.text());
+    if (!validProject(p)) throw new Error();
+    pushUndo(); project = p; if (!project.diagrams.find(d => d.id === project.current)) project.current = project.diagrams[0].id;
+    sel = null; fullRefresh(); fitView(); toast('Projeto aberto');
+  } catch (e) { toast('Arquivo inválido.'); }
+});
+document.querySelectorAll('[data-menu]').forEach(b => b.addEventListener('click', () => {
+  b.closest('details').open = false;
+  switch (b.dataset.menu) {
+    case 'new': if (confirm('Começar um projeto novo? (Dá para desfazer com Ctrl+Z)')) { pushUndo(); project = blankProject(); sel = null; fullRefresh(); } break;
+    case 'sample': pushUndo(); project = sampleProject(); sel = null; fullRefresh(); fitView(); break;
+    case 'open': $('#fileIn').click(); break;
+    case 'import': impPending = []; $('#fileImp').click(); break;
+    case 'save': saveJSON(); break;
+    case 'svg': exportSVG(); break;
+    case 'png': exportPNG(); break;
+    case 'puml': openModal('C4-PlantUML — ' + (cur().title || ''), toPlantUML()); break;
+  }
+}));
+document.querySelectorAll('details.menu').forEach(m => m.addEventListener('toggle', () => { if (m.open) document.querySelectorAll('details.menu').forEach(o => o !== m && (o.open = false)); }));
+document.addEventListener('pointerdown', ev => { if (!ev.target.closest('details.menu')) document.querySelectorAll('details.menu[open]').forEach(m => m.open = false); });
+
+$('#bUndo').onclick = undo; $('#bRedo').onclick = redo;
+$('#zIn').onclick = () => zoomAt(1.2); $('#zOut').onclick = () => zoomAt(1 / 1.2);
+$('#zoomLbl').onclick = () => { const v = view(), r = svg.getBoundingClientRect(); zoomAt(1 / v.k, r.width / 2, r.height / 2); };
+$('#zFit').onclick = fitView;
+
+let toastT;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.style.opacity = 1; clearTimeout(toastT); toastT = setTimeout(() => t.style.opacity = 0, 1800); }
+
+function fullRefresh() { renderTabs(); render(); renderProps(); updUndo(); }
+
+/* ---------- Layout: alinhamento, distribuição, tamanho, sobreposição ---------- */
+function bboxOf(ns) {
+  const b = {minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity};
+  ns.forEach(n => { b.minX = Math.min(b.minX, n.x); b.minY = Math.min(b.minY, n.y); b.maxX = Math.max(b.maxX, n.x + n.w); b.maxY = Math.max(b.maxY, n.y + n.h); });
+  return b;
+}
+function rectOf(a, b) { return {x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(a.x - b.x), h: Math.abs(a.y - b.y)}; }
+/* Elementos que se movem junto: os selecionados + o conteúdo das fronteiras selecionadas */
+function movingItems(ns) {
+  const set = new Set(ns);
+  ns.filter(n => n.type === 'boundary').forEach(b => cur().nodes.forEach(m => { if (contains(b, m)) set.add(m); }));
+  return [...set];
+}
+/* Aplica deslocamentos; o conteúdo de fronteiras acompanha a fronteira */
+function applyMoves(moves) {
+  const d = cur(), sel = new Set(moves.keys()), extra = new Map();
+  for (const [n, mv] of moves) if (n.type === 'boundary')
+    d.nodes.forEach(m => { if (contains(n, m) && !sel.has(m) && !extra.has(m)) extra.set(m, mv); });
+  for (const [n, mv] of [...moves, ...extra]) { n.x = Math.round(n.x + mv.dx); n.y = Math.round(n.y + mv.dy); }
+}
+const overlaps = (a, b, g = 0) => a.x < b.x + b.w + g && b.x < a.x + a.w + g && a.y < b.y + b.h + g && b.y < a.y + a.h + g;
+function overlapPairs(ns) {
+  const out = [];
+  for (let i = 0; i < ns.length; i++) for (let j = i + 1; j < ns.length; j++) if (overlaps(ns[i], ns[j])) out.push([ns[i], ns[j]]);
+  return out;
+}
+function fixOverlaps(ns, gap = 30) {
+  let moved = 0;
+  for (let pass = 0; pass < 300; pass++) {
+    const pairs = overlapPairs(ns);
+    if (!pairs.length) break;
+    for (const [a, b] of pairs) {
+      if (!overlaps(a, b)) continue;
+      const ox = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x) + gap;
+      const oy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y) + gap;
+      const ca = center(a), cb = center(b);
+      if (ox <= oy) b.x += (cb.x >= ca.x ? 1 : -1) * ox; else b.y += (cb.y >= ca.y ? 1 : -1) * oy;
+      b.x = snap(b.x); b.y = snap(b.y); moved++;
+    }
+  }
+  return moved;
+}
+function zorder(mode) {
+  const d = cur(), ids = new Set(selIds()); if (!ids.size) return;
+  pushUndo();
+  const isSel = n => ids.has(n.id);
+  if (mode === 'front') d.nodes = [...d.nodes.filter(n => !isSel(n)), ...d.nodes.filter(isSel)];
+  else if (mode === 'back') {
+    const b = d.nodes.filter(n => n.type === 'boundary' && !isSel(n));
+    d.nodes = [...d.nodes.filter(n => isSel(n) && n.type === 'boundary'), ...b, ...d.nodes.filter(n => isSel(n) && n.type !== 'boundary'), ...d.nodes.filter(n => !isSel(n) && n.type !== 'boundary')];
+  } else {
+    const arr = d.nodes, step = mode === 'up' ? 1 : -1;
+    const order = mode === 'up' ? [...arr.keys()].reverse() : [...arr.keys()];
+    for (const i of order) {
+      if (!isSel(arr[i])) continue;
+      let j = i + step;
+      while (j >= 0 && j < arr.length && (arr[j].type === 'boundary') !== (arr[i].type === 'boundary')) j += step;
+      if (j < 0 || j >= arr.length || isSel(arr[j])) continue;
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+  }
+  render(); renderProps();
+}
+const ICON = {
+  left: '<path d="M3 2v16" stroke="currentColor" stroke-width="1.8" fill="none"/><rect x="5" y="4" width="11" height="4" rx="1"/><rect x="5" y="11" width="7" height="4" rx="1"/>',
+  hcenter: '<path d="M10 1v18" stroke="currentColor" stroke-width="1.8" fill="none"/><rect x="3" y="4" width="14" height="4" rx="1"/><rect x="5.5" y="11" width="9" height="4" rx="1"/>',
+  right: '<path d="M17 2v16" stroke="currentColor" stroke-width="1.8" fill="none"/><rect x="4" y="4" width="11" height="4" rx="1"/><rect x="8" y="11" width="7" height="4" rx="1"/>',
+  top: '<path d="M2 3h16" stroke="currentColor" stroke-width="1.8" fill="none"/><rect x="4" y="5" width="4" height="11" rx="1"/><rect x="11" y="5" width="4" height="7" rx="1"/>',
+  vmiddle: '<path d="M1 10h18" stroke="currentColor" stroke-width="1.8" fill="none"/><rect x="4" y="3" width="4" height="14" rx="1"/><rect x="11" y="5.5" width="4" height="9" rx="1"/>',
+  bottom: '<path d="M2 17h16" stroke="currentColor" stroke-width="1.8" fill="none"/><rect x="4" y="4" width="4" height="11" rx="1"/><rect x="11" y="8" width="4" height="7" rx="1"/>',
+  disth: '<path d="M2 2v16M18 2v16" stroke="currentColor" stroke-width="1.8" fill="none"/><rect x="7.5" y="5" width="5" height="10" rx="1"/>',
+  distv: '<path d="M2 2h16M2 18h16" stroke="currentColor" stroke-width="1.8" fill="none"/><rect x="5" y="7.5" width="10" height="5" rx="1"/>',
+  front: '<rect x="2" y="2" width="10" height="10" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="7" y="7" width="11" height="11" rx="1.5"/>',
+  up: '<rect x="2" y="2" width="10" height="10" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="8" y="8" width="10" height="10" rx="1.5" opacity=".75"/><path d="M15 2v5M12.5 4.5L15 2l2.5 2.5" stroke="currentColor" stroke-width="1.5" fill="none"/>',
+  down: '<rect x="8" y="8" width="10" height="10" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="2" y="2" width="10" height="10" rx="1.5" opacity=".75"/><path d="M15 13v5M12.5 15.5L15 18l2.5-2.5" stroke="currentColor" stroke-width="1.5" fill="none" transform="translate(-10 -12)"/>',
+  back: '<rect x="7" y="7" width="11" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="2" y="2" width="10" height="10" rx="1.5" opacity=".45"/>'
+};
+const ib = (act, arg, title, dis) => `<button class="ib" data-act="${act}" data-arg="${arg}" title="${title}"${dis ? ' disabled' : ''}><svg viewBox="0 0 20 20">${ICON[arg] || ICON[act]}</svg></button>`;
+function zorderBar() {
+  return `<div class="iconbar four">${ib('z', 'front', 'Trazer para a frente (Ctrl+Shift+])')}${ib('z', 'up', 'Avançar (Ctrl+])')}${ib('z', 'down', 'Recuar (Ctrl+[)')}${ib('z', 'back', 'Enviar para trás (Ctrl+Shift+[)')}</div>`;
+}
+let lastGap = 40;
+function renderMultiPanel() {
+  const ns = selNodes(), lead = nodeById(sel.id), n = ns.length, ov = overlapPairs(ns.filter(x => x.type !== 'boundary')).length;
+  props.innerHTML = `
+    <h4>${n} elementos selecionados</h4>
+    <div class="pill">Referência: ${esc(lead?.name)}</div>
+    <div class="sub">Alinhar</div>
+    <div class="iconbar">${ib('align', 'left', 'Alinhar à esquerda')}${ib('align', 'hcenter', 'Centralizar na horizontal')}${ib('align', 'right', 'Alinhar à direita')}${ib('align', 'top', 'Alinhar ao topo')}${ib('align', 'vmiddle', 'Centralizar na vertical')}${ib('align', 'bottom', 'Alinhar à base')}</div>
+    <div class="sub">Distribuir (espaços iguais)</div>
+    <div class="iconbar two">${ib('dist', 'disth', 'Distribuir na horizontal', n < 3)}${ib('dist', 'distv', 'Distribuir na vertical', n < 3)}</div>
+    ${n < 3 ? '<div class="mini">Selecione 3 ou mais para distribuir.</div>' : ''}
+    <div class="sub">Espaçamento</div>
+    <div class="mini" style="margin:0 0 4px">Distância entre os elementos (px)</div>
+    <div class="row" style="gap:6px">
+      <input type="number" id="gapIn" value="${lastGap}" min="0" step="10" style="width:76px;border:1px solid #d3d9e1;border-radius:7px;padding:6px 8px">
+      <button class="btn" data-act="space" data-arg="h" title="Enfileira da esquerda para a direita" style="flex:1">↔ Horizontal</button>
+      <button class="btn" data-act="space" data-arg="v" title="Empilha de cima para baixo" style="flex:1">↕ Vertical</button>
+    </div>
+    <div class="sub">Dimensionamento</div>
+    <div class="btns" style="margin:4px 0 8px">
+      <button class="btn" data-act="size" data-arg="w">Mesma largura</button>
+      <button class="btn" data-act="size" data-arg="h">Mesma altura</button>
+      <button class="btn" data-act="size" data-arg="wh">Mesmo tamanho</button>
+    </div>
+    <div class="row" style="align-items:flex-end">
+      <div class="field" style="margin:0"><label>Largura</label><input type="number" id="wIn" placeholder="${lead?.w}" min="60" step="10"></div>
+      <div class="field" style="margin:0"><label>Altura</label><input type="number" id="hIn" placeholder="${lead?.h}" min="40" step="10"></div>
+      <button class="btn" data-act="size" data-arg="set">Aplicar</button>
+    </div>
+    <div class="btns" style="margin-top:8px"><button class="btn" data-act="fitAll">Ajustar altura ao texto</button><button class="btn" data-act="gridSnap">Encaixar na grade</button></div>
+    <div class="sub">Sobreposição</div>
+    ${zorderBar()}
+    <div class="btns" style="margin-top:8px"><button class="btn" data-act="fixOverlap" ${ov ? '' : 'disabled'}>Remover sobreposições${ov ? ` (${ov})` : ''}</button></div>
+    <div class="btns" style="margin-top:16px;border-top:1px solid var(--line);padding-top:12px">
+      <button class="btn" data-act="dup">Duplicar</button>
+      <button class="btn danger" data-act="del">Excluir ${n}</button>
+    </div>
+    <div class="hint">A referência (contorno mais forte) é o último elemento clicado; “Mesma largura/altura” copia o tamanho dela. Fronteiras levam o conteúdo junto.</div>`;
+}
+function layoutAction(act, arg) {
+  const d = cur();
+  if (act === 'selAll') { setSel(elNodes(d).map(n => n.id)); render(); renderProps(); return; }
+  if (act === 'z') { zorder(arg); return; }
+  let ns = selNodes();
+  if (act === 'fixOverlap') {
+    const pool = (ns.length > 1 ? ns : elNodes(d)).filter(n => n.type !== 'boundary');
+    pushUndo(); const m = fixOverlaps(pool);
+    toast(m ? 'Sobreposições removidas' : 'Nada sobreposto'); render(); renderProps(); return;
+  }
+  if (!ns.length) return;
+  const lead = nodeById(sel.id) || ns[0], b = bboxOf(ns), moves = new Map();
+  if (act === 'align') {
+    ns.forEach(n => {
+      let dx = 0, dy = 0;
+      if (arg === 'left') dx = b.minX - n.x;
+      if (arg === 'right') dx = b.maxX - n.w - n.x;
+      if (arg === 'hcenter') dx = (b.minX + b.maxX) / 2 - n.w / 2 - n.x;
+      if (arg === 'top') dy = b.minY - n.y;
+      if (arg === 'bottom') dy = b.maxY - n.h - n.y;
+      if (arg === 'vmiddle') dy = (b.minY + b.maxY) / 2 - n.h / 2 - n.y;
+      moves.set(n, {dx, dy});
+    });
+  } else if (act === 'dist' || act === 'space') {
+    const h = arg === 'disth' || arg === 'h';
+    const sorted = [...ns].sort((p, q) => h ? p.x - q.x || p.y - q.y : p.y - q.y || p.x - q.x);
+    let gap;
+    if (act === 'dist') {
+      if (ns.length < 3) return;
+      const span = h ? b.maxX - b.minX : b.maxY - b.minY, sum = sorted.reduce((s, n) => s + (h ? n.w : n.h), 0);
+      gap = (span - sum) / (sorted.length - 1);
+    } else { gap = Math.max(0, +($('#gapIn')?.value) || 0); lastGap = gap; }
+    let pos = h ? sorted[0].x : sorted[0].y;
+    sorted.forEach(n => { moves.set(n, h ? {dx: pos - n.x, dy: 0} : {dx: 0, dy: pos - n.y}); pos += (h ? n.w : n.h) + gap; });
+  } else if (act === 'size') {
+    pushUndo();
+    const W = +($('#wIn')?.value) || null, H = +($('#hIn')?.value) || null;
+    ns.forEach(n => {
+      if (arg === 'w' || arg === 'wh') n.w = lead.w;
+      if (arg === 'h' || arg === 'wh') n.h = lead.h;
+      if (arg === 'set') { if (W) n.w = Math.max(60, W); if (H) n.h = Math.max(40, H); }
+    });
+    render(); renderProps(); return;
+  } else if (act === 'fitAll') {
+    pushUndo(); ns.filter(n => n.type !== 'boundary').forEach(fitHeight); render(); renderProps(); return;
+  } else if (act === 'gridSnap') {
+    ns.forEach(n => moves.set(n, {dx: snap(n.x) - n.x, dy: snap(n.y) - n.y}));
+  }
+  if (!moves.size) return;
+  pushUndo(); applyMoves(moves); render(); renderProps();
+}
+
+/* ---------- Importar diagramas em novas abas ---------- */
+let impPending = [];
+function extractDiagrams(json) {
+  if (validProject(json)) return {name: json.name, list: json.diagrams};
+  if (json && Array.isArray(json.nodes) && Array.isArray(json.edges)) return {name: json.title, list: [json]};
+  if (Array.isArray(json) && json.length && json.every(d => d && Array.isArray(d.nodes) && Array.isArray(d.edges))) return {name: '', list: json};
+  throw new Error('formato');
+}
+async function readImportFiles(files) {
+  const bad = [];
+  for (const f of files) {
+    try {
+      const {name, list} = extractDiagrams(JSON.parse(await f.text()));
+      list.forEach(d => impPending.push({d, file: f.name, proj: name, on: true, title: d.title || 'Sem título'}));
+    } catch (e) { bad.push(f.name); }
+  }
+  if (bad.length) toast(`Arquivo inválido: ${bad.join(', ')}`);
+  if (impPending.length) openImport();
+}
+function uniqueTitle(t, taken) {
+  if (!taken.has(t)) return t;
+  let k = 1, c;
+  do { c = `${t} (importado${k > 1 ? ' ' + k : ''})`; k++; } while (taken.has(c));
+  return c;
+}
+function openImport() {
+  const taken = new Set(project.diagrams.map(d => d.title));
+  impPending.forEach(it => { if (!it.renamed) { it.title = uniqueTitle(it.d.title || 'Sem título', taken); taken.add(it.title); } });
+  $('#impList').innerHTML = impPending.map((it, i) => {
+    const els = (it.d.nodes || []).filter(n => n.type !== 'boundary').length;
+    return `<label class="imp${it.on ? '' : ' off'}" data-i="${i}">
+      <input type="checkbox" data-imp-on ${it.on ? 'checked' : ''}>
+      <div style="flex:1;display:flex;flex-direction:column;gap:3px">
+        <input type="text" data-imp-title value="${esc(it.title)}">
+        <span class="src">${esc(it.file)}${it.proj ? ' · projeto “' + esc(it.proj) + '”' : ''}</span>
+      </div>
+      <span class="meta">${esc(LEVEL_SHORT[it.d.level] || 'Outro')} · ${els} elem. · ${(it.d.edges || []).length} rel.</span>
+    </label>`;
+  }).join('');
+  updImpBtn();
+  $('#impModal').style.display = 'flex';
+}
+function updImpBtn() { const n = impPending.filter(i => i.on).length; $('#impGo').textContent = n ? `Importar ${n} diagrama${n > 1 ? 's' : ''}` : 'Importar'; $('#impGo').disabled = !n; }
+function closeImport() { $('#impModal').style.display = 'none'; impPending = []; }
+$('#impList').addEventListener('input', ev => {
+  const row = ev.target.closest('[data-i]'); if (!row) return;
+  const it = impPending[+row.dataset.i];
+  if (ev.target.matches('[data-imp-on]')) { it.on = ev.target.checked; row.classList.toggle('off', !it.on); updImpBtn(); }
+  if (ev.target.matches('[data-imp-title]')) { it.title = ev.target.value; it.renamed = true; }
+});
+$('#impAll').onclick = () => { impPending.forEach(i => i.on = true); openImport(); };
+$('#impNone').onclick = () => { impPending.forEach(i => i.on = false); openImport(); };
+$('#impMore').onclick = () => $('#fileImp').click();
+$('#impCancel').onclick = closeImport;
+$('#impModal').addEventListener('pointerdown', ev => { if (ev.target.id === 'impModal') closeImport(); });
+$('#fileImp').addEventListener('change', async ev => { const fs = [...ev.target.files]; ev.target.value = ''; if (fs.length) await readImportFiles(fs); });
+$('#impGo').onclick = () => {
+  const chosen = impPending.filter(i => i.on); if (!chosen.length) return;
+  if (sim) exitSim();
+  pushUndo();
+  const taken = new Set(project.diagrams.map(d => d.title)), added = [];
+  for (const it of chosen) {
+    const d = JSON.parse(JSON.stringify(it.d));
+    d.id = uid();
+    d.title = uniqueTitle((it.title || '').trim() || 'Sem título', taken); taken.add(d.title);
+    d.level = LEVELS[d.level] ? d.level : 'other';
+    d.desc = d.desc || ''; d.legend = !!d.legend;
+    d.nodes = d.nodes.filter(n => n && n.id && TYPES[n.type]).map(n => ({tech: '', desc: '', w: TYPES[n.type].w, h: TYPES[n.type].h, x: 0, y: 0, name: '', ...n}));
+    const ids = new Set(d.nodes.map(n => n.id));
+    d.edges = d.edges.filter(e => e && ids.has(e.from) && ids.has(e.to)).map(e => ({id: e.id || uid(), label: '', tech: '', style: 'dashed', both: false, ...e}));
+    project.diagrams.push(d); added.push(d);
+  }
+  closeImport();
+  project.current = added[0].id; sel = null;
+  fullRefresh();
+  requestAnimationFrame(fitView);
+  toast(`${added.length} diagrama${added.length > 1 ? 's importados' : ' importado'} em nova${added.length > 1 ? 's abas' : ' aba'}`);
+};
+
+/* ---------- Simulação ---------- */
+let sim = null, simView = null, simRAF = 0;
+const SIMC = {down: '#e03131', deg: '#f08c00', flow: '#2f9e44'};
+const elNodes = d => d.nodes.filter(n => n.type !== 'boundary');
+function bezier(g, u) {
+  const {s, c, t} = g, v = 1 - u;
+  if (!c) return {x: s.x + (t.x - s.x) * u, y: s.y + (t.y - s.y) * u};
+  return {x: v * v * s.x + 2 * v * u * c.x + u * u * t.x, y: v * v * s.y + 2 * v * u * c.y + u * u * t.y};
+}
+function depGraph(d) {
+  const out = new Map();
+  elNodes(d).forEach(n => out.set(n.id, []));
+  d.edges.forEach(e => {
+    if (!out.has(e.from) || !out.has(e.to) || e.from === e.to) return;
+    out.get(e.from).push({to: e.to, e});
+    if (e.both) out.get(e.to).push({to: e.from, e});
+  });
+  return out;
+}
+/* Uma relação A → B significa "A depende de B".
+   rule 'all': dependências equivalentes (mesmo tipo e tecnologia) se substituem; A cai quando um grupo inteiro cai.
+   rule 'any': A cai se QUALQUER dependência cair.
+   Relações marcadas como não bloqueantes (soft) só degradam a origem. */
+function computeFailure(d, failed, rule) {
+  const out = depGraph(d), down = new Set([...failed].filter(id => out.has(id)));
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const [id, deps] of out) {
+      const hard = deps.filter(x => !x.e.soft);
+      if (down.has(id) || !hard.length) continue;
+      let isDown;
+      if (rule === 'any') isDown = hard.some(x => down.has(x.to));
+      else {
+        const groups = new Map();
+        hard.forEach(x => { const t = nodeById(x.to, d), k = t.type + '|' + (t.tech || '').trim().toLowerCase(); if (!groups.has(k)) groups.set(k, new Set()); groups.get(k).add(x.to); });
+        isDown = [...groups.values()].some(g => [...g].every(t => down.has(t)));
+      }
+      if (isDown) { down.add(id); changed = true; }
+    }
+  }
+  const deg = new Set();
+  changed = true;
+  while (changed) {
+    changed = false;
+    for (const [id, deps] of out) {
+      if (down.has(id) || deg.has(id)) continue;
+      if (deps.some(x => down.has(x.to) || deg.has(x.to))) { deg.add(id); changed = true; }
+    }
+  }
+  return {down, deg};
+}
+function spofAnalysis(d, rule = 'all') {
+  return elNodes(d).map(n => {
+    const r = computeFailure(d, new Set([n.id]), rule);
+    return {n, down: [...r.down].filter(id => id !== n.id), deg: [...r.deg]};
+  }).filter(x => x.down.length).sort((a, b) => b.down.length - a.down.length || b.deg.length - a.deg.length);
+}
+function computeSimView(d) {
+  const nodes = new Map(), edges = new Map();
+  if (sim.mode === 'fail') {
+    const {down, deg} = computeFailure(d, sim.failed, sim.rule);
+    elNodes(d).forEach(n => {
+      if (sim.failed.has(n.id)) nodes.set(n.id, {color: SIMC.down, opacity: 0.6, badge: '✕ Fora do ar', cross: true});
+      else if (down.has(n.id)) nodes.set(n.id, {color: SIMC.down, badge: 'Indisponível'});
+      else if (deg.has(n.id)) nodes.set(n.id, {color: SIMC.deg, badge: 'Degradado'});
+    });
+    d.edges.forEach(e => {
+      if ((down.has(e.to) || (e.both && down.has(e.from))) && !e.soft) edges.set(e.id, {color: SIMC.down, marker: 'arrowRed', width: 2.4});
+      else if (deg.has(e.to) || down.has(e.to)) edges.set(e.id, {color: SIMC.deg, marker: 'arrowOrange', width: 2.2});
+    });
+  } else if (sim.origin) {
+    elNodes(d).forEach(n => {
+      if (n.id === sim.origin) nodes.set(n.id, {color: SIMC.flow, badge: 'Origem'});
+      else if (sim.visited.has(n.id)) nodes.set(n.id, {color: SIMC.flow, badge: 'Passo ' + sim.order.get(n.id)});
+      else nodes.set(n.id, {opacity: 0.25});
+    });
+    d.edges.forEach(e => {
+      if (sim.doneEdges.has(e.id) || sim.active.some(a => a.e.id === e.id)) edges.set(e.id, {color: SIMC.flow, marker: 'arrowGreen', width: 2.6});
+      else edges.set(e.id, {opacity: 0.18});
+    });
+  }
+  return {nodes, edges};
+}
+function newSim(prev) {
+  return {mode: prev?.mode || 'flow', rule: prev?.rule || 'all', speed: prev?.speed || 1, failed: new Set(), spof: null,
+    origin: null, visited: new Set(), order: new Map(), doneEdges: new Set(), active: [], frontier: [], steps: [], wave: 0, t: 0, running: false};
+}
+function enterSim() {
+  sel = null; sim = newSim();
+  document.body.classList.add('simulating'); $('#bSim').classList.add('on'); $('#bSim').textContent = '■ Parar simulação';
+  render(); renderProps();
+}
+function exitSim() {
+  cancelAnimationFrame(simRAF); sim = null; simView = null;
+  document.body.classList.remove('simulating'); $('#bSim').classList.remove('on'); $('#bSim').textContent = '▶ Simular';
+  render(); renderProps();
+}
+function resetSim() { cancelAnimationFrame(simRAF); sim = newSim(sim); }
+function simClick(n) {
+  if (sim.mode === 'flow') startFlow(n.id);
+  else { sim.failed.has(n.id) ? sim.failed.delete(n.id) : sim.failed.add(n.id); render(); renderProps(); }
+}
+function startFlow(id) {
+  cancelAnimationFrame(simRAF);
+  Object.assign(sim, {origin: id, visited: new Set([id]), order: new Map(), doneEdges: new Set(), active: [], frontier: [id], steps: [], wave: 0, t: 0, running: true});
+  nextWave(); renderProps();
+  sim.last = performance.now();
+  simRAF = requestAnimationFrame(tick);
+}
+function nextWave() {
+  const out = depGraph(cur()), act = [];
+  for (const id of sim.frontier)
+    for (const {to, e} of out.get(id) || [])
+      if (!sim.doneEdges.has(e.id) && !act.some(a => a.e.id === e.id)) act.push({e, from: id, to});
+  sim.frontier = []; sim.active = act; sim.t = 0;
+  if (act.length) sim.wave++; else sim.running = false;
+}
+function tick(now) {
+  if (!sim || !sim.running) return;
+  sim.t += (now - sim.last) / (1100 / sim.speed); sim.last = now;
+  if (sim.t >= 1) {
+    for (const a of sim.active) {
+      sim.doneEdges.add(a.e.id);
+      sim.steps.push({wave: sim.wave, from: a.from, to: a.to, e: a.e});
+      if (!sim.visited.has(a.to)) { sim.visited.add(a.to); sim.order.set(a.to, sim.wave); sim.frontier.push(a.to); }
+    }
+    nextWave(); renderProps();
+  }
+  render();
+  if (sim.running) simRAF = requestAnimationFrame(tick);
+}
+const nm = id => esc(nodeById(id)?.name || '?');
+function renderSimPanel() {
+  const d = cur();
+  const seg = (m, l) => `<button class="segb${sim.mode === m ? ' on' : ''}" data-sim="mode:${m}">${l}</button>`;
+  let h = `<h4>Simulação</h4><div class="seg">${seg('flow', 'Fluxo de chamadas')}${seg('fail', 'Falhas')}</div>`;
+  if (sim.mode === 'flow') {
+    h += `<p class="simhint">${sim.origin ? 'Clique em outro elemento para simular a partir dele.' : 'Clique em um elemento do diagrama para ver, passo a passo, por onde as chamadas que ele inicia passam.'}</p>
+      <div class="field"><label>Velocidade</label><input type="range" min="0.25" max="3" step="0.25" value="${sim.speed}" data-sim-speed style="width:100%"></div>
+      <div class="btns"><button class="btn" data-sim="replay" ${sim.origin ? '' : 'disabled'}>Repetir</button><button class="btn" data-sim="clear">Limpar</button></div>`;
+    if (sim.origin) {
+      const total = elNodes(d).length, reach = sim.visited.size;
+      if (!sim.running) {
+        const miss = elNodes(d).filter(n => !sim.visited.has(n.id));
+        h += `<div class="kpis"><div class="kpi ok"><b>${reach}</b>alcançados</div><div class="kpi"><b>${total - reach}</b>fora do caminho</div><div class="kpi"><b>${sim.wave}</b>passos</div></div>`;
+        if (miss.length) h += `<div class="sub">Fora do caminho a partir de ${nm(sim.origin)}</div><div class="tags">${miss.map(n => `<span class="tag">${esc(n.name)}</span>`).join('')}</div>`;
+      }
+      const waves = {};
+      sim.steps.forEach(s => (waves[s.wave] ||= []).push(s));
+      h += `<ol class="steps">` + Object.entries(waves).map(([w, list]) => `<li><b>Passo ${w}</b>` +
+        list.map(s => `<div>${nm(s.from)} → <strong>${nm(s.to)}</strong>${s.e.label ? `<br><i>${esc(s.e.label)}${s.e.tech ? ` [${esc(s.e.tech)}]` : ''}</i>` : ''}</div>`).join('') + `</li>`).join('') + `</ol>`;
+    }
+  } else {
+    const {down, deg} = computeFailure(d, sim.failed, sim.rule);
+    const cascade = [...down].filter(id => !sim.failed.has(id));
+    const ok = elNodes(d).filter(n => !down.has(n.id) && !deg.has(n.id)).length;
+    h += `<p class="simhint">Clique nos elementos para tirá-los do ar (clique de novo para restaurar). Uma relação A → B é lida como “A depende de B”.</p>
+      <p class="simhint">${sim.rule === 'all' ? 'Dependências do mesmo tipo e tecnologia (ex.: dois servidores IRIS) contam como redundantes: a origem só cai se todas elas caírem.' : 'Qualquer dependência fora do ar derruba quem depende dela.'} Relações “não bloqueantes” apenas degradam.</p>
+      <div class="field"><label>Regra de propagação</label><select data-sim-rule>
+        <option value="all"${sim.rule === 'all' ? ' selected' : ''}>Com redundância: elementos equivalentes se substituem</option>
+        <option value="any"${sim.rule === 'any' ? ' selected' : ''}>Sem redundância: qualquer dependência derruba</option></select></div>
+      <div class="kpis"><div class="kpi down"><b>${down.size}</b>indisponíveis</div><div class="kpi deg"><b>${deg.size}</b>degradados</div><div class="kpi ok"><b>${ok}</b>normais</div></div>`;
+    if (sim.failed.size) h += `<div class="sub">Fora do ar</div><div class="tags">${[...sim.failed].map(id => `<span class="tag down">${nm(id)}</span>`).join('')}</div>`;
+    if (cascade.length) h += `<div class="sub">Indisponíveis em cascata</div><div class="tags">${cascade.map(id => `<span class="tag down">${nm(id)}</span>`).join('')}</div>`;
+    if (deg.size) h += `<div class="sub">Degradados (perderam parte das dependências)</div><div class="tags">${[...deg].map(id => `<span class="tag deg">${nm(id)}</span>`).join('')}</div>`;
+    h += `<div class="btns"><button class="btn" data-sim="spof">Encontrar pontos únicos de falha</button><button class="btn" data-sim="clearfail" ${sim.failed.size ? '' : 'disabled'}>Restaurar tudo</button></div>`;
+    if (sim.spof) {
+      h += `<div class="sub" style="margin-top:14px">Pontos únicos de falha (regra com redundância)</div>`;
+      h += sim.spof.length ? sim.spof.map(x => `<div class="spof" data-sim="try:${x.n.id}"><b>${esc(x.n.name)}</b> — se cair, derruba ${x.down.length}: ${x.down.map(nm).join(', ')}</div>`).join('')
+        : `<p class="simhint">Nenhum elemento isolado derruba outros: há redundância em todas as dependências.</p>`;
+    }
+  }
+  h += `<div class="btns" style="margin-top:16px"><button class="btn" data-sim="exit">Sair da simulação</button></div>`;
+  props.innerHTML = h;
+}
+props.addEventListener('click', ev => {
+  const a = ev.target.closest('[data-sim]')?.dataset.sim; if (!a || !sim) return;
+  const [cmd, arg] = a.split(':');
+  if (cmd === 'mode') { cancelAnimationFrame(simRAF); sim = newSim(sim); sim.mode = arg; }
+  else if (cmd === 'replay' && sim.origin) { startFlow(sim.origin); return; }
+  else if (cmd === 'clear' || cmd === 'clearfail') { resetSim(); }
+  else if (cmd === 'spof') { sim.spof = spofAnalysis(cur(), 'all'); }
+  else if (cmd === 'try') { sim.failed = new Set([arg]); sim.rule = 'all'; }
+  else if (cmd === 'exit') { exitSim(); return; }
+  render(); renderProps();
+});
+props.addEventListener('input', ev => {
+  if (!sim) return;
+  if (ev.target.matches('[data-sim-speed]')) sim.speed = +ev.target.value;
+  if (ev.target.matches('[data-sim-rule]')) { sim.rule = ev.target.value; render(); renderProps(); }
+});
+$('#bSim').onclick = () => sim ? exitSim() : enterSim();
+
+/* ---------- Documentação ---------- */
+const innermost = (d, n) => d.nodes.filter(b => b.type === 'boundary' && contains(b, n)).sort((a, b) => a.w * a.h - b.w * b.h)[0] || null;
+const chainOf = (d, n) => d.nodes.filter(b => b.type === 'boundary' && contains(b, n)).sort((a, b) => b.w * b.h - a.w * a.h);
+const typeName = n => n.type === 'boundary' ? (n.tech || 'Fronteira') : (TYPES[n.type]?.label || n.type);
+function relText(e) { return (e.label || 'Relaciona-se') + (e.tech ? ` [${e.tech}]` : ''); }
+
+/* Blocos: {h,level,text,id} {p,parts} {table,head,rows} {list,items:[{parts,children}]} {img,svg,alt} — parts = [str | {b} | {i} | {code}] */
+function docBlocks(diagrams, withImg) {
+  const B = [], date = new Date().toLocaleDateString('pt-BR');
+  B.push({h: 1, text: `${project.name || 'Projeto'} — Documentação de arquitetura`, id: 'topo'});
+  B.push({p: [{i: `Gerado pelo C4 Studio em ${date} · ${diagrams.length} diagrama${diagrams.length > 1 ? 's' : ''}`}]});
+  if (diagrams.length > 1) B.push({list: diagrams.map((d, i) => ({parts: [{link: d.title || 'Sem título', href: '#d' + (i + 1)}, ` — ${LEVELS[d.level] || ''}`]}))});
+  diagrams.forEach((d, i) => {
+    const els = elNodes(d), rels = d.edges.map(e => ({e, a: nodeById(e.from, d), b: nodeById(e.to, d)})).filter(r => r.a && r.b);
+    B.push({h: 2, text: d.title || 'Sem título', id: 'd' + (i + 1)});
+    B.push({p: [{b: 'Nível C4:'}, ' ' + (LEVELS[d.level] || '—') + ' · ', {b: 'Elementos:'}, ' ' + els.length + ' · ', {b: 'Relações:'}, ' ' + rels.length]});
+    if (d.desc) B.push({p: [d.desc]});
+    if (d.notes) B.push({h: 3, text: 'Notas'}, ...d.notes.split(/\n{2,}/).map(t => ({p: [t]})));
+    if (withImg && d.nodes.length) B.push({img: buildSVG(d).str, alt: d.title});
+
+    const bnds = d.nodes.filter(n => n.type === 'boundary');
+    if (bnds.length) {
+      const kids = parent => d.nodes.filter(n => innermost(d, n) === parent && n !== parent)
+        .sort((a, b) => (a.type === 'boundary') - (b.type === 'boundary') || a.y - b.y || a.x - b.x)
+        .map(n => ({parts: n.type === 'boundary' ? [{b: n.name}, ' ', {i: `(${typeName(n)})`}] : [n.name, ' ', {i: `— ${typeName(n)}${n.tech && n.type !== 'code' ? ': ' + n.tech : ''}`}],
+          children: n.type === 'boundary' ? kids(n) : []}));
+      B.push({h: 3, text: 'Estrutura'}, {list: kids(null)});
+    }
+    if (els.length) {
+      B.push({h: 3, text: 'Elementos'});
+      B.push({table: true, head: ['Elemento', 'Tipo', 'Tecnologia', 'Localização', 'Descrição'],
+        rows: els.map(n => [[{b: n.name}], [typeName(n)], [n.tech || '—'], [chainOf(d, n).map(b => b.name).join(' › ') || '—'], [n.desc || '—']])});
+    }
+    if (rels.length) {
+      B.push({h: 3, text: 'Relações'});
+      B.push({table: true, head: ['#', 'Origem', 'Destino', 'Descrição', 'Tecnologia'],
+        rows: rels.map((r, k) => [[String(k + 1)], [r.a.name], [r.b.name], [r.e.label || '—', ...(r.e.soft ? [' ', {i: '(não bloqueante)'}] : [])], [r.e.tech ? {code: r.e.tech} : '—']])});
+      B.push({h: 3, text: 'Dependências por elemento'});
+      B.push({table: true, head: ['Elemento', 'Depende de (chama)', 'É usado por'],
+        rows: els.map(n => [[{b: n.name}],
+          [rels.filter(r => r.a === n).map(r => r.b.name).join(', ') || '—'],
+          [rels.filter(r => r.b === n).map(r => r.a.name).join(', ') || '—']])});
+    }
+    const checks = [];
+    spofAnalysis(d, 'all').forEach(x => checks.push({parts: [{b: 'Ponto único de falha:'}, ' ' + x.n.name, ` — se ficar fora do ar, deixa indisponíve${x.down.length > 1 ? 'is' : 'l'}: ${x.down.map(id => nodeById(id, d).name).join(', ')}.`]}));
+    const noDesc = els.filter(n => !n.desc?.trim());
+    if (noDesc.length) checks.push({parts: [{b: 'Sem descrição:'}, ' ' + noDesc.map(n => n.name).join(', ') + '.']});
+    const noTech = rels.filter(r => !r.e.tech?.trim());
+    if (noTech.length) checks.push({parts: [{b: `${noTech.length} relaç${noTech.length > 1 ? 'ões' : 'ão'} sem tecnologia/protocolo:`}, ' ' + noTech.slice(0, 12).map(r => `${r.a.name} → ${r.b.name}`).join('; ') + (noTech.length > 12 ? '; …' : '.')]});
+    const iso = els.filter(n => !rels.some(r => r.a === n || r.b === n));
+    if (iso.length) checks.push({parts: [{b: 'Sem nenhuma relação:'}, ' ' + iso.map(n => n.name).join(', ') + '.']});
+    if (checks.length) B.push({h: 3, text: 'Pontos de atenção (gerados automaticamente)'}, {list: checks});
+  });
+  return B;
+}
+const mdCell = s => String(s).replace(/\|/g, '\\|').replace(/\n/g, '<br>');
+function mdInline(parts, cell) {
+  return parts.map(p => {
+    const t = s => cell ? mdCell(s) : String(s);
+    if (typeof p === 'string') return t(p);
+    if (p.b != null) return `**${t(p.b)}**`;
+    if (p.i != null) return `*${t(p.i)}*`;
+    if (p.code != null) return '`' + t(p.code) + '`';
+    if (p.link != null) return `[${t(p.link)}](${p.href})`;
+    return '';
+  }).join('');
+}
+function htmlInline(parts) {
+  return parts.map(p => {
+    if (typeof p === 'string') return esc(p).replace(/\n/g, '<br>');
+    if (p.b != null) return `<strong>${esc(p.b)}</strong>`;
+    if (p.i != null) return `<em>${esc(p.i)}</em>`;
+    if (p.code != null) return `<code>${esc(p.code)}</code>`;
+    if (p.link != null) return `<a href="${p.href}">${esc(p.link)}</a>`;
+    return '';
+  }).join('');
+}
+function toMarkdown(B) {
+  const out = [];
+  const list = (items, ind) => items.forEach(it => { out.push(`${ind}- ${mdInline(it.parts)}`); if (it.children?.length) list(it.children, ind + '  '); });
+  for (const b of B) {
+    if (b.h) out.push(`${'#'.repeat(b.h)} ${b.text}`, '');
+    else if (b.p) out.push(mdInline(b.p), '');
+    else if (b.table) {
+      out.push('| ' + b.head.join(' | ') + ' |', '| ' + b.head.map(() => '---').join(' | ') + ' |');
+      b.rows.forEach(r => out.push('| ' + r.map(c => mdInline(Array.isArray(c) ? c : [c], true)).join(' | ') + ' |'));
+      out.push('');
+    } else if (b.list) { list(b.list, ''); out.push(''); }
+    else if (b.img) out.push(`![${b.alt}](data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(b.img)))})`, '');
+  }
+  return out.join('\n');
+}
+function toHTML(B) {
+  const list = items => '<ul>' + items.map(it => `<li>${htmlInline(it.parts)}${it.children?.length ? list(it.children) : ''}</li>`).join('') + '</ul>';
+  const body = B.map(b => {
+    if (b.h) return `<h${b.h} id="${b.id || ''}">${esc(b.text)}</h${b.h}>`;
+    if (b.p) return `<p>${htmlInline(b.p)}</p>`;
+    if (b.table) return `<div class="tw"><table><thead><tr>${b.head.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${b.rows.map(r => `<tr>${r.map(c => `<td>${htmlInline(Array.isArray(c) ? c : [c])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+    if (b.list) return list(b.list);
+    if (b.img) return `<figure>${b.img.replace(/^<\?xml[^>]*>\s*/, '')}<figcaption>${esc(b.alt)}</figcaption></figure>`;
+    return '';
+  }).join('\n');
+  return `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>${esc(project.name || 'Documentação')}</title><style>
+body{font-family:${FONT};color:#1f2933;max-width:1000px;margin:0 auto;padding:32px 28px 60px;line-height:1.55;font-size:15px}
+h1{font-size:26px;margin:0 0 4px}h2{font-size:21px;margin:44px 0 8px;padding-top:16px;border-top:2px solid #e2e6ec}h3{font-size:16px;margin:26px 0 8px;color:#1168bd}
+p{margin:6px 0}em{color:#6b7785}code{background:#eef3f9;border-radius:4px;padding:1px 5px;font-size:13px}
+figure{margin:16px 0;border:1px solid #e2e6ec;border-radius:10px;padding:12px;background:#fff}figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+figcaption{text-align:center;font-size:12px;color:#6b7785;margin-top:6px}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:13.5px;margin:6px 0}
+th,td{border:1px solid #e2e6ec;padding:6px 9px;text-align:left;vertical-align:top}th{background:#f4f6f9;font-weight:600}tr:nth-child(even) td{background:#fbfcfd}
+ul{padding-left:22px}li{margin:3px 0}a{color:#1168bd}
+@media print{body{padding:0}h2{break-before:page;border:0}figure{break-inside:avoid}}
+</style></head><body>${body}</body></html>`;
+}
+let docCache = null;
+function buildDoc() {
+  const ds = $('#docScope').value === 'all' ? project.diagrams : [cur()];
+  const B = docBlocks(ds, $('#docImg').checked);
+  docCache = {md: toMarkdown(B), html: toHTML(B)};
+  render();
+  $('#docFrame').srcdoc = docCache.html;
+}
+function openDoc() { $('#docModal').style.display = 'flex'; buildDoc(); }
+function closeDoc() { $('#docModal').style.display = 'none'; }
+$('#bDoc').onclick = openDoc;
+$('#docScope').onchange = buildDoc;
+$('#docImg').onchange = buildDoc;
+$('#docClose').onclick = closeDoc;
+$('#docModal').addEventListener('pointerdown', ev => { if (ev.target.id === 'docModal') closeDoc(); });
+const docName = () => slug($('#docScope').value === 'all' ? (project.name || 'projeto') : cur().title) + '-documentacao';
+$('#docMd').onclick = () => download(docCache.md, docName() + '.md', 'text/markdown');
+$('#docHtml').onclick = () => download(docCache.html, docName() + '.html', 'text/html');
+$('#docPrint').onclick = () => $('#docFrame').contentWindow.print();
+$('#docCopy').onclick = async () => {
+  try { await navigator.clipboard.writeText(docCache.md); toast('Markdown copiado!'); }
+  catch (e) { toast('Não foi possível copiar; use “Baixar Markdown”.'); }
+};
+
+/* ---------- Início ---------- */
+const loaded = load();
+project = loaded || sampleProject();
+renderPalette();
+fullRefresh();
+if (!loaded || !views[cur().id]) requestAnimationFrame(fitView);
+window.addEventListener('resize', render);
+window.C4Studio = {get project() { return project; }, toPlantUML, buildSVG};
+})();
+</script>
+</body>
+</html>
