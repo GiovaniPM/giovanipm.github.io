@@ -136,7 +136,7 @@ Toda página nova ganha um card em `projects.html`, nos quatro painéis, com o h
 </a></li>
 ```
 
-- Categorias (`data-cat`): `agile`, `model`, `data`, `jde`, `other`, `games`, `interview`.
+- Categorias (`data-cat`): `agile`, `model`, `data`, `jde`, `iris`, `other`, `games`, `interview`.
 - Tipos (`badge`): Tutorial, Artigo, Guia, Template, Entrevista, traduzidos em cada painel.
 - **Os totais são HTML estático.** A cada card novo ou tipo alterado, reconte a partir dos cards, em cada idioma: os contadores do cabeçalho (`.stat`) e os dos filtros (`<span class="n">`).
 - Os apps entram no índice pelo tutorial. App sem tutorial ainda não tem card.

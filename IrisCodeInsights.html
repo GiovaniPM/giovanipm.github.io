@@ -1,0 +1,2083 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>IRIS Code Insights: tutorial · Giovani Perotto Mesquita</title>
+<meta name="description" content="Tutorial do IRIS Code Insights, app em um único arquivo HTML que lê classes e rotinas ObjectScript do InterSystems IRIS: como levar o código ao app, roteiro com o exemplo, achados, fluxograma, mapa de dependências, dados, relatório e prompts de IA. Disponível em português, inglês, italiano e espanhol.">
+<meta name="author" content="Giovani Perotto Mesquita">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Paleta alegre: roxo e magenta vibrantes, amarelo-girassol, verde-água e coral */
+    --bg: #FFF7EC;
+    --surface: #FFFFFF;
+    --ink: #2B1B3D;
+    --text: #3E3350;
+    --muted: #756986;
+    --line: #F1E2CF;
+    --accent: #0E8074;
+    --accent-soft: #E2F6F2;
+    --accent-strong: #5B2A86;
+    --navy: #5B2A86;
+    --navy-deep: #C2185B;
+    --on-navy: #FFFFFF;
+    --on-navy-muted: #FCE4F0;
+    --gold: #FFB703;
+    --gold-ink: #B35300;
+    --gold-soft: #FFF1C9;
+    --coral: #FF6B6B;
+    --sky: #3A86FF;
+    --mint: #2A9D8F;
+    --pink: #EF476F;
+    --sans: "Hanken Grotesk", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1A1328; --surface: #241A36; --ink: #F7F0FF; --text: #E2D8F0; --muted: #A898C0;
+      --line: #3A2D52; --accent: #5FD3C4; --accent-soft: #1D3A38; --accent-strong: #C9A7F5;
+      --navy: #3D1A5C; --navy-deep: #7A1240; --gold: #FFC94D; --gold-ink: #FFC94D; --gold-soft: #3A2E12;
+      --coral: #FF8A8A; --sky: #6FA8FF; --mint: #4CC3B3; --pink: #FF6F91;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 4px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 1.5rem; }
+
+  /* navegação */
+  .nav {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: saturate(160%) blur(10px); -webkit-backdrop-filter: saturate(160%) blur(10px);
+    border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px);
+  }
+  .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 58px; gap: 1rem; }
+  .brand { font-family: var(--serif); font-weight: 600; color: var(--accent-strong); text-decoration: none; font-size: 1.05rem; }
+  .nav ul { list-style: none; display: flex; gap: 1.4rem; margin: 0; padding: 0; }
+  .nav ul a { color: var(--muted); text-decoration: none; font-size: 0.93rem; font-weight: 500; }
+  .nav ul a:hover, .nav ul a[aria-current="page"] { color: var(--ink); }
+  .nav-right { display: flex; align-items: center; gap: 1rem; }
+  .lang { position: relative; }
+  .lang button { font: inherit; cursor: pointer; }
+  .lang .flag { width: 18px; height: 12px; border-radius: 2px; flex: none; box-shadow: 0 0 0 1px rgba(0,0,0,.12); }
+  .lang-current { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.8rem; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 0.3rem 0.5rem 0.3rem 0.55rem; }
+  .lang-current:hover { border-color: var(--muted); }
+  .lang-now { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .lang .chev { width: 12px; height: 12px; color: var(--muted); transition: transform .15s ease; }
+  .lang-current[aria-expanded="true"] .chev { transform: rotate(180deg); }
+  .lang-list { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; min-width: 10.5rem; padding: 0.3rem; display: grid; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 12px 30px rgba(0,0,0,.18); }
+  .lang-list[hidden] { display: none; }
+  .lang-list [role="option"] { display: flex; align-items: center; gap: 0.6rem; width: 100%; text-align: left; font-size: 0.9rem; font-weight: 500; color: var(--ink); background: none; border: 0; border-radius: 6px; padding: 0.45rem 0.6rem; }
+  .lang-list [role="option"]:hover, .lang-list [role="option"]:focus-visible { background: color-mix(in srgb, var(--muted) 14%, transparent); }
+  .lang-list [role="option"][aria-selected="true"] { color: var(--accent-strong); font-weight: 600; }
+  .lang-list [role="option"][aria-selected="true"]::after { content: "✓"; margin-left: auto; }
+  @media (max-width: 480px) { .lang-now { font-size: 0; gap: 0; } }
+  [hidden] { display: none !important; }
+  .progress { position: absolute; left: 0; bottom: -1px; height: 3px; width: 0; background: linear-gradient(90deg, var(--coral), var(--gold), var(--mint)); }
+
+  /* abertura */
+  .hero-band {
+    background:
+      radial-gradient(900px 420px at 85% -10%, rgba(255,255,255,.07), transparent 60%),
+      linear-gradient(160deg, var(--navy) 0%, var(--navy-deep) 100%);
+    border-top: 4px solid var(--gold); color: var(--on-navy);
+  }
+  .hero { padding: 3.5rem 0 3.5rem; max-width: 820px; }
+  .crumb { margin: 0 0 1.4rem; font-size: 0.92rem; }
+  .crumb a { color: var(--on-navy-muted); text-decoration: none; }
+  .crumb a:hover { color: var(--gold); }
+  .eyebrow { color: var(--gold); font-weight: 600; font-size: 1rem; margin: 0 0 0.7rem; }
+  h1 { font-family: var(--serif); font-weight: 600; color: var(--on-navy); font-size: clamp(2.3rem, 5.5vw, 3.8rem); line-height: 1.05; letter-spacing: -0.025em; margin: 0; }
+  .dek { font-family: var(--serif); font-style: italic; font-size: clamp(1.1rem, 2.2vw, 1.35rem); color: var(--on-navy-muted); margin: 1.1rem 0 1.6rem; max-width: 58ch; }
+  .byline { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; font-size: 0.92rem; color: var(--on-navy-muted); }
+  .byline strong { color: var(--on-navy); font-weight: 600; }
+  .byline .credit { margin-left: auto; font-style: italic; }
+
+  /* layout do artigo */
+  .layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 3rem; padding: 3rem 0 4rem; align-items: start; }
+  .toc { position: sticky; top: 82px; font-size: 0.92rem; max-height: calc(100vh - 100px); overflow-y: auto; }
+  .toc h2 { font-family: var(--sans); font-size: 0.85rem; font-weight: 600; color: var(--muted); margin: 0 0 0.7rem; border: 0; padding: 0; }
+  .toc ol { list-style: none; margin: 0; padding: 0; counter-reset: toc; border-left: 2px solid var(--line); }
+  .toc li { counter-increment: toc; }
+  .toc a { display: block; padding: 0.3rem 0 0.3rem 1rem; margin-left: -2px; border-left: 2px solid transparent; color: var(--muted); text-decoration: none; line-height: 1.35; }
+  .toc a::before { content: counter(toc) ". "; color: var(--gold-ink); font-weight: 600; }
+  .toc a:hover { color: var(--ink); }
+  .toc a[aria-current="true"] { color: var(--accent-strong); border-left-color: var(--gold); font-weight: 600; }
+
+  article { background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: var(--radius); padding: 3rem clamp(1.25rem, 4vw, 3.5rem); min-width: 0; }
+  article section + section { margin-top: 3.2rem; }
+  article h2 { font-family: var(--serif); font-weight: 600; color: var(--ink); font-size: clamp(1.5rem, 2.8vw, 1.9rem); letter-spacing: -0.015em; line-height: 1.2; margin: 0 0 1.1rem; padding-left: 0.9rem; border-left: 3px solid var(--gold); }
+  article h3 { font-family: var(--sans); font-size: 1.1rem; font-weight: 600; color: var(--ink); margin: 2rem 0 0.8rem; }
+  article p, article li { font-family: var(--serif); font-size: 1.12rem; line-height: 1.7; color: var(--text); }
+  article p { margin: 0 0 1.1rem; max-width: 68ch; }
+  article ul, article ol { margin: 0 0 1.1rem; padding-left: 1.4rem; max-width: 68ch; }
+  article li { margin-bottom: 0.3rem; }
+  article strong { color: var(--ink); }
+  sup a { font-family: var(--sans); font-size: 0.72rem; font-weight: 700; text-decoration: none; padding: 0 0.15em; }
+
+  figure { margin: 2rem 0; }
+  figure img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: #FFF7EC; }
+  figcaption { margin-top: 0.6rem; font-size: 0.9rem; color: var(--muted); text-align: center; font-family: var(--sans); line-height: 1.5; }
+
+  blockquote { margin: 1.5rem 0; padding: 1.2rem 1.5rem; background: var(--accent-soft); border-left: 3px solid var(--gold); border-radius: 0 10px 10px 0; }
+  blockquote p { font-size: 1.05rem; margin: 0 0 0.8rem; }
+  blockquote p:last-child { margin-bottom: 0; }
+  blockquote.pull p { font-size: clamp(1.15rem, 2.3vw, 1.35rem); font-style: italic; line-height: 1.45; color: var(--ink); }
+  blockquote cite { font-family: var(--sans); font-size: 0.88rem; font-style: normal; color: var(--muted); }
+
+  /* tabelas */
+  .table-wrap { overflow-x: auto; margin: 1.5rem 0; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-family: var(--sans); font-size: 0.95rem; }
+  th, td { text-align: left; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.5; }
+  thead th { background: var(--gold-soft); color: var(--ink); font-weight: 600; }
+  tbody th { color: var(--ink); font-weight: 600; }
+  tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
+  td code, th code { font-size: 0.9em; }
+
+  /* mitos */
+  .myths { list-style: none; padding: 0; margin: 1.5rem 0; max-width: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
+  .myths li { margin: 0; padding: 1rem 1.2rem; border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: 10px; }
+  .myths li:nth-child(4n+2) { border-top-color: var(--sky); }
+  .myths li:nth-child(4n+3) { border-top-color: var(--mint); }
+  .myths li:nth-child(4n+4) { border-top-color: var(--gold); }
+  .myths h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+  .myths p { margin: 0; font-size: 1rem; line-height: 1.6; }
+
+  /* para fixar */
+  .recap { margin: 1.8rem 0 0; padding: 1.1rem 1.4rem; background: var(--gold-soft); border-left: 4px solid var(--mint); border-radius: 0 10px 10px 0; }
+  .recap h3 { margin: 0 0 0.5rem; font-size: 0.85rem; letter-spacing: .05em; text-transform: uppercase; color: var(--gold-ink); }
+  .recap ul { margin: 0; padding-left: 1.2rem; }
+  .recap li { font-family: var(--sans); font-size: 0.98rem; line-height: 1.55; margin-bottom: 0.25rem; }
+
+  /* revisão rápida */
+  .quiz { display: grid; gap: 0.7rem; margin: 1.5rem 0; }
+  .quiz details { border: 1px solid var(--line); border-left: 4px solid var(--sky); border-radius: 0 10px 10px 0; padding: 0.8rem 1.1rem; }
+  .quiz details:nth-child(3n+2) { border-left-color: var(--pink); }
+  .quiz details:nth-child(3n+3) { border-left-color: var(--mint); }
+  .quiz summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); line-height: 1.45; }
+  .quiz details[open] summary { margin-bottom: 0.5rem; }
+  .quiz p { margin: 0; font-size: 1.02rem; }
+
+  .refs { font-family: var(--sans); padding-left: 1.4rem; margin: 0; }
+  .refs li { font-family: var(--sans); font-size: 0.92rem; line-height: 1.55; margin-bottom: 0.7rem; word-break: break-word; }
+  .refs li:target { background: var(--gold-soft); border-radius: 6px; }
+
+  .back { display: inline-block; margin-top: 1rem; font-family: var(--sans); font-size: 0.85rem; text-decoration: none; }
+
+  footer { background: var(--navy-deep); color: var(--on-navy-muted); border-top: 3px solid var(--gold); padding: 1.5rem 0 calc(1.5rem + env(safe-area-inset-bottom, 0px)); font-size: 0.88rem; }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1.5rem; }
+  footer a { color: var(--on-navy); text-decoration: none; }
+  footer a:hover { color: var(--gold); }
+
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+    .toc { position: static; max-height: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.2rem 1.4rem; }
+  }
+  @media (max-width: 760px) {
+    .myths { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .nav ul { display: none; }
+    .hero { padding: 2.5rem 0; }
+    .wrap { padding: 0 1rem; }
+    article p, article li { font-size: 1.05rem; }
+    th, td { padding: 0.6rem 0.7rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  @media print {
+    .nav, .toc, footer, .back, .crumb { display: none !important; }
+    body { background: #fff; }
+    .hero-band { background: none; color: #111; border: 0; }
+    .hero-band h1 { color: #5B2A86; }
+    .dek, .byline, .byline strong { color: #333; }
+    .layout { display: block; padding: 0; }
+    article { border: 0; padding: 0; }
+    .table-wrap { overflow: visible; }
+    figure, blockquote, .myths li, .recap, .quiz details, tr { break-inside: avoid; }
+  }
+
+  /* blocos de código (Gherkin) */
+  pre.code { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: #2B1B3D; color: #F7F0FF; border-radius: 10px; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.92rem; line-height: 1.6; tab-size: 2; }
+  pre.code code { font-family: inherit; white-space: pre; }
+  pre.code .k { color: #FFB703; font-weight: 700; }
+  pre.code .s { color: #5FD3C4; font-weight: 700; }
+  pre.code .c { color: #A898C0; }
+  pre.code .p { color: #C9A7F5; }
+  article code { font-family: Consolas, "Courier New", monospace; font-size: 0.92em; }
+  article :not(pre) > code { background: var(--accent-soft); color: var(--ink); padding: 0.05em 0.35em; border-radius: 4px; }
+
+  /* fórmulas */
+  pre.formula { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.95rem; line-height: 1.5; }
+
+  /* glossário */
+  dl.glossary { margin: 1.2rem 0; display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  dl.glossary dt, dl.glossary dd { margin: 0; padding: 0.65rem 0.9rem; border-bottom: 1px solid var(--line); font-family: var(--sans); font-size: 0.95rem; line-height: 1.5; }
+  dl.glossary dt { font-weight: 600; color: var(--ink); background: color-mix(in srgb, var(--gold-soft) 60%, var(--surface)); }
+  dl.glossary dd { color: var(--text); }
+  dl.glossary dt:nth-last-of-type(1), dl.glossary dd:last-of-type { border-bottom: 0; }
+  @media (max-width: 720px) { dl.glossary { grid-template-columns: 1fr; } dl.glossary dt { border-bottom: 0; padding-bottom: 0.2rem; } }
+
+  /* figuras geradas pelo PlantUML e código recolhível */
+  figure.puml img { width: auto; max-width: 100%; margin: 0 auto; background: #FFFFFF; padding: 12px; }
+  details.codebox { margin: 1rem 0 1.5rem; border: 1px solid var(--line); border-radius: 10px; padding: 0.6rem 1rem; }
+  details.codebox summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); }
+  details.codebox pre.code { max-height: 480px; overflow: auto; }
+
+  /* nota de atenção */
+  aside.note { margin: 1.2rem 0 1.5rem; padding: 0.8rem 1.1rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; }
+  aside.note p { margin: 0; }
+
+  /* link para o simulador e teclas */
+  .launch { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--sans); font-weight: 600; font-size: 1rem; background: var(--accent-strong); color: var(--surface); text-decoration: none; padding: 0.65rem 1.2rem; border-radius: 10px; }
+  .launch:hover { background: var(--navy-deep); color: #FFFFFF; }
+  kbd { font-family: var(--sans); font-size: 0.85em; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 0.05em 0.4em; white-space: nowrap; }
+  .promptbox { position: relative; margin: 1rem 0 1.6rem; }
+  .promptbox pre.code { margin: 0; padding-top: 2.6rem; max-height: 420px; overflow: auto; }
+  .promptbox pre.code code { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .promptbox .copy { position: absolute; top: 8px; right: 14px; z-index: 1; font: 600 0.8rem var(--sans); color: #2B1B3D; background: #FFB703; border: 0; border-radius: 6px; padding: 0.3rem 0.65rem; cursor: pointer; }
+</style>
+</head>
+<body id="top">
+
+<nav class="nav" aria-label="Navegação do site">
+  <div class="wrap">
+    <a class="brand" href="index.html" data-home>Giovani Perotto Mesquita</a>
+    <div class="nav-right">
+      <ul>
+        <li><a href="index.html" data-home>Início</a></li>
+        <li><a href="about.html" data-about>Sobre</a></li>
+        <li><a href="resume.html" data-resume>Currículo</a></li>
+        <li><a href="projects.html" data-projects aria-current="page">Projetos</a></li>
+        <li><a href="contact.html" data-contact>Contato</a></li>
+      </ul>
+      <div class="lang">
+        <button type="button" class="lang-current" aria-haspopup="listbox" aria-expanded="false" aria-controls="lang-list" data-label="Idioma / Language / Lingua" aria-label="Idioma / Language / Lingua: Português"><span class="lang-now"><svg class="flag" viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009C3B"/><path d="M10 1.6 18.4 7 10 12.4 1.6 7z" fill="#FEDF00"/><circle cx="10" cy="7" r="3.3" fill="#002776"/><path d="M6.8 6.3c2.1-.6 4.5-.2 6.4 1" stroke="#fff" stroke-width=".7" fill="none"/></svg>PT</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="lang-list" id="lang-list" role="listbox" aria-label="Idioma / Language / Lingua" hidden>
+          <button type="button" role="option" id="tab-pt" aria-controls="pt" aria-selected="true" lang="pt-BR" data-code="PT"><svg class="flag" viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009C3B"/><path d="M10 1.6 18.4 7 10 12.4 1.6 7z" fill="#FEDF00"/><circle cx="10" cy="7" r="3.3" fill="#002776"/><path d="M6.8 6.3c2.1-.6 4.5-.2 6.4 1" stroke="#fff" stroke-width=".7" fill="none"/></svg><span>Português</span></button>
+          <button type="button" role="option" id="tab-en" aria-controls="en" aria-selected="false" lang="en" tabindex="-1" data-code="EN"><svg class="flag" viewBox="0 0 19 10" aria-hidden="true"><rect width="19" height="10" fill="#B22234"/><rect y="0.769" width="19" height="0.769" fill="#fff"/><rect y="2.308" width="19" height="0.769" fill="#fff"/><rect y="3.846" width="19" height="0.769" fill="#fff"/><rect y="5.385" width="19" height="0.769" fill="#fff"/><rect y="6.923" width="19" height="0.769" fill="#fff"/><rect y="8.462" width="19" height="0.769" fill="#fff"/><rect width="7.6" height="5.385" fill="#3C3B6E"/></svg><span>English</span></button>
+          <button type="button" role="option" id="tab-it" aria-controls="it" aria-selected="false" lang="it" tabindex="-1" data-code="IT"><svg class="flag" viewBox="0 0 3 2" aria-hidden="true"><rect width="1" height="2" fill="#009246"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#CE2B37"/></svg><span>Italiano</span></button>
+          <button type="button" role="option" id="tab-es" aria-controls="es" aria-selected="false" lang="es" tabindex="-1" data-code="ES"><svg class="flag" viewBox="0 0 750 500" aria-hidden="true"><rect width="750" height="500" fill="#AA151B"/><rect y="125" width="750" height="250" fill="#F1BF00"/></svg><span>Español</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="progress" aria-hidden="true"></div>
+</nav>
+
+<!-- ===================== PT ===================== -->
+<div id="pt" role="tabpanel" aria-labelledby="tab-pt" lang="pt-BR">
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projetos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>IRIS Code Insights: tutorial</h1>
+      <p class="dek">Como entender um código ObjectScript do InterSystems IRIS antes de mexer nele: achados com a linha exata, fluxograma de cada método, mapa de dependências e prompts para usar IA com segurança.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado em <time datetime="2026-11-02">02/11/2026</time></span>
+        <span class="credit">Revisado e formatado usando Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-pt">
+    <h2 id="toc-pt">Índice</h2>
+    <ol>
+      <li><a href="#intro-pt">O que é o IRIS Code Insights</a></li>
+      <li><a href="#obter-pt">Como levar o código ao app</a></li>
+      <li><a href="#roteiro-pt">Roteiro: analisando o exemplo</a></li>
+      <li><a href="#ins-pt">Como ler os insights</a></li>
+      <li><a href="#fluxo-pt">Fluxo</a></li>
+      <li><a href="#dep-pt">Dependências</a></li>
+      <li><a href="#outras-pt">Membros, Dados e Código</a></li>
+      <li><a href="#rel-pt">Relatório e privacidade</a></li>
+      <li><a href="#ia-pt">Prompts de IA</a></li>
+      <li><a href="#lim-pt">Erros comuns e limitações</a></li>
+      <li><a href="#rev-pt">Revisão rápida</a></li>
+      <li><a href="#ref-pt">Referências</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-pt" aria-labelledby="h-intro-pt">
+<h2 id="h-intro-pt">O que é o IRIS Code Insights</h2>
+<p>Antes de alterar uma classe do InterSystems IRIS, quase sempre vem a mesma pergunta: o que este código faz, quem o chama e onde ele pode quebrar? O IRIS Code Insights lê classes e rotinas ObjectScript e responde com três visões: achados ordenados por gravidade, o fluxograma de cada método e um mapa de quem chama quem. <sup><a href="#ref-1-pt">[1]</a></sup></p>
+<p>É um único arquivo HTML, sem instalação, sem conta e sem servidor.</p>
+<p><a class="launch" href="iris-code-insights.html">Abrir o IRIS Code Insights <span aria-hidden="true">→</span></a></p>
+<figure>
+<img src="rc_images/IrisCodeInsightsInicio.png" alt="Tela inicial do IRIS Code Insights, com a área para soltar arquivos, os botões Abrir arquivos, Colar código e Ver um exemplo, e os cartões O que ele lê, O que você recebe e Seu código fica aqui" width="1600" height="900" loading="lazy">
+<figcaption>A tela inicial. Solte os arquivos, cole o código ou abra o exemplo.</figcaption>
+</figure>
+<h3>Como o app trata o seu código</h3>
+<ul>
+<li><strong>Nada sai do seu computador.</strong> O arquivo bloqueia conexões de rede, e a leitura acontece no navegador.</li>
+<li><strong>O código não fica guardado.</strong> Ao fechar a página, a análise some. O app só guarda o idioma e o tema.</li>
+</ul>
+<aside class="note"><p>O app lê o texto do código, sem compilar e sem acessar o IRIS. Os achados são sinais para revisar, não erros confirmados. É uma ferramenta independente, sem vínculo com a InterSystems.</p></aside>
+</section>
+<section id="obter-pt" aria-labelledby="h-obter-pt">
+<h2 id="h-obter-pt">Como levar o código ao app</h2>
+<p>O app aceita quatro formatos. Abra vários arquivos juntos: só assim ele consegue ligar uma chamada de uma classe ao método de outra.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Formato</th><th scope="col">Exemplo</th><th scope="col">O que o app faz</th></tr></thead>
+<tbody>
+<tr><th scope="row">Classe em UDL</th><td><code>Demo.Orders.Order.cls</code></td><td>Lê a declaração, os membros, a documentação <code>///</code> e o código de cada método</td></tr>
+<tr><th scope="row">Rotina</th><td><code>DEMOUTIL.mac</code>, <code>.int</code></td><td>Separa os rótulos e lê o código de cada um, inclusive a sintaxe antiga com pontos</td></tr>
+<tr><th scope="row">Include</th><td><code>Demo.inc</code></td><td>Lista as macros <code>#define</code></td></tr>
+<tr><th scope="row">Exportação XML</th><td><code>demo.xml</code></td><td>Converte cada classe e rotina para UDL e lê como acima</td></tr>
+</tbody>
+</table></div>
+<h3>Três jeitos de obter os arquivos</h3>
+<ol>
+<li><strong>VS Code:</strong> com a extensão InterSystems ObjectScript, use o comando <strong>ObjectScript: Export Code from Server</strong>. Por padrão, os arquivos vão para a pasta <code>src</code> do workspace. <sup><a href="#ref-2-pt">[2]</a></sup></li>
+<li><strong>Terminal do IRIS:</strong> o método <code>Export</code> da classe <code>%SYSTEM.OBJ</code> gera um XML com os itens pedidos, como classes e rotinas. <sup><a href="#ref-3-pt">[3]</a></sup></li>
+</ol>
+<pre class="code"><code>Do $SYSTEM.OBJ.Export("Demo.*.cls","/tmp/demo.xml")</code></pre>
+<ol start="3">
+<li><strong>Colar:</strong> em <strong>Colar código</strong>, cole uma classe, uma rotina ou um XML. O nome do arquivo é opcional: sem ele, o app reconhece o tipo pelo conteúdo.</li>
+</ol>
+<aside class="note"><p>No XML, os números de linha citados pelo app são os do texto convertido, que aparece na aba <strong>Código</strong>, e não os do arquivo XML.</p></aside>
+</section>
+<section id="roteiro-pt" aria-labelledby="h-roteiro-pt">
+<h2 id="h-roteiro-pt">Roteiro: analisando o exemplo</h2>
+<p>Use o exemplo do próprio app: quatro arquivos fictícios, escritos para mostrar os achados. Há uma classe persistente de pedidos, uma API REST, um business service e uma rotina antiga. O que segue é exatamente o que você verá.</p>
+<h3>1. Abra o exemplo e leia os indicadores</h3>
+<ol>
+<li>Abra o app e clique em <strong>Ver um exemplo</strong>.</li>
+<li>Confira o topo: 4 arquivos, 3 classes e 1 rotina, 15 métodos e rótulos, 197 linhas, complexidade média 2,3 (máxima 6), 60% dos métodos documentados e 3 achados críticos, com 11 de atenção.</li>
+<li>Os filtros mostram 18 tipos de achado: 3 críticos, 8 de atenção e 7 de informação.</li>
+</ol>
+<figure>
+<img src="rc_images/IrisCodeInsightsInsights.png" alt="Aba Insights com os indicadores no topo, a lista de achados ordenada por gravidade, os métodos mais complexos e as classes e rotinas" width="1600" height="900" loading="lazy">
+<figcaption>Os achados vêm do mais grave ao mais leve, cada um com a explicação e a correção.</figcaption>
+</figure>
+<h3>2. Vá do achado à linha</h3>
+<ol>
+<li>No achado <strong>Kill apaga uma global inteira</strong>, clique em <strong>Ver onde (1)</strong>.</li>
+<li>Clique em <strong>Order.Purge</strong>. A aba <strong>Código</strong> abre na linha 85, destacada: <code>Kill ^DemoAudit</code>.</li>
+<li>Repare na linha 79: <code>Kill ^DemoAudit(id)</code> apaga só um nó e não gera achado. A diferença é o subscrito.</li>
+</ol>
+<figure>
+<img src="rc_images/IrisCodeInsightsCodigo.png" alt="Aba Código com o arquivo Demo.Orders.Order.cls e a linha 85, Kill ^DemoAudit, destacada" width="1600" height="900" loading="lazy">
+<figcaption>Cada local citado em um achado abre o código na linha certa.</figcaption>
+</figure>
+<h3>3. Leia o fluxo de um método</h3>
+<ol>
+<li>Abra a aba <strong>Fluxo</strong> e escolha <strong>Pay</strong>, na lista à esquerda.</li>
+<li>O corpo está dentro de uma caixa <strong>Try</strong>, ligada à caixa <strong>Catch ex</strong> por uma seta tracejada vermelha: o caminho do erro.</li>
+<li>O losango <code>order.Status '= "NEW" ?</code> leva a um <strong>Quit</strong> com borda vermelha e a nota <strong>sai do bloco atual</strong>.</li>
+</ol>
+<figure>
+<img src="rc_images/IrisCodeInsightsFluxo.png" alt="Aba Fluxo com o método Pay: caixa Try com os comandos, losango de decisão, Quit com borda vermelha e caixa Catch ligada por uma seta tracejada" width="1600" height="900" loading="lazy">
+<figcaption>O Quit dentro do Try tem borda vermelha porque sai só do bloco Try.</figcaption>
+</figure>
+<p>Por que a borda vermelha? Segundo a documentação, um <code>Quit</code> sem argumento dentro de um <code>Try</code> leva a execução para a primeira linha depois do <code>Catch</code>, e não para fora do método. <sup><a href="#ref-4-pt">[4]</a></sup> Aqui a linha seguinte é <code>Quit sc</code>, então o efeito é o esperado. Mas, se alguém incluir código depois do <code>Catch</code>, ele também vai rodar para pedidos que não são novos. <code>Return</code> deixaria a intenção explícita. <sup><a href="#ref-6-pt">[6]</a></sup></p>
+<p>No mesmo método aparecem mais três achados: <code>Do order.%Save()</code> descarta o <code>%Status</code>, o <code>&amp;sql</code> não confere <code>SQLCODE</code> e o <code>TStart</code> não tem <code>TRollback</code> no <code>Catch</code>.</p>
+<h3>4. Veja quem chama quem</h3>
+<ol>
+<li>Abra a aba <strong>Dependências</strong> e clique em <strong>Métodos</strong>.</li>
+<li>Clique no nó <strong>PayOrder</strong>. O caminho fica em destaque: a rota <code>POST /orders/:id/pay</code> chega a ele, e ele chama <code>Notify</code>, <code>Pay</code> e <code>Sync.Send</code>.</li>
+</ol>
+<figure>
+<img src="rc_images/IrisCodeInsightsDependencias.png" alt="Aba Dependências no nível Métodos, com o nó PayOrder selecionado, a rota POST em destaque e o painel Nó selecionado listando as chamadas" width="1600" height="900" loading="lazy">
+<figcaption>Selecionar um nó apaga o resto e lista as ligações no painel à direita.</figcaption>
+</figure>
+<h3>5. Confira os dados usados</h3>
+<p>A aba <strong>Dados</strong> mostra duas tabelas SQL e quatro globais. A global <code>^DemoAudit</code> é lida, gravada, apagada com <code>Kill</code> e travada com <code>Lock</code>, em 8 usos. A rota REST e a mensagem para <code>Demo.ERP.Operation</code> também aparecem. Essa classe de destino não está nos arquivos.</p>
+<figure>
+<img src="rc_images/IrisCodeInsightsDados.png" alt="Aba Dados com as tabelas SQL e as operações, as globais com os tipos de acesso, as rotas REST e as mensagens de interoperabilidade" width="1600" height="900" loading="lazy">
+<figcaption>Tabelas, globais, rotas e mensagens, cada uma com o método que as usa.</figcaption>
+</figure>
+<h3>6. Gere o relatório</h3>
+<ol>
+<li>Clique em <strong>Relatório</strong>.</li>
+<li>Revise o texto e use <strong>Copiar</strong> ou <strong>Baixar .md</strong>.</li>
+</ol>
+<figure>
+<img src="rc_images/IrisCodeInsightsRelatorio.png" alt="Janela Relatório em Markdown com o resumo da análise e a lista de achados, e os botões Copiar e Baixar .md" width="1600" height="900" loading="lazy">
+<figcaption>O relatório traz trechos do código. Revise antes de enviar.</figcaption>
+</figure>
+<p>Resultado: em poucos minutos você sabe por onde começar. Há uma senha no código, um SQL vulnerável a injeção e um <code>Kill</code> que apaga a auditoria inteira. Também já sabe quais métodos e tabelas cada correção afeta.</p>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+<section id="ins-pt" aria-labelledby="h-ins-pt">
+<h2 id="h-ins-pt">Como ler os insights</h2>
+<p>Cada achado é uma regra simples sobre o texto do código, e estas são as condições exatas. Um achado diz onde olhar, não que há um defeito.</p>
+<h3>Crítico</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Achado</th><th scope="col">Quando aparece</th><th scope="col">Por que importa</th></tr></thead>
+<tbody>
+<tr><th scope="row">Kill apaga uma global inteira</th><td><code>Kill ^Nome</code>, sem subscrito</td><td>Apaga todos os nós da global</td></tr>
+<tr><th scope="row">Quit com valor dentro de Try ou Catch</th><td><code>Quit valor</code> dentro de um desses blocos</td><td>A documentação diz que isso dá erro de compilação e indica <code>Return</code> <sup><a href="#ref-4-pt">[4]</a></sup></td></tr>
+<tr><th scope="row">SQL montado por concatenação</th><td>Um texto que começa com SELECT, INSERT, UPDATE, DELETE, CALL ou WITH, juntado com <code>_</code> a um valor que não é texto fixo, ou <code>%Prepare</code> e <code>%ExecDirect</code> com <code>_</code></td><td>Risco de injeção de SQL. O SQL dinâmico aceita parâmetros <code>?</code> <sup><a href="#ref-7-pt">[7]</a></sup></td></tr>
+<tr><th scope="row">Senha ou segredo no código</th><td>Variável com password, pwd, senha, secret, token, apikey ou credential no nome recebe um texto fixo de 3 caracteres ou mais</td><td>O segredo vaza com o código</td></tr>
+</tbody>
+</table></div>
+<h3>Atenção</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Achado</th><th scope="col">Quando aparece</th><th scope="col">Por que importa</th></tr></thead>
+<tbody>
+<tr><th scope="row">%Status descartado</th><td><code>Do</code> em <code>%Save</code>, <code>%Delete</code>, <code>%DeleteId</code> e afins, ou em um método dos arquivos que devolve <code>%Status</code></td><td>A falha passa despercebida</td></tr>
+<tr><th scope="row">SQLCODE não é conferido</th><td>O método tem <code>&amp;sql</code> e não cita <code>SQLCODE</code></td><td>100 significa que não houve dados, e um valor negativo, erro <sup><a href="#ref-8-pt">[8]</a></sup></td></tr>
+<tr><th scope="row">Catch vazio</th><td>Bloco <code>Catch</code> sem comandos</td><td>O erro some</td></tr>
+<tr><th scope="row">Quit dentro de Try sai só do Try</th><td><code>Quit</code> sem argumento direto em um <code>Try</code></td><td>A execução segue depois do <code>Catch</code> <sup><a href="#ref-4-pt">[4]</a></sup></td></tr>
+<tr><th scope="row">Quit com valor dentro de laço</th><td><code>Quit valor</code> dentro de <code>For</code>, <code>While</code> ou <code>Do-While</code></td><td>Não sai da rotina de dentro do laço. Use <code>Return</code> <sup><a href="#ref-5-pt">[5]</a></sup> <sup><a href="#ref-6-pt">[6]</a></sup></td></tr>
+<tr><th scope="row">Transação sem rollback garantido</th><td><code>TStart</code> sem <code>TRollback</code>, ou sem <code>Try</code>, <code>$ZTrap</code> ou <code>$ETrap</code></td><td><code>TRollback</code> desfaz a transação, e <code>$TLevel</code> diz quantas estão abertas <sup><a href="#ref-9-pt">[9]</a></sup></td></tr>
+<tr><th scope="row">Lock sem tempo limite</th><td><code>Lock</code> sem <code>:segundos</code> (o <code>Lock -</code> não conta)</td><td>Sem tempo limite, o IRIS espera indefinidamente <sup><a href="#ref-10-pt">[10]</a></sup></td></tr>
+<tr><th scope="row">Código executado a partir de texto</th><td><code>Xecute</code>, <code>$Xecute</code> ou indireção com <code>@</code></td><td>Texto vindo de fora pode virar comando</td></tr>
+<tr><th scope="row">Comando de depuração esquecido</th><td><code>Break</code>, <code>ZBreak</code>, <code>ZWrite</code> ou <code>ZZDump</code></td><td>Para o processo ou escreve dados</td></tr>
+<tr><th scope="row">Halt encerra o processo</th><td><code>Halt</code> (e não <code>Hang</code>)</td><td>Derruba quem chamou</td></tr>
+<tr><th scope="row">Complexidade alta, método longo, aninhamento</th><td>Complexidade acima de 10, mais de 60 linhas de código ou mais de 4 níveis de blocos</td><td>Mais caminhos para testar e revisar</td></tr>
+</tbody>
+</table></div>
+<h3>Informação</h3>
+<ul>
+<li><strong>%ResultSet está obsoleto:</strong> a referência de classes marca <code>%Library.ResultSet</code> como obsoleta e indica <code>%SQL.Statement</code> para SQL dinâmico. A classe continua funcionando. <sup><a href="#ref-11-pt">[11]</a></sup></li>
+<li><strong>$ZTrap ou $ETrap</strong>, <strong>Goto</strong>, <strong>privado sem uso nos arquivos</strong>, <strong>método sem documentação</strong> <code>///</code>, <strong>endereço ou caminho fixo</strong> (URL, IP ou pasta) e <strong>classe que acessa global direto</strong>.</li>
+<li><strong>Chamada recursiva:</strong> sem condição de parada, as chamadas se acumulam até o erro <code>&lt;FRAMESTACK&gt;</code>, que indica chamadas aninhadas demais. <sup><a href="#ref-12-pt">[12]</a></sup></li>
+<li><strong>Trecho que o app não entendeu:</strong> o fluxograma e os achados daquele membro podem estar incompletos.</li>
+</ul>
+<h3>Indicadores e complexidade</h3>
+<p>A complexidade segue a ideia de McCabe: quantos caminhos independentes existem no método. <sup><a href="#ref-13-pt">[13]</a></sup> O app faz uma aproximação: 1, mais cada <code>If</code>, <code>ElseIf</code>, laço, <code>Catch</code> e pós-condicional. Serve para comparar métodos entre si. "Métodos documentados" conta os métodos de classe com comentário <code>///</code>. Abaixo da lista, <strong>Verificações sem achados</strong> mostra o que foi procurado e não encontrado.</p>
+</section>
+<section id="fluxo-pt" aria-labelledby="h-fluxo-pt">
+<h2 id="h-fluxo-pt">Fluxo</h2>
+<p>A aba <strong>Fluxo</strong> desenha um método ou rótulo de cada vez, a partir dos comandos do código. Escolha o método na lista: o número ao lado do nome é a complexidade. Os métodos com mais caminhos ficam com o número em laranja ou vermelho.</p>
+<figure>
+<img src="rc_images/IrisCodeInsightsSimbolos.svg" alt="Os símbolos do fluxograma: Início (nome e argumentos); Comandos (Set, Kill e New agrupados); Decisão (If, ElseIf, pós-condicional); Laço (For, While, Do-While); Chamada (método ou rótulo); SQL embutido (&amp;sql(...)); Entrada e saída (Write, Read, ZWrite); Fim do caminho (Quit, Return, Goto); Erro ou parada (Throw, Halt, Catch vazio); Try e Catch (caixas tracejadas). Borda vermelha: o comando tem um achado. Clique em um bloco para ver o comando inteiro." loading="lazy">
+<figcaption>Cada forma tem um significado, e a borda vermelha marca o comando com achado.</figcaption>
+</figure>
+<ul>
+<li><strong>Agrupar comandos simples</strong> junta comandos seguidos como <code>Set</code>, <code>Kill</code> e <code>New</code> em um só bloco. Desmarque para ver um bloco por comando.</li>
+<li><strong>Clique</strong> em um bloco para ver o comando inteiro, a linha e os achados. <strong>Ver código</strong> abre a linha. <strong>Dois cliques</strong> em uma chamada abrem o fluxo do método chamado.</li>
+<li>Arraste o fundo para mover, use os botões de zoom ou <strong>Ajustar</strong>, e <strong>Baixar SVG</strong> para salvar a figura.</li>
+<li>Abaixo do desenho, <strong>Detalhes do membro</strong> traz a declaração, a documentação, quem ele chama, quem o chama e os dados que usa.</li>
+</ul>
+<aside class="note"><p>O desenho segue a estrutura do código, não a execução. <code>Quit</code>, <code>Return</code>, <code>Goto</code> e <code>Continue</code> aparecem como fim de caminho, sem a seta para onde a execução vai depois. Um <code>ElseIf</code> vira um novo losango no lado "não". Um <code>Quit:condição</code> vira uma decisão. Na sintaxe com pontos, o bloco aparece como <strong>Do (bloco de pontos)</strong>.</p></aside>
+</section>
+<section id="dep-pt" aria-labelledby="h-dep-pt">
+<h2 id="h-dep-pt">Dependências</h2>
+<p>A aba <strong>Dependências</strong> mostra o mapa de quem chama quem. As colunas seguem a direção das chamadas: quem chama fica à esquerda. Quanto mais grossa a linha, mais chamadas.</p>
+<ul>
+<li><strong>Classes</strong> junta tudo por classe ou rotina e mostra a herança em linha tracejada roxa. <strong>Métodos</strong> mostra cada método, as rotas REST que chegam a ele e os destinos de mensagens.</li>
+<li><strong>Externos</strong>, <strong>Tabelas</strong> e <strong>Globais</strong> ligam e desligam esses nós. "Fora dos arquivos" é uma classe ou rotina citada que você não carregou.</li>
+<li>Uma linha que volta para a esquerda, em traço curto, fecha um ciclo de chamadas.</li>
+<li>Clique em um nó para destacar as ligações dele. O painel à direita lista o que sai e o que chega, com atalhos para o fluxo e o código.</li>
+</ul>
+<aside class="note"><p>Uma chamada por variável, como <code>obj.Metodo()</code>, só é ligada quando o tipo aparece no próprio método: em <code>#dim</code>, no argumento ou em <code>%New</code> e <code>%OpenId</code>. Chamadas montadas em tempo de execução, como <code>$ClassMethod</code> ou indireção, não aparecem. Para caber na tela, o mapa mostra até 180 nós e avisa quantos ficaram de fora.</p></aside>
+</section>
+<section id="outras-pt" aria-labelledby="h-outras-pt">
+<h2 id="h-outras-pt">Membros, Dados e Código</h2>
+<ul>
+<li><strong>Membros:</strong> a tabela de todos os membros, com tipo, linhas, complexidade, aninhamento, documentação e chamadas. Clique no título de uma coluna para ordenar e use o filtro e o tipo para reduzir a lista.</li>
+<li><strong>Dados:</strong> as tabelas SQL, com as operações e a forma (<code>&amp;sql</code>, SQL dinâmico ou Query da classe), e as globais, com o tipo de acesso: leitura, escrita, Kill ou Lock. A classe é ligada à tabela pelo nome SQL padrão: o pacote com <code>_</code> no lugar do ponto, mais o nome da classe, ou o <code>SqlTableName</code>. As rotas REST vêm do <code>XData UrlMap</code>, e as mensagens, de <code>SendRequestSync</code>, <code>SendRequestAsync</code> e dos <code>&lt;call target&gt;</code> de uma BPL.</li>
+<li><strong>Código:</strong> o arquivo com destaque de sintaxe. Escolha o arquivo, digite o número em <strong>linha</strong> e clique em <strong>Ir</strong>.</li>
+<li><strong>Busca:</strong> o campo no topo encontra classes, métodos e rótulos em todos os arquivos.</li>
+</ul>
+</section>
+<section id="rel-pt" aria-labelledby="h-rel-pt">
+<h2 id="h-rel-pt">Relatório e privacidade</h2>
+<p><strong>Relatório</strong> gera um texto em Markdown com o resumo, os achados, os locais com o trecho do código e os métodos mais complexos, para anexar a um chamado, a uma revisão de código ou a uma wiki.</p>
+<aside class="note"><p>O relatório traz trechos do código, e os achados de senha mostram o nome da variável. Antes de enviar para alguém ou para uma IA, revise o texto e retire segredos, endereços e nomes de clientes.</p></aside>
+<p><strong>Novo</strong> volta à tela inicial e tira a análise da memória. Os arquivos no seu computador não mudam.</p>
+</section>
+<section id="ia-pt" aria-labelledby="h-ia-pt">
+<h2 id="h-ia-pt">Prompts de IA</h2>
+<p>O app mostra onde olhar. Ainda falta entender o porquê, decidir a correção e explicá-la para a equipe. Uma IA ajuda nessas três tarefas, mas também erra com segurança: inventa métodos de sistema, confunde <code>Quit</code> com <code>Return</code> e propõe código que não compila. Trate a resposta como rascunho de um colega apressado. Para escrever prompts melhores, veja o <a href="PromptTutorial.html">tutorial de prompts</a>.</p>
+<figure>
+<img src="rc_images/IrisCodeInsightsIA.svg" alt="Seis passos: o app gera o relatório ou você copia o método, você retira segredos e dados de clientes, a IA explica e propõe citando o trecho exato, o app confere no fluxo e na linha, você compila e testa fora de produção e a equipe revisa antes de publicar. Da revisão, volta-se à IA com o código novo." loading="lazy">
+<figcaption>A IA explica e propõe. Quem decide é o teste no IRIS e a revisão da equipe.</figcaption>
+</figure>
+<blockquote><p><strong>Antes de colar:</strong> código é propriedade da empresa e pode trazer senhas, endereços e regras de negócio. O app não envia nada para a rede, mas o serviço de IA recebe tudo o que você colar nele. Retire os segredos que o app apontou, troque nomes de clientes e siga a política da sua organização para uso de IA.</p></blockquote>
+<p>Troque os trechos entre colchetes e cole na ferramenta de IA que você usa. Cada prompt funciona sozinho.</p>
+<h3>1. Priorizar os achados</h3>
+<p>Em <strong>Relatório</strong>, use <strong>Copiar</strong>, revise o texto e cole no fim do prompt.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-pt-1" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-pt-1">Você é um desenvolvedor experiente em InterSystems IRIS e ObjectScript.
+Abaixo está o relatório de uma ferramenta que lê o código sem compilar.
+
+Contexto: [o que o sistema faz e o que você precisa mudar]
+
+Com base só no relatório:
+1. Ordene os achados pelo risco real para este contexto e diga por quê.
+2. Aponte os que podem ser falsos positivos e o que conferir no código para decidir.
+3. Sugira a ordem de correção, agrupando o que pode ir na mesma mudança.
+4. Separe o que está no relatório do que é suposição sua.
+
+Não invente classes, métodos nem comportamentos do IRIS. Se faltar informação, diga qual.
+
+Relatório:
+[cole o relatório]</code></pre></div>
+<h3>2. Explicar um método</h3>
+<p>Na aba <strong>Fluxo</strong>, use <strong>Ver código</strong> e copie o método. Em <strong>Detalhes do membro</strong>, copie as listas <strong>Chama</strong> e <strong>Chamado por</strong>.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-pt-2" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-pt-2">Explique o método ObjectScript abaixo para alguém que vai mantê-lo.
+
+Classe: [nome da classe e o que ela representa]
+Quem chama este método: [lista]
+O que ele chama: [lista]
+
+Código:
+[cole o método]
+
+Responda:
+1. O que o método faz, em poucas frases.
+2. Os caminhos possíveis, incluindo erros e saídas antecipadas.
+3. O que ele lê e grava: propriedades, globais, tabelas e transações.
+4. Pontos frágeis, citando a linha.
+
+Lembre que Quit sem argumento dentro de Try sai só do bloco Try. Se não souber o que um método chamado faz, diga, em vez de supor.</code></pre></div>
+<h3>3. Corrigir um achado</h3>
+<p>Copie o nome e a explicação do achado no app e o trecho de código ao redor da linha. Peça a menor mudança possível.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-pt-3" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-pt-3">A ferramenta apontou este achado em um código ObjectScript do InterSystems IRIS:
+
+Achado: [nome e explicação do achado]
+Linha: [número]
+
+Trecho:
+[cole o método ou as linhas ao redor]
+
+1. Confirme se o achado procede neste trecho e explique por quê.
+2. Proponha a menor correção possível, mostrando o código antes e depois.
+3. Diga o que muda no comportamento e o que pode quebrar em quem chama.
+4. Diga como testar a correção.
+
+Use só recursos que você sabe que existem no IRIS. Se não tiver certeza da sintaxe, avise.</code></pre></div>
+<h3>4. Quebrar um método complexo</h3>
+<p>Use os métodos do cartão <strong>Métodos mais complexos</strong>. Peça para manter o comportamento, porque trocar <code>Quit</code> por <code>Return</code> pode mudar o fluxo. <sup><a href="#ref-5-pt">[5]</a></sup> <sup><a href="#ref-6-pt">[6]</a></sup></p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-pt-4" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-pt-4">O método ObjectScript abaixo tem complexidade [número] e [número] linhas.
+
+[cole o método]
+
+Proponha uma reorganização que:
+1. Mantenha exatamente o mesmo comportamento, inclusive o retorno de %Status e as transações.
+2. Extraia partes com propósito próprio para métodos privados com nomes claros.
+3. Use Return quando a intenção for sair do método, e explique cada troca de Quit por Return.
+4. Liste os casos de teste que provam que nada mudou.
+
+Mostre o código completo. Não renomeie métodos públicos nem mude a assinatura.</code></pre></div>
+<h3>5. Documentar uma classe</h3>
+<p>Útil para o achado <strong>Método sem documentação</strong>. Confira cada frase contra o código: a IA pode descrever o que o nome sugere, e não o que o código faz.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-pt-5" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-pt-5">Escreva comentários /// para a classe ObjectScript abaixo, no estilo da referência de classes do IRIS.
+
+[cole a classe]
+
+Para a classe e para cada método:
+1. Uma frase sobre o que faz.
+2. Os argumentos e o retorno.
+3. Efeitos colaterais: globais, tabelas, transações e Lock.
+
+Escreva em [idioma]. Descreva só o que o código mostra. Quando não der para saber, escreva "verificar" em vez de supor.</code></pre></div>
+<h3>6. Planejar testes</h3>
+<p>Peça casos de teste a partir do fluxograma: cada losango tem dois lados para cobrir.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-pt-6" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-pt-6">Quero testar o método ObjectScript abaixo antes de alterá-lo.
+
+[cole o método]
+
+Formato de teste usado pela equipe: [ex.: %UnitTest.TestCase, ou descreva]
+
+1. Liste os caminhos do método e um caso de teste para cada um.
+2. Inclua os casos de erro: %Status de erro, exceção, SQLCODE diferente de 0.
+3. Diga quais dados precisam existir antes e como limpá-los depois.
+4. Escreva o código dos testes.
+
+Não use métodos de asserção que você não tem certeza de que existem. Se precisar de um, pergunte.</code></pre></div>
+<h3>7. Modernizar código antigo</h3>
+<p>Serve para <code>$ZTrap</code>, <code>%ResultSet</code> e a sintaxe com pontos. A referência de classes indica <code>%SQL.Statement</code> no lugar de <code>%ResultSet</code>. <sup><a href="#ref-11-pt">[11]</a></sup></p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-pt-7" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-pt-7">Modernize o código ObjectScript abaixo, sem mudar o que ele faz.
+
+[cole o código]
+
+Troque, quando houver:
+1. $ZTrap ou $ETrap por Try/Catch.
+2. %ResultSet por %SQL.Statement, com parâmetros ? no lugar de concatenação.
+3. Sintaxe com pontos e If de linha por blocos com chaves.
+
+Para cada troca, mostre antes e depois e explique a diferença de comportamento, se houver. Aponte o que precisa ser testado com cuidado.</code></pre></div>
+<h3>8. Descrever a mudança para revisão</h3>
+<p>Use depois de corrigir: a IA organiza o texto, e você confere se cada afirmação é verdadeira.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-pt-8" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-pt-8">Escreva a descrição de uma revisão de código para a mudança abaixo.
+
+Problema encontrado: [achado e local]
+O que foi mudado: [resumo ou diff]
+Como foi testado: [descreva]
+
+Estrutura:
+1. Resumo em duas frases.
+2. Motivo, com o achado e a linha.
+3. O que muda para quem usa o código.
+4. Riscos e como reverter.
+5. O que o revisor deve olhar com atenção.
+
+Não acrescente testes, números ou garantias que não estão aqui.</code></pre></div>
+<h3>Como conferir a resposta</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">O que a IA fez</th><th scope="col">Por que desconfiar</th><th scope="col">O que fazer</th></tr></thead>
+<tbody>
+<tr><td>Citou um método ou uma classe que não está no que você colou</td><td>Pode ter inventado</td><td>Procure na busca do app ou na referência de classes</td></tr>
+<tr><td>Afirmou como um comando se comporta</td><td>Pode valer para outra versão ou estar errado</td><td>Compare com a documentação da InterSystems <sup><a href="#ref-4-pt">[4]</a></sup> <sup><a href="#ref-5-pt">[5]</a></sup></td></tr>
+<tr><td>Trocou <code>Quit</code> por <code>Return</code>, ou o contrário</td><td>Muda o fluxo dentro de <code>Try</code> e de laços</td><td>Compare os fluxogramas antes e depois no app</td></tr>
+<tr><td>Entregou código pronto</td><td>Pode não compilar ou mudar um caso raro</td><td>Compile, rode os testes e analise de novo no app</td></tr>
+<tr><td>Sugeriu índice, Lock ou transação</td><td>Afeta outros processos</td><td>Avalie com quem administra o ambiente e teste fora de produção</td></tr>
+</tbody>
+</table></div>
+<aside class="note"><p>Depois da correção, abra o código novo no app: o achado deve sumir, e nenhum outro deve aparecer.</p></aside>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+<section id="lim-pt" aria-labelledby="h-lim-pt">
+<h2 id="h-lim-pt">Erros comuns e limitações</h2>
+<h3>Erros de leitura</h3>
+<ul>
+<li><strong>Tratar achado como defeito.</strong> Um <code>Kill ^Global</code> pode ser exatamente o que o método deve fazer. Confirme no código.</li>
+<li><strong>Analisar uma classe sozinha.</strong> Sem as superclasses e as classes chamadas, muitas ligações aparecem como "Fora dos arquivos".</li>
+<li><strong>Procurar no XML a linha citada.</strong> Na exportação XML, as linhas são as do texto convertido, na aba <strong>Código</strong>.</li>
+<li><strong>Achar que complexidade baixa é código certo.</strong> Ela mede caminhos, não correção.</li>
+</ul>
+<h3>Limitações</h3>
+<ul>
+<li><strong>Leitura sem compilar.</strong> O app não expande macros, não resolve herança fora dos arquivos e pode errar em construções raras.</li>
+<li><strong>Só código de exemplo.</strong> O app foi testado com o exemplo fictício e com trechos escritos para o teste, não com código de produção.</li>
+<li><strong>Outras linguagens.</strong> Métodos em Python ou outra linguagem não têm fluxograma. O app conta as linhas e as chamadas <code>iris.cls()</code>.</li>
+<li><strong>Tamanho.</strong> Arquivos acima de 30 MB são ignorados. O mapa mostra até 180 nós, e a tabela de membros, até 1.500 linhas.</li>
+<li><strong>Navegadores.</strong> Testado no Chromium. Firefox, Safari e celulares reais não foram testados.</li>
+</ul>
+</section>
+<section id="rev-pt" aria-labelledby="h-rev-pt">
+<h2 id="h-rev-pt">Revisão rápida</h2>
+<p>Tente responder antes de abrir cada pergunta.</p>
+<div class="quiz">
+<details><summary>1. Por que abrir várias classes juntas?</summary><p>Para o app ligar as chamadas entre elas. Sozinha, uma chamada a outra classe aparece como "Fora dos arquivos".</p></details>
+<details><summary>2. O que faz um Quit sem argumento dentro de um Try?</summary><p>Sai só do bloco Try, e a execução segue na primeira linha depois do Catch. Para sair do método, use Return.</p></details>
+<details><summary>3. Por que Do obj.%Save() gera achado?</summary><p>Porque %Save devolve um %Status, e Do descarta esse valor. Se a gravação falhar, ninguém fica sabendo.</p></details>
+<details><summary>4. Qual a diferença entre Kill ^DemoAudit e Kill ^DemoAudit(id)?</summary><p>O primeiro apaga a global inteira. O segundo apaga só o nó daquele id.</p></details>
+<details><summary>5. O que significa SQLCODE = 100 depois de um &amp;sql?</summary><p>Que o comando rodou, mas não encontrou dados. Valores negativos indicam erro.</p></details>
+<details><summary>6. O que a borda vermelha marca no fluxograma?</summary><p>Um comando ligado a um achado. Clique no bloco para ver qual.</p></details>
+<details><summary>7. O código sai do computador quando você o abre no app?</summary><p>Não. O arquivo bloqueia a rede e não guarda o código. Mas, se você colar o código em uma IA, ele vai para o serviço dela.</p></details>
+<details><summary>8. A IA propôs uma correção que parece certa. O que fazer antes de publicar?</summary><p>Compilar, testar fora de produção, abrir o código novo no app para ver se o achado sumiu e passar pela revisão da equipe.</p></details>
+</div>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+<section id="ref-pt" aria-labelledby="h-ref-pt">
+<h2 id="h-ref-pt">Referências</h2>
+<ol class="refs">
+<li id="ref-1-pt"><strong>Giovani Perotto Mesquita</strong>, “IRIS Code Insights”, app em um único arquivo HTML, <a href="iris-code-insights.html">giovanipm.github.io/iris-code-insights.html</a>.</li>
+<li id="ref-2-pt"><strong>InterSystems</strong>, fluxo de trabalho no cliente com a extensão ObjectScript para VS Code, comando Export Code from Server, documentação, consultado em 02/11/2026, <a href="https://docs.intersystems.com/components/csp/docbook/DocBook.UI.Page.cls?KEY=GVSCO_clientflow" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-3-pt"><strong>InterSystems</strong>, classe %SYSTEM.OBJ, método Export, referência de classes, documentação, consultado em 02/11/2026, <a href="https://docs.intersystems.com/irislatest/csp/documatic/%25CSP.Documatic.cls?LIBRARY=%25SYS&amp;CLASSNAME=%25SYSTEM.OBJ" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-4-pt"><strong>InterSystems</strong>, comando TRY, seção sobre QUIT e RETURN, referência de ObjectScript, documentação, consultado em 02/11/2026, <a href="https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RCOS_ctry" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-5-pt"><strong>InterSystems</strong>, comando QUIT, referência de ObjectScript, documentação, consultado em 02/11/2026, <a href="https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RCOS_cquit" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-6-pt"><strong>InterSystems</strong>, comando RETURN, referência de ObjectScript, documentação, consultado em 02/11/2026, <a href="https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RCOS_creturn" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-7-pt"><strong>InterSystems</strong>, SQL dinâmico, parâmetros de entrada com ?, guia de SQL, documentação, consultado em 02/11/2026, <a href="https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=GSQL_dynsql" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-8-pt"><strong>InterSystems</strong>, valores de SQLCODE, referência de SQL, documentação, consultado em 02/11/2026, <a href="https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RSQL_sqlcode" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-9-pt"><strong>InterSystems</strong>, comando TROLLBACK e $TLEVEL, referência de ObjectScript, documentação, consultado em 02/11/2026, <a href="https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RCOS_ctrollback" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-10-pt"><strong>InterSystems</strong>, comando LOCK, tempo limite, referência de ObjectScript, documentação, consultado em 02/11/2026, <a href="https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RCOS_clock" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-11-pt"><strong>InterSystems</strong>, classe %Library.ResultSet, marcada como obsoleta, referência de classes, documentação, consultado em 02/11/2026, <a href="https://docs.intersystems.com/irislatest/csp/documatic/%25CSP.Documatic.cls?LIBRARY=%25SYS&amp;CLASSNAME=%25Library.ResultSet" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-12-pt"><strong>InterSystems</strong>, mensagens de erro do sistema, &lt;FRAMESTACK&gt;, documentação, consultado em 02/11/2026, <a href="https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RERR_system" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-13-pt"><strong>Thomas J. McCabe</strong>, “A Complexity Measure”, IEEE Transactions on Software Engineering, SE-2(4), 1976, p. 308–320, <a href="https://doi.org/10.1109/TSE.1976.233837" rel="noopener">doi.org/10.1109/TSE.1976.233837</a>.</li>
+</ol>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== EN ===================== -->
+<div id="en" role="tabpanel" aria-labelledby="tab-en" lang="en" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html#en" data-projects>← Projects</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>IRIS Code Insights: tutorial</h1>
+      <p class="dek">How to understand InterSystems IRIS ObjectScript code before you change it: findings with the exact line, a flowchart of each method, a dependency map and prompts for using AI safely.</p>
+      <div class="byline">
+        <span>By <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Published on <time datetime="2026-11-02">2 November 2026</time></span>
+        <span class="credit">Reviewed and formatted using Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-en">
+    <h2 id="toc-en">Contents</h2>
+    <ol>
+      <li><a href="#intro-en">What IRIS Code Insights is</a></li>
+      <li><a href="#obter-en">How to bring the code into the app</a></li>
+      <li><a href="#roteiro-en">Walkthrough: analyzing the sample</a></li>
+      <li><a href="#ins-en">How to read the insights</a></li>
+      <li><a href="#fluxo-en">Flow</a></li>
+      <li><a href="#dep-en">Dependencies</a></li>
+      <li><a href="#outras-en">Members, Data and Code</a></li>
+      <li><a href="#rel-en">Report and privacy</a></li>
+      <li><a href="#ia-en">AI prompts</a></li>
+      <li><a href="#lim-en">Common mistakes and limitations</a></li>
+      <li><a href="#rev-en">Quick review</a></li>
+      <li><a href="#ref-en">References</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-en" aria-labelledby="h-intro-en">
+<h2 id="h-intro-en">What IRIS Code Insights is</h2>
+<p>Before you change an InterSystems IRIS class, the same questions almost always come up: what does this code do, who calls it and where can it break? IRIS Code Insights reads ObjectScript classes and routines and answers with three views: findings ordered by severity, a flowchart of each method and a map of who calls whom. <sup><a href="#ref-1-en">[1]</a></sup></p>
+<p>It is a single HTML file, with no installation, no account and no server.</p>
+<p><a class="launch" href="iris-code-insights.html#en">Open IRIS Code Insights <span aria-hidden="true">→</span></a></p>
+<figure>
+<img src="rc_images/IrisCodeInsightsInicio-en.png" alt="IRIS Code Insights start screen, with the area for dropping files, the Open files, Paste code and See a sample buttons, and the What it reads, What you get and Your code stays here cards" width="1600" height="900" loading="lazy">
+<figcaption>The start screen. Drop the files, paste the code or open the sample.</figcaption>
+</figure>
+<h3>How the app handles your code</h3>
+<ul>
+<li><strong>Nothing leaves your computer.</strong> The file blocks network connections, and reading happens in the browser.</li>
+<li><strong>The code is not stored.</strong> When you close the page, the analysis is gone. The app only saves the language and the theme.</li>
+</ul>
+<aside class="note"><p>The app reads the text of the code, without compiling it and without accessing IRIS. Findings are signals to review, not confirmed bugs. It is an independent tool, not affiliated with InterSystems.</p></aside>
+</section>
+<section id="obter-en" aria-labelledby="h-obter-en">
+<h2 id="h-obter-en">How to bring the code into the app</h2>
+<p>The app accepts four formats. Open several files together: only then can it link a call in one class to the method of another.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Format</th><th scope="col">Example</th><th scope="col">What the app does</th></tr></thead>
+<tbody>
+<tr><th scope="row">Class in UDL</th><td><code>Demo.Orders.Order.cls</code></td><td>Reads the declaration, the members, the <code>///</code> documentation and the code of each method</td></tr>
+<tr><th scope="row">Routine</th><td><code>DEMOUTIL.mac</code>, <code>.int</code></td><td>Splits the labels and reads the code of each one, including the old dot syntax</td></tr>
+<tr><th scope="row">Include</th><td><code>Demo.inc</code></td><td>Lists the <code>#define</code> macros</td></tr>
+<tr><th scope="row">XML export</th><td><code>demo.xml</code></td><td>Converts each class and routine to UDL and reads it as above</td></tr>
+</tbody>
+</table></div>
+<h3>Three ways to get the files</h3>
+<ol>
+<li><strong>VS Code:</strong> with the InterSystems ObjectScript extension, use the <strong>ObjectScript: Export Code from Server</strong> command. By default, the files go to the <code>src</code> folder of the workspace. <sup><a href="#ref-2-en">[2]</a></sup></li>
+<li><strong>IRIS Terminal:</strong> the <code>Export</code> method of the <code>%SYSTEM.OBJ</code> class creates an XML file with the requested items, such as classes and routines. <sup><a href="#ref-3-en">[3]</a></sup></li>
+</ol>
+<pre class="code"><code>Do $SYSTEM.OBJ.Export("Demo.*.cls","/tmp/demo.xml")</code></pre>
+<ol start="3">
+<li><strong>Paste:</strong> in <strong>Paste code</strong>, paste a class, a routine or an XML export. The file name is optional: without it, the app recognizes the type from the content.</li>
+</ol>
+<aside class="note"><p>For XML, the line numbers the app cites are those of the converted text shown in the <strong>Code</strong> tab, not those of the XML file.</p></aside>
+</section>
+<section id="roteiro-en" aria-labelledby="h-roteiro-en">
+<h2 id="h-roteiro-en">Walkthrough: analyzing the sample</h2>
+<p>Use the app's own sample: four made-up files, written to show the findings. There is a persistent order class, a REST API, a business service and an old routine. What follows is exactly what you will see.</p>
+<h3>1. Open the sample and read the indicators</h3>
+<ol>
+<li>Open the app and click <strong>See a sample</strong>.</li>
+<li>Check the top: 4 files, 3 classes and 1 routine, 15 methods and labels, 197 lines, average complexity 2.3 (maximum 6), 60% of methods documented and 3 critical findings, with 11 needing attention.</li>
+<li>The filters show 18 kinds of finding: 3 critical, 8 attention and 7 information.</li>
+</ol>
+<figure>
+<img src="rc_images/IrisCodeInsightsInsights-en.png" alt="Insights tab with the indicators at the top, the list of findings ordered by severity, the most complex methods and the classes and routines" width="1600" height="900" loading="lazy">
+<figcaption>Findings go from most to least serious, each with the explanation and the fix.</figcaption>
+</figure>
+<h3>2. Go from the finding to the line</h3>
+<ol>
+<li>In the finding <strong>Kill erases an entire global</strong>, click <strong>See where (1)</strong>.</li>
+<li>Click <strong>Order.Purge</strong>. The <strong>Code</strong> tab opens at line 85, highlighted: <code>Kill ^DemoAudit</code>.</li>
+<li>Look at line 79: <code>Kill ^DemoAudit(id)</code> erases only one node and does not create a finding. The difference is the subscript.</li>
+</ol>
+<figure>
+<img src="rc_images/IrisCodeInsightsCodigo-en.png" alt="Code tab with the file Demo.Orders.Order.cls and line 85, Kill ^DemoAudit, highlighted" width="1600" height="900" loading="lazy">
+<figcaption>Each place listed in a finding opens the code at the right line.</figcaption>
+</figure>
+<h3>3. Read the flow of a method</h3>
+<ol>
+<li>Open the <strong>Flow</strong> tab and choose <strong>Pay</strong> in the list on the left.</li>
+<li>The body is inside a <strong>Try</strong> box, linked to the <strong>Catch ex</strong> box by a red dashed arrow: the error path.</li>
+<li>The diamond <code>order.Status '= "NEW" ?</code> leads to a <strong>Quit</strong> with a red border and the note <strong>leaves the current block</strong>.</li>
+</ol>
+<figure>
+<img src="rc_images/IrisCodeInsightsFluxo-en.png" alt="Flow tab with the Pay method: Try box with the commands, decision diamond, Quit with a red border and Catch box linked by a dashed arrow" width="1600" height="900" loading="lazy">
+<figcaption>The Quit inside the Try has a red border because it only leaves the Try block.</figcaption>
+</figure>
+<p>Why the red border? According to the documentation, an argumentless <code>Quit</code> inside a <code>Try</code> moves execution to the first line after the <code>Catch</code>, not out of the method. <sup><a href="#ref-4-en">[4]</a></sup> Here the next line is <code>Quit sc</code>, so the effect is the expected one. But if someone adds code after the <code>Catch</code>, it will also run for orders that are not new. <code>Return</code> would make the intent explicit. <sup><a href="#ref-6-en">[6]</a></sup></p>
+<p>The same method has three more findings: <code>Do order.%Save()</code> throws away the <code>%Status</code>, the <code>&amp;sql</code> does not check <code>SQLCODE</code> and the <code>TStart</code> has no <code>TRollback</code> in the <code>Catch</code>.</p>
+<h3>4. See who calls whom</h3>
+<ol>
+<li>Open the <strong>Dependencies</strong> tab and click <strong>Methods</strong>.</li>
+<li>Click the <strong>PayOrder</strong> node. Its path is highlighted: the <code>POST /orders/:id/pay</code> route reaches it, and it calls <code>Notify</code>, <code>Pay</code> and <code>Sync.Send</code>.</li>
+</ol>
+<figure>
+<img src="rc_images/IrisCodeInsightsDependencias-en.png" alt="Dependencies tab at the Methods level, with the PayOrder node selected, the POST route highlighted and the Selected node panel listing the calls" width="1600" height="900" loading="lazy">
+<figcaption>Selecting a node fades the rest and lists its links in the panel on the right.</figcaption>
+</figure>
+<h3>5. Check the data used</h3>
+<p>The <strong>Data</strong> tab shows two SQL tables and four globals. The global <code>^DemoAudit</code> is read, written, erased with <code>Kill</code> and locked with <code>Lock</code>, in 8 uses. The REST route and the message to <code>Demo.ERP.Operation</code> also show up. That target class is not in the files.</p>
+<figure>
+<img src="rc_images/IrisCodeInsightsDados-en.png" alt="Data tab with the SQL tables and their operations, the globals with the access types, the REST routes and the interoperability messages" width="1600" height="900" loading="lazy">
+<figcaption>Tables, globals, routes and messages, each with the method that uses it.</figcaption>
+</figure>
+<h3>6. Create the report</h3>
+<ol>
+<li>Click <strong>Report</strong>.</li>
+<li>Review the text and use <strong>Copy</strong> or <strong>Download .md</strong>.</li>
+</ol>
+<figure>
+<img src="rc_images/IrisCodeInsightsRelatorio-en.png" alt="Markdown report window with the analysis summary and the list of findings, and the Copy and Download .md buttons" width="1600" height="900" loading="lazy">
+<figcaption>The report contains code excerpts. Review it before sending.</figcaption>
+</figure>
+<p>Result: in a few minutes you know where to start. There is a password in the code, a SQL statement open to injection and a <code>Kill</code> that erases the whole audit trail. You also know which methods and tables each fix affects.</p>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+<section id="ins-en" aria-labelledby="h-ins-en">
+<h2 id="h-ins-en">How to read the insights</h2>
+<p>Each finding is a simple rule about the text of the code, and these are the exact conditions. A finding tells you where to look, not that there is a defect.</p>
+<h3>Critical</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Finding</th><th scope="col">When it appears</th><th scope="col">Why it matters</th></tr></thead>
+<tbody>
+<tr><th scope="row">Kill erases an entire global</th><td><code>Kill ^Name</code>, without a subscript</td><td>Erases every node of the global</td></tr>
+<tr><th scope="row">Quit with a value inside Try or Catch</th><td><code>Quit value</code> inside one of these blocks</td><td>The documentation says this causes a compile error and points to <code>Return</code> <sup><a href="#ref-4-en">[4]</a></sup></td></tr>
+<tr><th scope="row">SQL built by concatenation</th><td>A text starting with SELECT, INSERT, UPDATE, DELETE, CALL or WITH, joined with <code>_</code> to a value that is not fixed text, or <code>%Prepare</code> and <code>%ExecDirect</code> with <code>_</code></td><td>Risk of SQL injection. Dynamic SQL accepts <code>?</code> parameters <sup><a href="#ref-7-en">[7]</a></sup></td></tr>
+<tr><th scope="row">Password or secret in the code</th><td>A variable with password, pwd, senha, secret, token, apikey or credential in its name gets a fixed text of 3 or more characters</td><td>The secret leaks with the code</td></tr>
+</tbody>
+</table></div>
+<h3>Attention</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Finding</th><th scope="col">When it appears</th><th scope="col">Why it matters</th></tr></thead>
+<tbody>
+<tr><th scope="row">%Status thrown away</th><td><code>Do</code> on <code>%Save</code>, <code>%Delete</code>, <code>%DeleteId</code> and the like, or on a method in the files that returns <code>%Status</code></td><td>The failure goes unnoticed</td></tr>
+<tr><th scope="row">SQLCODE is not checked</th><td>The method has <code>&amp;sql</code> and never mentions <code>SQLCODE</code></td><td>100 means there was no data, and a negative value means an error <sup><a href="#ref-8-en">[8]</a></sup></td></tr>
+<tr><th scope="row">Empty Catch</th><td>A <code>Catch</code> block with no commands</td><td>The error vanishes</td></tr>
+<tr><th scope="row">Quit inside Try only leaves the Try</th><td>An argumentless <code>Quit</code> directly in a <code>Try</code></td><td>Execution continues after the <code>Catch</code> <sup><a href="#ref-4-en">[4]</a></sup></td></tr>
+<tr><th scope="row">Quit with a value inside a loop</th><td><code>Quit value</code> inside <code>For</code>, <code>While</code> or <code>Do-While</code></td><td>It does not leave the routine from inside the loop. Use <code>Return</code> <sup><a href="#ref-5-en">[5]</a></sup> <sup><a href="#ref-6-en">[6]</a></sup></td></tr>
+<tr><th scope="row">Transaction without a guaranteed rollback</th><td><code>TStart</code> without <code>TRollback</code>, or without <code>Try</code>, <code>$ZTrap</code> or <code>$ETrap</code></td><td><code>TRollback</code> undoes the transaction, and <code>$TLevel</code> tells how many are open <sup><a href="#ref-9-en">[9]</a></sup></td></tr>
+<tr><th scope="row">Lock without a timeout</th><td><code>Lock</code> without <code>:seconds</code> (<code>Lock -</code> does not count)</td><td>Without a timeout, IRIS waits indefinitely <sup><a href="#ref-10-en">[10]</a></sup></td></tr>
+<tr><th scope="row">Code run from text</th><td><code>Xecute</code>, <code>$Xecute</code> or <code>@</code> indirection</td><td>Text from outside can become a command</td></tr>
+<tr><th scope="row">Leftover debugging command</th><td><code>Break</code>, <code>ZBreak</code>, <code>ZWrite</code> or <code>ZZDump</code></td><td>Stops the process or writes data</td></tr>
+<tr><th scope="row">Halt ends the process</th><td><code>Halt</code> (not <code>Hang</code>)</td><td>Brings the caller down</td></tr>
+<tr><th scope="row">High complexity, long method, nesting</th><td>Complexity above 10, more than 60 lines of code or more than 4 levels of blocks</td><td>More paths to test and review</td></tr>
+</tbody>
+</table></div>
+<h3>Information</h3>
+<ul>
+<li><strong>%ResultSet is deprecated:</strong> the class reference marks <code>%Library.ResultSet</code> as deprecated and points to <code>%SQL.Statement</code> for dynamic SQL. The class still works. <sup><a href="#ref-11-en">[11]</a></sup></li>
+<li><strong>$ZTrap or $ETrap</strong>, <strong>Goto</strong>, <strong>private and unused in the files</strong>, <strong>method without</strong> <code>///</code> <strong>documentation</strong>, <strong>fixed address or path</strong> (URL, IP or folder) and <strong>class that accesses a global directly</strong>.</li>
+<li><strong>Recursive call:</strong> without a stop condition, calls pile up until the <code>&lt;FRAMESTACK&gt;</code> error, which means too many nested calls. <sup><a href="#ref-12-en">[12]</a></sup></li>
+<li><strong>Part the app did not understand:</strong> the flowchart and the findings of that member may be incomplete.</li>
+</ul>
+<h3>Indicators and complexity</h3>
+<p>Complexity follows McCabe's idea: how many independent paths a method has. <sup><a href="#ref-13-en">[13]</a></sup> The app uses an approximation: 1, plus each <code>If</code>, <code>ElseIf</code>, loop, <code>Catch</code> and postconditional. It is useful for comparing methods with each other. "Documented methods" counts class methods with a <code>///</code> comment. Below the list, <strong>Checks with no findings</strong> shows what was looked for and not found.</p>
+</section>
+<section id="fluxo-en" aria-labelledby="h-fluxo-en">
+<h2 id="h-fluxo-en">Flow</h2>
+<p>The <strong>Flow</strong> tab draws one method or label at a time, from the commands in the code. Choose the method in the list: the number next to the name is its complexity. Methods with more paths show the number in orange or red.</p>
+<figure>
+<img src="rc_images/IrisCodeInsightsSimbolos-en.svg" alt="The flowchart symbols: Start (name and arguments); Commands (Set, Kill and New grouped); Decision (If, ElseIf, postconditional); Loop (For, While, Do-While); Call (method or label); Embedded SQL (&amp;sql(...)); Input and output (Write, Read, ZWrite); End of the path (Quit, Return, Goto); Error or stop (Throw, Halt, empty Catch); Try and Catch (dashed boxes). Red border: the command has a finding. Click a block to see the whole command." loading="lazy">
+<figcaption>Each shape has a meaning, and the red border marks a command with a finding.</figcaption>
+</figure>
+<ul>
+<li><strong>Group simple commands</strong> joins consecutive commands such as <code>Set</code>, <code>Kill</code> and <code>New</code> into one block. Clear it to see one block per command.</li>
+<li><strong>Click</strong> a block to see the whole command, the line and the findings. <strong>See code</strong> opens the line. <strong>Double-click</strong> a call to open the flow of the called method.</li>
+<li>Drag the background to move, use the zoom buttons or <strong>Fit</strong>, and <strong>Download SVG</strong> to save the picture.</li>
+<li>Below the drawing, <strong>Member details</strong> shows the declaration, the documentation, what it calls, who calls it and the data it uses.</li>
+</ul>
+<aside class="note"><p>The drawing follows the structure of the code, not the execution. <code>Quit</code>, <code>Return</code>, <code>Goto</code> and <code>Continue</code> appear as the end of a path, without the arrow to where execution goes next. An <code>ElseIf</code> becomes a new diamond on the "no" side. A <code>Quit:condition</code> becomes a decision. In dot syntax, the block appears as <strong>Do (dot block)</strong>.</p></aside>
+</section>
+<section id="dep-en" aria-labelledby="h-dep-en">
+<h2 id="h-dep-en">Dependencies</h2>
+<p>The <strong>Dependencies</strong> tab shows the map of who calls whom. The columns follow the direction of the calls: callers are on the left. The thicker the line, the more calls.</p>
+<ul>
+<li><strong>Classes</strong> groups everything by class or routine and shows inheritance as a purple dashed line. <strong>Methods</strong> shows each method, the REST routes that reach it and the message targets.</li>
+<li><strong>External</strong>, <strong>Tables</strong> and <strong>Globals</strong> turn those nodes on and off. "Outside the files" is a class or routine that is cited but that you did not load.</li>
+<li>A line that goes back to the left, with short dashes, closes a cycle of calls.</li>
+<li>Click a node to highlight its links. The panel on the right lists what goes out and what comes in, with shortcuts to the flow and the code.</li>
+</ul>
+<aside class="note"><p>A call through a variable, such as <code>obj.Method()</code>, is linked only when the type appears in the method itself: in <code>#dim</code>, in an argument or in <code>%New</code> and <code>%OpenId</code>. Calls built at run time, such as <code>$ClassMethod</code> or indirection, do not appear. To fit on screen, the map shows up to 180 nodes and says how many were left out.</p></aside>
+</section>
+<section id="outras-en" aria-labelledby="h-outras-en">
+<h2 id="h-outras-en">Members, Data and Code</h2>
+<ul>
+<li><strong>Members:</strong> the table of all members, with type, lines, complexity, nesting, documentation and calls. Click a column title to sort, and use the filter and the type to narrow the list.</li>
+<li><strong>Data:</strong> the SQL tables, with the operations and the form (<code>&amp;sql</code>, dynamic SQL or class Query), and the globals, with the kind of access: read, write, Kill or Lock. The class is linked to the table by the default SQL name: the package with <code>_</code> instead of the dot, plus the class name, or the <code>SqlTableName</code>. REST routes come from <code>XData UrlMap</code>, and messages from <code>SendRequestSync</code>, <code>SendRequestAsync</code> and the <code>&lt;call target&gt;</code> elements of a BPL.</li>
+<li><strong>Code:</strong> the file with syntax highlighting. Choose the file, type the number in <strong>line</strong> and click <strong>Go</strong>.</li>
+<li><strong>Search:</strong> the field at the top finds classes, methods and labels in all files.</li>
+</ul>
+</section>
+<section id="rel-en" aria-labelledby="h-rel-en">
+<h2 id="h-rel-en">Report and privacy</h2>
+<p><strong>Report</strong> creates a Markdown text with the summary, the findings, the places with the code excerpt and the most complex methods, to attach to a ticket, a code review or a wiki.</p>
+<aside class="note"><p>The report contains code excerpts, and password findings show the variable name. Before sending it to someone or to an AI, review the text and remove secrets, addresses and customer names.</p></aside>
+<p><strong>New</strong> goes back to the start screen and clears the analysis from memory. The files on your computer do not change.</p>
+</section>
+<section id="ia-en" aria-labelledby="h-ia-en">
+<h2 id="h-ia-en">AI prompts</h2>
+<p>The app shows where to look. You still need to understand why, decide on the fix and explain it to the team. An AI helps with these three tasks, but it is also confidently wrong: it invents system methods, mixes up <code>Quit</code> and <code>Return</code> and proposes code that does not compile. Treat the answer as a draft from a colleague in a hurry. To write better prompts, see the <a href="PromptTutorial.html#en">prompt tutorial</a>.</p>
+<figure>
+<img src="rc_images/IrisCodeInsightsIA-en.svg" alt="Six steps: the app generates the report or you copy the method, you remove secrets and customer data, the AI explains and proposes citing the exact excerpt, the app checks it in the flow and the line, you compile and test outside production, and the team reviews before publishing. From the review, you go back to the AI with the new code." loading="lazy">
+<figcaption>The AI explains and proposes. Testing in IRIS and the team review decide.</figcaption>
+</figure>
+<blockquote><p><strong>Before pasting:</strong> code is company property and may contain passwords, addresses and business rules. The app sends nothing to the network, but the AI service receives everything you paste into it. Remove the secrets the app pointed out, replace customer names and follow your organization's policy on AI use.</p></blockquote>
+<p>Replace the parts in brackets and paste into the AI tool you use. Each prompt works on its own.</p>
+<h3>1. Prioritize the findings</h3>
+<p>In <strong>Report</strong>, use <strong>Copy</strong>, review the text and paste it at the end of the prompt.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-en-1" data-done="Copied">Copy</button><pre class="code"><code id="prompt-en-1">You are a developer experienced in InterSystems IRIS and ObjectScript.
+Below is the report of a tool that reads the code without compiling it.
+
+Context: [what the system does and what you need to change]
+
+Based only on the report:
+1. Order the findings by real risk in this context and say why.
+2. Point out those that may be false positives and what to check in the code to decide.
+3. Suggest the order of the fixes, grouping what can go in the same change.
+4. Separate what is in the report from what is your assumption.
+
+Do not invent classes, methods or IRIS behaviors. If information is missing, say which.
+
+Report:
+[paste the report]</code></pre></div>
+<h3>2. Explain a method</h3>
+<p>In the <strong>Flow</strong> tab, use <strong>See code</strong> and copy the method. In <strong>Member details</strong>, copy the <strong>Calls</strong> and <strong>Called by</strong> lists.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-en-2" data-done="Copied">Copy</button><pre class="code"><code id="prompt-en-2">Explain the ObjectScript method below to someone who will maintain it.
+
+Class: [class name and what it represents]
+Who calls this method: [list]
+What it calls: [list]
+
+Code:
+[paste the method]
+
+Answer:
+1. What the method does, in a few sentences.
+2. The possible paths, including errors and early exits.
+3. What it reads and writes: properties, globals, tables and transactions.
+4. Fragile points, citing the line.
+
+Remember that an argumentless Quit inside Try only leaves the Try block. If you do not know what a called method does, say so instead of guessing.</code></pre></div>
+<h3>3. Fix a finding</h3>
+<p>Copy the name and explanation of the finding from the app and the code around the line. Ask for the smallest possible change.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-en-3" data-done="Copied">Copy</button><pre class="code"><code id="prompt-en-3">The tool reported this finding in InterSystems IRIS ObjectScript code:
+
+Finding: [name and explanation of the finding]
+Line: [number]
+
+Excerpt:
+[paste the method or the lines around it]
+
+1. Confirm whether the finding applies to this excerpt and explain why.
+2. Propose the smallest possible fix, showing the code before and after.
+3. Say what changes in behavior and what can break for the callers.
+4. Say how to test the fix.
+
+Use only features you know exist in IRIS. If you are not sure of the syntax, say so.</code></pre></div>
+<h3>4. Split a complex method</h3>
+<p>Use the methods in the <strong>Most complex methods</strong> card. Ask it to keep the behavior, because replacing <code>Quit</code> with <code>Return</code> can change the flow. <sup><a href="#ref-5-en">[5]</a></sup> <sup><a href="#ref-6-en">[6]</a></sup></p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-en-4" data-done="Copied">Copy</button><pre class="code"><code id="prompt-en-4">The ObjectScript method below has complexity [number] and [number] lines.
+
+[paste the method]
+
+Propose a reorganization that:
+1. Keeps exactly the same behavior, including the %Status return and the transactions.
+2. Extracts parts with their own purpose into private methods with clear names.
+3. Uses Return when the intent is to leave the method, and explains each change from Quit to Return.
+4. Lists the test cases that prove nothing changed.
+
+Show the full code. Do not rename public methods or change the signature.</code></pre></div>
+<h3>5. Document a class</h3>
+<p>Useful for the <strong>Method without documentation</strong> finding. Check each sentence against the code: the AI may describe what the name suggests, not what the code does.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-en-5" data-done="Copied">Copy</button><pre class="code"><code id="prompt-en-5">Write /// comments for the ObjectScript class below, in the style of the IRIS class reference.
+
+[paste the class]
+
+For the class and for each method:
+1. One sentence about what it does.
+2. The arguments and the return value.
+3. Side effects: globals, tables, transactions and Lock.
+
+Write in [language]. Describe only what the code shows. When it is not possible to know, write "check" instead of guessing.</code></pre></div>
+<h3>6. Plan the tests</h3>
+<p>Ask for test cases based on the flowchart: each diamond has two sides to cover.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-en-6" data-done="Copied">Copy</button><pre class="code"><code id="prompt-en-6">I want to test the ObjectScript method below before changing it.
+
+[paste the method]
+
+Test format used by the team: [e.g. %UnitTest.TestCase, or describe it]
+
+1. List the paths of the method and one test case for each.
+2. Include the error cases: error %Status, exception, SQLCODE other than 0.
+3. Say what data must exist beforehand and how to clean it up afterwards.
+4. Write the test code.
+
+Do not use assertion methods you are not sure exist. If you need one, ask.</code></pre></div>
+<h3>7. Modernize old code</h3>
+<p>For <code>$ZTrap</code>, <code>%ResultSet</code> and dot syntax. The class reference points to <code>%SQL.Statement</code> instead of <code>%ResultSet</code>. <sup><a href="#ref-11-en">[11]</a></sup></p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-en-7" data-done="Copied">Copy</button><pre class="code"><code id="prompt-en-7">Modernize the ObjectScript code below without changing what it does.
+
+[paste the code]
+
+Replace, where present:
+1. $ZTrap or $ETrap with Try/Catch.
+2. %ResultSet with %SQL.Statement, using ? parameters instead of concatenation.
+3. Dot syntax and line If with blocks in braces.
+
+For each change, show before and after and explain the difference in behavior, if any. Point out what needs careful testing.</code></pre></div>
+<h3>8. Describe the change for review</h3>
+<p>Use it after the fix: the AI organizes the text, and you check that each statement is true.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-en-8" data-done="Copied">Copy</button><pre class="code"><code id="prompt-en-8">Write the description of a code review for the change below.
+
+Problem found: [finding and place]
+What was changed: [summary or diff]
+How it was tested: [describe]
+
+Structure:
+1. Two-sentence summary.
+2. Reason, with the finding and the line.
+3. What changes for those who use the code.
+4. Risks and how to revert.
+5. What the reviewer should look at carefully.
+
+Do not add tests, numbers or guarantees that are not here.</code></pre></div>
+<h3>How to check the answer</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">What the AI did</th><th scope="col">Why be suspicious</th><th scope="col">What to do</th></tr></thead>
+<tbody>
+<tr><td>Cited a method or class that is not in what you pasted</td><td>It may have invented it</td><td>Look it up in the app search or in the class reference</td></tr>
+<tr><td>Stated how a command behaves</td><td>It may apply to another version or be wrong</td><td>Compare with the InterSystems documentation <sup><a href="#ref-4-en">[4]</a></sup> <sup><a href="#ref-5-en">[5]</a></sup></td></tr>
+<tr><td>Replaced <code>Quit</code> with <code>Return</code>, or the other way round</td><td>It changes the flow inside <code>Try</code> and loops</td><td>Compare the flowcharts before and after in the app</td></tr>
+<tr><td>Delivered ready-made code</td><td>It may not compile or may change a rare case</td><td>Compile, run the tests and analyze it again in the app</td></tr>
+<tr><td>Suggested an index, a Lock or a transaction</td><td>It affects other processes</td><td>Assess it with whoever runs the environment and test outside production</td></tr>
+</tbody>
+</table></div>
+<aside class="note"><p>After the fix, open the new code in the app: the finding should be gone, and no new one should appear.</p></aside>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+<section id="lim-en" aria-labelledby="h-lim-en">
+<h2 id="h-lim-en">Common mistakes and limitations</h2>
+<h3>Reading mistakes</h3>
+<ul>
+<li><strong>Treating a finding as a defect.</strong> A <code>Kill ^Global</code> may be exactly what the method should do. Confirm in the code.</li>
+<li><strong>Analyzing one class alone.</strong> Without the superclasses and the called classes, many links show up as "Outside the files".</li>
+<li><strong>Looking for the cited line in the XML.</strong> In an XML export, the lines are those of the converted text, in the <strong>Code</strong> tab.</li>
+<li><strong>Thinking low complexity means correct code.</strong> It measures paths, not correctness.</li>
+</ul>
+<h3>Limitations</h3>
+<ul>
+<li><strong>Reading without compiling.</strong> The app does not expand macros, does not resolve inheritance outside the files and can be wrong on rare constructs.</li>
+<li><strong>Sample code only.</strong> The app was tested with the made-up sample and with excerpts written for the test, not with production code.</li>
+<li><strong>Other languages.</strong> Methods in Python or another language have no flowchart. The app counts the lines and the <code>iris.cls()</code> calls.</li>
+<li><strong>Size.</strong> Files over 30 MB are skipped. The map shows up to 180 nodes, and the members table up to 1,500 rows.</li>
+<li><strong>Browsers.</strong> Tested in Chromium. Firefox, Safari and real phones were not tested.</li>
+</ul>
+</section>
+<section id="rev-en" aria-labelledby="h-rev-en">
+<h2 id="h-rev-en">Quick review</h2>
+<p>Try to answer before opening each question.</p>
+<div class="quiz">
+<details><summary>1. Why open several classes together?</summary><p>So the app can link the calls between them. On its own, a call to another class shows up as "Outside the files".</p></details>
+<details><summary>2. What does an argumentless Quit inside a Try do?</summary><p>It only leaves the Try block, and execution continues at the first line after the Catch. To leave the method, use Return.</p></details>
+<details><summary>3. Why does Do obj.%Save() create a finding?</summary><p>Because %Save returns a %Status, and Do throws that value away. If the save fails, nobody finds out.</p></details>
+<details><summary>4. What is the difference between Kill ^DemoAudit and Kill ^DemoAudit(id)?</summary><p>The first erases the whole global. The second erases only the node for that id.</p></details>
+<details><summary>5. What does SQLCODE = 100 mean after an &amp;sql?</summary><p>That the statement ran but found no data. Negative values mean an error.</p></details>
+<details><summary>6. What does the red border mark in the flowchart?</summary><p>A command linked to a finding. Click the block to see which one.</p></details>
+<details><summary>7. Does the code leave your computer when you open it in the app?</summary><p>No. The file blocks the network and does not store the code. But if you paste the code into an AI, it goes to that service.</p></details>
+<details><summary>8. The AI proposed a fix that looks right. What should you do before publishing it?</summary><p>Compile it, test it outside production, open the new code in the app to see whether the finding is gone and put it through the team review.</p></details>
+</div>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+<section id="ref-en" aria-labelledby="h-ref-en">
+<h2 id="h-ref-en">References</h2>
+<ol class="refs">
+<li id="ref-1-en"><strong>Giovani Perotto Mesquita</strong>, “IRIS Code Insights”, app in a single HTML file, <a href="iris-code-insights.html#en">giovanipm.github.io/iris-code-insights.html</a>.</li>
+<li id="ref-2-en"><strong>InterSystems</strong>, client-side workflow with the ObjectScript extension for VS Code, Export Code from Server command, documentation, accessed on 2 November 2026, <a href="https://docs.intersystems.com/components/csp/docbook/DocBook.UI.Page.cls?KEY=GVSCO_clientflow" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-3-en"><strong>InterSystems</strong>, %SYSTEM.OBJ class, Export method, class reference, documentation, accessed on 2 November 2026, <a href="https://docs.intersystems.com/irislatest/csp/documatic/%25CSP.Documatic.cls?LIBRARY=%25SYS&amp;CLASSNAME=%25SYSTEM.OBJ" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-4-en"><strong>InterSystems</strong>, TRY command, section on QUIT and RETURN, ObjectScript reference, documentation, accessed on 2 November 2026, <a href="https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RCOS_ctry" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-5-en"><strong>InterSystems</strong>, QUIT command, ObjectScript reference, documentation, accessed on 2 November 2026, <a href="https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RCOS_cquit" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-6-en"><strong>InterSystems</strong>, RETURN command, ObjectScript reference, documentation, accessed on 2 November 2026, <a href="https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RCOS_creturn" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-7-en"><strong>InterSystems</strong>, dynamic SQL, input parameters with ?, SQL guide, documentation, accessed on 2 November 2026, <a href="https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=GSQL_dynsql" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-8-en"><strong>InterSystems</strong>, SQLCODE values, SQL reference, documentation, accessed on 2 November 2026, <a href="https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RSQL_sqlcode" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-9-en"><strong>InterSystems</strong>, TROLLBACK command and $TLEVEL, ObjectScript reference, documentation, accessed on 2 November 2026, <a href="https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RCOS_ctrollback" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-10-en"><strong>InterSystems</strong>, LOCK command, timeout, ObjectScript reference, documentation, accessed on 2 November 2026, <a href="https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RCOS_clock" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-11-en"><strong>InterSystems</strong>, %Library.ResultSet class, marked as deprecated, class reference, documentation, accessed on 2 November 2026, <a href="https://docs.intersystems.com/irislatest/csp/documatic/%25CSP.Documatic.cls?LIBRARY=%25SYS&amp;CLASSNAME=%25Library.ResultSet" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-12-en"><strong>InterSystems</strong>, system error messages, &lt;FRAMESTACK&gt;, documentation, accessed on 2 November 2026, <a href="https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RERR_system" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-13-en"><strong>Thomas J. McCabe</strong>, “A Complexity Measure”, IEEE Transactions on Software Engineering, SE-2(4), 1976, pp. 308–320, <a href="https://doi.org/10.1109/TSE.1976.233837" rel="noopener">doi.org/10.1109/TSE.1976.233837</a>.</li>
+</ol>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== IT ===================== -->
+<div id="it" role="tabpanel" aria-labelledby="tab-it" lang="it" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html#it" data-projects>← Progetti</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>IRIS Code Insights: tutorial</h1>
+      <p class="dek">Come capire il codice ObjectScript di InterSystems IRIS prima di modificarlo: risultati con la riga esatta, diagramma di flusso di ogni metodo, mappa delle dipendenze e prompt per usare l'IA in sicurezza.</p>
+      <div class="byline">
+        <span>Di <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Pubblicato il <time datetime="2026-11-02">02/11/2026</time></span>
+        <span class="credit">Rivisto e formattato con Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-it">
+    <h2 id="toc-it">Indice</h2>
+    <ol>
+      <li><a href="#intro-it">Che cos'è IRIS Code Insights</a></li>
+      <li><a href="#obter-it">Come portare il codice nell'app</a></li>
+      <li><a href="#roteiro-it">Percorso: analizzare l'esempio</a></li>
+      <li><a href="#ins-it">Come leggere gli insight</a></li>
+      <li><a href="#fluxo-it">Flusso</a></li>
+      <li><a href="#dep-it">Dipendenze</a></li>
+      <li><a href="#outras-it">Membri, Dati e Codice</a></li>
+      <li><a href="#rel-it">Report e privacy</a></li>
+      <li><a href="#ia-it">Prompt per l'IA</a></li>
+      <li><a href="#lim-it">Errori comuni e limiti</a></li>
+      <li><a href="#rev-it">Ripasso rapido</a></li>
+      <li><a href="#ref-it">Riferimenti</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-it" aria-labelledby="h-intro-it">
+<h2 id="h-intro-it">Che cos'è IRIS Code Insights</h2>
+<p>Prima di modificare una classe di InterSystems IRIS, arrivano quasi sempre le stesse domande: cosa fa questo codice, chi lo chiama e dove può rompersi? IRIS Code Insights legge classi e routine ObjectScript e risponde con tre viste: risultati ordinati per gravità, il diagramma di flusso di ogni metodo e una mappa di chi chiama chi. <sup><a href="#ref-1-it">[1]</a></sup></p>
+<p>È un unico file HTML, senza installazione, senza account e senza server.</p>
+<p><a class="launch" href="iris-code-insights.html#it">Apri IRIS Code Insights <span aria-hidden="true">→</span></a></p>
+<figure>
+<img src="rc_images/IrisCodeInsightsInicio-it.png" alt="Schermata iniziale di IRIS Code Insights, con l'area per trascinare i file, i pulsanti Apri file, Incolla codice e Vedi un esempio, e le schede Cosa legge, Cosa ottieni e Il tuo codice resta qui" width="1600" height="900" loading="lazy">
+<figcaption>La schermata iniziale. Trascina i file, incolla il codice o apri l'esempio.</figcaption>
+</figure>
+<h3>Come l'app tratta il tuo codice</h3>
+<ul>
+<li><strong>Niente esce dal tuo computer.</strong> Il file blocca le connessioni di rete, e la lettura avviene nel browser.</li>
+<li><strong>Il codice non viene conservato.</strong> Chiudendo la pagina, l'analisi scompare. L'app salva solo la lingua e il tema.</li>
+</ul>
+<aside class="note"><p>L'app legge il testo del codice, senza compilarlo e senza accedere a IRIS. I risultati sono segnali da verificare, non errori confermati. È uno strumento indipendente, non affiliato a InterSystems.</p></aside>
+</section>
+<section id="obter-it" aria-labelledby="h-obter-it">
+<h2 id="h-obter-it">Come portare il codice nell'app</h2>
+<p>L'app accetta quattro formati. Apri più file insieme: solo così può collegare la chiamata di una classe al metodo di un'altra.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Formato</th><th scope="col">Esempio</th><th scope="col">Cosa fa l'app</th></tr></thead>
+<tbody>
+<tr><th scope="row">Classe in UDL</th><td><code>Demo.Orders.Order.cls</code></td><td>Legge la dichiarazione, i membri, la documentazione <code>///</code> e il codice di ogni metodo</td></tr>
+<tr><th scope="row">Routine</th><td><code>DEMOUTIL.mac</code>, <code>.int</code></td><td>Separa le etichette e legge il codice di ognuna, anche con la vecchia sintassi a punti</td></tr>
+<tr><th scope="row">Include</th><td><code>Demo.inc</code></td><td>Elenca le macro <code>#define</code></td></tr>
+<tr><th scope="row">Esportazione XML</th><td><code>demo.xml</code></td><td>Converte ogni classe e routine in UDL e la legge come sopra</td></tr>
+</tbody>
+</table></div>
+<h3>Tre modi per ottenere i file</h3>
+<ol>
+<li><strong>VS Code:</strong> con l'estensione InterSystems ObjectScript, usa il comando <strong>ObjectScript: Export Code from Server</strong>. Per impostazione predefinita, i file vanno nella cartella <code>src</code> del workspace. <sup><a href="#ref-2-it">[2]</a></sup></li>
+<li><strong>Terminal di IRIS:</strong> il metodo <code>Export</code> della classe <code>%SYSTEM.OBJ</code> crea un XML con gli elementi richiesti, come classi e routine. <sup><a href="#ref-3-it">[3]</a></sup></li>
+</ol>
+<pre class="code"><code>Do $SYSTEM.OBJ.Export("Demo.*.cls","/tmp/demo.xml")</code></pre>
+<ol start="3">
+<li><strong>Incollare:</strong> in <strong>Incolla codice</strong>, incolla una classe, una routine o un XML. Il nome del file è facoltativo: senza nome, l'app riconosce il tipo dal contenuto.</li>
+</ol>
+<aside class="note"><p>Nell'XML, i numeri di riga citati dall'app sono quelli del testo convertito, che compare nella scheda <strong>Codice</strong>, non quelli del file XML.</p></aside>
+</section>
+<section id="roteiro-it" aria-labelledby="h-roteiro-it">
+<h2 id="h-roteiro-it">Percorso: analizzare l'esempio</h2>
+<p>Usa l'esempio dell'app: quattro file fittizi, scritti per mostrare i risultati. C'è una classe persistente di ordini, un'API REST, un business service e una vecchia routine. Quello che segue è esattamente ciò che vedrai.</p>
+<h3>1. Apri l'esempio e leggi gli indicatori</h3>
+<ol>
+<li>Apri l'app e fai clic su <strong>Vedi un esempio</strong>.</li>
+<li>Controlla in alto: 4 file, 3 classi e 1 routine, 15 metodi ed etichette, 197 righe, complessità media 2,3 (massima 6), 60% dei metodi documentati e 3 risultati critici, con 11 da verificare.</li>
+<li>I filtri mostrano 18 tipi di risultato: 3 critici, 8 di attenzione e 7 di informazione.</li>
+</ol>
+<figure>
+<img src="rc_images/IrisCodeInsightsInsights-it.png" alt="Scheda Insight con gli indicatori in alto, l'elenco dei risultati ordinato per gravità, i metodi più complessi e le classi e routine" width="1600" height="900" loading="lazy">
+<figcaption>I risultati vanno dal più grave al più lieve, ognuno con la spiegazione e la correzione.</figcaption>
+</figure>
+<h3>2. Dal risultato alla riga</h3>
+<ol>
+<li>Nel risultato <strong>Kill cancella un'intera globale</strong>, fai clic su <strong>Vedi dove (1)</strong>.</li>
+<li>Fai clic su <strong>Order.Purge</strong>. La scheda <strong>Codice</strong> si apre alla riga 85, evidenziata: <code>Kill ^DemoAudit</code>.</li>
+<li>Guarda la riga 79: <code>Kill ^DemoAudit(id)</code> cancella un solo nodo e non genera un risultato. La differenza è l'indice.</li>
+</ol>
+<figure>
+<img src="rc_images/IrisCodeInsightsCodigo-it.png" alt="Scheda Codice con il file Demo.Orders.Order.cls e la riga 85, Kill ^DemoAudit, evidenziata" width="1600" height="900" loading="lazy">
+<figcaption>Ogni punto citato in un risultato apre il codice alla riga giusta.</figcaption>
+</figure>
+<h3>3. Leggi il flusso di un metodo</h3>
+<ol>
+<li>Apri la scheda <strong>Flusso</strong> e scegli <strong>Pay</strong> nell'elenco a sinistra.</li>
+<li>Il corpo sta dentro un riquadro <strong>Try</strong>, collegato al riquadro <strong>Catch ex</strong> da una freccia rossa tratteggiata: il percorso dell'errore.</li>
+<li>Il rombo <code>order.Status '= "NEW" ?</code> porta a un <strong>Quit</strong> con bordo rosso e la nota <strong>esce dal blocco corrente</strong>.</li>
+</ol>
+<figure>
+<img src="rc_images/IrisCodeInsightsFluxo-it.png" alt="Scheda Flusso con il metodo Pay: riquadro Try con i comandi, rombo di decisione, Quit con bordo rosso e riquadro Catch collegato da una freccia tratteggiata" width="1600" height="900" loading="lazy">
+<figcaption>Il Quit dentro il Try ha il bordo rosso perché esce solo dal blocco Try.</figcaption>
+</figure>
+<p>Perché il bordo rosso? Secondo la documentazione, un <code>Quit</code> senza argomento dentro un <code>Try</code> porta l'esecuzione alla prima riga dopo il <code>Catch</code>, non fuori dal metodo. <sup><a href="#ref-4-it">[4]</a></sup> Qui la riga successiva è <code>Quit sc</code>, quindi l'effetto è quello atteso. Ma se qualcuno aggiunge codice dopo il <code>Catch</code>, verrà eseguito anche per gli ordini che non sono nuovi. <code>Return</code> renderebbe esplicita l'intenzione. <sup><a href="#ref-6-it">[6]</a></sup></p>
+<p>Nello stesso metodo ci sono altri tre risultati: <code>Do order.%Save()</code> scarta il <code>%Status</code>, l'<code>&amp;sql</code> non controlla <code>SQLCODE</code> e il <code>TStart</code> non ha un <code>TRollback</code> nel <code>Catch</code>.</p>
+<h3>4. Guarda chi chiama chi</h3>
+<ol>
+<li>Apri la scheda <strong>Dipendenze</strong> e fai clic su <strong>Metodi</strong>.</li>
+<li>Fai clic sul nodo <strong>PayOrder</strong>. Il percorso viene evidenziato: la rotta <code>POST /orders/:id/pay</code> arriva a lui, e lui chiama <code>Notify</code>, <code>Pay</code> e <code>Sync.Send</code>.</li>
+</ol>
+<figure>
+<img src="rc_images/IrisCodeInsightsDependencias-it.png" alt="Scheda Dipendenze al livello Metodi, con il nodo PayOrder selezionato, la rotta POST evidenziata e il pannello Nodo selezionato con l'elenco delle chiamate" width="1600" height="900" loading="lazy">
+<figcaption>Selezionare un nodo attenua il resto ed elenca i collegamenti nel pannello a destra.</figcaption>
+</figure>
+<h3>5. Controlla i dati usati</h3>
+<p>La scheda <strong>Dati</strong> mostra due tabelle SQL e quattro globali. La globale <code>^DemoAudit</code> viene letta, scritta, cancellata con <code>Kill</code> e bloccata con <code>Lock</code>, in 8 usi. Compaiono anche la rotta REST e il messaggio per <code>Demo.ERP.Operation</code>. Questa classe di destinazione non è nei file.</p>
+<figure>
+<img src="rc_images/IrisCodeInsightsDados-it.png" alt="Scheda Dati con le tabelle SQL e le operazioni, le globali con i tipi di accesso, le rotte REST e i messaggi di interoperabilità" width="1600" height="900" loading="lazy">
+<figcaption>Tabelle, globali, rotte e messaggi, ognuno con il metodo che lo usa.</figcaption>
+</figure>
+<h3>6. Genera il report</h3>
+<ol>
+<li>Fai clic su <strong>Report</strong>.</li>
+<li>Rivedi il testo e usa <strong>Copia</strong> o <strong>Scarica .md</strong>.</li>
+</ol>
+<figure>
+<img src="rc_images/IrisCodeInsightsRelatorio-it.png" alt="Finestra Report in Markdown con il riepilogo dell'analisi e l'elenco dei risultati, e i pulsanti Copia e Scarica .md" width="1600" height="900" loading="lazy">
+<figcaption>Il report contiene estratti del codice. Rivedilo prima di inviarlo.</figcaption>
+</figure>
+<p>Risultato: in pochi minuti sai da dove cominciare. C'è una password nel codice, un SQL esposto all'injection e un <code>Kill</code> che cancella l'intero audit. Sai anche quali metodi e tabelle tocca ogni correzione.</p>
+<a class="back" href="#top">↑ Torna all'inizio</a>
+</section>
+<section id="ins-it" aria-labelledby="h-ins-it">
+<h2 id="h-ins-it">Come leggere gli insight</h2>
+<p>Ogni risultato è una regola semplice sul testo del codice, e queste sono le condizioni esatte. Un risultato dice dove guardare, non che c'è un difetto.</p>
+<h3>Critico</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Risultato</th><th scope="col">Quando compare</th><th scope="col">Perché conta</th></tr></thead>
+<tbody>
+<tr><th scope="row">Kill cancella un'intera globale</th><td><code>Kill ^Nome</code>, senza indice</td><td>Cancella tutti i nodi della globale</td></tr>
+<tr><th scope="row">Quit con valore dentro Try o Catch</th><td><code>Quit valore</code> dentro uno di questi blocchi</td><td>La documentazione dice che causa un errore di compilazione e indica <code>Return</code> <sup><a href="#ref-4-it">[4]</a></sup></td></tr>
+<tr><th scope="row">SQL costruito per concatenazione</th><td>Un testo che inizia con SELECT, INSERT, UPDATE, DELETE, CALL o WITH, unito con <code>_</code> a un valore che non è testo fisso, oppure <code>%Prepare</code> e <code>%ExecDirect</code> con <code>_</code></td><td>Rischio di SQL injection. L'SQL dinamico accetta parametri <code>?</code> <sup><a href="#ref-7-it">[7]</a></sup></td></tr>
+<tr><th scope="row">Password o segreto nel codice</th><td>Una variabile con password, pwd, senha, secret, token, apikey o credential nel nome riceve un testo fisso di 3 o più caratteri</td><td>Il segreto trapela con il codice</td></tr>
+</tbody>
+</table></div>
+<h3>Attenzione</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Risultato</th><th scope="col">Quando compare</th><th scope="col">Perché conta</th></tr></thead>
+<tbody>
+<tr><th scope="row">%Status scartato</th><td><code>Do</code> su <code>%Save</code>, <code>%Delete</code>, <code>%DeleteId</code> e simili, o su un metodo dei file che restituisce <code>%Status</code></td><td>Il fallimento passa inosservato</td></tr>
+<tr><th scope="row">SQLCODE non viene controllato</th><td>Il metodo ha <code>&amp;sql</code> e non cita mai <code>SQLCODE</code></td><td>100 significa che non c'erano dati, un valore negativo indica un errore <sup><a href="#ref-8-it">[8]</a></sup></td></tr>
+<tr><th scope="row">Catch vuoto</th><td>Blocco <code>Catch</code> senza comandi</td><td>L'errore sparisce</td></tr>
+<tr><th scope="row">Quit dentro di Try esce solo dal Try</th><td><code>Quit</code> senza argomento direttamente in un <code>Try</code></td><td>L'esecuzione prosegue dopo il <code>Catch</code> <sup><a href="#ref-4-it">[4]</a></sup></td></tr>
+<tr><th scope="row">Quit con valore dentro un ciclo</th><td><code>Quit valore</code> dentro <code>For</code>, <code>While</code> o <code>Do-While</code></td><td>Non esce dalla routine dall'interno del ciclo. Usa <code>Return</code> <sup><a href="#ref-5-it">[5]</a></sup> <sup><a href="#ref-6-it">[6]</a></sup></td></tr>
+<tr><th scope="row">Transazione senza rollback garantito</th><td><code>TStart</code> senza <code>TRollback</code>, o senza <code>Try</code>, <code>$ZTrap</code> o <code>$ETrap</code></td><td><code>TRollback</code> annulla la transazione, e <code>$TLevel</code> dice quante sono aperte <sup><a href="#ref-9-it">[9]</a></sup></td></tr>
+<tr><th scope="row">Lock senza timeout</th><td><code>Lock</code> senza <code>:secondi</code> (il <code>Lock -</code> non conta)</td><td>Senza timeout, IRIS aspetta indefinitamente <sup><a href="#ref-10-it">[10]</a></sup></td></tr>
+<tr><th scope="row">Codice eseguito da testo</th><td><code>Xecute</code>, <code>$Xecute</code> o indirezione con <code>@</code></td><td>Un testo esterno può diventare un comando</td></tr>
+<tr><th scope="row">Comando di debug dimenticato</th><td><code>Break</code>, <code>ZBreak</code>, <code>ZWrite</code> o <code>ZZDump</code></td><td>Ferma il processo o scrive dati</td></tr>
+<tr><th scope="row">Halt termina il processo</th><td><code>Halt</code> (e non <code>Hang</code>)</td><td>Fa cadere il chiamante</td></tr>
+<tr><th scope="row">Complessità alta, metodo lungo, annidamento</th><td>Complessità sopra 10, più di 60 righe di codice o più di 4 livelli di blocchi</td><td>Più percorsi da testare e rivedere</td></tr>
+</tbody>
+</table></div>
+<h3>Informazione</h3>
+<ul>
+<li><strong>%ResultSet è deprecato:</strong> il riferimento delle classi indica <code>%Library.ResultSet</code> come deprecato e <code>%SQL.Statement</code> per l'SQL dinamico. La classe funziona ancora. <sup><a href="#ref-11-it">[11]</a></sup></li>
+<li><strong>$ZTrap o $ETrap</strong>, <strong>Goto</strong>, <strong>privato e non usato nei file</strong>, <strong>metodo senza documentazione</strong> <code>///</code>, <strong>indirizzo o percorso fisso</strong> (URL, IP o cartella) e <strong>classe che accede direttamente a una globale</strong>.</li>
+<li><strong>Chiamata ricorsiva:</strong> senza condizione di arresto, le chiamate si accumulano fino all'errore <code>&lt;FRAMESTACK&gt;</code>, che indica troppe chiamate annidate. <sup><a href="#ref-12-it">[12]</a></sup></li>
+<li><strong>Parte che l'app non ha capito:</strong> il diagramma e i risultati di quel membro possono essere incompleti.</li>
+</ul>
+<h3>Indicatori e complessità</h3>
+<p>La complessità segue l'idea di McCabe: quanti percorsi indipendenti ha un metodo. <sup><a href="#ref-13-it">[13]</a></sup> L'app usa un'approssimazione: 1, più ogni <code>If</code>, <code>ElseIf</code>, ciclo, <code>Catch</code> e postcondizionale. Serve a confrontare i metodi tra loro. "Metodi documentati" conta i metodi di classe con commento <code>///</code>. Sotto l'elenco, <strong>Verifiche senza risultati</strong> mostra cosa è stato cercato e non trovato.</p>
+</section>
+<section id="fluxo-it" aria-labelledby="h-fluxo-it">
+<h2 id="h-fluxo-it">Flusso</h2>
+<p>La scheda <strong>Flusso</strong> disegna un metodo o un'etichetta alla volta, a partire dai comandi del codice. Scegli il metodo nell'elenco: il numero accanto al nome è la complessità. I metodi con più percorsi mostrano il numero in arancione o rosso.</p>
+<figure>
+<img src="rc_images/IrisCodeInsightsSimbolos-it.svg" alt="I simboli del diagramma di flusso: Inizio (nome e argomenti); Comandi (Set, Kill e New raggruppati); Decisione (If, ElseIf, postcondizionale); Ciclo (For, While, Do-While); Chiamata (metodo o etichetta); SQL incorporato (&amp;sql(...)); Ingresso e uscita (Write, Read, ZWrite); Fine del percorso (Quit, Return, Goto); Errore o arresto (Throw, Halt, Catch vuoto); Try e Catch (riquadri tratteggiati). Bordo rosso: il comando ha un risultato. Fai clic su un blocco per vedere il comando intero." loading="lazy">
+<figcaption>Ogni forma ha un significato, e il bordo rosso segna il comando con un risultato.</figcaption>
+</figure>
+<ul>
+<li><strong>Raggruppa i comandi semplici</strong> unisce comandi consecutivi come <code>Set</code>, <code>Kill</code> e <code>New</code> in un solo blocco. Deselezionalo per vedere un blocco per comando.</li>
+<li><strong>Fai clic</strong> su un blocco per vedere il comando intero, la riga e i risultati. <strong>Vedi codice</strong> apre la riga. Un <strong>doppio clic</strong> su una chiamata apre il flusso del metodo chiamato.</li>
+<li>Trascina lo sfondo per spostarti, usa i pulsanti di zoom o <strong>Adatta</strong>, e <strong>Scarica SVG</strong> per salvare la figura.</li>
+<li>Sotto il disegno, <strong>Dettagli del membro</strong> mostra la dichiarazione, la documentazione, cosa chiama, chi lo chiama e i dati che usa.</li>
+</ul>
+<aside class="note"><p>Il disegno segue la struttura del codice, non l'esecuzione. <code>Quit</code>, <code>Return</code>, <code>Goto</code> e <code>Continue</code> compaiono come fine del percorso, senza la freccia verso dove va l'esecuzione. Un <code>ElseIf</code> diventa un nuovo rombo sul lato "no". Un <code>Quit:condizione</code> diventa una decisione. Nella sintassi a punti, il blocco compare come <strong>Do (blocco a punti)</strong>.</p></aside>
+</section>
+<section id="dep-it" aria-labelledby="h-dep-it">
+<h2 id="h-dep-it">Dipendenze</h2>
+<p>La scheda <strong>Dipendenze</strong> mostra la mappa di chi chiama chi. Le colonne seguono la direzione delle chiamate: chi chiama sta a sinistra. Più la linea è spessa, più chiamate ci sono.</p>
+<ul>
+<li><strong>Classi</strong> raggruppa tutto per classe o routine e mostra l'ereditarietà con una linea viola tratteggiata. <strong>Metodi</strong> mostra ogni metodo, le rotte REST che arrivano a lui e le destinazioni dei messaggi.</li>
+<li><strong>Esterni</strong>, <strong>Tabelle</strong> e <strong>Globali</strong> attivano e disattivano quei nodi. "Fuori dai file" è una classe o routine citata che non hai caricato.</li>
+<li>Una linea che torna a sinistra, a trattini corti, chiude un ciclo di chiamate.</li>
+<li>Fai clic su un nodo per evidenziarne i collegamenti. Il pannello a destra elenca cosa esce e cosa arriva, con scorciatoie al flusso e al codice.</li>
+</ul>
+<aside class="note"><p>Una chiamata tramite variabile, come <code>obj.Metodo()</code>, viene collegata solo quando il tipo compare nel metodo stesso: in <code>#dim</code>, nell'argomento o in <code>%New</code> e <code>%OpenId</code>. Le chiamate costruite in esecuzione, come <code>$ClassMethod</code> o l'indirezione, non compaiono. Per stare sullo schermo, la mappa mostra fino a 180 nodi e avvisa quanti ne sono rimasti fuori.</p></aside>
+</section>
+<section id="outras-it" aria-labelledby="h-outras-it">
+<h2 id="h-outras-it">Membri, Dati e Codice</h2>
+<ul>
+<li><strong>Membri:</strong> la tabella di tutti i membri, con tipo, righe, complessità, annidamento, documentazione e chiamate. Fai clic sul titolo di una colonna per ordinare e usa il filtro e il tipo per ridurre l'elenco.</li>
+<li><strong>Dati:</strong> le tabelle SQL, con le operazioni e la forma (<code>&amp;sql</code>, SQL dinamico o Query della classe), e le globali, con il tipo di accesso: lettura, scrittura, Kill o Lock. La classe viene collegata alla tabella con il nome SQL predefinito: il pacchetto con <code>_</code> al posto del punto, più il nome della classe, oppure con <code>SqlTableName</code>. Le rotte REST vengono da <code>XData UrlMap</code>, e i messaggi da <code>SendRequestSync</code>, <code>SendRequestAsync</code> e dai <code>&lt;call target&gt;</code> di una BPL.</li>
+<li><strong>Codice:</strong> il file con l'evidenziazione della sintassi. Scegli il file, scrivi il numero in <strong>riga</strong> e fai clic su <strong>Vai</strong>.</li>
+<li><strong>Ricerca:</strong> il campo in alto trova classi, metodi ed etichette in tutti i file.</li>
+</ul>
+</section>
+<section id="rel-it" aria-labelledby="h-rel-it">
+<h2 id="h-rel-it">Report e privacy</h2>
+<p><strong>Report</strong> genera un testo in Markdown con il riepilogo, i risultati, i punti con l'estratto del codice e i metodi più complessi, da allegare a un ticket, a una revisione del codice o a una wiki.</p>
+<aside class="note"><p>Il report contiene estratti del codice, e i risultati sulle password mostrano il nome della variabile. Prima di inviarlo a qualcuno o a un'IA, rivedi il testo e togli segreti, indirizzi e nomi di clienti.</p></aside>
+<p><strong>Nuovo</strong> torna alla schermata iniziale e toglie l'analisi dalla memoria. I file sul tuo computer non cambiano.</p>
+</section>
+<section id="ia-it" aria-labelledby="h-ia-it">
+<h2 id="h-ia-it">Prompt per l'IA</h2>
+<p>L'app mostra dove guardare. Resta da capire il perché, decidere la correzione e spiegarla al team. Un'IA aiuta in questi tre compiti, ma sbaglia anche con sicurezza: inventa metodi di sistema, confonde <code>Quit</code> e <code>Return</code> e propone codice che non compila. Tratta la risposta come la bozza di un collega di fretta. Per scrivere prompt migliori, vedi il <a href="PromptTutorial.html#it">tutorial sui prompt</a>.</p>
+<figure>
+<img src="rc_images/IrisCodeInsightsIA-it.svg" alt="Sei passi: l'app genera il report o tu copi il metodo, togli segreti e dati dei clienti, l'IA spiega e propone citando l'estratto esatto, l'app verifica nel flusso e nella riga, compili e testi fuori produzione e il team rivede prima di pubblicare. Dalla revisione si torna all'IA con il codice nuovo." loading="lazy">
+<figcaption>L'IA spiega e propone. A decidere sono il test in IRIS e la revisione del team.</figcaption>
+</figure>
+<blockquote><p><strong>Prima di incollare:</strong> il codice è proprietà dell'azienda e può contenere password, indirizzi e regole di business. L'app non invia nulla in rete, ma il servizio di IA riceve tutto ciò che incolli. Togli i segreti che l'app ha segnalato, sostituisci i nomi dei clienti e segui la politica della tua organizzazione sull'uso dell'IA.</p></blockquote>
+<p>Sostituisci le parti tra parentesi quadre e incolla nello strumento di IA che usi. Ogni prompt funziona da solo.</p>
+<h3>1. Dare priorità ai risultati</h3>
+<p>In <strong>Report</strong>, usa <strong>Copia</strong>, rivedi il testo e incollalo alla fine del prompt.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-it-1" data-done="Copiato">Copia</button><pre class="code"><code id="prompt-it-1">Sei uno sviluppatore esperto di InterSystems IRIS e ObjectScript.
+Qui sotto c'è il report di uno strumento che legge il codice senza compilarlo.
+
+Contesto: [cosa fa il sistema e cosa devi modificare]
+
+Basandoti solo sul report:
+1. Ordina i risultati per rischio reale in questo contesto e spiega perché.
+2. Indica quelli che possono essere falsi positivi e cosa controllare nel codice per decidere.
+3. Suggerisci l'ordine delle correzioni, raggruppando ciò che può andare nella stessa modifica.
+4. Separa ciò che è nel report da ciò che è una tua supposizione.
+
+Non inventare classi, metodi o comportamenti di IRIS. Se manca un'informazione, di' quale.
+
+Report:
+[incolla il report]</code></pre></div>
+<h3>2. Spiegare un metodo</h3>
+<p>Nella scheda <strong>Flusso</strong>, usa <strong>Vedi codice</strong> e copia il metodo. In <strong>Dettagli del membro</strong>, copia gli elenchi <strong>Chiama</strong> e <strong>Chiamato da</strong>.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-it-2" data-done="Copiato">Copia</button><pre class="code"><code id="prompt-it-2">Spiega il metodo ObjectScript qui sotto a chi dovrà mantenerlo.
+
+Classe: [nome della classe e cosa rappresenta]
+Chi chiama questo metodo: [elenco]
+Cosa chiama: [elenco]
+
+Codice:
+[incolla il metodo]
+
+Rispondi:
+1. Cosa fa il metodo, in poche frasi.
+2. I percorsi possibili, compresi errori e uscite anticipate.
+3. Cosa legge e scrive: proprietà, globali, tabelle e transazioni.
+4. Punti fragili, citando la riga.
+
+Ricorda che un Quit senza argomento dentro un Try esce solo dal blocco Try. Se non sai cosa fa un metodo chiamato, dillo invece di supporlo.</code></pre></div>
+<h3>3. Correggere un risultato</h3>
+<p>Copia dall'app il nome e la spiegazione del risultato e il codice intorno alla riga. Chiedi la modifica più piccola possibile.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-it-3" data-done="Copiato">Copia</button><pre class="code"><code id="prompt-it-3">Lo strumento ha segnalato questo risultato in un codice ObjectScript di InterSystems IRIS:
+
+Risultato: [nome e spiegazione del risultato]
+Riga: [numero]
+
+Estratto:
+[incolla il metodo o le righe intorno]
+
+1. Conferma se il risultato vale per questo estratto e spiega perché.
+2. Proponi la correzione più piccola possibile, mostrando il codice prima e dopo.
+3. Di' cosa cambia nel comportamento e cosa può rompersi per i chiamanti.
+4. Di' come testare la correzione.
+
+Usa solo funzionalità che sai che esistono in IRIS. Se non sei sicuro della sintassi, avvisa.</code></pre></div>
+<h3>4. Dividere un metodo complesso</h3>
+<p>Usa i metodi della scheda <strong>Metodi più complessi</strong>. Chiedi di mantenere il comportamento, perché sostituire <code>Quit</code> con <code>Return</code> può cambiare il flusso. <sup><a href="#ref-5-it">[5]</a></sup> <sup><a href="#ref-6-it">[6]</a></sup></p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-it-4" data-done="Copiato">Copia</button><pre class="code"><code id="prompt-it-4">Il metodo ObjectScript qui sotto ha complessità [numero] e [numero] righe.
+
+[incolla il metodo]
+
+Proponi una riorganizzazione che:
+1. Mantenga esattamente lo stesso comportamento, compreso il ritorno di %Status e le transazioni.
+2. Estragga le parti con uno scopo proprio in metodi privati con nomi chiari.
+3. Usi Return quando l'intenzione è uscire dal metodo, spiegando ogni sostituzione di Quit con Return.
+4. Elenchi i casi di test che provano che nulla è cambiato.
+
+Mostra il codice completo. Non rinominare metodi pubblici né cambiare la firma.</code></pre></div>
+<h3>5. Documentare una classe</h3>
+<p>Utile per il risultato <strong>Metodo senza documentazione</strong>. Confronta ogni frase con il codice: l'IA può descrivere ciò che il nome suggerisce, non ciò che il codice fa.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-it-5" data-done="Copiato">Copia</button><pre class="code"><code id="prompt-it-5">Scrivi commenti /// per la classe ObjectScript qui sotto, nello stile del riferimento delle classi di IRIS.
+
+[incolla la classe]
+
+Per la classe e per ogni metodo:
+1. Una frase su cosa fa.
+2. Gli argomenti e il valore restituito.
+3. Effetti collaterali: globali, tabelle, transazioni e Lock.
+
+Scrivi in [lingua]. Descrivi solo ciò che il codice mostra. Quando non si può sapere, scrivi "verificare" invece di supporre.</code></pre></div>
+<h3>6. Pianificare i test</h3>
+<p>Chiedi casi di test a partire dal diagramma: ogni rombo ha due lati da coprire.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-it-6" data-done="Copiato">Copia</button><pre class="code"><code id="prompt-it-6">Voglio testare il metodo ObjectScript qui sotto prima di modificarlo.
+
+[incolla il metodo]
+
+Formato di test usato dal team: [es.: %UnitTest.TestCase, o descrivilo]
+
+1. Elenca i percorsi del metodo e un caso di test per ognuno.
+2. Includi i casi di errore: %Status di errore, eccezione, SQLCODE diverso da 0.
+3. Di' quali dati devono esistere prima e come ripulirli dopo.
+4. Scrivi il codice dei test.
+
+Non usare metodi di asserzione di cui non sei sicuro. Se te ne serve uno, chiedi.</code></pre></div>
+<h3>7. Modernizzare codice vecchio</h3>
+<p>Serve per <code>$ZTrap</code>, <code>%ResultSet</code> e la sintassi a punti. Il riferimento delle classi indica <code>%SQL.Statement</code> al posto di <code>%ResultSet</code>. <sup><a href="#ref-11-it">[11]</a></sup></p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-it-7" data-done="Copiato">Copia</button><pre class="code"><code id="prompt-it-7">Modernizza il codice ObjectScript qui sotto, senza cambiare ciò che fa.
+
+[incolla il codice]
+
+Sostituisci, dove presente:
+1. $ZTrap o $ETrap con Try/Catch.
+2. %ResultSet con %SQL.Statement, con parametri ? invece della concatenazione.
+3. Sintassi a punti e If di riga con blocchi tra graffe.
+
+Per ogni sostituzione, mostra prima e dopo e spiega la differenza di comportamento, se c'è. Indica cosa va testato con attenzione.</code></pre></div>
+<h3>8. Descrivere la modifica per la revisione</h3>
+<p>Da usare dopo la correzione: l'IA organizza il testo, e tu verifichi che ogni affermazione sia vera.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-it-8" data-done="Copiato">Copia</button><pre class="code"><code id="prompt-it-8">Scrivi la descrizione di una revisione del codice per la modifica qui sotto.
+
+Problema trovato: [risultato e punto]
+Cosa è stato modificato: [riepilogo o diff]
+Come è stato testato: [descrivi]
+
+Struttura:
+1. Riepilogo in due frasi.
+2. Motivo, con il risultato e la riga.
+3. Cosa cambia per chi usa il codice.
+4. Rischi e come annullare la modifica.
+5. Cosa il revisore deve guardare con attenzione.
+
+Non aggiungere test, numeri o garanzie che non sono qui.</code></pre></div>
+<h3>Come verificare la risposta</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Cosa ha fatto l'IA</th><th scope="col">Perché diffidare</th><th scope="col">Cosa fare</th></tr></thead>
+<tbody>
+<tr><td>Ha citato un metodo o una classe che non è in ciò che hai incollato</td><td>Può averlo inventato</td><td>Cercalo con la ricerca dell'app o nel riferimento delle classi</td></tr>
+<tr><td>Ha affermato come si comporta un comando</td><td>Può valere per un'altra versione o essere sbagliato</td><td>Confronta con la documentazione di InterSystems <sup><a href="#ref-4-it">[4]</a></sup> <sup><a href="#ref-5-it">[5]</a></sup></td></tr>
+<tr><td>Ha sostituito <code>Quit</code> con <code>Return</code>, o il contrario</td><td>Cambia il flusso dentro <code>Try</code> e cicli</td><td>Confronta i diagrammi prima e dopo nell'app</td></tr>
+<tr><td>Ha fornito codice pronto</td><td>Può non compilare o cambiare un caso raro</td><td>Compila, esegui i test e analizzalo di nuovo nell'app</td></tr>
+<tr><td>Ha suggerito un indice, un Lock o una transazione</td><td>Influisce su altri processi</td><td>Valutalo con chi gestisce l'ambiente e testa fuori produzione</td></tr>
+</tbody>
+</table></div>
+<aside class="note"><p>Dopo la correzione, apri il codice nuovo nell'app: il risultato deve sparire, e non ne deve comparire nessun altro.</p></aside>
+<a class="back" href="#top">↑ Torna all'inizio</a>
+</section>
+<section id="lim-it" aria-labelledby="h-lim-it">
+<h2 id="h-lim-it">Errori comuni e limiti</h2>
+<h3>Errori di lettura</h3>
+<ul>
+<li><strong>Trattare un risultato come un difetto.</strong> Un <code>Kill ^Global</code> può essere esattamente ciò che il metodo deve fare. Verifica nel codice.</li>
+<li><strong>Analizzare una classe da sola.</strong> Senza le superclassi e le classi chiamate, molti collegamenti compaiono come "Fuori dai file".</li>
+<li><strong>Cercare nell'XML la riga citata.</strong> Nell'esportazione XML, le righe sono quelle del testo convertito, nella scheda <strong>Codice</strong>.</li>
+<li><strong>Pensare che complessità bassa significhi codice corretto.</strong> Misura i percorsi, non la correttezza.</li>
+</ul>
+<h3>Limiti</h3>
+<ul>
+<li><strong>Lettura senza compilare.</strong> L'app non espande le macro, non risolve l'ereditarietà fuori dai file e può sbagliare su costrutti rari.</li>
+<li><strong>Solo codice di esempio.</strong> L'app è stata testata con l'esempio fittizio e con estratti scritti per il test, non con codice di produzione.</li>
+<li><strong>Altri linguaggi.</strong> I metodi in Python o in un altro linguaggio non hanno diagramma. L'app conta le righe e le chiamate <code>iris.cls()</code>.</li>
+<li><strong>Dimensioni.</strong> I file sopra i 30 MB vengono ignorati. La mappa mostra fino a 180 nodi, e la tabella dei membri fino a 1.500 righe.</li>
+<li><strong>Browser.</strong> Testato in Chromium. Firefox, Safari e telefoni reali non sono stati testati.</li>
+</ul>
+</section>
+<section id="rev-it" aria-labelledby="h-rev-it">
+<h2 id="h-rev-it">Ripasso rapido</h2>
+<p>Prova a rispondere prima di aprire ogni domanda.</p>
+<div class="quiz">
+<details><summary>1. Perché aprire più classi insieme?</summary><p>Perché l'app possa collegare le chiamate tra loro. Da sola, una chiamata a un'altra classe compare come "Fuori dai file".</p></details>
+<details><summary>2. Cosa fa un Quit senza argomento dentro un Try?</summary><p>Esce solo dal blocco Try, e l'esecuzione prosegue alla prima riga dopo il Catch. Per uscire dal metodo, usa Return.</p></details>
+<details><summary>3. Perché Do obj.%Save() genera un risultato?</summary><p>Perché %Save restituisce un %Status, e Do scarta quel valore. Se il salvataggio fallisce, nessuno lo viene a sapere.</p></details>
+<details><summary>4. Qual è la differenza tra Kill ^DemoAudit e Kill ^DemoAudit(id)?</summary><p>Il primo cancella l'intera globale. Il secondo cancella solo il nodo di quell'id.</p></details>
+<details><summary>5. Cosa significa SQLCODE = 100 dopo un &amp;sql?</summary><p>Che l'istruzione è stata eseguita ma non ha trovato dati. I valori negativi indicano un errore.</p></details>
+<details><summary>6. Cosa segna il bordo rosso nel diagramma?</summary><p>Un comando legato a un risultato. Fai clic sul blocco per vedere quale.</p></details>
+<details><summary>7. Il codice esce dal computer quando lo apri nell'app?</summary><p>No. Il file blocca la rete e non conserva il codice. Ma se incolli il codice in un'IA, va a quel servizio.</p></details>
+<details><summary>8. L'IA ha proposto una correzione che sembra giusta. Cosa fare prima di pubblicarla?</summary><p>Compilarla, testarla fuori produzione, aprire il codice nuovo nell'app per vedere se il risultato è sparito e farla passare per la revisione del team.</p></details>
+</div>
+<a class="back" href="#top">↑ Torna all'inizio</a>
+</section>
+<section id="ref-it" aria-labelledby="h-ref-it">
+<h2 id="h-ref-it">Riferimenti</h2>
+<ol class="refs">
+<li id="ref-1-it"><strong>Giovani Perotto Mesquita</strong>, “IRIS Code Insights”, app in un unico file HTML, <a href="iris-code-insights.html#it">giovanipm.github.io/iris-code-insights.html</a>.</li>
+<li id="ref-2-it"><strong>InterSystems</strong>, flusso di lavoro lato client con l'estensione ObjectScript per VS Code, comando Export Code from Server, documentazione, consultato il 02/11/2026, <a href="https://docs.intersystems.com/components/csp/docbook/DocBook.UI.Page.cls?KEY=GVSCO_clientflow" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-3-it"><strong>InterSystems</strong>, classe %SYSTEM.OBJ, metodo Export, riferimento delle classi, documentazione, consultato il 02/11/2026, <a href="https://docs.intersystems.com/irislatest/csp/documatic/%25CSP.Documatic.cls?LIBRARY=%25SYS&amp;CLASSNAME=%25SYSTEM.OBJ" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-4-it"><strong>InterSystems</strong>, comando TRY, sezione su QUIT e RETURN, riferimento di ObjectScript, documentazione, consultato il 02/11/2026, <a href="https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RCOS_ctry" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-5-it"><strong>InterSystems</strong>, comando QUIT, riferimento di ObjectScript, documentazione, consultato il 02/11/2026, <a href="https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RCOS_cquit" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-6-it"><strong>InterSystems</strong>, comando RETURN, riferimento di ObjectScript, documentazione, consultato il 02/11/2026, <a href="https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RCOS_creturn" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-7-it"><strong>InterSystems</strong>, SQL dinamico, parametri di input con ?, guida SQL, documentazione, consultato il 02/11/2026, <a href="https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=GSQL_dynsql" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-8-it"><strong>InterSystems</strong>, valori di SQLCODE, riferimento SQL, documentazione, consultato il 02/11/2026, <a href="https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RSQL_sqlcode" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-9-it"><strong>InterSystems</strong>, comando TROLLBACK e $TLEVEL, riferimento di ObjectScript, documentazione, consultato il 02/11/2026, <a href="https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RCOS_ctrollback" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-10-it"><strong>InterSystems</strong>, comando LOCK, timeout, riferimento di ObjectScript, documentazione, consultato il 02/11/2026, <a href="https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RCOS_clock" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-11-it"><strong>InterSystems</strong>, classe %Library.ResultSet, indicata come deprecata, riferimento delle classi, documentazione, consultato il 02/11/2026, <a href="https://docs.intersystems.com/irislatest/csp/documatic/%25CSP.Documatic.cls?LIBRARY=%25SYS&amp;CLASSNAME=%25Library.ResultSet" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-12-it"><strong>InterSystems</strong>, messaggi di errore di sistema, &lt;FRAMESTACK&gt;, documentazione, consultato il 02/11/2026, <a href="https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RERR_system" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-13-it"><strong>Thomas J. McCabe</strong>, “A Complexity Measure”, IEEE Transactions on Software Engineering, SE-2(4), 1976, pp. 308–320, <a href="https://doi.org/10.1109/TSE.1976.233837" rel="noopener">doi.org/10.1109/TSE.1976.233837</a>.</li>
+</ol>
+<a class="back" href="#top">↑ Torna all'inizio</a>
+</section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== ES ===================== -->
+<div id="es" role="tabpanel" aria-labelledby="tab-es" lang="es" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html#es" data-projects>← Proyectos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>IRIS Code Insights: tutorial</h1>
+      <p class="dek">Cómo entender un código ObjectScript de InterSystems IRIS antes de tocarlo: hallazgos con la línea exacta, diagrama de flujo de cada método, mapa de dependencias y prompts para usar IA con seguridad.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado el <time datetime="2026-11-02">02/11/2026</time></span>
+        <span class="credit">Revisado y formateado con Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-es">
+    <h2 id="toc-es">Índice</h2>
+    <ol>
+      <li><a href="#intro-es">Qué es IRIS Code Insights</a></li>
+      <li><a href="#obter-es">Cómo llevar el código a la app</a></li>
+      <li><a href="#roteiro-es">Guía: analizando el ejemplo</a></li>
+      <li><a href="#ins-es">Cómo leer los insights</a></li>
+      <li><a href="#fluxo-es">Flujo</a></li>
+      <li><a href="#dep-es">Dependencias</a></li>
+      <li><a href="#outras-es">Miembros, Datos y Código</a></li>
+      <li><a href="#rel-es">Informe y privacidad</a></li>
+      <li><a href="#ia-es">Prompts de IA</a></li>
+      <li><a href="#lim-es">Errores comunes y limitaciones</a></li>
+      <li><a href="#rev-es">Repaso rápido</a></li>
+      <li><a href="#ref-es">Referencias</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-es" aria-labelledby="h-intro-es">
+<h2 id="h-intro-es">Qué es IRIS Code Insights</h2>
+<p>Antes de cambiar una clase de InterSystems IRIS, casi siempre surgen las mismas preguntas: qué hace este código, quién lo llama y dónde puede romperse. IRIS Code Insights lee clases y rutinas ObjectScript y responde con tres vistas: hallazgos ordenados por gravedad, el diagrama de flujo de cada método y un mapa de quién llama a quién. <sup><a href="#ref-1-es">[1]</a></sup></p>
+<p>Es un único archivo HTML, sin instalación, sin cuenta y sin servidor.</p>
+<p><a class="launch" href="iris-code-insights.html#es">Abrir IRIS Code Insights <span aria-hidden="true">→</span></a></p>
+<figure>
+<img src="rc_images/IrisCodeInsightsInicio-es.png" alt="Pantalla inicial de IRIS Code Insights, con el área para soltar archivos, los botones Abrir archivos, Pegar código y Ver un ejemplo, y las tarjetas Qué lee, Qué obtienes y Tu código se queda aquí" width="1600" height="900" loading="lazy">
+<figcaption>La pantalla inicial. Suelta los archivos, pega el código o abre el ejemplo.</figcaption>
+</figure>
+<h3>Cómo trata la app tu código</h3>
+<ul>
+<li><strong>Nada sale de tu equipo.</strong> El archivo bloquea las conexiones de red, y la lectura ocurre en el navegador.</li>
+<li><strong>El código no se guarda.</strong> Al cerrar la página, el análisis desaparece. La app solo guarda el idioma y el tema.</li>
+</ul>
+<aside class="note"><p>La app lee el texto del código, sin compilarlo y sin acceder a IRIS. Los hallazgos son señales para revisar, no errores confirmados. Es una herramienta independiente, sin vínculo con InterSystems.</p></aside>
+</section>
+<section id="obter-es" aria-labelledby="h-obter-es">
+<h2 id="h-obter-es">Cómo llevar el código a la app</h2>
+<p>La app acepta cuatro formatos. Abre varios archivos juntos: solo así puede enlazar la llamada de una clase con el método de otra.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Formato</th><th scope="col">Ejemplo</th><th scope="col">Qué hace la app</th></tr></thead>
+<tbody>
+<tr><th scope="row">Clase en UDL</th><td><code>Demo.Orders.Order.cls</code></td><td>Lee la declaración, los miembros, la documentación <code>///</code> y el código de cada método</td></tr>
+<tr><th scope="row">Rutina</th><td><code>DEMOUTIL.mac</code>, <code>.int</code></td><td>Separa las etiquetas y lee el código de cada una, incluso con la antigua sintaxis de puntos</td></tr>
+<tr><th scope="row">Include</th><td><code>Demo.inc</code></td><td>Lista las macros <code>#define</code></td></tr>
+<tr><th scope="row">Exportación XML</th><td><code>demo.xml</code></td><td>Convierte cada clase y rutina a UDL y la lee como arriba</td></tr>
+</tbody>
+</table></div>
+<h3>Tres formas de obtener los archivos</h3>
+<ol>
+<li><strong>VS Code:</strong> con la extensión InterSystems ObjectScript, usa el comando <strong>ObjectScript: Export Code from Server</strong>. De forma predeterminada, los archivos van a la carpeta <code>src</code> del workspace. <sup><a href="#ref-2-es">[2]</a></sup></li>
+<li><strong>Terminal de IRIS:</strong> el método <code>Export</code> de la clase <code>%SYSTEM.OBJ</code> genera un XML con los elementos pedidos, como clases y rutinas. <sup><a href="#ref-3-es">[3]</a></sup></li>
+</ol>
+<pre class="code"><code>Do $SYSTEM.OBJ.Export("Demo.*.cls","/tmp/demo.xml")</code></pre>
+<ol start="3">
+<li><strong>Pegar:</strong> en <strong>Pegar código</strong>, pega una clase, una rutina o un XML. El nombre del archivo es opcional: sin él, la app reconoce el tipo por el contenido.</li>
+</ol>
+<aside class="note"><p>En el XML, los números de línea que cita la app son los del texto convertido, que aparece en la pestaña <strong>Código</strong>, y no los del archivo XML.</p></aside>
+</section>
+<section id="roteiro-es" aria-labelledby="h-roteiro-es">
+<h2 id="h-roteiro-es">Guía: analizando el ejemplo</h2>
+<p>Usa el ejemplo de la propia app: cuatro archivos ficticios, escritos para mostrar los hallazgos. Hay una clase persistente de pedidos, una API REST, un business service y una rutina antigua. Lo que sigue es exactamente lo que verás.</p>
+<h3>1. Abre el ejemplo y lee los indicadores</h3>
+<ol>
+<li>Abre la app y haz clic en <strong>Ver un ejemplo</strong>.</li>
+<li>Revisa la parte superior: 4 archivos, 3 clases y 1 rutina, 15 métodos y etiquetas, 197 líneas, complejidad media 2,3 (máxima 6), 60% de los métodos documentados y 3 hallazgos críticos, con 11 de atención.</li>
+<li>Los filtros muestran 18 tipos de hallazgo: 3 críticos, 8 de atención y 7 de información.</li>
+</ol>
+<figure>
+<img src="rc_images/IrisCodeInsightsInsights-es.png" alt="Pestaña Insights con los indicadores arriba, la lista de hallazgos ordenada por gravedad, los métodos más complejos y las clases y rutinas" width="1600" height="900" loading="lazy">
+<figcaption>Los hallazgos van del más grave al más leve, cada uno con la explicación y la corrección.</figcaption>
+</figure>
+<h3>2. Del hallazgo a la línea</h3>
+<ol>
+<li>En el hallazgo <strong>Kill borra una global entera</strong>, haz clic en <strong>Ver dónde (1)</strong>.</li>
+<li>Haz clic en <strong>Order.Purge</strong>. La pestaña <strong>Código</strong> se abre en la línea 85, destacada: <code>Kill ^DemoAudit</code>.</li>
+<li>Fíjate en la línea 79: <code>Kill ^DemoAudit(id)</code> borra solo un nodo y no genera hallazgo. La diferencia es el subíndice.</li>
+</ol>
+<figure>
+<img src="rc_images/IrisCodeInsightsCodigo-es.png" alt="Pestaña Código con el archivo Demo.Orders.Order.cls y la línea 85, Kill ^DemoAudit, destacada" width="1600" height="900" loading="lazy">
+<figcaption>Cada lugar citado en un hallazgo abre el código en la línea correcta.</figcaption>
+</figure>
+<h3>3. Lee el flujo de un método</h3>
+<ol>
+<li>Abre la pestaña <strong>Flujo</strong> y elige <strong>Pay</strong> en la lista de la izquierda.</li>
+<li>El cuerpo está dentro de un cuadro <strong>Try</strong>, unido al cuadro <strong>Catch ex</strong> por una flecha roja discontinua: el camino del error.</li>
+<li>El rombo <code>order.Status '= "NEW" ?</code> lleva a un <strong>Quit</strong> con borde rojo y la nota <strong>sale del bloque actual</strong>.</li>
+</ol>
+<figure>
+<img src="rc_images/IrisCodeInsightsFluxo-es.png" alt="Pestaña Flujo con el método Pay: cuadro Try con los comandos, rombo de decisión, Quit con borde rojo y cuadro Catch unido por una flecha discontinua" width="1600" height="900" loading="lazy">
+<figcaption>El Quit dentro del Try tiene borde rojo porque solo sale del bloque Try.</figcaption>
+</figure>
+<p>¿Por qué el borde rojo? Según la documentación, un <code>Quit</code> sin argumento dentro de un <code>Try</code> lleva la ejecución a la primera línea después del <code>Catch</code>, y no fuera del método. <sup><a href="#ref-4-es">[4]</a></sup> Aquí la línea siguiente es <code>Quit sc</code>, así que el efecto es el esperado. Pero, si alguien añade código después del <code>Catch</code>, también se ejecutará para los pedidos que no son nuevos. <code>Return</code> dejaría clara la intención. <sup><a href="#ref-6-es">[6]</a></sup></p>
+<p>En el mismo método aparecen tres hallazgos más: <code>Do order.%Save()</code> descarta el <code>%Status</code>, el <code>&amp;sql</code> no comprueba <code>SQLCODE</code> y el <code>TStart</code> no tiene <code>TRollback</code> en el <code>Catch</code>.</p>
+<h3>4. Mira quién llama a quién</h3>
+<ol>
+<li>Abre la pestaña <strong>Dependencias</strong> y haz clic en <strong>Métodos</strong>.</li>
+<li>Haz clic en el nodo <strong>PayOrder</strong>. El camino queda destacado: la ruta <code>POST /orders/:id/pay</code> llega a él, y él llama a <code>Notify</code>, <code>Pay</code> y <code>Sync.Send</code>.</li>
+</ol>
+<figure>
+<img src="rc_images/IrisCodeInsightsDependencias-es.png" alt="Pestaña Dependencias en el nivel Métodos, con el nodo PayOrder seleccionado, la ruta POST destacada y el panel Nodo seleccionado con la lista de llamadas" width="1600" height="900" loading="lazy">
+<figcaption>Seleccionar un nodo atenúa el resto y lista sus enlaces en el panel de la derecha.</figcaption>
+</figure>
+<h3>5. Revisa los datos usados</h3>
+<p>La pestaña <strong>Datos</strong> muestra dos tablas SQL y cuatro globales. La global <code>^DemoAudit</code> se lee, se escribe, se borra con <code>Kill</code> y se bloquea con <code>Lock</code>, en 8 usos. También aparecen la ruta REST y el mensaje para <code>Demo.ERP.Operation</code>. Esa clase de destino no está en los archivos.</p>
+<figure>
+<img src="rc_images/IrisCodeInsightsDados-es.png" alt="Pestaña Datos con las tablas SQL y sus operaciones, las globales con los tipos de acceso, las rutas REST y los mensajes de interoperabilidad" width="1600" height="900" loading="lazy">
+<figcaption>Tablas, globales, rutas y mensajes, cada uno con el método que lo usa.</figcaption>
+</figure>
+<h3>6. Genera el informe</h3>
+<ol>
+<li>Haz clic en <strong>Informe</strong>.</li>
+<li>Revisa el texto y usa <strong>Copiar</strong> o <strong>Descargar .md</strong>.</li>
+</ol>
+<figure>
+<img src="rc_images/IrisCodeInsightsRelatorio-es.png" alt="Ventana Informe en Markdown con el resumen del análisis y la lista de hallazgos, y los botones Copiar y Descargar .md" width="1600" height="900" loading="lazy">
+<figcaption>El informe incluye fragmentos del código. Revísalo antes de enviarlo.</figcaption>
+</figure>
+<p>Resultado: en pocos minutos sabes por dónde empezar. Hay una contraseña en el código, un SQL vulnerable a inyección y un <code>Kill</code> que borra toda la auditoría. También sabes qué métodos y tablas afecta cada corrección.</p>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+<section id="ins-es" aria-labelledby="h-ins-es">
+<h2 id="h-ins-es">Cómo leer los insights</h2>
+<p>Cada hallazgo es una regla simple sobre el texto del código, y estas son las condiciones exactas. Un hallazgo dice dónde mirar, no que haya un defecto.</p>
+<h3>Crítico</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Hallazgo</th><th scope="col">Cuándo aparece</th><th scope="col">Por qué importa</th></tr></thead>
+<tbody>
+<tr><th scope="row">Kill borra una global entera</th><td><code>Kill ^Nombre</code>, sin subíndice</td><td>Borra todos los nodos de la global</td></tr>
+<tr><th scope="row">Quit con valor dentro de Try o Catch</th><td><code>Quit valor</code> dentro de uno de esos bloques</td><td>La documentación dice que da error de compilación e indica <code>Return</code> <sup><a href="#ref-4-es">[4]</a></sup></td></tr>
+<tr><th scope="row">SQL armado por concatenación</th><td>Un texto que empieza con SELECT, INSERT, UPDATE, DELETE, CALL o WITH, unido con <code>_</code> a un valor que no es texto fijo, o <code>%Prepare</code> y <code>%ExecDirect</code> con <code>_</code></td><td>Riesgo de inyección de SQL. El SQL dinámico acepta parámetros <code>?</code> <sup><a href="#ref-7-es">[7]</a></sup></td></tr>
+<tr><th scope="row">Contraseña o secreto en el código</th><td>Una variable con password, pwd, senha, secret, token, apikey o credential en el nombre recibe un texto fijo de 3 caracteres o más</td><td>El secreto se filtra con el código</td></tr>
+</tbody>
+</table></div>
+<h3>Atención</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Hallazgo</th><th scope="col">Cuándo aparece</th><th scope="col">Por qué importa</th></tr></thead>
+<tbody>
+<tr><th scope="row">%Status descartado</th><td><code>Do</code> en <code>%Save</code>, <code>%Delete</code>, <code>%DeleteId</code> y similares, o en un método de los archivos que devuelve <code>%Status</code></td><td>El fallo pasa inadvertido</td></tr>
+<tr><th scope="row">SQLCODE no se comprueba</th><td>El método tiene <code>&amp;sql</code> y no cita <code>SQLCODE</code></td><td>100 significa que no hubo datos, y un valor negativo, error <sup><a href="#ref-8-es">[8]</a></sup></td></tr>
+<tr><th scope="row">Catch vacío</th><td>Bloque <code>Catch</code> sin comandos</td><td>El error desaparece</td></tr>
+<tr><th scope="row">Quit dentro de Try solo sale del Try</th><td><code>Quit</code> sin argumento directamente en un <code>Try</code></td><td>La ejecución sigue después del <code>Catch</code> <sup><a href="#ref-4-es">[4]</a></sup></td></tr>
+<tr><th scope="row">Quit con valor dentro de un bucle</th><td><code>Quit valor</code> dentro de <code>For</code>, <code>While</code> o <code>Do-While</code></td><td>No sale de la rutina desde dentro del bucle. Usa <code>Return</code> <sup><a href="#ref-5-es">[5]</a></sup> <sup><a href="#ref-6-es">[6]</a></sup></td></tr>
+<tr><th scope="row">Transacción sin rollback garantizado</th><td><code>TStart</code> sin <code>TRollback</code>, o sin <code>Try</code>, <code>$ZTrap</code> o <code>$ETrap</code></td><td><code>TRollback</code> deshace la transacción, y <code>$TLevel</code> dice cuántas están abiertas <sup><a href="#ref-9-es">[9]</a></sup></td></tr>
+<tr><th scope="row">Lock sin tiempo límite</th><td><code>Lock</code> sin <code>:segundos</code> (el <code>Lock -</code> no cuenta)</td><td>Sin tiempo límite, IRIS espera indefinidamente <sup><a href="#ref-10-es">[10]</a></sup></td></tr>
+<tr><th scope="row">Código ejecutado a partir de texto</th><td><code>Xecute</code>, <code>$Xecute</code> o indirección con <code>@</code></td><td>Un texto de fuera puede convertirse en comando</td></tr>
+<tr><th scope="row">Comando de depuración olvidado</th><td><code>Break</code>, <code>ZBreak</code>, <code>ZWrite</code> o <code>ZZDump</code></td><td>Detiene el proceso o escribe datos</td></tr>
+<tr><th scope="row">Halt termina el proceso</th><td><code>Halt</code> (y no <code>Hang</code>)</td><td>Tumba a quien llamó</td></tr>
+<tr><th scope="row">Complejidad alta, método largo, anidamiento</th><td>Complejidad mayor que 10, más de 60 líneas de código o más de 4 niveles de bloques</td><td>Más caminos que probar y revisar</td></tr>
+</tbody>
+</table></div>
+<h3>Información</h3>
+<ul>
+<li><strong>%ResultSet está obsoleto:</strong> la referencia de clases marca <code>%Library.ResultSet</code> como obsoleta e indica <code>%SQL.Statement</code> para SQL dinámico. La clase sigue funcionando. <sup><a href="#ref-11-es">[11]</a></sup></li>
+<li><strong>$ZTrap o $ETrap</strong>, <strong>Goto</strong>, <strong>privado sin uso en los archivos</strong>, <strong>método sin documentación</strong> <code>///</code>, <strong>dirección o ruta fija</strong> (URL, IP o carpeta) y <strong>clase que accede a una global directamente</strong>.</li>
+<li><strong>Llamada recursiva:</strong> sin condición de parada, las llamadas se acumulan hasta el error <code>&lt;FRAMESTACK&gt;</code>, que indica demasiadas llamadas anidadas. <sup><a href="#ref-12-es">[12]</a></sup></li>
+<li><strong>Parte que la app no entendió:</strong> el diagrama y los hallazgos de ese miembro pueden estar incompletos.</li>
+</ul>
+<h3>Indicadores y complejidad</h3>
+<p>La complejidad sigue la idea de McCabe: cuántos caminos independientes tiene un método. <sup><a href="#ref-13-es">[13]</a></sup> La app usa una aproximación: 1, más cada <code>If</code>, <code>ElseIf</code>, bucle, <code>Catch</code> y poscondicional. Sirve para comparar métodos entre sí. "Métodos documentados" cuenta los métodos de clase con comentario <code>///</code>. Debajo de la lista, <strong>Verificaciones sin hallazgos</strong> muestra lo que se buscó y no se encontró.</p>
+</section>
+<section id="fluxo-es" aria-labelledby="h-fluxo-es">
+<h2 id="h-fluxo-es">Flujo</h2>
+<p>La pestaña <strong>Flujo</strong> dibuja un método o etiqueta cada vez, a partir de los comandos del código. Elige el método en la lista: el número junto al nombre es la complejidad. Los métodos con más caminos muestran el número en naranja o rojo.</p>
+<figure>
+<img src="rc_images/IrisCodeInsightsSimbolos-es.svg" alt="Los símbolos del diagrama de flujo: Inicio (nombre y argumentos); Comandos (Set, Kill y New agrupados); Decisión (If, ElseIf, poscondicional); Bucle (For, While, Do-While); Llamada (método o etiqueta); SQL embebido (&amp;sql(...)); Entrada y salida (Write, Read, ZWrite); Fin del camino (Quit, Return, Goto); Error o parada (Throw, Halt, Catch vacío); Try y Catch (cuadros discontinuos). Borde rojo: el comando tiene un hallazgo. Haz clic en un bloque para ver el comando completo." loading="lazy">
+<figcaption>Cada forma tiene un significado, y el borde rojo marca el comando con un hallazgo.</figcaption>
+</figure>
+<ul>
+<li><strong>Agrupar comandos simples</strong> junta comandos seguidos como <code>Set</code>, <code>Kill</code> y <code>New</code> en un solo bloque. Desmárcalo para ver un bloque por comando.</li>
+<li><strong>Haz clic</strong> en un bloque para ver el comando completo, la línea y los hallazgos. <strong>Ver código</strong> abre la línea. <strong>Doble clic</strong> en una llamada abre el flujo del método llamado.</li>
+<li>Arrastra el fondo para moverte, usa los botones de zoom o <strong>Ajustar</strong>, y <strong>Descargar SVG</strong> para guardar la figura.</li>
+<li>Debajo del dibujo, <strong>Detalles del miembro</strong> muestra la declaración, la documentación, a quién llama, quién lo llama y los datos que usa.</li>
+</ul>
+<aside class="note"><p>El dibujo sigue la estructura del código, no la ejecución. <code>Quit</code>, <code>Return</code>, <code>Goto</code> y <code>Continue</code> aparecen como fin de camino, sin la flecha hacia donde va después la ejecución. Un <code>ElseIf</code> se convierte en un nuevo rombo en el lado "no". Un <code>Quit:condición</code> se convierte en una decisión. En la sintaxis de puntos, el bloque aparece como <strong>Do (bloque de puntos)</strong>.</p></aside>
+</section>
+<section id="dep-es" aria-labelledby="h-dep-es">
+<h2 id="h-dep-es">Dependencias</h2>
+<p>La pestaña <strong>Dependencias</strong> muestra el mapa de quién llama a quién. Las columnas siguen la dirección de las llamadas: quien llama queda a la izquierda. Cuanto más gruesa la línea, más llamadas.</p>
+<ul>
+<li><strong>Clases</strong> agrupa todo por clase o rutina y muestra la herencia con una línea morada discontinua. <strong>Métodos</strong> muestra cada método, las rutas REST que llegan a él y los destinos de mensajes.</li>
+<li><strong>Externos</strong>, <strong>Tablas</strong> y <strong>Globales</strong> muestran u ocultan esos nodos. "Fuera de los archivos" es una clase o rutina citada que no cargaste.</li>
+<li>Una línea que vuelve hacia la izquierda, con trazos cortos, cierra un ciclo de llamadas.</li>
+<li>Haz clic en un nodo para destacar sus enlaces. El panel de la derecha lista lo que sale y lo que llega, con atajos al flujo y al código.</li>
+</ul>
+<aside class="note"><p>Una llamada por variable, como <code>obj.Metodo()</code>, solo se enlaza cuando el tipo aparece en el propio método: en <code>#dim</code>, en el argumento o en <code>%New</code> y <code>%OpenId</code>. Las llamadas armadas en tiempo de ejecución, como <code>$ClassMethod</code> o la indirección, no aparecen. Para caber en la pantalla, el mapa muestra hasta 180 nodos y avisa cuántos quedaron fuera.</p></aside>
+</section>
+<section id="outras-es" aria-labelledby="h-outras-es">
+<h2 id="h-outras-es">Miembros, Datos y Código</h2>
+<ul>
+<li><strong>Miembros:</strong> la tabla de todos los miembros, con tipo, líneas, complejidad, anidamiento, documentación y llamadas. Haz clic en el título de una columna para ordenar y usa el filtro y el tipo para acortar la lista.</li>
+<li><strong>Datos:</strong> las tablas SQL, con las operaciones y la forma (<code>&amp;sql</code>, SQL dinámico o Query de la clase), y las globales, con el tipo de acceso: lectura, escritura, Kill o Lock. La clase se enlaza a la tabla por el nombre SQL predeterminado: el paquete con <code>_</code> en lugar del punto, más el nombre de la clase, o por el <code>SqlTableName</code>. Las rutas REST vienen del <code>XData UrlMap</code>, y los mensajes, de <code>SendRequestSync</code>, <code>SendRequestAsync</code> y de los <code>&lt;call target&gt;</code> de una BPL.</li>
+<li><strong>Código:</strong> el archivo con resaltado de sintaxis. Elige el archivo, escribe el número en <strong>línea</strong> y haz clic en <strong>Ir</strong>.</li>
+<li><strong>Búsqueda:</strong> el campo de arriba encuentra clases, métodos y etiquetas en todos los archivos.</li>
+</ul>
+</section>
+<section id="rel-es" aria-labelledby="h-rel-es">
+<h2 id="h-rel-es">Informe y privacidad</h2>
+<p><strong>Informe</strong> genera un texto en Markdown con el resumen, los hallazgos, los lugares con el fragmento del código y los métodos más complejos, para adjuntar a un ticket, a una revisión de código o a una wiki.</p>
+<aside class="note"><p>El informe incluye fragmentos del código, y los hallazgos de contraseña muestran el nombre de la variable. Antes de enviarlo a alguien o a una IA, revisa el texto y quita secretos, direcciones y nombres de clientes.</p></aside>
+<p><strong>Nuevo</strong> vuelve a la pantalla inicial y saca el análisis de la memoria. Los archivos de tu equipo no cambian.</p>
+</section>
+<section id="ia-es" aria-labelledby="h-ia-es">
+<h2 id="h-ia-es">Prompts de IA</h2>
+<p>La app muestra dónde mirar. Falta entender el porqué, decidir la corrección y explicarla al equipo. Una IA ayuda en esas tres tareas, pero también se equivoca con seguridad: inventa métodos del sistema, confunde <code>Quit</code> con <code>Return</code> y propone código que no compila. Trata la respuesta como el borrador de un colega con prisa. Para escribir mejores prompts, consulta el <a href="PromptTutorial.html#es">tutorial de prompts</a>.</p>
+<figure>
+<img src="rc_images/IrisCodeInsightsIA-es.svg" alt="Seis pasos: la app genera el informe o copias el método, quitas secretos y datos de clientes, la IA explica y propone citando el fragmento exacto, la app lo comprueba en el flujo y en la línea, compilas y pruebas fuera de producción y el equipo revisa antes de publicar. Desde la revisión, se vuelve a la IA con el código nuevo." loading="lazy">
+<figcaption>La IA explica y propone. Deciden la prueba en IRIS y la revisión del equipo.</figcaption>
+</figure>
+<blockquote><p><strong>Antes de pegar:</strong> el código es propiedad de la empresa y puede traer contraseñas, direcciones y reglas de negocio. La app no envía nada a la red, pero el servicio de IA recibe todo lo que pegues en él. Quita los secretos que la app señaló, cambia los nombres de clientes y sigue la política de tu organización sobre el uso de IA.</p></blockquote>
+<p>Cambia las partes entre corchetes y pega en la herramienta de IA que uses. Cada prompt funciona por sí solo.</p>
+<h3>1. Priorizar los hallazgos</h3>
+<p>En <strong>Informe</strong>, usa <strong>Copiar</strong>, revisa el texto y pégalo al final del prompt.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-es-1" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-es-1">Eres un desarrollador con experiencia en InterSystems IRIS y ObjectScript.
+Abajo está el informe de una herramienta que lee el código sin compilarlo.
+
+Contexto: [qué hace el sistema y qué necesitas cambiar]
+
+Basándote solo en el informe:
+1. Ordena los hallazgos por riesgo real en este contexto y explica por qué.
+2. Señala los que pueden ser falsos positivos y qué revisar en el código para decidir.
+3. Sugiere el orden de las correcciones, agrupando lo que puede ir en el mismo cambio.
+4. Separa lo que está en el informe de lo que es suposición tuya.
+
+No inventes clases, métodos ni comportamientos de IRIS. Si falta información, di cuál.
+
+Informe:
+[pega el informe]</code></pre></div>
+<h3>2. Explicar un método</h3>
+<p>En la pestaña <strong>Flujo</strong>, usa <strong>Ver código</strong> y copia el método. En <strong>Detalles del miembro</strong>, copia las listas <strong>Llama</strong> y <strong>Llamado por</strong>.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-es-2" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-es-2">Explica el método ObjectScript de abajo a alguien que va a mantenerlo.
+
+Clase: [nombre de la clase y qué representa]
+Quién llama a este método: [lista]
+A quién llama: [lista]
+
+Código:
+[pega el método]
+
+Responde:
+1. Qué hace el método, en pocas frases.
+2. Los caminos posibles, incluidos errores y salidas anticipadas.
+3. Qué lee y escribe: propiedades, globales, tablas y transacciones.
+4. Puntos frágiles, citando la línea.
+
+Recuerda que un Quit sin argumento dentro de Try solo sale del bloque Try. Si no sabes qué hace un método llamado, dilo en lugar de suponer.</code></pre></div>
+<h3>3. Corregir un hallazgo</h3>
+<p>Copia de la app el nombre y la explicación del hallazgo y el código alrededor de la línea. Pide el cambio más pequeño posible.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-es-3" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-es-3">La herramienta señaló este hallazgo en un código ObjectScript de InterSystems IRIS:
+
+Hallazgo: [nombre y explicación del hallazgo]
+Línea: [número]
+
+Fragmento:
+[pega el método o las líneas alrededor]
+
+1. Confirma si el hallazgo aplica a este fragmento y explica por qué.
+2. Propón la corrección más pequeña posible, mostrando el código antes y después.
+3. Di qué cambia en el comportamiento y qué puede romperse para quien llama.
+4. Di cómo probar la corrección.
+
+Usa solo recursos que sepas que existen en IRIS. Si no estás seguro de la sintaxis, avisa.</code></pre></div>
+<h3>4. Dividir un método complejo</h3>
+<p>Usa los métodos de la tarjeta <strong>Métodos más complejos</strong>. Pide mantener el comportamiento, porque cambiar <code>Quit</code> por <code>Return</code> puede alterar el flujo. <sup><a href="#ref-5-es">[5]</a></sup> <sup><a href="#ref-6-es">[6]</a></sup></p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-es-4" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-es-4">El método ObjectScript de abajo tiene complejidad [número] y [número] líneas.
+
+[pega el método]
+
+Propón una reorganización que:
+1. Mantenga exactamente el mismo comportamiento, incluido el retorno de %Status y las transacciones.
+2. Extraiga partes con propósito propio a métodos privados con nombres claros.
+3. Use Return cuando la intención sea salir del método, y explique cada cambio de Quit por Return.
+4. Liste los casos de prueba que demuestran que nada cambió.
+
+Muestra el código completo. No renombres métodos públicos ni cambies la firma.</code></pre></div>
+<h3>5. Documentar una clase</h3>
+<p>Útil para el hallazgo <strong>Método sin documentación</strong>. Compara cada frase con el código: la IA puede describir lo que sugiere el nombre y no lo que hace el código.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-es-5" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-es-5">Escribe comentarios /// para la clase ObjectScript de abajo, al estilo de la referencia de clases de IRIS.
+
+[pega la clase]
+
+Para la clase y para cada método:
+1. Una frase sobre lo que hace.
+2. Los argumentos y el retorno.
+3. Efectos secundarios: globales, tablas, transacciones y Lock.
+
+Escribe en [idioma]. Describe solo lo que muestra el código. Cuando no se pueda saber, escribe "verificar" en lugar de suponer.</code></pre></div>
+<h3>6. Planificar las pruebas</h3>
+<p>Pide casos de prueba a partir del diagrama: cada rombo tiene dos lados que cubrir.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-es-6" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-es-6">Quiero probar el método ObjectScript de abajo antes de cambiarlo.
+
+[pega el método]
+
+Formato de prueba que usa el equipo: [p. ej.: %UnitTest.TestCase, o descríbelo]
+
+1. Lista los caminos del método y un caso de prueba para cada uno.
+2. Incluye los casos de error: %Status de error, excepción, SQLCODE distinto de 0.
+3. Di qué datos deben existir antes y cómo limpiarlos después.
+4. Escribe el código de las pruebas.
+
+No uses métodos de aserción de los que no estés seguro. Si necesitas uno, pregunta.</code></pre></div>
+<h3>7. Modernizar código antiguo</h3>
+<p>Sirve para <code>$ZTrap</code>, <code>%ResultSet</code> y la sintaxis de puntos. La referencia de clases indica <code>%SQL.Statement</code> en lugar de <code>%ResultSet</code>. <sup><a href="#ref-11-es">[11]</a></sup></p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-es-7" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-es-7">Moderniza el código ObjectScript de abajo, sin cambiar lo que hace.
+
+[pega el código]
+
+Cambia, cuando haya:
+1. $ZTrap o $ETrap por Try/Catch.
+2. %ResultSet por %SQL.Statement, con parámetros ? en lugar de concatenación.
+3. Sintaxis de puntos e If de línea por bloques con llaves.
+
+Para cada cambio, muestra antes y después y explica la diferencia de comportamiento, si la hay. Señala lo que hay que probar con cuidado.</code></pre></div>
+<h3>8. Describir el cambio para la revisión</h3>
+<p>Úsalo después de corregir: la IA organiza el texto, y tú compruebas que cada afirmación sea verdadera.</p>
+<div class="promptbox"><button type="button" class="copy" data-copy="prompt-es-8" data-done="Copiado">Copiar</button><pre class="code"><code id="prompt-es-8">Escribe la descripción de una revisión de código para el cambio de abajo.
+
+Problema encontrado: [hallazgo y lugar]
+Qué se cambió: [resumen o diff]
+Cómo se probó: [describe]
+
+Estructura:
+1. Resumen en dos frases.
+2. Motivo, con el hallazgo y la línea.
+3. Qué cambia para quien usa el código.
+4. Riesgos y cómo revertir.
+5. Qué debe mirar con atención quien revisa.
+
+No añadas pruebas, números ni garantías que no estén aquí.</code></pre></div>
+<h3>Cómo comprobar la respuesta</h3>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Qué hizo la IA</th><th scope="col">Por qué desconfiar</th><th scope="col">Qué hacer</th></tr></thead>
+<tbody>
+<tr><td>Citó un método o una clase que no está en lo que pegaste</td><td>Puede haberlo inventado</td><td>Búscalo con la búsqueda de la app o en la referencia de clases</td></tr>
+<tr><td>Afirmó cómo se comporta un comando</td><td>Puede valer para otra versión o estar mal</td><td>Compáralo con la documentación de InterSystems <sup><a href="#ref-4-es">[4]</a></sup> <sup><a href="#ref-5-es">[5]</a></sup></td></tr>
+<tr><td>Cambió <code>Quit</code> por <code>Return</code>, o al revés</td><td>Cambia el flujo dentro de <code>Try</code> y de bucles</td><td>Compara los diagramas antes y después en la app</td></tr>
+<tr><td>Entregó código listo</td><td>Puede no compilar o cambiar un caso raro</td><td>Compila, ejecuta las pruebas y analízalo de nuevo en la app</td></tr>
+<tr><td>Sugirió un índice, un Lock o una transacción</td><td>Afecta a otros procesos</td><td>Evalúalo con quien administra el entorno y prueba fuera de producción</td></tr>
+</tbody>
+</table></div>
+<aside class="note"><p>Después de la corrección, abre el código nuevo en la app: el hallazgo debe desaparecer, y no debe aparecer ninguno nuevo.</p></aside>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+<section id="lim-es" aria-labelledby="h-lim-es">
+<h2 id="h-lim-es">Errores comunes y limitaciones</h2>
+<h3>Errores de lectura</h3>
+<ul>
+<li><strong>Tratar un hallazgo como un defecto.</strong> Un <code>Kill ^Global</code> puede ser justo lo que el método debe hacer. Confírmalo en el código.</li>
+<li><strong>Analizar una clase sola.</strong> Sin las superclases y las clases llamadas, muchos enlaces aparecen como "Fuera de los archivos".</li>
+<li><strong>Buscar en el XML la línea citada.</strong> En la exportación XML, las líneas son las del texto convertido, en la pestaña <strong>Código</strong>.</li>
+<li><strong>Creer que complejidad baja es código correcto.</strong> Mide caminos, no corrección.</li>
+</ul>
+<h3>Limitaciones</h3>
+<ul>
+<li><strong>Lectura sin compilar.</strong> La app no expande macros, no resuelve la herencia fuera de los archivos y puede equivocarse en construcciones raras.</li>
+<li><strong>Solo código de ejemplo.</strong> La app se probó con el ejemplo ficticio y con fragmentos escritos para la prueba, no con código de producción.</li>
+<li><strong>Otros lenguajes.</strong> Los métodos en Python u otro lenguaje no tienen diagrama. La app cuenta las líneas y las llamadas <code>iris.cls()</code>.</li>
+<li><strong>Tamaño.</strong> Los archivos de más de 30 MB se ignoran. El mapa muestra hasta 180 nodos, y la tabla de miembros, hasta 1.500 filas.</li>
+<li><strong>Navegadores.</strong> Probado en Chromium. Firefox, Safari y móviles reales no se probaron.</li>
+</ul>
+</section>
+<section id="rev-es" aria-labelledby="h-rev-es">
+<h2 id="h-rev-es">Repaso rápido</h2>
+<p>Intenta responder antes de abrir cada pregunta.</p>
+<div class="quiz">
+<details><summary>1. ¿Por qué abrir varias clases juntas?</summary><p>Para que la app enlace las llamadas entre ellas. Sola, una llamada a otra clase aparece como "Fuera de los archivos".</p></details>
+<details><summary>2. ¿Qué hace un Quit sin argumento dentro de un Try?</summary><p>Solo sale del bloque Try, y la ejecución sigue en la primera línea después del Catch. Para salir del método, usa Return.</p></details>
+<details><summary>3. ¿Por qué Do obj.%Save() genera un hallazgo?</summary><p>Porque %Save devuelve un %Status, y Do descarta ese valor. Si la grabación falla, nadie se entera.</p></details>
+<details><summary>4. ¿Qué diferencia hay entre Kill ^DemoAudit y Kill ^DemoAudit(id)?</summary><p>El primero borra la global entera. El segundo borra solo el nodo de ese id.</p></details>
+<details><summary>5. ¿Qué significa SQLCODE = 100 después de un &amp;sql?</summary><p>Que la sentencia se ejecutó pero no encontró datos. Los valores negativos indican error.</p></details>
+<details><summary>6. ¿Qué marca el borde rojo en el diagrama?</summary><p>Un comando vinculado a un hallazgo. Haz clic en el bloque para ver cuál.</p></details>
+<details><summary>7. ¿El código sale de tu equipo cuando lo abres en la app?</summary><p>No. El archivo bloquea la red y no guarda el código. Pero, si pegas el código en una IA, va a ese servicio.</p></details>
+<details><summary>8. La IA propuso una corrección que parece correcta. ¿Qué hacer antes de publicarla?</summary><p>Compilarla, probarla fuera de producción, abrir el código nuevo en la app para ver si el hallazgo desapareció y pasarla por la revisión del equipo.</p></details>
+</div>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+<section id="ref-es" aria-labelledby="h-ref-es">
+<h2 id="h-ref-es">Referencias</h2>
+<ol class="refs">
+<li id="ref-1-es"><strong>Giovani Perotto Mesquita</strong>, “IRIS Code Insights”, app en un único archivo HTML, <a href="iris-code-insights.html#es">giovanipm.github.io/iris-code-insights.html</a>.</li>
+<li id="ref-2-es"><strong>InterSystems</strong>, flujo de trabajo en el cliente con la extensión ObjectScript para VS Code, comando Export Code from Server, documentación, consultado el 02/11/2026, <a href="https://docs.intersystems.com/components/csp/docbook/DocBook.UI.Page.cls?KEY=GVSCO_clientflow" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-3-es"><strong>InterSystems</strong>, clase %SYSTEM.OBJ, método Export, referencia de clases, documentación, consultado el 02/11/2026, <a href="https://docs.intersystems.com/irislatest/csp/documatic/%25CSP.Documatic.cls?LIBRARY=%25SYS&amp;CLASSNAME=%25SYSTEM.OBJ" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-4-es"><strong>InterSystems</strong>, comando TRY, sección sobre QUIT y RETURN, referencia de ObjectScript, documentación, consultado el 02/11/2026, <a href="https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RCOS_ctry" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-5-es"><strong>InterSystems</strong>, comando QUIT, referencia de ObjectScript, documentación, consultado el 02/11/2026, <a href="https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RCOS_cquit" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-6-es"><strong>InterSystems</strong>, comando RETURN, referencia de ObjectScript, documentación, consultado el 02/11/2026, <a href="https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RCOS_creturn" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-7-es"><strong>InterSystems</strong>, SQL dinámico, parámetros de entrada con ?, guía de SQL, documentación, consultado el 02/11/2026, <a href="https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=GSQL_dynsql" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-8-es"><strong>InterSystems</strong>, valores de SQLCODE, referencia de SQL, documentación, consultado el 02/11/2026, <a href="https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RSQL_sqlcode" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-9-es"><strong>InterSystems</strong>, comando TROLLBACK y $TLEVEL, referencia de ObjectScript, documentación, consultado el 02/11/2026, <a href="https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RCOS_ctrollback" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-10-es"><strong>InterSystems</strong>, comando LOCK, tiempo límite, referencia de ObjectScript, documentación, consultado el 02/11/2026, <a href="https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RCOS_clock" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-11-es"><strong>InterSystems</strong>, clase %Library.ResultSet, marcada como obsoleta, referencia de clases, documentación, consultado el 02/11/2026, <a href="https://docs.intersystems.com/irislatest/csp/documatic/%25CSP.Documatic.cls?LIBRARY=%25SYS&amp;CLASSNAME=%25Library.ResultSet" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-12-es"><strong>InterSystems</strong>, mensajes de error del sistema, &lt;FRAMESTACK&gt;, documentación, consultado el 02/11/2026, <a href="https://docs.intersystems.com/irislatest/csp/docbook/DocBook.UI.Page.cls?KEY=RERR_system" rel="noopener">docs.intersystems.com</a>.</li>
+<li id="ref-13-es"><strong>Thomas J. McCabe</strong>, “A Complexity Measure”, IEEE Transactions on Software Engineering, SE-2(4), 1976, pp. 308–320, <a href="https://doi.org/10.1109/TSE.1976.233837" rel="noopener">doi.org/10.1109/TSE.1976.233837</a>.</li>
+</ol>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+  </article>
+</div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span>Giovani Perotto Mesquita · Porto Alegre, RS</span>
+    <span><a href="projects.html" data-projects data-foot="0">Projetos</a> · <a href="resume.html" data-resume data-foot="1">Currículo</a> · <a href="contact.html" data-contact data-foot="2">Contato</a></span>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('.lang [role="option"]'));
+    var titles = {"pt":"IRIS Code Insights: tutorial · Giovani Perotto Mesquita","en":"IRIS Code Insights: tutorial · Giovani Perotto Mesquita","it":"IRIS Code Insights: tutorial · Giovani Perotto Mesquita","es":"IRIS Code Insights: tutorial · Giovani Perotto Mesquita"};
+    var foots = {"pt": ["Projetos", "Currículo", "Contato"], "en": ["Projects", "Resume", "Contact"], "it": ["Progetti", "Curriculum", "Contatti"], "es": ["Proyectos", "Currículum", "Contacto"]};
+    var langs = { pt: 'pt-BR', en: 'en', it: 'it', es: 'es' };
+    var bar = document.querySelector('.progress');
+    var article = document.querySelector('[role="tabpanel"]:not([hidden]) article');
+
+    function show(id, focus) {
+      tabs.forEach(function (t) {
+        var on = t.getAttribute('aria-controls') === id;
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+        if (on && focus) t.focus();
+      });
+      document.documentElement.lang = langs[id];
+      document.title = titles[id];
+      var suffix = id === 'pt' ? '' : '#' + id;
+      [['data-home', 'index.html'], ['data-about', 'about.html'], ['data-resume', 'resume.html'], ['data-projects', 'projects.html'], ['data-contact', 'contact.html']].forEach(function (p) {
+        document.querySelectorAll('[' + p[0] + ']').forEach(function (a) { a.href = p[1] + suffix; });
+      });
+      document.querySelectorAll('[data-foot]').forEach(function (a) { a.textContent = foots[id][+a.getAttribute('data-foot')]; });
+      article = document.querySelector('#' + id + ' article');
+      if (history.replaceState) history.replaceState(null, '', id === 'pt' ? location.pathname : '#' + id);
+      progress();
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () { show(t.getAttribute('aria-controls')); });
+      t.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (d) { e.preventDefault(); show(tabs[(i + d + tabs.length) % tabs.length].getAttribute('aria-controls'), true); }
+      });
+    });
+
+    // barra de progresso de leitura
+    function progress() {
+      if (!article) return;
+      var r = article.getBoundingClientRect();
+      var total = r.height - window.innerHeight;
+      var p = total > 0 ? Math.min(Math.max(-r.top / total, 0), 1) : 1;
+      bar.style.width = (p * 100) + '%';
+    }
+    window.addEventListener('scroll', progress, { passive: true });
+    window.addEventListener('resize', progress);
+
+    // destaca a seção atual no índice
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          var panel = e.target.closest('[role="tabpanel"]');
+          panel.querySelectorAll('.toc a').forEach(function (a) {
+            if (a.getAttribute('href') === '#' + e.target.id) a.setAttribute('aria-current', 'true');
+            else a.removeAttribute('aria-current');
+          });
+        });
+      }, { rootMargin: '-20% 0px -70% 0px' });
+      document.querySelectorAll('article section[id]').forEach(function (s) { io.observe(s); });
+    }
+
+    var h = (location.hash || '').replace('#', '');
+    var m = h.match(/^(?:.*-)?(en|it|es)$/);
+    if (m) {
+      show(m[1]);
+      if (h !== m[1]) { var el = document.getElementById(h); if (el) el.scrollIntoView(); if (history.replaceState) history.replaceState(null, '', '#' + h); }
+    } else progress();
+  })();
+</script>
+<script>
+  // seletor de idioma em combobox: abre a lista, sincroniza o botão e fecha
+  (function () {
+    var box = document.querySelector('.lang'); if (!box) return;
+    var btn = box.querySelector('.lang-current'), list = box.querySelector('.lang-list'), now = btn.querySelector('.lang-now');
+    var opts = Array.prototype.slice.call(list.querySelectorAll('[role="option"]'));
+    var menu = {
+      pt: { index: 'Início', about: 'Sobre', resume: 'Currículo', projects: 'Projetos', contact: 'Contato' },
+      en: { index: 'Home', about: 'About', resume: 'Resume', projects: 'Projects', contact: 'Contact' },
+      it: { index: 'Home', about: 'Chi sono', resume: 'Curriculum', projects: 'Progetti', contact: 'Contatti' },
+      es: { index: 'Inicio', about: 'Sobre mí', resume: 'Currículum', projects: 'Proyectos', contact: 'Contacto' }
+    };
+    function translate(id) {
+      document.querySelectorAll('.nav ul a').forEach(function (l) {
+        var k = (l.getAttribute('href') || '').split('#')[0].replace('.html', '');
+        if (menu[id] && menu[id][k]) l.textContent = menu[id][k];
+      });
+      // links do menu para as páginas principais levam o idioma selecionado
+      var suf = id === 'pt' ? '' : '#' + id;
+      document.querySelectorAll('.nav a[href]').forEach(function (l) {
+        var m = l.getAttribute('href').match(/^(index|about|resume|projects|contact)\.html(#(pt|en|it|es))?$/);
+        if (m) l.setAttribute('href', m[1] + '.html' + suf);
+      });
+    }
+    function sync() {
+      var sel = opts.filter(function (o) { return o.getAttribute('aria-selected') === 'true'; })[0] || opts[0];
+      now.innerHTML = sel.querySelector('.flag').outerHTML + sel.getAttribute('data-code');
+      btn.setAttribute('aria-label', btn.getAttribute('data-label') + ': ' + sel.textContent.trim());
+      translate(sel.getAttribute('aria-controls'));
+      return sel;
+    }
+    function open() { list.hidden = false; btn.setAttribute('aria-expanded', 'true'); sync().focus(); }
+    function close(back) { list.hidden = true; btn.setAttribute('aria-expanded', 'false'); if (back) btn.focus(); }
+    btn.addEventListener('click', function () { if (list.hidden) open(); else close(); });
+    btn.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); open(); }
+      else if (e.key === 'Escape') close();
+    });
+    opts.forEach(function (o, i) {
+      o.addEventListener('click', function () { sync(); close(true); });
+      o.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0;
+        if (d) { e.preventDefault(); opts[(i + d + opts.length) % opts.length].focus(); }
+        else if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); opts[e.key === 'Home' ? 0 : opts.length - 1].focus(); }
+        else if (e.key === 'Escape') { e.preventDefault(); close(true); }
+        else if (e.key === 'Tab') close();
+      });
+    });
+    document.addEventListener('click', function (e) { if (!box.contains(e.target)) close(); });
+    new MutationObserver(sync).observe(list, { attributes: true, subtree: true, attributeFilter: ['aria-selected'] });
+    sync();
+  })();
+</script>
+<script>
+document.addEventListener('click', function (e) {
+  var b = e.target.closest && e.target.closest('[data-copy]');
+  if (!b) return;
+  var code = document.getElementById(b.getAttribute('data-copy')), old = b.textContent;
+  function done() { b.textContent = b.getAttribute('data-done'); setTimeout(function () { b.textContent = old; }, 1500); }
+  function fallback() { var r = document.createRange(); r.selectNodeContents(code); var s = getSelection(); s.removeAllRanges(); s.addRange(r); try { document.execCommand('copy'); done(); } catch (x) {} }
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code.textContent).then(done, fallback); else fallback();
+});
+</script>
+</body>
+</html>
