@@ -445,6 +445,13 @@ function Engine() {
   const canMortgage = (S, pi, sq) => isProp(sq) && S.owner[sq] === pi && !S.mort[sq] && (SP[sq].k !== 'st' || GROUP[SP[sq].g].every((i) => !S.lvl[i]));
   const liftCost = (sq) => Math.ceil(SP[sq].mort * 11 / 10);
   const canLift = (S, pi, sq) => isProp(sq) && S.owner[sq] === pi && S.mort[sq] && S.players[pi].cash >= liftCost(sq);
+  // quanto o jogador consegue juntar vendendo todas as construções e hipotecando tudo
+  function raisable(S, pi) {
+    let v = S.players[pi].cash;
+    S.owner.forEach((o, i) => { if (o !== pi) return; if (S.lvl[i]) v += S.lvl[i] * G[SP[i].g].cost / 2; if (!S.mort[i]) v += SP[i].mort; });
+    return v;
+  }
+  const owed = (S, pi) => S.debts.reduce((t, d) => t + (d.from === pi ? d.amount : 0), 0);
 
   function actor(S) {
     if (S.phase === 'over') return -1;
@@ -493,6 +500,7 @@ function Engine() {
       });
       C.cash += P.cash; P.cash = 0;
       mine.forEach((i) => { S.owner[i] = creditor; if (S.mort[i]) C.cash -= Math.min(C.cash, Math.ceil(SP[i].mort / 10)); });
+      if (mine.length) log(S, 'inherit', { p: pi, q: creditor, a: mine.length, b: mine.filter((i) => S.mort[i]).length });
       C.cards.push(...P.cards); P.cards = [];
     } else {
       mine.forEach((i) => { if (S.lvl[i] === 5) S.hotels++; else S.houses += S.lvl[i]; S.lvl[i] = 0; S.mort[i] = false; S.owner[i] = -1; S.queue.push(i); });
@@ -738,7 +746,8 @@ function Engine() {
   function ai(S) {
     const pi = actor(S), P = S.players[pi], L = P.kind, reserve = [250, 120, 60][L];
     switch (S.phase) {
-      case 'debt': return aiFund(S, pi) || { type: 'bankrupt' };
+      // sem como cobrir a dívida, fale logo: hipotecar tudo antes só entregaria ao credor propriedades hipotecadas
+      case 'debt': return (raisable(S, pi) >= owed(S, pi) && aiFund(S, pi)) || { type: 'bankrupt' };
       case 'trade': return aiAccept(S, pi);
       case 'auction': {
         const A = S.auction, top = Math.min(Math.round(aiValue(S, pi, A.sq) * [0.75, 0.95, 1.1][L]), P.cash - reserve), next = A.high + (A.high < 100 ? 10 : 25);
@@ -765,7 +774,7 @@ function Engine() {
     return null;
   }
 
-  return { SP, G, GROUP, CARDS, RAILS, UTILS, JAIL, FINE, newGame, act, actor, ai, rentFor, worth, active, canBuild, canSell, canMortgage, canLift, liftCost, canManage, tradeProblem, ownsAll, isProp };
+  return { SP, G, GROUP, CARDS, RAILS, UTILS, JAIL, FINE, newGame, act, actor, ai, rentFor, worth, active, canBuild, canSell, canMortgage, canLift, liftCost, canManage, raisable, owed, tradeProblem, ownsAll, isProp };
 }
 </script>
 
@@ -830,7 +839,7 @@ function Engine() {
       inJail: 'preso', cardsHeld: '{n} saída', turnOf: 'Vez de {p}', yourTurn: 'Sua vez, {p}', thinking: '{p} está pensando…', rollBtn: 'Lançar os dados', endBtn: 'Encerrar a vez', tradeBtn: 'Negociar', payJailBtn: 'Pagar {n} e sair', useCardBtn: 'Usar carta de saída', jailHint: 'Tente tirar dupla, pague a fiança ou use uma carta. Na terceira tentativa, a fiança é obrigatória.', againHint: 'Você tirou dupla e joga de novo.',
       buyTitle: '{s} está à venda', buyBtn: 'Comprar por {n}', declineBtn: 'Leiloar', noCash: 'Falta dinheiro: hipoteque algo ou leve a leilão.',
       aucTitle: 'Leilão de {s}', aucInfo: 'Maior lance: {n}{h}. Vez de {p}.', aucBy: ' de {p}', aucNone: 'Ainda sem lances. Vez de {p}.', passBtn: 'Desistir', bidBtn: '+{n}',
-      debtTitle: '{p} deve {n}', debtHint: 'Tem {c} em caixa. Venda construções ou hipoteque em Propriedades. O pagamento sai sozinho quando houver dinheiro.', manageBtn: 'Abrir propriedades', bankruptBtn: 'Declarar falência', confirmBankrupt: 'Declarar falência? Você sai da partida.',
+      debtTitle: '{p} deve {n}', debtHint: 'Tem {c} em caixa. Venda construções ou hipoteque em Propriedades. O pagamento sai sozinho quando houver dinheiro.', debtHopeless: 'Mesmo vendendo tudo e hipotecando tudo, chega só a {r}. Não há como pagar.', manageBtn: 'Abrir propriedades', bankruptBtn: 'Declarar falência', confirmBankrupt: 'Declarar falência? Você sai da partida.',
       offerTitle: '{p} propõe um negócio a {q}', youGive: '{p} entrega', youGet: '{p} recebe', nothing: 'nada', acceptBtn: 'Aceitar', rejectBtn: 'Recusar', outCard: 'carta de saída', trTitle: 'Nova negociação', trPartner: 'Negociar com', trSend: 'Propor', trCancel: 'Cancelar', cashLabel: 'Dinheiro',
       trNoPartner: 'Escolha um jogador.', trBuilt: 'Grupos com construções não podem ser negociados: venda as construções antes.', trCash: 'O valor passa do que o jogador tem.', trEmpty: 'Inclua algo na proposta.', trFee: 'Falta dinheiro para os 10% das propriedades hipotecadas.',
       owner: 'Dono', noOwner: 'Banco', priceL: 'Preço', mortL: 'Hipoteca', liftL: 'Resgate', costL: 'Casa ou hotel', rentBase: 'Aluguel', rentGroup: 'Com o grupo completo', rentH: '{n} casa(s)', rentHotel: 'Hotel', mortgagedTag: 'Hipotecada', railRent: 'Com {n} transporte(s)', utilRent1: 'Com 1: 4 × dados', utilRent2: 'Com 2: 10 × dados',
@@ -839,7 +848,7 @@ function Engine() {
       log: {
         start: '{p} começa a partida.', turn: 'Vez de {p}.', roll: '{p} tirou {a} e {b}.', rollD: '{p} tirou dupla de {a}!', go: '{p} passou pelo Largo e recebeu {n}.', land: '{p} parou em {s}.', bought: '{p} comprou {s} por {n}.', auction: '{s} vai a leilão.', bid: '{p} deu lance de {n}.', passed: '{p} desistiu do leilão.', auctionWon: '{p} arrematou {s} por {n}.', auctionNone: '{s} ficou sem comprador.',
         rent: '{p} pagou {n} de aluguel a {q} por {s}.', tax: '{p} pagou {n} de {s}.', owes: '{p} precisa levantar {n}.', card: '{p} tirou {d}: {c}', cardPay: '{p} pagou {n} ao banco.', cardEach: '{p} pagou {n} a {q}.', jailed: '{p} foi para a Detenção.', threeD: 'Três duplas seguidas: {p} vai preso.', jailOutD: '{p} saiu da Detenção com a dupla.', jailStay: '{p} continua preso.', jailFine: '{p} pagou {n} de fiança.', jailCard: '{p} usou a carta de saída.',
-        house: '{p} construiu casa em {s}.', hotel: '{p} construiu hotel em {s}.', sold: '{p} vendeu construção em {s}.', mortgaged: '{p} hipotecou {s} e recebeu {n}.', lifted: '{p} resgatou {s} por {n}.', offer: '{p} propôs um negócio a {q}.', accepted: '{p} aceitou o negócio de {q}.', rejected: '{p} recusou o negócio de {q}.', bankrupt: '{p} faliu para {q}.', bankruptBank: '{p} faliu para o banco: as propriedades vão a leilão.', win: '{p} venceu a partida!',
+        house: '{p} construiu casa em {s}.', hotel: '{p} construiu hotel em {s}.', sold: '{p} vendeu construção em {s}.', mortgaged: '{p} hipotecou {s} e recebeu {n}.', lifted: '{p} resgatou {s} por {n}.', offer: '{p} propôs um negócio a {q}.', accepted: '{p} aceitou o negócio de {q}.', rejected: '{p} recusou o negócio de {q}.', bankrupt: '{p} faliu para {q}.', inherit: '{q} ficou com {a} propriedade(s) de {p} (hipotecadas: {b}).', bankruptBank: '{p} faliu para o banco: as propriedades vão a leilão.', win: '{p} venceu a partida!',
       },
       cards: {
         m0: 'Vento a favor: avance até o Largo Glênio Peres e receba P$ 200.', m1: 'Convite para jantar em Moinhos de Vento: avance até lá.', m2: 'Passeio pela Rua da Praia: avance até lá. Se passar pelo Largo, receba P$ 200.', m3: 'Noite na Cidade Baixa: avance até lá. Se passar pelo Largo, receba P$ 200.',
@@ -870,7 +879,7 @@ function Engine() {
       inJail: 'locked up', cardsHeld: '{n} get-out', turnOf: '{p}’s turn', yourTurn: 'Your turn, {p}', thinking: '{p} is thinking…', rollBtn: 'Roll the dice', endBtn: 'End turn', tradeBtn: 'Trade', payJailBtn: 'Pay {n} and leave', useCardBtn: 'Use get-out card', jailHint: 'Try for doubles, pay the bail or use a card. On the third try, bail is mandatory.', againHint: 'You rolled doubles and go again.',
       buyTitle: '{s} is for sale', buyBtn: 'Buy for {n}', declineBtn: 'Auction', noCash: 'Not enough money: mortgage something or send it to auction.',
       aucTitle: 'Auction of {s}', aucInfo: 'Highest bid: {n}{h}. {p} to bid.', aucBy: ' by {p}', aucNone: 'No bids yet. {p} to bid.', passBtn: 'Drop out', bidBtn: '+{n}',
-      debtTitle: '{p} owes {n}', debtHint: 'Cash on hand: {c}. Sell buildings or mortgage under Properties. Payment goes through by itself once there is enough money.', manageBtn: 'Open properties', bankruptBtn: 'Declare bankruptcy', confirmBankrupt: 'Declare bankruptcy? You leave the game.',
+      debtTitle: '{p} owes {n}', debtHint: 'Cash on hand: {c}. Sell buildings or mortgage under Properties. Payment goes through by itself once there is enough money.', debtHopeless: 'Even selling and mortgaging everything only raises {r}. There is no way to pay.', manageBtn: 'Open properties', bankruptBtn: 'Declare bankruptcy', confirmBankrupt: 'Declare bankruptcy? You leave the game.',
       offerTitle: '{p} offers {q} a deal', youGive: '{p} gives', youGet: '{p} gets', nothing: 'nothing', acceptBtn: 'Accept', rejectBtn: 'Reject', outCard: 'get-out card', trTitle: 'New trade', trPartner: 'Trade with', trSend: 'Propose', trCancel: 'Cancel', cashLabel: 'Money',
       trNoPartner: 'Choose a player.', trBuilt: 'Groups with buildings cannot be traded: sell the buildings first.', trCash: 'That is more than the player has.', trEmpty: 'Put something in the offer.', trFee: 'Not enough money for the 10% on mortgaged properties.',
       owner: 'Owner', noOwner: 'Bank', priceL: 'Price', mortL: 'Mortgage', liftL: 'Redeem', costL: 'House or hotel', rentBase: 'Rent', rentGroup: 'With the full group', rentH: '{n} house(s)', rentHotel: 'Hotel', mortgagedTag: 'Mortgaged', railRent: 'With {n} transport(s)', utilRent1: 'With 1: 4 × dice', utilRent2: 'With 2: 10 × dice',
@@ -879,7 +888,7 @@ function Engine() {
       log: {
         start: '{p} starts the game.', turn: '{p}’s turn.', roll: '{p} rolled {a} and {b}.', rollD: '{p} rolled double {a}!', go: '{p} passed the Largo and got {n}.', land: '{p} landed on {s}.', bought: '{p} bought {s} for {n}.', auction: '{s} goes to auction.', bid: '{p} bid {n}.', passed: '{p} dropped out of the auction.', auctionWon: '{p} won {s} for {n}.', auctionNone: '{s} found no buyer.',
         rent: '{p} paid {q} {n} in rent for {s}.', tax: '{p} paid {n} in {s}.', owes: '{p} must raise {n}.', card: '{p} drew {d}: {c}', cardPay: '{p} paid the bank {n}.', cardEach: '{p} paid {q} {n}.', jailed: '{p} went to Detention.', threeD: 'Three doubles in a row: {p} is locked up.', jailOutD: '{p} left Detention with doubles.', jailStay: '{p} stays locked up.', jailFine: '{p} paid {n} in bail.', jailCard: '{p} used a get-out card.',
-        house: '{p} built a house on {s}.', hotel: '{p} built a hotel on {s}.', sold: '{p} sold a building on {s}.', mortgaged: '{p} mortgaged {s} and got {n}.', lifted: '{p} redeemed {s} for {n}.', offer: '{p} offered {q} a deal.', accepted: '{p} accepted {q}’s deal.', rejected: '{p} rejected {q}’s deal.', bankrupt: '{p} went bankrupt to {q}.', bankruptBank: '{p} went bankrupt to the bank: the properties go to auction.', win: '{p} won the game!',
+        house: '{p} built a house on {s}.', hotel: '{p} built a hotel on {s}.', sold: '{p} sold a building on {s}.', mortgaged: '{p} mortgaged {s} and got {n}.', lifted: '{p} redeemed {s} for {n}.', offer: '{p} offered {q} a deal.', accepted: '{p} accepted {q}’s deal.', rejected: '{p} rejected {q}’s deal.', bankrupt: '{p} went bankrupt to {q}.', inherit: '{q} took over {a} of {p}’s properties (mortgaged: {b}).', bankruptBank: '{p} went bankrupt to the bank: the properties go to auction.', win: '{p} won the game!',
       },
       cards: {
         m0: 'Tailwind: advance to Largo Glênio Peres and collect P$ 200.', m1: 'Dinner invitation in Moinhos de Vento: advance there.', m2: 'A stroll on Rua da Praia: advance there. If you pass the Largo, collect P$ 200.', m3: 'A night in Cidade Baixa: advance there. If you pass the Largo, collect P$ 200.',
@@ -910,7 +919,7 @@ function Engine() {
       inJail: 'in cella', cardsHeld: '{n} uscita', turnOf: 'Tocca a {p}', yourTurn: 'Tocca a te, {p}', thinking: '{p}: sta pensando…', rollBtn: 'Lancia i dadi', endBtn: 'Termina il turno', tradeBtn: 'Tratta', payJailBtn: 'Paga {n} ed esci', useCardBtn: 'Usa la carta di uscita', jailHint: 'Prova a fare un doppio, paga la cauzione o usa una carta. Al terzo tentativo la cauzione è obbligatoria.', againHint: 'Hai fatto un doppio e giochi ancora.',
       buyTitle: '{s} è in vendita', buyBtn: 'Compra per {n}', declineBtn: 'All’asta', noCash: 'Mancano i soldi: ipoteca qualcosa o manda all’asta.',
       aucTitle: 'Asta di {s}', aucInfo: 'Offerta più alta: {n}{h}. Tocca a {p}.', aucBy: ' di {p}', aucNone: 'Ancora nessuna offerta. Tocca a {p}.', passBtn: 'Ritirati', bidBtn: '+{n}',
-      debtTitle: '{p} deve {n}', debtHint: 'In cassa: {c}. Vendi costruzioni o ipoteca in Proprietà. Il pagamento parte da solo quando i soldi bastano.', manageBtn: 'Apri proprietà', bankruptBtn: 'Dichiara fallimento', confirmBankrupt: 'Dichiarare fallimento? Esci dalla partita.',
+      debtTitle: '{p} deve {n}', debtHint: 'In cassa: {c}. Vendi costruzioni o ipoteca in Proprietà. Il pagamento parte da solo quando i soldi bastano.', debtHopeless: 'Anche vendendo e ipotecando tutto si arriva solo a {r}. Non c’è modo di pagare.', manageBtn: 'Apri proprietà', bankruptBtn: 'Dichiara fallimento', confirmBankrupt: 'Dichiarare fallimento? Esci dalla partita.',
       offerTitle: '{p} propone un affare a {q}', youGive: '{p} dà', youGet: '{p} riceve', nothing: 'niente', acceptBtn: 'Accetta', rejectBtn: 'Rifiuta', outCard: 'carta di uscita', trTitle: 'Nuova trattativa', trPartner: 'Tratta con', trSend: 'Proponi', trCancel: 'Annulla', cashLabel: 'Denaro',
       trNoPartner: 'Scegli un giocatore.', trBuilt: 'I gruppi con costruzioni non si possono trattare: vendi prima le costruzioni.', trCash: 'La cifra supera quanto ha il giocatore.', trEmpty: 'Inserisci qualcosa nella proposta.', trFee: 'Mancano i soldi per il 10% delle proprietà ipotecate.',
       owner: 'Proprietario', noOwner: 'Banca', priceL: 'Prezzo', mortL: 'Ipoteca', liftL: 'Riscatto', costL: 'Casa o albergo', rentBase: 'Affitto', rentGroup: 'Con il gruppo completo', rentH: '{n} casa/e', rentHotel: 'Albergo', mortgagedTag: 'Ipotecata', railRent: 'Con {n} trasporto/i', utilRent1: 'Con 1: 4 × dadi', utilRent2: 'Con 2: 10 × dadi',
@@ -919,7 +928,7 @@ function Engine() {
       log: {
         start: '{p} inizia la partita.', turn: 'Tocca a {p}.', roll: '{p} ha fatto {a} e {b}.', rollD: '{p} ha fatto doppio {a}!', go: '{p} è passato dal Largo e ha ricevuto {n}.', land: '{p} è su {s}.', bought: '{p} ha comprato {s} per {n}.', auction: '{s} va all’asta.', bid: '{p} ha offerto {n}.', passed: '{p} si è ritirato dall’asta.', auctionWon: '{p} si è aggiudicato {s} per {n}.', auctionNone: '{s} è rimasta senza compratore.',
         rent: '{p} ha pagato a {q} {n} di affitto per {s}.', tax: '{p} ha pagato {n} di {s}.', owes: '{p} deve trovare {n}.', card: '{p} ha pescato {d}: {c}', cardPay: '{p} ha pagato {n} alla banca.', cardEach: '{p} ha pagato {n} a {q}.', jailed: '{p} è andato in Detenzione.', threeD: 'Tre doppi di fila: {p} va in cella.', jailOutD: '{p} è uscito dalla Detenzione con il doppio.', jailStay: '{p} resta in cella.', jailFine: '{p} ha pagato {n} di cauzione.', jailCard: '{p} ha usato la carta di uscita.',
-        house: '{p} ha costruito una casa su {s}.', hotel: '{p} ha costruito un albergo su {s}.', sold: '{p} ha venduto una costruzione su {s}.', mortgaged: '{p} ha ipotecato {s} e ricevuto {n}.', lifted: '{p} ha riscattato {s} per {n}.', offer: '{p} ha proposto un affare a {q}.', accepted: '{p} ha accettato l’affare di {q}.', rejected: '{p} ha rifiutato l’affare di {q}.', bankrupt: '{p} è fallito a favore di {q}.', bankruptBank: '{p} è fallito verso la banca: le proprietà vanno all’asta.', win: '{p} ha vinto la partita!',
+        house: '{p} ha costruito una casa su {s}.', hotel: '{p} ha costruito un albergo su {s}.', sold: '{p} ha venduto una costruzione su {s}.', mortgaged: '{p} ha ipotecato {s} e ricevuto {n}.', lifted: '{p} ha riscattato {s} per {n}.', offer: '{p} ha proposto un affare a {q}.', accepted: '{p} ha accettato l’affare di {q}.', rejected: '{p} ha rifiutato l’affare di {q}.', bankrupt: '{p} è fallito a favore di {q}.', inherit: '{q} ha preso {a} proprietà di {p} (ipotecate: {b}).', bankruptBank: '{p} è fallito verso la banca: le proprietà vanno all’asta.', win: '{p} ha vinto la partita!',
       },
       cards: {
         m0: 'Vento a favore: vai al Largo Glênio Peres e ricevi P$ 200.', m1: 'Invito a cena a Moinhos de Vento: vai lì.', m2: 'Passeggiata in Rua da Praia: vai lì. Se passi dal Largo, ricevi P$ 200.', m3: 'Serata a Cidade Baixa: vai lì. Se passi dal Largo, ricevi P$ 200.',
@@ -950,7 +959,7 @@ function Engine() {
       inJail: 'detenido', cardsHeld: '{n} salida', turnOf: 'Turno de {p}', yourTurn: 'Tu turno, {p}', thinking: '{p} está pensando…', rollBtn: 'Lanzar los dados', endBtn: 'Terminar el turno', tradeBtn: 'Negociar', payJailBtn: 'Pagar {n} y salir', useCardBtn: 'Usar carta de salida', jailHint: 'Intenta sacar doble, paga la fianza o usa una carta. En el tercer intento, la fianza es obligatoria.', againHint: 'Sacaste doble y juegas de nuevo.',
       buyTitle: '{s} está en venta', buyBtn: 'Comprar por {n}', declineBtn: 'Subastar', noCash: 'Falta dinero: hipoteca algo o llévala a subasta.',
       aucTitle: 'Subasta de {s}', aucInfo: 'Mayor oferta: {n}{h}. Turno de {p}.', aucBy: ' de {p}', aucNone: 'Aún sin ofertas. Turno de {p}.', passBtn: 'Retirarse', bidBtn: '+{n}',
-      debtTitle: '{p} debe {n}', debtHint: 'En caja: {c}. Vende construcciones o hipoteca en Propiedades. El pago sale solo cuando haya dinero.', manageBtn: 'Abrir propiedades', bankruptBtn: 'Declarar quiebra', confirmBankrupt: '¿Declarar quiebra? Sales de la partida.',
+      debtTitle: '{p} debe {n}', debtHint: 'En caja: {c}. Vende construcciones o hipoteca en Propiedades. El pago sale solo cuando haya dinero.', debtHopeless: 'Aun vendiendo e hipotecando todo, solo se llega a {r}. No hay forma de pagar.', manageBtn: 'Abrir propiedades', bankruptBtn: 'Declarar quiebra', confirmBankrupt: '¿Declarar quiebra? Sales de la partida.',
       offerTitle: '{p} propone un negocio a {q}', youGive: '{p} entrega', youGet: '{p} recibe', nothing: 'nada', acceptBtn: 'Aceptar', rejectBtn: 'Rechazar', outCard: 'carta de salida', trTitle: 'Nueva negociación', trPartner: 'Negociar con', trSend: 'Proponer', trCancel: 'Cancelar', cashLabel: 'Dinero',
       trNoPartner: 'Elige un jugador.', trBuilt: 'Los grupos con construcciones no se negocian: vende antes las construcciones.', trCash: 'El valor supera lo que tiene el jugador.', trEmpty: 'Incluye algo en la propuesta.', trFee: 'Falta dinero para el 10% de las propiedades hipotecadas.',
       owner: 'Dueño', noOwner: 'Banco', priceL: 'Precio', mortL: 'Hipoteca', liftL: 'Rescate', costL: 'Casa u hotel', rentBase: 'Alquiler', rentGroup: 'Con el grupo completo', rentH: '{n} casa(s)', rentHotel: 'Hotel', mortgagedTag: 'Hipotecada', railRent: 'Con {n} transporte(s)', utilRent1: 'Con 1: 4 × dados', utilRent2: 'Con 2: 10 × dados',
@@ -959,7 +968,7 @@ function Engine() {
       log: {
         start: '{p} empieza la partida.', turn: 'Turno de {p}.', roll: '{p} sacó {a} y {b}.', rollD: '¡{p} sacó doble {a}!', go: '{p} pasó por el Largo y recibió {n}.', land: '{p} cayó en {s}.', bought: '{p} compró {s} por {n}.', auction: '{s} va a subasta.', bid: '{p} ofreció {n}.', passed: '{p} se retiró de la subasta.', auctionWon: '{p} se quedó con {s} por {n}.', auctionNone: '{s} se quedó sin comprador.',
         rent: '{p} pagó a {q} {n} de alquiler por {s}.', tax: '{p} pagó {n} de {s}.', owes: '{p} debe reunir {n}.', card: '{p} sacó {d}: {c}', cardPay: '{p} pagó {n} al banco.', cardEach: '{p} pagó {n} a {q}.', jailed: '{p} fue a la Detención.', threeD: 'Tres dobles seguidos: {p} queda detenido.', jailOutD: '{p} salió de la Detención con el doble.', jailStay: '{p} sigue detenido.', jailFine: '{p} pagó {n} de fianza.', jailCard: '{p} usó la carta de salida.',
-        house: '{p} construyó una casa en {s}.', hotel: '{p} construyó un hotel en {s}.', sold: '{p} vendió una construcción en {s}.', mortgaged: '{p} hipotecó {s} y recibió {n}.', lifted: '{p} rescató {s} por {n}.', offer: '{p} propuso un negocio a {q}.', accepted: '{p} aceptó el negocio de {q}.', rejected: '{p} rechazó el negocio de {q}.', bankrupt: '{p} quebró a favor de {q}.', bankruptBank: '{p} quebró ante el banco: las propiedades van a subasta.', win: '¡{p} ganó la partida!',
+        house: '{p} construyó una casa en {s}.', hotel: '{p} construyó un hotel en {s}.', sold: '{p} vendió una construcción en {s}.', mortgaged: '{p} hipotecó {s} y recibió {n}.', lifted: '{p} rescató {s} por {n}.', offer: '{p} propuso un negocio a {q}.', accepted: '{p} aceptó el negocio de {q}.', rejected: '{p} rechazó el negocio de {q}.', bankrupt: '{p} quebró a favor de {q}.', inherit: '{q} se quedó con {a} propiedad(es) de {p} (hipotecadas: {b}).', bankruptBank: '{p} quebró ante el banco: las propiedades van a subasta.', win: '¡{p} ganó la partida!',
       },
       cards: {
         m0: 'Viento a favor: avanza hasta el Largo Glênio Peres y recibe P$ 200.', m1: 'Invitación a cenar en Moinhos de Vento: avanza hasta allí.', m2: 'Paseo por la Rua da Praia: avanza hasta allí. Si pasas por el Largo, recibe P$ 200.', m3: 'Noche en Cidade Baixa: avanza hasta allí. Si pasas por el Largo, recibe P$ 200.',
@@ -1149,7 +1158,8 @@ function Engine() {
       h += btn('pass', t('passBtn')) + btn('deedOpen', t('details'), '', `data-sq="${a.sq}"`) + '</div>';
     } else if (S.phase === 'debt') {
       const d = S.debts[0];
-      h = `<h2>${t('debtTitle', { p: nm, n: money(d.amount) })}</h2><p>${t('debtHint', { c: money(P.cash) })}</p><div class="btns">${btn('mineOpen', t('manageBtn'), 'pri')}${btn('bankrupt', t('bankruptBtn'), 'bad')}</div>`;
+      const r = E.raisable(S, me), hopeless = r < E.owed(S, me);
+      h = `<h2>${t('debtTitle', { p: nm, n: money(d.amount) })}</h2><p>${hopeless ? t('debtHopeless', { r: money(r) }) : t('debtHint', { c: money(P.cash) })}</p><div class="btns">${btn('mineOpen', t('manageBtn'), 'pri')}${btn('bankrupt', t('bankruptBtn'), 'bad')}</div>`;
     } else if (S.phase === 'trade') {
       const tr = S.trade;
       h = `<h2>${t('offerTitle', { p: esc(pname(tr.from)), q: esc(pname(tr.to)) })}</h2><p><b>${t('youGive', { p: esc(pname(tr.from)) })}:</b> ${tradeSide(tr.give, tr.giveCash, tr.giveCards)}<br><b>${t('youGet', { p: esc(pname(tr.from)) })}:</b> ${tradeSide(tr.get, tr.getCash, tr.getCards)}</p><div class="btns">${btn('accept', t('acceptBtn'), 'pri')}${btn('reject', t('rejectBtn'))}</div>`;
@@ -1264,8 +1274,17 @@ function Engine() {
     h += `<div class="row"><button type="button" class="btn pri" data-close="dDeed">${t('close')}</button></div>`;
     d.innerHTML = h;
   }
+  // a janela fica presa ao jogador para quem foi aberta: se a vez passa a outro humano,
+  // ela não troca sozinha para as propriedades dele (os botões somem até a vez voltar)
+  let mineWho = null;
+  function openMine() {
+    const me = S.over ? S.turn : E.actor(S), h = S.players.findIndex((p) => p.kind === 'human');
+    mineWho = S.players[me].kind === 'human' ? me : (h >= 0 ? h : me);
+    renderMine();
+    if (!$('dMine').open) $('dMine').showModal();
+  }
   function renderMine() {
-    const me = S.over ? S.turn : E.actor(S), who = S.players[me].kind === 'human' ? me : (S.players.findIndex((p) => p.kind === 'human') >= 0 ? S.players.findIndex((p) => p.kind === 'human') : me);
+    const who = mineWho;
     const list = []; S.owner.forEach((o, i) => { if (o === who) list.push(i); });
     let h = `<h2 id="mineH">${t('mineTitle', { p: esc(pname(who)) })}</h2><p class="pinfo">${money(S.players[who].cash)}</p>`;
     if (!list.length) h += `<p>${t('noneOwned')}</p>`;
@@ -1300,16 +1319,30 @@ function Engine() {
     const prob = E.tradeProblem(S, Object.assign({ from: me }, tr));
     $('dTrade').innerHTML = `<h2 id="tradeH">${t('trTitle')}</h2><label class="field">${t('trPartner')}<select id="trTo">${opts}</select></label><div class="tcols">${col(me, 'give', 'giveCash', 'giveCards', t('youGive', { p: esc(pname(me)) }))}${col(tr.to, 'get', 'getCash', 'getCards', t('youGive', { p: esc(pname(tr.to)) }))}</div><p class="warn" id="trWarn">${prob && prob !== 'trEmpty' ? t(prob) : ''}</p><div class="row"><button type="button" class="btn pri" id="trSend" ${prob ? 'disabled' : ''}>${t('trSend')}</button><button type="button" class="btn" data-close="dTrade">${t('trCancel')}</button></div>`;
   }
+  // Lê a proposta direto dos campos. Só a troca de parceiro redesenha a janela: redesenhar a cada
+  // mudança apagava o elemento sob o mouse e o clique seguinte se perdia (por exemplo, digitar um
+  // valor e clicar numa propriedade enviava só o dinheiro, sem a propriedade).
+  function readTrade() {
+    const d = $('dTrade');
+    tr.give = [...d.querySelectorAll('input[data-tr="give"]:checked')].map((x) => +x.value);
+    tr.get = [...d.querySelectorAll('input[data-tr="get"]:checked')].map((x) => +x.value);
+    d.querySelectorAll('[data-trc]').forEach((x) => { tr[x.dataset.trc] = Math.max(0, Math.floor(+x.value || 0)); });
+    d.querySelectorAll('[data-trk]').forEach((x) => { tr[x.dataset.trk] = x.checked ? 1 : 0; });
+    const prob = E.tradeProblem(S, Object.assign({ from: S.turn }, tr));
+    $('trWarn').textContent = prob && prob !== 'trEmpty' ? t(prob) : '';
+    $('trSend').disabled = !!prob;
+    return prob;
+  }
+  $('dTrade').addEventListener('input', (e) => { if (e.target.dataset.trc) readTrade(); });
   $('dTrade').addEventListener('change', (e) => {
     const x = e.target;
-    if (x.id === 'trTo') { tr.to = +x.value; tr.get = []; tr.getCash = 0; tr.getCards = 0; }
-    else if (x.dataset.tr) { const k = x.dataset.tr, v = +x.value; tr[k] = x.checked ? tr[k].concat(v) : tr[k].filter((i) => i !== v); }
-    else if (x.dataset.trc) tr[x.dataset.trc] = Math.max(0, Math.floor(+x.value || 0));
-    else if (x.dataset.trk) tr[x.dataset.trk] = x.checked ? 1 : 0;
-    renderTrade();
+    if (x.id === 'trTo') { tr.to = +x.value; tr.get = []; tr.getCash = 0; tr.getCards = 0; renderTrade(); }
+    else readTrade();
   });
   $('dTrade').addEventListener('click', (e) => {
-    if (e.target.id === 'trSend') { const a = { type: 'propose', trade: tr }; $('dTrade').close(); dispatch(a); }
+    if (e.target.id !== 'trSend' || readTrade()) return;
+    const a = { type: 'propose', trade: { to: tr.to, give: tr.give.slice(), get: tr.get.slice(), giveCash: tr.giveCash, getCash: tr.getCash, giveCards: tr.giveCards, getCards: tr.getCards } };
+    $('dTrade').close(); dispatch(a);
   });
 
   // ---------------------------------------------------------------- som
@@ -1404,7 +1437,7 @@ function Engine() {
     if (!b || b.disabled) return;
     const a = b.dataset.act;
     if (a === 'tradeOpen') openTrade();
-    else if (a === 'mineOpen') { renderMine(); $('dMine').showModal(); }
+    else if (a === 'mineOpen') openMine();
     else if (a === 'deedOpen') openDeed(+b.dataset.sq);
     else if (a === 'showEnd') showEnd();
     else if (a === 'bid') dispatch({ type: 'bid', amount: +b.dataset.amt });
@@ -1419,7 +1452,7 @@ function Engine() {
   });
   $('board').addEventListener('click', (e) => { const c = e.target.closest('[data-sq]'); if (c) openDeed(+c.dataset.sq); });
   $('dDeed').addEventListener('close', () => { deedSq = null; });
-  $('bMine').addEventListener('click', () => { if (S) { renderMine(); $('dMine').showModal(); } });
+  $('bMine').addEventListener('click', () => { if (S) openMine(); });
   const openRules = () => { $('dRules').showModal(); $('dRules').scrollTop = 0; };
   $('bRules').addEventListener('click', openRules);
   $('bRules2').addEventListener('click', openRules);
