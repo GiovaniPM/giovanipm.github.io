@@ -1,0 +1,1779 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Prefeito de Porto Alegre: tutorial · Giovani Perotto Mesquita</title>
+<meta name="description" content="Tutorial do Prefeito de Porto Alegre, simulador de cidade em um único arquivo HTML: ruas, zonas, energia, água, serviços, trânsito, cheias do Guaíba com diques e comportas, orçamento, eleição, marcos e cidades de exemplo, com telas do jogo. Disponível em português, inglês, italiano e espanhol.">
+<meta name="author" content="Giovani Perotto Mesquita">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Paleta alegre: roxo e magenta vibrantes, amarelo-girassol, verde-água e coral */
+    --bg: #FFF7EC;
+    --surface: #FFFFFF;
+    --ink: #2B1B3D;
+    --text: #3E3350;
+    --muted: #756986;
+    --line: #F1E2CF;
+    --accent: #0E8074;
+    --accent-soft: #E2F6F2;
+    --accent-strong: #5B2A86;
+    --navy: #5B2A86;
+    --navy-deep: #C2185B;
+    --on-navy: #FFFFFF;
+    --on-navy-muted: #FCE4F0;
+    --gold: #FFB703;
+    --gold-ink: #B35300;
+    --gold-soft: #FFF1C9;
+    --coral: #FF6B6B;
+    --sky: #3A86FF;
+    --mint: #2A9D8F;
+    --pink: #EF476F;
+    --sans: "Hanken Grotesk", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1A1328; --surface: #241A36; --ink: #F7F0FF; --text: #E2D8F0; --muted: #A898C0;
+      --line: #3A2D52; --accent: #5FD3C4; --accent-soft: #1D3A38; --accent-strong: #C9A7F5;
+      --navy: #3D1A5C; --navy-deep: #7A1240; --gold: #FFC94D; --gold-ink: #FFC94D; --gold-soft: #3A2E12;
+      --coral: #FF8A8A; --sky: #6FA8FF; --mint: #4CC3B3; --pink: #FF6F91;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 4px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 1.5rem; }
+
+  /* navegação */
+  .nav {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: saturate(160%) blur(10px); -webkit-backdrop-filter: saturate(160%) blur(10px);
+    border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px);
+  }
+  .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 58px; gap: 1rem; }
+  .brand { font-family: var(--serif); font-weight: 600; color: var(--accent-strong); text-decoration: none; font-size: 1.05rem; }
+  .nav ul { list-style: none; display: flex; gap: 1.4rem; margin: 0; padding: 0; }
+  .nav ul a { color: var(--muted); text-decoration: none; font-size: 0.93rem; font-weight: 500; }
+  .nav ul a:hover, .nav ul a[aria-current="page"] { color: var(--ink); }
+  .nav-right { display: flex; align-items: center; gap: 1rem; }
+  .lang { position: relative; }
+  .lang button { font: inherit; cursor: pointer; }
+  .lang .flag { width: 18px; height: 12px; border-radius: 2px; flex: none; box-shadow: 0 0 0 1px rgba(0,0,0,.12); }
+  .lang-current { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.8rem; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 0.3rem 0.5rem 0.3rem 0.55rem; }
+  .lang-current:hover { border-color: var(--muted); }
+  .lang-now { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .lang .chev { width: 12px; height: 12px; color: var(--muted); transition: transform .15s ease; }
+  .lang-current[aria-expanded="true"] .chev { transform: rotate(180deg); }
+  .lang-list { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; min-width: 10.5rem; padding: 0.3rem; display: grid; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 12px 30px rgba(0,0,0,.18); }
+  .lang-list[hidden] { display: none; }
+  .lang-list [role="option"] { display: flex; align-items: center; gap: 0.6rem; width: 100%; text-align: left; font-size: 0.9rem; font-weight: 500; color: var(--ink); background: none; border: 0; border-radius: 6px; padding: 0.45rem 0.6rem; }
+  .lang-list [role="option"]:hover, .lang-list [role="option"]:focus-visible { background: color-mix(in srgb, var(--muted) 14%, transparent); }
+  .lang-list [role="option"][aria-selected="true"] { color: var(--accent-strong); font-weight: 600; }
+  .lang-list [role="option"][aria-selected="true"]::after { content: "✓"; margin-left: auto; }
+  @media (max-width: 480px) { .lang-now { font-size: 0; gap: 0; } }
+  [hidden] { display: none !important; }
+  .progress { position: absolute; left: 0; bottom: -1px; height: 3px; width: 0; background: linear-gradient(90deg, var(--coral), var(--gold), var(--mint)); }
+
+  /* abertura */
+  .hero-band {
+    background:
+      radial-gradient(900px 420px at 85% -10%, rgba(255,255,255,.07), transparent 60%),
+      linear-gradient(160deg, var(--navy) 0%, var(--navy-deep) 100%);
+    border-top: 4px solid var(--gold); color: var(--on-navy);
+  }
+  .hero { padding: 3.5rem 0 3.5rem; max-width: 820px; }
+  .crumb { margin: 0 0 1.4rem; font-size: 0.92rem; }
+  .crumb a { color: var(--on-navy-muted); text-decoration: none; }
+  .crumb a:hover { color: var(--gold); }
+  .eyebrow { color: var(--gold); font-weight: 600; font-size: 1rem; margin: 0 0 0.7rem; }
+  h1 { font-family: var(--serif); font-weight: 600; color: var(--on-navy); font-size: clamp(2.3rem, 5.5vw, 3.8rem); line-height: 1.05; letter-spacing: -0.025em; margin: 0; }
+  .dek { font-family: var(--serif); font-style: italic; font-size: clamp(1.1rem, 2.2vw, 1.35rem); color: var(--on-navy-muted); margin: 1.1rem 0 1.6rem; max-width: 58ch; }
+  .byline { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; font-size: 0.92rem; color: var(--on-navy-muted); }
+  .byline strong { color: var(--on-navy); font-weight: 600; }
+  .byline .credit { margin-left: auto; font-style: italic; }
+
+  /* layout do artigo */
+  .layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 3rem; padding: 3rem 0 4rem; align-items: start; }
+  .toc { position: sticky; top: 82px; font-size: 0.92rem; max-height: calc(100vh - 100px); overflow-y: auto; }
+  .toc h2 { font-family: var(--sans); font-size: 0.85rem; font-weight: 600; color: var(--muted); margin: 0 0 0.7rem; border: 0; padding: 0; }
+  .toc ol { list-style: none; margin: 0; padding: 0; counter-reset: toc; border-left: 2px solid var(--line); }
+  .toc li { counter-increment: toc; }
+  .toc a { display: block; padding: 0.3rem 0 0.3rem 1rem; margin-left: -2px; border-left: 2px solid transparent; color: var(--muted); text-decoration: none; line-height: 1.35; }
+  .toc a::before { content: counter(toc) ". "; color: var(--gold-ink); font-weight: 600; }
+  .toc a:hover { color: var(--ink); }
+  .toc a[aria-current="true"] { color: var(--accent-strong); border-left-color: var(--gold); font-weight: 600; }
+
+  article { background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: var(--radius); padding: 3rem clamp(1.25rem, 4vw, 3.5rem); min-width: 0; }
+  article section + section { margin-top: 3.2rem; }
+  article h2 { font-family: var(--serif); font-weight: 600; color: var(--ink); font-size: clamp(1.5rem, 2.8vw, 1.9rem); letter-spacing: -0.015em; line-height: 1.2; margin: 0 0 1.1rem; padding-left: 0.9rem; border-left: 3px solid var(--gold); }
+  article h3 { font-family: var(--sans); font-size: 1.1rem; font-weight: 600; color: var(--ink); margin: 2rem 0 0.8rem; }
+  article p, article li { font-family: var(--serif); font-size: 1.12rem; line-height: 1.7; color: var(--text); }
+  article p { margin: 0 0 1.1rem; max-width: 68ch; }
+  article ul, article ol { margin: 0 0 1.1rem; padding-left: 1.4rem; max-width: 68ch; }
+  article li { margin-bottom: 0.3rem; }
+  article strong { color: var(--ink); }
+  sup a { font-family: var(--sans); font-size: 0.72rem; font-weight: 700; text-decoration: none; padding: 0 0.15em; }
+
+  figure { margin: 2rem 0; }
+  figure img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: #FFF7EC; }
+  figcaption { margin-top: 0.6rem; font-size: 0.9rem; color: var(--muted); text-align: center; font-family: var(--sans); line-height: 1.5; }
+
+  blockquote { margin: 1.5rem 0; padding: 1.2rem 1.5rem; background: var(--accent-soft); border-left: 3px solid var(--gold); border-radius: 0 10px 10px 0; }
+  blockquote p { font-size: 1.05rem; margin: 0 0 0.8rem; }
+  blockquote p:last-child { margin-bottom: 0; }
+  blockquote.pull p { font-size: clamp(1.15rem, 2.3vw, 1.35rem); font-style: italic; line-height: 1.45; color: var(--ink); }
+  blockquote cite { font-family: var(--sans); font-size: 0.88rem; font-style: normal; color: var(--muted); }
+
+  /* tabelas */
+  .table-wrap { overflow-x: auto; margin: 1.5rem 0; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-family: var(--sans); font-size: 0.95rem; }
+  th, td { text-align: left; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.5; }
+  thead th { background: var(--gold-soft); color: var(--ink); font-weight: 600; }
+  tbody th { color: var(--ink); font-weight: 600; }
+  tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
+  td code, th code { font-size: 0.9em; }
+
+  /* mitos */
+  .myths { list-style: none; padding: 0; margin: 1.5rem 0; max-width: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
+  .myths li { margin: 0; padding: 1rem 1.2rem; border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: 10px; }
+  .myths li:nth-child(4n+2) { border-top-color: var(--sky); }
+  .myths li:nth-child(4n+3) { border-top-color: var(--mint); }
+  .myths li:nth-child(4n+4) { border-top-color: var(--gold); }
+  .myths h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+  .myths p { margin: 0; font-size: 1rem; line-height: 1.6; }
+
+  /* para fixar */
+  .recap { margin: 1.8rem 0 0; padding: 1.1rem 1.4rem; background: var(--gold-soft); border-left: 4px solid var(--mint); border-radius: 0 10px 10px 0; }
+  .recap h3 { margin: 0 0 0.5rem; font-size: 0.85rem; letter-spacing: .05em; text-transform: uppercase; color: var(--gold-ink); }
+  .recap ul { margin: 0; padding-left: 1.2rem; }
+  .recap li { font-family: var(--sans); font-size: 0.98rem; line-height: 1.55; margin-bottom: 0.25rem; }
+
+  /* revisão rápida */
+  .quiz { display: grid; gap: 0.7rem; margin: 1.5rem 0; }
+  .quiz details { border: 1px solid var(--line); border-left: 4px solid var(--sky); border-radius: 0 10px 10px 0; padding: 0.8rem 1.1rem; }
+  .quiz details:nth-child(3n+2) { border-left-color: var(--pink); }
+  .quiz details:nth-child(3n+3) { border-left-color: var(--mint); }
+  .quiz summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); line-height: 1.45; }
+  .quiz details[open] summary { margin-bottom: 0.5rem; }
+  .quiz p { margin: 0; font-size: 1.02rem; }
+
+  .refs { font-family: var(--sans); padding-left: 1.4rem; margin: 0; }
+  .refs li { font-family: var(--sans); font-size: 0.92rem; line-height: 1.55; margin-bottom: 0.7rem; word-break: break-word; }
+  .refs li:target { background: var(--gold-soft); border-radius: 6px; }
+
+  .back { display: inline-block; margin-top: 1rem; font-family: var(--sans); font-size: 0.85rem; text-decoration: none; }
+
+  footer { background: var(--navy-deep); color: var(--on-navy-muted); border-top: 3px solid var(--gold); padding: 1.5rem 0 calc(1.5rem + env(safe-area-inset-bottom, 0px)); font-size: 0.88rem; }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1.5rem; }
+  footer a { color: var(--on-navy); text-decoration: none; }
+  footer a:hover { color: var(--gold); }
+
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+    .toc { position: static; max-height: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.2rem 1.4rem; }
+  }
+  @media (max-width: 760px) {
+    .myths { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .nav ul { display: none; }
+    .hero { padding: 2.5rem 0; }
+    .wrap { padding: 0 1rem; }
+    article p, article li { font-size: 1.05rem; }
+    th, td { padding: 0.6rem 0.7rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  @media print {
+    .nav, .toc, footer, .back, .crumb { display: none !important; }
+    body { background: #fff; }
+    .hero-band { background: none; color: #111; border: 0; }
+    .hero-band h1 { color: #5B2A86; }
+    .dek, .byline, .byline strong { color: #333; }
+    .layout { display: block; padding: 0; }
+    article { border: 0; padding: 0; }
+    .table-wrap { overflow: visible; }
+    figure, blockquote, .myths li, .recap, .quiz details, tr { break-inside: avoid; }
+  }
+
+  /* blocos de código (Gherkin) */
+  pre.code { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: #2B1B3D; color: #F7F0FF; border-radius: 10px; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.92rem; line-height: 1.6; tab-size: 2; }
+  pre.code code { font-family: inherit; white-space: pre; }
+  pre.code .k { color: #FFB703; font-weight: 700; }
+  pre.code .s { color: #5FD3C4; font-weight: 700; }
+  pre.code .c { color: #A898C0; }
+  pre.code .p { color: #C9A7F5; }
+  article code { font-family: Consolas, "Courier New", monospace; font-size: 0.92em; }
+  article :not(pre) > code { background: var(--accent-soft); color: var(--ink); padding: 0.05em 0.35em; border-radius: 4px; }
+
+  /* fórmulas */
+  pre.formula { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.95rem; line-height: 1.5; }
+
+  /* glossário */
+  dl.glossary { margin: 1.2rem 0; display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  dl.glossary dt, dl.glossary dd { margin: 0; padding: 0.65rem 0.9rem; border-bottom: 1px solid var(--line); font-family: var(--sans); font-size: 0.95rem; line-height: 1.5; }
+  dl.glossary dt { font-weight: 600; color: var(--ink); background: color-mix(in srgb, var(--gold-soft) 60%, var(--surface)); }
+  dl.glossary dd { color: var(--text); }
+  dl.glossary dt:nth-last-of-type(1), dl.glossary dd:last-of-type { border-bottom: 0; }
+  @media (max-width: 720px) { dl.glossary { grid-template-columns: 1fr; } dl.glossary dt { border-bottom: 0; padding-bottom: 0.2rem; } }
+
+  /* figuras geradas pelo PlantUML e código recolhível */
+  figure.puml img { width: auto; max-width: 100%; margin: 0 auto; background: #FFFFFF; padding: 12px; }
+  details.codebox { margin: 1rem 0 1.5rem; border: 1px solid var(--line); border-radius: 10px; padding: 0.6rem 1rem; }
+  details.codebox summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); }
+  details.codebox pre.code { max-height: 480px; overflow: auto; }
+
+  /* nota de atenção */
+  aside.note { margin: 1.2rem 0 1.5rem; padding: 0.8rem 1.1rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; }
+  aside.note p { margin: 0; }
+
+  /* link para o simulador e teclas */
+  .launch { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--sans); font-weight: 600; font-size: 1rem; background: var(--accent-strong); color: var(--surface); text-decoration: none; padding: 0.65rem 1.2rem; border-radius: 10px; }
+  .launch:hover { background: var(--navy-deep); color: #FFFFFF; }
+  kbd { font-family: var(--sans); font-size: 0.85em; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 0.05em 0.4em; white-space: nowrap; }
+  .promptbox { position: relative; margin: 1rem 0 1.6rem; }
+  .promptbox pre.code { margin: 0; padding-top: 2.6rem; max-height: 420px; overflow: auto; }
+  .promptbox pre.code code { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .promptbox .copy { position: absolute; top: 8px; right: 14px; z-index: 1; font: 600 0.8rem var(--sans); color: #2B1B3D; background: #FFB703; border: 0; border-radius: 6px; padding: 0.3rem 0.65rem; cursor: pointer; }
+</style>
+</head>
+<body id="top">
+
+<nav class="nav" aria-label="Navegação do site">
+  <div class="wrap">
+    <a class="brand" href="index.html" data-home>Giovani Perotto Mesquita</a>
+    <div class="nav-right">
+      <ul>
+        <li><a href="index.html" data-home>Início</a></li>
+        <li><a href="about.html" data-about>Sobre</a></li>
+        <li><a href="resume.html" data-resume>Currículo</a></li>
+        <li><a href="projects.html" data-projects aria-current="page">Projetos</a></li>
+        <li><a href="contact.html" data-contact>Contato</a></li>
+      </ul>
+      <div class="lang">
+        <button type="button" class="lang-current" aria-haspopup="listbox" aria-expanded="false" aria-controls="lang-list" data-label="Idioma / Language / Lingua" aria-label="Idioma / Language / Lingua: Português"><span class="lang-now"><svg class="flag" viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009C3B"/><path d="M10 1.6 18.4 7 10 12.4 1.6 7z" fill="#FEDF00"/><circle cx="10" cy="7" r="3.3" fill="#002776"/><path d="M6.8 6.3c2.1-.6 4.5-.2 6.4 1" stroke="#fff" stroke-width=".7" fill="none"/></svg>PT</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="lang-list" id="lang-list" role="listbox" aria-label="Idioma / Language / Lingua" hidden>
+          <button type="button" role="option" id="tab-pt" aria-controls="pt" aria-selected="true" lang="pt-BR" data-code="PT"><svg class="flag" viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009C3B"/><path d="M10 1.6 18.4 7 10 12.4 1.6 7z" fill="#FEDF00"/><circle cx="10" cy="7" r="3.3" fill="#002776"/><path d="M6.8 6.3c2.1-.6 4.5-.2 6.4 1" stroke="#fff" stroke-width=".7" fill="none"/></svg><span>Português</span></button>
+          <button type="button" role="option" id="tab-en" aria-controls="en" aria-selected="false" lang="en" tabindex="-1" data-code="EN"><svg class="flag" viewBox="0 0 19 10" aria-hidden="true"><rect width="19" height="10" fill="#B22234"/><rect y="0.769" width="19" height="0.769" fill="#fff"/><rect y="2.308" width="19" height="0.769" fill="#fff"/><rect y="3.846" width="19" height="0.769" fill="#fff"/><rect y="5.385" width="19" height="0.769" fill="#fff"/><rect y="6.923" width="19" height="0.769" fill="#fff"/><rect y="8.462" width="19" height="0.769" fill="#fff"/><rect width="7.6" height="5.385" fill="#3C3B6E"/></svg><span>English</span></button>
+          <button type="button" role="option" id="tab-it" aria-controls="it" aria-selected="false" lang="it" tabindex="-1" data-code="IT"><svg class="flag" viewBox="0 0 3 2" aria-hidden="true"><rect width="1" height="2" fill="#009246"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#CE2B37"/></svg><span>Italiano</span></button>
+          <button type="button" role="option" id="tab-es" aria-controls="es" aria-selected="false" lang="es" tabindex="-1" data-code="ES"><svg class="flag" viewBox="0 0 750 500" aria-hidden="true"><rect width="750" height="500" fill="#AA151B"/><rect y="125" width="750" height="250" fill="#F1BF00"/></svg><span>Español</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="progress" aria-hidden="true"></div>
+</nav>
+
+
+<!-- ===================== PT ===================== -->
+<div id="pt" role="tabpanel" aria-labelledby="tab-pt" lang="pt-BR">
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projetos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Prefeito de Porto Alegre: como construir e governar a sua cidade</h1>
+      <p class="dek">Um passo a passo com telas do jogo: ruas, zonas, energia, água, serviços, cheias do Guaíba, orçamento e eleição.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado em <time datetime="2026-11-06">06/11/2026</time></span>
+        <span class="credit">Revisado e formatado usando Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-pt">
+    <h2 id="toc-pt">Índice</h2>
+    <ol>
+      <li><a href="#intro-pt">O jogo</a></li>
+      <li><a href="#tela-pt">A tela</a></li>
+      <li><a href="#ruas-pt">Passo 1: ruas</a></li>
+      <li><a href="#zonas-pt">Passo 2: zonas</a></li>
+      <li><a href="#energia-pt">Passo 3: energia</a></li>
+      <li><a href="#agua-pt">Passo 4: água</a></li>
+      <li><a href="#cresce-pt">Passo 5: a cidade cresce</a></li>
+      <li><a href="#ver-pt">Inspecionar uma quadra</a></li>
+      <li><a href="#servicos-pt">Serviços e cobertura</a></li>
+      <li><a href="#transito-pt">Trânsito e transporte</a></li>
+      <li><a href="#cheias-pt">As cheias do Guaíba</a></li>
+      <li><a href="#dinheiro-pt">Orçamento e eleição</a></li>
+      <li><a href="#mapas-pt">Mapas e relatório</a></li>
+      <li><a href="#marcos-pt">Marcos e títulos</a></li>
+      <li><a href="#exemplos-pt">Cidades de exemplo</a></li>
+      <li><a href="#salvar-pt">Salvar e teclas</a></li>
+      <li><a href="#erros-pt">Erros comuns</a></li>
+      <li><a href="#revisao-pt">Revisão rápida</a></li>
+      <li><a href="#referencias-pt">Referências</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-pt" aria-labelledby="h-intro-pt">
+<h2 id="h-intro-pt">O jogo</h2>
+<p><strong>Prefeito de Porto Alegre</strong> é um simulador de cidade que roda no navegador, num único arquivo HTML. Você assume a prefeitura de uma Porto Alegre ainda por construir, entre o Guaíba, o delta do Jacuí, o Gravataí e os morros. As casas, lojas e fábricas aparecem sozinhas; o seu trabalho é dar a elas o que precisam: ruas, energia, água, serviços e proteção contra as cheias. <sup><a href="#ref-1-pt">[1]</a></sup></p>
+<p>O jogo está em português, inglês, italiano e espanhol, salva sozinho no navegador e não precisa de instalação nem de conta.</p>
+<p><a class="launch" href="PrefeitoDePortoAlegre.html">Jogar Prefeito de Porto Alegre <span aria-hidden="true">→</span></a></p>
+<figure>
+<img src="rc_images/PrefeitoPOAInicio.png" alt="Tela de boas-vindas do jogo: o diálogo Bem-vindo ao Paço Municipal explica os primeiros passos e tem os botões Como jogar, Ver exemplos e Começar; atrás, o mapa ainda vazio com a Freeway" width="1440" height="880" loading="lazy">
+<figcaption>Ao abrir o jogo pela primeira vez, as boas-vindas resumem a missão. O botão Ver exemplos abre três cidades prontas.</figcaption>
+</figure>
+<h3>Palavras que você vai ver o tempo todo</h3>
+<dl class="glossary">
+<dt>Quadra</dt><dd>Cada quadradinho do mapa. Custos e alcances são contados em quadras.</dd>
+<dt>Zona</dt><dd>Terreno marcado para moradia (R), comércio (C) ou indústria (I). Os prédios nascem nas zonas.</dd>
+<dt>Demanda</dt><dd>O quanto a cidade quer de cada tipo de zona. Aparece nas barras R, C e I.</dd>
+<dt>Cobertura</dt><dd>A área que um serviço (polícia, bombeiros, saúde, escola, lazer) atende em volta dele.</dd>
+<dt>Valor do solo</dt><dd>O quanto um lugar é desejado. Valor alto atrai prédios mais altos.</dd>
+<dt>Aprovação</dt><dd>O que os moradores acham do seu governo. Decide a eleição.</dd>
+</dl>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="tela-pt" aria-labelledby="h-tela-pt">
+<h2 id="h-tela-pt">A tela</h2>
+<p>A tela tem cinco partes. Vale a pena reconhecê-las antes de construir:</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Parte</th><th>O que mostra</th></tr></thead>
+<tbody>
+<tr><th>Barra superior</th><td>data, população, caixa e aprovação; os botões de velocidade (pausa, 1, 2 e 3); e os botões <strong>Orçamento</strong>, <strong>Mapas</strong>, <strong>Relatório</strong>, <strong>Jogo</strong> e <strong>?</strong> (ajuda)</td></tr>
+<tr><th>Paleta, à esquerda</th><td>as categorias <strong>Ver</strong>, <strong>Vias</strong>, <strong>Zonas</strong>, <strong>Energia e água</strong>, <strong>Serviços</strong>, <strong>Lazer</strong>, <strong>Cheias</strong> e <strong>Marcos</strong>, e as ferramentas de cada uma, com preço e manutenção por mês</td></tr>
+<tr><th>Mapa, no centro</th><td>a cidade; arraste para mover e use a roda do mouse ou os botões − e + para o zoom</td></tr>
+<tr><th>Painel, à direita</th><td>a <strong>Demanda</strong> (barras R, C e I), a descrição da ferramenta escolhida ou os detalhes da quadra inspecionada, e as <strong>Notícias</strong></td></tr>
+<tr><th>Rádio Guaíba, embaixo</th><td>a última notícia, sempre visível</td></tr>
+</tbody></table></div>
+<p>No celular, a paleta e o painel viram gavetas, abertas pelos botões nos cantos da barra superior.</p>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="ruas-pt" aria-labelledby="h-ruas-pt">
+<h2 id="h-ruas-pt">Passo 1: ruas a partir da Freeway</h2>
+<p>A cidade começa vazia, cortada pela Freeway, que já a liga ao resto do estado. Tudo o que você construir precisa chegar a ela. Abra <strong>Vias</strong> e escolha <strong>Avenida</strong> ou <strong>Rua</strong>. Ruas, avenidas, trilhos e diques se constroem arrastando do início ao fim.</p>
+<figure>
+<img src="rc_images/PrefeitoPOARua.png" alt="Ferramenta Avenida ativa: uma faixa clara desce da Freeway enquanto o mouse é arrastado, com o custo R$ 4.960 ao lado do cursor; o painel da direita descreve a avenida, que custa R$ 250 e R$ 5 por mês por quadra" width="1440" height="880" loading="lazy">
+<figcaption>Enquanto você arrasta, a pré-visualização mostra o traçado e o custo. Em vermelho, o jogo explica por que não dá para construir ali.</figcaption>
+</figure>
+<p>A <strong>avenida</strong> custa R$ 250 por quadra e leva duas vezes e meia mais carros que a <strong>rua</strong>, de R$ 100. Use avenidas nos eixos principais e ruas dentro dos bairros. Rua sobre a água vira ponte e custa seis vezes mais.</p>
+<p>No passo a passo deste tutorial, uma avenida desce da Freeway e três ruas fecham dois quarteirões de cada lado dela.</p>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="zonas-pt" aria-labelledby="h-zonas-pt">
+<h2 id="h-zonas-pt">Passo 2: zonas</h2>
+<p>Em <strong>Zonas</strong>, arraste retângulos para marcar onde a cidade pode crescer: <strong>residencial</strong> (verde), <strong>comercial</strong> (azul) ou <strong>industrial</strong> (amarela). Cada quadra zoneada custa R$ 40. Você não constrói as casas: elas aparecem quando há demanda, rua, energia e água.</p>
+<figure>
+<img src="rc_images/PrefeitoPOAZonas.png" alt="Ferramenta Zona residencial ativa: um retângulo verde tracejado é arrastado dentro do primeiro quarteirão, com o custo R$ 1.400; ao lado, as barras de demanda mostram R alta e I média" width="1440" height="880" loading="lazy">
+<figcaption>A zona precisa de rua a até três quadras. As barras de demanda, no alto à direita, dizem o que a cidade quer agora.</figcaption>
+</figure>
+<p>Olhe as barras <strong>R</strong>, <strong>C</strong> e <strong>I</strong> antes de zonear: zoneie o que estiver em alta. No começo, a cidade quer moradias e um pouco de indústria, que dá empregos. O comércio vem depois, quando há gente para comprar.</p>
+<aside class="note"><p>Deixe espaço nos quarteirões para os serviços. Neste exemplo, uma escola, um posto de saúde e uma praça ficaram no quarteirão residencial de baixo, e a polícia e os bombeiros entre o comércio e a indústria.</p></aside>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="energia-pt" aria-labelledby="h-energia-pt">
+<h2 id="h-energia-pt">Passo 3: energia</h2>
+<p>Em <strong>Energia e água</strong>, construa uma usina. A <strong>termelétrica</strong> (R$ 40.000, 3×3 quadras) dá muita energia, mas polui; a <strong>solar</strong> e a <strong>eólica</strong> são limpas e rendem menos. A eólica só é liberada com 5.000 habitantes.</p>
+<p>A energia sai da usina pela <strong>linha de transmissão</strong> (R$ 40 por quadra). Construções encostadas passam a energia umas para as outras, e ela pula uma rua de um quarteirão para o vizinho. Mas a energia não corre ao longo das ruas: para ir longe, puxe uma linha.</p>
+<figure>
+<img src="rc_images/PrefeitoPOAEnergia.png" alt="Mapa Rede elétrica: a usina termelétrica no canto superior direito liga-se por uma linha amarela que desce ao lado dos quarteirões; todos os prédios aparecem em verde, com energia, e a legenda mostra com, sem e linha com energia" width="1440" height="880" loading="lazy">
+<figcaption>No mapa Rede elétrica, verde é com energia e vermelho é sem. A linha amarela é a linha de transmissão ligada.</figcaption>
+</figure>
+<p>Prédio sem energia mostra um raio amarelo no mapa e não cresce.</p>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="agua-pt" aria-labelledby="h-agua-pt">
+<h2 id="h-agua-pt">Passo 4: água</h2>
+<p>A <strong>estação de tratamento de água</strong> (R$ 20.000) capta água do Guaíba ou dos rios, então precisa ficar na margem. E ela <strong>precisa de energia</strong>: puxe uma linha de transmissão até ela.</p>
+<p>A água sai da estação pelos <strong>canos</strong> (R$ 30 por quadra), que ficam no subsolo e passam por baixo de ruas e prédios. Tudo a até 5 quadras de um cano abastecido recebe água. Ao escolher a ferramenta de cano, o mapa mostra o subsolo.</p>
+<figure>
+<img src="rc_images/PrefeitoPOAAgua.png" alt="Vista do subsolo com a ferramenta Cano de água ativa: a estação na margem em azul claro, canos azuis sob as ruas e os quarteirões em verde, abastecidos; a usina aparece em vermelho porque está longe dos canos" width="1440" height="880" loading="lazy">
+<figcaption>Na vista do subsolo, os canos com água ficam azuis e as quadras abastecidas, verdes. Vermelho é o que está fora do alcance.</figcaption>
+</figure>
+<p>Sem água, a cidade fica nas casas térreas: sobrados e prédios só aparecem com água. Prédio sem água mostra uma gota no mapa. Nessa vista do subsolo, a ferramenta <strong>Demolir</strong> remove só os canos.</p>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="cresce-pt" aria-labelledby="h-cresce-pt">
+<h2 id="h-cresce-pt">Passo 5: a cidade cresce</h2>
+<p>Com ruas, zonas, energia e água, aperte <strong>1</strong>, <strong>2</strong> ou <strong>3</strong> na barra superior para o tempo andar. Cada mês, os prédios nascem, crescem ou são abandonados conforme a demanda, o valor do solo e os problemas do bairro.</p>
+<figure>
+<img src="rc_images/PrefeitoPOACrescimento.png" alt="A cidade do passo a passo três anos depois, em janeiro de 2028: 2.408 habitantes, aprovação de 59% e o título Vila; casas, sobrados e prédios baixos nos quarteirões residenciais, lojas com estacionamento no comercial, galpões e fábricas no industrial, e a escola, o posto de saúde, a praça, a polícia e os bombeiros" width="1440" height="880" loading="lazy">
+<figcaption>Três anos depois do primeiro traço, a vila tem 2.408 habitantes. As notícias anunciam o novo título e o primeiro marco liberado, o Mercado Público.</figcaption>
+</figure>
+<p>Prédios altos precisam de <strong>valor do solo</strong> alto: orla, parques, serviços, pouco crime e pouca poluição. Nos morros, só nascem casas e sobrados. Ligar as ruas à Freeway ou à ponte do Guaíba ajuda o comércio e a indústria.</p>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="ver-pt" aria-labelledby="h-ver-pt">
+<h2 id="h-ver-pt">Inspecionar uma quadra</h2>
+<p>Com a ferramenta <strong>Ver</strong>, clique numa quadra para ver tudo o que o jogo sabe sobre ela. O nome do bairro aparece junto ao cursor.</p>
+<figure>
+<img src="rc_images/PrefeitoPOAVer.png" alt="Uma quadra residencial selecionada no bairro Navegantes; o painel mostra terreno, altitude, valor do solo 38%, poluição 2%, risco de cheia alto, densidade 2 de 3, 39 moradores, energia e água, criminalidade 3% e a cobertura de polícia, bombeiros, saúde, educação, lazer e transporte coletivo" width="1440" height="880" loading="lazy">
+<figcaption>O painel mostra por que a quadra está como está. Aqui, o risco de cheia é alto e não há lazer nem transporte coletivo por perto.</figcaption>
+</figure>
+<p>Use a inspeção para responder perguntas como “por que esse bairro não cresce?”. A resposta costuma estar numa linha vazia: sem água, sem lazer, poluição alta ou cobertura baixa.</p>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="servicos-pt" aria-labelledby="h-servicos-pt">
+<h2 id="h-servicos-pt">Serviços e cobertura</h2>
+<p>Polícia, bombeiros, saúde, escolas e lazer atendem um raio em volta. Quanto mais perto, melhor o atendimento. Polícia, bombeiros, saúde e escola precisam de energia.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Serviço</th><th>Custo</th><th>Manutenção</th><th>Raio</th><th>Para que serve</th></tr></thead>
+<tbody>
+<tr><th>Batalhão de polícia</th><td>R$ 9.000</td><td>R$ 180/mês</td><td>13</td><td>reduz a criminalidade</td></tr>
+<tr><th>Quartel de bombeiros</th><td>R$ 9.000</td><td>R$ 180/mês</td><td>13</td><td>evita e apaga incêndios</td></tr>
+<tr><th>Posto de saúde</th><td>R$ 4.000</td><td>R$ 90/mês</td><td>8</td><td>saúde básica do bairro</td></tr>
+<tr><th>Hospital</th><td>R$ 30.000</td><td>R$ 600/mês</td><td>20</td><td>saúde para uma região grande; liberado com 3.000 habitantes</td></tr>
+<tr><th>Escola</th><td>R$ 10.000</td><td>R$ 220/mês</td><td>12</td><td>valoriza o bairro e atrai prédios melhores</td></tr>
+<tr><th>Praça, parque, orla</th><td>R$ 800 a R$ 6.000</td><td>R$ 10 a R$ 80/mês</td><td>5 a 10</td><td>lazer; a orla valoriza muito o entorno</td></tr>
+</tbody></table></div>
+<figure>
+<img src="rc_images/PrefeitoPOAServicos.png" alt="Mapa Bombeiros na cidade de exemplo média: o centro dos bairros aparece em verde, bem atendido, e as bordas e as áreas vazias em vermelho; a legenda vai de baixo a alto" width="1440" height="880" loading="lazy">
+<figcaption>No mapa Bombeiros da cidade média, o verde mostra onde os quartéis chegam. As bordas vermelhas pedem um quartel novo quando a cidade crescer para lá.</figcaption>
+</figure>
+<p>Os incêndios começam ao acaso e se espalham para as quadras vizinhas. Onde há bombeiros por perto, eles são raros e se apagam logo.</p>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="transito-pt" aria-labelledby="h-transito-pt">
+<h2 id="h-transito-pt">Trânsito e transporte coletivo</h2>
+<p>Os carros saem das casas para o trabalho e as compras. Ruas cheias poluem e irritam os moradores, o que pesa na aprovação. Há três remédios: avenidas nos eixos mais usados, <strong>terminais de ônibus</strong> da Carris (R$ 1.500) e o <strong>Trensurb</strong>, liberado com 8.000 habitantes.</p>
+<figure>
+<img src="rc_images/PrefeitoPOATransito.png" alt="Mapa Trânsito da metrópole de exemplo: a maior parte das ruas em tons neutros e alguns corredores em vermelho forte, sobretudo no Centro e perto da zona industrial" width="1440" height="880" loading="lazy">
+<figcaption>Na metrópole, o mapa Trânsito mostra os corredores mais carregados em vermelho.</figcaption>
+</figure>
+<p>A estação do Trensurb precisa de outra estação na mesma linha de trilhos para funcionar. Os trilhos podem cruzar ruas.</p>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="cheias-pt" aria-labelledby="h-cheias-pt">
+<h2 id="h-cheias-pt">As cheias do Guaíba</h2>
+<p>O Guaíba sobe no inverno e na primavera e, com chuvas fortes, invade as partes baixas. De vez em quando, a Defesa Civil anuncia uma <strong>cheia histórica</strong>, muito acima das chuvas comuns. As quadras alagadas perdem moradores e renda, e parte delas vira entulho quando a água baixa.</p>
+<figure>
+<img src="rc_images/PrefeitoPOACheia.png" alt="A cidade pequena de exemplo durante uma cheia histórica: a água cobre quase todo o mapa, inclusive os quarteirões; as notícias dizem que a Defesa Civil está em alerta máximo, que o Guaíba chega a 7,81 m e que a água invadiu 272 quadras" width="1440" height="880" loading="lazy">
+<figcaption>O dique curto da cidade pequena segura as chuvas comuns, mas numa cheia histórica a água contorna as pontas e invade 272 quadras.</figcaption>
+</figure>
+<p>Antes de construir perto da água, abra o mapa <strong>Risco de cheia</strong>: ele mostra o que está abaixo da cota de inundação.</p>
+<figure>
+<img src="rc_images/PrefeitoPOARiscoCheia.png" alt="Mapa Risco de cheia sobre a cidade pequena: a orla, a várzea e a faixa ao longo do Dilúvio em vermelho forte; a parte alta, a leste, em verde" width="1440" height="880" loading="lazy">
+<figcaption>O mapa Risco de cheia: vermelho é baixo e perigoso, verde é alto e seguro.</figcaption>
+</figure>
+<h3>Como se proteger</h3>
+<ul>
+<li><strong>Dique</strong> (R$ 600 por quadra, em <strong>Cheias</strong>): um muro que a água não atravessa. Arraste-o ao longo da margem e feche as pontas até o terreno alto, ou a água dá a volta.</li>
+<li><strong>Comporta</strong>: o dique construído sobre uma rua vira comporta. Os carros passam e a água não. Custa uma vez e meia o dique.</li>
+<li><strong>Casa de bombas</strong> (R$ 7.000): drena as quadras alagadas num raio de 7. Precisa de energia e para se ela mesma ficar alagada.</li>
+</ul>
+<figure>
+<img src="rc_images/PrefeitoPOADique.png" alt="Detalhe da orla da metrópole de exemplo: diques cinzentos acompanham a margem, as ruas que chegam ao Guaíba atravessam o muro por comportas, e a Usina do Gasômetro fica do lado de fora, na beira da água" width="1440" height="880" loading="lazy">
+<figcaption>Na metrópole, o muro acompanha toda a orla e as ruas passam por comportas. A Usina do Gasômetro fica fora do muro, como na cidade real.</figcaption>
+</figure>
+<h3>A Porto Alegre de verdade</h3>
+<p>As cheias do jogo têm inspiração real. Em abril e maio de 1941, o Guaíba ficou 22 dias acima do normal e chegou a 4,76 m. <sup><a href="#ref-2-pt">[2]</a></sup> Depois disso, a cidade construiu um sistema de proteção com o <strong>Muro da Mauá</strong>, de 2.647 m de comprimento e 3 m de altura, concluído em 1974, e cerca de 68 km de diques, 14 comportas e 19 casas de bombas. <sup><a href="#ref-4-pt">[4]</a></sup></p>
+<p>Em 5 de maio de 2024, o Guaíba chegou a 5,37 m, acima da marca de 1941. <sup><a href="#ref-3-pt">[3]</a></sup> Comportas que não puderam ser bem fechadas e casas de bombas paradas deixaram a água entrar na cidade. <sup><a href="#ref-4-pt">[4]</a></sup> Não por acaso, no jogo a casa de bombas para sem energia: um dique só protege se as comportas fecham e as bombas funcionam.</p>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="dinheiro-pt" aria-labelledby="h-dinheiro-pt">
+<h2 id="h-dinheiro-pt">Orçamento e eleição</h2>
+<p>Você começa com R$ 200.000. A cidade arrecada <strong>IPTU</strong> das moradias, <strong>ISS</strong> do comércio e um imposto da indústria, e gasta com a manutenção das obras, as secretarias e o custeio da prefeitura, que cresce com a cidade. Tudo isso fica em <strong>Orçamento</strong>.</p>
+<figure>
+<img src="rc_images/PrefeitoPOAOrcamento.png" alt="Diálogo Orçamento da metrópole: barras para os impostos residencial, comercial e industrial e para as verbas de segurança, saúde e educação, e infraestrutura; abaixo, o último mês com receitas de R$ 209.497, despesas de R$ 183.382 e saldo de R$ 26.115, e o botão Pedir empréstimo de R$ 100.000" width="1440" height="880" loading="lazy">
+<figcaption>O orçamento mostra as receitas e as despesas do último mês. Impostos altos espantam moradores; verbas baixas enfraquecem os serviços.</figcaption>
+</figure>
+<ul>
+<li><strong>Impostos</strong>: cada ponto a mais rende mais, mas espanta moradores e empresas e baixa a aprovação.</li>
+<li><strong>Verbas</strong>: cortar a verba de uma secretaria economiza, mas reduz a cobertura dos serviços dela.</li>
+<li><strong>Empréstimo</strong>: R$ 100.000 na hora, pagos em 60 parcelas de R$ 1.917 (15% de juros no total). Dá para ter até três ao mesmo tempo.</li>
+</ul>
+<aside class="note"><p>Um ano inteiro com o caixa abaixo de −R$ 100.000 afasta o prefeito. E em outubro, a cada quatro anos, há eleição: você precisa de mais de 50% de aprovação para continuar.</p></aside>
+<p>A aprovação sobe com serviços, empregos, lazer e impostos baixos, e cai com crime, trânsito, poluição, falta de energia ou água, cheias e incêndios. As notícias avisam quando a eleição se aproxima.</p>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="mapas-pt" aria-labelledby="h-mapas-pt">
+<h2 id="h-mapas-pt">Mapas e relatório</h2>
+<p>O botão <strong>Mapas</strong> pinta a cidade com uma informação de cada vez. Use-os para decidir onde construir o próximo serviço.</p>
+<figure>
+<img src="rc_images/PrefeitoPOAMapas.png" alt="Diálogo Mapas com 15 botões: Cidade, Valor do solo, Poluição, Criminalidade, Trânsito, Rede elétrica, Rede de água (subsolo), Polícia, Bombeiros, Saúde, Educação, Lazer, Transporte coletivo, Risco de cheia e Densidade" width="1440" height="880" loading="lazy">
+<figcaption>Os 15 mapas. Cidade volta à vista normal.</figcaption>
+</figure>
+<p>O <strong>Relatório</strong> mostra a população, o caixa e a aprovação ao longo do tempo e os números da cidade. É ali que se vê se uma decisão funcionou.</p>
+<figure>
+<img src="rc_images/PrefeitoPOARelatorio.png" alt="Diálogo Relatório da cidade com três gráficos de fevereiro de 2038 a janeiro de 2041: população estável em torno de 105 mil, caixa subindo até R$ 4.284.202 e aprovação perto de 70%; abaixo começa a seção Em números" width="1440" height="880" loading="lazy">
+<figcaption>O relatório da metrópole: população estável, caixa subindo e aprovação perto de 70%.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="marcos-pt" aria-labelledby="h-marcos-pt">
+<h2 id="h-marcos-pt">Marcos e títulos</h2>
+<p>Conforme a população cresce, a cidade ganha títulos e libera os marcos de Porto Alegre em <strong>Marcos</strong>. Cada marco valoriza o entorno e atrai algo diferente.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Habitantes</th><th>Título</th><th>O que é liberado</th></tr></thead>
+<tbody>
+<tr><td>0</td><td>Porto dos Casais</td><td>ruas, zonas, energia, água, serviços básicos</td></tr>
+<tr><td>500</td><td>Freguesia</td><td>—</td></tr>
+<tr><td>2.000</td><td>Vila</td><td>Mercado Público</td></tr>
+<tr><td>3.000 a 8.000</td><td>—</td><td>hospital, Parque da Redenção, eólica, Usina do Gasômetro, Casa de Cultura Mario Quintana, Catedral Metropolitana, Trensurb</td></tr>
+<tr><td>10.000</td><td>Cidade</td><td>Hospital de Clínicas (12.000), Beira-Rio e Arena (15.000)</td></tr>
+<tr><td>20.000 a 40.000</td><td>—</td><td>Fundação Iberê Camargo, Universidade, Aeroporto Salgado Filho</td></tr>
+<tr><td>50.000</td><td>Capital</td><td>—</td></tr>
+<tr><td>150.000</td><td>Metrópole</td><td>—</td></tr>
+</tbody></table></div>
+<figure>
+<img src="rc_images/PrefeitoPOAMarcos.png" alt="Centro da metrópole de exemplo: a Usina do Gasômetro com a chaminé alta na margem, o Mercado Público com o pátio de vidro, a Catedral com a cúpula verde, a Casa de Cultura Mario Quintana em rosa e, abaixo, um hospital e a Redenção, entre torres de vidro" width="1440" height="880" loading="lazy">
+<figcaption>No Centro da metrópole: Gasômetro, Mercado, Catedral, Casa de Cultura Mario Quintana e Redenção.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="exemplos-pt" aria-labelledby="h-exemplos-pt">
+<h2 id="h-exemplos-pt">Cidades de exemplo</h2>
+<p>Em <strong>Jogo › Exemplos de cidades…</strong> (ou no botão <strong>Ver exemplos</strong> das boas-vindas) há três cidades prontas, montadas com as mesmas regras do jogo. São um bom jeito de ver o que funciona antes de construir a sua.</p>
+<figure>
+<img src="rc_images/PrefeitoPOAExemplos.png" alt="Diálogo Exemplos de cidades com três cartões: Metrópole, com 105.157 habitantes e saldo de R$ 26.115 por mês; Cidade média, com 33.415 habitantes; e Cidade pequena, com 4.454 habitantes; cada cartão tem uma descrição e um botão Abrir" width="1440" height="880" loading="lazy">
+<figcaption>Os três exemplos e os seus números. Abrir um exemplo substitui o jogo atual.</figcaption>
+</figure>
+<ul>
+<li><strong>Metrópole</strong>: toda a margem leste construída, com prédios altos, Trensurb, ônibus, todos os marcos e a cidade inteira protegida por diques e comportas.</li>
+<li><strong>Cidade média</strong>: Centro e zona norte, com o muro da orla que segura as chuvas de inverno mas não uma cheia histórica.</li>
+<li><strong>Cidade pequena</strong>: uma vila com o básico funcionando e muito espaço para crescer.</li>
+</ul>
+<aside class="note"><p>Abrir um exemplo substitui o jogo atual. Exporte o seu antes, se quiser guardá-lo.</p></aside>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="salvar-pt" aria-labelledby="h-salvar-pt">
+<h2 id="h-salvar-pt">Salvar e teclas</h2>
+<p>O jogo é salvo neste navegador a cada mês de jogo. Em <strong>Jogo</strong>, você também pode salvar na hora, <strong>exportar</strong> o jogo para um arquivo, <strong>importar</strong> um arquivo, começar um <strong>novo jogo</strong> com uma semente de mapa, ligar ou desligar os desastres e as eleições e trocar o idioma e o tema.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Tecla</th><th>Ação</th></tr></thead>
+<tbody>
+<tr><td><kbd>Espaço</kbd></td><td>pausar e continuar</td></tr>
+<tr><td><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></td><td>velocidade</td></tr>
+<tr><td><kbd>+</kbd> <kbd>−</kbd></td><td>zoom</td></tr>
+<tr><td><kbd>Esc</kbd></td><td>voltar à ferramenta Ver</td></tr>
+<tr><td><kbd>B</kbd> / <kbd>R</kbd></td><td>Demolir / Rua</td></tr>
+<tr><td>setas e <kbd>Enter</kbd></td><td>com o mapa em foco, mover o cursor e usar a ferramenta</td></tr>
+</tbody></table></div>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="erros-pt" aria-labelledby="h-erros-pt">
+<h2 id="h-erros-pt">Erros comuns</h2>
+<ul class="myths">
+<li><h3>Zona longe da rua</h3><p>A zona precisa de rua a até três quadras. Sem acesso, nada nasce ali.</p></li>
+<li><h3>Usina sem linha</h3><p>A energia não corre ao longo das ruas. Se o bairro está longe da usina, puxe uma linha de transmissão.</p></li>
+<li><h3>Estação de água sem energia</h3><p>A estação de tratamento precisa de energia. Sem ela, os canos ficam secos e a cidade toda fica sem água.</p></li>
+<li><h3>Esquecer os canos</h3><p>Sem água, a cidade não passa das casas térreas. Sobrados e prédios precisam de água.</p></li>
+<li><h3>Zonear sem demanda</h3><p>Zonas sem procura ficam vazias e custam dinheiro. Siga as barras R, C e I.</p></li>
+<li><h3>Construir na várzea</h3><p>Antes de construir perto da água, veja o mapa Risco de cheia. Dique sem as pontas fechadas não protege.</p></li>
+<li><h3>Gastar tudo na largada</h3><p>Cada obra tem manutenção mensal. Guarde caixa para os meses em que a arrecadação ainda é pequena.</p></li>
+<li><h3>Esquecer a eleição</h3><p>Em outubro, a cada quatro anos, você precisa de mais de 50%. Acompanhe a aprovação no Relatório.</p></li>
+</ul>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="revisao-pt" aria-labelledby="h-revisao-pt">
+<h2 id="h-revisao-pt">Revisão rápida</h2>
+<p>Tente responder antes de abrir cada pergunta.</p>
+<div class="quiz">
+<details><summary>1. O que uma zona precisa para ganhar prédios?</summary><p>Demanda, rua a até três quadras e energia. Para passar das casas térreas, também água.</p></details>
+<details><summary>2. A energia corre ao longo das ruas?</summary><p>Não. Ela passa de uma construção encostada para a outra e pula uma rua entre quarteirões. Para ir longe, é preciso linha de transmissão.</p></details>
+<details><summary>3. Até onde um cano leva água?</summary><p>A tudo o que estiver a até 5 quadras de um cano abastecido.</p></details>
+<details><summary>4. Por que a estação de tratamento fica na margem?</summary><p>Porque ela capta água do Guaíba ou dos rios. E ela também precisa de energia.</p></details>
+<details><summary>5. O que acontece quando um dique passa por uma rua?</summary><p>Vira comporta: os carros passam e a água não.</p></details>
+<details><summary>6. Por que um dique pode não proteger numa cheia histórica?</summary><p>Se as pontas não chegam ao terreno alto, a água contorna o muro.</p></details>
+<details><summary>7. Quando é a eleição e quanto você precisa?</summary><p>Em outubro, a cada quatro anos. É preciso mais de 50% de aprovação.</p></details>
+<details><summary>8. Como descobrir por que um bairro não cresce?</summary><p>Inspecione uma quadra com Ver e procure o que falta: água, energia, lazer, cobertura de serviços, ou o que sobra: poluição, crime, trânsito.</p></details>
+</div>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="referencias-pt" aria-labelledby="h-referencias-pt">
+<h2 id="h-referencias-pt">Referências</h2>
+<ol class="refs">
+<li id="ref-1-pt"><strong>Giovani Perotto Mesquita</strong>, “Prefeito de Porto Alegre”, jogo em um único arquivo HTML, <a href="PrefeitoDePortoAlegre.html">giovanipm.github.io/PrefeitoDePortoAlegre.html</a>.</li>
+<li id="ref-2-pt"><strong>Wikipédia</strong>, “Enchentes em Porto Alegre em 1941”, acesso em 06/11/2026, <a href="https://pt.wikipedia.org/wiki/Enchentes_em_Porto_Alegre_em_1941" rel="noopener">pt.wikipedia.org/wiki/Enchentes_em_Porto_Alegre_em_1941</a>.</li>
+<li id="ref-3-pt"><strong>Wikipédia</strong>, “Enchentes no Rio Grande do Sul em 2024”, acesso em 06/11/2026, <a href="https://pt.wikipedia.org/wiki/Enchentes_no_Rio_Grande_do_Sul_em_2024" rel="noopener">pt.wikipedia.org/wiki/Enchentes_no_Rio_Grande_do_Sul_em_2024</a>. Divergência: a tabela do artigo sobre 1941 [2] registra 5,35 m para 2024.</li>
+<li id="ref-4-pt"><strong>Wikipédia</strong>, “Muro da Mauá”, acesso em 06/11/2026, <a href="https://pt.wikipedia.org/wiki/Muro_da_Mau%C3%A1" rel="noopener">pt.wikipedia.org/wiki/Muro_da_Mauá</a>. Divergência: o artigo fala em 19 casas de bombas no sistema e, na seção de críticas, em 4 de 23 operando em 2024.</li>
+</ol>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== EN ===================== -->
+<div id="en" role="tabpanel" aria-labelledby="tab-en" lang="en" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projects</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Mayor of Porto Alegre: how to build and run your city</h1>
+      <p class="dek">A step-by-step guide with screens from the game: roads, zones, power, water, services, Guaíba floods, budget and elections.</p>
+      <div class="byline">
+        <span>By <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Published on <time datetime="2026-11-06">6 November 2026</time></span>
+        <span class="credit">Reviewed and formatted using Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-en">
+    <h2 id="toc-en">Contents</h2>
+    <ol>
+      <li><a href="#intro-en">The game</a></li>
+      <li><a href="#tela-en">The screen</a></li>
+      <li><a href="#ruas-en">Step 1: roads</a></li>
+      <li><a href="#zonas-en">Step 2: zones</a></li>
+      <li><a href="#energia-en">Step 3: power</a></li>
+      <li><a href="#agua-en">Step 4: water</a></li>
+      <li><a href="#cresce-en">Step 5: the city grows</a></li>
+      <li><a href="#ver-en">Inspecting a tile</a></li>
+      <li><a href="#servicos-en">Services and coverage</a></li>
+      <li><a href="#transito-en">Traffic and transit</a></li>
+      <li><a href="#cheias-en">The Guaíba floods</a></li>
+      <li><a href="#dinheiro-en">Budget and elections</a></li>
+      <li><a href="#mapas-en">Maps and report</a></li>
+      <li><a href="#marcos-en">Landmarks and titles</a></li>
+      <li><a href="#exemplos-en">Example cities</a></li>
+      <li><a href="#salvar-en">Saving and keys</a></li>
+      <li><a href="#erros-en">Common mistakes</a></li>
+      <li><a href="#revisao-en">Quick review</a></li>
+      <li><a href="#referencias-en">References</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-en" aria-labelledby="h-intro-en">
+<h2 id="h-intro-en">The game</h2>
+<p><strong>Mayor of Porto Alegre</strong> is a city-building game that runs in the browser, in a single HTML file. You take over City Hall of a Porto Alegre yet to be built, between the Guaíba, the Jacuí delta, the Gravataí river and the hills. Houses, shops and factories appear on their own; your job is to give them what they need: roads, power, water, services and protection from floods. <sup><a href="#ref-1-en">[1]</a></sup></p>
+<p>The game is available in Portuguese, English, Italian and Spanish, saves itself in the browser and needs no installation or account.</p>
+<p><a class="launch" href="PrefeitoDePortoAlegre.html#en">Play Mayor of Porto Alegre <span aria-hidden="true">→</span></a></p>
+<figure>
+<img src="rc_images/PrefeitoPOAInicio-en.png" alt="Game welcome screen: the Welcome to City Hall dialog explains the first steps and has the buttons How to play, See examples and Start; behind it, the still empty map with the Freeway" width="1440" height="880" loading="lazy">
+<figcaption>The first time you open the game, the welcome screen sums up the mission. The See examples button opens three ready-made cities.</figcaption>
+</figure>
+<h3>Words you will see all the time</h3>
+<dl class="glossary">
+<dt>Tile</dt><dd>Each small square of the map. Costs and ranges are counted in tiles.</dd>
+<dt>Zone</dt><dd>Land marked for housing (R), commerce (C) or industry (I). Buildings grow in zones.</dd>
+<dt>Demand</dt><dd>How much the city wants of each zone type. Shown in the R, C and I bars.</dd>
+<dt>Coverage</dt><dd>The area a service (police, fire, health, school, leisure) serves around it.</dd>
+<dt>Land value</dt><dd>How desirable a place is. High value attracts taller buildings.</dd>
+<dt>Approval</dt><dd>What residents think of your government. It decides the election.</dd>
+</dl>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="tela-en" aria-labelledby="h-tela-en">
+<h2 id="h-tela-en">The screen</h2>
+<p>The screen has five parts. It is worth recognising them before you build:</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Part</th><th>What it shows</th></tr></thead>
+<tbody>
+<tr><th>Top bar</th><td>date, population, treasury and approval; the speed buttons (pause, 1, 2 and 3); and the <strong>Budget</strong>, <strong>Maps</strong>, <strong>Report</strong>, <strong>Game</strong> and <strong>?</strong> (help) buttons</td></tr>
+<tr><th>Palette, on the left</th><td>the categories <strong>Inspect</strong>, <strong>Transport</strong>, <strong>Zones</strong>, <strong>Power &amp; water</strong>, <strong>Services</strong>, <strong>Leisure</strong>, <strong>Floods</strong> and <strong>Landmarks</strong>, and the tools in each one, with price and monthly upkeep</td></tr>
+<tr><th>Map, in the centre</th><td>the city; drag to move it and use the mouse wheel or the − and + buttons to zoom</td></tr>
+<tr><th>Panel, on the right</th><td><strong>Demand</strong> (R, C and I bars), the description of the chosen tool or the details of the inspected tile, and the <strong>News</strong></td></tr>
+<tr><th>Guaíba Radio, at the bottom</th><td>the latest news item, always visible</td></tr>
+</tbody></table></div>
+<p>On a phone, the palette and the panel become drawers, opened by the buttons at the corners of the top bar.</p>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="ruas-en" aria-labelledby="h-ruas-en">
+<h2 id="h-ruas-en">Step 1: roads from the Freeway</h2>
+<p>The city starts empty, crossed by the Freeway, which already links it to the rest of the state. Everything you build has to reach it. Open <strong>Transport</strong> and choose <strong>Avenue</strong> or <strong>Road</strong>. Roads, avenues, rails and dikes are built by dragging from start to end.</p>
+<figure>
+<img src="rc_images/PrefeitoPOARua-en.png" alt="Avenue tool active: a light strip goes down from the Freeway while the mouse is dragged, with the cost R$ 4,960 next to the cursor; the right panel describes the avenue, which costs R$ 250 and R$ 5 a month per tile" width="1440" height="880" loading="lazy">
+<figcaption>While you drag, the preview shows the route and the cost. In red, the game explains why you cannot build there.</figcaption>
+</figure>
+<p>An <strong>avenue</strong> costs R$ 250 per tile and carries two and a half times more cars than a <strong>road</strong>, which costs R$ 100. Use avenues on the main axes and roads inside neighbourhoods. A road over water becomes a bridge and costs six times as much.</p>
+<p>In this tutorial's walkthrough, one avenue goes down from the Freeway and three roads close two blocks on each side of it.</p>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="zonas-en" aria-labelledby="h-zonas-en">
+<h2 id="h-zonas-en">Step 2: zones</h2>
+<p>In <strong>Zones</strong>, drag rectangles to mark where the city can grow: <strong>residential</strong> (green), <strong>commercial</strong> (blue) or <strong>industrial</strong> (yellow). Each zoned tile costs R$ 40. You do not build the houses: they appear when there is demand, a road, power and water.</p>
+<figure>
+<img src="rc_images/PrefeitoPOAZonas-en.png" alt="Residential zone tool active: a dashed green rectangle is dragged inside the first block, costing R$ 1,400; beside it, the demand bars show high R and medium I" width="1440" height="880" loading="lazy">
+<figcaption>A zone needs a road within three tiles. The demand bars, top right, tell you what the city wants now.</figcaption>
+</figure>
+<p>Look at the <strong>R</strong>, <strong>C</strong> and <strong>I</strong> bars before zoning, and zone what is in demand. At first the city wants housing and some industry, which brings jobs. Commerce comes later, when there are people to buy.</p>
+<aside class="note"><p>Leave room in the blocks for services. In this example, a school, a health clinic and a square went in the lower residential block, and the police and fire stations between commerce and industry.</p></aside>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="energia-en" aria-labelledby="h-energia-en">
+<h2 id="h-energia-en">Step 3: power</h2>
+<p>In <strong>Power &amp; water</strong>, build a power plant. The <strong>thermal plant</strong> (R$ 40,000, 3×3 tiles) gives a lot of power but pollutes; the <strong>solar plant</strong> and the <strong>wind farm</strong> are clean and produce less. The wind farm unlocks at 5,000 inhabitants.</p>
+<p>Power leaves the plant through the <strong>power line</strong> (R$ 40 per tile). Buildings that touch pass power to each other, and it jumps one road from one block to the next. But power does not run along roads: to go far, lay a line.</p>
+<figure>
+<img src="rc_images/PrefeitoPOAEnergia-en.png" alt="Power grid map: the thermal plant in the top right corner connects through a yellow line that runs down beside the blocks; every building is green, with power, and the legend shows with, without and powered line" width="1440" height="880" loading="lazy">
+<figcaption>On the Power grid map, green means powered and red means unpowered. The yellow line is the live power line.</figcaption>
+</figure>
+<p>A building without power shows a yellow bolt on the map and does not grow.</p>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="agua-en" aria-labelledby="h-agua-en">
+<h2 id="h-agua-en">Step 4: water</h2>
+<p>The <strong>water treatment plant</strong> (R$ 20,000) draws water from the Guaíba or the rivers, so it has to stand on the shore. And it <strong>needs power</strong>: run a power line to it.</p>
+<p>Water leaves the plant through <strong>water pipes</strong> (R$ 30 per tile), which lie underground and pass under roads and buildings. Everything within 5 tiles of a supplied pipe gets water. When you pick the pipe tool, the map shows the underground.</p>
+<figure>
+<img src="rc_images/PrefeitoPOAAgua-en.png" alt="Underground view with the Water pipe tool active: the plant on the shore in light blue, blue pipes under the roads and the blocks in green, supplied; the power plant is red because it is far from the pipes" width="1440" height="880" loading="lazy">
+<figcaption>In the underground view, pipes with water are blue and supplied tiles are green. Red is out of reach.</figcaption>
+</figure>
+<p>Without water, the city stays at single-storey houses: townhouses and apartment buildings only appear with water. A building without water shows a drop on the map. In this underground view, the <strong>Demolish</strong> tool removes only pipes.</p>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="cresce-en" aria-labelledby="h-cresce-en">
+<h2 id="h-cresce-en">Step 5: the city grows</h2>
+<p>With roads, zones, power and water in place, press <strong>1</strong>, <strong>2</strong> or <strong>3</strong> in the top bar to let time run. Each month, buildings appear, grow or are abandoned depending on demand, land value and the neighbourhood's problems.</p>
+<figure>
+<img src="rc_images/PrefeitoPOACrescimento-en.png" alt="The walkthrough city three years later, in January 2028: 2,408 inhabitants, 59% approval and the title Town; houses, townhouses and low buildings in the residential blocks, shops with parking in the commercial one, sheds and factories in the industrial one, plus the school, clinic, square, police and fire stations" width="1440" height="880" loading="lazy">
+<figcaption>Three years after the first road, the town has 2,408 inhabitants. The news announces the new title and the first landmark unlocked, the Mercado Público.</figcaption>
+</figure>
+<p>Tall buildings need high <strong>land value</strong>: waterfront, parks, services, little crime and little pollution. On the hills, only houses and townhouses grow. Linking the roads to the Freeway or to the Guaíba bridge helps commerce and industry.</p>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="ver-en" aria-labelledby="h-ver-en">
+<h2 id="h-ver-en">Inspecting a tile</h2>
+<p>With the <strong>Inspect</strong> tool, click a tile to see everything the game knows about it. The neighbourhood name appears next to the cursor.</p>
+<figure>
+<img src="rc_images/PrefeitoPOAVer-en.png" alt="A residential tile selected in the Navegantes neighbourhood; the panel shows terrain, elevation, land value 38%, pollution 2%, high flood risk, density 2 of 3, 39 residents, power and water, crime 3% and the coverage of police, fire, health, education, leisure and public transport" width="1440" height="880" loading="lazy">
+<figcaption>The panel shows why the tile is the way it is. Here, the flood risk is high and there is no leisure or public transport nearby.</figcaption>
+</figure>
+<p>Use inspection to answer questions such as “why is this neighbourhood not growing?”. The answer is usually an empty line: no water, no leisure, high pollution or low coverage.</p>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="servicos-en" aria-labelledby="h-servicos-en">
+<h2 id="h-servicos-en">Services and coverage</h2>
+<p>Police, fire, health, schools and leisure serve a radius around them. The closer, the better the service. Police, fire, health and schools need power.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Service</th><th>Cost</th><th>Upkeep</th><th>Radius</th><th>What it does</th></tr></thead>
+<tbody>
+<tr><th>Police station</th><td>R$ 9,000</td><td>R$ 180/month</td><td>13</td><td>reduces crime</td></tr>
+<tr><th>Fire station</th><td>R$ 9,000</td><td>R$ 180/month</td><td>13</td><td>prevents and puts out fires</td></tr>
+<tr><th>Health clinic</th><td>R$ 4,000</td><td>R$ 90/month</td><td>8</td><td>basic health care for the neighbourhood</td></tr>
+<tr><th>Hospital</th><td>R$ 30,000</td><td>R$ 600/month</td><td>20</td><td>health care for a large area; unlocks at 3,000 inhabitants</td></tr>
+<tr><th>School</th><td>R$ 10,000</td><td>R$ 220/month</td><td>12</td><td>raises land value and attracts better buildings</td></tr>
+<tr><th>Square, park, waterfront</th><td>R$ 800 to R$ 6,000</td><td>R$ 10 to R$ 80/month</td><td>5 to 10</td><td>leisure; the waterfront raises land value a lot</td></tr>
+</tbody></table></div>
+<figure>
+<img src="rc_images/PrefeitoPOAServicos-en.png" alt="Fire map of the mid-sized example city: the core of the neighbourhoods is green, well served, and the edges and empty areas are red; the legend runs from low to high" width="1440" height="880" loading="lazy">
+<figcaption>On the Fire map of the mid-sized city, green shows where the stations reach. The red edges call for a new station when the city grows that way.</figcaption>
+</figure>
+<p>Fires start at random and spread to neighbouring tiles. Where a fire station is close, they are rare and go out quickly.</p>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="transito-en" aria-labelledby="h-transito-en">
+<h2 id="h-transito-en">Traffic and public transport</h2>
+<p>Cars leave homes for work and shopping. Busy roads pollute and annoy residents, which weighs on approval. There are three remedies: avenues on the busiest axes, Carris <strong>bus terminals</strong> (R$ 1,500) and the <strong>Trensurb</strong> metro train, unlocked at 8,000 inhabitants.</p>
+<figure>
+<img src="rc_images/PrefeitoPOATransito-en.png" alt="Traffic map of the example metropolis: most roads in neutral tones and some corridors in strong red, especially downtown and near the industrial zone" width="1440" height="880" loading="lazy">
+<figcaption>In the metropolis, the Traffic map shows the busiest corridors in red.</figcaption>
+</figure>
+<p>A Trensurb station needs another station on the same rail line to work. Rails can cross roads.</p>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="cheias-en" aria-labelledby="h-cheias-en">
+<h2 id="h-cheias-en">The Guaíba floods</h2>
+<p>The Guaíba rises in winter and spring and, with heavy rain, invades the low areas. Every now and then, Civil Defense announces a <strong>historic flood</strong>, far above ordinary rains. Flooded tiles lose residents and income, and some of them turn into rubble when the water goes down.</p>
+<figure>
+<img src="rc_images/PrefeitoPOACheia-en.png" alt="The small example city during a historic flood: water covers almost the whole map, including the blocks; the news says Civil Defense is on maximum alert, the Guaíba reaches 7.81 m and the water has invaded 272 tiles" width="1440" height="880" loading="lazy">
+<figcaption>The small town’s short dike holds back ordinary rains, but in a historic flood the water gets around its ends and invades 272 tiles.</figcaption>
+</figure>
+<p>Before building near the water, open the <strong>Flood risk</strong> map: it shows what lies below the flood level.</p>
+<figure>
+<img src="rc_images/PrefeitoPOARiscoCheia-en.png" alt="Flood risk map over the small city: the shore, the floodplain and the strip along the Dilúvio in strong red; the high ground to the east in green" width="1440" height="880" loading="lazy">
+<figcaption>The Flood risk map: red is low and dangerous, green is high and safe.</figcaption>
+</figure>
+<h3>How to protect the city</h3>
+<ul>
+<li><strong>Dike</strong> (R$ 600 per tile, under <strong>Floods</strong>): a wall water cannot cross. Drag it along the shore and close its ends up to high ground, or the water goes around.</li>
+<li><strong>Flood gate</strong>: a dike built over a road becomes a flood gate. Cars pass, water does not. It costs one and a half times a dike.</li>
+<li><strong>Pumping station</strong> (R$ 7,000): drains flooded tiles within a radius of 7. It needs power and stops if it gets flooded itself.</li>
+</ul>
+<figure>
+<img src="rc_images/PrefeitoPOADique-en.png" alt="Detail of the example metropolis’s waterfront: grey dikes follow the shore, the roads that reach the Guaíba cross the wall through flood gates, and the Usina do Gasômetro stands outside, at the water’s edge" width="1440" height="880" loading="lazy">
+<figcaption>In the metropolis, the wall follows the whole waterfront and roads pass through flood gates. The Usina do Gasômetro stands outside the wall, as in the real city.</figcaption>
+</figure>
+<h3>The real Porto Alegre</h3>
+<p>The game’s floods are inspired by real ones. In April and May 1941, the Guaíba stayed above normal for 22 days and reached 4.76 m. <sup><a href="#ref-2-en">[2]</a></sup> Afterwards, the city built a protection system with the <strong>Mauá Wall</strong>, 2,647 m long and 3 m high, completed in 1974, plus about 68 km of dikes, 14 flood gates and 19 pumping stations. <sup><a href="#ref-4-en">[4]</a></sup></p>
+<p>On 5 May 2024, the Guaíba reached 5.37 m, above the 1941 mark. <sup><a href="#ref-3-en">[3]</a></sup> Flood gates that could not be properly closed and pumping stations that stopped let the water into the city. <sup><a href="#ref-4-en">[4]</a></sup> That is why, in the game, a pumping station stops without power: a dike only protects if its gates close and its pumps work.</p>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="dinheiro-en" aria-labelledby="h-dinheiro-en">
+<h2 id="h-dinheiro-en">Budget and elections</h2>
+<p>You start with R$ 200,000. The city collects residential, commercial and industrial taxes, and spends on upkeep of works, department funding and City Hall running costs, which grow with the city. All of this is under <strong>Budget</strong>.</p>
+<figure>
+<img src="rc_images/PrefeitoPOAOrcamento-en.png" alt="Budget dialog of the metropolis: sliders for residential, commercial and industrial taxes and for safety, health and education, and infrastructure funding; below, last month with income of R$ 209,497, expenses of R$ 183,382 and a balance of R$ 26,115, and the Borrow R$ 100,000 button" width="1440" height="880" loading="lazy">
+<figcaption>The budget shows last month’s income and expenses. High taxes drive residents away; low funding weakens services.</figcaption>
+</figure>
+<ul>
+<li><strong>Taxes</strong>: each extra point brings in more, but drives residents and businesses away and lowers approval.</li>
+<li><strong>Funding</strong>: cutting a department’s funding saves money but reduces the coverage of its services.</li>
+<li><strong>Loan</strong>: R$ 100,000 right away, repaid in 60 instalments of R$ 1,917 (15% interest in total). You can hold up to three at once.</li>
+</ul>
+<aside class="note"><p>A whole year with the treasury below −R$ 100,000 removes the mayor. And every four years, in October, there is an election: you need more than 50% approval to stay.</p></aside>
+<p>Approval rises with services, jobs, leisure and low taxes, and falls with crime, traffic, pollution, lack of power or water, floods and fires. The news warns you when the election is near.</p>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="mapas-en" aria-labelledby="h-mapas-en">
+<h2 id="h-mapas-en">Maps and report</h2>
+<p>The <strong>Maps</strong> button colours the city with one piece of information at a time. Use the maps to decide where to build the next service.</p>
+<figure>
+<img src="rc_images/PrefeitoPOAMapas-en.png" alt="Maps dialog with 15 buttons: City, Land value, Pollution, Crime, Traffic, Power grid, Water network (underground), Police, Fire, Health, Education, Leisure, Public transport, Flood risk and Density" width="1440" height="880" loading="lazy">
+<figcaption>The 15 maps. City goes back to the normal view.</figcaption>
+</figure>
+<p>The <strong>Report</strong> shows population, treasury and approval over time, plus the city’s numbers. That is where you see whether a decision worked.</p>
+<figure>
+<img src="rc_images/PrefeitoPOARelatorio-en.png" alt="City report dialog with three charts from February 2038 to January 2041: population steady around 105 thousand, treasury rising to R$ 4,284,202 and approval near 70%; the In numbers section starts below" width="1440" height="880" loading="lazy">
+<figcaption>The metropolis report: steady population, rising treasury and approval near 70%.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="marcos-en" aria-labelledby="h-marcos-en">
+<h2 id="h-marcos-en">Landmarks and titles</h2>
+<p>As the population grows, the city earns titles and unlocks Porto Alegre’s landmarks under <strong>Landmarks</strong>. Each landmark raises land value around it and attracts something different.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Inhabitants</th><th>Title</th><th>What unlocks</th></tr></thead>
+<tbody>
+<tr><td>0</td><td>Porto dos Casais</td><td>roads, zones, power, water, basic services</td></tr>
+<tr><td>500</td><td>Parish</td><td>—</td></tr>
+<tr><td>2,000</td><td>Town</td><td>Mercado Público</td></tr>
+<tr><td>3,000 to 8,000</td><td>—</td><td>hospital, Redenção Park, wind farm, Usina do Gasômetro, Casa de Cultura Mario Quintana, Metropolitan Cathedral, Trensurb</td></tr>
+<tr><td>10,000</td><td>City</td><td>Hospital de Clínicas (12,000), Beira-Rio and Arena (15,000)</td></tr>
+<tr><td>20,000 to 40,000</td><td>—</td><td>Fundação Iberê Camargo, University, Salgado Filho Airport</td></tr>
+<tr><td>50,000</td><td>Capital</td><td>—</td></tr>
+<tr><td>150,000</td><td>Metropolis</td><td>—</td></tr>
+</tbody></table></div>
+<figure>
+<img src="rc_images/PrefeitoPOAMarcos-en.png" alt="Downtown of the example metropolis: the Usina do Gasômetro with its tall chimney on the shore, the Mercado Público with its glass courtyard, the Cathedral with its green dome, the pink Casa de Cultura Mario Quintana and, below, a hospital and the Redenção, among glass towers" width="1440" height="880" loading="lazy">
+<figcaption>Downtown in the metropolis: Gasômetro, Mercado, Cathedral, Casa de Cultura Mario Quintana and Redenção.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="exemplos-en" aria-labelledby="h-exemplos-en">
+<h2 id="h-exemplos-en">Example cities</h2>
+<p>Under <strong>Game › Example cities…</strong> (or the <strong>See examples</strong> button on the welcome screen) there are three ready-made cities, built with the game’s own rules. They are a good way to see what works before building your own.</p>
+<figure>
+<img src="rc_images/PrefeitoPOAExemplos-en.png" alt="Example cities dialog with three cards: Metropolis, with 105,157 inhabitants and a balance of R$ 26,115 a month; Mid-sized city, with 33,415 inhabitants; and Small town, with 4,454 inhabitants; each card has a description and an Open button" width="1440" height="880" loading="lazy">
+<figcaption>The three examples and their numbers. Opening an example replaces the current game.</figcaption>
+</figure>
+<ul>
+<li><strong>Metropolis</strong>: the whole east bank built up, with tall buildings, Trensurb, buses, all landmarks and the entire city protected by dikes and flood gates.</li>
+<li><strong>Mid-sized city</strong>: downtown and the north zone, with a waterfront wall that holds back winter rains but not a historic flood.</li>
+<li><strong>Small town</strong>: a village with the basics working and plenty of room to grow.</li>
+</ul>
+<aside class="note"><p>Opening an example replaces the current game. Export yours first if you want to keep it.</p></aside>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="salvar-en" aria-labelledby="h-salvar-en">
+<h2 id="h-salvar-en">Saving and keys</h2>
+<p>The game saves in this browser every game month. Under <strong>Game</strong>, you can also save right away, <strong>export</strong> the game to a file, <strong>import</strong> a file, start a <strong>new game</strong> with a map seed, turn disasters and elections on or off, and change the language and theme.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Key</th><th>Action</th></tr></thead>
+<tbody>
+<tr><td><kbd>Space</kbd></td><td>pause and resume</td></tr>
+<tr><td><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></td><td>speed</td></tr>
+<tr><td><kbd>+</kbd> <kbd>−</kbd></td><td>zoom</td></tr>
+<tr><td><kbd>Esc</kbd></td><td>back to the Inspect tool</td></tr>
+<tr><td><kbd>B</kbd> / <kbd>R</kbd></td><td>Demolish / Road</td></tr>
+<tr><td>arrows and <kbd>Enter</kbd></td><td>with the map focused, move the cursor and use the tool</td></tr>
+</tbody></table></div>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="erros-en" aria-labelledby="h-erros-en">
+<h2 id="h-erros-en">Common mistakes</h2>
+<ul class="myths">
+<li><h3>Zone far from a road</h3><p>A zone needs a road within three tiles. Without access, nothing grows there.</p></li>
+<li><h3>Plant without a line</h3><p>Power does not run along roads. If the neighbourhood is far from the plant, lay a power line.</p></li>
+<li><h3>Water plant without power</h3><p>The treatment plant needs power. Without it the pipes stay dry and the whole city has no water.</p></li>
+<li><h3>Forgetting the pipes</h3><p>Without water, the city never gets past single-storey houses. Townhouses and buildings need water.</p></li>
+<li><h3>Zoning without demand</h3><p>Zones nobody wants stay empty and cost money. Follow the R, C and I bars.</p></li>
+<li><h3>Building on the floodplain</h3><p>Before building near the water, check the Flood risk map. A dike with open ends does not protect.</p></li>
+<li><h3>Spending everything at the start</h3><p>Every work has monthly upkeep. Keep cash for the months when tax income is still small.</p></li>
+<li><h3>Forgetting the election</h3><p>In October, every four years, you need more than 50%. Follow your approval in the Report.</p></li>
+</ul>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="revisao-en" aria-labelledby="h-revisao-en">
+<h2 id="h-revisao-en">Quick review</h2>
+<p>Try to answer before opening each question.</p>
+<div class="quiz">
+<details><summary>1. What does a zone need to get buildings?</summary><p>Demand, a road within three tiles and power. To grow beyond single-storey houses, water too.</p></details>
+<details><summary>2. Does power run along roads?</summary><p>No. It passes from one touching building to the next and jumps one road between blocks. To go far, you need a power line.</p></details>
+<details><summary>3. How far does a pipe carry water?</summary><p>To everything within 5 tiles of a supplied pipe.</p></details>
+<details><summary>4. Why does the treatment plant sit on the shore?</summary><p>Because it draws water from the Guaíba or the rivers. It also needs power.</p></details>
+<details><summary>5. What happens when a dike crosses a road?</summary><p>It becomes a flood gate: cars pass and water does not.</p></details>
+<details><summary>6. Why might a dike fail in a historic flood?</summary><p>If its ends do not reach high ground, the water goes around the wall.</p></details>
+<details><summary>7. When is the election and what do you need?</summary><p>In October, every four years. You need more than 50% approval.</p></details>
+<details><summary>8. How do you find out why a neighbourhood is not growing?</summary><p>Inspect a tile and look for what is missing (water, power, leisure, service coverage) or what is too high (pollution, crime, traffic).</p></details>
+</div>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="referencias-en" aria-labelledby="h-referencias-en">
+<h2 id="h-referencias-en">References</h2>
+<ol class="refs">
+<li id="ref-1-en"><strong>Giovani Perotto Mesquita</strong>, “Mayor of Porto Alegre” (Prefeito de Porto Alegre), game in a single HTML file, <a href="PrefeitoDePortoAlegre.html#en">giovanipm.github.io/PrefeitoDePortoAlegre.html</a>.</li>
+<li id="ref-2-en"><strong>Wikipedia</strong> (in Portuguese), “Enchentes em Porto Alegre em 1941”, accessed 6 November 2026, <a href="https://pt.wikipedia.org/wiki/Enchentes_em_Porto_Alegre_em_1941" rel="noopener">pt.wikipedia.org/wiki/Enchentes_em_Porto_Alegre_em_1941</a>.</li>
+<li id="ref-3-en"><strong>Wikipedia</strong> (in Portuguese), “Enchentes no Rio Grande do Sul em 2024”, accessed 6 November 2026, <a href="https://pt.wikipedia.org/wiki/Enchentes_no_Rio_Grande_do_Sul_em_2024" rel="noopener">pt.wikipedia.org/wiki/Enchentes_no_Rio_Grande_do_Sul_em_2024</a>. Discrepancy: the table in the 1941 article [2] gives 5.35 m for 2024.</li>
+<li id="ref-4-en"><strong>Wikipedia</strong> (in Portuguese), “Muro da Mauá”, accessed 6 November 2026, <a href="https://pt.wikipedia.org/wiki/Muro_da_Mau%C3%A1" rel="noopener">pt.wikipedia.org/wiki/Muro_da_Mauá</a>. Discrepancy: the article mentions 19 pumping stations in the system and, in its criticism section, 4 out of 23 running in 2024.</li>
+</ol>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== IT ===================== -->
+<div id="it" role="tabpanel" aria-labelledby="tab-it" lang="it" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Progetti</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Sindaco di Porto Alegre: come costruire e governare la tua città</h1>
+      <p class="dek">Una guida passo passo con le schermate del gioco: strade, zone, energia, acqua, servizi, piene del Guaíba, bilancio ed elezioni.</p>
+      <div class="byline">
+        <span>Di <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Pubblicato il <time datetime="2026-11-06">06/11/2026</time></span>
+        <span class="credit">Rivisto e formattato con Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-it">
+    <h2 id="toc-it">Indice</h2>
+    <ol>
+      <li><a href="#intro-it">Il gioco</a></li>
+      <li><a href="#tela-it">Lo schermo</a></li>
+      <li><a href="#ruas-it">Passo 1: strade</a></li>
+      <li><a href="#zonas-it">Passo 2: zone</a></li>
+      <li><a href="#energia-it">Passo 3: energia</a></li>
+      <li><a href="#agua-it">Passo 4: acqua</a></li>
+      <li><a href="#cresce-it">Passo 5: la città cresce</a></li>
+      <li><a href="#ver-it">Ispezionare una casella</a></li>
+      <li><a href="#servicos-it">Servizi e copertura</a></li>
+      <li><a href="#transito-it">Traffico e trasporti</a></li>
+      <li><a href="#cheias-it">Le piene del Guaíba</a></li>
+      <li><a href="#dinheiro-it">Bilancio ed elezioni</a></li>
+      <li><a href="#mapas-it">Mappe e rapporto</a></li>
+      <li><a href="#marcos-it">Monumenti e titoli</a></li>
+      <li><a href="#exemplos-it">Città di esempio</a></li>
+      <li><a href="#salvar-it">Salvare e tasti</a></li>
+      <li><a href="#erros-it">Errori comuni</a></li>
+      <li><a href="#revisao-it">Ripasso veloce</a></li>
+      <li><a href="#referencias-it">Riferimenti</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-it" aria-labelledby="h-intro-it">
+<h2 id="h-intro-it">Il gioco</h2>
+<p><strong>Sindaco di Porto Alegre</strong> è un gioco di costruzione di città che gira nel browser, in un unico file HTML. Prendi in mano il municipio di una Porto Alegre ancora da costruire, tra il Guaíba, il delta del Jacuí, il fiume Gravataí e le colline. Case, negozi e fabbriche nascono da soli; il tuo compito è dar loro ciò che serve: strade, energia, acqua, servizi e protezione dalle piene. <sup><a href="#ref-1-it">[1]</a></sup></p>
+<p>Il gioco è in portoghese, inglese, italiano e spagnolo, si salva da solo nel browser e non richiede installazione né account.</p>
+<p><a class="launch" href="PrefeitoDePortoAlegre.html#it">Gioca a Sindaco di Porto Alegre <span aria-hidden="true">→</span></a></p>
+<figure>
+<img src="rc_images/PrefeitoPOAInicio-it.png" alt="Schermata di benvenuto: la finestra Benvenuto in municipio spiega i primi passi e ha i pulsanti Come si gioca, Vedi esempi e Inizia; dietro, la mappa ancora vuota con la Freeway" width="1440" height="880" loading="lazy">
+<figcaption>La prima volta che apri il gioco, il benvenuto riassume la missione. Il pulsante Vedi esempi apre tre città già pronte.</figcaption>
+</figure>
+<h3>Parole che vedrai di continuo</h3>
+<dl class="glossary">
+<dt>Casella</dt><dd>Ogni quadratino della mappa. Costi e portate si contano in caselle.</dd>
+<dt>Zona</dt><dd>Terreno destinato ad abitazioni (R), commercio (C) o industria (I). Gli edifici nascono nelle zone.</dd>
+<dt>Domanda</dt><dd>Quanto la città desidera ciascun tipo di zona. Si vede nelle barre R, C e I.</dd>
+<dt>Copertura</dt><dd>L’area che un servizio (polizia, pompieri, salute, scuola, svago) serve intorno a sé.</dd>
+<dt>Valore del suolo</dt><dd>Quanto un luogo è desiderato. Un valore alto attira edifici più alti.</dd>
+<dt>Gradimento</dt><dd>Ciò che gli abitanti pensano del tuo governo. Decide le elezioni.</dd>
+</dl>
+<a class="back" href="#top">↑ Torna su</a>
+</section>
+
+<section id="tela-it" aria-labelledby="h-tela-it">
+<h2 id="h-tela-it">Lo schermo</h2>
+<p>Lo schermo ha cinque parti. Conviene riconoscerle prima di costruire:</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Parte</th><th>Cosa mostra</th></tr></thead>
+<tbody>
+<tr><th>Barra superiore</th><td>data, popolazione, cassa e gradimento; i pulsanti di velocità (pausa, 1, 2 e 3); e i pulsanti <strong>Bilancio</strong>, <strong>Mappe</strong>, <strong>Rapporto</strong>, <strong>Gioco</strong> e <strong>?</strong> (aiuto)</td></tr>
+<tr><th>Tavolozza, a sinistra</th><td>le categorie <strong>Vedi</strong>, <strong>Trasporti</strong>, <strong>Zone</strong>, <strong>Energia e acqua</strong>, <strong>Servizi</strong>, <strong>Svago</strong>, <strong>Piene</strong> e <strong>Monumenti</strong>, e gli strumenti di ciascuna, con prezzo e manutenzione mensile</td></tr>
+<tr><th>Mappa, al centro</th><td>la città; trascina per spostarla e usa la rotellina del mouse o i pulsanti − e + per lo zoom</td></tr>
+<tr><th>Pannello, a destra</th><td>la <strong>Domanda</strong> (barre R, C e I), la descrizione dello strumento scelto o i dettagli della casella ispezionata, e le <strong>Notizie</strong></td></tr>
+<tr><th>Radio Guaíba, in basso</th><td>l’ultima notizia, sempre visibile</td></tr>
+</tbody></table></div>
+<p>Sul telefono, tavolozza e pannello diventano cassetti, aperti dai pulsanti agli angoli della barra superiore.</p>
+<a class="back" href="#top">↑ Torna su</a>
+</section>
+
+<section id="ruas-it" aria-labelledby="h-ruas-it">
+<h2 id="h-ruas-it">Passo 1: strade dalla Freeway</h2>
+<p>La città parte vuota, attraversata dalla Freeway, che la collega già al resto dello stato. Tutto ciò che costruisci deve arrivarci. Apri <strong>Trasporti</strong> e scegli <strong>Viale</strong> o <strong>Strada</strong>. Strade, viali, binari e argini si costruiscono trascinando dall’inizio alla fine.</p>
+<figure>
+<img src="rc_images/PrefeitoPOARua-it.png" alt="Strumento Viale attivo: una striscia chiara scende dalla Freeway mentre si trascina il mouse, con il costo R$ 4.960 accanto al cursore; il pannello a destra descrive il viale, che costa R$ 250 e R$ 5 al mese per casella" width="1440" height="880" loading="lazy">
+<figcaption>Mentre trascini, l’anteprima mostra il tracciato e il costo. In rosso, il gioco spiega perché lì non si può costruire.</figcaption>
+</figure>
+<p>Il <strong>viale</strong> costa R$ 250 per casella e porta due volte e mezzo più auto della <strong>strada</strong>, da R$ 100. Usa i viali sugli assi principali e le strade dentro i quartieri. Una strada sull’acqua diventa un ponte e costa sei volte di più.</p>
+<p>Nell’esempio di questo tutorial, un viale scende dalla Freeway e tre strade chiudono due isolati per lato.</p>
+<a class="back" href="#top">↑ Torna su</a>
+</section>
+
+<section id="zonas-it" aria-labelledby="h-zonas-it">
+<h2 id="h-zonas-it">Passo 2: zone</h2>
+<p>In <strong>Zone</strong>, trascina rettangoli per segnare dove la città può crescere: <strong>residenziale</strong> (verde), <strong>commerciale</strong> (blu) o <strong>industriale</strong> (gialla). Ogni casella costa R$ 40. Non sei tu a costruire le case: nascono quando ci sono domanda, strada, energia e acqua.</p>
+<figure>
+<img src="rc_images/PrefeitoPOAZonas-it.png" alt="Strumento Zona residenziale attivo: un rettangolo verde tratteggiato viene trascinato nel primo isolato, al costo di R$ 1.400; accanto, le barre della domanda mostrano R alta e I media" width="1440" height="880" loading="lazy">
+<figcaption>La zona ha bisogno di una strada entro tre caselle. Le barre della domanda, in alto a destra, dicono cosa vuole ora la città.</figcaption>
+</figure>
+<p>Guarda le barre <strong>R</strong>, <strong>C</strong> e <strong>I</strong> prima di zonizzare e segui la domanda. All’inizio la città vuole abitazioni e un po’ di industria, che porta lavoro. Il commercio arriva dopo, quando c’è gente che compra.</p>
+<aside class="note"><p>Lascia spazio negli isolati per i servizi. In questo esempio, una scuola, un ambulatorio e una piazza sono nell’isolato residenziale in basso, e polizia e pompieri tra commercio e industria.</p></aside>
+<a class="back" href="#top">↑ Torna su</a>
+</section>
+
+<section id="energia-it" aria-labelledby="h-energia-it">
+<h2 id="h-energia-it">Passo 3: energia</h2>
+<p>In <strong>Energia e acqua</strong>, costruisci una centrale. La <strong>centrale termoelettrica</strong> (R$ 40.000, 3×3 caselle) dà molta energia ma inquina; l’<strong>impianto solare</strong> e il <strong>parco eolico</strong> sono puliti e rendono meno. Il parco eolico si sblocca a 5.000 abitanti.</p>
+<p>L’energia esce dalla centrale lungo la <strong>linea elettrica</strong> (R$ 40 per casella). Gli edifici a contatto si passano l’energia, e questa salta una strada da un isolato all’altro. Ma l’energia non corre lungo le strade: per arrivare lontano serve una linea.</p>
+<figure>
+<img src="rc_images/PrefeitoPOAEnergia-it.png" alt="Mappa Rete elettrica: la centrale termoelettrica in alto a destra si collega con una linea gialla che scende accanto agli isolati; tutti gli edifici sono verdi, con energia, e la legenda mostra con, senza e linea alimentata" width="1440" height="880" loading="lazy">
+<figcaption>Nella mappa Rete elettrica, verde è con energia e rosso è senza. La linea gialla è la linea elettrica alimentata.</figcaption>
+</figure>
+<p>Un edificio senza energia mostra un fulmine giallo sulla mappa e non cresce.</p>
+<a class="back" href="#top">↑ Torna su</a>
+</section>
+
+<section id="agua-it" aria-labelledby="h-agua-it">
+<h2 id="h-agua-it">Passo 4: acqua</h2>
+<p>L’<strong>impianto di trattamento dell’acqua</strong> (R$ 20.000) preleva acqua dal Guaíba o dai fiumi, quindi deve stare sulla riva. E <strong>ha bisogno di energia</strong>: portagli una linea elettrica.</p>
+<p>L’acqua esce dall’impianto lungo le <strong>tubature</strong> (R$ 30 per casella), che stanno nel sottosuolo e passano sotto strade ed edifici. Tutto ciò che è entro 5 caselle da una tubatura alimentata riceve acqua. Scegliendo lo strumento tubatura, la mappa mostra il sottosuolo.</p>
+<figure>
+<img src="rc_images/PrefeitoPOAAgua-it.png" alt="Vista del sottosuolo con lo strumento Tubatura dell’acqua attivo: l’impianto sulla riva in azzurro, tubature blu sotto le strade e gli isolati in verde, serviti; la centrale è rossa perché è lontana dalle tubature" width="1440" height="880" loading="lazy">
+<figcaption>Nella vista del sottosuolo, le tubature con acqua sono blu e le caselle servite verdi. Il rosso è fuori portata.</figcaption>
+</figure>
+<p>Senz’acqua la città resta alle case a un piano: villette a schiera e palazzi nascono solo con l’acqua. Un edificio senz’acqua mostra una goccia sulla mappa. In questa vista del sottosuolo, lo strumento <strong>Demolisci</strong> rimuove solo le tubature.</p>
+<a class="back" href="#top">↑ Torna su</a>
+</section>
+
+<section id="cresce-it" aria-labelledby="h-cresce-it">
+<h2 id="h-cresce-it">Passo 5: la città cresce</h2>
+<p>Con strade, zone, energia e acqua al loro posto, premi <strong>1</strong>, <strong>2</strong> o <strong>3</strong> nella barra superiore per far scorrere il tempo. Ogni mese gli edifici nascono, crescono o vengono abbandonati secondo la domanda, il valore del suolo e i problemi del quartiere.</p>
+<figure>
+<img src="rc_images/PrefeitoPOACrescimento-it.png" alt="La città dell’esempio tre anni dopo, a gennaio 2028: 2408 abitanti, gradimento del 59% e il titolo Borgo; case, villette e palazzine negli isolati residenziali, negozi con parcheggio in quello commerciale, capannoni e fabbriche in quello industriale, più la scuola, l’ambulatorio, la piazza, la polizia e i pompieri" width="1440" height="880" loading="lazy">
+<figcaption>Tre anni dopo la prima strada, il borgo ha 2408 abitanti. Le notizie annunciano il nuovo titolo e il primo monumento sbloccato, il Mercado Público.</figcaption>
+</figure>
+<p>Gli edifici alti hanno bisogno di un <strong>valore del suolo</strong> alto: lungolago, parchi, servizi, poca criminalità e poco inquinamento. Sulle colline nascono solo case e villette. Collegare le strade alla Freeway o al ponte sul Guaíba aiuta commercio e industria.</p>
+<a class="back" href="#top">↑ Torna su</a>
+</section>
+
+<section id="ver-it" aria-labelledby="h-ver-it">
+<h2 id="h-ver-it">Ispezionare una casella</h2>
+<p>Con lo strumento <strong>Vedi</strong>, fai clic su una casella per vedere tutto ciò che il gioco sa di essa. Il nome del quartiere compare accanto al cursore.</p>
+<figure>
+<img src="rc_images/PrefeitoPOAVer-it.png" alt="Una casella residenziale selezionata nel quartiere Navegantes; il pannello mostra terreno, altitudine, valore del suolo 38%, inquinamento 2%, rischio di piena alto, densità 2 su 3, 39 residenti, energia e acqua, criminalità 3% e la copertura di polizia, pompieri, salute, istruzione, svago e trasporto pubblico" width="1440" height="880" loading="lazy">
+<figcaption>Il pannello mostra perché la casella è così. Qui il rischio di piena è alto e non ci sono svago né trasporto pubblico vicini.</figcaption>
+</figure>
+<p>Usa l’ispezione per rispondere a domande come «perché questo quartiere non cresce?». La risposta di solito è una riga vuota: niente acqua, niente svago, inquinamento alto o copertura bassa.</p>
+<a class="back" href="#top">↑ Torna su</a>
+</section>
+
+<section id="servicos-it" aria-labelledby="h-servicos-it">
+<h2 id="h-servicos-it">Servizi e copertura</h2>
+<p>Polizia, pompieri, salute, scuole e svago servono un raggio intorno a sé. Più vicino, migliore il servizio. Polizia, pompieri, salute e scuola hanno bisogno di energia.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Servizio</th><th>Costo</th><th>Manutenzione</th><th>Raggio</th><th>A cosa serve</th></tr></thead>
+<tbody>
+<tr><th>Stazione di polizia</th><td>R$ 9.000</td><td>R$ 180/mese</td><td>13</td><td>riduce la criminalità</td></tr>
+<tr><th>Caserma dei pompieri</th><td>R$ 9.000</td><td>R$ 180/mese</td><td>13</td><td>previene e spegne gli incendi</td></tr>
+<tr><th>Ambulatorio</th><td>R$ 4.000</td><td>R$ 90/mese</td><td>8</td><td>salute di base per il quartiere</td></tr>
+<tr><th>Ospedale</th><td>R$ 30.000</td><td>R$ 600/mese</td><td>20</td><td>salute per un’area ampia; si sblocca a 3.000 abitanti</td></tr>
+<tr><th>Scuola</th><td>R$ 10.000</td><td>R$ 220/mese</td><td>12</td><td>valorizza il quartiere e attira edifici migliori</td></tr>
+<tr><th>Piazza, parco, lungolago</th><td>da R$ 800 a R$ 6.000</td><td>da R$ 10 a R$ 80/mese</td><td>da 5 a 10</td><td>svago; il lungolago valorizza molto i dintorni</td></tr>
+</tbody></table></div>
+<figure>
+<img src="rc_images/PrefeitoPOAServicos-it.png" alt="Mappa Pompieri della città media di esempio: il centro dei quartieri è verde, ben servito, e i bordi e le aree vuote sono rossi; la legenda va da basso ad alto" width="1440" height="880" loading="lazy">
+<figcaption>Nella mappa Pompieri della città media, il verde mostra dove arrivano le caserme. I bordi rossi chiedono una nuova caserma quando la città crescerà da quella parte.</figcaption>
+</figure>
+<p>Gli incendi scoppiano a caso e si propagano alle caselle vicine. Dove c’è una caserma vicina sono rari e si spengono presto.</p>
+<a class="back" href="#top">↑ Torna su</a>
+</section>
+
+<section id="transito-it" aria-labelledby="h-transito-it">
+<h2 id="h-transito-it">Traffico e trasporto pubblico</h2>
+<p>Le auto escono di casa per andare al lavoro e a fare acquisti. Le strade congestionate inquinano e infastidiscono gli abitanti, e questo pesa sul gradimento. Ci sono tre rimedi: viali sugli assi più usati, i <strong>capolinea degli autobus</strong> della Carris (R$ 1.500) e il treno metropolitano <strong>Trensurb</strong>, sbloccato a 8.000 abitanti.</p>
+<figure>
+<img src="rc_images/PrefeitoPOATransito-it.png" alt="Mappa Traffico della metropoli di esempio: la maggior parte delle strade in toni neutri e alcuni corridoi in rosso acceso, soprattutto in centro e vicino alla zona industriale" width="1440" height="880" loading="lazy">
+<figcaption>Nella metropoli, la mappa Traffico mostra in rosso i corridoi più carichi.</figcaption>
+</figure>
+<p>Una stazione del Trensurb ha bisogno di un’altra stazione sulla stessa linea per funzionare. I binari possono incrociare le strade.</p>
+<a class="back" href="#top">↑ Torna su</a>
+</section>
+
+<section id="cheias-it" aria-labelledby="h-cheias-it">
+<h2 id="h-cheias-it">Le piene del Guaíba</h2>
+<p>Il Guaíba sale in inverno e in primavera e, con piogge forti, invade le zone basse. Ogni tanto la Protezione civile annuncia una <strong>piena storica</strong>, molto oltre le piogge normali. Le caselle allagate perdono abitanti e entrate, e alcune diventano macerie quando l’acqua si ritira.</p>
+<figure>
+<img src="rc_images/PrefeitoPOACheia-it.png" alt="La piccola città di esempio durante una piena storica: l’acqua copre quasi tutta la mappa, isolati compresi; le notizie dicono che la Protezione civile è in allerta massima, che il Guaíba arriva a 7,81 m e che l’acqua ha invaso 272 caselle" width="1440" height="880" loading="lazy">
+<figcaption>L’argine corto della piccola città regge le piogge normali, ma in una piena storica l’acqua lo aggira alle estremità e invade 272 caselle.</figcaption>
+</figure>
+<p>Prima di costruire vicino all’acqua, apri la mappa <strong>Rischio di piena</strong>: mostra ciò che sta sotto la quota di inondazione.</p>
+<figure>
+<img src="rc_images/PrefeitoPOARiscoCheia-it.png" alt="Mappa Rischio di piena sulla piccola città: la riva, la piana alluvionale e la fascia lungo il Dilúvio in rosso acceso; la parte alta, a est, in verde" width="1440" height="880" loading="lazy">
+<figcaption>La mappa Rischio di piena: rosso è basso e pericoloso, verde è alto e sicuro.</figcaption>
+</figure>
+<h3>Come proteggersi</h3>
+<ul>
+<li><strong>Argine</strong> (R$ 600 per casella, in <strong>Piene</strong>): un muro che l’acqua non supera. Trascinalo lungo la riva e chiudi le estremità fino al terreno alto, altrimenti l’acqua gira intorno.</li>
+<li><strong>Paratoia</strong>: un argine costruito su una strada diventa paratoia. Le auto passano, l’acqua no. Costa una volta e mezza l’argine.</li>
+<li><strong>Idrovora</strong> (R$ 7.000): drena le caselle allagate in un raggio di 7. Ha bisogno di energia e si ferma se si allaga anche lei.</li>
+</ul>
+<figure>
+<img src="rc_images/PrefeitoPOADique-it.png" alt="Dettaglio del lungolago della metropoli di esempio: argini grigi seguono la riva, le strade che arrivano al Guaíba attraversano il muro con paratoie, e la Usina do Gasômetro resta fuori, sul bordo dell’acqua" width="1440" height="880" loading="lazy">
+<figcaption>Nella metropoli il muro segue tutto il lungolago e le strade passano dalle paratoie. La Usina do Gasômetro resta fuori dal muro, come nella città vera.</figcaption>
+</figure>
+<h3>La Porto Alegre vera</h3>
+<p>Le piene del gioco si ispirano a quelle reali. Ad aprile e maggio 1941 il Guaíba restò sopra il normale per 22 giorni e arrivò a 4,76 m. <sup><a href="#ref-2-it">[2]</a></sup> In seguito la città costruì un sistema di protezione con il <strong>Muro della Mauá</strong>, lungo 2.647 m e alto 3 m, completato nel 1974, e circa 68 km di argini, 14 paratoie e 19 idrovore. <sup><a href="#ref-4-it">[4]</a></sup></p>
+<p>Il 5 maggio 2024 il Guaíba arrivò a 5,37 m, sopra il livello del 1941. <sup><a href="#ref-3-it">[3]</a></sup> Paratoie che non si poterono chiudere bene e idrovore ferme lasciarono entrare l’acqua in città. <sup><a href="#ref-4-it">[4]</a></sup> Non a caso, nel gioco l’idrovora si ferma senza energia: un argine protegge solo se le paratoie si chiudono e le pompe funzionano.</p>
+<a class="back" href="#top">↑ Torna su</a>
+</section>
+
+<section id="dinheiro-it" aria-labelledby="h-dinheiro-it">
+<h2 id="h-dinheiro-it">Bilancio ed elezioni</h2>
+<p>Parti con R$ 200.000. La città incassa tasse residenziali, commerciali e industriali, e spende per la manutenzione delle opere, i fondi degli assessorati e i costi di funzionamento del comune, che crescono con la città. Tutto questo sta in <strong>Bilancio</strong>.</p>
+<figure>
+<img src="rc_images/PrefeitoPOAOrcamento-it.png" alt="Finestra Bilancio della metropoli: cursori per le tasse residenziali, commerciali e industriali e per i fondi di sicurezza, salute e istruzione, e infrastrutture; sotto, l’ultimo mese con entrate di R$ 209.497, spese di R$ 183.382 e saldo di R$ 26.115, e il pulsante Chiedi un prestito di R$ 100.000" width="1440" height="880" loading="lazy">
+<figcaption>Il bilancio mostra entrate e spese dell’ultimo mese. Tasse alte allontanano gli abitanti; fondi bassi indeboliscono i servizi.</figcaption>
+</figure>
+<ul>
+<li><strong>Tasse</strong>: ogni punto in più rende di più, ma allontana abitanti e imprese e abbassa il gradimento.</li>
+<li><strong>Fondi</strong>: tagliare i fondi di un assessorato fa risparmiare, ma riduce la copertura dei suoi servizi.</li>
+<li><strong>Prestito</strong>: R$ 100.000 subito, restituiti in 60 rate da R$ 1.917 (15% di interessi in totale). Se ne possono avere fino a tre insieme.</li>
+</ul>
+<aside class="note"><p>Un anno intero con la cassa sotto −R$ 100.000 fa decadere il sindaco. E ogni quattro anni, a ottobre, ci sono le elezioni: serve più del 50% di gradimento per restare.</p></aside>
+<p>Il gradimento sale con servizi, lavoro, svago e tasse basse, e scende con criminalità, traffico, inquinamento, mancanza di energia o acqua, piene e incendi. Le notizie avvisano quando le elezioni si avvicinano.</p>
+<a class="back" href="#top">↑ Torna su</a>
+</section>
+
+<section id="mapas-it" aria-labelledby="h-mapas-it">
+<h2 id="h-mapas-it">Mappe e rapporto</h2>
+<p>Il pulsante <strong>Mappe</strong> colora la città con un’informazione alla volta. Usale per decidere dove costruire il prossimo servizio.</p>
+<figure>
+<img src="rc_images/PrefeitoPOAMapas-it.png" alt="Finestra Mappe con 15 pulsanti: Città, Valore del suolo, Inquinamento, Criminalità, Traffico, Rete elettrica, Rete idrica (sottosuolo), Polizia, Pompieri, Salute, Istruzione, Svago, Trasporto pubblico, Rischio di piena e Densità" width="1440" height="880" loading="lazy">
+<figcaption>Le 15 mappe. Città torna alla vista normale.</figcaption>
+</figure>
+<p>Il <strong>Rapporto</strong> mostra popolazione, cassa e gradimento nel tempo e i numeri della città. È lì che si vede se una decisione ha funzionato.</p>
+<figure>
+<img src="rc_images/PrefeitoPOARelatorio-it.png" alt="Finestra Rapporto con tre grafici da febbraio 2038 a gennaio 2041: popolazione stabile intorno a 105 mila, cassa che sale fino a R$ 4.284.202 e gradimento vicino al 70%; sotto inizia la sezione In cifre" width="1440" height="880" loading="lazy">
+<figcaption>Il rapporto della metropoli: popolazione stabile, cassa in crescita e gradimento vicino al 70%.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Torna su</a>
+</section>
+
+<section id="marcos-it" aria-labelledby="h-marcos-it">
+<h2 id="h-marcos-it">Monumenti e titoli</h2>
+<p>Man mano che la popolazione cresce, la città ottiene titoli e sblocca i monumenti di Porto Alegre in <strong>Monumenti</strong>. Ognuno valorizza i dintorni e attira qualcosa di diverso.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Abitanti</th><th>Titolo</th><th>Cosa si sblocca</th></tr></thead>
+<tbody>
+<tr><td>0</td><td>Porto dos Casais</td><td>strade, zone, energia, acqua, servizi di base</td></tr>
+<tr><td>500</td><td>Parrocchia</td><td>—</td></tr>
+<tr><td>2.000</td><td>Borgo</td><td>Mercado Público</td></tr>
+<tr><td>da 3.000 a 8.000</td><td>—</td><td>ospedale, Parco della Redenção, parco eolico, Usina do Gasômetro, Casa de Cultura Mario Quintana, Cattedrale Metropolitana, Trensurb</td></tr>
+<tr><td>10.000</td><td>Città</td><td>Hospital de Clínicas (12.000), Beira-Rio e Arena (15.000)</td></tr>
+<tr><td>da 20.000 a 40.000</td><td>—</td><td>Fundação Iberê Camargo, Università, Aeroporto Salgado Filho</td></tr>
+<tr><td>50.000</td><td>Capitale</td><td>—</td></tr>
+<tr><td>150.000</td><td>Metropoli</td><td>—</td></tr>
+</tbody></table></div>
+<figure>
+<img src="rc_images/PrefeitoPOAMarcos-it.png" alt="Centro della metropoli di esempio: la Usina do Gasômetro con l’alta ciminiera sulla riva, il Mercado Público con il cortile di vetro, la Cattedrale con la cupola verde, la Casa de Cultura Mario Quintana in rosa e, sotto, un ospedale e la Redenção, tra torri di vetro" width="1440" height="880" loading="lazy">
+<figcaption>Nel centro della metropoli: Gasômetro, Mercado, Cattedrale, Casa de Cultura Mario Quintana e Redenção.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Torna su</a>
+</section>
+
+<section id="exemplos-it" aria-labelledby="h-exemplos-it">
+<h2 id="h-exemplos-it">Città di esempio</h2>
+<p>In <strong>Gioco › Città di esempio…</strong> (o con il pulsante <strong>Vedi esempi</strong> del benvenuto) ci sono tre città già pronte, costruite con le regole del gioco. Sono un buon modo per vedere cosa funziona prima di costruire la tua.</p>
+<figure>
+<img src="rc_images/PrefeitoPOAExemplos-it.png" alt="Finestra Città di esempio con tre schede: Metropoli, con 105.157 abitanti e saldo di R$ 26.115 al mese; Città media, con 33.415 abitanti; e Piccola città, con 4454 abitanti; ogni scheda ha una descrizione e un pulsante Apri" width="1440" height="880" loading="lazy">
+<figcaption>I tre esempi e i loro numeri. Aprire un esempio sostituisce la partita attuale.</figcaption>
+</figure>
+<ul>
+<li><strong>Metropoli</strong>: tutta la riva est costruita, con edifici alti, Trensurb, autobus, tutti i monumenti e l’intera città protetta da argini e paratoie.</li>
+<li><strong>Città media</strong>: centro e zona nord, con un muro sul lungolago che regge le piogge invernali ma non una piena storica.</li>
+<li><strong>Piccola città</strong>: un borgo con l’essenziale funzionante e molto spazio per crescere.</li>
+</ul>
+<aside class="note"><p>Aprire un esempio sostituisce la partita attuale. Esporta la tua prima, se vuoi conservarla.</p></aside>
+<a class="back" href="#top">↑ Torna su</a>
+</section>
+
+<section id="salvar-it" aria-labelledby="h-salvar-it">
+<h2 id="h-salvar-it">Salvare e tasti</h2>
+<p>Il gioco si salva in questo browser a ogni mese di gioco. In <strong>Gioco</strong> puoi anche salvare subito, <strong>esportare</strong> la partita in un file, <strong>importare</strong> un file, iniziare una <strong>nuova partita</strong> con un seme della mappa, attivare o disattivare disastri ed elezioni e cambiare lingua e tema.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Tasto</th><th>Azione</th></tr></thead>
+<tbody>
+<tr><td><kbd>Spazio</kbd></td><td>pausa e ripresa</td></tr>
+<tr><td><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></td><td>velocità</td></tr>
+<tr><td><kbd>+</kbd> <kbd>−</kbd></td><td>zoom</td></tr>
+<tr><td><kbd>Esc</kbd></td><td>torna allo strumento Vedi</td></tr>
+<tr><td><kbd>B</kbd> / <kbd>R</kbd></td><td>Demolisci / Strada</td></tr>
+<tr><td>frecce e <kbd>Invio</kbd></td><td>con la mappa a fuoco, muovono il cursore e usano lo strumento</td></tr>
+</tbody></table></div>
+<a class="back" href="#top">↑ Torna su</a>
+</section>
+
+<section id="erros-it" aria-labelledby="h-erros-it">
+<h2 id="h-erros-it">Errori comuni</h2>
+<ul class="myths">
+<li><h3>Zona lontana dalla strada</h3><p>La zona ha bisogno di una strada entro tre caselle. Senza accesso non nasce nulla.</p></li>
+<li><h3>Centrale senza linea</h3><p>L’energia non corre lungo le strade. Se il quartiere è lontano dalla centrale, stendi una linea elettrica.</p></li>
+<li><h3>Impianto dell’acqua senza energia</h3><p>L’impianto di trattamento ha bisogno di energia. Senza, le tubature restano asciutte e tutta la città resta senz’acqua.</p></li>
+<li><h3>Dimenticare le tubature</h3><p>Senz’acqua la città non va oltre le case a un piano. Villette e palazzi hanno bisogno d’acqua.</p></li>
+<li><h3>Zonizzare senza domanda</h3><p>Le zone che nessuno vuole restano vuote e costano. Segui le barre R, C e I.</p></li>
+<li><h3>Costruire nella piana alluvionale</h3><p>Prima di costruire vicino all’acqua, guarda la mappa Rischio di piena. Un argine con le estremità aperte non protegge.</p></li>
+<li><h3>Spendere tutto all’inizio</h3><p>Ogni opera ha una manutenzione mensile. Tieni cassa per i mesi in cui le entrate sono ancora piccole.</p></li>
+<li><h3>Dimenticare le elezioni</h3><p>A ottobre, ogni quattro anni, ti serve più del 50%. Segui il gradimento nel Rapporto.</p></li>
+</ul>
+<a class="back" href="#top">↑ Torna su</a>
+</section>
+
+<section id="revisao-it" aria-labelledby="h-revisao-it">
+<h2 id="h-revisao-it">Ripasso veloce</h2>
+<p>Prova a rispondere prima di aprire ogni domanda.</p>
+<div class="quiz">
+<details><summary>1. Di cosa ha bisogno una zona per avere edifici?</summary><p>Domanda, una strada entro tre caselle ed energia. Per andare oltre le case a un piano, anche acqua.</p></details>
+<details><summary>2. L’energia corre lungo le strade?</summary><p>No. Passa da un edificio all’altro quando si toccano e salta una strada tra isolati. Per andare lontano serve una linea elettrica.</p></details>
+<details><summary>3. Fin dove porta l’acqua una tubatura?</summary><p>A tutto ciò che è entro 5 caselle da una tubatura alimentata.</p></details>
+<details><summary>4. Perché l’impianto di trattamento sta sulla riva?</summary><p>Perché preleva acqua dal Guaíba o dai fiumi. E ha bisogno anche di energia.</p></details>
+<details><summary>5. Cosa succede quando un argine attraversa una strada?</summary><p>Diventa una paratoia: le auto passano e l’acqua no.</p></details>
+<details><summary>6. Perché un argine può non proteggere in una piena storica?</summary><p>Se le estremità non arrivano al terreno alto, l’acqua aggira il muro.</p></details>
+<details><summary>7. Quando sono le elezioni e cosa serve?</summary><p>A ottobre, ogni quattro anni. Serve più del 50% di gradimento.</p></details>
+<details><summary>8. Come scoprire perché un quartiere non cresce?</summary><p>Ispeziona una casella e cerca cosa manca (acqua, energia, svago, copertura dei servizi) o cosa è troppo alto (inquinamento, criminalità, traffico).</p></details>
+</div>
+<a class="back" href="#top">↑ Torna su</a>
+</section>
+
+<section id="referencias-it" aria-labelledby="h-referencias-it">
+<h2 id="h-referencias-it">Riferimenti</h2>
+<ol class="refs">
+<li id="ref-1-it"><strong>Giovani Perotto Mesquita</strong>, «Sindaco di Porto Alegre» (Prefeito de Porto Alegre), gioco in un unico file HTML, <a href="PrefeitoDePortoAlegre.html#it">giovanipm.github.io/PrefeitoDePortoAlegre.html</a>.</li>
+<li id="ref-2-it"><strong>Wikipedia</strong> (in portoghese), «Enchentes em Porto Alegre em 1941», consultato il 06/11/2026, <a href="https://pt.wikipedia.org/wiki/Enchentes_em_Porto_Alegre_em_1941" rel="noopener">pt.wikipedia.org/wiki/Enchentes_em_Porto_Alegre_em_1941</a>.</li>
+<li id="ref-3-it"><strong>Wikipedia</strong> (in portoghese), «Enchentes no Rio Grande do Sul em 2024», consultato il 06/11/2026, <a href="https://pt.wikipedia.org/wiki/Enchentes_no_Rio_Grande_do_Sul_em_2024" rel="noopener">pt.wikipedia.org/wiki/Enchentes_no_Rio_Grande_do_Sul_em_2024</a>. Divergenza: la tabella dell’articolo sul 1941 [2] riporta 5,35 m per il 2024.</li>
+<li id="ref-4-it"><strong>Wikipedia</strong> (in portoghese), «Muro da Mauá», consultato il 06/11/2026, <a href="https://pt.wikipedia.org/wiki/Muro_da_Mau%C3%A1" rel="noopener">pt.wikipedia.org/wiki/Muro_da_Mauá</a>. Divergenza: l’articolo parla di 19 idrovore nel sistema e, nella sezione delle critiche, di 4 su 23 in funzione nel 2024.</li>
+</ol>
+<a class="back" href="#top">↑ Torna su</a>
+</section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== ES ===================== -->
+<div id="es" role="tabpanel" aria-labelledby="tab-es" lang="es" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Proyectos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Alcalde de Porto Alegre: cómo construir y gobernar tu ciudad</h1>
+      <p class="dek">Una guía paso a paso con pantallas del juego: calles, zonas, energía, agua, servicios, crecidas del Guaíba, presupuesto y elecciones.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado el <time datetime="2026-11-06">06/11/2026</time></span>
+        <span class="credit">Revisado y formateado con Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-es">
+    <h2 id="toc-es">Índice</h2>
+    <ol>
+      <li><a href="#intro-es">El juego</a></li>
+      <li><a href="#tela-es">La pantalla</a></li>
+      <li><a href="#ruas-es">Paso 1: calles</a></li>
+      <li><a href="#zonas-es">Paso 2: zonas</a></li>
+      <li><a href="#energia-es">Paso 3: energía</a></li>
+      <li><a href="#agua-es">Paso 4: agua</a></li>
+      <li><a href="#cresce-es">Paso 5: la ciudad crece</a></li>
+      <li><a href="#ver-es">Inspeccionar una casilla</a></li>
+      <li><a href="#servicos-es">Servicios y cobertura</a></li>
+      <li><a href="#transito-es">Tráfico y transporte</a></li>
+      <li><a href="#cheias-es">Las crecidas del Guaíba</a></li>
+      <li><a href="#dinheiro-es">Presupuesto y elecciones</a></li>
+      <li><a href="#mapas-es">Mapas e informe</a></li>
+      <li><a href="#marcos-es">Hitos y títulos</a></li>
+      <li><a href="#exemplos-es">Ciudades de ejemplo</a></li>
+      <li><a href="#salvar-es">Guardar y teclas</a></li>
+      <li><a href="#erros-es">Errores comunes</a></li>
+      <li><a href="#revisao-es">Repaso rápido</a></li>
+      <li><a href="#referencias-es">Referencias</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-es" aria-labelledby="h-intro-es">
+<h2 id="h-intro-es">El juego</h2>
+<p><strong>Alcalde de Porto Alegre</strong> es un juego de construcción de ciudades que funciona en el navegador, en un único archivo HTML. Asumes la alcaldía de una Porto Alegre todavía por construir, entre el Guaíba, el delta del Jacuí, el río Gravataí y los cerros. Las casas, tiendas y fábricas aparecen solas; tu trabajo es darles lo que necesitan: calles, energía, agua, servicios y protección contra las crecidas. <sup><a href="#ref-1-es">[1]</a></sup></p>
+<p>El juego está en portugués, inglés, italiano y español, se guarda solo en el navegador y no necesita instalación ni cuenta.</p>
+<p><a class="launch" href="PrefeitoDePortoAlegre.html#es">Jugar a Alcalde de Porto Alegre <span aria-hidden="true">→</span></a></p>
+<figure>
+<img src="rc_images/PrefeitoPOAInicio-es.png" alt="Pantalla de bienvenida: el diálogo Bienvenido al Palacio Municipal explica los primeros pasos y tiene los botones Cómo jugar, Ver ejemplos y Empezar; detrás, el mapa todavía vacío con la Freeway" width="1440" height="880" loading="lazy">
+<figcaption>La primera vez que abres el juego, la bienvenida resume la misión. El botón Ver ejemplos abre tres ciudades listas.</figcaption>
+</figure>
+<h3>Palabras que verás todo el tiempo</h3>
+<dl class="glossary">
+<dt>Casilla</dt><dd>Cada cuadradito del mapa. Los costes y alcances se cuentan en casillas.</dd>
+<dt>Zona</dt><dd>Terreno marcado para vivienda (R), comercio (C) o industria (I). Los edificios nacen en las zonas.</dd>
+<dt>Demanda</dt><dd>Cuánto quiere la ciudad de cada tipo de zona. Aparece en las barras R, C e I.</dd>
+<dt>Cobertura</dt><dd>El área que un servicio (policía, bomberos, salud, escuela, ocio) atiende a su alrededor.</dd>
+<dt>Valor del suelo</dt><dd>Cuánto se desea un lugar. Un valor alto atrae edificios más altos.</dd>
+<dt>Aprobación</dt><dd>Lo que los vecinos piensan de tu gobierno. Decide la elección.</dd>
+</dl>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="tela-es" aria-labelledby="h-tela-es">
+<h2 id="h-tela-es">La pantalla</h2>
+<p>La pantalla tiene cinco partes. Conviene reconocerlas antes de construir:</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Parte</th><th>Qué muestra</th></tr></thead>
+<tbody>
+<tr><th>Barra superior</th><td>fecha, población, caja y aprobación; los botones de velocidad (pausa, 1, 2 y 3); y los botones <strong>Presupuesto</strong>, <strong>Mapas</strong>, <strong>Informe</strong>, <strong>Juego</strong> y <strong>?</strong> (ayuda)</td></tr>
+<tr><th>Paleta, a la izquierda</th><td>las categorías <strong>Ver</strong>, <strong>Vías</strong>, <strong>Zonas</strong>, <strong>Energía y agua</strong>, <strong>Servicios</strong>, <strong>Ocio</strong>, <strong>Crecidas</strong> e <strong>Hitos</strong>, y las herramientas de cada una, con precio y mantenimiento mensual</td></tr>
+<tr><th>Mapa, en el centro</th><td>la ciudad; arrastra para moverla y usa la rueda del ratón o los botones − y + para el zoom</td></tr>
+<tr><th>Panel, a la derecha</th><td>la <strong>Demanda</strong> (barras R, C e I), la descripción de la herramienta elegida o los detalles de la casilla inspeccionada, y las <strong>Noticias</strong></td></tr>
+<tr><th>Radio Guaíba, abajo</th><td>la última noticia, siempre visible</td></tr>
+</tbody></table></div>
+<p>En el móvil, la paleta y el panel se vuelven cajones, que se abren con los botones de las esquinas de la barra superior.</p>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="ruas-es" aria-labelledby="h-ruas-es">
+<h2 id="h-ruas-es">Paso 1: calles desde la Freeway</h2>
+<p>La ciudad empieza vacía, cruzada por la Freeway, que ya la une con el resto del estado. Todo lo que construyas tiene que llegar a ella. Abre <strong>Vías</strong> y elige <strong>Avenida</strong> o <strong>Calle</strong>. Calles, avenidas, vías de tren y diques se construyen arrastrando del inicio al final.</p>
+<figure>
+<img src="rc_images/PrefeitoPOARua-es.png" alt="Herramienta Avenida activa: una franja clara baja desde la Freeway mientras se arrastra el ratón, con el coste R$ 4.960 junto al cursor; el panel de la derecha describe la avenida, que cuesta R$ 250 y R$ 5 al mes por casilla" width="1440" height="880" loading="lazy">
+<figcaption>Mientras arrastras, la vista previa muestra el trazado y el coste. En rojo, el juego explica por qué no se puede construir ahí.</figcaption>
+</figure>
+<p>La <strong>avenida</strong> cuesta R$ 250 por casilla y lleva dos veces y media más coches que la <strong>calle</strong>, de R$ 100. Usa avenidas en los ejes principales y calles dentro de los barrios. Una calle sobre el agua se vuelve puente y cuesta seis veces más.</p>
+<p>En el ejemplo de este tutorial, una avenida baja desde la Freeway y tres calles cierran dos manzanas a cada lado.</p>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="zonas-es" aria-labelledby="h-zonas-es">
+<h2 id="h-zonas-es">Paso 2: zonas</h2>
+<p>En <strong>Zonas</strong>, arrastra rectángulos para marcar dónde puede crecer la ciudad: <strong>residencial</strong> (verde), <strong>comercial</strong> (azul) o <strong>industrial</strong> (amarilla). Cada casilla cuesta R$ 40. Tú no construyes las casas: aparecen cuando hay demanda, calle, energía y agua.</p>
+<figure>
+<img src="rc_images/PrefeitoPOAZonas-es.png" alt="Herramienta Zona residencial activa: un rectángulo verde discontinuo se arrastra dentro de la primera manzana, con coste de R$ 1.400; al lado, las barras de demanda muestran R alta e I media" width="1440" height="880" loading="lazy">
+<figcaption>La zona necesita una calle a menos de tres casillas. Las barras de demanda, arriba a la derecha, dicen qué quiere la ciudad ahora.</figcaption>
+</figure>
+<p>Mira las barras <strong>R</strong>, <strong>C</strong> e <strong>I</strong> antes de zonificar y sigue la demanda. Al principio, la ciudad quiere viviendas y algo de industria, que da empleo. El comercio llega después, cuando hay gente que compra.</p>
+<aside class="note"><p>Deja espacio en las manzanas para los servicios. En este ejemplo, una escuela, un centro de salud y una plaza quedaron en la manzana residencial de abajo, y la policía y los bomberos entre el comercio y la industria.</p></aside>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="energia-es" aria-labelledby="h-energia-es">
+<h2 id="h-energia-es">Paso 3: energía</h2>
+<p>En <strong>Energía y agua</strong>, construye una central. La <strong>central termoeléctrica</strong> (R$ 40.000, 3×3 casillas) da mucha energía pero contamina; la <strong>planta solar</strong> y el <strong>parque eólico</strong> son limpios y rinden menos. El parque eólico se desbloquea con 5.000 habitantes.</p>
+<p>La energía sale de la central por la <strong>línea eléctrica</strong> (R$ 40 por casilla). Los edificios que se tocan se pasan la energía, y esta salta una calle de una manzana a la vecina. Pero la energía no corre a lo largo de las calles: para llegar lejos, tiende una línea.</p>
+<figure>
+<img src="rc_images/PrefeitoPOAEnergia-es.png" alt="Mapa Red eléctrica: la central termoeléctrica arriba a la derecha se conecta con una línea amarilla que baja junto a las manzanas; todos los edificios están en verde, con energía, y la leyenda muestra con, sin y línea con energía" width="1440" height="880" loading="lazy">
+<figcaption>En el mapa Red eléctrica, verde es con energía y rojo es sin ella. La línea amarilla es la línea eléctrica conectada.</figcaption>
+</figure>
+<p>Un edificio sin energía muestra un rayo amarillo en el mapa y no crece.</p>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="agua-es" aria-labelledby="h-agua-es">
+<h2 id="h-agua-es">Paso 4: agua</h2>
+<p>La <strong>planta de tratamiento de agua</strong> (R$ 20.000) capta agua del Guaíba o de los ríos, así que tiene que estar en la orilla. Y <strong>necesita energía</strong>: llévale una línea eléctrica.</p>
+<p>El agua sale de la planta por las <strong>tuberías</strong> (R$ 30 por casilla), que van bajo tierra y pasan por debajo de calles y edificios. Todo lo que esté a menos de 5 casillas de una tubería abastecida recibe agua. Al elegir la herramienta de tubería, el mapa muestra el subsuelo.</p>
+<figure>
+<img src="rc_images/PrefeitoPOAAgua-es.png" alt="Vista del subsuelo con la herramienta Tubería de agua activa: la planta en la orilla en celeste, tuberías azules bajo las calles y las manzanas en verde, abastecidas; la central aparece en rojo porque está lejos de las tuberías" width="1440" height="880" loading="lazy">
+<figcaption>En la vista del subsuelo, las tuberías con agua son azules y las casillas abastecidas, verdes. El rojo está fuera de alcance.</figcaption>
+</figure>
+<p>Sin agua, la ciudad se queda en casas de una planta: las casas de dos plantas y los edificios solo aparecen con agua. Un edificio sin agua muestra una gota en el mapa. En esta vista del subsuelo, la herramienta <strong>Demoler</strong> quita solo las tuberías.</p>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="cresce-es" aria-labelledby="h-cresce-es">
+<h2 id="h-cresce-es">Paso 5: la ciudad crece</h2>
+<p>Con calles, zonas, energía y agua, pulsa <strong>1</strong>, <strong>2</strong> o <strong>3</strong> en la barra superior para que pase el tiempo. Cada mes, los edificios nacen, crecen o se abandonan según la demanda, el valor del suelo y los problemas del barrio.</p>
+<figure>
+<img src="rc_images/PrefeitoPOACrescimento-es.png" alt="La ciudad del ejemplo tres años después, en enero de 2028: 2408 habitantes, aprobación del 59% y el título Villa; casas, casas de dos plantas y edificios bajos en las manzanas residenciales, tiendas con aparcamiento en la comercial, naves y fábricas en la industrial, más la escuela, el centro de salud, la plaza, la policía y los bomberos" width="1440" height="880" loading="lazy">
+<figcaption>Tres años después de la primera calle, la villa tiene 2408 habitantes. Las noticias anuncian el nuevo título y el primer hito desbloqueado, el Mercado Público.</figcaption>
+</figure>
+<p>Los edificios altos necesitan un <strong>valor del suelo</strong> alto: costanera, parques, servicios, poca criminalidad y poca contaminación. En los cerros solo nacen casas de una y dos plantas. Unir las calles a la Freeway o al puente del Guaíba ayuda al comercio y a la industria.</p>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="ver-es" aria-labelledby="h-ver-es">
+<h2 id="h-ver-es">Inspeccionar una casilla</h2>
+<p>Con la herramienta <strong>Ver</strong>, haz clic en una casilla para ver todo lo que el juego sabe de ella. El nombre del barrio aparece junto al cursor.</p>
+<figure>
+<img src="rc_images/PrefeitoPOAVer-es.png" alt="Una casilla residencial seleccionada en el barrio Navegantes; el panel muestra terreno, altitud, valor del suelo 38%, contaminación 2%, riesgo de crecida alto, densidad 2 de 3, 39 residentes, energía y agua, criminalidad 3% y la cobertura de policía, bomberos, salud, educación, ocio y transporte público" width="1440" height="880" loading="lazy">
+<figcaption>El panel muestra por qué la casilla está así. Aquí, el riesgo de crecida es alto y no hay ocio ni transporte público cerca.</figcaption>
+</figure>
+<p>Usa la inspección para responder preguntas como «¿por qué no crece este barrio?». La respuesta suele estar en una línea vacía: sin agua, sin ocio, contaminación alta o cobertura baja.</p>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="servicos-es" aria-labelledby="h-servicos-es">
+<h2 id="h-servicos-es">Servicios y cobertura</h2>
+<p>La policía, los bomberos, la salud, las escuelas y el ocio atienden un radio a su alrededor. Cuanto más cerca, mejor el servicio. La policía, los bomberos, la salud y la escuela necesitan energía.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Servicio</th><th>Coste</th><th>Mantenimiento</th><th>Radio</th><th>Para qué sirve</th></tr></thead>
+<tbody>
+<tr><th>Comisaría</th><td>R$ 9.000</td><td>R$ 180/mes</td><td>13</td><td>reduce la criminalidad</td></tr>
+<tr><th>Cuartel de bomberos</th><td>R$ 9.000</td><td>R$ 180/mes</td><td>13</td><td>evita y apaga incendios</td></tr>
+<tr><th>Centro de salud</th><td>R$ 4.000</td><td>R$ 90/mes</td><td>8</td><td>salud básica para el barrio</td></tr>
+<tr><th>Hospital</th><td>R$ 30.000</td><td>R$ 600/mes</td><td>20</td><td>salud para una zona grande; se desbloquea con 3.000 habitantes</td></tr>
+<tr><th>Escuela</th><td>R$ 10.000</td><td>R$ 220/mes</td><td>12</td><td>valoriza el barrio y atrae mejores edificios</td></tr>
+<tr><th>Plaza, parque, costanera</th><td>de R$ 800 a R$ 6.000</td><td>de R$ 10 a R$ 80/mes</td><td>de 5 a 10</td><td>ocio; la costanera valoriza mucho el entorno</td></tr>
+</tbody></table></div>
+<figure>
+<img src="rc_images/PrefeitoPOAServicos-es.png" alt="Mapa Bomberos de la ciudad mediana de ejemplo: el centro de los barrios aparece en verde, bien atendido, y los bordes y las zonas vacías en rojo; la leyenda va de bajo a alto" width="1440" height="880" loading="lazy">
+<figcaption>En el mapa Bomberos de la ciudad mediana, el verde muestra hasta dónde llegan los cuarteles. Los bordes rojos piden un cuartel nuevo cuando la ciudad crezca hacia allí.</figcaption>
+</figure>
+<p>Los incendios empiezan al azar y se extienden a las casillas vecinas. Donde hay bomberos cerca, son raros y se apagan pronto.</p>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="transito-es" aria-labelledby="h-transito-es">
+<h2 id="h-transito-es">Tráfico y transporte público</h2>
+<p>Los coches salen de las casas hacia el trabajo y las compras. Las calles congestionadas contaminan y molestan a los vecinos, lo que pesa en la aprobación. Hay tres remedios: avenidas en los ejes más usados, <strong>terminales de autobuses</strong> de Carris (R$ 1.500) y el tren metropolitano <strong>Trensurb</strong>, que se desbloquea con 8.000 habitantes.</p>
+<figure>
+<img src="rc_images/PrefeitoPOATransito-es.png" alt="Mapa Tráfico de la metrópolis de ejemplo: la mayoría de las calles en tonos neutros y algunos corredores en rojo intenso, sobre todo en el Centro y cerca de la zona industrial" width="1440" height="880" loading="lazy">
+<figcaption>En la metrópolis, el mapa Tráfico muestra en rojo los corredores más cargados.</figcaption>
+</figure>
+<p>Una estación del Trensurb necesita otra estación en la misma línea para funcionar. Las vías pueden cruzar calles.</p>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="cheias-es" aria-labelledby="h-cheias-es">
+<h2 id="h-cheias-es">Las crecidas del Guaíba</h2>
+<p>El Guaíba sube en invierno y en primavera y, con lluvias fuertes, invade las partes bajas. De vez en cuando, Defensa Civil anuncia una <strong>crecida histórica</strong>, muy por encima de las lluvias comunes. Las casillas inundadas pierden vecinos e ingresos, y parte de ellas queda en escombros cuando el agua baja.</p>
+<figure>
+<img src="rc_images/PrefeitoPOACheia-es.png" alt="La ciudad pequeña de ejemplo durante una crecida histórica: el agua cubre casi todo el mapa, incluidas las manzanas; las noticias dicen que Defensa Civil está en alerta máxima, que el Guaíba llega a 7,81 m y que el agua invadió 272 casillas" width="1440" height="880" loading="lazy">
+<figcaption>El dique corto de la ciudad pequeña contiene las lluvias comunes, pero en una crecida histórica el agua lo rodea por los extremos e invade 272 casillas.</figcaption>
+</figure>
+<p>Antes de construir cerca del agua, abre el mapa <strong>Riesgo de crecida</strong>: muestra lo que está por debajo de la cota de inundación.</p>
+<figure>
+<img src="rc_images/PrefeitoPOARiscoCheia-es.png" alt="Mapa Riesgo de crecida sobre la ciudad pequeña: la orilla, la llanura de inundación y la franja a lo largo del Dilúvio en rojo intenso; la parte alta, al este, en verde" width="1440" height="880" loading="lazy">
+<figcaption>El mapa Riesgo de crecida: rojo es bajo y peligroso, verde es alto y seguro.</figcaption>
+</figure>
+<h3>Cómo protegerse</h3>
+<ul>
+<li><strong>Dique</strong> (R$ 600 por casilla, en <strong>Crecidas</strong>): un muro que el agua no atraviesa. Arrástralo a lo largo de la orilla y cierra los extremos hasta el terreno alto, o el agua lo rodea.</li>
+<li><strong>Compuerta</strong>: el dique construido sobre una calle se vuelve compuerta. Los coches pasan y el agua no. Cuesta una vez y media el dique.</li>
+<li><strong>Estación de bombeo</strong> (R$ 7.000): drena las casillas inundadas en un radio de 7. Necesita energía y se detiene si ella misma se inunda.</li>
+</ul>
+<figure>
+<img src="rc_images/PrefeitoPOADique-es.png" alt="Detalle de la costanera de la metrópolis de ejemplo: diques grises siguen la orilla, las calles que llegan al Guaíba atraviesan el muro por compuertas, y la Usina do Gasômetro queda fuera, al borde del agua" width="1440" height="880" loading="lazy">
+<figcaption>En la metrópolis, el muro sigue toda la costanera y las calles pasan por compuertas. La Usina do Gasômetro queda fuera del muro, como en la ciudad real.</figcaption>
+</figure>
+<h3>La Porto Alegre de verdad</h3>
+<p>Las crecidas del juego se inspiran en las reales. En abril y mayo de 1941, el Guaíba estuvo 22 días por encima de lo normal y llegó a 4,76 m. <sup><a href="#ref-2-es">[2]</a></sup> Después, la ciudad construyó un sistema de protección con el <strong>Muro de la Mauá</strong>, de 2.647 m de largo y 3 m de alto, terminado en 1974, y unos 68 km de diques, 14 compuertas y 19 estaciones de bombeo. <sup><a href="#ref-4-es">[4]</a></sup></p>
+<p>El 5 de mayo de 2024, el Guaíba llegó a 5,37 m, por encima de la marca de 1941. <sup><a href="#ref-3-es">[3]</a></sup> Compuertas que no pudieron cerrarse bien y estaciones de bombeo paradas dejaron entrar el agua en la ciudad. <sup><a href="#ref-4-es">[4]</a></sup> No por casualidad, en el juego la estación de bombeo se detiene sin energía: un dique solo protege si las compuertas cierran y las bombas funcionan.</p>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="dinheiro-es" aria-labelledby="h-dinheiro-es">
+<h2 id="h-dinheiro-es">Presupuesto y elecciones</h2>
+<p>Empiezas con R$ 200.000. La ciudad recauda impuestos residenciales, comerciales e industriales, y gasta en el mantenimiento de las obras, los fondos de las secretarías y los gastos de funcionamiento de la alcaldía, que crecen con la ciudad. Todo eso está en <strong>Presupuesto</strong>.</p>
+<figure>
+<img src="rc_images/PrefeitoPOAOrcamento-es.png" alt="Diálogo Presupuesto de la metrópolis: deslizadores para los impuestos residencial, comercial e industrial y para los fondos de seguridad, salud y educación, e infraestructura; abajo, el último mes con ingresos de R$ 209.497, gastos de R$ 183.382 y saldo de R$ 26.115, y el botón Pedir un préstamo de R$ 100.000" width="1440" height="880" loading="lazy">
+<figcaption>El presupuesto muestra los ingresos y gastos del último mes. Los impuestos altos espantan a los vecinos; los fondos bajos debilitan los servicios.</figcaption>
+</figure>
+<ul>
+<li><strong>Impuestos</strong>: cada punto más recauda más, pero espanta a vecinos y empresas y baja la aprobación.</li>
+<li><strong>Fondos</strong>: recortar los fondos de una secretaría ahorra, pero reduce la cobertura de sus servicios.</li>
+<li><strong>Préstamo</strong>: R$ 100.000 al instante, devueltos en 60 cuotas de R$ 1.917 (15% de interés en total). Puedes tener hasta tres a la vez.</li>
+</ul>
+<aside class="note"><p>Un año entero con la caja por debajo de −R$ 100.000 aparta al alcalde. Y cada cuatro años, en octubre, hay elecciones: necesitas más del 50% de aprobación para seguir.</p></aside>
+<p>La aprobación sube con servicios, empleo, ocio e impuestos bajos, y baja con criminalidad, tráfico, contaminación, falta de energía o agua, crecidas e incendios. Las noticias avisan cuando se acercan las elecciones.</p>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="mapas-es" aria-labelledby="h-mapas-es">
+<h2 id="h-mapas-es">Mapas e informe</h2>
+<p>El botón <strong>Mapas</strong> pinta la ciudad con un dato cada vez. Úsalos para decidir dónde construir el próximo servicio.</p>
+<figure>
+<img src="rc_images/PrefeitoPOAMapas-es.png" alt="Diálogo Mapas con 15 botones: Ciudad, Valor del suelo, Contaminación, Criminalidad, Tráfico, Red eléctrica, Red de agua (subsuelo), Policía, Bomberos, Salud, Educación, Ocio, Transporte público, Riesgo de crecida y Densidad" width="1440" height="880" loading="lazy">
+<figcaption>Los 15 mapas. Ciudad vuelve a la vista normal.</figcaption>
+</figure>
+<p>El <strong>Informe</strong> muestra la población, la caja y la aprobación a lo largo del tiempo y los números de la ciudad. Ahí se ve si una decisión funcionó.</p>
+<figure>
+<img src="rc_images/PrefeitoPOARelatorio-es.png" alt="Diálogo Informe con tres gráficos de febrero de 2038 a enero de 2041: población estable en torno a 105 mil, caja subiendo hasta R$ 4.284.202 y aprobación cerca del 70%; abajo empieza la sección En cifras" width="1440" height="880" loading="lazy">
+<figcaption>El informe de la metrópolis: población estable, caja en alza y aprobación cerca del 70%.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="marcos-es" aria-labelledby="h-marcos-es">
+<h2 id="h-marcos-es">Hitos y títulos</h2>
+<p>A medida que crece la población, la ciudad gana títulos y desbloquea los hitos de Porto Alegre en <strong>Hitos</strong>. Cada hito valoriza el entorno y atrae algo distinto.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Habitantes</th><th>Título</th><th>Qué se desbloquea</th></tr></thead>
+<tbody>
+<tr><td>0</td><td>Porto dos Casais</td><td>calles, zonas, energía, agua, servicios básicos</td></tr>
+<tr><td>500</td><td>Parroquia</td><td>—</td></tr>
+<tr><td>2.000</td><td>Villa</td><td>Mercado Público</td></tr>
+<tr><td>de 3.000 a 8.000</td><td>—</td><td>hospital, Parque de la Redenção, parque eólico, Usina do Gasômetro, Casa de Cultura Mario Quintana, Catedral Metropolitana, Trensurb</td></tr>
+<tr><td>10.000</td><td>Ciudad</td><td>Hospital de Clínicas (12.000), Beira-Rio y Arena (15.000)</td></tr>
+<tr><td>de 20.000 a 40.000</td><td>—</td><td>Fundação Iberê Camargo, Universidad, Aeropuerto Salgado Filho</td></tr>
+<tr><td>50.000</td><td>Capital</td><td>—</td></tr>
+<tr><td>150.000</td><td>Metrópolis</td><td>—</td></tr>
+</tbody></table></div>
+<figure>
+<img src="rc_images/PrefeitoPOAMarcos-es.png" alt="Centro de la metrópolis de ejemplo: la Usina do Gasômetro con su chimenea alta en la orilla, el Mercado Público con su patio de vidrio, la Catedral con la cúpula verde, la Casa de Cultura Mario Quintana en rosa y, abajo, un hospital y la Redenção, entre torres de vidrio" width="1440" height="880" loading="lazy">
+<figcaption>En el Centro de la metrópolis: Gasômetro, Mercado, Catedral, Casa de Cultura Mario Quintana y Redenção.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="exemplos-es" aria-labelledby="h-exemplos-es">
+<h2 id="h-exemplos-es">Ciudades de ejemplo</h2>
+<p>En <strong>Juego › Ciudades de ejemplo…</strong> (o con el botón <strong>Ver ejemplos</strong> de la bienvenida) hay tres ciudades listas, construidas con las mismas reglas del juego. Son una buena forma de ver qué funciona antes de construir la tuya.</p>
+<figure>
+<img src="rc_images/PrefeitoPOAExemplos-es.png" alt="Diálogo Ciudades de ejemplo con tres tarjetas: Metrópolis, con 105.157 habitantes y saldo de R$ 26.115 al mes; Ciudad mediana, con 33.415 habitantes; y Ciudad pequeña, con 4454 habitantes; cada tarjeta tiene una descripción y un botón Abrir" width="1440" height="880" loading="lazy">
+<figcaption>Los tres ejemplos y sus números. Abrir un ejemplo sustituye la partida actual.</figcaption>
+</figure>
+<ul>
+<li><strong>Metrópolis</strong>: toda la orilla este construida, con edificios altos, Trensurb, autobuses, todos los hitos y la ciudad entera protegida por diques y compuertas.</li>
+<li><strong>Ciudad mediana</strong>: Centro y zona norte, con un muro en la costanera que contiene las lluvias de invierno pero no una crecida histórica.</li>
+<li><strong>Ciudad pequeña</strong>: una villa con lo básico funcionando y mucho espacio para crecer.</li>
+</ul>
+<aside class="note"><p>Abrir un ejemplo sustituye la partida actual. Exporta la tuya antes si quieres guardarla.</p></aside>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="salvar-es" aria-labelledby="h-salvar-es">
+<h2 id="h-salvar-es">Guardar y teclas</h2>
+<p>El juego se guarda en este navegador cada mes de juego. En <strong>Juego</strong> también puedes guardar en el momento, <strong>exportar</strong> la partida a un archivo, <strong>importar</strong> un archivo, empezar una <strong>nueva partida</strong> con una semilla de mapa, activar o desactivar los desastres y las elecciones, y cambiar el idioma y el tema.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Tecla</th><th>Acción</th></tr></thead>
+<tbody>
+<tr><td><kbd>Espacio</kbd></td><td>pausar y seguir</td></tr>
+<tr><td><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></td><td>velocidad</td></tr>
+<tr><td><kbd>+</kbd> <kbd>−</kbd></td><td>zoom</td></tr>
+<tr><td><kbd>Esc</kbd></td><td>volver a la herramienta Ver</td></tr>
+<tr><td><kbd>B</kbd> / <kbd>R</kbd></td><td>Demoler / Calle</td></tr>
+<tr><td>flechas e <kbd>Intro</kbd></td><td>con el mapa enfocado, mover el cursor y usar la herramienta</td></tr>
+</tbody></table></div>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="erros-es" aria-labelledby="h-erros-es">
+<h2 id="h-erros-es">Errores comunes</h2>
+<ul class="myths">
+<li><h3>Zona lejos de la calle</h3><p>La zona necesita una calle a menos de tres casillas. Sin acceso, no nace nada.</p></li>
+<li><h3>Central sin línea</h3><p>La energía no corre a lo largo de las calles. Si el barrio está lejos de la central, tiende una línea eléctrica.</p></li>
+<li><h3>Planta de agua sin energía</h3><p>La planta de tratamiento necesita energía. Sin ella, las tuberías quedan secas y toda la ciudad se queda sin agua.</p></li>
+<li><h3>Olvidar las tuberías</h3><p>Sin agua, la ciudad no pasa de las casas de una planta. Las casas de dos plantas y los edificios necesitan agua.</p></li>
+<li><h3>Zonificar sin demanda</h3><p>Las zonas que nadie quiere se quedan vacías y cuestan dinero. Sigue las barras R, C e I.</p></li>
+<li><h3>Construir en la llanura de inundación</h3><p>Antes de construir cerca del agua, mira el mapa Riesgo de crecida. Un dique con los extremos abiertos no protege.</p></li>
+<li><h3>Gastarlo todo al principio</h3><p>Cada obra tiene mantenimiento mensual. Guarda caja para los meses en que la recaudación todavía es pequeña.</p></li>
+<li><h3>Olvidar las elecciones</h3><p>En octubre, cada cuatro años, necesitas más del 50%. Sigue la aprobación en el Informe.</p></li>
+</ul>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="revisao-es" aria-labelledby="h-revisao-es">
+<h2 id="h-revisao-es">Repaso rápido</h2>
+<p>Intenta responder antes de abrir cada pregunta.</p>
+<div class="quiz">
+<details><summary>1. ¿Qué necesita una zona para tener edificios?</summary><p>Demanda, una calle a menos de tres casillas y energía. Para pasar de las casas de una planta, también agua.</p></details>
+<details><summary>2. ¿La energía corre a lo largo de las calles?</summary><p>No. Pasa de un edificio a otro cuando se tocan y salta una calle entre manzanas. Para llegar lejos hace falta una línea eléctrica.</p></details>
+<details><summary>3. ¿Hasta dónde lleva agua una tubería?</summary><p>A todo lo que esté a menos de 5 casillas de una tubería abastecida.</p></details>
+<details><summary>4. ¿Por qué la planta de tratamiento está en la orilla?</summary><p>Porque capta agua del Guaíba o de los ríos. Y también necesita energía.</p></details>
+<details><summary>5. ¿Qué pasa cuando un dique cruza una calle?</summary><p>Se vuelve compuerta: los coches pasan y el agua no.</p></details>
+<details><summary>6. ¿Por qué un dique puede no proteger en una crecida histórica?</summary><p>Si sus extremos no llegan al terreno alto, el agua rodea el muro.</p></details>
+<details><summary>7. ¿Cuándo son las elecciones y qué necesitas?</summary><p>En octubre, cada cuatro años. Hace falta más del 50% de aprobación.</p></details>
+<details><summary>8. ¿Cómo averiguar por qué un barrio no crece?</summary><p>Inspecciona una casilla y busca lo que falta (agua, energía, ocio, cobertura de servicios) o lo que sobra (contaminación, criminalidad, tráfico).</p></details>
+</div>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="referencias-es" aria-labelledby="h-referencias-es">
+<h2 id="h-referencias-es">Referencias</h2>
+<ol class="refs">
+<li id="ref-1-es"><strong>Giovani Perotto Mesquita</strong>, «Alcalde de Porto Alegre» (Prefeito de Porto Alegre), juego en un único archivo HTML, <a href="PrefeitoDePortoAlegre.html#es">giovanipm.github.io/PrefeitoDePortoAlegre.html</a>.</li>
+<li id="ref-2-es"><strong>Wikipedia</strong> (en portugués), «Enchentes em Porto Alegre em 1941», consultado el 06/11/2026, <a href="https://pt.wikipedia.org/wiki/Enchentes_em_Porto_Alegre_em_1941" rel="noopener">pt.wikipedia.org/wiki/Enchentes_em_Porto_Alegre_em_1941</a>.</li>
+<li id="ref-3-es"><strong>Wikipedia</strong> (en portugués), «Enchentes no Rio Grande do Sul em 2024», consultado el 06/11/2026, <a href="https://pt.wikipedia.org/wiki/Enchentes_no_Rio_Grande_do_Sul_em_2024" rel="noopener">pt.wikipedia.org/wiki/Enchentes_no_Rio_Grande_do_Sul_em_2024</a>. Discrepancia: la tabla del artículo sobre 1941 [2] da 5,35 m para 2024.</li>
+<li id="ref-4-es"><strong>Wikipedia</strong> (en portugués), «Muro da Mauá», consultado el 06/11/2026, <a href="https://pt.wikipedia.org/wiki/Muro_da_Mau%C3%A1" rel="noopener">pt.wikipedia.org/wiki/Muro_da_Mauá</a>. Discrepancia: el artículo habla de 19 estaciones de bombeo en el sistema y, en su sección de críticas, de 4 de 23 funcionando en 2024.</li>
+</ol>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+  </article>
+</div>
+</div>
+
+
+<footer>
+  <div class="wrap">
+    <span>Giovani Perotto Mesquita · Porto Alegre, RS</span>
+    <span><a href="projects.html" data-projects data-foot="0">Projetos</a> · <a href="resume.html" data-resume data-foot="1">Currículo</a> · <a href="contact.html" data-contact data-foot="2">Contato</a></span>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('.lang [role="option"]'));
+    var titles = {"pt":"Prefeito de Porto Alegre: tutorial · Giovani Perotto Mesquita","en":"Mayor of Porto Alegre: tutorial · Giovani Perotto Mesquita","it":"Sindaco di Porto Alegre: tutorial · Giovani Perotto Mesquita","es":"Alcalde de Porto Alegre: tutorial · Giovani Perotto Mesquita"};
+    var foots = {"pt": ["Projetos", "Currículo", "Contato"], "en": ["Projects", "Resume", "Contact"], "it": ["Progetti", "Curriculum", "Contatti"], "es": ["Proyectos", "Currículum", "Contacto"]};
+    var langs = { pt: 'pt-BR', en: 'en', it: 'it', es: 'es' };
+    var bar = document.querySelector('.progress');
+    var article = document.querySelector('[role="tabpanel"]:not([hidden]) article');
+
+    function show(id, focus) {
+      tabs.forEach(function (t) {
+        var on = t.getAttribute('aria-controls') === id;
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+        if (on && focus) t.focus();
+      });
+      document.documentElement.lang = langs[id];
+      document.title = titles[id];
+      var suffix = id === 'pt' ? '' : '#' + id;
+      [['data-home', 'index.html'], ['data-about', 'about.html'], ['data-resume', 'resume.html'], ['data-projects', 'projects.html'], ['data-contact', 'contact.html']].forEach(function (p) {
+        document.querySelectorAll('[' + p[0] + ']').forEach(function (a) { a.href = p[1] + suffix; });
+      });
+      document.querySelectorAll('[data-foot]').forEach(function (a) { a.textContent = foots[id][+a.getAttribute('data-foot')]; });
+      article = document.querySelector('#' + id + ' article');
+      if (history.replaceState) history.replaceState(null, '', id === 'pt' ? location.pathname : '#' + id);
+      progress();
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () { show(t.getAttribute('aria-controls')); });
+      t.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (d) { e.preventDefault(); show(tabs[(i + d + tabs.length) % tabs.length].getAttribute('aria-controls'), true); }
+      });
+    });
+
+    // barra de progresso de leitura
+    function progress() {
+      if (!article) return;
+      var r = article.getBoundingClientRect();
+      var total = r.height - window.innerHeight;
+      var p = total > 0 ? Math.min(Math.max(-r.top / total, 0), 1) : 1;
+      bar.style.width = (p * 100) + '%';
+    }
+    window.addEventListener('scroll', progress, { passive: true });
+    window.addEventListener('resize', progress);
+
+    // destaca a seção atual no índice
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          var panel = e.target.closest('[role="tabpanel"]');
+          panel.querySelectorAll('.toc a').forEach(function (a) {
+            if (a.getAttribute('href') === '#' + e.target.id) a.setAttribute('aria-current', 'true');
+            else a.removeAttribute('aria-current');
+          });
+        });
+      }, { rootMargin: '-20% 0px -70% 0px' });
+      document.querySelectorAll('article section[id]').forEach(function (s) { io.observe(s); });
+    }
+
+    var h = (location.hash || '').replace('#', '');
+    var m = h.match(/^(?:.*-)?(en|it|es)$/);
+    if (m) {
+      show(m[1]);
+      if (h !== m[1]) { var el = document.getElementById(h); if (el) el.scrollIntoView(); if (history.replaceState) history.replaceState(null, '', '#' + h); }
+    } else progress();
+  })();
+</script>
+<script>
+  // seletor de idioma em combobox: abre a lista, sincroniza o botão e fecha
+  (function () {
+    var box = document.querySelector('.lang'); if (!box) return;
+    var btn = box.querySelector('.lang-current'), list = box.querySelector('.lang-list'), now = btn.querySelector('.lang-now');
+    var opts = Array.prototype.slice.call(list.querySelectorAll('[role="option"]'));
+    var menu = {
+      pt: { index: 'Início', about: 'Sobre', resume: 'Currículo', projects: 'Projetos', contact: 'Contato' },
+      en: { index: 'Home', about: 'About', resume: 'Resume', projects: 'Projects', contact: 'Contact' },
+      it: { index: 'Home', about: 'Chi sono', resume: 'Curriculum', projects: 'Progetti', contact: 'Contatti' },
+      es: { index: 'Inicio', about: 'Sobre mí', resume: 'Currículum', projects: 'Proyectos', contact: 'Contacto' }
+    };
+    function translate(id) {
+      document.querySelectorAll('.nav ul a').forEach(function (l) {
+        var k = (l.getAttribute('href') || '').split('#')[0].replace('.html', '');
+        if (menu[id] && menu[id][k]) l.textContent = menu[id][k];
+      });
+      // links do menu para as páginas principais levam o idioma selecionado
+      var suf = id === 'pt' ? '' : '#' + id;
+      document.querySelectorAll('.nav a[href]').forEach(function (l) {
+        var m = l.getAttribute('href').match(/^(index|about|resume|projects|contact)\.html(#(pt|en|it|es))?$/);
+        if (m) l.setAttribute('href', m[1] + '.html' + suf);
+      });
+    }
+    function sync() {
+      var sel = opts.filter(function (o) { return o.getAttribute('aria-selected') === 'true'; })[0] || opts[0];
+      now.innerHTML = sel.querySelector('.flag').outerHTML + sel.getAttribute('data-code');
+      btn.setAttribute('aria-label', btn.getAttribute('data-label') + ': ' + sel.textContent.trim());
+      translate(sel.getAttribute('aria-controls'));
+      return sel;
+    }
+    function open() { list.hidden = false; btn.setAttribute('aria-expanded', 'true'); sync().focus(); }
+    function close(back) { list.hidden = true; btn.setAttribute('aria-expanded', 'false'); if (back) btn.focus(); }
+    btn.addEventListener('click', function () { if (list.hidden) open(); else close(); });
+    btn.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); open(); }
+      else if (e.key === 'Escape') close();
+    });
+    opts.forEach(function (o, i) {
+      o.addEventListener('click', function () { sync(); close(true); });
+      o.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0;
+        if (d) { e.preventDefault(); opts[(i + d + opts.length) % opts.length].focus(); }
+        else if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); opts[e.key === 'Home' ? 0 : opts.length - 1].focus(); }
+        else if (e.key === 'Escape') { e.preventDefault(); close(true); }
+        else if (e.key === 'Tab') close();
+      });
+    });
+    document.addEventListener('click', function (e) { if (!box.contains(e.target)) close(); });
+    new MutationObserver(sync).observe(list, { attributes: true, subtree: true, attributeFilter: ['aria-selected'] });
+    sync();
+  })();
+</script>
+</body>
+</html>
