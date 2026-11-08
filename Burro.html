@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; base-uri 'none'; form-action 'none'">
+<title>Burro · Giovani Perotto Mesquita</title>
+<meta name="description" content="Burro: jogo de cartas em que é obrigatório seguir o naipe. Quem não tem compra do monte, e o último a ficar com cartas na mão é o burro. Contra o computador, em português, inglês, italiano e espanhol.">
+<meta name="author" content="Giovani Perotto Mesquita">
+<meta name="theme-color" content="#10291C">
+<style>
+  :root {
+    --bg: #0E2418; --felt: #1F6B45; --felt-2: #134A30; --panel: #FBF5EA; --panel-2: #F1E6D2; --ink: #2A1E18; --muted: #6F5F50; --line: #DFCDB1;
+    --accent: #8A3B12; --accent-ink: #FFFFFF; --gold: #E8B23E; --ok: #1F7A4D;
+    --sans: "Segoe UI", "Helvetica Neue", Arial, sans-serif; --serif: Georgia, "Times New Roman", serif;
+    --cw: clamp(56px, 8.4vmin, 92px);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --panel: #20261F; --panel-2: #2C352B; --ink: #F2EEE4; --muted: #B4AE9E; --line: #3E4A3C; --accent: #D9773F; --accent-ink: #1A1208; --ok: #5CC490; color-scheme: dark; }
+  }
+  :root[data-theme="dark"] { --panel: #20261F; --panel-2: #2C352B; --ink: #F2EEE4; --muted: #B4AE9E; --line: #3E4A3C; --accent: #D9773F; --accent-ink: #1A1208; --ok: #5CC490; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: var(--sans); -webkit-tap-highlight-color: transparent; }
+  button, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  button:disabled { cursor: default; opacity: .45; }
+  :focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+  .app { display: grid; grid-template-columns: minmax(0, 1fr) 320px; height: 100dvh; }
+  .stage { display: flex; flex-direction: column; min-width: 0; padding: 8px; gap: 8px; }
+  .side { display: flex; flex-direction: column; gap: 8px; padding: 8px 8px 8px 0; min-height: 0; }
+  .box { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: .6rem .75rem; }
+
+  /* mesa */
+  .table { position: relative; flex: 1; min-height: 260px; border-radius: 20px; background: radial-gradient(ellipse at center, var(--felt) 0%, var(--felt-2) 85%); border: 6px solid #3B2413; box-shadow: inset 0 0 40px rgba(0,0,0,.35), 0 10px 30px rgba(0,0,0,.35); display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 10px; gap: 8px; overflow: hidden; color: #FFF7EA; }
+  .opps { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; }
+  .opp { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .opp .np { font-weight: 700; font-size: .84rem; padding: .1rem .55rem; border-radius: 99px; background: rgba(0,0,0,.4); white-space: nowrap; }
+  .opp.on .np { background: var(--gold); color: #2A1E18; }
+  .opp.out { opacity: .7; }
+  .backs { display: flex; align-items: center; height: calc(var(--cw) * .62); }
+  .backs svg { width: calc(var(--cw) * .4); height: calc(var(--cw) * .58); margin-left: calc(var(--cw) * -.31); }
+  .backs svg:first-child { margin-left: 0; }
+  .backs .more { margin-left: 4px; font-size: .78rem; font-weight: 700; }
+  .backs .done { font-size: .8rem; padding: .1rem .5rem; border: 1px dashed rgba(255,255,255,.5); border-radius: 8px; }
+  .mid { display: flex; gap: clamp(12px, 3vw, 30px); align-items: center; justify-content: center; flex: 1; width: 100%; flex-wrap: wrap; }
+  .pile { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #FFF7EA; font-size: .8rem; background: transparent; border: 0; padding: 4px; border-radius: 10px; }
+  .pile.can { outline: 3px solid var(--gold); outline-offset: 1px; }
+  .pile.can:hover { background: rgba(255,255,255,.08); }
+  .pile:disabled { opacity: 1; }
+  .slotcard { width: var(--cw); height: calc(var(--cw) * 1.45); display: block; }
+  .emptyslot { width: var(--cw); height: calc(var(--cw) * 1.45); border: 2px dashed rgba(255,255,255,.35); border-radius: 8px; }
+  .pcard { display: block; filter: drop-shadow(0 2px 4px rgba(0,0,0,.35)); }
+  .trickbox { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
+  .tsuit { font-size: .85rem; font-weight: 700; background: rgba(0,0,0,.35); padding: .12rem .6rem; border-radius: 99px; }
+  .trick { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; min-height: calc(var(--cw) * 1.45 + 22px); align-items: flex-start; }
+  .tc { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: .74rem; max-width: calc(var(--cw) + 20px); }
+  .tc span { text-align: center; line-height: 1.15; overflow-wrap: anywhere; max-width: 100%; }
+  .tc span b { display: block; }
+  .tc.best svg { outline: 3px solid var(--gold); outline-offset: 1px; border-radius: 8px; }
+  .tc.best span b { color: var(--gold); }
+  .tc.off svg { opacity: .55; }
+
+  /* mão */
+  .hand { position: relative; display: flex; flex-direction: column; gap: 10px; padding: 18px 4px 12px; min-height: calc(var(--cw) * 1.45 + 32px); }
+  .hrow { display: flex; justify-content: center; }
+  .hcard { position: relative; padding: 0; border: 0; background: transparent; width: var(--cw); height: calc(var(--cw) * 1.45); margin-left: var(--ov, 2px); flex: none; border-radius: 8px; transition: transform .1s; }
+  .hcard:first-child { margin-left: 0; }
+  .hcard svg { width: 100%; height: 100%; }
+  .hand.pick .hcard:not(:disabled) svg { filter: drop-shadow(0 0 5px rgba(232,178,62,.9)); }
+  .hand.pick .hcard:disabled { opacity: .5; }
+  .hcard:disabled { opacity: 1; }
+  .hcard.sel { transform: translateY(-16px); z-index: 3; }
+  .hcard.isnew::after { content: ""; position: absolute; top: -8px; left: 50%; width: 10px; height: 10px; margin-left: -5px; background: var(--gold); border-radius: 50%; }
+  .action { min-height: 92px; }
+  .action h2 { font-family: var(--serif); font-size: 1.05rem; line-height: 1.2; margin: 0 0 .3rem; }
+  .action p { margin: 0 0 .4rem; font-size: .86rem; line-height: 1.3; color: var(--muted); }
+  .btns { display: flex; flex-wrap: wrap; gap: .35rem; }
+  .btn { border: 1px solid var(--line); background: var(--panel-2); border-radius: 9px; padding: .5rem .72rem; font-weight: 700; font-size: .9rem; min-height: 40px; }
+  .btn:hover:not(:disabled) { border-color: var(--accent); }
+  .btn.pri { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .btn.sm { padding: .3rem .55rem; font-size: .8rem; min-height: 32px; }
+  .score { display: grid; gap: .25rem; font-size: .9rem; }
+  .score .row2 { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: .6rem; padding: .15rem .3rem; border-radius: 6px; align-items: baseline; }
+  .score .row2 > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .score .row2.on { background: var(--panel-2); font-weight: 700; }
+  .score .row2 small { color: var(--muted); font-weight: 400; }
+  .score .sub { font-size: .75rem; color: var(--muted); }
+  .score .head { font-size: .72rem; color: var(--muted); }
+  .log { flex: 1; min-height: 70px; overflow: auto; font-size: .82rem; line-height: 1.35; }
+  .log ol { list-style: none; margin: 0; padding: 0; display: grid; gap: .25rem; }
+  .log li { color: var(--muted); }
+  .log li:last-child { color: var(--ink); font-weight: 600; }
+  .bar { display: flex; flex-wrap: wrap; gap: .35rem; }
+
+  /* telas */
+  .overlay { position: fixed; inset: 0; display: grid; place-items: center; padding: 1rem; overflow: auto; z-index: 20; background: var(--bg); }
+  .sheet, dialog { background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 16px; padding: 1.2rem clamp(1rem, 4vw, 1.8rem); box-shadow: 0 24px 70px rgba(0,0,0,.5); }
+  .sheet { width: min(100%, 660px); }
+  dialog { width: min(94vw, 680px); max-height: 90dvh; overflow: auto; }
+  dialog::backdrop { background: rgba(4, 14, 8, .65); }
+  .back { font-size: .85rem; color: var(--accent); text-decoration: none; }
+  .hero { display: flex; justify-content: center; align-items: flex-end; padding: .9rem 0 .4rem; gap: 10px; }
+  .hero .fan { display: flex; }
+  .hero .pcard { width: 70px; height: 101px; margin-left: -22px; }
+  .hero .pcard:first-child { margin-left: 0; }
+  .hero .pcard:nth-child(1) { transform: rotate(-10deg); } .hero .pcard:nth-child(2) { transform: rotate(-3deg) translateY(-6px); } .hero .pcard:nth-child(3) { transform: rotate(4deg) translateY(-6px); } .hero .pcard:nth-child(4) { transform: rotate(11deg); }
+  .hero .donkey { width: 96px; height: 96px; }
+  .sheet h1 { font-family: var(--serif); font-size: clamp(2.2rem, 7vw, 3.1rem); line-height: 1.05; margin: .2rem 0 .3rem; }
+  .tag { font-family: var(--serif); font-size: 1.1rem; color: var(--accent); margin: 0 0 .4rem; font-weight: 600; }
+  .sheet p { line-height: 1.45; margin: .3rem 0; font-size: .95rem; color: var(--muted); }
+  .row { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: .8rem; align-items: end; }
+  .field { display: grid; gap: .2rem; font-size: .8rem; color: var(--muted); }
+  select { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: .45rem .5rem; color: var(--ink); min-height: 38px; max-width: 100%; }
+  dialog h2 { font-family: var(--serif); margin: 0 0 .6rem; font-size: 1.4rem; }
+  dialog h3 { font-size: 1rem; margin: 1rem 0 .35rem; }
+  dialog a { color: var(--accent); }
+  .rules { padding-left: 1.1rem; margin: 0; display: grid; gap: .4rem; line-height: 1.4; font-size: .93rem; }
+  .left { display: flex; flex-wrap: wrap; margin: .5rem 0; padding: 5px; background: var(--panel-2); border-radius: 8px; width: fit-content; max-width: 100%; }
+  .left svg { width: 44px; height: 64px; margin-left: -16px; }
+  .left svg:first-child { margin-left: 0; }
+  .sumline { display: flex; justify-content: space-between; gap: 1rem; padding: .32rem .45rem; background: var(--panel-2); border-radius: 7px; font-size: .92rem; margin-bottom: .25rem; }
+  .sumline.me { font-weight: 700; }
+  @media (max-width: 900px) {
+    .app { grid-template-columns: minmax(0, 1fr); height: auto; min-height: 100dvh; }
+    .stage { padding: 4px; }
+    .table { min-height: 300px; flex: none; }
+    .side { padding: 0 4px 12px; }
+    .log { max-height: 180px; flex: none; }
+    .action { order: -1; }
+    :root { --cw: clamp(52px, 14vw, 84px); }
+  }
+  @media (prefers-reduced-motion: reduce) { .hcard { transition: none; } }
+  @media print { .bar, .action { display: none; } }
+</style>
+</head>
+<body>
+<div class="app" id="app" hidden>
+  <main class="stage">
+    <div class="table" id="table" role="group"></div>
+    <div class="hand" id="hand" role="group"></div>
+  </main>
+  <aside class="side">
+    <section class="box action" id="action" aria-live="polite"></section>
+    <section class="box score" id="score"></section>
+    <section class="box log" id="logBox"><ol id="log"></ol></section>
+    <div class="bar">
+      <button type="button" class="btn sm" id="bRules" data-t="rules"></button>
+      <button type="button" class="btn sm" id="bSound"></button>
+      <button type="button" class="btn sm" id="bSpeed"></button>
+      <button type="button" class="btn sm" id="bTheme"></button>
+      <button type="button" class="btn sm" id="bMenu" data-t="menu"></button>
+    </div>
+  </aside>
+</div>
+
+<section class="overlay" id="ovTitle" aria-labelledby="ttl">
+  <div class="sheet">
+    <a class="back" id="backLink" href="projects.html" data-t="back"></a>
+    <div class="hero" id="heroArt" aria-hidden="true"></div>
+    <h1 id="ttl">Burro</h1>
+    <p class="tag" data-t="tagline"></p>
+    <p data-t="story"></p>
+    <div class="row">
+      <label class="field"><span data-t="players"></span>
+        <select id="numSel"><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></label>
+      <label class="field"><span data-t="level"></span>
+        <select id="levelSel"><option value="0" data-t="easy"></option><option value="1" data-t="medium"></option><option value="2" data-t="hard"></option></select></label>
+      <label class="field"><span data-t="target"></span>
+        <select id="targetSel"><option value="1">1</option><option value="3">3</option><option value="5">5</option></select></label>
+      <label class="field"><span data-t="lang"></span>
+        <select id="langSel"><option value="pt">Português</option><option value="en">English</option><option value="it">Italiano</option><option value="es">Español</option></select></label>
+    </div>
+    <div class="row">
+      <label class="field"><span data-t="deck"></span>
+        <select id="deckSel"><option value="40" data-t="deck40"></option><option value="52" data-t="deck52"></option></select></label>
+      <label class="field"><span data-t="order"></span>
+        <select id="orderSel"><option value="ak" data-t="orderAK"></option><option value="a7" data-t="orderA7"></option></select></label>
+      <label class="field"><span data-t="handSize"></span>
+        <select id="handSel"><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
+      <label class="field"><span data-t="empty"></span>
+        <select id="emptySel"><option value="take" data-t="emptyTake"></option><option value="pass" data-t="emptyPass"></option></select></label>
+    </div>
+    <div class="row">
+      <button type="button" class="btn pri" id="bPlay" data-t="play"></button>
+      <button type="button" class="btn" id="bResume" data-t="resume" hidden></button>
+      <button type="button" class="btn" id="bRules2" data-t="rules"></button>
+      <button type="button" class="btn" id="bTheme2"></button>
+    </div>
+  </div>
+</section>
+
+<dialog id="dRules" aria-labelledby="rulesH"><h2 id="rulesH" data-t="rulesTitle"></h2><div id="rulesBody"></div><div class="row"><button type="button" class="btn pri" id="bRulesClose" data-t="close"></button></div></dialog>
+<dialog id="dEnd" aria-labelledby="endH"></dialog>
+
+<script>
+// Motor do burro: regras e computador, sem nada de tela. Estado em JSON puro.
+function Engine() {
+  const SUITS = ['s', 'h', 'd', 'c'];
+  const rankOf = (c) => parseInt(c, 10), suitOf = (c) => c[c.length - 1];
+  function rnd(S) { S.seed = (S.seed + 0x6D2B79F5) | 0; let t = Math.imul(S.seed ^ (S.seed >>> 15), 1 | S.seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
+  const shuffle = (S, a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd(S) * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const log = (S, k, v) => { S.log.push({ k, v: v || {} }); if (S.log.length > 200) S.log.shift(); };
+  const fx = (S, o) => { S.fx.push(o); };
+  // ordem com Ás e 7 no topo (Só Jogo): A-7-R-D-V-6-5-4-3-2; com 52 cartas, 10-9-8 entram entre o Valete e o 6
+  const HIGH_A7 = [1, 7, 13, 12, 11, 10, 9, 8, 6, 5, 4, 3, 2];
+  const strength = (S, c) => (S.opts.order === 'a7' ? 20 - HIGH_A7.indexOf(rankOf(c)) : (rankOf(c) === 1 ? 14 : rankOf(c)));
+  const ranks = (S) => (S.opts.deck === 52 ? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13] : [1, 2, 3, 4, 5, 6, 7, 11, 12, 13]);
+  const sortHand = (S, h) => h.sort((a, b) => SUITS.indexOf(suitOf(a)) - SUITS.indexOf(suitOf(b)) || strength(S, a) - strength(S, b));
+
+  function newGame({ players, opts, target, seed }) {
+    const S = { players, opts, target, seed: seed == null ? (Date.now() | 0) : seed, handNo: 0, years: players.map(() => 0), log: [], fx: [], phase: 'play', over: null, result: null };
+    S.starter = Math.floor(rnd(S) * players.length);
+    startHand(S);
+    return S;
+  }
+  function startHand(S) {
+    const n = S.players.length, deck = [];
+    ranks(S).forEach((r) => SUITS.forEach((s) => deck.push(r + s)));
+    shuffle(S, deck);
+    S.handNo++;
+    S.hands = S.players.map(() => []);
+    for (let k = 0; k < S.opts.hand; k++) for (let p = 0; p < n; p++) S.hands[p].push(deck.pop());
+    S.hands.forEach((h) => sortHand(S, h));
+    S.stock = deck; S.discards = []; S.out = S.players.map(() => false); S.outOrder = [];
+    S.voids = S.players.map(() => ({})); S.result = null; S.phase = 'play'; S.lastDraw = null; S.stall = 0;
+    S.leader = S.starter;
+    log(S, 'hand', { p: S.leader, n: S.handNo });
+    startTrick(S);
+  }
+  const active = (S) => S.players.map((_, i) => i).filter((i) => !S.out[i]);
+  function nextActive(S, p) { const n = S.players.length; for (let k = 1; k <= n; k++) { const q = (p + k) % n; if (!S.out[q]) return q; } return -1; }
+  function startTrick(S) {
+    const n = S.players.length;
+    S.trick = []; S.toPlay = [];
+    for (let k = 0; k < n; k++) { const q = (S.leader + k) % n; if (!S.out[q]) S.toPlay.push(q); }
+    S.turn = S.toPlay[0];
+  }
+  const leadSuit = (S) => (S.trick.length ? suitOf(S.trick[0].c) : null);
+  function best(S) {
+    const ls = leadSuit(S);
+    let b = null;
+    S.trick.forEach((x) => { if (suitOf(x.c) === ls && (!b || strength(S, x.c) > strength(S, b.c))) b = x; });
+    return b;
+  }
+  function legal(S) {
+    if (S.phase !== 'play') return {};
+    const hand = S.hands[S.turn];
+    if (!S.trick.length) return { play: hand.slice() };
+    const ls = leadSuit(S), follow = hand.filter((c) => suitOf(c) === ls);
+    if (follow.length) return { play: follow };
+    if (S.stock.length) return { draw: true };
+    return S.opts.empty === 'take' ? { take: true } : { pass: true };
+  }
+  function act(S, a) {
+    S.fx = [];
+    if (S.phase === 'over') return false;
+    if (a.type === 'next') { if (S.phase !== 'handEnd') return false; startHand(S); return true; }
+    if (S.phase !== 'play') return false;
+    const p = S.turn, L = legal(S), hand = S.hands[p], ls = leadSuit(S);
+    if (a.type === 'play') {
+      if (!L.play || !L.play.includes(a.c)) return false;
+      hand.splice(hand.indexOf(a.c), 1);
+      log(S, S.trick.length ? 'played' : 'led', { p, c: a.c });
+      S.trick.push({ p, c: a.c });
+      S.lastDraw = null;
+      fx(S, { t: 'play', p, c: a.c });
+      if (!hand.length) { S.out[p] = true; S.outOrder.push(p); S.stall = 0; log(S, 'out', { p, n: S.outOrder.length }); }
+      advance(S);
+      return true;
+    }
+    if (a.type === 'draw') {
+      if (!L.draw) return false;
+      const c = S.stock.pop();
+      hand.push(c); sortHand(S, hand);
+      // estava sem o naipe da vaza; o que mais tinha antes deixa de ser certo
+      S.voids[p] = { [ls]: true };
+      const last = S.log[S.log.length - 1];
+      if (last && last.k === 'drew' && last.v.p === p) last.v.n++; else log(S, 'drew', { p, n: 1 });
+      S.lastDraw = { p, c };
+      fx(S, { t: 'draw', p });
+      return true;
+    }
+    if (a.type === 'take') {
+      if (!L.take) return false;
+      const b = best(S), cards = S.trick.map((x) => x.c);
+      fx(S, { t: 'trick', trick: S.trick.slice(), w: null, taker: p });
+      hand.push(...cards); sortHand(S, hand);
+      S.voids[p] = {};
+      log(S, 'took', { p, n: cards.length });
+      // recomeça quem tinha posto a carta mais alta (texto das regras do Só Jogo)
+      S.leader = S.out[b.p] ? nextActive(S, b.p) : b.p;
+      if (stalled(S)) { S.trick = []; endHand(S, true); return true; }
+      startTrick(S);
+      return true;
+    }
+    if (a.type === 'pass') {
+      if (!L.pass) return false;
+      S.voids[p][ls] = true;
+      log(S, 'passed', { p });
+      advance(S);
+      return true;
+    }
+    return false;
+  }
+  function advance(S) {
+    S.toPlay.shift();
+    if (active(S).length <= 1) { endHand(S); return; }
+    if (S.toPlay.length) { S.turn = S.toPlay[0]; return; }
+    const b = best(S);
+    log(S, 'won', { p: b.p, c: b.c });
+    fx(S, { t: 'trick', trick: S.trick.slice(), w: b.p });
+    S.discards.push(...S.trick.map((x) => x.c));
+    S.leader = S.out[b.p] ? nextActive(S, b.p) : b.p;
+    if (stalled(S)) { S.trick = []; endHand(S, true); return; }
+    startTrick(S);
+  }
+  // Pegar a mesa devolve cartas ao jogo e, raramente, a partida gira sem fim. Com o monte vazio,
+  // depois de STALL vazas sem ninguém sair, a partida termina (nas simulações, a maior sequência
+  // numa partida que terminou sozinha foi de 64 vazas).
+  const STALL = 100;
+  function stalled(S) {
+    if (S.stock.length) return false;
+    S.stall = (S.stall || 0) + 1;
+    return S.stall >= STALL;
+  }
+  function endHand(S, stall) {
+    // sem travamento sobra um só jogador; travada, é burro quem tem mais cartas, e no empate todos os empatados
+    const act = active(S), most = Math.max(...act.map((p) => S.hands[p].length));
+    const burros = stall ? act.filter((p) => S.hands[p].length === most) : [act[0]];
+    const burro = burros[0], yrs = S.hands[burro].length;
+    fx(S, { t: 'trick', trick: S.trick.slice(), w: null });
+    if (stall) log(S, 'stall', { n: STALL });
+    burros.forEach((b) => { S.years[b] += yrs; log(S, 'burro', { p: b, n: yrs }); });
+    S.result = { burro, burros, yrs, stall: !!stall, first: S.outOrder.length ? S.outOrder[0] : null, left: S.hands[burro].slice() };
+    S.starter = S.outOrder.length ? S.outOrder[0] : S.leader;
+    S.turn = -1;
+    if (S.handNo >= S.target) {
+      const min = Math.min(...S.years);
+      S.over = { winners: S.years.map((y, i) => (y === min ? i : -1)).filter((i) => i >= 0) };
+      S.phase = 'over';
+      log(S, 'over', {});
+    } else S.phase = 'handEnd';
+  }
+
+  // ---------------------------------------------------------------- computador. kind: 0 fácil, 1 médio, 2 difícil
+  // Só usa a própria mão e o que é público: cartas que saíram do jogo, a mesa e quem já ficou sem naipe.
+  function isBoss(S, p, c) {
+    const s = suitOf(c), st = strength(S, c), mine = S.hands[p];
+    return ranks(S).every((r) => { const x = r + s; return strength(S, x) <= st || S.discards.includes(x) || mine.includes(x); });
+  }
+  function aiLead(S, p, L) {
+    const hand = S.hands[p], by = {};
+    hand.forEach((c) => { (by[suitOf(c)] = by[suitOf(c)] || []).push(c); });
+    const top = (list) => list.reduce((a, b) => (strength(S, b) > strength(S, a) ? b : a));
+    const low = (list) => list.reduce((a, b) => (strength(S, b) < strength(S, a) ? b : a));
+    const suits = Object.keys(by);
+    if (L === 1) {
+      const s = suits.sort((a, b) => by[b].length - by[a].length || strength(S, top(by[b])) - strength(S, top(by[a])))[0];
+      return top(by[s]);
+    }
+    // difícil: prefere o naipe que falta aos outros (eles vão ao monte) e o naipe mais longo da mão
+    const opp = active(S).filter((o) => o !== p);
+    const score = (s) => by[s].length * 0.5 + opp.reduce((t, o) => t + (S.voids[o][s] ? 2 : 0), 0) + (isBoss(S, p, top(by[s])) ? 1.5 : 0);
+    const s = suits.sort((a, b) => score(b) - score(a))[0];
+    return isBoss(S, p, top(by[s])) ? top(by[s]) : low(by[s]);
+  }
+  function aiFollow(S, p, L, opts) {
+    const b = best(S), cur = strength(S, b.c), sorted = opts.slice().sort((x, y) => strength(S, x) - strength(S, y));
+    const beats = sorted.filter((c) => strength(S, c) > cur);
+    // levar a vaza dá a vez de abrir: quem abre nunca precisa comprar
+    if (beats.length) return L === 2 && S.toPlay.length === 1 ? beats[0] : beats[beats.length - 1];
+    return sorted[0];
+  }
+  function ai(S) {
+    const p = S.turn, L = legal(S), lv = S.players[p].kind;
+    if (L.draw) return { type: 'draw' };
+    if (L.take) return { type: 'take' };
+    if (L.pass) return { type: 'pass' };
+    if (!L.play) return null;
+    if (lv === 0) return { type: 'play', c: L.play[Math.floor(rnd(S) * L.play.length)] };
+    return { type: 'play', c: S.trick.length ? aiFollow(S, p, lv, L.play) : aiLead(S, p, lv) };
+  }
+
+  return { SUITS, rankOf, suitOf, strength, newGame, act, ai, legal, best, leadSuit, active };
+}
+</script>
+
+<script>
+(() => {
+  'use strict';
+  const E = Engine();
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const Store = {
+    get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* sem armazenamento */ } },
+  };
+
+  // ---------------------------------------------------------------- cartas francesas em SVG
+  const SUITP = {
+    h: 'M0 12C-4 6 -12 1 -12 -5C-12 -10 -8 -13 -5 -13C-2 -13 0 -11 0 -8C0 -11 2 -13 5 -13C8 -13 12 -10 12 -5C12 1 4 6 0 12Z',
+    d: 'M0 -14L10 0L0 14L-10 0Z',
+    s: 'M0 -14C4 -8 12 -3 12 3C12 8 7 10 3.500 7.500C4 10 5 12 7 14H-7C-5 12 -4 10 -3.500 7.500C-7 10 -12 8 -12 3C-12 -3 -4 -8 0 -14Z',
+    c: 'M0 -14A6.200 6.200 0 0 1 5 -4A6.200 6.200 0 1 1 3.500 7C4 10 5 12 7 14H-7C-5 12 -4 10 -3.500 7A6.200 6.200 0 1 1 -5 -4A6.200 6.200 0 0 1 0 -14Z',
+  };
+  const RED = { h: 1, d: 1 };
+  const col = (s) => (RED[s] ? '#C2252F' : '#20242B');
+  const pip = (s, x, y, k, flip) => `<path transform="translate(${x} ${y}) scale(${k})${flip ? ' rotate(180)' : ''}" d="${SUITP[s]}" fill="${col(s)}"/>`;
+  const Y = { t: 28, b: 117 };
+  const PIPS = {
+    1: [[50, 72.5, 2.2]], 2: [[50, Y.t], [50, Y.b, 1, 1]], 3: [[50, Y.t], [50, 72.5], [50, Y.b, 1, 1]], 4: [[35, Y.t], [65, Y.t], [35, Y.b, 1, 1], [65, Y.b, 1, 1]],
+    5: [[35, Y.t], [65, Y.t], [50, 72.5], [35, Y.b, 1, 1], [65, Y.b, 1, 1]], 6: [[35, Y.t], [65, Y.t], [35, 72.5], [65, 72.5], [35, Y.b, 1, 1], [65, Y.b, 1, 1]],
+    7: [[35, Y.t], [65, Y.t], [50, 50], [35, 72.5], [65, 72.5], [35, Y.b, 1, 1], [65, Y.b, 1, 1]], 8: [[35, Y.t], [65, Y.t], [50, 50], [35, 72.5], [65, 72.5], [50, 95, 1, 1], [35, Y.b, 1, 1], [65, Y.b, 1, 1]],
+    9: [[35, Y.t], [65, Y.t], [35, 57], [65, 57], [50, 72.5], [35, 88, 1, 1], [65, 88, 1, 1], [35, Y.b, 1, 1], [65, Y.b, 1, 1]], 10: [[35, Y.t], [65, Y.t], [50, 41], [35, 57], [65, 57], [35, 88, 1, 1], [65, 88, 1, 1], [50, 104, 1, 1], [35, Y.b, 1, 1], [65, Y.b, 1, 1]],
+  };
+  const RL = { 1: 'A', 11: 'J', 12: 'Q', 13: 'K' };
+  const rl = (r) => RL[r] || String(r);
+  function figure(r, s) {
+    const c = col(s), crown = r === 13 ? `<path d="M34 50L34 34L42 42L50 30L58 42L66 34L66 50Z" fill="#E8B23E" stroke="#7A5208"/>` : r === 12 ? `<path d="M38 50L36 38L44 44L50 34L56 44L64 38L62 50Z" fill="#E8B23E" stroke="#7A5208"/><circle cx="50" cy="33" r="2.500" fill="#C2252F"/>` : `<path d="M36 50C36 38 64 38 64 50Z" fill="${c}"/><path d="M60 42L74 36" stroke="#C2252F" stroke-width="2.500"/>`;
+    return `<rect x="24" y="24" width="52" height="97" rx="4" fill="${RED[s] ? '#FBE9E6' : '#E9ECF2'}" stroke="${c}"/>${crown}<circle cx="50" cy="60" r="11" fill="#F0CBA0"/><path d="M28 118C28 88 38 74 50 74S72 88 72 118Z" fill="${c}"/><path d="M47 74H53L55 118H45Z" fill="#FFF7EA"/>${pip(s, 50, 96, 0.72)}`;
+  }
+  function cardSvg(c, cls) {
+    const r = E.rankOf(c), s = E.suitOf(c), k = col(s), lb = rl(r);
+    const inner = r > 10 ? figure(r, s) : PIPS[r].map(([x, y, q, f]) => pip(s, x, y, r === 1 ? q : 0.72, f)).join('');
+    return `<svg class="pcard ${cls || ''}" viewBox="0 0 100 145" role="img" aria-label="${esc(cardName(c))}"><rect x="1" y="1" width="98" height="143" rx="8" fill="#FFFDF6" stroke="#B9A98F" stroke-width="1.500"/><text x="7" y="21" font-family="Georgia, serif" font-weight="700" font-size="20" fill="${k}">${lb}</text>${pip(s, 15, 33, 0.55)}<g transform="rotate(180 50 72.500)"><text x="7" y="21" font-family="Georgia, serif" font-weight="700" font-size="20" fill="${k}">${lb}</text>${pip(s, 15, 33, 0.55)}</g>${inner}</svg>`;
+  }
+  const backSvg = (cls) => `<svg class="${cls || ''}" viewBox="0 0 100 145" aria-hidden="true"><rect x="1" y="1" width="98" height="143" rx="8" fill="#7A3414" stroke="#FFFDF6" stroke-width="3"/><rect x="9" y="9" width="82" height="127" rx="5" fill="none" stroke="#E8B23E" stroke-width="2"/><path d="M50 30L74 72L50 115L26 72Z" fill="none" stroke="#E8B23E" stroke-width="2.500"/><circle cx="50" cy="72" r="9" fill="#E8B23E"/></svg>`;
+  const donkeySvg = () => `<svg class="donkey" viewBox="0 0 120 120" aria-hidden="true"><path d="M38 40L26 4L50 30Z" fill="#7D6A5A" stroke="#3D3128" stroke-width="2"/><path d="M82 40L94 4L70 30Z" fill="#7D6A5A" stroke="#3D3128" stroke-width="2"/><path d="M34 14L38 30M86 14L82 30" stroke="#E7C9B0" stroke-width="4" stroke-linecap="round"/><ellipse cx="60" cy="58" rx="30" ry="28" fill="#9A8574" stroke="#3D3128" stroke-width="2"/><ellipse cx="60" cy="90" rx="22" ry="18" fill="#D9C2AE" stroke="#3D3128" stroke-width="2"/><circle cx="48" cy="54" r="4.500" fill="#2A1E18"/><circle cx="72" cy="54" r="4.500" fill="#2A1E18"/><ellipse cx="52" cy="92" rx="3" ry="4" fill="#3D3128"/><ellipse cx="68" cy="92" rx="3" ry="4" fill="#3D3128"/><path d="M50 102Q60 107 70 102" stroke="#3D3128" stroke-width="2.500" fill="none" stroke-linecap="round"/><path d="M52 32Q60 22 68 32" stroke="#3D3128" stroke-width="3" fill="none"/></svg>`;
+
+  // ---------------------------------------------------------------- textos: chave → [pt, en, it, es]
+  const LANGS = ['pt', 'en', 'it', 'es'];
+  const NAMES = {
+    pt: { ranks: { 1: 'Ás', 2: 'Dois', 3: 'Três', 4: 'Quatro', 5: 'Cinco', 6: 'Seis', 7: 'Sete', 8: 'Oito', 9: 'Nove', 10: 'Dez', 11: 'Valete', 12: 'Dama', 13: 'Rei' }, of: 'de', suits: { s: 'espadas', h: 'copas', d: 'ouros', c: 'paus' } },
+    en: { ranks: { 1: 'Ace', 2: 'Two', 3: 'Three', 4: 'Four', 5: 'Five', 6: 'Six', 7: 'Seven', 8: 'Eight', 9: 'Nine', 10: 'Ten', 11: 'Jack', 12: 'Queen', 13: 'King' }, of: 'of', suits: { s: 'spades', h: 'hearts', d: 'diamonds', c: 'clubs' } },
+    it: { ranks: { 1: 'Asso', 2: 'Due', 3: 'Tre', 4: 'Quattro', 5: 'Cinque', 6: 'Sei', 7: 'Sette', 8: 'Otto', 9: 'Nove', 10: 'Dieci', 11: 'Fante', 12: 'Regina', 13: 'Re' }, of: 'di', suits: { s: 'picche', h: 'cuori', d: 'quadri', c: 'fiori' } },
+    es: { ranks: { 1: 'As', 2: 'Dos', 3: 'Tres', 4: 'Cuatro', 5: 'Cinco', 6: 'Seis', 7: 'Siete', 8: 'Ocho', 9: 'Nueve', 10: 'Diez', 11: 'Jota', 12: 'Reina', 13: 'Rey' }, of: 'de', suits: { s: 'picas', h: 'corazones', d: 'diamantes', c: 'tréboles' } },
+  };
+  const WIKI = 'https://pt.wikipedia.org/wiki/Burro_(jogo_de_cartas)', SOJOGO = 'https://sojogo.pt/arquivo/burro/';
+  const src = (u, n) => `<a href="${u}" target="_blank" rel="noopener">${n}</a>`;
+  const I18N = {
+    back: ['← Voltar aos projetos', '← Back to projects', '← Torna ai progetti', '← Volver a los proyectos'],
+    tagline: ['Siga o naipe ou vá ao monte', 'Follow suit or go to the stock', 'Rispondi al seme o pesca dal mazzo', 'Sigue el palo o ve al mazo'],
+    story: ['Cada um joga uma carta do naipe que abriu a vaza. Quem não tem compra do monte até tirar uma. Livre-se de todas as cartas: o último a ficar com cartas na mão é o burro.',
+      'Everyone plays a card of the suit that opened the trick. Whoever lacks it draws from the stock until getting one. Get rid of every card: the last player still holding cards is the burro, the donkey.',
+      'Ognuno gioca una carta del seme che ha aperto la presa. Chi non ce l’ha pesca dal mazzo finché non ne trova una. Liberati di tutte le carte: l’ultimo a restare con carte in mano è il burro, l’asino.',
+      'Cada uno juega una carta del palo que abrió la baza. Quien no lo tiene roba del mazo hasta sacar una. Deshazte de todas las cartas: el último que se queda con cartas en la mano es el burro.'],
+    players: ['Jogadores', 'Players', 'Giocatori', 'Jugadores'],
+    level: ['Dificuldade', 'Difficulty', 'Difficoltà', 'Dificultad'],
+    easy: ['Fácil', 'Easy', 'Facile', 'Fácil'], medium: ['Médio', 'Medium', 'Medio', 'Medio'], hard: ['Difícil', 'Hard', 'Difficile', 'Difícil'],
+    target: ['Partidas', 'Hands', 'Partite', 'Partidas'],
+    lang: ['Idioma', 'Language', 'Lingua', 'Idioma'],
+    deck: ['Baralho', 'Deck', 'Mazzo', 'Baraja'],
+    deck40: ['40 cartas (sem 8, 9 e 10)', '40 cards (no 8, 9, 10)', '40 carte (senza 8, 9 e 10)', '40 cartas (sin 8, 9 y 10)'],
+    deck52: ['52 cartas', '52 cards', '52 carte', '52 cartas'],
+    order: ['Valor das cartas', 'Card ranking', 'Valore delle carte', 'Valor de las cartas'],
+    orderAK: ['Do 2 ao Ás (mais alto)', '2 to Ace (highest)', 'Dal 2 all’Asso (più alto)', 'Del 2 al As (más alto)'],
+    orderA7: ['Ás e 7 no topo', 'Ace and 7 on top', 'Asso e 7 in cima', 'As y 7 arriba'],
+    handSize: ['Cartas na mão', 'Cards in hand', 'Carte in mano', 'Cartas en la mano'],
+    empty: ['Monte vazio, sem o naipe', 'Stock empty, no card of the suit', 'Mazzo vuoto, senza il seme', 'Mazo vacío, sin el palo'],
+    emptyTake: ['Pega as cartas da mesa', 'Pick up the table cards', 'Prende le carte del tavolo', 'Recoge las cartas de la mesa'],
+    emptyPass: ['Passa a vez', 'Pass', 'Passa il turno', 'Pasa el turno'],
+    play: ['Novo jogo', 'New game', 'Nuova partita', 'Nuevo juego'],
+    resume: ['Continuar', 'Resume', 'Riprendi', 'Continuar'],
+    rules: ['Regras', 'Rules', 'Regole', 'Reglas'],
+    rulesTitle: ['Como se joga', 'How to play', 'Come si gioca', 'Cómo se juega'],
+    close: ['Fechar', 'Close', 'Chiudi', 'Cerrar'],
+    menu: ['Menu', 'Menu', 'Menu', 'Menú'],
+    soundOn: ['Som ligado', 'Sound on', 'Audio attivo', 'Sonido activado'], soundOff: ['Som desligado', 'Sound off', 'Audio spento', 'Sonido desactivado'],
+    speedN: ['Velocidade normal', 'Normal speed', 'Velocità normale', 'Velocidad normal'], speedF: ['Velocidade rápida', 'Fast speed', 'Velocità rapida', 'Velocidad rápida'],
+    themeAuto: ['Tema automático', 'Auto theme', 'Tema automatico', 'Tema automático'], themeLight: ['Tema claro', 'Light theme', 'Tema chiaro', 'Tema claro'], themeDark: ['Tema escuro', 'Dark theme', 'Tema scuro', 'Tema oscuro'],
+    tableL: ['Mesa', 'Table', 'Tavolo', 'Mesa'], handL: ['Sua mão', 'Your hand', 'La tua mano', 'Tu mano'], logL: ['Histórico', 'History', 'Cronologia', 'Historial'],
+    you: ['Você', 'You', 'Tu', 'Tú'],
+    stock: ['Monte ({n})', 'Stock ({n})', 'Mazzo ({n})', 'Mazo ({n})'],
+    stockEmpty: ['Monte vazio', 'Stock empty', 'Mazzo vuoto', 'Mazo vacío'],
+    trickSuit: ['Vaza de {s}', 'Trick in {s}', 'Presa a {s}', 'Baza de {s}'],
+    noTrick: ['Mesa vazia: {p} abre', 'Empty table: {p} leads', 'Tavolo vuoto: apre {p}', 'Mesa vacía: abre {p}'],
+    noTrickMe: ['Mesa vazia: você abre', 'Empty table: you lead', 'Tavolo vuoto: apri tu', 'Mesa vacía: abres tú'],
+    highest: ['maior', 'highest', 'più alta', 'más alta'],
+    tookT: ['{p} pegou a mesa', '{p} picked up the table', '{p} prende il tavolo', '{p} recogió la mesa'],
+    handOf: ['Partida {n} de {m}', 'Hand {n} of {m}', 'Partita {n} di {m}', 'Partida {n} de {m}'],
+    yearsH: ['Anos de burro', 'Donkey years', 'Anni d’asino', 'Años de burro'],
+    cardsH: ['Cartas', 'Cards', 'Carte', 'Cartas'],
+    cardsN: ['{n} cartas', '{n} cards', '{n} carte', '{n} cartas'],
+    outTag: ['saiu em {n}º', 'out #{n}', 'fuori, {n}º', 'salió {n}º'],
+    thinking: ['{p} está jogando…', '{p} is playing…', '{p}: sta giocando…', '{p} está jugando…'],
+    leadT: ['Sua vez: abra a vaza', 'Your turn: lead the trick', 'Tocca a te: apri la presa', 'Tu turno: abre la baza'],
+    leadH: ['Jogue qualquer carta. Os outros terão de seguir o naipe dela.', 'Play any card. The others must follow its suit.', 'Gioca una carta qualsiasi. Gli altri dovranno rispondere al suo seme.', 'Juega cualquier carta. Los demás deberán seguir su palo.'],
+    followT: ['Sua vez: jogue {s}', 'Your turn: play {s}', 'Tocca a te: gioca {s}', 'Tu turno: juega {s}'],
+    pickH: ['Toque numa carta destacada e depois em Jogar, ou toque nela duas vezes.', 'Tap a highlighted card, then Play, or tap it twice.', 'Tocca una carta evidenziata e poi Gioca, oppure toccala due volte.', 'Toca una carta resaltada y luego Jugar, o tócala dos veces.'],
+    drawT: ['Você não tem {s}', 'You have no {s}', 'Non hai {s}', 'No tienes {s}'],
+    drawH: ['Compre do monte até tirar uma carta de {s}.', 'Draw from the stock until you get a card of {s}.', 'Pesca dal mazzo finché non esce una carta di {s}.', 'Roba del mazo hasta sacar una carta de {s}.'],
+    takeT: ['O monte acabou', 'The stock is empty', 'Il mazzo è finito', 'El mazo se acabó'],
+    takeH: ['Você não tem {s}: pegue para a sua mão as cartas da mesa.', 'You have no {s}: pick up the table cards into your hand.', 'Non hai {s}: prendi in mano le carte del tavolo.', 'No tienes {s}: recoge en tu mano las cartas de la mesa.'],
+    passH: ['Você não tem {s} e não há o que comprar: passe a vez.', 'You have no {s} and nothing to draw: pass.', 'Non hai {s} e non c’è niente da pescare: passa il turno.', 'No tienes {s} y no hay nada que robar: pasa el turno.'],
+    outT: ['Você se livrou das cartas!', 'You are out of cards!', 'Ti sei liberato delle carte!', '¡Te deshiciste de las cartas!'],
+    outH: ['Agora é só assistir quem vai ser o burro.', 'Now just watch who ends up as the burro.', 'Ora resta solo vedere chi sarà il burro.', 'Ahora solo queda ver quién será el burro.'],
+    btnPlay: ['Jogar', 'Play', 'Gioca', 'Jugar'],
+    btnDraw: ['Comprar', 'Draw', 'Pesca', 'Robar'],
+    btnDrawAll: ['Comprar até achar', 'Draw until found', 'Pesca finché esce', 'Robar hasta encontrar'],
+    btnTake: ['Pegar a mesa', 'Pick up the table', 'Prendi il tavolo', 'Recoger la mesa'],
+    btnPass: ['Passar', 'Pass', 'Passa', 'Pasar'],
+    again: ['Jogar de novo', 'Play again', 'Gioca ancora', 'Jugar otra vez'],
+    nextHand: ['Próxima partida', 'Next hand', 'Prossima partita', 'Próxima partida'],
+    seeResult: ['Ver resultado', 'See result', 'Vedi il risultato', 'Ver resultado'],
+    endBurroMe: ['Você é o burro!', 'You are the burro!', 'Sei tu il burro!', '¡Eres el burro!'],
+    endBurro: ['{p} é o burro!', '{p} is the burro!', '{p} è il burro!', '¡{p} es el burro!'],
+    endYears: ['Ficou com {n} carta(s) na mão: {n} ano(s) de burro.', 'Left holding {n} card(s): {n} donkey year(s).', 'È rimasto con {n} carta/e in mano: {n} anno/i d’asino.', 'Se quedó con {n} carta(s) en la mano: {n} año(s) de burro.'],
+    endBurros: ['Burros: {p}!', 'Burros: {p}!', 'Burri: {p}!', '¡Burros: {p}!'],
+    endStall: ['O monte acabou e passaram 100 vazas sem ninguém sair, então a partida terminou. É burro quem tinha mais cartas.', 'The stock ran out and 100 tricks went by with nobody going out, so the hand ended. The burro is whoever held the most cards.', 'Il mazzo era finito e sono passate 100 prese senza che nessuno uscisse, quindi la partita è finita. È burro chi aveva più carte.', 'El mazo se acabó y pasaron 100 bazas sin que nadie saliera, así que la partida terminó. Es burro quien tenía más cartas.'],
+    endYearsEach: ['Cada um ficou com {n} carta(s) na mão: {n} ano(s) de burro.', 'Each was left holding {n} card(s): {n} donkey year(s).', 'Ognuno è rimasto con {n} carta/e in mano: {n} anno/i d’asino.', 'Cada uno se quedó con {n} carta(s) en la mano: {n} año(s) de burro.'],
+    endFirstMe: ['Você saiu primeiro e começa a próxima partida.', 'You went out first and lead the next hand.', 'Sei uscito per primo e apri la prossima partita.', 'Saliste primero y empiezas la próxima partida.'],
+    endFirst: ['Saiu primeiro: {p}. Começa a próxima partida.', 'First out: {p}, who leads the next hand.', 'Primo a uscire: {p}, che apre la prossima partita.', 'Salió primero: {p}. Empieza la próxima partida.'],
+    endTotals: ['Anos de burro no total', 'Total donkey years', 'Anni d’asino in totale', 'Años de burro en total'],
+    overYou: ['Você venceu, com menos anos de burro!', 'You won, with the fewest donkey years!', 'Hai vinto, con meno anni d’asino!', '¡Ganaste, con menos años de burro!'],
+    overOther: ['{p} venceu, com menos anos de burro', '{p} won, with the fewest donkey years', 'Ha vinto {p}, con meno anni d’asino', 'Ganó {p}, con menos años de burro'],
+    overTie: ['Empate entre {p}', 'Tie between {p}', 'Pareggio tra {p}', 'Empate entre {p}'],
+    and: [' e ', ' and ', ' e ', ' y '],
+    // histórico: L_ para os outros, M_ quando é você (em italiano e espanhol o verbo muda)
+    L_hand: ['Partida {n}: começa {p}.', 'Hand {n}: {p} leads.', 'Partita {n}: inizia {p}.', 'Partida {n}: empieza {p}.'],
+    M_hand: ['Partida {n}: você começa.', 'Hand {n}: you lead.', 'Partita {n}: inizi tu.', 'Partida {n}: empiezas tú.'],
+    L_led: ['{p} abriu com {c}.', '{p} led {c}.', '{p} ha aperto con {c}.', '{p} abrió con {c}.'],
+    M_led: ['Você abriu com {c}.', 'You led {c}.', 'Hai aperto con {c}.', 'Abriste con {c}.'],
+    L_played: ['{p} jogou {c}.', '{p} played {c}.', '{p} ha giocato {c}.', '{p} jugó {c}.'],
+    M_played: ['Você jogou {c}.', 'You played {c}.', 'Hai giocato {c}.', 'Jugaste {c}.'],
+    L_drew: ['{p} comprou {n} do monte.', '{p} drew {n} from the stock.', '{p} ha pescato {n} dal mazzo.', '{p} robó {n} del mazo.'],
+    M_drew: ['Você comprou {n} do monte.', 'You drew {n} from the stock.', 'Hai pescato {n} dal mazzo.', 'Robaste {n} del mazo.'],
+    L_took: ['{p} pegou a mesa: {n} carta(s).', '{p} picked up the table: {n} card(s).', '{p} ha preso il tavolo: {n} carta/e.', '{p} recogió la mesa: {n} carta(s).'],
+    M_took: ['Você pegou a mesa: {n} carta(s).', 'You picked up the table: {n} card(s).', 'Hai preso il tavolo: {n} carta/e.', 'Recogiste la mesa: {n} carta(s).'],
+    L_passed: ['{p} passou a vez.', '{p} passed.', '{p} ha passato il turno.', '{p} pasó el turno.'],
+    M_passed: ['Você passou a vez.', 'You passed.', 'Hai passato il turno.', 'Pasaste el turno.'],
+    L_won: ['{p} levou a vaza com {c}.', '{p} took the trick with {c}.', '{p} prende con {c}.', '{p} se llevó la baza con {c}.'],
+    M_won: ['Você levou a vaza com {c}.', 'You took the trick with {c}.', 'Prendi tu con {c}.', 'Te llevaste la baza con {c}.'],
+    L_out: ['{p} ficou sem cartas e saiu.', '{p} is out of cards.', '{p} è rimasto senza carte.', '{p} se quedó sin cartas.'],
+    M_out: ['Você ficou sem cartas e saiu.', 'You are out of cards.', 'Sei rimasto senza carte.', 'Te quedaste sin cartas.'],
+    L_burro: ['{p} é o burro: {n} ano(s).', '{p} is the burro: {n} year(s).', '{p} è il burro: {n} anno/i.', '{p} es el burro: {n} año(s).'],
+    M_burro: ['Você é o burro: {n} ano(s).', 'You are the burro: {n} year(s).', 'Sei tu il burro: {n} anno/i.', 'Eres el burro: {n} año(s).'],
+    L_over: ['Fim de jogo.', 'Game over.', 'Fine della partita.', 'Fin del juego.'],
+    L_stall: ['Monte vazio e {n} vazas sem ninguém sair: a partida termina.', 'Empty stock and {n} tricks with nobody going out: the hand ends.', 'Mazzo vuoto e {n} prese senza che nessuno esca: la partita finisce.', 'Mazo vacío y {n} bazas sin que nadie salga: la partida termina.'],
+    rulesHtml: [
+      `<h3>O jogo</h3><ul class="rules"><li><b>Objetivo:</b> ficar sem cartas. Quem esvazia a mão sai da partida; o último que sobrar com cartas é o burro.</li><li><b>Baralho:</b> 40 cartas, sem 8, 9 e 10, ou as 52, conforme a opção. Cada jogador recebe 3, 4 ou 5 cartas; o resto fica no monte, virado para baixo.</li><li><b>Vaza:</b> quem começa joga qualquer carta. Os outros, na ordem, jogam uma carta do mesmo naipe. Seguir o naipe é obrigatório.</li><li><b>Sem o naipe:</b> compre do monte, uma carta de cada vez, até tirar uma do naipe, e jogue-a.</li><li><b>Monte vazio:</b> quem não tem o naipe pega para a mão as cartas que estão na mesa, e a vaza termina. Na outra opção, só passa a vez.</li><li><b>Quem leva:</b> a carta mais alta do naipe da vaza. Não há trunfo: carta de outro naipe nunca ganha. As cartas da vaza saem do jogo, e quem levou abre a seguinte.</li><li><b>Valor:</b> o Ás é a carta mais alta. Na ordem normal: A, K, Q, J, 7, 6, 5, 4, 3, 2 (com 52 cartas, o 10, o 9 e o 8 entre o Valete e o 7). Na opção Ás e 7 no topo: A, 7, K, Q, J, 6, 5, 4, 3, 2.</li></ul><h3>Pontos</h3><ul class="rules"><li>O burro leva um ano de burro para cada carta que ficou na mão dele. Depois do número de partidas escolhido, vence quem tiver menos anos.</li><li>Quem sai primeiro começa a partida seguinte.</li></ul><h3>Nesta versão</h3><ul class="rules"><li>As regras do burro mudam de mesa para mesa. A base é a descrita na ${src(WIKI, 'Wikipédia')} e no site português ${src(SOJOGO, 'Só Jogo')}, que divergem em alguns pontos.</li><li>A Wikipédia fala em 4 cartas e em passar a vez quando o monte acaba. O Só Jogo fala em 5 cartas, Ás e 7 no topo e pegar as cartas da mesa. As duas regras estão nas opções.</li><li>A Wikipédia lista uma ordem que vai do Ás ao Rei. Aqui o Ás é sempre a carta mais alta, como no Só Jogo e como se joga em muitas mesas.</li><li>Depois que alguém pega a mesa, o texto das regras do Só Jogo diz que recomeça quem pôs a carta mais alta, mas um comentário do próprio site diz que recomeça quem abriu a vaza. Aqui, recomeça quem pôs a carta mais alta.</li><li>A contagem de anos de burro vem do Só Jogo. Nenhuma das fontes diz o que fazer com as cartas da vaza; aqui elas saem do jogo.</li><li>Com 52 cartas e Ás e 7 no topo, o 10, o 9 e o 8 ficam entre o Valete e o 6. Isso é escolha desta versão.</li><li>Pegar a mesa devolve cartas ao jogo, e raramente a partida gira sem fim (5 em 45 mil partidas simuladas). Por isso, se o monte já acabou e passam 100 vazas sem ninguém sair, a partida termina, e é burro quem tiver mais cartas; no empate, todos os empatados. Nas simulações, a partida mais longa que terminou sozinha teve 64 vazas assim.</li><li>De 2 a 6 jogadores, sempre você contra o computador. O computador só vê as próprias cartas e o que foi jogado na mesa.</li></ul>`,
+      `<h3>The game</h3><ul class="rules"><li><b>Goal:</b> run out of cards. Whoever empties their hand leaves the hand; the last one still holding cards is the burro, the donkey.</li><li><b>Deck:</b> 40 cards, without 8, 9 and 10, or all 52, depending on the option. Each player gets 3, 4 or 5 cards; the rest is the stock, face down.</li><li><b>Trick:</b> the leader plays any card. The others, in turn, play a card of the same suit. Following suit is mandatory.</li><li><b>No card of the suit:</b> draw from the stock, one card at a time, until you get one of the suit, and play it.</li><li><b>Empty stock:</b> a player without the suit picks up the cards on the table into their hand, and the trick ends. With the other option, the player just passes.</li><li><b>Who wins:</b> the highest card of the suit led. There are no trumps: a card of another suit never wins. Trick cards leave the game, and the winner leads the next trick.</li><li><b>Ranking:</b> the ace is the highest card. In the normal order: A, K, Q, J, 7, 6, 5, 4, 3, 2 (with 52 cards, the 10, 9 and 8 sit between the Jack and the 7). With the ace-and-7-on-top option: A, 7, K, Q, J, 6, 5, 4, 3, 2.</li></ul><h3>Scoring</h3><ul class="rules"><li>The burro gets one donkey year for each card left in their hand. After the chosen number of hands, whoever has the fewest years wins.</li><li>Whoever goes out first leads the next hand.</li></ul><h3>In this version</h3><ul class="rules"><li>Burro rules change from table to table. The base is the one described on Portuguese ${src(WIKI, 'Wikipedia')} and on the Portuguese site ${src(SOJOGO, 'Só Jogo')}, which differ on some points.</li><li>Wikipedia gives 4 cards and passing when the stock runs out. Só Jogo gives 5 cards, ace and 7 on top and picking up the table cards. Both rules are available as options.</li><li>Wikipedia lists an order running from ace to King. Here the ace is always the highest card, as in Só Jogo and as many tables play it.</li><li>After someone picks up the table, Só Jogo’s rule text says the player who laid the highest card leads again, but a comment on the same site says the player who opened the trick does. Here, the player with the highest card leads.</li><li>Donkey-year scoring comes from Só Jogo. Neither source says what happens to the trick cards; here they leave the game.</li><li>With 52 cards and ace and 7 on top, the 10, 9 and 8 sit between the Jack and the 6. That is a choice of this version.</li><li>Picking up the table puts cards back into play, and rarely a hand can go round forever (5 in 45,000 simulated hands). So if the stock is gone and 100 tricks pass with nobody going out, the hand ends and the burro is whoever holds the most cards; on a tie, everyone tied. In the simulations, the longest hand that ended by itself had 64 such tricks.</li><li>2 to 6 players, always you against the computer. The computer sees only its own cards and what was played on the table.</li></ul>`,
+      `<h3>Il gioco</h3><ul class="rules"><li><b>Obiettivo:</b> restare senza carte. Chi svuota la mano esce dalla partita; l’ultimo che resta con carte in mano è il burro, l’asino.</li><li><b>Mazzo:</b> 40 carte, senza 8, 9 e 10, oppure tutte le 52, secondo l’opzione. Ogni giocatore riceve 3, 4 o 5 carte; il resto forma il mazzo, coperto.</li><li><b>Presa:</b> chi apre gioca una carta qualsiasi. Gli altri, a turno, giocano una carta dello stesso seme. Rispondere al seme è obbligatorio.</li><li><b>Senza il seme:</b> pesca dal mazzo, una carta alla volta, finché non ne esce una del seme, e giocala.</li><li><b>Mazzo vuoto:</b> chi non ha il seme prende in mano le carte sul tavolo, e la presa finisce. Con l’altra opzione, passa solo il turno.</li><li><b>Chi prende:</b> la carta più alta del seme d’apertura. Non ci sono briscole: una carta di un altro seme non vince mai. Le carte della presa escono dal gioco, e chi ha preso apre la successiva.</li><li><b>Valore:</b> l’Asso è la carta più alta. Nell’ordine normale: A, K, Q, J, 7, 6, 5, 4, 3, 2 (con 52 carte, il 10, il 9 e l’8 stanno tra il Fante e il 7). Con l’opzione Asso e 7 in cima: A, 7, K, Q, J, 6, 5, 4, 3, 2.</li></ul><h3>Punteggio</h3><ul class="rules"><li>Il burro prende un anno d’asino per ogni carta rimasta nella sua mano. Dopo il numero di partite scelto, vince chi ha meno anni.</li><li>Chi esce per primo apre la partita successiva.</li></ul><h3>In questa versione</h3><ul class="rules"><li>Le regole del burro cambiano da un tavolo all’altro. La base è quella descritta su ${src(WIKI, 'Wikipedia')} in portoghese e sul sito portoghese ${src(SOJOGO, 'Só Jogo')}, che divergono su alcuni punti.</li><li>Wikipedia parla di 4 carte e di turno passato quando il mazzo finisce. Só Jogo parla di 5 carte, Asso e 7 in cima e carte del tavolo prese in mano. Entrambe le regole sono tra le opzioni.</li><li>Wikipedia riporta un ordine che va dall’Asso al Re. Qui l’Asso è sempre la carta più alta, come in Só Jogo e come si gioca a molti tavoli.</li><li>Dopo che qualcuno prende il tavolo, il testo delle regole di Só Jogo dice che riapre chi ha messo la carta più alta, ma un commento dello stesso sito dice che riapre chi aveva aperto la presa. Qui riapre chi ha messo la carta più alta.</li><li>Il conteggio degli anni d’asino viene da Só Jogo. Nessuna delle fonti dice cosa fare con le carte della presa; qui escono dal gioco.</li><li>Con 52 carte e Asso e 7 in cima, il 10, il 9 e l’8 stanno tra il Fante e il 6. È una scelta di questa versione.</li><li>Prendere il tavolo rimette carte in gioco, e raramente la partita può girare senza fine (5 su 45.000 partite simulate). Per questo, se il mazzo è finito e passano 100 prese senza che nessuno esca, la partita finisce ed è burro chi ha più carte; in caso di parità, tutti i pari. Nelle simulazioni, la partita più lunga finita da sola ha avuto 64 prese così.</li><li>Da 2 a 6 giocatori, sempre tu contro il computer. Il computer vede solo le proprie carte e quello che è stato giocato sul tavolo.</li></ul>`,
+      `<h3>El juego</h3><ul class="rules"><li><b>Objetivo:</b> quedarse sin cartas. Quien vacía la mano sale de la partida; el último que queda con cartas es el burro.</li><li><b>Baraja:</b> 40 cartas, sin 8, 9 y 10, o las 52, según la opción. Cada jugador recibe 3, 4 o 5 cartas; el resto queda en el mazo, boca abajo.</li><li><b>Baza:</b> quien empieza juega cualquier carta. Los demás, por turno, juegan una carta del mismo palo. Seguir el palo es obligatorio.</li><li><b>Sin el palo:</b> roba del mazo, una carta cada vez, hasta sacar una del palo, y juégala.</li><li><b>Mazo vacío:</b> quien no tiene el palo recoge en su mano las cartas de la mesa, y la baza termina. Con la otra opción, solo pasa el turno.</li><li><b>Quién gana:</b> la carta más alta del palo de salida. No hay triunfo: una carta de otro palo nunca gana. Las cartas de la baza salen del juego, y quien la ganó abre la siguiente.</li><li><b>Valor:</b> el As es la carta más alta. En el orden normal: A, K, Q, J, 7, 6, 5, 4, 3, 2 (con 52 cartas, el 10, el 9 y el 8 quedan entre la Jota y el 7). Con la opción As y 7 arriba: A, 7, K, Q, J, 6, 5, 4, 3, 2.</li></ul><h3>Puntos</h3><ul class="rules"><li>El burro suma un año de burro por cada carta que le quedó en la mano. Tras el número de partidas elegido, gana quien tenga menos años.</li><li>Quien sale primero empieza la partida siguiente.</li></ul><h3>En esta versión</h3><ul class="rules"><li>Las reglas del burro cambian de mesa en mesa. La base es la descrita en la ${src(WIKI, 'Wikipedia')} en portugués y en el sitio portugués ${src(SOJOGO, 'Só Jogo')}, que difieren en algunos puntos.</li><li>La Wikipedia habla de 4 cartas y de pasar el turno cuando el mazo se acaba. Só Jogo habla de 5 cartas, As y 7 arriba y recoger las cartas de la mesa. Las dos reglas están en las opciones.</li><li>La Wikipedia recoge un orden que va del As al Rey. Aquí el As es siempre la carta más alta, como en Só Jogo y como se juega en muchas mesas.</li><li>Después de que alguien recoge la mesa, el texto de las reglas de Só Jogo dice que vuelve a empezar quien puso la carta más alta, pero un comentario del mismo sitio dice que vuelve a empezar quien abrió la baza. Aquí empieza quien puso la carta más alta.</li><li>La cuenta de años de burro viene de Só Jogo. Ninguna de las fuentes dice qué hacer con las cartas de la baza; aquí salen del juego.</li><li>Con 52 cartas y As y 7 arriba, el 10, el 9 y el 8 quedan entre la Jota y el 6. Es una elección de esta versión.</li><li>Recoger la mesa devuelve cartas al juego, y rara vez la partida puede girar sin fin (5 de 45.000 partidas simuladas). Por eso, si el mazo ya se acabó y pasan 100 bazas sin que nadie salga, la partida termina y es burro quien tenga más cartas; en caso de empate, todos los empatados. En las simulaciones, la partida más larga que terminó sola tuvo 64 bazas así.</li><li>De 2 a 6 jugadores, siempre tú contra la computadora. La computadora solo ve sus propias cartas y lo que se jugó en la mesa.</li></ul>`,
+    ],
+  };
+  let lang = 'pt';
+  const TAG = { pt: 'pt-BR', en: 'en', it: 'it', es: 'es' };
+  const fill = (s, v) => s.replace(/\{(\w+)\}/g, (m, k) => (v && v[k] !== undefined ? v[k] : m));
+  const t = (k, v) => { const a = I18N[k]; const s = a ? a[LANGS.indexOf(lang)] : k; return v ? fill(s, v) : s; };
+  const SUITCH = { s: '♠', h: '♥', d: '♦', c: '♣' };
+  const cardName = (c) => `${NAMES[lang].ranks[E.rankOf(c)]} ${NAMES[lang].of} ${NAMES[lang].suits[E.suitOf(c)]}`;
+  const shortName = (c) => rl(E.rankOf(c)) + SUITCH[E.suitOf(c)];
+  const suitName = (s) => `${NAMES[lang].suits[s]} ${SUITCH[s]}`;
+  const CPU = ['Tchê', 'Dona Zefa', 'Seu Lima', 'Guria', 'Piá'];
+
+  // ---------------------------------------------------------------- estado da tela
+  let S = null, fast = false, soundOn = true, theme = 'auto', busy = false, aiTimer = null, sel = null, showTrick = null;
+  const human = 0;
+  const save = () => { if (S) Store.set('burro.game', Object.assign({}, S, { fx: [] })); };
+  const delay = (ms) => new Promise((r) => setTimeout(r, reduceMotion ? Math.min(ms, 60) : (fast ? ms * 0.3 : ms)));
+  const pname = (s) => (s === human ? t('you') : S.players[s].name);
+  const live = () => S && S.phase === 'play';
+
+  function renderTable() {
+    const L = !busy && live() && S.turn === human ? E.legal(S) : {};
+    let h = `<div class="opps">${S.players.map((p, s) => {
+      if (s === human) return '';
+      const n = S.hands[s].length, on = live() && s === S.turn && !showTrick;
+      const backs = S.out[s] ? `<span class="done">${t('outTag', { n: S.outOrder.indexOf(s) + 1 })}</span>` : Array.from({ length: Math.min(n, 10) }, () => backSvg()).join('') + (n > 10 ? `<span class="more">+${n - 10}</span>` : '');
+      return `<div class="opp${on ? ' on' : ''}${S.out[s] ? ' out' : ''}"><div class="backs" aria-hidden="true">${backs}</div><div class="np">${esc(p.name)} · ${n}</div></div>`;
+    }).join('')}</div>`;
+    h += '<div class="mid">';
+    h += `<button type="button" class="pile${L.draw ? ' can' : ''}" id="pStock" ${L.draw ? '' : 'disabled'} aria-label="${esc(S.stock.length ? t('stock', { n: S.stock.length }) : t('stockEmpty'))}">${S.stock.length ? backSvg('slotcard') : '<div class="emptyslot"></div>'}<span>${S.stock.length ? t('stock', { n: S.stock.length }) : t('stockEmpty')}</span></button>`;
+    const shown = showTrick ? showTrick.trick : S.trick;
+    let title;
+    if (showTrick && showTrick.taker != null) title = t('tookT', { p: esc(pname(showTrick.taker)) });
+    else if (shown.length) title = t('trickSuit', { s: suitName(E.suitOf(shown[0].c)) });
+    else title = live() ? (S.turn === human ? t('noTrickMe') : t('noTrick', { p: esc(pname(S.turn)) })) : '';
+    const ls = shown.length ? E.suitOf(shown[0].c) : null;
+    let bi = -1;
+    shown.forEach((x, i) => { if (E.suitOf(x.c) === ls && (bi < 0 || E.strength(S, x.c) > E.strength(S, shown[bi].c))) bi = i; });
+    h += `<div class="trickbox"><div class="tsuit">${title}</div><div class="trick">${shown.map((x, i) => `<div class="tc${i === bi ? ' best' : ''}${showTrick && showTrick.taker != null ? ' off' : ''}">${cardSvg(x.c, 'slotcard')}<span>${esc(pname(x.p))}${i === bi ? `<b>${t('highest')}</b>` : ''}</span></div>`).join('')}</div></div>`;
+    h += '</div>';
+    $('table').innerHTML = h;
+    $('table').setAttribute('aria-label', t('tableL'));
+  }
+  function renderHand() {
+    const hand = S.hands[human], box = $('hand');
+    const L = !busy && live() && S.turn === human ? E.legal(S) : {}, ok = L.play || [];
+    if (sel != null && !ok.includes(sel)) sel = null;
+    const isNew = S.lastDraw && S.lastDraw.p === human ? S.lastDraw.c : null;
+    box.setAttribute('aria-label', t('handL'));
+    box.classList.toggle('pick', ok.length > 0);
+    const cards = hand.map((c) => `<button type="button" class="hcard${sel === c ? ' sel' : ''}${isNew === c ? ' isnew' : ''}" data-c="${c}" aria-label="${esc(cardName(c))}" aria-pressed="${sel === c}" ${ok.includes(c) ? '' : 'disabled'}>${cardSvg(c)}</button>`);
+    // cada carta mostra pelo menos 42% da largura; se não couber numa fileira, a mão quebra em várias
+    box.innerHTML = `<div class="hrow">${cards[0] || ''}</div>`;
+    const first = box.querySelector('.hcard'), w = box.clientWidth - 8, cw = first ? first.offsetWidth : 70, n = cards.length;
+    const perRow = Math.max(1, Math.floor((w - cw) / (cw * 0.42)) + 1), rows = Math.max(1, Math.ceil(n / perRow)), m = Math.max(1, Math.ceil(n / rows));
+    let h = '';
+    for (let i = 0; i < n; i += m) {
+      const k = Math.min(m, n - i), ov = k > 1 ? Math.min(4, (w - cw * k) / (k - 1)) : 0;
+      h += `<div class="hrow" style="--ov:${ov.toFixed(1)}px">${cards.slice(i, i + k).join('')}</div>`;
+    }
+    box.innerHTML = h;
+  }
+  function renderScore() {
+    const sub = t('handOf', { n: S.handNo, m: S.target });
+    $('score').innerHTML = `<div class="sub">${sub}</div><div class="row2 head"><span></span><span>${t('cardsH')}</span><span>${t('yearsH')}</span></div>` + S.players.map((p, s) => {
+      const tag = S.out[s] && live() ? ` <small>· ${t('outTag', { n: S.outOrder.indexOf(s) + 1 })}</small>` : '';
+      return `<div class="row2${live() && s === S.turn ? ' on' : ''}"><span>${esc(pname(s))}${tag}</span><span>${S.hands[s].length}</span><strong>${S.years[s]}</strong></div>`;
+    }).join('');
+  }
+  function logText(e) {
+    const v = e.v, o = {};
+    if ('p' in v) o.p = esc(pname(v.p));
+    if ('c' in v) o.c = shortName(v.c);
+    if ('n' in v) o.n = v.n;
+    const k = v.p === human && I18N['M_' + e.k] ? 'M_' + e.k : 'L_' + e.k;
+    return t(k, o);
+  }
+  function renderLog() { const ol = $('log'); ol.innerHTML = S.log.slice(-60).map((e) => `<li>${logText(e)}</li>`).join(''); ol.parentElement.scrollTop = ol.parentElement.scrollHeight; $('logBox').setAttribute('aria-label', t('logL')); }
+  const btn = (a, label, cls, dis) => `<button type="button" class="btn ${cls || ''}" data-a="${a}" ${dis ? 'disabled' : ''}>${esc(label)}</button>`;
+  function renderAction() {
+    const el = $('action');
+    if (S.phase === 'over' || S.phase === 'handEnd') { el.innerHTML = busy ? '<h2>…</h2>' : btn('showEnd', t('seeResult'), 'pri'); return; }
+    if (S.out[human]) { el.innerHTML = `<h2>${t('outT')}</h2><p>${t('outH')}</p>`; return; }
+    if (S.turn !== human || busy) { el.innerHTML = `<h2>${S.turn === human ? '…' : t('thinking', { p: esc(pname(S.turn)) })}</h2>`; return; }
+    const L = E.legal(S), ls = E.leadSuit(S), sn = ls ? suitName(ls) : '';
+    if (L.play && !S.trick.length) el.innerHTML = `<h2>${t('leadT')}</h2><p>${t('leadH')} ${t('pickH')}</p><div class="btns">${btn('play', t('btnPlay'), 'pri', sel == null)}</div>`;
+    else if (L.play) el.innerHTML = `<h2>${t('followT', { s: sn })}</h2><p>${t('pickH')}</p><div class="btns">${btn('play', t('btnPlay'), 'pri', sel == null)}</div>`;
+    else if (L.draw) el.innerHTML = `<h2>${t('drawT', { s: sn })}</h2><p>${t('drawH', { s: NAMES[lang].suits[ls] })}</p><div class="btns">${btn('draw', t('btnDraw'), 'pri')}${btn('drawAll', t('btnDrawAll'))}</div>`;
+    else if (L.take) el.innerHTML = `<h2>${t('takeT')}</h2><p>${t('takeH', { s: NAMES[lang].suits[ls] })}</p><div class="btns">${btn('take', t('btnTake'), 'pri')}</div>`;
+    else if (L.pass) el.innerHTML = `<h2>${t('takeT')}</h2><p>${t('passH', { s: NAMES[lang].suits[ls] })}</p><div class="btns">${btn('pass', t('btnPass'), 'pri')}</div>`;
+    const f = el.querySelector('.btn.pri:not([disabled])');
+    if (f && (!document.activeElement || document.activeElement === document.body || el.contains(document.activeElement))) f.focus({ preventScroll: true });
+  }
+  function render() { renderTable(); renderHand(); renderScore(); renderLog(); renderAction(); }
+  function showEnd() {
+    const r = S.result, d = $('dEnd');
+    const bs = r.burros || [r.burro];
+    let h = `<h2 id="endH">${bs.length > 1 ? t('endBurros', { p: bs.map((i) => esc(pname(i))).join(t('and')) }) : r.burro === human ? t('endBurroMe') : t('endBurro', { p: esc(pname(r.burro)) })}</h2>`;
+    if (r.stall) h += `<p>${t('endStall')}</p>`;
+    h += `<p>${t(bs.length > 1 ? 'endYearsEach' : 'endYears', { n: r.yrs })}</p><div class="left">${r.left.map((c) => cardSvg(c)).join('')}</div>`;
+    if (S.phase !== 'over' && r.first != null) h += `<p>${r.first === human ? t('endFirstMe') : t('endFirst', { p: esc(pname(r.first)) })}</p>`;
+    else {
+      const w = S.over.winners;
+      h += `<h3>${w.length > 1 ? t('overTie', { p: w.map((i) => esc(pname(i))).join(t('and')) }) : w[0] === human ? t('overYou') : t('overOther', { p: esc(pname(w[0])) })}</h3>`;
+    }
+    h += `<h3>${t('endTotals')}</h3>` + S.players.map((p, s) => `<div class="sumline${s === human ? ' me' : ''}"><span>${esc(pname(s))}</span><strong>${S.years[s]}</strong></div>`).join('');
+    h += `<div class="row">${S.phase === 'over' ? `<button type="button" class="btn pri" data-go="menu">${t('again')}</button>` : `<button type="button" class="btn pri" data-go="next">${t('nextHand')}</button>`}<button type="button" class="btn" data-go="close">${t('close')}</button></div>`;
+    d.innerHTML = h;
+    if (!d.open) d.showModal();
+  }
+
+  // ---------------------------------------------------------------- fluxo
+  async function dispatch(a) {
+    if (busy || !S) return false;
+    if (!E.act(S, a)) return false;
+    const game = S, list = S.fx.slice(); S.fx = [];
+    if (a.type === 'play') sel = null;
+    save();
+    busy = true;
+    const tr = list.find((f) => f.t === 'trick' && f.trick.length);
+    showTrick = tr || null;
+    render();
+    for (const f of list) if (f.t === 'play' || f.t === 'draw') sfx('card');
+    if (tr) { sfx(tr.taker != null ? 'tick' : 'win1'); await delay(tr.taker != null ? 1300 : 1100); }
+    else if (list.some((f) => f.t === 'play' || f.t === 'draw')) await delay(a.type === 'draw' && S.turn === human ? 140 : (list[0].p === human ? 160 : 520));
+    showTrick = null;
+    busy = false;
+    // durante a espera a pessoa pode ter ido ao menu ou começado outro jogo
+    if (!$('ovTitle').hidden) return true;
+    if (S !== game) { enter(); return true; }
+    render();
+    if (S.phase === 'handEnd' || S.phase === 'over') { sfx((S.result.burros || [S.result.burro]).includes(human) ? 'lose' : 'win'); showEnd(); return true; }
+    schedule();
+    return true;
+  }
+  function schedule() {
+    clearTimeout(aiTimer);
+    if (!S || !live() || !$('ovTitle').hidden || S.turn === human) return;
+    aiTimer = setTimeout(() => { if (S && live() && !busy && S.turn !== human) dispatch(E.ai(S)); }, reduceMotion ? 60 : (fast ? 120 : 420));
+  }
+  async function drawAll() {
+    while (S && live() && S.turn === human && E.legal(S).draw) { if (!(await dispatch({ type: 'draw' }))) break; }
+  }
+
+  // ---------------------------------------------------------------- som
+  let audio = null;
+  function tone(f, d, type, v, when) {
+    if (!soundOn) return;
+    try {
+      if (!audio) audio = new (window.AudioContext || window.webkitAudioContext)();
+      if (audio.state === 'suspended') audio.resume();
+      const o = audio.createOscillator(), g = audio.createGain(), st = audio.currentTime + (when || 0);
+      o.type = type || 'sine'; o.frequency.setValueAtTime(f, st);
+      g.gain.setValueAtTime(v || 0.05, st); g.gain.exponentialRampToValueAtTime(0.0001, st + d);
+      o.connect(g); g.connect(audio.destination); o.start(st); o.stop(st + d);
+    } catch (e) { /* sem áudio */ }
+  }
+  function sfx(k) {
+    if (k === 'card') tone(520, 0.05, 'triangle', 0.04);
+    else if (k === 'tick') tone(330, 0.12, 'sine', 0.05);
+    else if (k === 'win1') tone(780, 0.09, 'triangle', 0.04);
+    else if (k === 'win') [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.22, 'triangle', 0.07, i * 0.12));
+    else if (k === 'lose') [392, 349, 311, 262].forEach((f, i) => tone(f, 0.26, 'sine', 0.05, i * 0.18));
+  }
+
+  // ---------------------------------------------------------------- telas
+  function startGame() {
+    const n = +$('numSel').value, L = +$('levelSel').value, target = +$('targetSel').value;
+    const opts = { deck: +$('deckSel').value, order: $('orderSel').value, hand: +$('handSel').value, empty: $('emptySel').value };
+    savePref({ num: n, level: L, target, opts });
+    const players = Array.from({ length: n }, (_, i) => ({ name: i ? CPU[i - 1] : '', kind: i ? L : 'human' }));
+    S = E.newGame({ players, opts, target, seed: (Math.random() * 2147483647) | 0 });
+    sel = null;
+    enter();
+  }
+  function enter() {
+    $('ovTitle').hidden = true; $('app').hidden = false;
+    S.fx = []; save(); render();
+    if (S.phase === 'handEnd' || S.phase === 'over') showEnd(); else schedule();
+  }
+  function showMenu() {
+    clearTimeout(aiTimer);
+    if (S) save();
+    if ($('dEnd').open) $('dEnd').close();
+    $('app').hidden = true; $('ovTitle').hidden = false;
+    refreshResume();
+  }
+  function refreshResume() { const g = Store.get('burro.game'); $('bResume').hidden = !(g && g.phase !== 'over' && g.players); }
+  const savePref = (o) => Store.set('burro.prefs', Object.assign({}, Store.get('burro.prefs') || {}, o));
+  function applyTheme() {
+    if (theme === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', theme);
+    const label = t(theme === 'light' ? 'themeLight' : theme === 'dark' ? 'themeDark' : 'themeAuto');
+    $('bTheme').textContent = label; $('bTheme2').textContent = label;
+  }
+  function applySoundSpeed() { $('bSound').textContent = t(soundOn ? 'soundOn' : 'soundOff'); $('bSpeed').textContent = t(fast ? 'speedF' : 'speedN'); }
+  function applyLang() {
+    document.documentElement.lang = TAG[lang];
+    document.querySelectorAll('[data-t]').forEach((el) => { el.textContent = t(el.dataset.t); });
+    $('rulesBody').innerHTML = t('rulesHtml');
+    $('langSel').value = lang;
+    $('backLink').href = 'projects.html' + (lang === 'pt' ? '' : '#' + lang);
+    $('heroArt').innerHTML = `<div class="fan">${['1h', '7s', '13d', '12c'].map((c) => cardSvg(c)).join('')}</div>${donkeySvg()}`;
+    applySoundSpeed(); applyTheme();
+    if (S && !$('app').hidden) { render(); if ($('dEnd').open) showEnd(); }
+  }
+
+  // ---------------------------------------------------------------- cliques
+  $('table').addEventListener('click', (e) => {
+    const b = e.target.closest('#pStock');
+    if (b && !b.disabled) dispatch({ type: 'draw' });
+  });
+  $('action').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-a]');
+    if (!b || b.disabled) return;
+    const a = b.dataset.a;
+    if (a === 'showEnd') showEnd();
+    else if (a === 'play') { if (sel) dispatch({ type: 'play', c: sel }); }
+    else if (a === 'drawAll') drawAll();
+    else dispatch({ type: a });
+  });
+  $('hand').addEventListener('click', (e) => {
+    const b = e.target.closest('.hcard');
+    if (!b || b.disabled || busy) return;
+    const c = b.dataset.c;
+    if (sel === c) { dispatch({ type: 'play', c }); return; }
+    sel = c; renderHand(); renderAction();
+    const again = $('hand').querySelector(`[data-c="${c}"]`); if (again) again.focus({ preventScroll: true });
+  });
+  $('dEnd').addEventListener('click', (e) => {
+    const go = e.target.closest('[data-go]');
+    if (!go) return;
+    const k = go.dataset.go;
+    if (k === 'close') $('dEnd').close();
+    else if (k === 'menu') showMenu();
+    else if (k === 'next') { $('dEnd').close(); dispatch({ type: 'next' }); }
+  });
+  const openRules = () => { $('dRules').showModal(); $('dRules').scrollTop = 0; };
+  const cycleTheme = () => { theme = theme === 'auto' ? 'light' : theme === 'light' ? 'dark' : 'auto'; savePref({ theme }); applyTheme(); };
+  $('bRules').addEventListener('click', openRules);
+  $('bRules2').addEventListener('click', openRules);
+  $('bRulesClose').addEventListener('click', () => $('dRules').close());
+  $('bMenu').addEventListener('click', showMenu);
+  $('bPlay').addEventListener('click', startGame);
+  $('bResume').addEventListener('click', () => { const g = Store.get('burro.game'); if (g && g.phase !== 'over') { S = g; sel = null; enter(); } });
+  $('bSound').addEventListener('click', () => { soundOn = !soundOn; savePref({ sound: soundOn }); applySoundSpeed(); });
+  $('bSpeed').addEventListener('click', () => { fast = !fast; savePref({ fast }); applySoundSpeed(); });
+  $('bTheme').addEventListener('click', cycleTheme);
+  $('bTheme2').addEventListener('click', cycleTheme);
+  $('langSel').addEventListener('change', () => { lang = $('langSel').value; savePref({ lang }); applyLang(); });
+  window.addEventListener('resize', () => { if (S && !$('app').hidden) renderHand(); });
+
+  // ---------------------------------------------------------------- início
+  const prefs = Store.get('burro.prefs') || {}, po = prefs.opts || {};
+  const hashLang = location.hash.slice(1), navLang = ((navigator.language || 'pt').slice(0, 2)).toLowerCase();
+  lang = LANGS.includes(hashLang) ? hashLang : (LANGS.includes(prefs.lang) ? prefs.lang : (LANGS.includes(navLang) ? navLang : 'pt'));
+  soundOn = prefs.sound !== false; fast = !!prefs.fast; theme = ['light', 'dark'].includes(prefs.theme) ? prefs.theme : 'auto';
+  $('numSel').value = String(prefs.num || 4);
+  $('levelSel').value = String(prefs.level == null ? 1 : prefs.level);
+  $('targetSel').value = String(prefs.target || 3);
+  $('deckSel').value = String(po.deck || 40);
+  $('orderSel').value = po.order || 'ak';
+  $('handSel').value = String(po.hand || 4);
+  $('emptySel').value = po.empty || 'take';
+  applyLang();
+  refreshResume();
+})();
+</script>
+</body>
+</html>
