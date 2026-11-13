@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Acompanhamento Mensal de Metas</title>
+<style>
+:root{
+  --ink:#111111; --muted:#646067; --line:#E6E6E7; --line2:#ECECED;
+  --bg:#FAF8F6; --card:#FFFFFF; --soft:#F5F3EF;
+  --purple:#7B2D8E; --purple-t:#F3EAF5; --plum:#2D1837;
+  --orange:#FF5A1F; --orange-t:#FFEFE9;
+  --teal:#0A9B8E; --teal-t:#E3F4F2;
+  --amber:#C98A00; --amber-t:#FDF3DC;
+  --red:#D92D20; --red-t:#FDECEA;
+  --blue:#2F6FDE; --blue-t:#E8EFFC;
+  --gray:#8A8790; --gray-t:#F0EFF1;
+  --r:10px;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 "Segoe UI",system-ui,-apple-system,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+input,select,textarea{border:1px solid var(--line);border-radius:6px;background:#fff;padding:6px 8px;outline:none;width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--purple);box-shadow:0 0 0 3px var(--purple-t)}
+textarea{resize:vertical;min-height:38px}
+input.plain,textarea.plain{border-color:transparent;background:transparent;padding:3px 6px;margin-left:-6px}
+input.plain:hover,textarea.plain:hover{border-color:var(--line)}
+input.plain:focus,textarea.plain:focus{background:#fff;border-color:var(--purple)}
+.strong{font-weight:600}
+::placeholder{color:#A9A6AD}
+
+/* header */
+.top{background:var(--plum);color:#fff;position:sticky;top:0;z-index:20;box-shadow:0 2px 10px rgba(45,24,55,.25)}
+.top-in{max-width:1400px;margin:0 auto;padding:14px 24px 10px;display:flex;gap:20px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap}
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange)}
+.brand h1{margin:2px 0 2px;font-size:20px;font-weight:700;line-height:1.2}
+.who{display:flex;align-items:center;gap:4px;color:#D9CFE0;font-size:13px}
+.who input.plain{color:#fff;width:auto;padding:1px 6px}
+.who input.plain:hover{border-color:rgba(255,255,255,.3)}
+.who input.plain:focus{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.6);box-shadow:none}
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.msel{display:flex;align-items:center;gap:6px;font-size:12px;color:#D9CFE0}
+.msel select{width:auto;min-width:150px;background:#fff;color:var(--ink);font-weight:600}
+.btn{border:1px solid transparent;border-radius:6px;padding:7px 14px;cursor:pointer;font-weight:600;background:#fff;color:var(--ink);white-space:nowrap}
+.btn.primary{background:var(--orange);color:#fff}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.35)}
+.btn.ghost:hover{background:rgba(255,255,255,.1)}
+.btn.dirty::after{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#fff;margin-left:8px;vertical-align:middle}
+.menu{position:relative}
+.menu summary{list-style:none}
+.menu summary::-webkit-details-marker{display:none}
+.menu-pop{position:absolute;right:0;top:calc(100% + 6px);background:#fff;color:var(--ink);border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:6px;min-width:230px;z-index:30}
+.menu-pop button{display:block;width:100%;text-align:left;background:none;border:0;padding:8px 10px;border-radius:5px;cursor:pointer}
+.menu-pop button:hover{background:var(--soft)}
+.menu-pop hr{border:0;border-top:1px solid var(--line);margin:4px 0}
+.danger{color:var(--red)!important}
+.tabs{max-width:1400px;margin:0 auto;padding:0 24px;display:flex;gap:2px;overflow-x:auto}
+.tabs button{background:none;border:0;color:#CBBFD3;padding:10px 14px;cursor:pointer;font-weight:600;border-bottom:3px solid transparent;white-space:nowrap}
+.tabs button:hover{color:#fff}
+.tabs button.on{color:#fff;border-bottom-color:var(--orange)}
+.savebar{max-width:1400px;margin:0 auto;padding:8px 24px 0;font-size:12px;color:var(--muted);text-align:right}
+.savebar.dirty{color:var(--orange);font-weight:600}
+
+/* layout */
+.wrap{max-width:1400px;margin:0 auto;padding:10px 24px 60px}
+.sec-head{margin:10px 0 18px}
+.sec-head h2{margin:4px 0;font-size:24px;line-height:1.25}
+.sec-head .eyebrow{color:var(--purple)}
+.sec-head p{margin:0;color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r)}
+
+/* summary tiles */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}
+.tile{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;border-top:4px solid var(--gray)}
+.tile b{display:block;font-size:26px;line-height:1.1}
+.tile span{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.tile.total{border-top-color:var(--purple)} .tile.ok{border-top-color:var(--teal)} .tile.warn{border-top-color:var(--amber)} .tile.crit{border-top-color:var(--red)}
+.tile.alert{border-top-color:var(--orange);background:var(--orange-t)}
+.rule{display:flex;gap:10px;align-items:flex-start;background:var(--orange-t);border-left:4px solid var(--orange);padding:10px 14px;border-radius:6px;margin-bottom:14px;font-size:13px}
+.rule b{color:var(--orange)}
+
+/* table */
+.tbl-wrap{overflow-x:auto;background:#fff;border:1px solid var(--line);border-radius:var(--r)}
+table{border-collapse:collapse;width:100%}
+table.kpi{min-width:1180px}
+th{background:var(--plum);color:#fff;font-size:11px;letter-spacing:.08em;text-transform:uppercase;text-align:left;padding:10px 8px;font-weight:700;white-space:nowrap}
+th small{display:block;font-weight:400;letter-spacing:0;text-transform:none;color:#CBBFD3}
+td{border-top:1px solid var(--line2);padding:8px;vertical-align:top}
+tr:nth-child(even) td{background:#FCFBFA}
+td.num{font-weight:700;color:var(--purple);width:40px;padding-top:13px}
+td.kpi-name{min-width:340px}
+td.kpi-name .note{font-size:12px;color:var(--muted);display:block}
+textarea.grow{resize:none;overflow:hidden;min-height:0}
+td.prev{width:110px;color:var(--muted);padding-top:13px}
+td.c-val{width:120px} td.c-tgt{width:110px} td.c-st{width:140px} td.c-del{width:36px}
+td.plan{min-width:340px}
+.plan-row{display:grid;grid-template-columns:1fr 150px;gap:6px;margin-top:6px}
+.req{display:none;color:var(--red);font-size:12px;font-weight:600;margin-top:4px}
+tr.issue td{background:var(--red-t)!important}
+tr.issue td.num{box-shadow:inset 4px 0 0 var(--red)}
+tr.issue .req{display:block}
+.center{text-align:center}
+.x{background:none;border:0;color:#B3B0B7;cursor:pointer;font-size:18px;line-height:1;padding:4px 6px;border-radius:4px}
+.x:hover{color:var(--red);background:var(--red-t)}
+
+/* status pills */
+select.pill{font-weight:700;font-size:12px;border-radius:999px;padding:5px 10px;cursor:pointer}
+.st-ok{--c:var(--teal);--t:var(--teal-t)} .st-warn{--c:var(--amber);--t:var(--amber-t)} .st-crit{--c:var(--red);--t:var(--red-t)} .st-tbd{--c:var(--gray);--t:var(--gray-t)}
+.st-nao_iniciado{--c:var(--gray);--t:var(--gray-t)} .st-avaliacao{--c:var(--purple);--t:var(--purple-t)} .st-andamento{--c:var(--teal);--t:var(--teal-t)}
+.st-desenvolvimento{--c:var(--blue);--t:var(--blue-t)} .st-impedimento{--c:var(--red);--t:var(--red-t)} .st-concluido{--c:#1E7B34;--t:#E5F3E8}
+select.pill{color:var(--c);background-color:var(--t);border-color:var(--t)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);margin-left:6px;vertical-align:middle}
+.legend{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin:12px 2px;font-size:12px;color:var(--muted)}
+.legend .dot{margin:0 5px 0 0}
+.add{margin-top:10px;background:#fff;border:1px dashed #C9C5CC;color:var(--purple);border-radius:6px;padding:7px 14px;cursor:pointer;font-weight:600}
+.add:hover{border-color:var(--purple);background:var(--purple-t)}
+.add.sm{padding:4px 10px;font-size:12px;margin:0}
+
+/* 1:1 */
+.callout{background:var(--purple-t);border-left:4px solid var(--purple);border-radius:6px;padding:10px 14px;margin-bottom:16px;font-size:13px}
+.callout b{color:var(--purple)}
+.fronts{display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:16px}
+.front{display:flex;flex-direction:column;overflow:hidden}
+.front-head{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.front-head .n{font-size:22px;font-weight:800;color:var(--orange);line-height:1}
+.front-head input{font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--plum)}
+.front-body{padding:12px 16px;display:flex;flex-direction:column;gap:10px;flex:1}
+.init{border:1px solid var(--line);border-left:4px solid var(--c);border-radius:8px;padding:10px 12px;background:#fff}
+.init-head{display:grid;grid-template-columns:1fr 28px;gap:4px 6px;align-items:center}
+.init-head select{grid-column:1;grid-row:2;width:auto;justify-self:start;min-width:170px}
+.metric{display:grid;grid-template-columns:110px 64px 1fr 28px;gap:6px;align-items:center;margin-top:6px}
+.metric input[type=number]{text-align:right;padding:4px 6px}
+.bar{height:8px;background:var(--gray-t);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--c);border-radius:99px;transition:width .2s}
+.item{display:grid;grid-template-columns:20px 1fr 28px;gap:4px;align-items:center;margin-top:2px}
+.item input[type=checkbox]{width:16px;height:16px;accent-color:var(--teal);margin:0}
+.item.done input.plain{text-decoration:line-through;color:var(--muted)}
+.init-actions{display:flex;gap:6px;margin-top:8px}
+.fd{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 16px;background:var(--soft);border-top:1px solid var(--line)}
+.fd label,.talk label{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--purple);margin-bottom:4px}
+.talk{margin-top:20px;padding:16px}
+.talk h3{margin:0 0 4px;font-size:16px}
+.talk p{margin:0 0 12px;color:var(--muted);font-size:13px}
+.talk-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.talk-grid>div{position:relative}
+.talk-grid label .s{color:var(--orange);margin-right:4px}
+
+/* histórico */
+table.hist{min-width:700px}
+table.hist td.h{text-align:center;white-space:nowrap;font-weight:600;color:var(--c);background:var(--t)!important;border-left:2px solid #fff}
+table.hist th.m{text-align:center}
+table.hist td.spark{width:250px;padding:4px 8px;vertical-align:middle}
+.spark svg{display:block;width:240px;height:64px;overflow:visible}
+.spark .ln{fill:none;stroke:var(--purple);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.spark .tg{stroke:var(--gray);stroke-width:1;stroke-dasharray:4 3}
+.spark .tgl{font-size:10px;fill:var(--muted)}
+.spark .pt{fill:var(--c);stroke:#fff;stroke-width:2}
+.spark .hit{fill:transparent;cursor:default}
+.spark .hit:hover+.pt{stroke:var(--ink)}
+.spark .none{font-size:12px;color:var(--muted);font-style:italic}
+.log{display:grid;gap:12px;margin-top:12px}
+.log .card{padding:14px 16px}
+.log h4{margin:0 0 8px;color:var(--purple)}
+.log dl{display:grid;grid-template-columns:200px 1fr;gap:4px 12px;margin:0;font-size:13px}
+.log dt{color:var(--muted);font-weight:600}
+.log dd{margin:0;white-space:pre-wrap}
+h3.sub{margin:28px 0 4px;font-size:18px}
+
+/* arquivos vinculados às metas */
+.files{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;align-items:center}
+.flink{display:inline-flex;align-items:center;gap:5px;max-width:280px;padding:3px 10px;border-radius:999px;background:var(--blue-t);color:var(--blue);font-size:12px;font-weight:600;text-decoration:none;border:1px solid transparent}
+.flink:hover{border-color:var(--blue);text-decoration:underline}
+.flink span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+td.kpi-name:has(.fedit){min-width:560px}
+table.kpi:has(.fedit){min-width:1440px}
+.fmonth{font-size:12px;color:var(--purple);margin-bottom:6px}
+.hf{display:block;font-size:11px;font-weight:600;margin-top:2px;opacity:.85}
+.fedit{margin-top:8px;padding:8px 10px;border:1px dashed #C9C5CC;border-radius:8px;background:var(--soft)}
+.frow{display:grid;grid-template-columns:150px minmax(0,1fr) 30px 28px;gap:6px;align-items:center;margin-bottom:6px}
+.frow input{padding:5px 7px;font-size:13px}
+.fopen{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:6px;background:#fff;border:1px solid var(--line);color:var(--blue);text-decoration:none;font-size:15px}
+.fopen:hover{border-color:var(--blue);background:var(--blue-t)}
+.fopen.off{opacity:.35;pointer-events:none}
+.fhelp{margin-top:8px;font-size:12.5px}
+.fhelp summary{cursor:pointer;color:var(--purple);font-weight:600;padding:2px 0;list-style:none}
+.fhelp summary::-webkit-details-marker{display:none}
+.fhelp summary::after{content:" ▸";font-size:11px}
+.fhelp[open] summary::after{content:" ▾"}
+.fhelp-tip{background:var(--purple-t);border-left:3px solid var(--purple);border-radius:5px;padding:7px 10px;margin:6px 0 8px;color:var(--ink)}
+.fhelp-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.fhelp-card{background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 11px;color:var(--ink)}
+.fhelp-card h5{margin:0 0 6px;font-size:13px}
+.fhelp-card ol,.fhelp-card ul{margin:3px 0 8px;padding-left:18px}
+.fhelp-card li{margin:2px 0}
+.fhelp-card p{margin:0 0 6px}
+.fhelp-sm{color:var(--muted);font-size:12px}
+kbd{background:var(--soft);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;font-size:11px;font-family:inherit;white-space:nowrap}
+@media (max-width:900px){.fhelp-grid{grid-template-columns:1fr}}
+.fedit-act{display:flex;gap:6px;align-items:center;margin-top:2px}
+.empty{color:var(--muted);font-style:italic}
+
+.notice{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--amber-t);border:1px solid #F0D48A;border-left:4px solid var(--amber);border-radius:8px;padding:12px 16px;margin:6px 0 10px}
+.notice.bad{background:var(--red-t);border-color:#F3B8B2;border-left-color:var(--red)}
+.notice-act{display:flex;gap:8px}
+.notice .btn:not(.primary){border-color:var(--line)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--plum);color:#fff;padding:10px 18px;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:.25s;z-index:50}
+.toast.show{opacity:1;transform:translateX(-50%)}
+
+@media (max-width:900px){
+  .talk-grid{grid-template-columns:1fr 1fr}
+  .fronts{grid-template-columns:1fr}
+}
+@media (max-width:560px){
+  .top-in,.tabs,.wrap,.savebar{padding-left:16px;padding-right:16px}
+  .talk-grid,.fd{grid-template-columns:1fr}
+  .log dl{grid-template-columns:1fr}
+}
+@media print{
+  .top{position:static;box-shadow:none}
+  .controls,.tabs,.savebar,.x,.add,.init-actions,.fedit{display:none!important}
+  .flink{border:1px solid var(--blue)}
+  body{background:#fff}
+  input,select,textarea{border-color:transparent!important;box-shadow:none!important}
+  .tbl-wrap{overflow:visible}
+  table.kpi{min-width:0}
+  .front,.init{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<noscript>Esta aplicação precisa de JavaScript habilitado.</noscript>
+
+<!-- DADOS: este bloco é regravado a cada salvamento. -->
+<script type="application/json" id="store">
+{
+ "schema": 1,
+ "meta": {
+  "name": "Giovani Mesquita",
+  "role": "Business Analyst",
+  "savedAt": "2026-10-29T18:16:38.636Z",
+  "saveId": "ss885wp"
+ },
+ "kpis": [
+  {
+   "id": "k01",
+   "name": "Architecture compliance",
+   "target": ">95%",
+   "note": ""
+  },
+  {
+   "id": "k02",
+   "name": "Assessment TKE ONE",
+   "target": "TBD"
+  },
+  {
+   "id": "k03",
+   "name": "Assets within Lifecycle Policy (EOL + EOS)",
+   "target": ">95%"
+  },
+  {
+   "id": "k04",
+   "name": "Business continuity plan",
+   "target": "100%"
+  },
+  {
+   "id": "k05",
+   "name": "Cloud spend variance",
+   "target": "\u003c5%",
+   "note": ""
+  },
+  {
+   "id": "k07",
+   "name": "Critical EOL/EOS remediation",
+   "target": "≥95%"
+  },
+  {
+   "id": "k08",
+   "name": "Crown Jewel applications under governed change process",
+   "target": "100%"
+  },
+  {
+   "id": "k09",
+   "name": "DR test completion; critical RTO/RPO achievement",
+   "target": "100%"
+  },
+  {
+   "id": "k10",
+   "name": "IT General Controls Effectiveness",
+   "target": ">95%"
+  },
+  {
+   "id": "k11",
+   "name": "IT Portfolio Health",
+   "target": ">90%"
+  },
+  {
+   "id": "k12",
+   "name": "Sharepoint phase 2",
+   "target": "Project"
+  },
+  {
+   "id": "k13",
+   "name": "Support for SDLC Implementation Using AI",
+   "target": "TBD"
+  },
+  {
+   "id": "k14",
+   "name": "TAX Reform",
+   "target": "Project"
+  },
+  {
+   "id": "k15",
+   "name": "Upgrade IRIS",
+   "target": "March 2027"
+  }
+ ],
+ "fronts": [
+  {
+   "id": "f1",
+   "name": "Governança"
+  },
+  {
+   "id": "f2",
+   "name": "Projetos"
+  },
+  {
+   "id": "f3",
+   "name": "Inovação"
+  },
+  {
+   "id": "f4",
+   "name": "Indicadores"
+  },
+  {
+   "id": "f5",
+   "name": "Auditoria"
+  }
+ ],
+ "months": {
+  "2026-10": {
+   "kpi": {
+    "k01": {
+     "status": "tbd",
+     "action": "",
+     "owner": "",
+     "due": "",
+     "value": ""
+    },
+    "k03": {
+     "status": "tbd",
+     "value": ""
+    },
+    "k02": {
+     "value": ""
+    }
+   },
+   "inits": [],
+   "fronts": {},
+   "talk": {}
+  }
+ }
+}
+</script>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- Estado e cópia limpa do documento (base para salvar) ---------- */
+const PRISTINE = document.documentElement.cloneNode(true);
+const $ = (s, r = document) => r.querySelector(s);
+const root = $('#root');
+let data = JSON.parse($('#store').textContent);
+let dirty = false;
+let fileHandle = null;
+
+const KPI_ST = {ok: 'No prazo', warn: 'Atenção', crit: 'Crítico', tbd: 'A definir'};
+const INIT_ST = {nao_iniciado: 'Não iniciado', avaliacao: 'Em avaliação', andamento: 'Em andamento',
+  desenvolvimento: 'Em desenvolvimento', impedimento: 'Com impedimento', concluido: 'Concluído'};
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const TALK = [
+  ['avancos', 'Avanços', 'O que avançou desde o último encontro'],
+  ['bloqueios', 'Bloqueios', 'O que está travando e por quê'],
+  ['decisao', 'Decisão necessária', 'O que precisa ser decidido pelo gestor'],
+  ['compromisso', 'Compromisso para o próximo encontro', 'O que será entregue até o próximo 1:1']
+];
+
+/* ---------- Utilidades ---------- */
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = p => p + Math.random().toString(36).slice(2, 8);
+const monthKeys = () => Object.keys(data.months).sort();
+const monthLabel = k => { const [y, m] = k.split('-'); return MESES[+m - 1] + ' ' + y; };
+const shortLabel = k => { const [y, m] = k.split('-'); return MESES[+m - 1].slice(0, 3) + '/' + y.slice(2); };
+const prevKey = k => { const ks = monthKeys(), i = ks.indexOf(k); return i > 0 ? ks[i - 1] : null; };
+const nextMonthKey = k => { let [y, m] = k.split('-').map(Number); if (++m > 12) { m = 1; y++; } return y + '-' + String(m).padStart(2, '0'); };
+const cur = () => data.months[state.month];
+const getPath = p => p.split('.').reduce((o, k) => o == null ? undefined : o[k], data);
+function setPath(p, v){
+  const ks = p.split('.'); let o = data;
+  for (let i = 0; i < ks.length - 1; i++) { if (o[ks[i]] == null) o[ks[i]] = {}; o = o[ks[i]]; }
+  o[ks[ks.length - 1]] = v;
+}
+const store = {
+  get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
+  set(k, v){ try { localStorage.setItem(k, v); } catch(e){} }
+};
+function fileName(){
+  const n = decodeURIComponent(location.pathname.split('/').pop() || '');
+  return /\.html?$/i.test(n) ? n : 'Acompanhamento_Mensal_Metas.html';
+}
+function fmtDate(iso){
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'});
+}
+function toast(msg){
+  let t = $('#toast');
+  if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t); }
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+/* ---------- Campos ligados aos dados (data-path) ---------- */
+function inp(path, o = {}){
+  const v = getPath(path);
+  return `<input type="${o.type || 'text'}" class="${o.cls || ''}" data-path="${path}" value="${esc(v ?? '')}"
+    placeholder="${esc(o.ph || '')}" ${o.attrs || ''}>`;
+}
+// Ajusta a altura do textarea ao conteúdo (classe "grow").
+const grow = el => { el.style.height = 'auto'; el.style.height = el.scrollHeight + 2 + 'px'; };
+function area(path, o = {}){
+  return `<textarea class="${o.cls || ''}" data-path="${path}" rows="${o.rows || 3}" placeholder="${esc(o.ph || '')}">${esc(getPath(path) ?? '')}</textarea>`;
+}
+function sel(path, opts, val, cls){
+  return `<select class="pill st-${val} ${cls || ''}" data-path="${path}">` +
+    Object.entries(opts).map(([k, l]) => `<option value="${k}"${k === val ? ' selected' : ''}>${esc(l)}</option>`).join('') + '</select>';
+}
+function readVal(el){
+  if (el.type === 'checkbox') return el.checked;
+  if (el.dataset.num !== undefined) return el.value === '' ? 0 : Math.max(0, Math.min(100, Number(el.value)));
+  return el.value;
+}
+
+function normalize(d){
+  d.meta = d.meta || {}; d.kpis = d.kpis || []; d.fronts = d.fronts || []; d.months = d.months || {};
+  // Arquivos são por mês (months.<mês>.kpi.<meta>.files). Versões anteriores guardavam na própria meta:
+  // esses arquivos são movidos para o mês corrente (ou o mais recente até hoje).
+  const mks = Object.keys(d.months).sort(), now = new Date(), nowK = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  const target = mks.filter(k => k <= nowK).slice(-1)[0] || mks.slice(-1)[0];
+  d.kpis.forEach(k => {
+    if (!('files' in k)) return;
+    const fs = (Array.isArray(k.files) ? k.files : []).filter(f => f && ((f.url || '').trim() || (f.name || '').trim()));
+    if (fs.length && target) { const mk = d.months[target].kpi, e = mk[k.id] = mk[k.id] || {}; e.files = (e.files || []).concat(fs); }
+    delete k.files;
+  });
+  Object.values(d.months).forEach(m => { m.kpi = m.kpi || {}; m.inits = m.inits || []; m.fronts = m.fronts || {}; m.talk = m.talk || {}; });
+  return d;
+}
+normalize(data);
+
+/* ---------- Estado de interface ---------- */
+const thisMonth = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); };
+// Mês aberto ao iniciar: o mês corrente, se existir; senão o último anterior a ele; senão o primeiro cadastrado.
+function initialMonth(){
+  const ks = monthKeys(), now = thisMonth();
+  return ks.includes(now) ? now : ks.filter(k => k < now).slice(-1)[0] || ks[0];
+}
+const state = {
+  tab: location.hash.slice(1) || store.get('acomp-tab') || 'metas',
+  month: initialMonth(),
+  filesOpen: new Set()   // metas com a edição de arquivos aberta (não é salvo)
+};
+if (!state.month) { state.month = thisMonth(); data.months[state.month] = {kpi: {}, inits: [], fronts: {}, talk: {}}; }
+
+function markDirty(){ if (!dirty) { dirty = true; updateSaveUI(); } }
+function updateSaveUI(){
+  const b = $('#save-btn'), bar = $('#savebar');
+  if (b) b.classList.toggle('dirty', dirty);
+  document.title = (dirty ? '• ' : '') + 'Acompanhamento Mensal de Metas';
+  if (bar) {
+    bar.classList.toggle('dirty', dirty);
+    bar.textContent = dirty
+      ? '● Alterações não salvas — Ctrl+S para salvar'
+      : (data.meta.savedAt ? 'Último salvamento: ' + fmtDate(data.meta.savedAt) : 'Ainda não salvo') +
+        (WHERE === 'preview' ? ' · somente leitura (pré-visualização)'
+          : fileHandle ? ' · gravando em: ' + fileHandle.name : ' · o próximo Salvar pedirá para selecionar este arquivo');
+  }
+}
+
+/* ---------- Regras ---------- */
+const kpiEntry = (m, id) => (m && m.kpi && m.kpi[id]) || {};
+const kpiIssue = e => e.status === 'crit' && !((e.action || '').trim() && (e.owner || '').trim() && e.due);
+
+/* ---------- Renderização ---------- */
+function render(){
+  const y = window.scrollY;
+  const view = state.tab === 'oneone' ? viewOneOne() : state.tab === 'hist' ? viewHist() : viewMetas();
+  const n = state.notice;
+  const where = WHERE === 'preview'
+    ? `<div class="notice bad"><div><b>Esta tela não salva.</b> O arquivo está aberto na pré-visualização do SharePoint/Teams, que bloqueia a gravação: o que for alterado aqui será perdido.
+        Para editar, abra o arquivo pela pasta sincronizada <b>OneDrive - TK Elevator</b> no computador (Explorador de Arquivos), com Edge ou Chrome. O OneDrive envia as alterações para o SharePoint.</div></div>`
+    : WHERE === 'web'
+    ? `<div class="notice"><div><b>Aberto a partir da web.</b> O Salvar grava uma cópia neste computador, não no SharePoint. Para atualizar o SharePoint, abra o arquivo pela pasta sincronizada do OneDrive.</div></div>`
+    : '';
+  const notice = where + (n ? `<div class="notice"><div><b>Atenção:</b> o último salvamento feito a partir desta página foi gravado em
+      <b>${esc(n.name || 'outro arquivo')}</b>${n.at ? ' (' + fmtDate(n.at) + ')' : ''}, e não neste arquivo aberto. Os dados mais recentes podem estar lá.</div>
+      <div class="notice-act"><button class="btn primary" data-act="load-other">Carregar dados desse arquivo</button>
+      <button class="btn" data-act="dismiss-notice">Ignorar</button></div></div>` : '');
+  root.innerHTML = header() + `<div class="savebar" id="savebar"></div><main class="wrap">${notice}${view}</main>`;
+  root.querySelectorAll('textarea.grow').forEach(grow);
+  window.scrollTo(0, y);
+  updateSaveUI();
+}
+
+function header(){
+  const tabs = [['metas', 'Metas anuais'], ['oneone', '1:1 com o gestor'], ['hist', 'Histórico']];
+  const sz = v => Math.max(6, Math.ceil((v || '').length * 0.85));
+  return `<header class="top"><div class="top-in">
+    <div class="brand">
+      <div class="eyebrow">Acompanhamento mensal</div>
+      <h1>Metas anuais e 1:1 com o gestor</h1>
+      <div class="who">${inp('meta.name', {cls: 'plain', attrs: `size="${sz(data.meta.name)}"`})}<span>|</span>${inp('meta.role', {cls: 'plain', attrs: `size="${sz(data.meta.role)}"`})}</div>
+    </div>
+    <div class="controls">
+      <label class="msel"><span>Mês</span><select id="month-sel">${monthKeys().slice().reverse().map(k => `<option value="${k}"${k === state.month ? ' selected' : ''}>${monthLabel(k)}</option>`).join('')}</select></label>
+      <button class="btn ghost" data-act="new-month">+ Novo mês</button>
+      <button class="btn primary" id="save-btn" data-act="save" title="Ctrl+S">Salvar</button>
+      <details class="menu"><summary class="btn ghost" aria-label="Mais opções">⋯</summary><div class="menu-pop">
+        <button data-act="save-as">Salvar como…</button>
+        <button data-act="export">Exportar dados (JSON)</button>
+        <button data-act="import">Importar dados (JSON)</button>
+        <button data-act="print">Imprimir / PDF</button>
+        <hr><button data-act="del-month" class="danger">Excluir ${esc(monthLabel(state.month))}</button>
+      </div></details>
+    </div></div>
+    <nav class="tabs">${tabs.map(([k, l]) => `<button data-act="tab" data-tab="${k}" class="${state.tab === k ? 'on' : ''}">${l}</button>`).join('')}</nav>
+  </header>`;
+}
+
+function summaryHTML(){
+  const m = cur(), c = {ok: 0, warn: 0, crit: 0, tbd: 0}; let issues = 0;
+  data.kpis.forEach(k => { const e = kpiEntry(m, k.id); c[e.status || 'tbd']++; if (kpiIssue(e)) issues++; });
+  return `<div class="tile total"><span>KPIs</span><b>${data.kpis.length}</b></div>
+    <div class="tile ok"><span>No prazo</span><b>${c.ok}</b></div>
+    <div class="tile warn"><span>Atenção</span><b>${c.warn}</b></div>
+    <div class="tile crit"><span>Crítico</span><b>${c.crit}</b></div>
+    <div class="tile"><span>A definir</span><b>${c.tbd}</b></div>
+    ${issues ? `<div class="tile alert"><span>Críticos sem plano</span><b>${issues}</b></div>` : ''}`;
+}
+
+/* ---------- Arquivos vinculados às metas ---------- */
+// Converte o endereço digitado/colado em um link que o navegador consegue abrir.
+function toHref(u){
+  u = String(u || '').trim().replace(/^["']|["']$/g, '');
+  if (!u) return '';
+  if (/^(https?|file|mailto|ftp):/i.test(u)) return u;
+  if (/^[A-Za-z]:[\\/]/.test(u)) return 'file:///' + encodeURI(u.replace(/\\/g, '/')).replace(/#/g, '%23');          // C:\pasta\arquivo.xlsx
+  if (/^\\\\[^\\]/.test(u)) return 'file:' + encodeURI(u.replace(/\\/g, '/')).replace(/#/g, '%23');               // \\servidor\pasta\arquivo.docx
+  if (/^\//.test(u)) return 'file://' + encodeURI(u).replace(/#/g, '%23');                                       // /Users/... (Mac/Linux)
+  if (/^(www\.|[\w-]+\.(sharepoint|com|net|org|br|io)\b)/i.test(u)) return 'https://' + u;
+  return u;
+}
+// Nome amigável a partir do endereço (último trecho do caminho, sem parâmetros).
+function baseName(u){
+  u = String(u || '').trim();
+  try { if (/^https?:/i.test(u)) { const x = new URL(u); const f = x.searchParams.get('file'); if (f) return f; u = x.pathname; } } catch(e) {}
+  const parts = u.split(/[\\/]/).filter(Boolean);
+  let n = parts.length ? parts[parts.length - 1] : u;
+  try { n = decodeURIComponent(n); } catch(e) {}
+  return n.slice(0, 80);
+}
+function fileIcon(u){
+  const ext = (baseName(u).match(/\.([a-z0-9]+)$/i) || [])[1];
+  const m = {pdf: '📕', xls: '📊', xlsx: '📊', xlsm: '📊', csv: '📊', doc: '📝', docx: '📝', ppt: '📽️', pptx: '📽️', txt: '📄', png: '🖼️', jpg: '🖼️', jpeg: '🖼️', zip: '🗜️', msg: '✉️', eml: '✉️', html: '🌐', htm: '🌐'};
+  if (ext && m[ext.toLowerCase()]) return m[ext.toLowerCase()];
+  const sp = String(u).match(/sharepoint\.com\/:([xwpbfo]):\//i);   // links de compartilhamento do SharePoint
+  if (sp) return {x: '📊', w: '📝', p: '📽️', b: '📕', f: '📁', o: '📓'}[sp[1].toLowerCase()];
+  if (/^(https?:|www\.)/i.test(String(u).trim())) return '🔗';
+  return ext ? '📄' : '📁';
+}
+// Lista de arquivos de uma meta num mês (create = cria a estrutura se não existir).
+function kpiFiles(mk, id, create){
+  const m = data.months[mk]; if (!m) return [];
+  if (!create) return ((m.kpi[id] || {}).files) || [];
+  const e = m.kpi[id] = m.kpi[id] || {};
+  return e.files = e.files || [];
+}
+const validFiles = fs => (fs || []).filter(f => (f.url || '').trim());
+function fileChips(files){
+  const fs = validFiles(files);
+  return fs.map(f => { const href = toHref(f.url), name = (f.name || '').trim() || baseName(f.url);
+    return `<a class="flink" href="${esc(href)}" target="_blank" rel="noopener" title="${esc(f.url)}">${fileIcon(f.url)}<span>${esc(name)}</span></a>`; }).join('');
+}
+// Ajuda: como copiar o endereço de um arquivo em cada plataforma.
+function fileHelpHTML(){
+  const K = t => t.split('+').map(x => `<kbd>${x}</kbd>`).join('+');
+  return `<details class="fhelp"${state.fhelpOpen ? ' open' : ''}><summary>❓ Como copiar o endereço do arquivo</summary>
+  <div class="fhelp-tip"><b>Qual usar?</b> O <b>link do SharePoint/OneDrive</b> (https://…) abre em qualquer computador ou celular de quem tem acesso. O <b>caminho local</b> (C:\\…, \\\\servidor\\…) só abre neste computador e com este HTML aberto direto do disco — não funciona na pré-visualização do SharePoint/Teams nem no celular.</div>
+  <div class="fhelp-grid">
+    <div class="fhelp-card"><h5>🪟 Windows</h5>
+      <b>Caminho do arquivo</b>
+      <ol><li>No <b>Explorador de Arquivos</b>, clique uma vez no arquivo.</li>
+        <li>Pressione ${K('Ctrl+Shift+C')} — ou clique com o botão direito → <i>Copiar como caminho</i> (no Windows 10, segure ${K('Shift')} ao clicar com o botão direito).</li>
+        <li>Cole no campo <i>Endereço</i> com ${K('Ctrl+V')}. As aspas são removidas automaticamente.</li></ol>
+      <b>Link (arquivo na pasta do OneDrive/SharePoint)</b>
+      <ol><li>Botão direito no arquivo → <i>Compartilhar</i> (ícone da nuvem do OneDrive).</li>
+        <li>Clique em <i>Copiar link</i> e cole no campo <i>Endereço</i>.</li></ol></div>
+    <div class="fhelp-card"><h5>🌐 SharePoint / OneDrive na web</h5>
+      <ol><li>Abra a biblioteca de documentos no navegador.</li>
+        <li>Passe o mouse sobre o arquivo e clique em <b>⋯</b> (Mais ações) → <i>Copiar link</i>. Também funciona: selecionar o arquivo → <i>Compartilhar</i> → <i>Copiar link</i>.</li>
+        <li>Confira em <i>Configurações do link</i> quem pode abrir (ex.: pessoas da organização).</li>
+        <li>Cole no campo <i>Endereço</i>.</li></ol>
+      <b>Outros atalhos</b>
+      <ul><li><b>Teams:</b> aba <i>Arquivos</i> → <b>⋯</b> no arquivo → <i>Copiar link</i>.</li>
+        <li><b>Word/Excel/PowerPoint:</b> com o arquivo aberto, <i>Arquivo</i> → <i>Informações</i> → <i>Copiar caminho</i>, ou o botão <i>Compartilhar</i> → <i>Copiar link</i>.</li></ul></div>
+    <div class="fhelp-card"><h5>🍎 Mac</h5>
+      <b>Caminho do arquivo</b>
+      <ol><li>No <b>Finder</b>, selecione o arquivo.</li>
+        <li>Pressione ${K('⌥ Option+⌘ Cmd+C')} — ou clique com o botão direito, segure ${K('⌥ Option')} e escolha <i>Copiar "…" como Nome do Caminho</i>.</li>
+        <li>Cole no campo <i>Endereço</i> com ${K('⌘ Cmd+V')}.</li></ol>
+      <b>Link (pasta do OneDrive)</b>
+      <ol><li>Botão direito no arquivo → <i>Compartilhar</i> (OneDrive) → <i>Copiar link</i>.</li></ol></div>
+    <div class="fhelp-card"><h5>🤖 Android</h5>
+      <p>No celular use sempre o <b>link</b> — caminhos do telefone não abrem em outros aparelhos.</p>
+      <ol><li>Abra o app <b>OneDrive</b>, <b>SharePoint</b> ou <b>Teams</b> e localize o arquivo.</li>
+        <li>Toque em <b>⋮</b> / <b>⋯</b> ao lado do arquivo → <i>Compartilhar</i> → <i>Copiar link</i>.</li>
+        <li>Volte a este app, toque no campo <i>Endereço</i>, mantenha pressionado e toque em <i>Colar</i>.</li></ol>
+      <p class="fhelp-sm">No Google Drive: <b>⋮</b> → <i>Compartilhar</i> → <i>Copiar link</i>.</p></div>
+  </div></details>`;
+}
+function filesHTML(k){
+  const mk = state.month, files = kpiFiles(mk, k.id), open = state.filesOpen.has(k.id);
+  if (!open) return `<div class="files">${fileChips(files)}<button class="add sm" data-act="files-edit" data-k="${k.id}" title="Vincular arquivos a esta meta em ${esc(monthLabel(mk))}">📎 Arquivo(s)</button></div>`;
+  const base = `months.${mk}.kpi.${k.id}.files`, pk = prevKey(mk), prevN = pk ? validFiles(kpiFiles(pk, k.id)).length : 0;
+  const rows = files.map((f, j) => { const href = toHref(f.url);
+    return `<div class="frow">${inp(`${base}.${j}.name`, {ph: 'Nome (opcional)'})}${inp(`${base}.${j}.url`, {ph: 'Endereço: https://…, C:\\…, \\\\servidor\\…', attrs: 'data-file-url spellcheck="false"'})}
+      <a class="fopen${href ? '' : ' off'}" href="${esc(href)}" target="_blank" rel="noopener" title="Abrir">↗</a>
+      <button class="x" data-act="del-file" data-k="${k.id}" data-j="${j}" title="Remover arquivo">×</button></div>`; }).join('');
+  return `<div class="fedit"><div class="fmonth">📅 Arquivos de <b>${esc(monthLabel(mk))}</b></div>${rows || '<div class="empty" style="font-size:12px;margin-bottom:6px">Nenhum arquivo vinculado neste mês.</div>'}
+    <div class="fedit-act"><button class="add sm" data-act="add-file" data-k="${k.id}">+ Arquivo</button>${prevN ? `<button class="add sm" data-act="copy-prev-files" data-k="${k.id}" title="Copia os arquivos de ${esc(monthLabel(pk))} para este mês">⧉ Copiar de ${esc(shortLabel(pk))} (${prevN})</button>` : ''}<button class="add sm" data-act="files-edit" data-k="${k.id}">✓ Concluir</button></div>
+    ${fileHelpHTML()}</div>`;
+}
+
+function viewMetas(){
+  const mk = state.month, m = cur(), pk = prevKey(mk), pm = pk ? data.months[pk] : null;
+  const rows = data.kpis.map((k, i) => {
+    const base = `months.${mk}.kpi.${k.id}`, e = kpiEntry(m, k.id), st = e.status || 'tbd';
+    const p = kpiEntry(pm, k.id);
+    const prev = p.value ? `${esc(p.value)}<span class="dot st-${p.status || 'tbd'}" title="${KPI_ST[p.status || 'tbd']}"></span>` : '—';
+    return `<tr data-kpi="${k.id}" class="${kpiIssue(e) ? 'issue' : ''}">
+      <td class="num">${String(i + 1).padStart(2, '0')}</td>
+      <td class="kpi-name">${inp(`kpis.${i}.name`, {cls: 'plain strong'})}${area(`kpis.${i}.note`, {cls: 'plain note grow', ph: 'Observação', rows: 1})}${filesHTML(k)}</td>
+      <td class="prev">${prev}</td>
+      <td class="c-val">${inp(base + '.value', {ph: '—'})}</td>
+      <td class="c-tgt">${inp(`kpis.${i}.target`, {cls: 'center'})}</td>
+      <td class="c-st">${sel(base + '.status', KPI_ST, st)}</td>
+      <td class="plan">${area(base + '.action', {rows: 1, ph: 'Ação'})}
+        <div class="plan-row">${inp(base + '.owner', {ph: 'Responsável'})}${inp(base + '.due', {type: 'date', attrs: 'title="Prazo"'})}</div>
+        <div class="req">Status crítico: preencha ação, responsável e prazo.</div></td>
+      <td class="c-del"><button class="x" data-act="del-kpi" data-i="${i}" title="Remover meta">×</button></td>
+    </tr>`;
+  }).join('');
+  return `<div class="sec-head"><div class="eyebrow">Metas anuais · ${monthLabel(mk)}</div>
+      <h2>Visão única para acompanhar as ${data.kpis.length} metas do ano</h2>
+      <p>Compare a medição do mês anterior${pk ? ` (${monthLabel(pk)})` : ''}, do mês atual e a meta final de cada KPI. Status CRÍTICO exige plano de ação.</p></div>
+    <div class="tiles" id="kpi-summary">${summaryHTML()}</div>
+    <div class="rule"><b>REGRA</b><span>Toda meta com status <b>CRÍTICO</b> deve ter <b>PLANO DE AÇÃO</b> preenchido (ação, responsável e prazo).</span></div>
+    <div class="tbl-wrap"><table class="kpi"><thead><tr>
+      <th>#</th><th>Meta / KPI</th><th>Mês anterior${pk ? `<small>${shortLabel(pk)}</small>` : ''}</th><th>Mês atual<small>${shortLabel(mk)}</small></th>
+      <th>Meta final</th><th>Status</th><th>Plano de ação<small>ação · responsável · prazo</small></th><th></th>
+    </tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="legend"><b>LEGENDA</b>${Object.entries(KPI_ST).map(([k, l]) => `<span class="st-${k}"><span class="dot"></span>${l}</span>`).join('')}</div>
+    <button class="add" data-act="add-kpi">+ Adicionar meta</button>`;
+}
+
+function initCard(it, idx){
+  const base = `months.${state.month}.inits.${idx}`;
+  const metrics = (it.metrics || []).map((mt, j) => `<div class="metric">
+      ${inp(`${base}.metrics.${j}.label`, {cls: 'plain', ph: 'Indicador'})}
+      ${inp(`${base}.metrics.${j}.pct`, {type: 'number', attrs: 'min="0" max="100" data-num data-live="bar" title="%"'})}
+      <div class="bar"><i style="width:${Number(mt.pct) || 0}%"></i></div>
+      <button class="x" data-act="del-metric" data-i="${idx}" data-j="${j}" title="Remover">×</button></div>`).join('');
+  const items = (it.items || []).map((x, j) => `<div class="item${x.done ? ' done' : ''}">
+      <input type="checkbox" data-path="${base}.items.${j}.done"${x.done ? ' checked' : ''}>
+      ${inp(`${base}.items.${j}.text`, {cls: 'plain', ph: 'Item'})}
+      <button class="x" data-act="del-item" data-i="${idx}" data-j="${j}" title="Remover">×</button></div>`).join('');
+  return `<div class="init st-${it.status}">
+    <div class="init-head">${inp(base + '.name', {cls: 'plain strong', ph: 'Iniciativa'})}${sel(base + '.status', INIT_ST, it.status)}
+      <button class="x" data-act="del-init" data-i="${idx}" title="Remover iniciativa">×</button></div>
+    ${metrics}${items}
+    <div class="init-actions"><button class="add sm" data-act="add-metric" data-i="${idx}">+ Progresso (%)</button>
+      <button class="add sm" data-act="add-item" data-i="${idx}">+ Item</button></div>
+  </div>`;
+}
+
+function viewOneOne(){
+  const mk = state.month, m = cur(), pk = prevKey(mk);
+  const prevCommit = pk && ((data.months[pk].talk || {}).compromisso || '').trim();
+  const fronts = data.fronts.map((f, fi) => {
+    const inits = m.inits.map((it, idx) => ({it, idx})).filter(o => o.it.front === f.id);
+    const fb = `months.${mk}.fronts.${f.id}`;
+    return `<section class="card front">
+      <div class="front-head"><span class="n">${String(fi + 1).padStart(2, '0')}</span>${inp(`fronts.${fi}.name`, {cls: 'plain'})}</div>
+      <div class="front-body">${inits.map(o => initCard(o.it, o.idx)).join('') || '<div class="empty">Nenhuma iniciativa nesta frente.</div>'}
+        <div><button class="add sm" data-act="add-init" data-f="${f.id}">+ Iniciativa</button></div></div>
+      <div class="fd"><div><label>Foco do mês</label>${area(fb + '.focus', {ph: 'A preencher'})}</div>
+        <div><label>Decisão / alinhamento</label>${area(fb + '.decision', {ph: 'A preencher'})}</div></div>
+    </section>`;
+  }).join('');
+  return `<div class="sec-head"><div class="eyebrow">1:1 com o gestor · ${monthLabel(mk)}</div>
+      <h2>Frentes prioritárias para acompanhamento no 1:1</h2>
+      <p>Visão consolidada das iniciativas que exigem acompanhamento, direcionamento ou decisão.</p></div>
+    ${prevCommit ? `<div class="callout"><b>Compromisso do encontro anterior (${monthLabel(pk)}):</b> ${esc(prevCommit)}</div>` : ''}
+    <div class="fronts">${fronts}</div>
+    <section class="card talk"><h3>Condução sugerida no 1:1</h3>
+      <p>avanços → bloqueios → decisão necessária → compromisso para o próximo encontro</p>
+      <div class="talk-grid">${TALK.map(([k, l, ph], i) => `<div><label><span class="s">${i + 1}</span>${l}</label>${area(`months.${mk}.talk.${k}`, {rows: 5, ph})}</div>`).join('')}</div>
+    </section>`;
+}
+
+// Primeiro número do texto ("94%", "4,2%" → 94, 4.2); textos como "Em execução" ficam de fora do gráfico.
+const toNum = s => { const m = String(s || '').match(/-?\d+(?:[.,]\d+)?/); return m ? parseFloat(m[0].replace(',', '.')) : null; };
+// A meta só vira linha de referência quando é percentual ou comparação (">95%", "<5%"), não datas como "March 2027".
+const targetNum = t => /%|^\s*[<>≥≤]/.test(t || '') ? toNum(t) : null;
+
+function sparkHTML(k, ks){
+  const pts = ks.map(mk => { const e = kpiEntry(data.months[mk], k.id); return {mk, v: toNum(e.value), raw: e.value, st: e.status || 'tbd'}; });
+  const vals = pts.filter(p => p.v !== null).map(p => p.v);
+  if (!vals.length) return '<span class="none">Sem valores numéricos</span>';
+  const tg = targetNum(k.target), all = tg === null ? vals : vals.concat(tg);
+  let lo = Math.min(...all), hi = Math.max(...all);
+  if (hi === lo) { lo -= 1; hi += 1; }
+  const pad = (hi - lo) * 0.12; lo -= pad; hi += pad;
+  const W = 240, H = 64, L = 8, R = tg === null ? 8 : 40, T = 6, B = 6;
+  const x = i => ks.length === 1 ? (L + W - R) / 2 : L + i * (W - L - R) / (ks.length - 1);
+  const y = v => T + (hi - v) * (H - T - B) / (hi - lo);
+  // Linha interrompida nos meses sem valor numérico.
+  let d = '', open = false;
+  pts.forEach((p, i) => { if (p.v === null) { open = false; return; } d += (open ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(p.v).toFixed(1); open = true; });
+  const tgLine = tg === null ? '' : `<line class="tg" x1="${L}" x2="${W - R + 4}" y1="${y(tg).toFixed(1)}" y2="${y(tg).toFixed(1)}"/>
+    <text class="tgl" x="${W - R + 7}" y="${(y(tg) + 3).toFixed(1)}">meta ${esc(k.target.trim())}</text>`;
+  const dots = pts.map((p, i) => p.v === null ? '' : `<g class="st-${p.st}"><circle class="hit" cx="${x(i).toFixed(1)}" cy="${y(p.v).toFixed(1)}" r="10"><title>${monthLabel(p.mk)}: ${esc(p.raw)} · ${KPI_ST[p.st]}</title></circle>
+    <circle class="pt" cx="${x(i).toFixed(1)}" cy="${y(p.v).toFixed(1)}" r="4.5" pointer-events="none"/></g>`).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Evolução de ${esc(k.name)}">${tgLine}<path class="ln" d="${d}"/>${dots}</svg>`;
+}
+
+function viewHist(){
+  const ks = monthKeys();
+  const rows = data.kpis.map((k, i) => `<tr><td class="num">${String(i + 1).padStart(2, '0')}</td><td class="kpi-name strong">${esc(k.name)}</td><td>${esc(k.target)}</td>
+    <td class="spark">${sparkHTML(k, ks)}</td>
+    ${ks.map(mk => { const e = kpiEntry(data.months[mk], k.id), st = e.status || 'tbd';
+      const fs = validFiles(e.files), fl = fs.length ? `<span class="hf" title="${esc(fs.map(f => (f.name || '').trim() || baseName(f.url)).join('\n'))}">📎 ${fs.length}</span>` : '';
+      return `<td class="h st-${st}" title="${KPI_ST[st]}">${esc(e.value) || '—'}${fl}</td>`; }).join('')}</tr>`).join('');
+  const log = ks.slice().reverse().map(mk => {
+    const m = data.months[mk], t = m.talk || {}, lines = [];
+    TALK.forEach(([k, l]) => { if ((t[k] || '').trim()) lines.push([l, t[k]]); });
+    data.fronts.forEach(f => { const d = ((m.fronts || {})[f.id] || {}).decision; if ((d || '').trim()) lines.push(['Decisão · ' + f.name, d]); });
+    data.kpis.forEach(k => { const fs = validFiles(kpiEntry(m, k.id).files); if (fs.length) lines.push(['Arquivos · ' + k.name, fs.map(f => (f.name || '').trim() || baseName(f.url)).join('\n')]); });
+    const crit = data.kpis.filter(k => kpiEntry(m, k.id).status === 'crit').map(k => k.name);
+    if (crit.length) lines.push(['KPIs críticos', crit.join(', ')]);
+    return `<div class="card"><h4>${monthLabel(mk)}</h4>${lines.length
+      ? `<dl>${lines.map(([a, b]) => `<dt>${esc(a)}</dt><dd>${esc(b)}</dd>`).join('')}</dl>`
+      : '<div class="empty">Sem registros.</div>'}</div>`;
+  }).join('');
+  return `<div class="sec-head"><div class="eyebrow">Histórico</div><h2>Evolução das metas mês a mês</h2>
+      <p>Valor medido em cada mês, colorido pelo status registrado. O gráfico mostra os valores numéricos; a linha tracejada é a meta final.</p></div>
+    <div class="tbl-wrap"><table class="hist"><thead><tr><th>#</th><th>Meta / KPI</th><th>Meta final</th><th>Evolução</th>
+      ${ks.map(mk => `<th class="m">${shortLabel(mk)}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="legend"><b>LEGENDA</b>${Object.entries(KPI_ST).map(([k, l]) => `<span class="st-${k}"><span class="dot"></span>${l}</span>`).join('')}</div>
+    <h3 class="sub">Registro dos 1:1</h3><div class="log">${log}</div>`;
+}
+
+function refreshChecks(){
+  if (state.tab !== 'metas') return;
+  const m = cur(), s = $('#kpi-summary');
+  if (s) s.innerHTML = summaryHTML();
+  document.querySelectorAll('tr[data-kpi]').forEach(tr => tr.classList.toggle('issue', kpiIssue(kpiEntry(m, tr.dataset.kpi))));
+}
+
+/* ---------- Eventos ---------- */
+document.addEventListener('input', e => {
+  const el = e.target;
+  if (!el.dataset || !el.dataset.path) return;
+  const v = readVal(el);
+  setPath(el.dataset.path, v);
+  markDirty();
+  if (el.classList.contains('grow')) grow(el);
+  if (el.dataset.live === 'bar') { const b = el.closest('.metric').querySelector('.bar i'); if (b) b.style.width = v + '%'; }
+  if (el.dataset.fileUrl !== undefined) { const a = el.closest('.frow').querySelector('.fopen'), h = toHref(v); a.href = h; a.classList.toggle('off', !h); }
+});
+document.addEventListener('change', e => {
+  const el = e.target;
+  if (el.id === 'month-sel') { state.month = el.value; state.filesOpen.clear(); render(); return; }
+  if (!el.dataset || !el.dataset.path) return;
+  setPath(el.dataset.path, readVal(el));
+  markDirty();
+  if (el.dataset.fileUrl !== undefined) {   // preenche o nome a partir do endereço, se estiver vazio
+    const np = el.dataset.path.replace(/\.url$/, '.name'), ni = el.closest('.frow').querySelector(`[data-path="${np}"]`);
+    if (!(getPath(np) || '').trim() && el.value.trim()) { setPath(np, baseName(el.value)); if (ni) ni.value = getPath(np); }
+    return;
+  }
+  if (el.tagName === 'SELECT' || el.type === 'checkbox') render(); else refreshChecks();
+});
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]');
+  if (!b) return;
+  const d = b.dataset, m = cur(), menu = b.closest('details');
+  if (menu) menu.removeAttribute('open');
+  const change = fn => { fn(); markDirty(); render(); };
+  switch (d.act) {
+    case 'tab': state.tab = d.tab; store.set('acomp-tab', d.tab); render(); window.scrollTo(0, 0); break;
+    case 'save': save(false); break;
+    case 'save-as': save(true); break;
+    case 'new-month': newMonth(); break;
+    case 'del-month': delMonth(); break;
+    case 'export': exportJSON(); break;
+    case 'import': importJSON(); break;
+    case 'print': window.print(); break;
+    case 'load-other': loadOther(); break;
+    case 'dismiss-notice': state.notice = null; handleDel(); render(); break;
+    case 'add-kpi': change(() => data.kpis.push({id: uid('k'), name: 'Nova meta', target: ''})); break;
+    case 'del-kpi': if (confirm(`Remover a meta "${data.kpis[+d.i].name}" de todos os meses?`)) change(() => data.kpis.splice(+d.i, 1)); break;
+    case 'add-init': change(() => m.inits.push({id: uid('i'), front: d.f, name: 'Nova iniciativa', status: 'nao_iniciado', metrics: [], items: []})); break;
+    case 'del-init': if (confirm(`Remover a iniciativa "${m.inits[+d.i].name}" deste mês?`)) change(() => m.inits.splice(+d.i, 1)); break;
+    case 'add-metric': change(() => (m.inits[+d.i].metrics = m.inits[+d.i].metrics || []).push({label: 'Progresso', pct: 0})); break;
+    case 'del-metric': change(() => m.inits[+d.i].metrics.splice(+d.j, 1)); break;
+    case 'add-item': change(() => (m.inits[+d.i].items = m.inits[+d.i].items || []).push({text: '', done: false})); break;
+    case 'del-item': change(() => m.inits[+d.i].items.splice(+d.j, 1)); break;
+    case 'files-edit': {
+      const id = d.k, mk = state.month, focusLast = () => { const ins = document.querySelectorAll(`tr[data-kpi="${id}"] [data-file-url]`); if (ins.length) ins[ins.length - 1].focus(); };
+      if (state.filesOpen.has(id)) {   // ao concluir, descarta linhas vazias
+        state.filesOpen.delete(id);
+        const e = (data.months[mk].kpi || {})[id];
+        if (e && e.files) { const before = e.files.length; e.files = e.files.filter(f => (f.url || '').trim() || (f.name || '').trim()); if (!e.files.length) delete e.files; if ((e.files || []).length !== before && before) markDirty(); }
+        render();
+      } else {
+        state.filesOpen.add(id);
+        const fs = kpiFiles(mk, id, true); if (!fs.length) fs.push({name: '', url: ''});
+        render(); focusLast();
+      }
+      break;
+    }
+    case 'add-file': {
+      change(() => kpiFiles(state.month, d.k, true).push({name: '', url: ''}));
+      const ins = document.querySelectorAll(`tr[data-kpi="${d.k}"] [data-file-url]`); if (ins.length) ins[ins.length - 1].focus();
+      break;
+    }
+    case 'del-file': change(() => kpiFiles(state.month, d.k, true).splice(+d.j, 1)); break;
+    case 'copy-prev-files': {
+      const pk = prevKey(state.month), src = validFiles(kpiFiles(pk, d.k));
+      const dst = kpiFiles(state.month, d.k, true);
+      for (let x = dst.length - 1; x >= 0; x--) if (!(dst[x].url || '').trim() && !(dst[x].name || '').trim()) dst.splice(x, 1);
+      let n = 0; src.forEach(f => { if (!dst.some(g => (g.url || '').trim() === f.url.trim())) { dst.push({name: f.name || '', url: f.url}); n++; } });
+      markDirty(); render();
+      toast(n ? `${n} arquivo(s) copiado(s) de ${monthLabel(pk)}.` : 'Os arquivos do mês anterior já estão neste mês.');
+      break;
+    }
+  }
+});
+document.addEventListener('toggle', e => { if (e.target.classList && e.target.classList.contains('fhelp')) state.fhelpOpen = e.target.open; }, true);
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); save(false); }
+});
+window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+
+/* ---------- Meses ---------- */
+function newMonth(){
+  const last = monthKeys().slice(-1)[0];
+  const k = (prompt('Novo mês (AAAA-MM):', nextMonthKey(last)) || '').trim();
+  if (!k) return;
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(k)) { alert('Use o formato AAAA-MM, por exemplo 2026-11.'); return; }
+  if (data.months[k]) { state.month = k; render(); toast(monthLabel(k) + ' já existe — selecionado.'); return; }
+  // Base: o mês existente mais recente anterior ao novo (ou o último, se for anterior a todos)
+  const base = data.months[monthKeys().filter(x => x < k).slice(-1)[0] || last];
+  const kpi = {};
+  Object.entries(base.kpi || {}).forEach(([id, e]) => { kpi[id] = {status: e.status, action: e.action, owner: e.owner, due: e.due}; });
+  data.months[k] = {kpi, inits: JSON.parse(JSON.stringify(base.inits || [])), fronts: {}, talk: {}};
+  state.month = k; markDirty(); render();
+  toast(monthLabel(k) + ' criado com base no mês anterior.');
+}
+function delMonth(){
+  if (monthKeys().length < 2) { alert('É preciso manter ao menos um mês.'); return; }
+  if (!confirm(`Excluir todos os dados de ${monthLabel(state.month)}?`)) return;
+  delete data.months[state.month];
+  state.month = monthKeys().slice(-1)[0];
+  markDirty(); render();
+}
+
+/* ---------- Salvamento no próprio HTML ---------- */
+function buildHTML(){
+  const doc = PRISTINE.cloneNode(true);
+  doc.querySelector('#store').textContent = '\n' + JSON.stringify(data, null, 1).replace(/</g, '\\u003c') + '\n';
+  return '<!DOCTYPE html>\n' + doc.outerHTML;
+}
+// O vínculo com o arquivo só é reaproveitado se a última gravação nele (saveId) for esta mesma página.
+const HKEY = 'v2|' + location.href.split('#')[0];
+// Onde a página roda: 'preview' = pré-visualização do SharePoint/Teams (iframe isolado, nada pode ser gravado);
+// 'web' = endereço http(s), grava só no computador; 'local' = arquivo no disco.
+const WHERE = (() => {
+  let framed = true;
+  try { framed = window.self !== window.top; } catch(e) {}
+  if (framed || (window.origin === 'null' && location.protocol !== 'file:')) return 'preview';
+  return location.protocol === 'file:' ? 'local' : 'web';
+})();
+function localPath(){
+  let p = decodeURIComponent(location.pathname);
+  if (/^\/[A-Za-z]:/.test(p)) p = p.slice(1).replace(/\//g, '\\');
+  return p;
+}
+function startIn(){
+  const p = localPath().toLowerCase();
+  return p.includes('\\downloads\\') ? 'downloads' : p.includes('\\desktop\\') ? 'desktop' : p.includes('\\documents\\') ? 'documents' : undefined;
+}
+async function ensurePerm(h, mode){
+  let p = await h.queryPermission({mode});
+  if (p !== 'granted') p = await h.requestPermission({mode});
+  return p === 'granted';
+}
+function idb(){
+  return new Promise((res, rej) => {
+    const r = indexedDB.open('acomp-metas', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('h');
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  });
+}
+async function handleGet(){
+  try { const db = await idb(); return await new Promise(res => { const q = db.transaction('h').objectStore('h').get(HKEY); q.onsuccess = () => res(q.result || null); q.onerror = () => res(null); }); }
+  catch(e){ return null; }
+}
+async function handleSet(rec){
+  try { const db = await idb(); db.transaction('h', 'readwrite').objectStore('h').put(rec, HKEY); } catch(e){}
+}
+async function handleDel(){
+  try { const db = await idb(); db.transaction('h', 'readwrite').objectStore('h').delete(HKEY); } catch(e){}
+}
+async function save(asNew){
+  if (WHERE === 'preview') { window.scrollTo(0, 0); toast('Não é possível salvar na pré-visualização do SharePoint/Teams.'); return; }
+  const prev = {savedAt: data.meta.savedAt, saveId: data.meta.saveId};
+  const restore = () => { data.meta.savedAt = prev.savedAt; data.meta.saveId = prev.saveId; };
+  data.meta.savedAt = new Date().toISOString();
+  data.meta.saveId = uid('s');
+  const html = buildHTML();
+  if (window.showSaveFilePicker) {
+    try {
+      if (asNew) fileHandle = null;
+      if (fileHandle && !(await ensurePerm(fileHandle, 'readwrite'))) fileHandle = null;
+      if (!fileHandle) {
+        if (!asNew && !confirm('Na próxima janela, selecione ESTE arquivo e confirme a substituição:\n\n' + localPath() +
+          '\n\nSe gravar em outra pasta ou com outro nome, os dados ficarão naquele outro arquivo.')) { restore(); return; }
+        const opts = {suggestedName: fileName(), types: [{description: 'Página HTML', accept: {'text/html': ['.html']}}]};
+        if (startIn()) opts.startIn = startIn();
+        fileHandle = await window.showSaveFilePicker(opts);
+        if (!asNew && fileHandle.name !== fileName())
+          alert(`Atenção: os dados serão gravados em "${fileHandle.name}", e não em "${fileName()}". Da próxima vez, abra "${fileHandle.name}".`);
+      }
+      const w = await fileHandle.createWritable();
+      await w.write(html); await w.close();
+      handleSet({h: fileHandle, saveId: data.meta.saveId, name: fileHandle.name, at: data.meta.savedAt});
+      state.notice = null; dirty = false; render();
+      toast('Salvo em ' + fileHandle.name);
+      return;
+    } catch(e) {
+      if (e.name === 'AbortError') { restore(); return; }
+      console.warn('Gravação direta indisponível, baixando cópia.', e);
+      fileHandle = null;
+    }
+  }
+  download(new Blob([html], {type: 'text/html'}), fileName());
+  dirty = false; updateSaveUI();
+  toast('Cópia atualizada baixada — substitua o arquivo original por ela.');
+}
+function download(blob, name){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+async function loadOther(){
+  const rec = state.notice;
+  try {
+    if (!(await ensurePerm(rec.h, 'read'))) return;
+    const doc = new DOMParser().parseFromString(await (await rec.h.getFile()).text(), 'text/html');
+    const s = doc.querySelector('#store');
+    if (!s) throw new Error('o arquivo não contém dados desta aplicação');
+    data = normalize(JSON.parse(s.textContent));
+    state.month = initialMonth(); state.notice = null;
+    markDirty(); render();
+    toast('Dados carregados. Clique em Salvar e selecione este arquivo para gravá-los aqui.');
+  } catch(e) { alert('Não foi possível ler "' + rec.name + '": ' + e.message); }
+}
+function exportJSON(){
+  download(new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'}), 'acompanhamento_metas_' + new Date().toISOString().slice(0, 10) + '.json');
+}
+function importJSON(){
+  const f = document.createElement('input');
+  f.type = 'file'; f.accept = '.json,application/json';
+  f.onchange = async () => {
+    try {
+      const d = JSON.parse(await f.files[0].text());
+      if (!Array.isArray(d.kpis) || !d.months || !Object.keys(d.months).length) throw new Error('estrutura inválida');
+      if (!confirm('Substituir todos os dados atuais pelos do arquivo importado?')) return;
+      data = normalize(d); state.month = initialMonth();
+      markDirty(); render(); toast('Dados importados. Salve para gravar no arquivo.');
+    } catch(e) { alert('Não foi possível importar: ' + e.message); }
+  };
+  f.click();
+}
+
+/* ---------- Início ---------- */
+if (!['metas', 'oneone', 'hist'].includes(state.tab)) state.tab = 'metas';
+render();
+if (window.showSaveFilePicker) handleGet().then(rec => {
+  if (!rec || !rec.h || fileHandle) return;
+  if (rec.saveId && rec.saveId === data.meta.saveId) { fileHandle = rec.h; updateSaveUI(); }
+  else if (!rec.at || rec.at > (data.meta.savedAt || '')) { state.notice = rec; render(); }
+});
+})();
+</script></body></html>
