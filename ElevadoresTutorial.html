@@ -1,0 +1,1658 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Elevadores: tutorial · Giovani Perotto Mesquita</title>
+<meta name="description" content="Tutorial do jogo Elevadores: história do elevador seguro, da escada rolante e das pontes de embarque; teoria do tráfego vertical, com viagem de ida e volta, intervalo, capacidade de 5 minutos e zonas; regras do jogo, passo a passo com telas, estratégias por tipo de construção e resultados de simulação.">
+<meta name="author" content="Giovani Perotto Mesquita">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Paleta alegre: roxo e magenta vibrantes, amarelo-girassol, verde-água e coral */
+    --bg: #FFF7EC;
+    --surface: #FFFFFF;
+    --ink: #2B1B3D;
+    --text: #3E3350;
+    --muted: #756986;
+    --line: #F1E2CF;
+    --accent: #0E8074;
+    --accent-soft: #E2F6F2;
+    --accent-strong: #5B2A86;
+    --navy: #5B2A86;
+    --navy-deep: #C2185B;
+    --on-navy: #FFFFFF;
+    --on-navy-muted: #FCE4F0;
+    --gold: #FFB703;
+    --gold-ink: #B35300;
+    --gold-soft: #FFF1C9;
+    --coral: #FF6B6B;
+    --sky: #3A86FF;
+    --mint: #2A9D8F;
+    --pink: #EF476F;
+    --sans: "Hanken Grotesk", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1A1328; --surface: #241A36; --ink: #F7F0FF; --text: #E2D8F0; --muted: #A898C0;
+      --line: #3A2D52; --accent: #5FD3C4; --accent-soft: #1D3A38; --accent-strong: #C9A7F5;
+      --navy: #3D1A5C; --navy-deep: #7A1240; --gold: #FFC94D; --gold-ink: #FFC94D; --gold-soft: #3A2E12;
+      --coral: #FF8A8A; --sky: #6FA8FF; --mint: #4CC3B3; --pink: #FF6F91;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 4px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 1.5rem; }
+
+  /* navegação */
+  .nav {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: saturate(160%) blur(10px); -webkit-backdrop-filter: saturate(160%) blur(10px);
+    border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px);
+  }
+  .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 58px; gap: 1rem; }
+  .brand { font-family: var(--serif); font-weight: 600; color: var(--accent-strong); text-decoration: none; font-size: 1.05rem; }
+  .nav ul { list-style: none; display: flex; gap: 1.4rem; margin: 0; padding: 0; }
+  .nav ul a { color: var(--muted); text-decoration: none; font-size: 0.93rem; font-weight: 500; }
+  .nav ul a:hover, .nav ul a[aria-current="page"] { color: var(--ink); }
+  .nav-right { display: flex; align-items: center; gap: 1rem; }
+  .lang { position: relative; }
+  .lang button { font: inherit; cursor: pointer; }
+  .lang .flag { width: 18px; height: 12px; border-radius: 2px; flex: none; box-shadow: 0 0 0 1px rgba(0,0,0,.12); }
+  .lang-current { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.8rem; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 0.3rem 0.5rem 0.3rem 0.55rem; }
+  .lang-current:hover { border-color: var(--muted); }
+  .lang-now { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .lang .chev { width: 12px; height: 12px; color: var(--muted); transition: transform .15s ease; }
+  .lang-current[aria-expanded="true"] .chev { transform: rotate(180deg); }
+  .lang-list { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; min-width: 10.5rem; padding: 0.3rem; display: grid; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 12px 30px rgba(0,0,0,.18); }
+  .lang-list[hidden] { display: none; }
+  .lang-list [role="option"] { display: flex; align-items: center; gap: 0.6rem; width: 100%; text-align: left; font-size: 0.9rem; font-weight: 500; color: var(--ink); background: none; border: 0; border-radius: 6px; padding: 0.45rem 0.6rem; }
+  .lang-list [role="option"]:hover, .lang-list [role="option"]:focus-visible { background: color-mix(in srgb, var(--muted) 14%, transparent); }
+  .lang-list [role="option"][aria-selected="true"] { color: var(--accent-strong); font-weight: 600; }
+  .lang-list [role="option"][aria-selected="true"]::after { content: "✓"; margin-left: auto; }
+  @media (max-width: 480px) { .lang-now { font-size: 0; gap: 0; } }
+  [hidden] { display: none !important; }
+  .progress { position: absolute; left: 0; bottom: -1px; height: 3px; width: 0; background: linear-gradient(90deg, var(--coral), var(--gold), var(--mint)); }
+
+  /* abertura */
+  .hero-band {
+    background:
+      radial-gradient(900px 420px at 85% -10%, rgba(255,255,255,.07), transparent 60%),
+      linear-gradient(160deg, var(--navy) 0%, var(--navy-deep) 100%);
+    border-top: 4px solid var(--gold); color: var(--on-navy);
+  }
+  .hero { padding: 3.5rem 0 3.5rem; max-width: 820px; }
+  .crumb { margin: 0 0 1.4rem; font-size: 0.92rem; }
+  .crumb a { color: var(--on-navy-muted); text-decoration: none; }
+  .crumb a:hover { color: var(--gold); }
+  .eyebrow { color: var(--gold); font-weight: 600; font-size: 1rem; margin: 0 0 0.7rem; }
+  h1 { font-family: var(--serif); font-weight: 600; color: var(--on-navy); font-size: clamp(2.3rem, 5.5vw, 3.8rem); line-height: 1.05; letter-spacing: -0.025em; margin: 0; }
+  .dek { font-family: var(--serif); font-style: italic; font-size: clamp(1.1rem, 2.2vw, 1.35rem); color: var(--on-navy-muted); margin: 1.1rem 0 1.6rem; max-width: 58ch; }
+  .byline { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; font-size: 0.92rem; color: var(--on-navy-muted); }
+  .byline strong { color: var(--on-navy); font-weight: 600; }
+  .byline .credit { margin-left: auto; font-style: italic; }
+
+  /* layout do artigo */
+  .layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 3rem; padding: 3rem 0 4rem; align-items: start; }
+  .toc { position: sticky; top: 82px; font-size: 0.92rem; max-height: calc(100vh - 100px); overflow-y: auto; }
+  .toc h2 { font-family: var(--sans); font-size: 0.85rem; font-weight: 600; color: var(--muted); margin: 0 0 0.7rem; border: 0; padding: 0; }
+  .toc ol { list-style: none; margin: 0; padding: 0; counter-reset: toc; border-left: 2px solid var(--line); }
+  .toc li { counter-increment: toc; }
+  .toc a { display: block; padding: 0.3rem 0 0.3rem 1rem; margin-left: -2px; border-left: 2px solid transparent; color: var(--muted); text-decoration: none; line-height: 1.35; }
+  .toc a::before { content: counter(toc) ". "; color: var(--gold-ink); font-weight: 600; }
+  .toc a:hover { color: var(--ink); }
+  .toc a[aria-current="true"] { color: var(--accent-strong); border-left-color: var(--gold); font-weight: 600; }
+
+  article { background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: var(--radius); padding: 3rem clamp(1.25rem, 4vw, 3.5rem); min-width: 0; }
+  article section + section { margin-top: 3.2rem; }
+  article h2 { font-family: var(--serif); font-weight: 600; color: var(--ink); font-size: clamp(1.5rem, 2.8vw, 1.9rem); letter-spacing: -0.015em; line-height: 1.2; margin: 0 0 1.1rem; padding-left: 0.9rem; border-left: 3px solid var(--gold); }
+  article h3 { font-family: var(--sans); font-size: 1.1rem; font-weight: 600; color: var(--ink); margin: 2rem 0 0.8rem; }
+  article p, article li { font-family: var(--serif); font-size: 1.12rem; line-height: 1.7; color: var(--text); }
+  article p { margin: 0 0 1.1rem; max-width: 68ch; }
+  article ul, article ol { margin: 0 0 1.1rem; padding-left: 1.4rem; max-width: 68ch; }
+  article li { margin-bottom: 0.3rem; }
+  article strong { color: var(--ink); }
+  sup a { font-family: var(--sans); font-size: 0.72rem; font-weight: 700; text-decoration: none; padding: 0 0.15em; }
+
+  figure { margin: 2rem 0; }
+  figure img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: #FFF7EC; }
+  figcaption { margin-top: 0.6rem; font-size: 0.9rem; color: var(--muted); text-align: center; font-family: var(--sans); line-height: 1.5; }
+
+  blockquote { margin: 1.5rem 0; padding: 1.2rem 1.5rem; background: var(--accent-soft); border-left: 3px solid var(--gold); border-radius: 0 10px 10px 0; }
+  blockquote p { font-size: 1.05rem; margin: 0 0 0.8rem; }
+  blockquote p:last-child { margin-bottom: 0; }
+  blockquote.pull p { font-size: clamp(1.15rem, 2.3vw, 1.35rem); font-style: italic; line-height: 1.45; color: var(--ink); }
+  blockquote cite { font-family: var(--sans); font-size: 0.88rem; font-style: normal; color: var(--muted); }
+
+  /* tabelas */
+  .table-wrap { overflow-x: auto; margin: 1.5rem 0; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-family: var(--sans); font-size: 0.95rem; }
+  th, td { text-align: left; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.5; }
+  thead th { background: var(--gold-soft); color: var(--ink); font-weight: 600; }
+  tbody th { color: var(--ink); font-weight: 600; }
+  tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
+  td code, th code { font-size: 0.9em; }
+
+  /* mitos */
+  .myths { list-style: none; padding: 0; margin: 1.5rem 0; max-width: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
+  .myths li { margin: 0; padding: 1rem 1.2rem; border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: 10px; }
+  .myths li:nth-child(4n+2) { border-top-color: var(--sky); }
+  .myths li:nth-child(4n+3) { border-top-color: var(--mint); }
+  .myths li:nth-child(4n+4) { border-top-color: var(--gold); }
+  .myths h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+  .myths p { margin: 0; font-size: 1rem; line-height: 1.6; }
+
+  /* para fixar */
+  .recap { margin: 1.8rem 0 0; padding: 1.1rem 1.4rem; background: var(--gold-soft); border-left: 4px solid var(--mint); border-radius: 0 10px 10px 0; }
+  .recap h3 { margin: 0 0 0.5rem; font-size: 0.85rem; letter-spacing: .05em; text-transform: uppercase; color: var(--gold-ink); }
+  .recap ul { margin: 0; padding-left: 1.2rem; }
+  .recap li { font-family: var(--sans); font-size: 0.98rem; line-height: 1.55; margin-bottom: 0.25rem; }
+
+  /* revisão rápida */
+  .quiz { display: grid; gap: 0.7rem; margin: 1.5rem 0; }
+  .quiz details { border: 1px solid var(--line); border-left: 4px solid var(--sky); border-radius: 0 10px 10px 0; padding: 0.8rem 1.1rem; }
+  .quiz details:nth-child(3n+2) { border-left-color: var(--pink); }
+  .quiz details:nth-child(3n+3) { border-left-color: var(--mint); }
+  .quiz summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); line-height: 1.45; }
+  .quiz details[open] summary { margin-bottom: 0.5rem; }
+  .quiz p { margin: 0; font-size: 1.02rem; }
+
+  .refs { font-family: var(--sans); padding-left: 1.4rem; margin: 0; }
+  .refs li { font-family: var(--sans); font-size: 0.92rem; line-height: 1.55; margin-bottom: 0.7rem; word-break: break-word; }
+  .refs li:target { background: var(--gold-soft); border-radius: 6px; }
+
+  .back { display: inline-block; margin-top: 1rem; font-family: var(--sans); font-size: 0.85rem; text-decoration: none; }
+
+  footer { background: var(--navy-deep); color: var(--on-navy-muted); border-top: 3px solid var(--gold); padding: 1.5rem 0 calc(1.5rem + env(safe-area-inset-bottom, 0px)); font-size: 0.88rem; }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1.5rem; }
+  footer a { color: var(--on-navy); text-decoration: none; }
+  footer a:hover { color: var(--gold); }
+
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+    .toc { position: static; max-height: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.2rem 1.4rem; }
+  }
+  @media (max-width: 760px) {
+    .myths { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .nav ul { display: none; }
+    .hero { padding: 2.5rem 0; }
+    .wrap { padding: 0 1rem; }
+    article p, article li { font-size: 1.05rem; }
+    th, td { padding: 0.6rem 0.7rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  @media print {
+    .nav, .toc, footer, .back, .crumb { display: none !important; }
+    body { background: #fff; }
+    .hero-band { background: none; color: #111; border: 0; }
+    .hero-band h1 { color: #5B2A86; }
+    .dek, .byline, .byline strong { color: #333; }
+    .layout { display: block; padding: 0; }
+    article { border: 0; padding: 0; }
+    .table-wrap { overflow: visible; }
+    figure, blockquote, .myths li, .recap, .quiz details, tr { break-inside: avoid; }
+  }
+
+  /* blocos de código (Gherkin) */
+  pre.code { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: #2B1B3D; color: #F7F0FF; border-radius: 10px; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.92rem; line-height: 1.6; tab-size: 2; }
+  pre.code code { font-family: inherit; white-space: pre; }
+  pre.code .k { color: #FFB703; font-weight: 700; }
+  pre.code .s { color: #5FD3C4; font-weight: 700; }
+  pre.code .c { color: #A898C0; }
+  pre.code .p { color: #C9A7F5; }
+  article code { font-family: Consolas, "Courier New", monospace; font-size: 0.92em; }
+  article :not(pre) > code { background: var(--accent-soft); color: var(--ink); padding: 0.05em 0.35em; border-radius: 4px; }
+
+  /* fórmulas */
+  pre.formula { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.95rem; line-height: 1.5; }
+
+  /* glossário */
+  dl.glossary { margin: 1.2rem 0; display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  dl.glossary dt, dl.glossary dd { margin: 0; padding: 0.65rem 0.9rem; border-bottom: 1px solid var(--line); font-family: var(--sans); font-size: 0.95rem; line-height: 1.5; }
+  dl.glossary dt { font-weight: 600; color: var(--ink); background: color-mix(in srgb, var(--gold-soft) 60%, var(--surface)); }
+  dl.glossary dd { color: var(--text); }
+  dl.glossary dt:nth-last-of-type(1), dl.glossary dd:last-of-type { border-bottom: 0; }
+  @media (max-width: 720px) { dl.glossary { grid-template-columns: 1fr; } dl.glossary dt { border-bottom: 0; padding-bottom: 0.2rem; } }
+
+  /* figuras geradas pelo PlantUML e código recolhível */
+  figure.puml img { width: auto; max-width: 100%; margin: 0 auto; background: #FFFFFF; padding: 12px; }
+  details.codebox { margin: 1rem 0 1.5rem; border: 1px solid var(--line); border-radius: 10px; padding: 0.6rem 1rem; }
+  details.codebox summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); }
+  details.codebox pre.code { max-height: 480px; overflow: auto; }
+
+  /* nota de atenção */
+  aside.note { margin: 1.2rem 0 1.5rem; padding: 0.8rem 1.1rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; }
+  aside.note p { margin: 0; }
+
+  /* link para o simulador e teclas */
+  .launch { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--sans); font-weight: 600; font-size: 1rem; background: var(--accent-strong); color: var(--surface); text-decoration: none; padding: 0.65rem 1.2rem; border-radius: 10px; }
+  .launch:hover { background: var(--navy-deep); color: #FFFFFF; }
+  kbd { font-family: var(--sans); font-size: 0.85em; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 0.05em 0.4em; white-space: nowrap; }
+  .promptbox { position: relative; margin: 1rem 0 1.6rem; }
+  .promptbox pre.code { margin: 0; padding-top: 2.6rem; max-height: 420px; overflow: auto; }
+  .promptbox pre.code code { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .promptbox .copy { position: absolute; top: 8px; right: 14px; z-index: 1; font: 600 0.8rem var(--sans); color: #2B1B3D; background: #FFB703; border: 0; border-radius: 6px; padding: 0.3rem 0.65rem; cursor: pointer; }
+  @media (max-width: 720px) { figure { overflow-x: auto; } figure img { width: 680px; max-width: none; } }
+</style>
+</head>
+<body id="top">
+
+<nav class="nav" aria-label="Navegação do site">
+  <div class="wrap">
+    <a class="brand" href="index.html" data-home>Giovani Perotto Mesquita</a>
+    <div class="nav-right">
+      <ul>
+        <li><a href="index.html" data-home>Início</a></li>
+        <li><a href="about.html" data-about>Sobre</a></li>
+        <li><a href="resume.html" data-resume>Currículo</a></li>
+        <li><a href="projects.html" data-projects aria-current="page">Projetos</a></li>
+        <li><a href="contact.html" data-contact>Contato</a></li>
+      </ul>
+      <div class="lang">
+        <button type="button" class="lang-current" aria-haspopup="listbox" aria-expanded="false" aria-controls="lang-list" data-label="Idioma / Language / Lingua" aria-label="Idioma / Language / Lingua: Português"><span class="lang-now"><svg class="flag" viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009C3B"/><path d="M10 1.6 18.4 7 10 12.4 1.6 7z" fill="#FEDF00"/><circle cx="10" cy="7" r="3.3" fill="#002776"/><path d="M6.8 6.3c2.1-.6 4.5-.2 6.4 1" stroke="#fff" stroke-width=".7" fill="none"/></svg>PT</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="lang-list" id="lang-list" role="listbox" aria-label="Idioma / Language / Lingua" hidden>
+          <button type="button" role="option" id="tab-pt" aria-controls="pt" aria-selected="true" lang="pt-BR" data-code="PT"><svg class="flag" viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009C3B"/><path d="M10 1.6 18.4 7 10 12.4 1.6 7z" fill="#FEDF00"/><circle cx="10" cy="7" r="3.3" fill="#002776"/><path d="M6.8 6.3c2.1-.6 4.5-.2 6.4 1" stroke="#fff" stroke-width=".7" fill="none"/></svg><span>Português</span></button>
+          <button type="button" role="option" id="tab-en" aria-controls="en" aria-selected="false" lang="en" tabindex="-1" data-code="EN"><svg class="flag" viewBox="0 0 19 10" aria-hidden="true"><rect width="19" height="10" fill="#B22234"/><rect y="0.769" width="19" height="0.769" fill="#fff"/><rect y="2.308" width="19" height="0.769" fill="#fff"/><rect y="3.846" width="19" height="0.769" fill="#fff"/><rect y="5.385" width="19" height="0.769" fill="#fff"/><rect y="6.923" width="19" height="0.769" fill="#fff"/><rect y="8.462" width="19" height="0.769" fill="#fff"/><rect width="7.6" height="5.385" fill="#3C3B6E"/></svg><span>English</span></button>
+          <button type="button" role="option" id="tab-it" aria-controls="it" aria-selected="false" lang="it" tabindex="-1" data-code="IT"><svg class="flag" viewBox="0 0 3 2" aria-hidden="true"><rect width="1" height="2" fill="#009246"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#CE2B37"/></svg><span>Italiano</span></button>
+          <button type="button" role="option" id="tab-es" aria-controls="es" aria-selected="false" lang="es" tabindex="-1" data-code="ES"><svg class="flag" viewBox="0 0 750 500" aria-hidden="true"><rect width="750" height="500" fill="#AA151B"/><rect y="125" width="750" height="250" fill="#F1BF00"/></svg><span>Español</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="progress" aria-hidden="true"></div>
+</nav>
+
+<!-- ===================== PT ===================== -->
+<div id="pt" role="tabpanel" aria-labelledby="tab-pt" lang="pt-BR">
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projetos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Elevadores: tutorial do simulador de transporte vertical</h1>
+      <p class="dek">A história dos elevadores, das escadas rolantes e das pontes de embarque; a teoria do tráfego vertical; as regras do jogo; um passo a passo com as telas; e estratégias para cada tipo de construção.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado em <time datetime="2026-11-13">13/11/2026</time></span>
+        <span class="credit">Revisado e formatado usando Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-pt">
+    <h2 id="toc-pt">Índice</h2>
+    <ol>
+      <li><a href="#intro-pt">O jogo</a></li>
+      <li><a href="#historia-pt">Uma breve história</a></li>
+      <li><a href="#teoria-pt">A teoria do tráfego vertical</a></li>
+      <li><a href="#regras-pt">As regras do jogo</a></li>
+      <li><a href="#roteiro-pt">Passo a passo</a></li>
+      <li><a href="#experimento-pt">O que a simulação mostra</a></li>
+      <li><a href="#estrategia-pt">Estratégias por construção</a></li>
+      <li><a href="#erros-pt">Erros comuns</a></li>
+      <li><a href="#modelo-pt">Limites do modelo</a></li>
+      <li><a href="#glossario-pt">Glossário</a></li>
+      <li><a href="#revisao-pt">Revisão rápida</a></li>
+      <li><a href="#referencias-pt">Referências</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-pt" aria-labelledby="h-intro-pt">
+<h2 id="h-intro-pt">O jogo</h2>
+<p>Elevadores é um jogo de projeto. <sup><a href="#ref-1-pt">[1]</a></sup> A cada partida ele sorteia uma construção, de uma casa a um arranha-céu, um aeroporto ou um estádio, com uma necessidade: quantas pessoas, para onde vão, com que pressa e com que dinheiro. Você escolhe elevadores, escadas rolantes, esteiras e pontes de embarque. Depois, a simulação mostra o horário de pico em movimento, com cabines subindo e descendo e filas crescendo ou sumindo, e dá a nota.</p>
+<p>O jogo é um único arquivo HTML, funciona sem internet e está em português, inglês, italiano e espanhol.</p>
+<p><a class="launch" href="Elevadores.html">Abrir o jogo <span aria-hidden="true">→</span></a></p>
+<figure>
+<img src="rc_images/ElevadoresInicio.png" alt="Tela inicial do jogo com o briefing de uma torre de escritórios à esquerda (níveis, altura, população, orçamento, demanda, metas e exigências), o corte do prédio de 23 níveis ao centro e o painel de projeto vazio à direita" width="1300" height="900" loading="lazy">
+<figcaption>Briefing à esquerda, corte da construção ao centro e projeto à direita.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="historia-pt" aria-labelledby="h-historia-pt">
+<h2 id="h-historia-pt">Uma breve história</h2>
+<h3>O elevador seguro (1853–1857)</h3>
+<p>Elevadores de carga já existiam, mas o medo de o cabo arrebentar impedia que levassem pessoas. Elisha Otis criou um freio de segurança que trava a cabine nas guias se o cabo se rompe, e o demonstrou em público em Nova York, cortando o cabo da própria plataforma. <sup><a href="#ref-2-pt">[2]</a></sup> As fontes divergem sobre a data da demonstração: 1853 ou 1854. <sup><a href="#ref-2-pt">[2]</a></sup> <sup><a href="#ref-3-pt">[3]</a></sup> Em 23 de março de 1857, Otis instalou o primeiro elevador de passageiros com esse freio na loja E. V. Haughwout, em Nova York. <sup><a href="#ref-2-pt">[2]</a></sup></p>
+<h3>A escada rolante (1896–1900)</h3>
+<p>Jesse Reno construiu em 1896 um “elevador inclinado” em Coney Island, considerado a primeira escada rolante em funcionamento. Charles Seeberger desenvolveu outro modelo, construído com a Otis em 1899, e registrou o nome “escalator” em 1900; a escada da Otis foi premiada na Exposição Universal de Paris naquele ano. <sup><a href="#ref-4-pt">[4]</a></sup> <sup><a href="#ref-5-pt">[5]</a></sup></p>
+<h3>A conta do tráfego (1923)</h3>
+<p>Para saber quantos elevadores um prédio precisa, é preciso estimar quantas paradas uma cabine faz por viagem. Bassett Jones publicou essa fórmula em 1923, na <em>General Electric Review</em>, e ela ainda é uma das bases do método de cálculo usado hoje. <sup><a href="#ref-9-pt">[9]</a></sup> <sup><a href="#ref-10-pt">[10]</a></sup></p>
+<h3>Dois andares e lobby no céu (1931–1973)</h3>
+<p>O Cities Service Building, em Nova York, teve elevadores de dois andares, com uma cabine para os andares pares e outra para os ímpares. As fontes dão 1931 ou 1932. <sup><a href="#ref-6-pt">[6]</a></sup> O lobby no céu, um andar de transferência no meio da torre, aparece no John Hancock Center, em Chicago, concluído em 1969 segundo a Wikipédia (outra fonte dá 1968), e nas torres do World Trade Center, com lobbies nos andares 44 e 78. <sup><a href="#ref-7-pt">[7]</a></sup></p>
+<h3>Controle por destino (1961–1992)</h3>
+<p>Em vez de apertar “subir” e escolher o andar dentro da cabine, o passageiro digita o destino no saguão e o sistema diz qual cabine pegar. A ideia foi concebida em 1961 por Leo Port, em Sydney; o primeiro sistema comercial, o Miconic 10 da Schindler, é datado de 1992, embora uma fonte cite uma instalação em 1990. <sup><a href="#ref-8-pt">[8]</a></sup></p>
+<h3>Pontes de embarque (1958–1959)</h3>
+<p>As primeiras pontes de embarque fechadas surgiram nos Estados Unidos no fim dos anos 1950, mas não há consenso sobre qual foi a primeira: há registros de uma ponte da United em Chicago O’Hare em 1958 e de pontes em São Francisco e Atlanta em 1959. <sup><a href="#ref-11-pt">[11]</a></sup></p>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="teoria-pt" aria-labelledby="h-teoria-pt">
+<h2 id="h-teoria-pt">A teoria do tráfego vertical</h2>
+<h3>O pico de subida e a viagem de ida e volta</h3>
+<p>O momento mais exigente de um prédio de escritórios é a chegada da manhã: quase todos entram pelo térreo e sobem. O método clássico de cálculo olha para uma viagem completa de uma cabine nesse pico. <sup><a href="#ref-10-pt">[10]</a></sup></p>
+<figure>
+<img src="rc_images/ElevadoresViagem.svg" alt="Uma cabine embarca P passageiros no térreo, sobe parando em S andares até o andar de reversão H e desce sem parar até o térreo. O tempo de ida e volta soma a viagem de 2 vezes H, as S + 1 paradas e o embarque e o desembarque dos 2 P passageiros. Dividido pelo número de cabines L, dá o intervalo; e 300 vezes P vezes L dividido pelo tempo de ida e volta dá quantas pessoas o grupo leva em 5 minutos." width="1000" height="380" loading="lazy">
+<figcaption>A viagem de ida e volta: o tempo que uma cabine leva para sair do térreo e voltar a ele.</figcaption>
+</figure>
+<ul>
+<li><strong>Paradas prováveis (S):</strong> com muitos andares e muitos passageiros, a cabine para em quase todos. É por isso que prédios altos se dividem em zonas.</li>
+<li><strong>Intervalo:</strong> o tempo médio entre duas cabines saindo do térreo. Quanto menor, menos se espera.</li>
+<li><strong>Capacidade de 5 minutos:</strong> quantas pessoas o grupo leva em 5 minutos, em porcentagem da população.</li>
+</ul>
+<p>Para escritórios, a revista Elevator World cita para a ISO 8100-32:2020 e o CIBSE Guide D uma capacidade de 12% da população em 5 minutos com intervalo de até 30 segundos; para residências, 6%. <sup><a href="#ref-14-pt">[14]</a></sup> O jogo usa esses valores como metas. Não consegui consultar o texto completo do artigo, só o resumo.</p>
+<p>O jogo não aplica a fórmula: ele simula cada passageiro e mede o resultado. A fórmula serve para entender por que zonas e cabines maiores funcionam.</p>
+<h3>Zonas, expresso e lobby no céu</h3>
+<figure>
+<img src="rc_images/ElevadoresZonas.svg" alt="À esquerda, um grupo único atende todos os andares e para em muitos deles a cada viagem. No centro, duas zonas: um grupo atende os andares baixos e outro vai direto do térreo aos andares altos, sem parar nos baixos. À direita, um lobby no céu: elevadores de transferência rápidos, que podem ser de dois andares, levam do térreo ao lobby no céu, e grupos locais distribuem a partir dali." width="1000" height="410" loading="lazy">
+<figcaption>Dividir o prédio reduz as paradas por viagem; o lobby no céu economiza poços nos andares de baixo.</figcaption>
+</figure>
+<p>No jogo, uma zona é um grupo com “Atende de … até …” limitado e “Andar de embarque” no térreo. O trecho entre o térreo e a zona é percorrido sem paradas. Para um lobby no céu, crie um grupo de transferência entre o térreo e um andar intermediário e grupos locais com esse andar como embarque; o jogo faz as pessoas trocarem de elevador sozinhas.</p>
+<h3>Dois andares e controle por destino</h3>
+<ul>
+<li><strong>Dois andares:</strong> duas cabines empilhadas param em dois andares vizinhos de uma vez. No jogo, só em construções com 25 níveis ou mais.</li>
+<li><strong>Controle por destino:</strong> agrupa na mesma cabine quem vai para o mesmo andar e reduz paradas. No jogo, o agrupamento fica mais forte quando a fila do grupo passa da metade da capacidade das cabines.</li>
+</ul>
+<h3>Escadas rolantes</h3>
+<p>Escadas rolantes levam muito mais gente que elevadores entre poucos andares. A capacidade teórica a 0,5 m/s é de 6.750 pessoas por hora com degraus de 800 mm e 9.000 com 1.000 mm. Para 600 mm, a AmadaTECH dá 2.500 e um catálogo da Mitsubishi Electric dá 4.500; o jogo usa 4.500. <sup><a href="#ref-13-pt">[13]</a></sup> Na prática, ninguém ocupa todos os degraus, e o jogo usa 60% do valor teórico (regra do jogo). Escadas rolantes não levam cadeirantes nem carrinhos: por isso toda construção com escadas também precisa de elevadores.</p>
+<h3>Pontes de embarque</h3>
+<p>A ponte apron drive é a mais flexível e a mais usada; a nose loader fica presa ao prédio, para pátios apertados; há versões para o deque superior do A380, pontes em T e pontes para aviões regionais (commuter). <sup><a href="#ref-12-pt">[12]</a></sup> A ponte sobre a asa liga a porta traseira e complementa a dianteira. Sem ponte, o embarque é por ônibus, mais lento.</p>
+<h3>Acessibilidade e bombeiros</h3>
+<p>Elevadores para bombeiros seguem normas próprias, como a EN 81-72, que trata de elevadores usados no combate a incêndio sob controle dos bombeiros. <sup><a href="#ref-15-pt">[15]</a></sup> O jogo exige um elevador de bombeiros em todos os níveis quando a construção passa de 30 m; esse limite é regra do jogo, não da norma.</p>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="regras-pt" aria-labelledby="h-regras-pt">
+<h2 id="h-regras-pt">As regras do jogo</h2>
+<p>O jogo tem 12 tipos de construção, em três dificuldades, gerados a partir de uma semente: a mesma semente sempre gera a mesma construção e os mesmos passageiros.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Construção</th><th>Necessidade</th><th>Metas típicas</th></tr></thead>
+<tbody>
+<tr><td>Casa</td><td>Moradora cadeirante chega a todos os andares</td><td>Espera média, orçamento curto</td></tr>
+<tr><td>Residencial</td><td>Pico da manhã, descendo para térreo e garagem</td><td>Capacidade de 5 min ≥ 6%, espera</td></tr>
+<tr><td>Escritórios</td><td>Pico de chegada, subindo do térreo</td><td>Capacidade ≥ 12%, intervalo ≤ 30 s, espera ≤ 30 s</td></tr>
+<tr><td>Hotel</td><td>Hóspedes nos dois sentidos, carrinhos de serviço</td><td>Intervalo, espera, carrinhos</td></tr>
+<tr><td>Hospital</td><td>Visitantes, leitos, insumos e farmácia</td><td>Espera de leitos e de cargas</td></tr>
+<tr><td>Shopping</td><td>Movimento entre pisos e garagem</td><td>Espera, maior fila de escada, viagem</td></tr>
+<tr><td>Aeroporto</td><td>Embarque e desembarque, portões, píer</td><td>Voos no prazo, caminhada, filas</td></tr>
+<tr><td>Metrô</td><td>Multidão a cada trem</td><td>Esvaziar a plataforma antes do próximo trem</td></tr>
+<tr><td>Estádio</td><td>Saída das arquibancadas superiores</td><td>Público retirado a tempo</td></tr>
+<tr><td>Garagem</td><td>Motoristas; às vezes sem rampas</td><td>Espera de pessoas e de veículos</td></tr>
+<tr><td>Armazém</td><td>Paletes entre doca e mezaninos</td><td>Paletes entregues, espera</td></tr>
+<tr><td>Arranha-céu</td><td>Escritórios, hotel, residências e mirante</td><td>Capacidade, espera, viagem</td></tr>
+</tbody></table></div>
+<ul>
+<li><strong>Exigências</strong> são obrigatórias: rota acessível a todos os níveis usados, bombeiros acima de 30 m, elevadores-maca no hospital, serviço no hotel e no hospital, escadas em todos os lances no shopping, no metrô e no estádio, e assim por diante. O briefing as marca ao vivo enquanto você monta o projeto.</li>
+<li><strong>Estrelas:</strong> 1 com todas as metas e exigências; 2 dentro do orçamento; 3 gastando até 90% do orçamento, com as recomendações atendidas.</li>
+<li><strong>Projeto de referência:</strong> o botão monta uma solução pronta, mas limita a nota a uma estrela.</li>
+</ul>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="roteiro-pt" aria-labelledby="h-roteiro-pt">
+<h2 id="h-roteiro-pt">Passo a passo</h2>
+<p>O roteiro abaixo resolve uma torre de escritórios média (semente 123, 23 níveis, 3.080 pessoas) com três estrelas.</p>
+<h3>1. Escolha a construção</h3>
+<p>Clique em <strong>Nova construção</strong>. Escolha o tipo (ou “Sorteado”), a dificuldade e, se quiser repetir uma partida, a semente. Clique em <strong>Gerar</strong>.</p>
+<figure>
+<img src="rc_images/ElevadoresNova.png" alt="Janela Nova construção com os 12 tipos de construção e a opção Sorteado, as dificuldades Fácil, Médio e Difícil e o campo Semente com o valor 123" width="1300" height="900" loading="lazy">
+<figcaption>A janela de nova construção.</figcaption>
+</figure>
+<h3>2. Leia o briefing</h3>
+<p>Veja a demanda (pessoas a cada 5 minutos), as metas e as exigências. Nesta torre, as metas são capacidade de 12%, intervalo de até 30 s e espera média de até 30 s; as exigências são rota acessível e elevador de bombeiros.</p>
+<h3>3. Monte os grupos de elevadores</h3>
+<ol>
+<li>Clique em <strong>+ Elevadores</strong>. Escolha <strong>Tração sem casa de máquinas</strong>, 9 cabines de 21 pessoas a 2,5 m/s, atendendo do Andar 1 ao Andar 11.</li>
+<li>Clique de novo em <strong>+ Elevadores</strong>. Escolha <strong>Tração com casa de máquinas</strong>, 9 cabines de 21 pessoas a 4 m/s, do Andar 12 ao 22, com controle <strong>Por destino</strong>.</li>
+<li>Adicione um terceiro grupo, <strong>Bombeiros</strong>, atendendo de Térreo a Andar 22.</li>
+</ol>
+<figure>
+<img src="rc_images/ElevadoresProjeto.png" alt="Painel Projeto com dois grupos: tração sem casa de máquinas, 9 cabines de 21 pessoas a 2,5 m/s atendendo do andar 1 ao 11, e tração com casa de máquinas, 9 cabines de 21 pessoas a 4 m/s do andar 12 ao 22 com controle por destino; cada grupo mostra paradas, percurso e custo" width="380" height="904" loading="lazy">
+<figcaption>Duas zonas: andares baixos e andares altos, ambos embarcando no térreo.</figcaption>
+</figure>
+<p>Cada grupo mostra quantas paradas atende, o percurso, o que pode levar e o custo. Se algo não for permitido, como um hidráulico num prédio alto, o grupo fica vermelho e explica o motivo.</p>
+<h3>4. Simule</h3>
+<p>Clique em <strong>Simular</strong> para ver o pico em movimento (escolha ×10 a ×120) ou em <strong>Resultado imediato</strong>.</p>
+<figure>
+<img src="rc_images/ElevadoresSimulacao.png" alt="Corte da torre durante a simulação: dois poços de elevadores com cabines em vários andares, cabos e contrapesos, passageiros dentro das cabines, filas de pessoas no térreo e o elevador de bombeiros à direita; embaixo, o relógio em 5:00 de 15:00 e os números de pessoas esperando, que chegaram e espera média" width="574" height="854" loading="lazy">
+<figcaption>Cinco minutos de pico: cada zona com suas cabines, cabos e contrapesos.</figcaption>
+</figure>
+<h3>5. Leia o resultado e ajuste</h3>
+<figure>
+<img src="rc_images/ElevadoresResultado.png" alt="Painel Resultado com três estrelas: capacidade de 5 minutos 14,4% contra meta de 12%, intervalo 17 s contra 30 s, espera média 23 s contra 30 s, nenhuma pessoa sem rota e custo 4.993 contra orçamento de 7.050 créditos" width="574" height="619" loading="lazy">
+<figcaption>Três estrelas: metas cumpridas gastando 71% do orçamento.</figcaption>
+</figure>
+<p>Se alguma meta falhar, a lista “O que melhorar” diz por onde começar, e o desenho mostra onde as filas cresceram. Mude o projeto e simule de novo: com a mesma semente, os passageiros são os mesmos, e a comparação é justa.</p>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="experimento-pt" aria-labelledby="h-experimento-pt">
+<h2 id="h-experimento-pt">O que a simulação mostra</h2>
+<p>Na mesma torre do passo a passo, testei seis projetos, cada um em 10 simulações com sementes de passageiros diferentes. Todos incluem o elevador de bombeiros. Os valores são médias do modelo do jogo, não medições de prédios reais.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Projeto</th><th>Capacidade 5 min</th><th>Intervalo</th><th>Espera média</th><th>Custo</th></tr></thead>
+<tbody>
+<tr><td>Um grupo, 6 cabines, convencional</td><td>4,8%</td><td>46 s</td><td>4,1 min</td><td>2.479</td></tr>
+<tr><td>Um grupo, 6 cabines, por destino</td><td>5,6%</td><td>44 s</td><td>4,0 min</td><td>2.479</td></tr>
+<tr><td>Um grupo, 10 cabines, convencional</td><td>8,5%</td><td>24 s</td><td>2,4 min</td><td>3.879</td></tr>
+<tr><td>Duas zonas, 5 + 5 cabines, convencional</td><td>11,1%</td><td>41 s</td><td>1,6 min</td><td>2.732</td></tr>
+<tr><td>Duas zonas, 5 + 5 cabines, por destino</td><td>11,0%</td><td>39 s</td><td>1,8 min</td><td>2.732</td></tr>
+<tr><td>Projeto de referência: três zonas, 28 cabines</td><td>14,2%</td><td>10 s</td><td>11 s</td><td>5.874</td></tr>
+</tbody></table></div>
+<ul>
+<li><strong>Zonas rendem mais que cabines extras.</strong> Duas zonas com 10 cabines levam mais gente e fazem esperar menos que um grupo único com as mesmas 10, e custam menos.</li>
+<li><strong>Intervalo curto não basta.</strong> O grupo único de 10 cabines tem intervalo de 24 s, mas cada viagem para em muitos andares, e a capacidade fica em 8,5%.</li>
+<li><strong>O controle por destino ajudou pouco neste modelo.</strong> Subiu a capacidade do grupo único de 4,8% para 5,6%, mas não melhorou a espera. Em prédios reais, os fabricantes relatam ganhos maiores; o modelo do jogo agrupa passageiros de forma simples.</li>
+<li><strong>A solução do passo a passo</strong> (duas zonas com 9 cabines cada) chegou a 14,4% de capacidade e 23 s de espera numa única simulação, com custo de 4.993.</li>
+</ul>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="estrategia-pt" aria-labelledby="h-estrategia-pt">
+<h2 id="h-estrategia-pt">Estratégias por construção</h2>
+<ul>
+<li><strong>Casa:</strong> o elevador residencial ou a plataforma bastam. Atenda todos os andares e gaste pouco.</li>
+<li><strong>Residencial:</strong> um grupo de tração sem casa de máquinas, incluindo a garagem, costuma bastar. Acima de 30 m, ponha o elevador de bombeiros.</li>
+<li><strong>Escritórios e arranha-céu:</strong> zonas de cerca de 10 andares, cabines de 21 ou 24 pessoas e velocidade maior nas zonas altas. Se houver garagem, um grupo só entre garagem e térreo evita parar as zonas lá embaixo. No arranha-céu, um grupo direto ao mirante.</li>
+<li><strong>Hotel:</strong> um grupo para hóspedes e um elevador de carga e serviço do subsolo a todos os andares.</li>
+<li><strong>Hospital:</strong> elevadores-maca na quantidade exigida, com uma folga, mais serviço e passageiros. Leitos demoram para entrar e sair, e um só elevador-maca forma fila rápido.</li>
+<li><strong>Shopping:</strong> escadas rolantes em par em cada lance, um elevador acessível de ponta a ponta, elevador de serviço e uma esteira inclinada até a garagem para os carrinhos.</li>
+<li><strong>Aeroporto:</strong> ponte compatível em cada porta: commuter nos regionais, nose loader ou apron drive no corredor único, apron drive mais sobre a asa nos widebody e A380 com a ponte do deque superior. A meta de caminhada pede esteiras em pouco mais da metade do píer.</li>
+<li><strong>Metrô:</strong> o trem despeja centenas de pessoas de uma vez. Use escadas de subida largas, com várias unidades por lance, e elevadores acessíveis.</li>
+</ul>
+<figure>
+<img src="rc_images/ElevadoresMetro.png" alt="Corte de uma estação de metrô subterrânea com três níveis abaixo da rua, elevadores à esquerda, um trem parado na plataforma e escadas rolantes em ziguezague à direita com pessoas subindo e fila na base" width="574" height="469" loading="lazy">
+<figcaption>Metrô: o trem acabou de chegar e a fila se forma na base das escadas.</figcaption>
+</figure>
+<ul>
+<li><strong>Estádio:</strong> escadas de descida em cada lance, dimensionadas pelo público das arquibancadas de cima, e elevadores para cadeirantes.</li>
+<li><strong>Garagem:</strong> se for “sem rampas”, os carros também precisam de elevadores de veículos, que são lentos; ponha vários.</li>
+<li><strong>Armazém:</strong> elevadores de carga com capacidade de vários paletes e velocidade maior.</li>
+</ul>
+<figure>
+<img src="rc_images/ElevadoresAeroporto.png" alt="Corte do terminal do aeroporto com cobertura curva, elevadores e escadas rolantes, e abaixo o pátio com aviões dos dois lados do píer, pontes de embarque ligando o píer às portas e barras de progresso do embarque" width="574" height="635" loading="lazy">
+<figcaption>Aeroporto: aviões dos dois lados do píer, com as pontes escolhidas e o progresso do embarque.</figcaption>
+</figure>
+<figure>
+<img src="rc_images/ElevadoresPontes.png" alt="Editor de pontes de embarque com uma linha por tipo de aeronave e um seletor de ponte para cada porta" width="352" height="138" loading="lazy">
+<figcaption>As pontes são escolhidas por tipo de aeronave e por porta.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="erros-pt" aria-labelledby="h-erros-pt">
+<h2 id="h-erros-pt">Erros comuns</h2>
+<ul class="myths">
+<li><h3>“Um grupo grande resolve tudo.”</h3><p>Num prédio alto, cada viagem para em quase todos os andares. Divida em zonas.</p></li>
+<li><h3>“Hidráulico é barato, então uso em tudo.”</h3><p>O hidráulico é lento e, no jogo, vai só até 18 m e 6 paradas.</p></li>
+<li><h3>“A escada rolante já leva todo mundo.”</h3><p>Cadeirantes, carrinhos de bebê e carrinhos de compra precisam de elevador ou de esteira inclinada.</p></li>
+<li><h3>“Uma escada por lance basta.”</h3><p>Em shopping e metrô a exigência é por sentido. Use “Os dois (par)” ou duas escadas.</p></li>
+<li><h3>“Qualquer ponte serve.”</h3><p>Nose loader não atende widebody, e o A380 precisa da ponte alta para o deque superior. A ponte sobre a asa só complementa uma dianteira.</p></li>
+<li><h3>“Esqueci a garagem.”</h3><p>Quem chega de carro também precisa de rota até os andares, e cadeirantes não sobem rampas.</p></li>
+</ul>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="modelo-pt" aria-labelledby="h-modelo-pt">
+<h2 id="h-modelo-pt">Limites do modelo</h2>
+<ul>
+<li>As cabines escolhem a próxima parada ao partir e não param no meio do caminho para atender uma chamada nova.</li>
+<li>As chegadas seguem uma taxa constante durante o pico, sem ondas.</li>
+<li>Escadas fixas não são simuladas. No estádio, metade do público usa as escadas fixas, que ficam fora da conta.</li>
+<li>O embarque nos aviões e a caminhada no píer são contas diretas, não simulação de pessoas.</li>
+<li>Custos e energia estão em unidades do jogo. Velocidades, limites de percurso e custos são parâmetros do jogo, escolhidos para serem plausíveis, e não dados de fabricantes.</li>
+</ul>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="glossario-pt" aria-labelledby="h-glossario-pt">
+<h2 id="h-glossario-pt">Glossário</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Termo</th><th>Significado</th></tr></thead>
+<tbody>
+<tr><td>Andar de reversão</td><td>O andar mais alto onde a cabine para numa viagem, antes de descer.</td></tr>
+<tr><td>Capacidade de 5 minutos</td><td>Pessoas levadas em 5 minutos, em porcentagem da população.</td></tr>
+<tr><td>Casa de máquinas</td><td>Sala no topo do poço com o motor dos elevadores de tração tradicionais.</td></tr>
+<tr><td>Contrapeso</td><td>Peso que desce quando a cabine sobe e reduz o esforço do motor.</td></tr>
+<tr><td>Controle por destino</td><td>O passageiro informa o andar no saguão e o sistema indica a cabine.</td></tr>
+<tr><td>Dois andares (double-deck)</td><td>Duas cabines empilhadas que param em dois andares de uma vez.</td></tr>
+<tr><td>Expresso</td><td>Trecho do poço sem paradas, entre o térreo e uma zona alta.</td></tr>
+<tr><td>Intervalo</td><td>Tempo médio entre cabines saindo do andar de embarque.</td></tr>
+<tr><td>Lobby no céu</td><td>Andar de transferência no meio de uma torre alta.</td></tr>
+<tr><td>MRL</td><td>Elevador de tração sem casa de máquinas.</td></tr>
+<tr><td>Paradas prováveis</td><td>Número médio de paradas de uma cabine por viagem.</td></tr>
+<tr><td>Pico de subida</td><td>Horário em que quase todos entram pelo térreo e sobem.</td></tr>
+<tr><td>Ponte de embarque</td><td>Passarela fechada do portão até a porta do avião.</td></tr>
+<tr><td>Semente</td><td>Número que define a construção e os passageiros de uma partida.</td></tr>
+<tr><td>Tempo de ida e volta</td><td>Tempo de uma cabine sair do térreo, atender a viagem e voltar.</td></tr>
+<tr><td>Zona</td><td>Faixa de andares atendida por um grupo de elevadores.</td></tr>
+</tbody></table></div>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="revisao-pt" aria-labelledby="h-revisao-pt">
+<h2 id="h-revisao-pt">Revisão rápida</h2>
+<div class="quiz">
+<details><summary>1. Por que dividir uma torre em zonas aumenta a capacidade?</summary><p>Cada cabine atende menos andares e para menos por viagem; e o grupo alto percorre os andares baixos sem parar. O tempo de ida e volta cai.</p></details>
+<details><summary>2. Um grupo tem intervalo de 24 s, mas a capacidade de 5 minutos é baixa. Como pode?</summary><p>As cabines saem do térreo com frequência, mas cada viagem demora porque para em muitos andares. Intervalo curto não garante capacidade.</p></details>
+<details><summary>3. O que exige um prédio com mais de 30 m no jogo?</summary><p>Um elevador de bombeiros atendendo todos os níveis. O limite de 30 m é regra do jogo.</p></details>
+<details><summary>4. Por que um shopping com escadas rolantes ainda precisa de elevadores?</summary><p>Cadeirantes, carrinhos de bebê e carrinhos de compra não usam escada rolante.</p></details>
+<details><summary>5. Qual ponte de embarque atende um widebody pela porta dianteira?</summary><p>Apron drive ou ponte em T. A ponte sobre a asa só complementa a dianteira.</p></details>
+<details><summary>6. Quem demonstrou o freio de segurança do elevador, e quando?</summary><p>Elisha Otis, em Nova York, em 1853 ou 1854, conforme a fonte.</p></details>
+<details><summary>7. Qual a diferença entre a capacidade teórica e a prática de uma escada rolante?</summary><p>A teórica supõe todos os degraus ocupados. Na prática, as pessoas deixam espaço; o jogo usa 60% da teórica.</p></details>
+<details><summary>8. Para que serve a semente?</summary><p>Ela repete a mesma construção e os mesmos passageiros, para comparar projetos de forma justa.</p></details>
+</div>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="referencias-pt" aria-labelledby="h-referencias-pt">
+<h2 id="h-referencias-pt">Referências</h2>
+<ol class="refs">
+<li id="ref-1-pt"><strong>Giovani Perotto Mesquita</strong>, “Elevadores”, jogo deste site, <a href="Elevadores.html">giovanipm.github.io/Elevadores.html</a>.</li>
+<li id="ref-2-pt"><strong>Wikipedia</strong>, “Elisha Otis”, acesso em 13/11/2026, <a href="https://en.wikipedia.org/wiki/Elisha_Otis" rel="noopener">en.wikipedia.org/wiki/Elisha_Otis</a>.</li>
+<li id="ref-3-pt"><strong>Guinness World Records</strong>, “First safety elevator (lift)”, acesso em 13/11/2026, <a href="https://www.guinnessworldrecords.com/world-records/72451-first-safety-elevator-lift" rel="noopener">guinnessworldrecords.com</a>. Dá 1854 para a demonstração.</li>
+<li id="ref-4-pt"><strong>Wikipedia</strong>, “Escalator”, acesso em 13/11/2026, <a href="https://en.wikipedia.org/wiki/Escalator" rel="noopener">en.wikipedia.org/wiki/Escalator</a>.</li>
+<li id="ref-5-pt"><strong>Smithsonian Magazine</strong>, “How the Escalator Forever Changed Our Sense of Space”, acesso em 13/11/2026, <a href="https://www.smithsonianmag.com/innovation/how-escalator-forever-changed-our-sense-space-180972468/" rel="noopener">smithsonianmag.com</a>.</li>
+<li id="ref-6-pt"><strong>Britannica</strong>, “Double-deck elevator”, acesso em 13/11/2026, <a href="https://www.britannica.com/technology/double-deck-elevator" rel="noopener">britannica.com</a>. Outras fontes dão 1931 para o Cities Service Building.</li>
+<li id="ref-7-pt"><strong>Wikipedia</strong>, “Sky lobby”, acesso em 13/11/2026, <a href="https://en.wikipedia.org/wiki/Sky_lobby" rel="noopener">en.wikipedia.org/wiki/Sky_lobby</a>.</li>
+<li id="ref-8-pt"><strong>Wikipedia</strong>, “Destination dispatch”, acesso em 13/11/2026, <a href="https://en.wikipedia.org/wiki/Destination_dispatch" rel="noopener">en.wikipedia.org/wiki/Destination_dispatch</a>.</li>
+<li id="ref-9-pt"><strong>Lee E. Gray</strong>, “Lift Traffic Analysis 1890–1960”, resumo, acesso em 13/11/2026, <a href="https://liftescalatorlibrary.org/paper_indexing/abstract_pages/00000141.html" rel="noopener">liftescalatorlibrary.org</a>.</li>
+<li id="ref-10-pt"><strong>Richard Peters</strong>, “Traffic Analysis based on the Up Peak Round Trip Time method: why it works and how it can be improved”, Peters Research, acesso em 13/11/2026, <a href="https://peters-research.com/?p=1096" rel="noopener">peters-research.com</a>.</li>
+<li id="ref-11-pt"><strong>AviationPros</strong>, “Just Where Was That First Boarding Bridge Installed?”, acesso em 13/11/2026, <a href="https://www.aviationpros.com/gse/passenger-loading-systems-boarding-bridges-stairs-jetways/article/10910572/different-people-say-they-invstalled-the-first-jetbridge" rel="noopener">aviationpros.com</a>.</li>
+<li id="ref-12-pt"><strong>ADELTE</strong>, “Passenger Boarding Bridges for Airports”, acesso em 13/11/2026, <a href="https://www.adelte.com/airports/passenger-boarding-bridges/" rel="noopener">adelte.com</a>.</li>
+<li id="ref-13-pt"><strong>AmadaTECH</strong>, “Escalator speed and capacity”, 2020, acesso em 13/11/2026, <a href="https://amadatech.com/de/escalator-speed-and-capacity/" rel="noopener">amadatech.com</a>. O valor de 4.500 pessoas/h para 600 mm vem de um catálogo da Mitsubishi Electric (Series Z), visto apenas como trecho em resultado de busca.</li>
+<li id="ref-14-pt"><strong>ISO</strong>, “ISO 8100-32:2020”, e <strong>CIBSE</strong>, “Guide D: Transportation systems in buildings”; valores citados pela revista Elevator World em “ISO 8100-32:2020 Guidance”, cujo texto completo não pude abrir. <a href="https://www.iso.org/standard/76389.html" rel="noopener">iso.org</a> · <a href="https://www.cibse.org/knowledge-research/knowledge-portal/guide-d-transportation-systems-in-buildings-2020" rel="noopener">cibse.org</a>.</li>
+<li id="ref-15-pt"><strong>CEN</strong>, “EN 81-72:2020”, descrição, acesso em 13/11/2026, <a href="https://genorma.com/en/standards/en-81-72-2020" rel="noopener">genorma.com</a>.</li>
+</ol>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== EN ===================== -->
+<div id="en" role="tabpanel" aria-labelledby="tab-en" lang="en" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html#en" data-projects>← Projects</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Lifts: vertical transport simulator tutorial</h1>
+      <p class="dek">The history of lifts, escalators and boarding bridges; the theory of vertical traffic; the game rules; a step-by-step walkthrough with screens; and strategies for each type of building.</p>
+      <div class="byline">
+        <span>By <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Published on <time datetime="2026-11-13">13 November 2026</time></span>
+        <span class="credit">Reviewed and formatted using Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-en">
+    <h2 id="toc-en">Contents</h2>
+    <ol>
+      <li><a href="#intro-en">The game</a></li>
+      <li><a href="#historia-en">A short history</a></li>
+      <li><a href="#teoria-en">Vertical traffic theory</a></li>
+      <li><a href="#regras-en">The game rules</a></li>
+      <li><a href="#roteiro-en">Step by step</a></li>
+      <li><a href="#experimento-en">What the simulation shows</a></li>
+      <li><a href="#estrategia-en">Strategies by building</a></li>
+      <li><a href="#erros-en">Common mistakes</a></li>
+      <li><a href="#modelo-en">Model limits</a></li>
+      <li><a href="#glossario-en">Glossary</a></li>
+      <li><a href="#revisao-en">Quick review</a></li>
+      <li><a href="#referencias-en">References</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-en" aria-labelledby="h-intro-en">
+<h2 id="h-intro-en">The game</h2>
+<p>Lifts is a design game. <sup><a href="#ref-1-en">[1]</a></sup> Each game draws a building, from a house to a skyscraper, an airport or a stadium, with a need: how many people, where they go, how fast and on what budget. You choose lifts, escalators, moving walks and boarding bridges. The simulation then plays the peak hour, with cars moving and queues growing or shrinking, and gives a score.</p>
+<p>The game is a single HTML file, works offline and is available in Portuguese, English, Italian and Spanish.</p>
+<p><a class="launch" href="Elevadores.html#en">Open the game <span aria-hidden="true">→</span></a></p>
+<figure>
+<img src="rc_images/ElevadoresInicio-en.png" alt="Game start screen with the brief of an office tower on the left (levels, height, population, budget, demand, targets and requirements), the section of the 23-level building in the centre and the empty design panel on the right" width="1300" height="900" loading="lazy">
+<figcaption>Brief on the left, building section in the centre and design on the right.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="historia-en" aria-labelledby="h-historia-en">
+<h2 id="h-historia-en">A short history</h2>
+<h3>The safe lift (1853–1857)</h3>
+<p>Goods hoists already existed, but fear of a broken rope kept them from carrying people. Elisha Otis created a safety brake that locks the car to its guide rails if the rope breaks, and demonstrated it in public in New York by having the rope of his own platform cut. <sup><a href="#ref-2-en">[2]</a></sup> Sources disagree on the date of the demonstration: 1853 or 1854. <sup><a href="#ref-2-en">[2]</a></sup> <sup><a href="#ref-3-en">[3]</a></sup> On 23 March 1857, Otis installed the first passenger lift with this brake in the E. V. Haughwout store in New York. <sup><a href="#ref-2-en">[2]</a></sup></p>
+<h3>The escalator (1896–1900)</h3>
+<p>Jesse Reno built an “inclined elevator” at Coney Island in 1896, considered the first working escalator. Charles Seeberger developed another design, built with Otis in 1899, and registered the name “escalator” in 1900; the Otis escalator won a prize at the Paris Exposition that year. <sup><a href="#ref-4-en">[4]</a></sup> <sup><a href="#ref-5-en">[5]</a></sup></p>
+<h3>The traffic calculation (1923)</h3>
+<p>To know how many lifts a building needs, you must estimate how many stops a car makes per trip. Bassett Jones published that formula in 1923 in the <em>General Electric Review</em>, and it is still one of the bases of the calculation method used today. <sup><a href="#ref-9-en">[9]</a></sup> <sup><a href="#ref-10-en">[10]</a></sup></p>
+<h3>Double-deck and sky lobby (1931–1973)</h3>
+<p>The Cities Service Building in New York had double-deck lifts, with one car for the even floors and another for the odd ones. Sources give 1931 or 1932. <sup><a href="#ref-6-en">[6]</a></sup> The sky lobby, a transfer floor halfway up the tower, appears in Chicago’s John Hancock Center, completed in 1969 according to Wikipedia (another source gives 1968), and in the World Trade Center towers, with lobbies on floors 44 and 78. <sup><a href="#ref-7-en">[7]</a></sup></p>
+<h3>Destination dispatch (1961–1992)</h3>
+<p>Instead of pressing “up” and choosing the floor inside the car, passengers key in their destination in the lobby and the system tells them which car to take. The idea was conceived in 1961 by Leo Port in Sydney; the first commercial system, Schindler’s Miconic 10, is dated 1992, although one source mentions an installation in 1990. <sup><a href="#ref-8-en">[8]</a></sup></p>
+<h3>Boarding bridges (1958–1959)</h3>
+<p>The first enclosed boarding bridges appeared in the United States in the late 1950s, but there is no agreement on which came first: there are records of a United bridge at Chicago O’Hare in 1958 and of bridges at San Francisco and Atlanta in 1959. <sup><a href="#ref-11-en">[11]</a></sup></p>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="teoria-en" aria-labelledby="h-teoria-en">
+<h2 id="h-teoria-en">Vertical traffic theory</h2>
+<h3>The up-peak and the round trip</h3>
+<p>The most demanding moment in an office building is the morning arrival: almost everyone enters at the main floor and goes up. The classic calculation method looks at one complete trip of a car during that peak. <sup><a href="#ref-10-en">[10]</a></sup></p>
+<figure>
+<img src="rc_images/ElevadoresViagem-en.svg" alt="A car loads P passengers at the main floor, goes up stopping at S floors up to the reversal floor H and comes down non-stop to the main floor. The round trip time adds the travel over 2 times H, the S + 1 stops and the loading and unloading of the 2 P passengers. Divided by the number of cars L, it gives the interval; and 300 times P times L divided by the round trip time gives how many people the group carries in 5 minutes." width="1000" height="380" loading="lazy">
+<figcaption>The round trip: the time a car takes to leave the main floor and return to it.</figcaption>
+</figure>
+<ul>
+<li><strong>Probable stops (S):</strong> with many floors and many passengers, the car stops at almost all of them. That is why tall buildings are split into zones.</li>
+<li><strong>Interval:</strong> the average time between two cars leaving the main floor. The shorter, the less waiting.</li>
+<li><strong>5-minute handling capacity:</strong> how many people the group carries in 5 minutes, as a percentage of the population.</li>
+</ul>
+<p>For offices, Elevator World cites for ISO 8100-32:2020 and CIBSE Guide D a capacity of 12% of the population in 5 minutes with an interval of up to 30 seconds; for residential buildings, 6%. <sup><a href="#ref-14-en">[14]</a></sup> The game uses these values as targets. I could not consult the full text of the article, only its summary.</p>
+<p>The game does not apply the formula: it simulates each passenger and measures the result. The formula helps you understand why zones and bigger cars work.</p>
+<h3>Zones, express runs and sky lobby</h3>
+<figure>
+<img src="rc_images/ElevadoresZonas-en.svg" alt="On the left, a single group serves every floor and stops at many of them on each trip. In the centre, two zones: one group serves the low floors and another goes straight from the main floor to the high floors, without stopping at the low ones. On the right, a sky lobby: fast shuttle lifts, possibly double-deck, carry people from the main floor to the sky lobby, and local groups distribute from there." width="1000" height="410" loading="lazy">
+<figcaption>Splitting the building cuts stops per trip; a sky lobby saves shafts on the lower floors.</figcaption>
+</figure>
+<p>In the game, a zone is a group with a limited “Serves from … to …” and the “Main boarding floor” on the ground floor. The stretch between the ground floor and the zone is run without stops. For a sky lobby, create a shuttle group between the ground floor and an intermediate floor, and local groups with that floor as their boarding floor; the game makes people change lifts on their own.</p>
+<h3>Double-deck and destination dispatch</h3>
+<ul>
+<li><strong>Double-deck:</strong> two stacked cars stop at two neighbouring floors at once. In the game, only in buildings with 25 levels or more.</li>
+<li><strong>Destination dispatch:</strong> puts people going to the same floor in the same car, cutting stops. In the game, grouping gets stronger when the group’s queue exceeds half of its cars’ capacity.</li>
+</ul>
+<h3>Escalators</h3>
+<p>Escalators carry far more people than lifts over a few floors. Theoretical capacity at 0.5 m/s is 6,750 people per hour with 800 mm steps and 9,000 with 1,000 mm. For 600 mm, AmadaTECH gives 2,500 and a Mitsubishi Electric brochure gives 4,500; the game uses 4,500. <sup><a href="#ref-13-en">[13]</a></sup> In practice, people do not fill every step, and the game uses 60% of the theoretical value (a game rule). Escalators do not take wheelchairs or trolleys: that is why every building with escalators also needs lifts.</p>
+<h3>Boarding bridges</h3>
+<p>The apron drive bridge is the most flexible and widely used; the nose loader is anchored to the building, for tight stands; there are versions for the A380 upper deck, T-bridges and bridges for regional aircraft (commuter). <sup><a href="#ref-12-en">[12]</a></sup> The over-the-wing bridge reaches the rear door and complements the front one. Without a bridge, boarding is by bus, which is slower.</p>
+<h3>Accessibility and firefighters</h3>
+<p>Firefighter lifts follow their own standards, such as EN 81-72, which covers lifts used for firefighting under firefighter control. <sup><a href="#ref-15-en">[15]</a></sup> The game requires a firefighter lift serving every level when the building is taller than 30 m; that limit is a game rule, not the standard’s.</p>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="regras-en" aria-labelledby="h-regras-en">
+<h2 id="h-regras-en">The game rules</h2>
+<p>There are 12 building types, in three difficulties, generated from a seed: the same seed always creates the same building and the same passengers.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Building</th><th>Need</th><th>Typical targets</th></tr></thead>
+<tbody>
+<tr><td>House</td><td>A wheelchair user reaches every floor</td><td>Average wait, tight budget</td></tr>
+<tr><td>Apartments</td><td>Morning peak, going down to the ground floor and car park</td><td>5-minute capacity ≥ 6%, wait</td></tr>
+<tr><td>Offices</td><td>Arrival peak, going up from the ground floor</td><td>Capacity ≥ 12%, interval ≤ 30 s, wait ≤ 30 s</td></tr>
+<tr><td>Hotel</td><td>Guests both ways, service trolleys</td><td>Interval, wait, trolleys</td></tr>
+<tr><td>Hospital</td><td>Visitors, beds, supplies and pharmacy</td><td>Bed and goods waits</td></tr>
+<tr><td>Shopping mall</td><td>Traffic between floors and the car park</td><td>Wait, longest escalator queue, journey</td></tr>
+<tr><td>Airport</td><td>Departures and arrivals, gates, pier</td><td>Flights on time, walk, queues</td></tr>
+<tr><td>Metro</td><td>A crowd with each train</td><td>Clear the platform before the next train</td></tr>
+<tr><td>Stadium</td><td>Exit from the upper tiers</td><td>Crowd cleared in time</td></tr>
+<tr><td>Car park</td><td>Drivers; sometimes without ramps</td><td>People and car waits</td></tr>
+<tr><td>Warehouse</td><td>Pallets between dock and mezzanines</td><td>Pallets delivered, wait</td></tr>
+<tr><td>Supertall</td><td>Offices, hotel, homes and sky deck</td><td>Capacity, wait, journey</td></tr>
+</tbody></table></div>
+<ul>
+<li><strong>Requirements</strong> are mandatory: a step-free route to every level in use, a firefighter lift above 30 m, bed lifts in the hospital, service lifts in the hotel and hospital, escalators on every flight in the mall, metro and stadium, and so on. The brief ticks them live while you build the design.</li>
+<li><strong>Stars:</strong> 1 with every target and requirement met; 2 within budget; 3 spending at most 90% of the budget, with the recommendations met.</li>
+<li><strong>Reference design:</strong> the button builds a ready-made solution but caps the score at one star.</li>
+</ul>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="roteiro-en" aria-labelledby="h-roteiro-en">
+<h2 id="h-roteiro-en">Step by step</h2>
+<p>The walkthrough below solves a medium office tower (seed 123, 23 levels, 3,080 people) with three stars.</p>
+<h3>1. Choose the building</h3>
+<p>Click <strong>New building</strong>. Choose the type (or “Random”), the difficulty and, to repeat a game, the seed. Click <strong>Generate</strong>.</p>
+<figure>
+<img src="rc_images/ElevadoresNova-en.png" alt="New building window with the 12 building types and the Random option, the Easy, Medium and Hard difficulties and the Seed field set to 123" width="1300" height="900" loading="lazy">
+<figcaption>The new building window.</figcaption>
+</figure>
+<h3>2. Read the brief</h3>
+<p>Look at the demand (people per 5 minutes), the targets and the requirements. In this tower, the targets are 12% capacity, an interval of up to 30 s and an average wait of up to 30 s; the requirements are a step-free route and a firefighter lift.</p>
+<h3>3. Build the lift groups</h3>
+<ol>
+<li>Click <strong>+ Lifts</strong>. Choose <strong>Machine-room-less traction</strong>, 9 cars for 21 people at 2.5 m/s, serving Floor 1 to Floor 11.</li>
+<li>Click <strong>+ Lifts</strong> again. Choose <strong>Traction with machine room</strong>, 9 cars for 21 people at 4 m/s, from Floor 12 to 22, with <strong>Destination dispatch</strong> control.</li>
+<li>Add a third group, <strong>Firefighter lift</strong>, serving Ground floor to Floor 22.</li>
+</ol>
+<figure>
+<img src="rc_images/ElevadoresProjeto-en.png" alt="Design panel with two groups: machine-room-less traction, 9 cars for 21 people at 2.5 m/s serving floor 1 to 11, and traction with machine room, 9 cars for 21 people at 4 m/s from floor 12 to 22 with destination dispatch; each group shows stops, travel and cost" width="380" height="904" loading="lazy">
+<figcaption>Two zones: low floors and high floors, both boarding on the ground floor.</figcaption>
+</figure>
+<p>Each group shows how many stops it serves, the travel, what it can carry and the cost. If something is not allowed, such as a hydraulic lift in a tall building, the group turns red and explains why.</p>
+<h3>4. Simulate</h3>
+<p>Click <strong>Simulate</strong> to watch the peak (choose ×10 to ×120) or <strong>Instant result</strong>.</p>
+<figure>
+<img src="rc_images/ElevadoresSimulacao-en.png" alt="Section of the tower during the simulation: two lift shafts with cars on several floors, ropes and counterweights, passengers inside the cars, queues of people on the ground floor and the firefighter lift on the right; below, the clock at 5:00 of 15:00 and the numbers of people waiting, arrived and average wait" width="574" height="825" loading="lazy">
+<figcaption>Five minutes into the peak: each zone with its cars, ropes and counterweights.</figcaption>
+</figure>
+<h3>5. Read the result and adjust</h3>
+<figure>
+<img src="rc_images/ElevadoresResultado-en.png" alt="Result panel with three stars: 5-minute capacity 14.4% against a 12% target, interval 17 s against 30 s, average wait 23 s against 30 s, no one without a route and cost 4,993 against a budget of 7,050 credits" width="574" height="567" loading="lazy">
+<figcaption>Three stars: every target met while spending 71% of the budget.</figcaption>
+</figure>
+<p>If a target fails, the “What to improve” list tells you where to start, and the drawing shows where queues grew. Change the design and simulate again: with the same seed, the passengers are the same, so the comparison is fair.</p>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="experimento-en" aria-labelledby="h-experimento-en">
+<h2 id="h-experimento-en">What the simulation shows</h2>
+<p>In the same tower as the walkthrough, I tested six designs, each in 10 simulations with different passenger seeds. All include the firefighter lift. The values are averages from the game’s model, not measurements of real buildings.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Design</th><th>5-min capacity</th><th>Interval</th><th>Average wait</th><th>Cost</th></tr></thead>
+<tbody>
+<tr><td>One group, 6 cars, conventional</td><td>4.8%</td><td>46 s</td><td>4.1 min</td><td>2,479</td></tr>
+<tr><td>One group, 6 cars, destination dispatch</td><td>5.6%</td><td>44 s</td><td>4.0 min</td><td>2,479</td></tr>
+<tr><td>One group, 10 cars, conventional</td><td>8.5%</td><td>24 s</td><td>2.4 min</td><td>3,879</td></tr>
+<tr><td>Two zones, 5 + 5 cars, conventional</td><td>11.1%</td><td>41 s</td><td>1.6 min</td><td>2,732</td></tr>
+<tr><td>Two zones, 5 + 5 cars, destination dispatch</td><td>11.0%</td><td>39 s</td><td>1.8 min</td><td>2,732</td></tr>
+<tr><td>Reference design: three zones, 28 cars</td><td>14.2%</td><td>10 s</td><td>11 s</td><td>5,874</td></tr>
+</tbody></table></div>
+<ul>
+<li><strong>Zones pay off more than extra cars.</strong> Two zones with 10 cars carry more people and keep waits shorter than a single group with the same 10 cars, and they cost less.</li>
+<li><strong>A short interval is not enough.</strong> The single group with 10 cars has a 24 s interval, but each trip stops at many floors and capacity stays at 8.5%.</li>
+<li><strong>Destination dispatch helped little in this model.</strong> It raised the single group’s capacity from 4.8% to 5.6% but did not improve the wait. Manufacturers report bigger gains in real buildings; the game’s model groups passengers in a simple way.</li>
+<li><strong>The walkthrough solution</strong> (two zones with 9 cars each) reached 14.4% capacity and a 23 s wait in a single simulation, at a cost of 4,993.</li>
+</ul>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="estrategia-en" aria-labelledby="h-estrategia-en">
+<h2 id="h-estrategia-en">Strategies by building</h2>
+<ul>
+<li><strong>House:</strong> a home lift or a platform lift is enough. Serve every floor and spend little.</li>
+<li><strong>Apartments:</strong> one machine-room-less traction group, including the car park, usually does it. Above 30 m, add the firefighter lift.</li>
+<li><strong>Offices and supertall:</strong> zones of about 10 floors, cars for 21 or 24 people and higher speed in the high zones. If there is a car park, a group just between car park and ground floor keeps the zones from stopping down there. In the supertall, a direct group to the sky deck.</li>
+<li><strong>Hotel:</strong> one group for guests and a goods and service lift from the basement to every floor.</li>
+<li><strong>Hospital:</strong> the required number of bed lifts, plus one spare, and service and passenger lifts. Beds take long to load, and a single bed lift queues up fast.</li>
+<li><strong>Shopping mall:</strong> escalator pairs on every flight, one accessible lift end to end, a service lift and an inclined moving walk to the car park for trolleys.</li>
+<li><strong>Airport:</strong> a compatible bridge at every door: commuter for regional aircraft, nose loader or apron drive for narrow-body, apron drive plus over-the-wing for wide-body, and the A380 with the upper-deck bridge. The walking target calls for walkways along a bit more than half of the pier.</li>
+<li><strong>Metro:</strong> each train drops hundreds of people at once. Use wide up escalators, several units per flight, and accessible lifts.</li>
+</ul>
+<figure>
+<img src="rc_images/ElevadoresMetro-en.png" alt="Section of an underground metro station with three levels below the street, lifts on the left, a train stopped at the platform and zigzag escalators on the right with people going up and a queue at the bottom" width="574" height="440" loading="lazy">
+<figcaption>Metro: the train has just arrived and the queue forms at the foot of the escalators.</figcaption>
+</figure>
+<ul>
+<li><strong>Stadium:</strong> down escalators on every flight, sized for the crowd in the upper tiers, and lifts for wheelchair users.</li>
+<li><strong>Car park:</strong> if it is “without ramps”, cars also need car lifts, which are slow; add several.</li>
+<li><strong>Warehouse:</strong> goods lifts carrying several pallets, at higher speed.</li>
+</ul>
+<figure>
+<img src="rc_images/ElevadoresAeroporto-en.png" alt="Section of the airport terminal with a curved roof, lifts and escalators, and below the apron with aircraft on both sides of the pier, boarding bridges linking the pier to the doors and boarding progress bars" width="574" height="606" loading="lazy">
+<figcaption>Airport: aircraft on both sides of the pier, with the chosen bridges and the boarding progress.</figcaption>
+</figure>
+<figure>
+<img src="rc_images/ElevadoresPontes-en.png" alt="Boarding bridge editor with one row per aircraft type and a bridge selector for each door" width="352" height="121" loading="lazy">
+<figcaption>Bridges are chosen by aircraft type and by door.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="erros-en" aria-labelledby="h-erros-en">
+<h2 id="h-erros-en">Common mistakes</h2>
+<ul class="myths">
+<li><h3>“One big group solves everything.”</h3><p>In a tall building, every trip stops at almost every floor. Split into zones.</p></li>
+<li><h3>“Hydraulic is cheap, so I use it everywhere.”</h3><p>Hydraulic lifts are slow and, in the game, only go up to 18 m and 6 stops.</p></li>
+<li><h3>“The escalators already take everyone.”</h3><p>Wheelchair users, prams and shopping trolleys need a lift or an inclined moving walk.</p></li>
+<li><h3>“One escalator per flight is enough.”</h3><p>In the mall and the metro the requirement is per direction. Use “Both (pair)” or two escalators.</p></li>
+<li><h3>“Any bridge will do.”</h3><p>A nose loader does not serve wide-body aircraft, and the A380 needs the high bridge for the upper deck. The over-the-wing bridge only complements a front one.</p></li>
+<li><h3>“I forgot the car park.”</h3><p>People arriving by car also need a route to the floors, and wheelchair users do not climb ramps.</p></li>
+</ul>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="modelo-en" aria-labelledby="h-modelo-en">
+<h2 id="h-modelo-en">Model limits</h2>
+<ul>
+<li>Cars choose their next stop when they leave and do not stop on the way for a new call.</li>
+<li>Arrivals follow a constant rate during the peak, without waves.</li>
+<li>Fixed stairs are not simulated. In the stadium, half of the crowd uses fixed stairs, which are left out.</li>
+<li>Aircraft boarding and the walk along the pier are direct calculations, not simulations of people.</li>
+<li>Costs and energy are in game units. Speeds, travel limits and costs are game parameters chosen to be plausible, not manufacturer data.</li>
+</ul>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="glossario-en" aria-labelledby="h-glossario-en">
+<h2 id="h-glossario-en">Glossary</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Term</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td>5-minute handling capacity</td><td>People carried in 5 minutes, as a percentage of the population.</td></tr>
+<tr><td>Boarding bridge</td><td>Enclosed walkway from the gate to the aircraft door.</td></tr>
+<tr><td>Counterweight</td><td>Weight that goes down when the car goes up, easing the motor’s work.</td></tr>
+<tr><td>Destination dispatch</td><td>The passenger enters the floor in the lobby and the system assigns the car.</td></tr>
+<tr><td>Double-deck</td><td>Two stacked cars that stop at two floors at once.</td></tr>
+<tr><td>Express zone</td><td>Stretch of shaft without stops, between the ground floor and a high zone.</td></tr>
+<tr><td>Interval</td><td>Average time between cars leaving the main boarding floor.</td></tr>
+<tr><td>Machine room</td><td>Room at the top of the shaft housing the motor of traditional traction lifts.</td></tr>
+<tr><td>MRL</td><td>Machine-room-less traction lift.</td></tr>
+<tr><td>Probable stops</td><td>Average number of stops a car makes per trip.</td></tr>
+<tr><td>Reversal floor</td><td>The highest floor where the car stops on a trip, before going down.</td></tr>
+<tr><td>Round trip time</td><td>Time for a car to leave the ground floor, serve its trip and come back.</td></tr>
+<tr><td>Seed</td><td>Number that defines a game’s building and passengers.</td></tr>
+<tr><td>Sky lobby</td><td>Transfer floor halfway up a tall tower.</td></tr>
+<tr><td>Up-peak</td><td>Period when almost everyone enters at the ground floor and goes up.</td></tr>
+<tr><td>Zone</td><td>Range of floors served by a lift group.</td></tr>
+</tbody></table></div>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="revisao-en" aria-labelledby="h-revisao-en">
+<h2 id="h-revisao-en">Quick review</h2>
+<div class="quiz">
+<details><summary>1. Why does splitting a tower into zones raise capacity?</summary><p>Each car serves fewer floors and stops less per trip, and the high group runs past the low floors without stopping. The round trip time drops.</p></details>
+<details><summary>2. A group has a 24 s interval but a low 5-minute capacity. How?</summary><p>Cars leave the ground floor often, but each trip is long because it stops at many floors. A short interval does not guarantee capacity.</p></details>
+<details><summary>3. What does a building taller than 30 m require in the game?</summary><p>A firefighter lift serving every level. The 30 m limit is a game rule.</p></details>
+<details><summary>4. Why does a mall with escalators still need lifts?</summary><p>Wheelchair users, prams and shopping trolleys do not use escalators.</p></details>
+<details><summary>5. Which boarding bridge serves a wide-body aircraft through the front door?</summary><p>Apron drive or T-bridge. The over-the-wing bridge only complements the front one.</p></details>
+<details><summary>6. Who demonstrated the lift safety brake, and when?</summary><p>Elisha Otis, in New York, in 1853 or 1854, depending on the source.</p></details>
+<details><summary>7. What is the difference between an escalator’s theoretical and practical capacity?</summary><p>Theoretical capacity assumes every step is full. In practice people leave gaps; the game uses 60% of the theoretical value.</p></details>
+<details><summary>8. What is the seed for?</summary><p>It repeats the same building and the same passengers, so designs can be compared fairly.</p></details>
+</div>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="referencias-en" aria-labelledby="h-referencias-en">
+<h2 id="h-referencias-en">References</h2>
+<ol class="refs">
+<li id="ref-1-en"><strong>Giovani Perotto Mesquita</strong>, “Elevadores” (Lifts), game on this site, <a href="Elevadores.html#en">giovanipm.github.io/Elevadores.html</a>.</li>
+<li id="ref-2-en"><strong>Wikipedia</strong>, “Elisha Otis”, accessed 13 November 2026, <a href="https://en.wikipedia.org/wiki/Elisha_Otis" rel="noopener">en.wikipedia.org/wiki/Elisha_Otis</a>.</li>
+<li id="ref-3-en"><strong>Guinness World Records</strong>, “First safety elevator (lift)”, accessed 13 November 2026, <a href="https://www.guinnessworldrecords.com/world-records/72451-first-safety-elevator-lift" rel="noopener">guinnessworldrecords.com</a>. Gives 1854 for the demonstration.</li>
+<li id="ref-4-en"><strong>Wikipedia</strong>, “Escalator”, accessed 13 November 2026, <a href="https://en.wikipedia.org/wiki/Escalator" rel="noopener">en.wikipedia.org/wiki/Escalator</a>.</li>
+<li id="ref-5-en"><strong>Smithsonian Magazine</strong>, “How the Escalator Forever Changed Our Sense of Space”, accessed 13 November 2026, <a href="https://www.smithsonianmag.com/innovation/how-escalator-forever-changed-our-sense-space-180972468/" rel="noopener">smithsonianmag.com</a>.</li>
+<li id="ref-6-en"><strong>Britannica</strong>, “Double-deck elevator”, accessed 13 November 2026, <a href="https://www.britannica.com/technology/double-deck-elevator" rel="noopener">britannica.com</a>. Other sources give 1931 for the Cities Service Building.</li>
+<li id="ref-7-en"><strong>Wikipedia</strong>, “Sky lobby”, accessed 13 November 2026, <a href="https://en.wikipedia.org/wiki/Sky_lobby" rel="noopener">en.wikipedia.org/wiki/Sky_lobby</a>.</li>
+<li id="ref-8-en"><strong>Wikipedia</strong>, “Destination dispatch”, accessed 13 November 2026, <a href="https://en.wikipedia.org/wiki/Destination_dispatch" rel="noopener">en.wikipedia.org/wiki/Destination_dispatch</a>.</li>
+<li id="ref-9-en"><strong>Lee E. Gray</strong>, “Lift Traffic Analysis 1890–1960”, abstract, accessed 13 November 2026, <a href="https://liftescalatorlibrary.org/paper_indexing/abstract_pages/00000141.html" rel="noopener">liftescalatorlibrary.org</a>.</li>
+<li id="ref-10-en"><strong>Richard Peters</strong>, “Traffic Analysis based on the Up Peak Round Trip Time method: why it works and how it can be improved”, Peters Research, accessed 13 November 2026, <a href="https://peters-research.com/?p=1096" rel="noopener">peters-research.com</a>.</li>
+<li id="ref-11-en"><strong>AviationPros</strong>, “Just Where Was That First Boarding Bridge Installed?”, accessed 13 November 2026, <a href="https://www.aviationpros.com/gse/passenger-loading-systems-boarding-bridges-stairs-jetways/article/10910572/different-people-say-they-invstalled-the-first-jetbridge" rel="noopener">aviationpros.com</a>.</li>
+<li id="ref-12-en"><strong>ADELTE</strong>, “Passenger Boarding Bridges for Airports”, accessed 13 November 2026, <a href="https://www.adelte.com/airports/passenger-boarding-bridges/" rel="noopener">adelte.com</a>.</li>
+<li id="ref-13-en"><strong>AmadaTECH</strong>, “Escalator speed and capacity”, 2020, accessed 13 November 2026, <a href="https://amadatech.com/de/escalator-speed-and-capacity/" rel="noopener">amadatech.com</a>. The 4,500 people/h figure for 600 mm comes from a Mitsubishi Electric brochure (Series Z), seen only as a search-result excerpt.</li>
+<li id="ref-14-en"><strong>ISO</strong>, “ISO 8100-32:2020”, and <strong>CIBSE</strong>, “Guide D: Transportation systems in buildings”; values cited by Elevator World in “ISO 8100-32:2020 Guidance”, whose full text I could not open. <a href="https://www.iso.org/standard/76389.html" rel="noopener">iso.org</a> · <a href="https://www.cibse.org/knowledge-research/knowledge-portal/guide-d-transportation-systems-in-buildings-2020" rel="noopener">cibse.org</a>.</li>
+<li id="ref-15-en"><strong>CEN</strong>, “EN 81-72:2020”, description, accessed 13 November 2026, <a href="https://genorma.com/en/standards/en-81-72-2020" rel="noopener">genorma.com</a>.</li>
+</ol>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== IT ===================== -->
+<div id="it" role="tabpanel" aria-labelledby="tab-it" lang="it" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html#it" data-projects>← Progetti</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Ascensori: tutorial del simulatore di trasporto verticale</h1>
+      <p class="dek">La storia di ascensori, scale mobili e ponti d’imbarco; la teoria del traffico verticale; le regole del gioco; una guida passo dopo passo con le schermate; e strategie per ogni tipo di costruzione.</p>
+      <div class="byline">
+        <span>Di <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Pubblicato il <time datetime="2026-11-13">13/11/2026</time></span>
+        <span class="credit">Rivisto e formattato con Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-it">
+    <h2 id="toc-it">Indice</h2>
+    <ol>
+      <li><a href="#intro-it">Il gioco</a></li>
+      <li><a href="#historia-it">Una breve storia</a></li>
+      <li><a href="#teoria-it">La teoria del traffico verticale</a></li>
+      <li><a href="#regras-it">Le regole del gioco</a></li>
+      <li><a href="#roteiro-it">Passo dopo passo</a></li>
+      <li><a href="#experimento-it">Cosa mostra la simulazione</a></li>
+      <li><a href="#estrategia-it">Strategie per costruzione</a></li>
+      <li><a href="#erros-it">Errori comuni</a></li>
+      <li><a href="#modelo-it">Limiti del modello</a></li>
+      <li><a href="#glossario-it">Glossario</a></li>
+      <li><a href="#revisao-it">Ripasso rapido</a></li>
+      <li><a href="#referencias-it">Riferimenti</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-it" aria-labelledby="h-intro-it">
+<h2 id="h-intro-it">Il gioco</h2>
+<p>Ascensori è un gioco di progettazione. <sup><a href="#ref-1-it">[1]</a></sup> A ogni partita estrae una costruzione, da una casa a un grattacielo, un aeroporto o uno stadio, con un’esigenza: quante persone, dove vanno, con che fretta e con quale budget. Tu scegli ascensori, scale mobili, tappeti mobili e ponti d’imbarco. Poi la simulazione mostra l’ora di punta in movimento, con cabine che salgono e scendono e code che crescono o spariscono, e dà il punteggio.</p>
+<p>Il gioco è un unico file HTML, funziona senza internet ed è in portoghese, inglese, italiano e spagnolo.</p>
+<p><a class="launch" href="Elevadores.html#it">Apri il gioco <span aria-hidden="true">→</span></a></p>
+<figure>
+<img src="rc_images/ElevadoresInicio-it.png" alt="Schermata iniziale del gioco con il brief di una torre di uffici a sinistra (livelli, altezza, popolazione, budget, domanda, obiettivi e requisiti), la sezione dell’edificio di 23 livelli al centro e il pannello del progetto vuoto a destra" width="1300" height="900" loading="lazy">
+<figcaption>Brief a sinistra, sezione della costruzione al centro e progetto a destra.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="historia-it" aria-labelledby="h-historia-it">
+<h2 id="h-historia-it">Una breve storia</h2>
+<h3>L’ascensore sicuro (1853–1857)</h3>
+<p>I montacarichi esistevano già, ma la paura che la fune si spezzasse impediva di usarli per le persone. Elisha Otis creò un freno di sicurezza che blocca la cabina sulle guide se la fune si rompe, e lo dimostrò in pubblico a New York facendo tagliare la fune della sua stessa piattaforma. <sup><a href="#ref-2-it">[2]</a></sup> Le fonti non concordano sulla data della dimostrazione: 1853 o 1854. <sup><a href="#ref-2-it">[2]</a></sup> <sup><a href="#ref-3-it">[3]</a></sup> Il 23 marzo 1857 Otis installò il primo ascensore per passeggeri con questo freno nel negozio E. V. Haughwout, a New York. <sup><a href="#ref-2-it">[2]</a></sup></p>
+<h3>La scala mobile (1896–1900)</h3>
+<p>Jesse Reno costruì nel 1896 un “ascensore inclinato” a Coney Island, considerato la prima scala mobile funzionante. Charles Seeberger sviluppò un altro modello, costruito con la Otis nel 1899, e registrò il nome “escalator” nel 1900; la scala della Otis fu premiata all’Esposizione Universale di Parigi quell’anno. <sup><a href="#ref-4-it">[4]</a></sup> <sup><a href="#ref-5-it">[5]</a></sup></p>
+<h3>Il calcolo del traffico (1923)</h3>
+<p>Per sapere quanti ascensori servono a un edificio bisogna stimare quante fermate fa una cabina per viaggio. Bassett Jones pubblicò questa formula nel 1923 sulla <em>General Electric Review</em>, ed è ancora una delle basi del metodo di calcolo usato oggi. <sup><a href="#ref-9-it">[9]</a></sup> <sup><a href="#ref-10-it">[10]</a></sup></p>
+<h3>Due piani e sky lobby (1931–1973)</h3>
+<p>Il Cities Service Building, a New York, ebbe ascensori a due piani, con una cabina per i piani pari e un’altra per i dispari. Le fonti indicano il 1931 o il 1932. <sup><a href="#ref-6-it">[6]</a></sup> Lo sky lobby, un piano di trasferimento a metà torre, compare nel John Hancock Center di Chicago, completato nel 1969 secondo Wikipedia (un’altra fonte indica il 1968), e nelle torri del World Trade Center, con lobby ai piani 44 e 78. <sup><a href="#ref-7-it">[7]</a></sup></p>
+<h3>Comando a destinazione (1961–1992)</h3>
+<p>Invece di premere “su” e scegliere il piano dentro la cabina, il passeggero digita la destinazione nell’atrio e il sistema indica quale cabina prendere. L’idea fu concepita nel 1961 da Leo Port, a Sydney; il primo sistema commerciale, il Miconic 10 della Schindler, è datato 1992, anche se una fonte cita un’installazione nel 1990. <sup><a href="#ref-8-it">[8]</a></sup></p>
+<h3>Ponti d’imbarco (1958–1959)</h3>
+<p>I primi ponti d’imbarco chiusi comparvero negli Stati Uniti alla fine degli anni Cinquanta, ma non c’è accordo su quale sia stato il primo: ci sono notizie di un ponte della United a Chicago O’Hare nel 1958 e di ponti a San Francisco e Atlanta nel 1959. <sup><a href="#ref-11-it">[11]</a></sup></p>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="teoria-it" aria-labelledby="h-teoria-it">
+<h2 id="h-teoria-it">La teoria del traffico verticale</h2>
+<h3>La punta di salita e il viaggio di andata e ritorno</h3>
+<p>Il momento più impegnativo di un edificio per uffici è l’arrivo del mattino: quasi tutti entrano dal piano terra e salgono. Il metodo di calcolo classico guarda un viaggio completo di una cabina in quella punta. <sup><a href="#ref-10-it">[10]</a></sup></p>
+<figure>
+<img src="rc_images/ElevadoresViagem-it.svg" alt="Una cabina carica P passeggeri al piano principale, sale fermandosi in S piani fino al piano di inversione H e scende senza fermate al piano principale. Il tempo di andata e ritorno somma la corsa di 2 volte H, le S + 1 fermate e la salita e discesa dei 2 P passeggeri. Diviso per il numero di cabine L dà l’intervallo; e 300 per P per L diviso per il tempo di andata e ritorno dà quante persone il gruppo trasporta in 5 minuti." width="1000" height="380" loading="lazy">
+<figcaption>Il viaggio di andata e ritorno: il tempo che una cabina impiega a lasciare il piano terra e tornarci.</figcaption>
+</figure>
+<ul>
+<li><strong>Fermate probabili (S):</strong> con molti piani e molti passeggeri, la cabina si ferma quasi a tutti. Per questo gli edifici alti si dividono in zone.</li>
+<li><strong>Intervallo:</strong> il tempo medio tra due cabine che lasciano il piano terra. Più è breve, meno si aspetta.</li>
+<li><strong>Capacità in 5 minuti:</strong> quante persone il gruppo trasporta in 5 minuti, in percentuale della popolazione.</li>
+</ul>
+<p>Per gli uffici, la rivista Elevator World cita per la ISO 8100-32:2020 e il CIBSE Guide D una capacità del 12% della popolazione in 5 minuti con intervallo fino a 30 secondi; per le residenze, il 6%. <sup><a href="#ref-14-it">[14]</a></sup> Il gioco usa questi valori come obiettivi. Non ho potuto consultare il testo completo dell’articolo, solo il riassunto.</p>
+<p>Il gioco non applica la formula: simula ogni passeggero e misura il risultato. La formula serve a capire perché zone e cabine più grandi funzionano.</p>
+<h3>Zone, corsa diretta e sky lobby</h3>
+<figure>
+<img src="rc_images/ElevadoresZonas-it.svg" alt="A sinistra, un gruppo unico serve tutti i piani e si ferma in molti di essi a ogni viaggio. Al centro, due zone: un gruppo serve i piani bassi e un altro va diretto dal piano principale ai piani alti, senza fermarsi nei bassi. A destra, uno sky lobby: ascensori navetta veloci, anche a due piani, portano dal piano principale allo sky lobby, e gruppi locali distribuiscono da lì." width="1000" height="410" loading="lazy">
+<figcaption>Dividere l’edificio riduce le fermate per viaggio; lo sky lobby risparmia vani nei piani bassi.</figcaption>
+</figure>
+<p>Nel gioco, una zona è un gruppo con “Serve da … a …” limitato e “Piano d’imbarco” al piano terra. Il tratto tra il piano terra e la zona si percorre senza fermate. Per uno sky lobby, crea un gruppo navetta tra il piano terra e un piano intermedio, e gruppi locali con quel piano come imbarco; il gioco fa cambiare ascensore alle persone da sole.</p>
+<h3>Due piani e comando a destinazione</h3>
+<ul>
+<li><strong>Due piani:</strong> due cabine sovrapposte si fermano a due piani vicini insieme. Nel gioco, solo in costruzioni con 25 livelli o più.</li>
+<li><strong>Comando a destinazione:</strong> mette nella stessa cabina chi va allo stesso piano e riduce le fermate. Nel gioco, il raggruppamento diventa più forte quando la coda del gruppo supera la metà della capacità delle cabine.</li>
+</ul>
+<h3>Scale mobili</h3>
+<p>Le scale mobili portano molte più persone degli ascensori su pochi piani. La capacità teorica a 0,5 m/s è di 6.750 persone all’ora con gradini da 800 mm e 9.000 con 1.000 mm. Per 600 mm, AmadaTECH indica 2.500 e un catalogo Mitsubishi Electric 4.500; il gioco usa 4.500. <sup><a href="#ref-13-it">[13]</a></sup> In pratica nessuno occupa tutti i gradini, e il gioco usa il 60% del valore teorico (regola del gioco). Le scale mobili non portano sedie a rotelle né carrelli: per questo ogni costruzione con scale ha bisogno anche di ascensori.</p>
+<h3>Ponti d’imbarco</h3>
+<p>Il ponte apron drive è il più flessibile e diffuso; il nose loader è ancorato all’edificio, per piazzole strette; esistono versioni per il ponte superiore dell’A380, ponti a T e ponti per aerei regionali (commuter). <sup><a href="#ref-12-it">[12]</a></sup> Il ponte sopra l’ala raggiunge la porta posteriore e completa quello anteriore. Senza ponte, l’imbarco è in autobus, più lento.</p>
+<h3>Accessibilità e vigili del fuoco</h3>
+<p>Gli ascensori antincendio seguono norme proprie, come la EN 81-72, che riguarda gli ascensori usati per lo spegnimento sotto il controllo dei vigili del fuoco. <sup><a href="#ref-15-it">[15]</a></sup> Il gioco richiede un ascensore antincendio a tutti i livelli quando la costruzione supera i 30 m; questo limite è una regola del gioco, non della norma.</p>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="regras-it" aria-labelledby="h-regras-it">
+<h2 id="h-regras-it">Le regole del gioco</h2>
+<p>Ci sono 12 tipi di costruzione, in tre difficoltà, generati da un seme: lo stesso seme genera sempre la stessa costruzione e gli stessi passeggeri.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Costruzione</th><th>Esigenza</th><th>Obiettivi tipici</th></tr></thead>
+<tbody>
+<tr><td>Casa</td><td>Una persona in sedia a rotelle raggiunge tutti i piani</td><td>Attesa media, budget ridotto</td></tr>
+<tr><td>Condominio</td><td>Punta del mattino, scendendo al piano terra e al garage</td><td>Capacità in 5 min ≥ 6%, attesa</td></tr>
+<tr><td>Uffici</td><td>Punta d’arrivo, salendo dal piano terra</td><td>Capacità ≥ 12%, intervallo ≤ 30 s, attesa ≤ 30 s</td></tr>
+<tr><td>Hotel</td><td>Ospiti nei due sensi, carrelli di servizio</td><td>Intervallo, attesa, carrelli</td></tr>
+<tr><td>Ospedale</td><td>Visitatori, letti, forniture e farmacia</td><td>Attesa dei letti e dei carichi</td></tr>
+<tr><td>Centro commerciale</td><td>Movimento tra piani e parcheggio</td><td>Attesa, coda più lunga alla scala, viaggio</td></tr>
+<tr><td>Aeroporto</td><td>Partenze e arrivi, gate, molo</td><td>Voli in tempo, cammino, code</td></tr>
+<tr><td>Metropolitana</td><td>Una folla a ogni treno</td><td>Svuotare la banchina prima del treno successivo</td></tr>
+<tr><td>Stadio</td><td>Uscita dalle tribune superiori</td><td>Pubblico evacuato in tempo</td></tr>
+<tr><td>Parcheggio</td><td>Automobilisti; a volte senza rampe</td><td>Attesa di persone e veicoli</td></tr>
+<tr><td>Magazzino</td><td>Pallet tra banchina e soppalchi</td><td>Pallet consegnati, attesa</td></tr>
+<tr><td>Grattacielo</td><td>Uffici, hotel, abitazioni e belvedere</td><td>Capacità, attesa, viaggio</td></tr>
+</tbody></table></div>
+<ul>
+<li><strong>I requisiti</strong> sono obbligatori: percorso accessibile a tutti i livelli usati, ascensore antincendio oltre i 30 m, montaletti in ospedale, montacarichi di servizio in hotel e ospedale, scale mobili a ogni rampa nel centro commerciale, nella metropolitana e nello stadio, e così via. Il brief li spunta in tempo reale mentre prepari il progetto.</li>
+<li><strong>Stelle:</strong> 1 con tutti gli obiettivi e requisiti; 2 nel budget; 3 spendendo al massimo il 90% del budget, con le raccomandazioni rispettate.</li>
+<li><strong>Progetto di riferimento:</strong> il pulsante monta una soluzione pronta, ma limita il punteggio a una stella.</li>
+</ul>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="roteiro-it" aria-labelledby="h-roteiro-it">
+<h2 id="h-roteiro-it">Passo dopo passo</h2>
+<p>Il percorso qui sotto risolve una torre di uffici media (seme 123, 23 livelli, 3.080 persone) con tre stelle.</p>
+<h3>1. Scegli la costruzione</h3>
+<p>Fai clic su <strong>Nuova costruzione</strong>. Scegli il tipo (o “Casuale”), la difficoltà e, se vuoi ripetere una partita, il seme. Fai clic su <strong>Genera</strong>.</p>
+<figure>
+<img src="rc_images/ElevadoresNova-it.png" alt="Finestra Nuova costruzione con i 12 tipi di costruzione e l’opzione Casuale, le difficoltà Facile, Medio e Difficile e il campo Seme con il valore 123" width="1300" height="900" loading="lazy">
+<figcaption>La finestra della nuova costruzione.</figcaption>
+</figure>
+<h3>2. Leggi il brief</h3>
+<p>Guarda la domanda (persone ogni 5 minuti), gli obiettivi e i requisiti. In questa torre gli obiettivi sono capacità del 12%, intervallo fino a 30 s e attesa media fino a 30 s; i requisiti sono percorso accessibile e ascensore antincendio.</p>
+<h3>3. Prepara i gruppi di ascensori</h3>
+<ol>
+<li>Fai clic su <strong>+ Ascensori</strong>. Scegli <strong>Trazione senza locale macchine</strong>, 9 cabine da 21 persone a 2,5 m/s, dal Piano 1 al Piano 11.</li>
+<li>Fai di nuovo clic su <strong>+ Ascensori</strong>. Scegli <strong>Trazione con locale macchine</strong>, 9 cabine da 21 persone a 4 m/s, dal Piano 12 al 22, con comando <strong>A destinazione</strong>.</li>
+<li>Aggiungi un terzo gruppo, <strong>Antincendio</strong>, dal Piano terra al Piano 22.</li>
+</ol>
+<figure>
+<img src="rc_images/ElevadoresProjeto-it.png" alt="Pannello Progetto con due gruppi: trazione senza locale macchine, 9 cabine da 21 persone a 2,5 m/s dal piano 1 all’11, e trazione con locale macchine, 9 cabine da 21 persone a 4 m/s dal piano 12 al 22 con comando a destinazione; ogni gruppo mostra fermate, corsa e costo" width="380" height="904" loading="lazy">
+<figcaption>Due zone: piani bassi e piani alti, entrambe con imbarco al piano terra.</figcaption>
+</figure>
+<p>Ogni gruppo mostra quante fermate serve, la corsa, cosa può portare e il costo. Se qualcosa non è permesso, come un idraulico in un edificio alto, il gruppo diventa rosso e spiega il motivo.</p>
+<h3>4. Simula</h3>
+<p>Fai clic su <strong>Simula</strong> per vedere la punta in movimento (scegli da ×10 a ×120) o su <strong>Risultato immediato</strong>.</p>
+<figure>
+<img src="rc_images/ElevadoresSimulacao-it.png" alt="Sezione della torre durante la simulazione: due vani di ascensori con cabine a vari piani, funi e contrappesi, passeggeri dentro le cabine, code di persone al piano terra e l’ascensore antincendio a destra; sotto, l’orologio a 5:00 su 15:00 e i numeri di persone in attesa, arrivate e attesa media" width="574" height="854" loading="lazy">
+<figcaption>Cinque minuti di punta: ogni zona con le sue cabine, funi e contrappesi.</figcaption>
+</figure>
+<h3>5. Leggi il risultato e correggi</h3>
+<figure>
+<img src="rc_images/ElevadoresResultado-it.png" alt="Pannello Risultato con tre stelle: capacità in 5 minuti 14,4% contro un obiettivo del 12%, intervallo 17 s contro 30 s, attesa media 23 s contro 30 s, nessuno senza percorso e costo 4993 contro un budget di 7050 crediti" width="574" height="567" loading="lazy">
+<figcaption>Tre stelle: obiettivi rispettati spendendo il 71% del budget.</figcaption>
+</figure>
+<p>Se un obiettivo non è rispettato, l’elenco “Cosa migliorare” dice da dove partire, e il disegno mostra dove sono cresciute le code. Cambia il progetto e simula di nuovo: con lo stesso seme i passeggeri sono gli stessi, e il confronto è equo.</p>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="experimento-it" aria-labelledby="h-experimento-it">
+<h2 id="h-experimento-it">Cosa mostra la simulazione</h2>
+<p>Nella stessa torre della guida ho provato sei progetti, ciascuno in 10 simulazioni con semi di passeggeri diversi. Tutti includono l’ascensore antincendio. I valori sono medie del modello del gioco, non misure di edifici reali.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Progetto</th><th>Capacità 5 min</th><th>Intervallo</th><th>Attesa media</th><th>Costo</th></tr></thead>
+<tbody>
+<tr><td>Un gruppo, 6 cabine, convenzionale</td><td>4,8%</td><td>46 s</td><td>4,1 min</td><td>2.479</td></tr>
+<tr><td>Un gruppo, 6 cabine, a destinazione</td><td>5,6%</td><td>44 s</td><td>4,0 min</td><td>2.479</td></tr>
+<tr><td>Un gruppo, 10 cabine, convenzionale</td><td>8,5%</td><td>24 s</td><td>2,4 min</td><td>3.879</td></tr>
+<tr><td>Due zone, 5 + 5 cabine, convenzionale</td><td>11,1%</td><td>41 s</td><td>1,6 min</td><td>2.732</td></tr>
+<tr><td>Due zone, 5 + 5 cabine, a destinazione</td><td>11,0%</td><td>39 s</td><td>1,8 min</td><td>2.732</td></tr>
+<tr><td>Progetto di riferimento: tre zone, 28 cabine</td><td>14,2%</td><td>10 s</td><td>11 s</td><td>5.874</td></tr>
+</tbody></table></div>
+<ul>
+<li><strong>Le zone rendono più delle cabine in più.</strong> Due zone con 10 cabine portano più persone e fanno aspettare meno di un gruppo unico con le stesse 10, e costano meno.</li>
+<li><strong>Un intervallo breve non basta.</strong> Il gruppo unico da 10 cabine ha un intervallo di 24 s, ma ogni viaggio si ferma a molti piani e la capacità resta all’8,5%.</li>
+<li><strong>Il comando a destinazione ha aiutato poco in questo modello.</strong> Ha portato la capacità del gruppo unico dal 4,8% al 5,6%, ma non ha migliorato l’attesa. I costruttori riportano guadagni maggiori negli edifici reali; il modello del gioco raggruppa i passeggeri in modo semplice.</li>
+<li><strong>La soluzione della guida</strong> (due zone con 9 cabine ciascuna) ha raggiunto il 14,4% di capacità e 23 s di attesa in una sola simulazione, con un costo di 4.993.</li>
+</ul>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="estrategia-it" aria-labelledby="h-estrategia-it">
+<h2 id="h-estrategia-it">Strategie per costruzione</h2>
+<ul>
+<li><strong>Casa:</strong> basta l’ascensore domestico o la piattaforma. Servi tutti i piani e spendi poco.</li>
+<li><strong>Condominio:</strong> di solito basta un gruppo a trazione senza locale macchine, incluso il garage. Oltre i 30 m, aggiungi l’ascensore antincendio.</li>
+<li><strong>Uffici e grattacielo:</strong> zone di circa 10 piani, cabine da 21 o 24 persone e velocità maggiore nelle zone alte. Se c’è un parcheggio, un gruppo solo tra parcheggio e piano terra evita che le zone si fermino laggiù. Nel grattacielo, un gruppo diretto al belvedere.</li>
+<li><strong>Hotel:</strong> un gruppo per gli ospiti e un montacarichi di servizio dal seminterrato a tutti i piani.</li>
+<li><strong>Ospedale:</strong> i montaletti richiesti, più uno di scorta, e ascensori di servizio e per passeggeri. I letti impiegano molto a entrare e uscire, e un solo montaletti fa subito coda.</li>
+<li><strong>Centro commerciale:</strong> coppie di scale mobili a ogni rampa, un ascensore accessibile da un capo all’altro, un montacarichi di servizio e un tappeto inclinato fino al parcheggio per i carrelli.</li>
+<li><strong>Aeroporto:</strong> un ponte compatibile a ogni porta: commuter per i regionali, nose loader o apron drive per il corridoio singolo, apron drive più sopra l’ala per i widebody, e l’A380 con il ponte per il ponte superiore. L’obiettivo di cammino richiede tappeti su poco più di metà del molo.</li>
+<li><strong>Metropolitana:</strong> ogni treno lascia centinaia di persone insieme. Usa scale in salita larghe, con più unità per rampa, e ascensori accessibili.</li>
+</ul>
+<figure>
+<img src="rc_images/ElevadoresMetro-it.png" alt="Sezione di una stazione della metropolitana sotterranea con tre livelli sotto la strada, ascensori a sinistra, un treno fermo alla banchina e scale mobili a zigzag a destra con persone che salgono e una coda alla base" width="574" height="469" loading="lazy">
+<figcaption>Metropolitana: il treno è appena arrivato e la coda si forma ai piedi delle scale.</figcaption>
+</figure>
+<ul>
+<li><strong>Stadio:</strong> scale in discesa a ogni rampa, dimensionate per il pubblico delle tribune alte, e ascensori per le sedie a rotelle.</li>
+<li><strong>Parcheggio:</strong> se è “senza rampe”, anche le auto hanno bisogno di montauto, che sono lenti; mettine diversi.</li>
+<li><strong>Magazzino:</strong> montacarichi da più pallet, a velocità maggiore.</li>
+</ul>
+<figure>
+<img src="rc_images/ElevadoresAeroporto-it.png" alt="Sezione del terminal aeroportuale con copertura curva, ascensori e scale mobili, e sotto il piazzale con aerei sui due lati del molo, ponti d’imbarco che collegano il molo alle porte e barre di avanzamento dell’imbarco" width="574" height="635" loading="lazy">
+<figcaption>Aeroporto: aerei sui due lati del molo, con i ponti scelti e l’avanzamento dell’imbarco.</figcaption>
+</figure>
+<figure>
+<img src="rc_images/ElevadoresPontes-it.png" alt="Editor dei ponti d’imbarco con una riga per tipo di aereo e un selettore di ponte per ogni porta" width="352" height="138" loading="lazy">
+<figcaption>I ponti si scelgono per tipo di aereo e per porta.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="erros-it" aria-labelledby="h-erros-it">
+<h2 id="h-erros-it">Errori comuni</h2>
+<ul class="myths">
+<li><h3>“Un gruppo grande risolve tutto.”</h3><p>In un edificio alto, ogni viaggio si ferma quasi a tutti i piani. Dividi in zone.</p></li>
+<li><h3>“L’idraulico costa poco, lo uso ovunque.”</h3><p>L’idraulico è lento e, nel gioco, arriva solo a 18 m e 6 fermate.</p></li>
+<li><h3>“Le scale mobili portano già tutti.”</h3><p>Sedie a rotelle, passeggini e carrelli della spesa hanno bisogno di un ascensore o di un tappeto inclinato.</p></li>
+<li><h3>“Basta una scala per rampa.”</h3><p>Nel centro commerciale e nella metropolitana il requisito è per senso. Usa “Entrambi (coppia)” o due scale.</p></li>
+<li><h3>“Qualsiasi ponte va bene.”</h3><p>Il nose loader non serve i widebody, e l’A380 ha bisogno del ponte alto per il ponte superiore. Il ponte sopra l’ala completa solo uno anteriore.</p></li>
+<li><h3>“Ho dimenticato il parcheggio.”</h3><p>Chi arriva in auto ha bisogno anche lui di un percorso fino ai piani, e le sedie a rotelle non salgono le rampe.</p></li>
+</ul>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="modelo-it" aria-labelledby="h-modelo-it">
+<h2 id="h-modelo-it">Limiti del modello</h2>
+<ul>
+<li>Le cabine scelgono la fermata successiva alla partenza e non si fermano a metà strada per una chiamata nuova.</li>
+<li>Gli arrivi seguono un ritmo costante durante la punta, senza ondate.</li>
+<li>Le scale fisse non sono simulate. Nello stadio, metà del pubblico usa le scale fisse, che restano fuori dal conto.</li>
+<li>L’imbarco sugli aerei e il cammino sul molo sono calcoli diretti, non simulazioni di persone.</li>
+<li>Costi ed energia sono in unità del gioco. Velocità, limiti di corsa e costi sono parametri del gioco scelti per essere plausibili, non dati dei costruttori.</li>
+</ul>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="glossario-it" aria-labelledby="h-glossario-it">
+<h2 id="h-glossario-it">Glossario</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Termine</th><th>Significato</th></tr></thead>
+<tbody>
+<tr><td>Capacità in 5 minuti</td><td>Persone trasportate in 5 minuti, in percentuale della popolazione.</td></tr>
+<tr><td>Comando a destinazione</td><td>Il passeggero indica il piano nell’atrio e il sistema assegna la cabina.</td></tr>
+<tr><td>Contrappeso</td><td>Peso che scende quando la cabina sale e riduce lo sforzo del motore.</td></tr>
+<tr><td>Corsa diretta</td><td>Tratto del vano senza fermate, tra il piano terra e una zona alta.</td></tr>
+<tr><td>Due piani (double-deck)</td><td>Due cabine sovrapposte che si fermano a due piani insieme.</td></tr>
+<tr><td>Fermate probabili</td><td>Numero medio di fermate di una cabina per viaggio.</td></tr>
+<tr><td>Intervallo</td><td>Tempo medio tra cabine che lasciano il piano d’imbarco.</td></tr>
+<tr><td>Locale macchine</td><td>Locale in cima al vano con il motore degli ascensori a trazione tradizionali.</td></tr>
+<tr><td>MRL</td><td>Ascensore a trazione senza locale macchine.</td></tr>
+<tr><td>Piano di inversione</td><td>Il piano più alto dove la cabina si ferma in un viaggio, prima di scendere.</td></tr>
+<tr><td>Ponte d’imbarco</td><td>Passerella chiusa dal gate alla porta dell’aereo.</td></tr>
+<tr><td>Punta di salita</td><td>Periodo in cui quasi tutti entrano dal piano terra e salgono.</td></tr>
+<tr><td>Seme</td><td>Numero che definisce la costruzione e i passeggeri di una partita.</td></tr>
+<tr><td>Sky lobby</td><td>Piano di trasferimento a metà di una torre alta.</td></tr>
+<tr><td>Tempo di andata e ritorno</td><td>Tempo perché una cabina lasci il piano terra, faccia il viaggio e torni.</td></tr>
+<tr><td>Zona</td><td>Gruppo di piani servito da un gruppo di ascensori.</td></tr>
+</tbody></table></div>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="revisao-it" aria-labelledby="h-revisao-it">
+<h2 id="h-revisao-it">Ripasso rapido</h2>
+<div class="quiz">
+<details><summary>1. Perché dividere una torre in zone aumenta la capacità?</summary><p>Ogni cabina serve meno piani e si ferma meno per viaggio, e il gruppo alto passa i piani bassi senza fermarsi. Il tempo di andata e ritorno si riduce.</p></details>
+<details><summary>2. Un gruppo ha un intervallo di 24 s ma una capacità in 5 minuti bassa. Come mai?</summary><p>Le cabine lasciano spesso il piano terra, ma ogni viaggio dura a lungo perché si ferma a molti piani. Un intervallo breve non garantisce capacità.</p></details>
+<details><summary>3. Cosa richiede nel gioco un edificio più alto di 30 m?</summary><p>Un ascensore antincendio a tutti i livelli. Il limite dei 30 m è una regola del gioco.</p></details>
+<details><summary>4. Perché un centro commerciale con scale mobili ha comunque bisogno di ascensori?</summary><p>Sedie a rotelle, passeggini e carrelli della spesa non usano le scale mobili.</p></details>
+<details><summary>5. Quale ponte d’imbarco serve un widebody dalla porta anteriore?</summary><p>Apron drive o ponte a T. Il ponte sopra l’ala completa solo quello anteriore.</p></details>
+<details><summary>6. Chi dimostrò il freno di sicurezza dell’ascensore, e quando?</summary><p>Elisha Otis, a New York, nel 1853 o nel 1854, a seconda della fonte.</p></details>
+<details><summary>7. Qual è la differenza tra capacità teorica e pratica di una scala mobile?</summary><p>Quella teorica suppone tutti i gradini occupati. In pratica le persone lasciano spazio; il gioco usa il 60% di quella teorica.</p></details>
+<details><summary>8. A cosa serve il seme?</summary><p>Ripete la stessa costruzione e gli stessi passeggeri, per confrontare i progetti in modo equo.</p></details>
+</div>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="referencias-it" aria-labelledby="h-referencias-it">
+<h2 id="h-referencias-it">Riferimenti</h2>
+<ol class="refs">
+<li id="ref-1-it"><strong>Giovani Perotto Mesquita</strong>, “Elevadores” (Ascensori), gioco di questo sito, <a href="Elevadores.html#it">giovanipm.github.io/Elevadores.html</a>.</li>
+<li id="ref-2-it"><strong>Wikipedia</strong>, “Elisha Otis”, in inglese, consultato il 13/11/2026, <a href="https://en.wikipedia.org/wiki/Elisha_Otis" rel="noopener">en.wikipedia.org/wiki/Elisha_Otis</a>.</li>
+<li id="ref-3-it"><strong>Guinness World Records</strong>, “First safety elevator (lift)”, consultato il 13/11/2026, <a href="https://www.guinnessworldrecords.com/world-records/72451-first-safety-elevator-lift" rel="noopener">guinnessworldrecords.com</a>. Indica il 1854 per la dimostrazione.</li>
+<li id="ref-4-it"><strong>Wikipedia</strong>, “Escalator”, in inglese, consultato il 13/11/2026, <a href="https://en.wikipedia.org/wiki/Escalator" rel="noopener">en.wikipedia.org/wiki/Escalator</a>.</li>
+<li id="ref-5-it"><strong>Smithsonian Magazine</strong>, “How the Escalator Forever Changed Our Sense of Space”, consultato il 13/11/2026, <a href="https://www.smithsonianmag.com/innovation/how-escalator-forever-changed-our-sense-space-180972468/" rel="noopener">smithsonianmag.com</a>.</li>
+<li id="ref-6-it"><strong>Britannica</strong>, “Double-deck elevator”, consultato il 13/11/2026, <a href="https://www.britannica.com/technology/double-deck-elevator" rel="noopener">britannica.com</a>. Altre fonti indicano il 1931 per il Cities Service Building.</li>
+<li id="ref-7-it"><strong>Wikipedia</strong>, “Sky lobby”, in inglese, consultato il 13/11/2026, <a href="https://en.wikipedia.org/wiki/Sky_lobby" rel="noopener">en.wikipedia.org/wiki/Sky_lobby</a>.</li>
+<li id="ref-8-it"><strong>Wikipedia</strong>, “Destination dispatch”, in inglese, consultato il 13/11/2026, <a href="https://en.wikipedia.org/wiki/Destination_dispatch" rel="noopener">en.wikipedia.org/wiki/Destination_dispatch</a>.</li>
+<li id="ref-9-it"><strong>Lee E. Gray</strong>, “Lift Traffic Analysis 1890–1960”, riassunto, consultato il 13/11/2026, <a href="https://liftescalatorlibrary.org/paper_indexing/abstract_pages/00000141.html" rel="noopener">liftescalatorlibrary.org</a>.</li>
+<li id="ref-10-it"><strong>Richard Peters</strong>, “Traffic Analysis based on the Up Peak Round Trip Time method: why it works and how it can be improved”, Peters Research, consultato il 13/11/2026, <a href="https://peters-research.com/?p=1096" rel="noopener">peters-research.com</a>.</li>
+<li id="ref-11-it"><strong>AviationPros</strong>, “Just Where Was That First Boarding Bridge Installed?”, consultato il 13/11/2026, <a href="https://www.aviationpros.com/gse/passenger-loading-systems-boarding-bridges-stairs-jetways/article/10910572/different-people-say-they-invstalled-the-first-jetbridge" rel="noopener">aviationpros.com</a>.</li>
+<li id="ref-12-it"><strong>ADELTE</strong>, “Passenger Boarding Bridges for Airports”, consultato il 13/11/2026, <a href="https://www.adelte.com/airports/passenger-boarding-bridges/" rel="noopener">adelte.com</a>.</li>
+<li id="ref-13-it"><strong>AmadaTECH</strong>, “Escalator speed and capacity”, 2020, consultato il 13/11/2026, <a href="https://amadatech.com/de/escalator-speed-and-capacity/" rel="noopener">amadatech.com</a>. Il valore di 4.500 persone/h per 600 mm viene da un catalogo Mitsubishi Electric (Series Z), visto solo come estratto in un risultato di ricerca.</li>
+<li id="ref-14-it"><strong>ISO</strong>, “ISO 8100-32:2020”, e <strong>CIBSE</strong>, “Guide D: Transportation systems in buildings”; valori citati da Elevator World in “ISO 8100-32:2020 Guidance”, il cui testo completo non ho potuto aprire. <a href="https://www.iso.org/standard/76389.html" rel="noopener">iso.org</a> · <a href="https://www.cibse.org/knowledge-research/knowledge-portal/guide-d-transportation-systems-in-buildings-2020" rel="noopener">cibse.org</a>.</li>
+<li id="ref-15-it"><strong>CEN</strong>, “EN 81-72:2020”, descrizione, consultato il 13/11/2026, <a href="https://genorma.com/en/standards/en-81-72-2020" rel="noopener">genorma.com</a>.</li>
+</ol>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== ES ===================== -->
+<div id="es" role="tabpanel" aria-labelledby="tab-es" lang="es" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html#es" data-projects>← Proyectos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Ascensores: tutorial del simulador de transporte vertical</h1>
+      <p class="dek">La historia de los ascensores, las escaleras mecánicas y las pasarelas de embarque; la teoría del tráfico vertical; las reglas del juego; un paso a paso con las pantallas; y estrategias para cada tipo de construcción.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado el <time datetime="2026-11-13">13/11/2026</time></span>
+        <span class="credit">Revisado y formateado con Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-es">
+    <h2 id="toc-es">Índice</h2>
+    <ol>
+      <li><a href="#intro-es">El juego</a></li>
+      <li><a href="#historia-es">Una breve historia</a></li>
+      <li><a href="#teoria-es">La teoría del tráfico vertical</a></li>
+      <li><a href="#regras-es">Las reglas del juego</a></li>
+      <li><a href="#roteiro-es">Paso a paso</a></li>
+      <li><a href="#experimento-es">Lo que muestra la simulación</a></li>
+      <li><a href="#estrategia-es">Estrategias por construcción</a></li>
+      <li><a href="#erros-es">Errores comunes</a></li>
+      <li><a href="#modelo-es">Límites del modelo</a></li>
+      <li><a href="#glossario-es">Glosario</a></li>
+      <li><a href="#revisao-es">Repaso rápido</a></li>
+      <li><a href="#referencias-es">Referencias</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-es" aria-labelledby="h-intro-es">
+<h2 id="h-intro-es">El juego</h2>
+<p>Ascensores es un juego de proyecto. <sup><a href="#ref-1-es">[1]</a></sup> En cada partida sortea una construcción, desde una casa hasta un rascacielos, un aeropuerto o un estadio, con una necesidad: cuántas personas, adónde van, con qué prisa y con qué presupuesto. Tú eliges ascensores, escaleras mecánicas, pasillos rodantes y pasarelas de embarque. Después, la simulación muestra la hora pico en movimiento, con cabinas que suben y bajan y filas que crecen o desaparecen, y da la nota.</p>
+<p>El juego es un único archivo HTML, funciona sin internet y está en portugués, inglés, italiano y español.</p>
+<p><a class="launch" href="Elevadores.html#es">Abrir el juego <span aria-hidden="true">→</span></a></p>
+<figure>
+<img src="rc_images/ElevadoresInicio-es.png" alt="Pantalla inicial del juego con el encargo de una torre de oficinas a la izquierda (niveles, altura, población, presupuesto, demanda, metas y requisitos), el corte del edificio de 23 niveles en el centro y el panel del proyecto vacío a la derecha" width="1300" height="900" loading="lazy">
+<figcaption>Encargo a la izquierda, corte de la construcción en el centro y proyecto a la derecha.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="historia-es" aria-labelledby="h-historia-es">
+<h2 id="h-historia-es">Una breve historia</h2>
+<h3>El ascensor seguro (1853–1857)</h3>
+<p>Los montacargas ya existían, pero el miedo a que se cortara el cable impedía usarlos para personas. Elisha Otis creó un freno de seguridad que traba la cabina en las guías si el cable se rompe, y lo demostró en público en Nueva York haciendo cortar el cable de su propia plataforma. <sup><a href="#ref-2-es">[2]</a></sup> Las fuentes no coinciden en la fecha de la demostración: 1853 o 1854. <sup><a href="#ref-2-es">[2]</a></sup> <sup><a href="#ref-3-es">[3]</a></sup> El 23 de marzo de 1857, Otis instaló el primer ascensor de pasajeros con ese freno en la tienda E. V. Haughwout, en Nueva York. <sup><a href="#ref-2-es">[2]</a></sup></p>
+<h3>La escalera mecánica (1896–1900)</h3>
+<p>Jesse Reno construyó en 1896 un “ascensor inclinado” en Coney Island, considerado la primera escalera mecánica en funcionamiento. Charles Seeberger desarrolló otro modelo, construido con Otis en 1899, y registró el nombre “escalator” en 1900; la escalera de Otis fue premiada en la Exposición Universal de París ese año. <sup><a href="#ref-4-es">[4]</a></sup> <sup><a href="#ref-5-es">[5]</a></sup></p>
+<h3>El cálculo del tráfico (1923)</h3>
+<p>Para saber cuántos ascensores necesita un edificio hay que estimar cuántas paradas hace una cabina por viaje. Bassett Jones publicó esa fórmula en 1923 en la <em>General Electric Review</em>, y sigue siendo una de las bases del método de cálculo que se usa hoy. <sup><a href="#ref-9-es">[9]</a></sup> <sup><a href="#ref-10-es">[10]</a></sup></p>
+<h3>Doble cabina y vestíbulo en altura (1931–1973)</h3>
+<p>El Cities Service Building, en Nueva York, tuvo ascensores de doble cabina, una para los pisos pares y otra para los impares. Las fuentes dan 1931 o 1932. <sup><a href="#ref-6-es">[6]</a></sup> El vestíbulo en altura (sky lobby), un piso de transferencia a mitad de la torre, aparece en el John Hancock Center de Chicago, terminado en 1969 según Wikipedia (otra fuente da 1968), y en las torres del World Trade Center, con vestíbulos en los pisos 44 y 78. <sup><a href="#ref-7-es">[7]</a></sup></p>
+<h3>Control por destino (1961–1992)</h3>
+<p>En lugar de pulsar “subir” y elegir el piso dentro de la cabina, el pasajero marca el destino en el vestíbulo y el sistema le dice qué cabina tomar. La idea la concibió en 1961 Leo Port, en Sídney; el primer sistema comercial, el Miconic 10 de Schindler, se fecha en 1992, aunque una fuente menciona una instalación en 1990. <sup><a href="#ref-8-es">[8]</a></sup></p>
+<h3>Pasarelas de embarque (1958–1959)</h3>
+<p>Las primeras pasarelas de embarque cerradas aparecieron en Estados Unidos a fines de los años cincuenta, pero no hay acuerdo sobre cuál fue la primera: hay registros de una pasarela de United en Chicago O’Hare en 1958 y de pasarelas en San Francisco y Atlanta en 1959. <sup><a href="#ref-11-es">[11]</a></sup></p>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="teoria-es" aria-labelledby="h-teoria-es">
+<h2 id="h-teoria-es">La teoría del tráfico vertical</h2>
+<h3>El pico de subida y el viaje de ida y vuelta</h3>
+<p>El momento más exigente de un edificio de oficinas es la llegada de la mañana: casi todos entran por la planta baja y suben. El método de cálculo clásico mira un viaje completo de una cabina en ese pico. <sup><a href="#ref-10-es">[10]</a></sup></p>
+<figure>
+<img src="rc_images/ElevadoresViagem-es.svg" alt="Una cabina embarca P pasajeros en el piso principal, sube parando en S pisos hasta el piso de reversa H y baja sin parar al piso principal. El tiempo de ida y vuelta suma el recorrido de 2 veces H, las S + 1 paradas y el embarque y desembarque de los 2 P pasajeros. Dividido por el número de cabinas L da el intervalo; y 300 por P por L dividido por el tiempo de ida y vuelta da cuántas personas lleva el grupo en 5 minutos." width="1000" height="380" loading="lazy">
+<figcaption>El viaje de ida y vuelta: el tiempo que tarda una cabina en salir de la planta baja y volver a ella.</figcaption>
+</figure>
+<ul>
+<li><strong>Paradas probables (S):</strong> con muchos pisos y muchos pasajeros, la cabina para en casi todos. Por eso los edificios altos se dividen en zonas.</li>
+<li><strong>Intervalo:</strong> el tiempo medio entre dos cabinas que salen de la planta baja. Cuanto más corto, menos se espera.</li>
+<li><strong>Capacidad de 5 minutos:</strong> cuántas personas lleva el grupo en 5 minutos, en porcentaje de la población.</li>
+</ul>
+<p>Para oficinas, la revista Elevator World cita para la ISO 8100-32:2020 y el CIBSE Guide D una capacidad del 12% de la población en 5 minutos con un intervalo de hasta 30 segundos; para viviendas, el 6%. <sup><a href="#ref-14-es">[14]</a></sup> El juego usa esos valores como metas. No pude consultar el texto completo del artículo, solo el resumen.</p>
+<p>El juego no aplica la fórmula: simula cada pasajero y mide el resultado. La fórmula sirve para entender por qué funcionan las zonas y las cabinas más grandes.</p>
+<h3>Zonas, recorrido expreso y vestíbulo en altura</h3>
+<figure>
+<img src="rc_images/ElevadoresZonas-es.svg" alt="A la izquierda, un grupo único atiende todos los pisos y para en muchos de ellos en cada viaje. En el centro, dos zonas: un grupo atiende los pisos bajos y otro va directo del piso principal a los pisos altos, sin parar en los bajos. A la derecha, un vestíbulo en altura: ascensores lanzadera rápidos, que pueden ser de doble cabina, llevan del piso principal al vestíbulo en altura, y grupos locales distribuyen desde allí." width="1000" height="410" loading="lazy">
+<figcaption>Dividir el edificio reduce las paradas por viaje; el vestíbulo en altura ahorra huecos en los pisos de abajo.</figcaption>
+</figure>
+<p>En el juego, una zona es un grupo con “Atiende desde … hasta …” limitado y el “Piso de embarque” en la planta baja. El tramo entre la planta baja y la zona se recorre sin paradas. Para un vestíbulo en altura, crea un grupo lanzadera entre la planta baja y un piso intermedio, y grupos locales con ese piso como embarque; el juego hace que la gente cambie de ascensor sola.</p>
+<h3>Doble cabina y control por destino</h3>
+<ul>
+<li><strong>Doble cabina:</strong> dos cabinas apiladas paran en dos pisos vecinos a la vez. En el juego, solo en construcciones con 25 niveles o más.</li>
+<li><strong>Control por destino:</strong> agrupa en la misma cabina a quienes van al mismo piso y reduce paradas. En el juego, el agrupamiento se vuelve más fuerte cuando la fila del grupo supera la mitad de la capacidad de las cabinas.</li>
+</ul>
+<h3>Escaleras mecánicas</h3>
+<p>Las escaleras mecánicas llevan mucha más gente que los ascensores entre pocos pisos. La capacidad teórica a 0,5 m/s es de 6.750 personas por hora con peldaños de 800 mm y 9.000 con 1.000 mm. Para 600 mm, AmadaTECH da 2.500 y un catálogo de Mitsubishi Electric da 4.500; el juego usa 4.500. <sup><a href="#ref-13-es">[13]</a></sup> En la práctica nadie ocupa todos los peldaños, y el juego usa el 60% del valor teórico (regla del juego). Las escaleras mecánicas no llevan sillas de ruedas ni carritos: por eso toda construcción con escaleras también necesita ascensores.</p>
+<h3>Pasarelas de embarque</h3>
+<p>La pasarela apron drive es la más flexible y la más usada; la nose loader está anclada al edificio, para plataformas estrechas; hay versiones para la cubierta superior del A380, pasarelas en T y pasarelas para aviones regionales (commuter). <sup><a href="#ref-12-es">[12]</a></sup> La pasarela sobre el ala llega a la puerta trasera y complementa la delantera. Sin pasarela, el embarque es en autobús, más lento.</p>
+<h3>Accesibilidad y bomberos</h3>
+<p>Los ascensores para bomberos siguen normas propias, como la EN 81-72, que trata de los ascensores usados en la extinción bajo control de los bomberos. <sup><a href="#ref-15-es">[15]</a></sup> El juego exige un ascensor de bomberos en todos los niveles cuando la construcción supera los 30 m; ese límite es regla del juego, no de la norma.</p>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="regras-es" aria-labelledby="h-regras-es">
+<h2 id="h-regras-es">Las reglas del juego</h2>
+<p>Hay 12 tipos de construcción, en tres dificultades, generados a partir de una semilla: la misma semilla siempre genera la misma construcción y los mismos pasajeros.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Construcción</th><th>Necesidad</th><th>Metas típicas</th></tr></thead>
+<tbody>
+<tr><td>Casa</td><td>Una persona en silla de ruedas llega a todos los pisos</td><td>Espera media, presupuesto corto</td></tr>
+<tr><td>Residencial</td><td>Pico de la mañana, bajando a la planta baja y al garaje</td><td>Capacidad de 5 min ≥ 6%, espera</td></tr>
+<tr><td>Oficinas</td><td>Pico de llegada, subiendo desde la planta baja</td><td>Capacidad ≥ 12%, intervalo ≤ 30 s, espera ≤ 30 s</td></tr>
+<tr><td>Hotel</td><td>Huéspedes en los dos sentidos, carritos de servicio</td><td>Intervalo, espera, carritos</td></tr>
+<tr><td>Hospital</td><td>Visitas, camas, insumos y farmacia</td><td>Espera de camas y de cargas</td></tr>
+<tr><td>Centro comercial</td><td>Movimiento entre pisos y estacionamiento</td><td>Espera, mayor fila de escalera, viaje</td></tr>
+<tr><td>Aeropuerto</td><td>Salidas y llegadas, puertas, muelle</td><td>Vuelos a tiempo, caminata, filas</td></tr>
+<tr><td>Metro</td><td>Una multitud con cada tren</td><td>Vaciar el andén antes del tren siguiente</td></tr>
+<tr><td>Estadio</td><td>Salida de las tribunas superiores</td><td>Público retirado a tiempo</td></tr>
+<tr><td>Estacionamiento</td><td>Conductores; a veces sin rampas</td><td>Espera de personas y de vehículos</td></tr>
+<tr><td>Almacén</td><td>Palés entre muelle y entrepisos</td><td>Palés entregados, espera</td></tr>
+<tr><td>Rascacielos</td><td>Oficinas, hotel, viviendas y mirador</td><td>Capacidad, espera, viaje</td></tr>
+</tbody></table></div>
+<ul>
+<li><strong>Los requisitos</strong> son obligatorios: ruta accesible a todos los niveles usados, ascensor de bomberos por encima de 30 m, montacamas en el hospital, servicio en el hotel y el hospital, escaleras en cada tramo en el centro comercial, el metro y el estadio, y así sucesivamente. El encargo los marca en vivo mientras armas el proyecto.</li>
+<li><strong>Estrellas:</strong> 1 con todas las metas y requisitos; 2 dentro del presupuesto; 3 gastando como máximo el 90% del presupuesto, con las recomendaciones cumplidas.</li>
+<li><strong>Proyecto de referencia:</strong> el botón arma una solución lista, pero limita la nota a una estrella.</li>
+</ul>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="roteiro-es" aria-labelledby="h-roteiro-es">
+<h2 id="h-roteiro-es">Paso a paso</h2>
+<p>El recorrido de abajo resuelve una torre de oficinas media (semilla 123, 23 niveles, 3.080 personas) con tres estrellas.</p>
+<h3>1. Elige la construcción</h3>
+<p>Haz clic en <strong>Nueva construcción</strong>. Elige el tipo (o “Al azar”), la dificultad y, si quieres repetir una partida, la semilla. Haz clic en <strong>Generar</strong>.</p>
+<figure>
+<img src="rc_images/ElevadoresNova-es.png" alt="Ventana Nueva construcción con los 12 tipos de construcción y la opción Al azar, las dificultades Fácil, Media y Difícil y el campo Semilla con el valor 123" width="1300" height="900" loading="lazy">
+<figcaption>La ventana de nueva construcción.</figcaption>
+</figure>
+<h3>2. Lee el encargo</h3>
+<p>Mira la demanda (personas cada 5 minutos), las metas y los requisitos. En esta torre, las metas son capacidad del 12%, intervalo de hasta 30 s y espera media de hasta 30 s; los requisitos son ruta accesible y ascensor de bomberos.</p>
+<h3>3. Arma los grupos de ascensores</h3>
+<ol>
+<li>Haz clic en <strong>+ Ascensores</strong>. Elige <strong>Tracción sin sala de máquinas</strong>, 9 cabinas de 21 personas a 2,5 m/s, del Piso 1 al Piso 11.</li>
+<li>Haz clic de nuevo en <strong>+ Ascensores</strong>. Elige <strong>Tracción con sala de máquinas</strong>, 9 cabinas de 21 personas a 4 m/s, del Piso 12 al 22, con control <strong>Por destino</strong>.</li>
+<li>Agrega un tercer grupo, <strong>Bomberos</strong>, de Planta baja a Piso 22.</li>
+</ol>
+<figure>
+<img src="rc_images/ElevadoresProjeto-es.png" alt="Panel Proyecto con dos grupos: tracción sin sala de máquinas, 9 cabinas de 21 personas a 2,5 m/s del piso 1 al 11, y tracción con sala de máquinas, 9 cabinas de 21 personas a 4 m/s del piso 12 al 22 con control por destino; cada grupo muestra paradas, recorrido y costo" width="380" height="904" loading="lazy">
+<figcaption>Dos zonas: pisos bajos y pisos altos, ambas con embarque en la planta baja.</figcaption>
+</figure>
+<p>Cada grupo muestra cuántas paradas atiende, el recorrido, qué puede llevar y el costo. Si algo no está permitido, como un hidráulico en un edificio alto, el grupo se pone rojo y explica el motivo.</p>
+<h3>4. Simula</h3>
+<p>Haz clic en <strong>Simular</strong> para ver el pico en movimiento (elige de ×10 a ×120) o en <strong>Resultado inmediato</strong>.</p>
+<figure>
+<img src="rc_images/ElevadoresSimulacao-es.png" alt="Corte de la torre durante la simulación: dos huecos de ascensores con cabinas en varios pisos, cables y contrapesos, pasajeros dentro de las cabinas, filas de personas en la planta baja y el ascensor de bomberos a la derecha; abajo, el reloj en 5:00 de 15:00 y los números de personas esperando, que llegaron y espera media" width="574" height="854" loading="lazy">
+<figcaption>Cinco minutos de pico: cada zona con sus cabinas, cables y contrapesos.</figcaption>
+</figure>
+<h3>5. Lee el resultado y ajusta</h3>
+<figure>
+<img src="rc_images/ElevadoresResultado-es.png" alt="Panel Resultado con tres estrellas: capacidad de 5 minutos 14,4% contra una meta del 12%, intervalo 17 s contra 30 s, espera media 23 s contra 30 s, nadie sin ruta y costo 4993 contra un presupuesto de 7050 créditos" width="574" height="600" loading="lazy">
+<figcaption>Tres estrellas: metas cumplidas gastando el 71% del presupuesto.</figcaption>
+</figure>
+<p>Si alguna meta falla, la lista “Qué mejorar” dice por dónde empezar, y el dibujo muestra dónde crecieron las filas. Cambia el proyecto y vuelve a simular: con la misma semilla los pasajeros son los mismos, y la comparación es justa.</p>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="experimento-es" aria-labelledby="h-experimento-es">
+<h2 id="h-experimento-es">Lo que muestra la simulación</h2>
+<p>En la misma torre del paso a paso probé seis proyectos, cada uno en 10 simulaciones con semillas de pasajeros distintas. Todos incluyen el ascensor de bomberos. Los valores son promedios del modelo del juego, no mediciones de edificios reales.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Proyecto</th><th>Capacidad 5 min</th><th>Intervalo</th><th>Espera media</th><th>Costo</th></tr></thead>
+<tbody>
+<tr><td>Un grupo, 6 cabinas, convencional</td><td>4,8%</td><td>46 s</td><td>4,1 min</td><td>2.479</td></tr>
+<tr><td>Un grupo, 6 cabinas, por destino</td><td>5,6%</td><td>44 s</td><td>4,0 min</td><td>2.479</td></tr>
+<tr><td>Un grupo, 10 cabinas, convencional</td><td>8,5%</td><td>24 s</td><td>2,4 min</td><td>3.879</td></tr>
+<tr><td>Dos zonas, 5 + 5 cabinas, convencional</td><td>11,1%</td><td>41 s</td><td>1,6 min</td><td>2.732</td></tr>
+<tr><td>Dos zonas, 5 + 5 cabinas, por destino</td><td>11,0%</td><td>39 s</td><td>1,8 min</td><td>2.732</td></tr>
+<tr><td>Proyecto de referencia: tres zonas, 28 cabinas</td><td>14,2%</td><td>10 s</td><td>11 s</td><td>5.874</td></tr>
+</tbody></table></div>
+<ul>
+<li><strong>Las zonas rinden más que las cabinas extra.</strong> Dos zonas con 10 cabinas llevan más gente y hacen esperar menos que un grupo único con las mismas 10, y cuestan menos.</li>
+<li><strong>Un intervalo corto no basta.</strong> El grupo único de 10 cabinas tiene un intervalo de 24 s, pero cada viaje para en muchos pisos y la capacidad queda en 8,5%.</li>
+<li><strong>El control por destino ayudó poco en este modelo.</strong> Subió la capacidad del grupo único de 4,8% a 5,6%, pero no mejoró la espera. Los fabricantes informan ganancias mayores en edificios reales; el modelo del juego agrupa pasajeros de forma simple.</li>
+<li><strong>La solución del paso a paso</strong> (dos zonas con 9 cabinas cada una) llegó a 14,4% de capacidad y 23 s de espera en una única simulación, con un costo de 4.993.</li>
+</ul>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="estrategia-es" aria-labelledby="h-estrategia-es">
+<h2 id="h-estrategia-es">Estrategias por construcción</h2>
+<ul>
+<li><strong>Casa:</strong> basta el ascensor doméstico o la plataforma. Atiende todos los pisos y gasta poco.</li>
+<li><strong>Residencial:</strong> un grupo de tracción sin sala de máquinas, que incluya el garaje, suele bastar. Por encima de 30 m, agrega el ascensor de bomberos.</li>
+<li><strong>Oficinas y rascacielos:</strong> zonas de unos 10 pisos, cabinas de 21 o 24 personas y más velocidad en las zonas altas. Si hay estacionamiento, un grupo solo entre estacionamiento y planta baja evita que las zonas paren allí abajo. En el rascacielos, un grupo directo al mirador.</li>
+<li><strong>Hotel:</strong> un grupo para huéspedes y un ascensor de carga y servicio del sótano a todos los pisos.</li>
+<li><strong>Hospital:</strong> los montacamas exigidos, más uno de reserva, y ascensores de servicio y de pasajeros. Las camas tardan en entrar y salir, y un solo montacamas forma fila enseguida.</li>
+<li><strong>Centro comercial:</strong> pares de escaleras mecánicas en cada tramo, un ascensor accesible de punta a punta, un ascensor de servicio y una rampa mecánica hasta el estacionamiento para los carritos.</li>
+<li><strong>Aeropuerto:</strong> una pasarela compatible en cada puerta: commuter para los regionales, nose loader o apron drive para pasillo único, apron drive más sobre el ala para fuselaje ancho, y el A380 con la pasarela de la cubierta superior. La meta de caminata pide pasillos rodantes en poco más de la mitad del muelle.</li>
+<li><strong>Metro:</strong> cada tren deja cientos de personas de golpe. Usa escaleras de subida anchas, con varias unidades por tramo, y ascensores accesibles.</li>
+</ul>
+<figure>
+<img src="rc_images/ElevadoresMetro-es.png" alt="Corte de una estación de metro subterránea con tres niveles bajo la calle, ascensores a la izquierda, un tren detenido en el andén y escaleras mecánicas en zigzag a la derecha con personas subiendo y una fila en la base" width="574" height="469" loading="lazy">
+<figcaption>Metro: el tren acaba de llegar y la fila se forma al pie de las escaleras.</figcaption>
+</figure>
+<ul>
+<li><strong>Estadio:</strong> escaleras de bajada en cada tramo, dimensionadas para el público de las tribunas altas, y ascensores para sillas de ruedas.</li>
+<li><strong>Estacionamiento:</strong> si es “sin rampas”, los autos también necesitan montacoches, que son lentos; pon varios.</li>
+<li><strong>Almacén:</strong> montacargas de varios palés y más velocidad.</li>
+</ul>
+<figure>
+<img src="rc_images/ElevadoresAeroporto-es.png" alt="Corte de la terminal del aeropuerto con cubierta curva, ascensores y escaleras mecánicas, y abajo la plataforma con aviones a los dos lados del muelle, pasarelas que unen el muelle con las puertas y barras de progreso del embarque" width="574" height="635" loading="lazy">
+<figcaption>Aeropuerto: aviones a los dos lados del muelle, con las pasarelas elegidas y el progreso del embarque.</figcaption>
+</figure>
+<figure>
+<img src="rc_images/ElevadoresPontes-es.png" alt="Editor de pasarelas de embarque con una fila por tipo de avión y un selector de pasarela para cada puerta" width="352" height="122" loading="lazy">
+<figcaption>Las pasarelas se eligen por tipo de avión y por puerta.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="erros-es" aria-labelledby="h-erros-es">
+<h2 id="h-erros-es">Errores comunes</h2>
+<ul class="myths">
+<li><h3>“Un grupo grande lo resuelve todo.”</h3><p>En un edificio alto, cada viaje para en casi todos los pisos. Divide en zonas.</p></li>
+<li><h3>“El hidráulico es barato, así que lo uso en todo.”</h3><p>El hidráulico es lento y, en el juego, solo llega a 18 m y 6 paradas.</p></li>
+<li><h3>“Las escaleras mecánicas ya llevan a todos.”</h3><p>Sillas de ruedas, carritos de bebé y carritos de compras necesitan ascensor o rampa mecánica.</p></li>
+<li><h3>“Una escalera por tramo basta.”</h3><p>En el centro comercial y el metro el requisito es por sentido. Usa “Ambos (par)” o dos escaleras.</p></li>
+<li><h3>“Cualquier pasarela sirve.”</h3><p>La nose loader no atiende fuselaje ancho, y el A380 necesita la pasarela alta para la cubierta superior. La pasarela sobre el ala solo complementa una delantera.</p></li>
+<li><h3>“Me olvidé del estacionamiento.”</h3><p>Quien llega en auto también necesita una ruta hasta los pisos, y las sillas de ruedas no suben rampas.</p></li>
+</ul>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="modelo-es" aria-labelledby="h-modelo-es">
+<h2 id="h-modelo-es">Límites del modelo</h2>
+<ul>
+<li>Las cabinas eligen la parada siguiente al salir y no paran en el camino para atender una llamada nueva.</li>
+<li>Las llegadas siguen un ritmo constante durante el pico, sin olas.</li>
+<li>Las escaleras fijas no se simulan. En el estadio, la mitad del público usa las escaleras fijas, que quedan fuera de la cuenta.</li>
+<li>El embarque en los aviones y la caminata por el muelle son cálculos directos, no simulación de personas.</li>
+<li>Costos y energía están en unidades del juego. Velocidades, límites de recorrido y costos son parámetros del juego elegidos para ser plausibles, no datos de fabricantes.</li>
+</ul>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="glossario-es" aria-labelledby="h-glossario-es">
+<h2 id="h-glossario-es">Glosario</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Término</th><th>Significado</th></tr></thead>
+<tbody>
+<tr><td>Capacidad de 5 minutos</td><td>Personas llevadas en 5 minutos, en porcentaje de la población.</td></tr>
+<tr><td>Contrapeso</td><td>Peso que baja cuando la cabina sube y reduce el esfuerzo del motor.</td></tr>
+<tr><td>Control por destino</td><td>El pasajero indica el piso en el vestíbulo y el sistema asigna la cabina.</td></tr>
+<tr><td>Doble cabina (double-deck)</td><td>Dos cabinas apiladas que paran en dos pisos a la vez.</td></tr>
+<tr><td>Expreso</td><td>Tramo del hueco sin paradas, entre la planta baja y una zona alta.</td></tr>
+<tr><td>Intervalo</td><td>Tiempo medio entre cabinas que salen del piso de embarque.</td></tr>
+<tr><td>MRL</td><td>Ascensor de tracción sin sala de máquinas.</td></tr>
+<tr><td>Paradas probables</td><td>Número medio de paradas de una cabina por viaje.</td></tr>
+<tr><td>Pasarela de embarque</td><td>Pasillo cerrado desde la puerta de embarque hasta la del avión.</td></tr>
+<tr><td>Pico de subida</td><td>Período en que casi todos entran por la planta baja y suben.</td></tr>
+<tr><td>Piso de reversa</td><td>El piso más alto donde la cabina para en un viaje, antes de bajar.</td></tr>
+<tr><td>Sala de máquinas</td><td>Sala en lo alto del hueco con el motor de los ascensores de tracción tradicionales.</td></tr>
+<tr><td>Semilla</td><td>Número que define la construcción y los pasajeros de una partida.</td></tr>
+<tr><td>Tiempo de ida y vuelta</td><td>Tiempo que tarda una cabina en salir de la planta baja, hacer el viaje y volver.</td></tr>
+<tr><td>Vestíbulo en altura (sky lobby)</td><td>Piso de transferencia a mitad de una torre alta.</td></tr>
+<tr><td>Zona</td><td>Rango de pisos atendido por un grupo de ascensores.</td></tr>
+</tbody></table></div>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="revisao-es" aria-labelledby="h-revisao-es">
+<h2 id="h-revisao-es">Repaso rápido</h2>
+<div class="quiz">
+<details><summary>1. ¿Por qué dividir una torre en zonas aumenta la capacidad?</summary><p>Cada cabina atiende menos pisos y para menos por viaje, y el grupo alto pasa por los pisos bajos sin parar. El tiempo de ida y vuelta baja.</p></details>
+<details><summary>2. Un grupo tiene un intervalo de 24 s, pero la capacidad de 5 minutos es baja. ¿Cómo puede ser?</summary><p>Las cabinas salen seguido de la planta baja, pero cada viaje es largo porque para en muchos pisos. Un intervalo corto no garantiza capacidad.</p></details>
+<details><summary>3. ¿Qué exige en el juego un edificio de más de 30 m?</summary><p>Un ascensor de bomberos en todos los niveles. El límite de 30 m es regla del juego.</p></details>
+<details><summary>4. ¿Por qué un centro comercial con escaleras mecánicas igual necesita ascensores?</summary><p>Sillas de ruedas, carritos de bebé y carritos de compras no usan escaleras mecánicas.</p></details>
+<details><summary>5. ¿Qué pasarela atiende un avión de fuselaje ancho por la puerta delantera?</summary><p>Apron drive o pasarela en T. La pasarela sobre el ala solo complementa la delantera.</p></details>
+<details><summary>6. ¿Quién demostró el freno de seguridad del ascensor, y cuándo?</summary><p>Elisha Otis, en Nueva York, en 1853 o 1854, según la fuente.</p></details>
+<details><summary>7. ¿Qué diferencia hay entre la capacidad teórica y la práctica de una escalera mecánica?</summary><p>La teórica supone todos los peldaños ocupados. En la práctica la gente deja espacio; el juego usa el 60% de la teórica.</p></details>
+<details><summary>8. ¿Para qué sirve la semilla?</summary><p>Repite la misma construcción y los mismos pasajeros, para comparar proyectos de forma justa.</p></details>
+</div>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="referencias-es" aria-labelledby="h-referencias-es">
+<h2 id="h-referencias-es">Referencias</h2>
+<ol class="refs">
+<li id="ref-1-es"><strong>Giovani Perotto Mesquita</strong>, “Elevadores” (Ascensores), juego de este sitio, <a href="Elevadores.html#es">giovanipm.github.io/Elevadores.html</a>.</li>
+<li id="ref-2-es"><strong>Wikipedia</strong>, “Elisha Otis”, en inglés, consultado el 13/11/2026, <a href="https://en.wikipedia.org/wiki/Elisha_Otis" rel="noopener">en.wikipedia.org/wiki/Elisha_Otis</a>.</li>
+<li id="ref-3-es"><strong>Guinness World Records</strong>, “First safety elevator (lift)”, consultado el 13/11/2026, <a href="https://www.guinnessworldrecords.com/world-records/72451-first-safety-elevator-lift" rel="noopener">guinnessworldrecords.com</a>. Da 1854 para la demostración.</li>
+<li id="ref-4-es"><strong>Wikipedia</strong>, “Escalator”, en inglés, consultado el 13/11/2026, <a href="https://en.wikipedia.org/wiki/Escalator" rel="noopener">en.wikipedia.org/wiki/Escalator</a>.</li>
+<li id="ref-5-es"><strong>Smithsonian Magazine</strong>, “How the Escalator Forever Changed Our Sense of Space”, consultado el 13/11/2026, <a href="https://www.smithsonianmag.com/innovation/how-escalator-forever-changed-our-sense-space-180972468/" rel="noopener">smithsonianmag.com</a>.</li>
+<li id="ref-6-es"><strong>Britannica</strong>, “Double-deck elevator”, consultado el 13/11/2026, <a href="https://www.britannica.com/technology/double-deck-elevator" rel="noopener">britannica.com</a>. Otras fuentes dan 1931 para el Cities Service Building.</li>
+<li id="ref-7-es"><strong>Wikipedia</strong>, “Sky lobby”, en inglés, consultado el 13/11/2026, <a href="https://en.wikipedia.org/wiki/Sky_lobby" rel="noopener">en.wikipedia.org/wiki/Sky_lobby</a>.</li>
+<li id="ref-8-es"><strong>Wikipedia</strong>, “Destination dispatch”, en inglés, consultado el 13/11/2026, <a href="https://en.wikipedia.org/wiki/Destination_dispatch" rel="noopener">en.wikipedia.org/wiki/Destination_dispatch</a>.</li>
+<li id="ref-9-es"><strong>Lee E. Gray</strong>, “Lift Traffic Analysis 1890–1960”, resumen, consultado el 13/11/2026, <a href="https://liftescalatorlibrary.org/paper_indexing/abstract_pages/00000141.html" rel="noopener">liftescalatorlibrary.org</a>.</li>
+<li id="ref-10-es"><strong>Richard Peters</strong>, “Traffic Analysis based on the Up Peak Round Trip Time method: why it works and how it can be improved”, Peters Research, consultado el 13/11/2026, <a href="https://peters-research.com/?p=1096" rel="noopener">peters-research.com</a>.</li>
+<li id="ref-11-es"><strong>AviationPros</strong>, “Just Where Was That First Boarding Bridge Installed?”, consultado el 13/11/2026, <a href="https://www.aviationpros.com/gse/passenger-loading-systems-boarding-bridges-stairs-jetways/article/10910572/different-people-say-they-invstalled-the-first-jetbridge" rel="noopener">aviationpros.com</a>.</li>
+<li id="ref-12-es"><strong>ADELTE</strong>, “Passenger Boarding Bridges for Airports”, consultado el 13/11/2026, <a href="https://www.adelte.com/airports/passenger-boarding-bridges/" rel="noopener">adelte.com</a>.</li>
+<li id="ref-13-es"><strong>AmadaTECH</strong>, “Escalator speed and capacity”, 2020, consultado el 13/11/2026, <a href="https://amadatech.com/de/escalator-speed-and-capacity/" rel="noopener">amadatech.com</a>. El valor de 4.500 personas/h para 600 mm viene de un catálogo de Mitsubishi Electric (Series Z), visto solo como extracto en un resultado de búsqueda.</li>
+<li id="ref-14-es"><strong>ISO</strong>, “ISO 8100-32:2020”, y <strong>CIBSE</strong>, “Guide D: Transportation systems in buildings”; valores citados por Elevator World en “ISO 8100-32:2020 Guidance”, cuyo texto completo no pude abrir. <a href="https://www.iso.org/standard/76389.html" rel="noopener">iso.org</a> · <a href="https://www.cibse.org/knowledge-research/knowledge-portal/guide-d-transportation-systems-in-buildings-2020" rel="noopener">cibse.org</a>.</li>
+<li id="ref-15-es"><strong>CEN</strong>, “EN 81-72:2020”, descripción, consultado el 13/11/2026, <a href="https://genorma.com/en/standards/en-81-72-2020" rel="noopener">genorma.com</a>.</li>
+</ol>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+  </article>
+</div>
+</div>
+
+
+
+<footer>
+  <div class="wrap">
+    <span>Giovani Perotto Mesquita · Porto Alegre, RS</span>
+    <span><a href="projects.html" data-projects data-foot="0">Projetos</a> · <a href="resume.html" data-resume data-foot="1">Currículo</a> · <a href="contact.html" data-contact data-foot="2">Contato</a></span>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('.lang [role="option"]'));
+    var titles = {"pt": "Elevadores: tutorial · Giovani Perotto Mesquita", "en": "Lifts: tutorial · Giovani Perotto Mesquita", "it": "Ascensori: tutorial · Giovani Perotto Mesquita", "es": "Ascensores: tutorial · Giovani Perotto Mesquita"};
+    var foots = {"pt": ["Projetos", "Currículo", "Contato"], "en": ["Projects", "Resume", "Contact"], "it": ["Progetti", "Curriculum", "Contatti"], "es": ["Proyectos", "Currículum", "Contacto"]};
+    var langs = { pt: 'pt-BR', en: 'en', it: 'it', es: 'es' };
+    var bar = document.querySelector('.progress');
+    var article = document.querySelector('[role="tabpanel"]:not([hidden]) article');
+
+    function show(id, focus) {
+      tabs.forEach(function (t) {
+        var on = t.getAttribute('aria-controls') === id;
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+        if (on && focus) t.focus();
+      });
+      document.documentElement.lang = langs[id];
+      document.title = titles[id];
+      var suffix = id === 'pt' ? '' : '#' + id;
+      [['data-home', 'index.html'], ['data-about', 'about.html'], ['data-resume', 'resume.html'], ['data-projects', 'projects.html'], ['data-contact', 'contact.html']].forEach(function (p) {
+        document.querySelectorAll('[' + p[0] + ']').forEach(function (a) { a.href = p[1] + suffix; });
+      });
+      document.querySelectorAll('[data-foot]').forEach(function (a) { a.textContent = foots[id][+a.getAttribute('data-foot')]; });
+      article = document.querySelector('#' + id + ' article');
+      if (history.replaceState) history.replaceState(null, '', id === 'pt' ? location.pathname : '#' + id);
+      progress();
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () { show(t.getAttribute('aria-controls')); });
+      t.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (d) { e.preventDefault(); show(tabs[(i + d + tabs.length) % tabs.length].getAttribute('aria-controls'), true); }
+      });
+    });
+
+    // barra de progresso de leitura
+    function progress() {
+      if (!article) return;
+      var r = article.getBoundingClientRect();
+      var total = r.height - window.innerHeight;
+      var p = total > 0 ? Math.min(Math.max(-r.top / total, 0), 1) : 1;
+      bar.style.width = (p * 100) + '%';
+    }
+    window.addEventListener('scroll', progress, { passive: true });
+    window.addEventListener('resize', progress);
+
+    // destaca a seção atual no índice
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          var panel = e.target.closest('[role="tabpanel"]');
+          panel.querySelectorAll('.toc a').forEach(function (a) {
+            if (a.getAttribute('href') === '#' + e.target.id) a.setAttribute('aria-current', 'true');
+            else a.removeAttribute('aria-current');
+          });
+        });
+      }, { rootMargin: '-20% 0px -70% 0px' });
+      document.querySelectorAll('article section[id]').forEach(function (s) { io.observe(s); });
+    }
+
+    var h = (location.hash || '').replace('#', '');
+    var m = h.match(/^(?:.*-)?(en|it|es)$/);
+    if (m) {
+      show(m[1]);
+      if (h !== m[1]) { var el = document.getElementById(h); if (el) el.scrollIntoView(); if (history.replaceState) history.replaceState(null, '', '#' + h); }
+    } else progress();
+  })();
+</script>
+<script>
+  // seletor de idioma em combobox: abre a lista, sincroniza o botão e fecha
+  (function () {
+    var box = document.querySelector('.lang'); if (!box) return;
+    var btn = box.querySelector('.lang-current'), list = box.querySelector('.lang-list'), now = btn.querySelector('.lang-now');
+    var opts = Array.prototype.slice.call(list.querySelectorAll('[role="option"]'));
+    var menu = {
+      pt: { index: 'Início', about: 'Sobre', resume: 'Currículo', projects: 'Projetos', contact: 'Contato' },
+      en: { index: 'Home', about: 'About', resume: 'Resume', projects: 'Projects', contact: 'Contact' },
+      it: { index: 'Home', about: 'Chi sono', resume: 'Curriculum', projects: 'Progetti', contact: 'Contatti' },
+      es: { index: 'Inicio', about: 'Sobre mí', resume: 'Currículum', projects: 'Proyectos', contact: 'Contacto' }
+    };
+    function translate(id) {
+      document.querySelectorAll('.nav ul a').forEach(function (l) {
+        var k = (l.getAttribute('href') || '').split('#')[0].replace('.html', '');
+        if (menu[id] && menu[id][k]) l.textContent = menu[id][k];
+      });
+      // links do menu para as páginas principais levam o idioma selecionado
+      var suf = id === 'pt' ? '' : '#' + id;
+      document.querySelectorAll('.nav a[href]').forEach(function (l) {
+        var m = l.getAttribute('href').match(/^(index|about|resume|projects|contact)\.html(#(pt|en|it|es))?$/);
+        if (m) l.setAttribute('href', m[1] + '.html' + suf);
+      });
+    }
+    function sync() {
+      var sel = opts.filter(function (o) { return o.getAttribute('aria-selected') === 'true'; })[0] || opts[0];
+      now.innerHTML = sel.querySelector('.flag').outerHTML + sel.getAttribute('data-code');
+      btn.setAttribute('aria-label', btn.getAttribute('data-label') + ': ' + sel.textContent.trim());
+      translate(sel.getAttribute('aria-controls'));
+      return sel;
+    }
+    function open() { list.hidden = false; btn.setAttribute('aria-expanded', 'true'); sync().focus(); }
+    function close(back) { list.hidden = true; btn.setAttribute('aria-expanded', 'false'); if (back) btn.focus(); }
+    btn.addEventListener('click', function () { if (list.hidden) open(); else close(); });
+    btn.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); open(); }
+      else if (e.key === 'Escape') close();
+    });
+    opts.forEach(function (o, i) {
+      o.addEventListener('click', function () { sync(); close(true); });
+      o.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0;
+        if (d) { e.preventDefault(); opts[(i + d + opts.length) % opts.length].focus(); }
+        else if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); opts[e.key === 'Home' ? 0 : opts.length - 1].focus(); }
+        else if (e.key === 'Escape') { e.preventDefault(); close(true); }
+        else if (e.key === 'Tab') close();
+      });
+    });
+    document.addEventListener('click', function (e) { if (!box.contains(e.target)) close(); });
+    new MutationObserver(sync).observe(list, { attributes: true, subtree: true, attributeFilter: ['aria-selected'] });
+    sync();
+  })();
+</script>
+<script>
+document.addEventListener('click', function (e) {
+  var b = e.target.closest && e.target.closest('[data-copy]');
+  if (!b) return;
+  var code = document.getElementById(b.getAttribute('data-copy')), old = b.textContent;
+  function done() { b.textContent = b.getAttribute('data-done'); setTimeout(function () { b.textContent = old; }, 1500); }
+  function fallback() { var r = document.createRange(); r.selectNodeContents(code); var s = getSelection(); s.removeAllRanges(); s.addRange(r); try { document.execCommand('copy'); done(); } catch (x) {} }
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code.textContent).then(done, fallback); else fallback();
+});
+</script>
+</body>
+</html>

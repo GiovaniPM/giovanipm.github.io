@@ -1,0 +1,1773 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; base-uri 'none'; form-action 'none'">
+<title>Elevadores · Giovani Perotto Mesquita</title>
+<meta name="description" content="Elevadores: jogo de simulação de transporte vertical. A cada partida surge uma construção diferente, de uma casa a um aeroporto, e você projeta elevadores, escadas rolantes, esteiras e pontes de embarque para atender a demanda. Em português, inglês, italiano e espanhol.">
+<meta name="author" content="Giovani Perotto Mesquita">
+<style>
+:root{
+  --bg:#FFF7EC; --surface:#FFFFFF; --surface-2:#FBF1E3; --ink:#2B1B3D; --text:#3E3350; --muted:#756986; --line:#F1E2CF;
+  --accent:#0E8074; --accent-ink:#FFFFFF; --accent-soft:#E2F6F2; --navy:#5B2A86; --gold:#FFB703; --gold-ink:#B35300; --gold-soft:#FFF1C9;
+  --bad:#B3261E; --bad-soft:#FDE7E5; --ok:#1F7A4D; --ok-soft:#E3F4EA;
+  --sky:#DCEBFA; --ground:#D9C7AE; --shaft:#EFE6F7; --wall:#CBBBDD;
+  --sans:"Segoe UI","Helvetica Neue",Arial,sans-serif; --serif:Georgia,"Times New Roman",serif; --radius:14px;
+}
+:root[data-theme="dark"]{
+  --bg:#1A1328; --surface:#241A36; --surface-2:#2D2244; --ink:#F7F0FF; --text:#E2D8F0; --muted:#A898C0; --line:#3A2D52;
+  --accent:#5FD3C4; --accent-ink:#10231F; --accent-soft:#1D3A38; --navy:#C9A7F5; --gold:#FFC94D; --gold-ink:#FFC94D; --gold-soft:#3A2E12;
+  --bad:#FF8A80; --bad-soft:#3D1F24; --ok:#6FD39B; --ok-soft:#163327;
+  --sky:#1E2A44; --ground:#3A3024; --shaft:#2F2546; --wall:#4A3B66;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-tap-highlight-color:transparent}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+button:disabled{cursor:default;opacity:.45}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.top{display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap;padding:.55rem 1rem;background:var(--surface);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:.6rem;min-width:0}
+.brand svg{width:36px;height:36px;flex:none}
+.brand h1{font-family:var(--serif);font-size:1.3rem;margin:0;color:var(--ink);line-height:1.1}
+.brand p{margin:0;font-size:.8rem;color:var(--muted)}
+.tools{display:flex;gap:.4rem;flex-wrap:wrap;align-items:center}
+.btn{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:.42rem .75rem;min-height:38px;color:var(--ink)}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.btn.sm{min-height:32px;padding:.25rem .55rem;font-size:.85rem}
+.btn.icon{min-width:38px;padding:.25rem .5rem}
+select,input[type=number],input[type=text]{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:.35rem .45rem;min-height:36px;color:var(--ink);max-width:100%}
+.layout{display:grid;grid-template-columns:290px minmax(0,1fr) 380px;grid-template-areas:"brief view design";gap:.9rem;max-width:1500px;margin:0 auto;padding:.9rem}
+.brief{grid-area:brief}.view{grid-area:view}.design{grid-area:design}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:.85rem;min-width:0}
+.card h2{font-size:1rem;margin:0 0 .5rem;color:var(--ink)}
+.card h3{font-size:.9rem;margin:.8rem 0 .35rem;color:var(--ink)}
+.stack{display:flex;flex-direction:column;gap:.9rem;min-width:0}
+.bname{font-family:var(--serif);font-size:1.25rem;color:var(--ink);margin:.1rem 0 .2rem}
+.btype{display:flex;align-items:center;gap:.5rem;color:var(--muted);font-size:.85rem}
+.btype svg{width:28px;height:28px;flex:none}
+.facts{list-style:none;padding:0;margin:.5rem 0 0;display:grid;gap:.25rem;font-size:.88rem}
+.facts li{display:flex;justify-content:space-between;gap:.6rem;border-bottom:1px dashed var(--line);padding:.18rem 0}
+.facts li b{color:var(--ink);text-align:right}
+.chk{list-style:none;padding:0;margin:0;display:grid;gap:.3rem;font-size:.86rem}
+.chk li{display:flex;gap:.45rem;align-items:flex-start;line-height:1.3}
+.chk .m{flex:none;width:1.25rem;height:1.25rem;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800}
+.m.ok{background:var(--ok-soft);color:var(--ok)}.m.bad{background:var(--bad-soft);color:var(--bad)}.m.soft{background:var(--gold-soft);color:var(--gold-ink)}.m.na{background:var(--surface-2);color:var(--muted)}
+.note{font-size:.82rem;color:var(--muted);line-height:1.4}
+.canvasWrap{position:relative;background:var(--sky);border-radius:12px;overflow:auto;border:1px solid var(--line);max-height:72vh}
+canvas{display:block}
+.simbar{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-top:.6rem}
+.clock{font-variant-numeric:tabular-nums;font-weight:700;color:var(--ink);min-width:7.5em}
+.live{display:flex;gap:.9rem;flex-wrap:wrap;font-size:.85rem;color:var(--muted);margin-top:.4rem}
+.live b{color:var(--ink)}
+.legend{display:flex;flex-wrap:wrap;gap:.35rem .8rem;font-size:.76rem;color:var(--muted);margin-top:.5rem}
+.legend i{display:inline-block;width:.8rem;height:.8rem;border-radius:3px;margin-right:.3rem;vertical-align:-1px}
+.adds{display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:.6rem}
+.grp{border:1px solid var(--line);border-radius:12px;padding:.55rem .6rem;margin-bottom:.55rem;background:var(--surface-2)}
+.grp.bad{border-color:var(--bad)}
+.grp header{display:flex;justify-content:space-between;align-items:center;gap:.4rem;margin-bottom:.35rem}
+.grp header b{color:var(--ink);font-size:.9rem;display:flex;gap:.4rem;align-items:center}
+.sw{width:.8rem;height:.8rem;border-radius:3px;display:inline-block;flex:none}
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.35rem .5rem}
+.fields label{display:grid;gap:.15rem;font-size:.75rem;color:var(--muted)}
+.fields label.full{grid-column:1/-1}
+.fields select,.fields input{width:100%}
+.ginfo{font-size:.76rem;color:var(--muted);margin-top:.35rem}
+.issues{font-size:.78rem;color:var(--bad);margin:.3rem 0 0;padding-left:1rem}
+.costbar{height:12px;border-radius:7px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden;margin:.3rem 0}
+.costbar span{display:block;height:100%;background:var(--accent)}
+.costbar span.over{background:var(--bad)}
+.row{display:flex;gap:.45rem;flex-wrap:wrap;align-items:center}
+.row.end{justify-content:flex-end}
+table{border-collapse:collapse;width:100%;font-size:.87rem}
+th,td{border-bottom:1px solid var(--line);padding:.32rem .35rem;text-align:left;vertical-align:top}
+th{font-size:.76rem;color:var(--muted);font-weight:700}
+td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.stars{font-size:1.8rem;letter-spacing:.15em;color:var(--gold-ink)}
+.stars .off{color:var(--line)}
+.result-head{display:flex;justify-content:space-between;align-items:center;gap:.6rem;flex-wrap:wrap}
+.tips{margin:.4rem 0 0;padding-left:1.1rem;font-size:.87rem;display:grid;gap:.3rem}
+.pbb{display:grid;grid-template-columns:minmax(0,1fr);gap:.4rem}
+.pbbrow{display:grid;grid-template-columns:minmax(0,1.1fr) repeat(3,minmax(0,1fr));gap:.3rem;align-items:center;font-size:.8rem}
+dialog{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);color:var(--text);padding:1rem 1.15rem;width:min(720px,calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow:auto}
+dialog::backdrop{background:rgba(20,10,30,.55)}
+dialog h2{font-family:var(--serif);margin:0 0 .6rem;color:var(--ink)}
+dialog h3{font-size:.98rem;margin:1rem 0 .35rem;color:var(--ink)}
+dialog p,dialog li{line-height:1.45;font-size:.92rem}
+.choice{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.4rem;margin:.3rem 0 .6rem}
+.choice label{display:flex;gap:.4rem;align-items:center;border:1px solid var(--line);border-radius:10px;padding:.4rem .5rem;font-size:.86rem;cursor:pointer}
+.choice input{accent-color:var(--accent)}
+.toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:.5rem 1rem;border-radius:10px;font-size:.9rem;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
+.toast.on{opacity:1}
+@media (max-width:1240px){.layout{grid-template-columns:300px minmax(0,1fr);grid-template-areas:"brief view" "design view"}}
+@media (max-width:860px){.layout{grid-template-columns:minmax(0,1fr);grid-template-areas:"brief" "view" "design";padding:.55rem}.canvasWrap{max-height:none}}
+@media (max-width:480px){.top{padding:.45rem .6rem}.brand p{display:none}.fields{grid-template-columns:minmax(0,1fr)}.pbbrow{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media print{.tools,.simbar,.adds{display:none}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <svg viewBox="0 0 40 40" aria-hidden="true"><rect x="5" y="2" width="30" height="36" rx="6" fill="#5B2A86"/><rect x="10" y="7" width="20" height="26" rx="3" fill="#FFF7EC"/><path d="M20 10l5 6h-10z" fill="#0E8074"/><path d="M20 30l5-6h-10z" fill="#C2185B"/></svg>
+    <div><h1 data-t="title"></h1><p data-t="subtitle"></p></div>
+  </div>
+  <div class="tools">
+    <button type="button" class="btn" id="bNew" data-t="b.new"></button>
+    <button type="button" class="btn" id="bHelp" data-t="b.help"></button>
+    <label class="sr" for="lang" data-t="lang"></label>
+    <select id="lang"><option value="pt">PT</option><option value="en">EN</option><option value="it">IT</option><option value="es">ES</option></select>
+    <button type="button" class="btn icon" id="bTheme" data-ta="b.theme">◐</button>
+  </div>
+</header>
+<main class="layout">
+  <section class="card brief" id="brief" aria-labelledby="hBrief"></section>
+  <div class="stack view">
+    <section class="card" aria-labelledby="hView">
+      <h2 id="hView" data-t="view.title"></h2>
+      <div class="canvasWrap" id="cwrap"><canvas id="cv" role="img"></canvas></div>
+      <div class="legend" id="legend"></div>
+      <div class="simbar">
+        <button type="button" class="btn primary" id="bRun"></button>
+        <label class="sr" for="speed" data-t="sim.speed"></label>
+        <select id="speed"><option value="10">×10</option><option value="30" selected>×30</option><option value="60">×60</option><option value="120">×120</option></select>
+        <button type="button" class="btn" id="bInstant" data-t="sim.instant"></button>
+        <button type="button" class="btn" id="bReset" data-t="sim.reset"></button>
+        <span class="clock" id="clock" aria-live="off"></span>
+      </div>
+      <div class="live" id="live" aria-live="polite"></div>
+    </section>
+    <section class="card" id="results" aria-labelledby="hRes" hidden></section>
+  </div>
+  <section class="card design" id="design" aria-labelledby="hDesign"></section>
+</main>
+
+<dialog id="dNew" aria-labelledby="hNew">
+  <form method="dialog" id="fNew">
+    <h2 id="hNew" data-t="new.title"></h2>
+    <h3 data-t="new.kind"></h3>
+    <div class="choice" id="kindChoice"></div>
+    <h3 data-t="new.diff"></h3>
+    <div class="choice" id="diffChoice"></div>
+    <label class="note" style="display:grid;gap:.2rem;max-width:240px"><span data-t="new.seed"></span><input type="text" name="seed" inputmode="numeric" autocomplete="off"></label>
+    <div class="row end" style="margin-top:.8rem"><button type="button" class="btn" id="bNewCancel" data-t="close"></button><button type="submit" class="btn primary" data-t="new.go"></button></div>
+  </form>
+</dialog>
+
+<dialog id="dHelp" aria-labelledby="hHelp">
+  <h2 id="hHelp" data-t="b.help" tabindex="-1" autofocus></h2>
+  <div id="helpBody"></div>
+  <div class="row end" style="margin-top:.8rem"><button type="button" class="btn primary" id="bHelpClose" data-t="close"></button></div>
+</dialog>
+<div class="toast" id="toast" role="status"></div>
+<script>
+'use strict';
+/* ===================== Gerador semeado ===================== */
+function mulberry(seed) { let s = seed | 0; return () => { s = (s + 0x6D2B79F5) | 0; let x = Math.imul(s ^ (s >>> 15), 1 | s); x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x; return ((x ^ (x >>> 14)) >>> 0) / 4294967296; }; }
+const ri = (R, a, b) => a + Math.floor(R() * (b - a + 1));
+const pick = (R, arr) => arr[Math.floor(R() * arr.length)];
+function poisson(R, lam) {
+  if (lam <= 0) return 0;
+  if (lam > 30) { const u = Math.max(1e-9, R()), v = R(); return Math.max(0, Math.round(lam + Math.sqrt(lam) * Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v))); }
+  const L = Math.exp(-lam); let k = 0, p = 1; do { k++; p *= R(); } while (p > L); return k - 1;
+}
+
+/* ===================== Catálogo de equipamentos (parâmetros do jogo) ===================== */
+/* tipos de carga: p pessoa, w cadeirante/carrinho de bebê, k carrinho (bagagem, compras, limpeza),
+   b leito, f palete, m pequena carga, c veículo */
+const UNITS = { p: 1, w: 2, k: 2, b: 10, f: 10, m: 2, c: 10 };
+const TRANSFER = { p: 1.2, w: 4, k: 3, b: 25, f: 20, m: 5, c: 40 };
+const LIFTS = {
+  home: { speeds: [0.3], caps: [3], maxTravel: 15, maxStops: 5, serves: 'pwk', base: 25, stop: 2, perV: 0, energy: 0.6, door: 5 },
+  plat: { speeds: [0.15], caps: [2], maxTravel: 6, maxStops: 3, serves: 'w', base: 12, stop: 2, perV: 0, energy: 0.4, door: 6 },
+  hyd: { speeds: [0.63], caps: [6, 8, 13], maxTravel: 18, maxStops: 6, serves: 'pwk', base: 55, stop: 4, perV: 0, energy: 3, door: 5 },
+  mrl: { speeds: [1, 1.6, 2.5], caps: [8, 13, 17, 21], maxTravel: 76, maxStops: 30, serves: 'pwk', base: 80, stop: 5, perV: 15, energy: 1.4, door: 5 },
+  trac: { speeds: [2.5, 4, 6, 8, 10], caps: [13, 17, 21, 24], maxTravel: 600, maxStops: 150, serves: 'pwk', base: 130, stop: 6, perV: 22, energy: 1.2, door: 5 },
+  dd: { speeds: [4, 6, 8, 10], caps: [21, 24], maxTravel: 600, maxStops: 150, serves: 'pwk', base: 260, stop: 9, perV: 35, energy: 2.0, door: 5.5, double: true, minLevels: 25 },
+  pan: { speeds: [1, 1.6, 2.5], caps: [8, 13, 17], maxTravel: 120, maxStops: 40, serves: 'pwk', base: 120, stop: 6, perV: 18, energy: 1.5, door: 5 },
+  fire: { speeds: [1.6, 2.5, 4, 6], caps: [8, 13], maxTravel: 600, maxStops: 150, serves: 'pwk', base: 150, stop: 7, perV: 20, energy: 1.3, door: 5, fire: true },
+  bed: { speeds: [1, 1.6, 2.5], caps: [21, 26], maxTravel: 200, maxStops: 40, serves: 'pwkb', base: 120, stop: 6, perV: 18, energy: 1.6, door: 7 },
+  svc: { speeds: [0.5, 1, 1.6, 2.5], caps: [10, 20, 30, 50], maxTravel: 600, maxStops: 150, serves: 'fmk', base: 90, stop: 5, perV: 15, energy: 1.8, door: 8 },
+  car: { speeds: [0.3, 0.5], caps: [10, 20], maxTravel: 40, maxStops: 12, serves: 'c', base: 140, stop: 8, perV: 30, energy: 2.5, door: 10 },
+  dumb: { speeds: [0.5], caps: [2], maxTravel: 60, maxStops: 20, serves: 'm', base: 18, stop: 2, perV: 0, energy: 0.3, door: 3 }
+};
+const LIFT_ORDER = ['home', 'plat', 'hyd', 'mrl', 'trac', 'dd', 'pan', 'fire', 'bed', 'svc', 'car', 'dumb'];
+/* escadas rolantes: capacidade teórica (pessoas/h) a 0,5 m/s; o jogo usa 60% dela como capacidade prática */
+const ESC_CAP = { 600: 4500, 800: 6750, 1000: 9000 };
+const ESC_PRACTICAL = 0.6;
+const ESC_COST = { 600: 55, 800: 65, 1000: 75 };
+const INC_CAP = { 1000: 5000, 1400: 7000 };
+/* pontes de embarque: classes de aeronave que cada tipo atende */
+const PBB = {
+  apron: { cls: ['nar', 'wide', 'jumbo'], cost: 160 },
+  nose: { cls: ['nar'], cost: 90 },
+  tb: { cls: ['nar', 'wide'], cost: 130 },
+  com: { cls: ['reg'], cost: 70 },
+  otw: { cls: ['wide', 'jumbo'], cost: 150, second: true },
+  a380: { cls: ['jumbo'], cost: 220, upper: true }
+};
+const PBB_ORDER = ['apron', 'nose', 'tb', 'com', 'otw', 'a380'];
+const AIRCRAFT = { reg: { pax: [50, 72], doors: 1, target: 12 }, nar: { pax: [150, 200], doors: 1, target: 20 }, wide: { pax: [250, 350], doors: 2, target: 30 }, jumbo: { pax: [450, 550], doors: 3, target: 35 } };
+const BRIDGE_RATE = 12, BUS_RATE = 8, BUS_OVERHEAD = 6;   /* passageiros/min e minutos */
+const WALK = 1.3, BELT = 0.65, WALK_COST = 0.6;            /* m/s; créditos por metro */
+
+/* ===================== Cenários ===================== */
+const KINDS = ['house', 'resid', 'office', 'hotel', 'hosp', 'mall', 'airport', 'metro', 'stadium', 'parking', 'warehouse', 'supertall'];
+const KIND_DIFF = { house: [0, 1, 2], resid: [0, 1, 2], office: [0, 1, 2], hotel: [0, 1, 2], hosp: [1, 2], mall: [0, 1, 2], airport: [1, 2], metro: [1, 2], stadium: [1, 2], parking: [0, 1, 2], warehouse: [0, 1, 2], supertall: [2] };
+const NAMES = ['Aurora', 'Ipê', 'Atlântico', 'Guaíba', 'Horizonte', 'Pampa', 'Farol', 'Jacarandá', 'Vértice', 'Coral', 'Mirante', 'Lumen', 'Boreal', 'Sereno', 'Nimbus', 'Cobalto', 'Araucária', 'Bússola', 'Cais', 'Zênite'];
+
+function genScenario(seed, kind, diff) {
+  const R = mulberry(seed);
+  if (diff == null) diff = 1;
+  if (!kind) { const ks = KINDS.filter((k) => KIND_DIFF[k].includes(diff)); kind = pick(mulberry(seed ^ 0x9E3779B9), ks); }
+  const S = { seed, kind, diff, name: pick(R, NAMES), levels: [], A: 0, streams: [], bursts: [], window: 900, warm: 120, targets: {}, reqs: { access: true }, gates: [], pier: 0, notes: [], hcPop: 0, pop: 0 };
+  const L = (lab, z, pop, n) => { S.levels.push({ lab, n: n == null ? null : n, z, pop: pop || 0 }); return S.levels.length - 1; };
+  const st = (o, d, k, per5, extra) => { if (per5 > 0) S.streams.push(Object.assign({ o, d, k, rate: per5 / 300, t0: 0, t1: S.window }, extra || {})); };
+  const floors = (n, h, popf, z0) => { const ids = []; for (let i = 1; i <= n; i++) ids.push(L('fl', (z0 || 0) + i * h, popf(i), i)); return ids; };
+  const spread = (ids, total, fn) => { const tp = ids.reduce((a, i) => a + (S.levels[i].pop || 1), 0); ids.forEach((i) => fn(i, total * (S.levels[i].pop || 1) / tp)); };
+  switch (kind) {
+    case 'house': {
+      const F = [ri(R, 1, 2), ri(R, 2, 3), ri(R, 3, 4)][diff];
+      S.A = L('ground', 0, 2);
+      const ids = floors(F, 3, () => 2);
+      S.window = 600; S.warm = 0;
+      ids.forEach((i) => { st(S.A, i, 'p', 0.5); st(i, S.A, 'p', 0.5); });
+      st(S.A, ids[ids.length - 1], 'w', 0.4); st(ids[0], S.A, 'w', 0.4);
+      S.targets = { awt: 60 };
+      S.reqs.wheel = true;
+      break;
+    }
+    case 'resid': {
+      const F = [ri(R, 4, 12), ri(R, 10, 28), ri(R, 24, 42)][diff], apts = ri(R, 2, 8), h = 2.9;
+      const gar = diff > 0 && R() < 0.6 ? L('garage', -3, 0) : -1;
+      S.A = L('ground', 0, 0);
+      const ids = floors(F, h, () => apts * 3);
+      S.pop = S.hcPop = F * apts * 3;
+      const d5 = 0.075 * S.pop;
+      spread(ids, d5 * 0.85, (i, x) => { if (gar >= 0) { st(i, S.A, 'p', x * 0.7, { hc: 1 }); st(i, gar, 'p', x * 0.3, { hc: 1 }); } else st(i, S.A, 'p', x, { hc: 1 }); });
+      spread(ids, d5 * 0.1, (i, x) => st(S.A, i, 'p', x, { hc: 1 }));
+      spread(ids, d5 * 0.03, (i, x) => st(i, S.A, 'w', x));
+      S.targets = { hc5: 0.06, awt: 40 };
+      break;
+    }
+    case 'office': {
+      const F = [ri(R, 6, 14), ri(R, 12, 32), ri(R, 28, 55)][diff], area = ri(R, 8, 24) * 100, h = 3.8;
+      const g = diff === 2 ? [L('garage', -6.6, 0), L('garage', -3.3, 0)] : [];
+      S.A = L('ground', 0, 0);
+      const ids = floors(F, h, () => Math.round(area / 10));
+      S.pop = S.hcPop = ids.reduce((a, i) => a + S.levels[i].pop, 0);
+      const d5 = 0.155 * S.pop;
+      spread(ids, d5 * 0.85, (i, x) => { if (g.length) { st(S.A, i, 'p', x * 0.7, { hc: 1 }); g.forEach((gg) => st(gg, i, 'p', x * 0.15, { hc: 1 })); } else st(S.A, i, 'p', x, { hc: 1 }); });
+      spread(ids, d5 * 0.1, (i, x) => st(i, S.A, 'p', x));
+      spread(ids, d5 * 0.02, (i, x) => st(S.A, i, 'w', x));
+      for (let k = 0; k < 6; k++) { const a = pick(R, ids), b = pick(R, ids); if (a !== b) st(a, b, 'p', d5 * 0.05 / 6); }
+      S.targets = { hc5: 0.12, interval: 30, awt: 30 };
+      break;
+    }
+    case 'hotel': {
+      const F = [ri(R, 6, 12), ri(R, 10, 25), ri(R, 22, 42)][diff], rooms = ri(R, 14, 40), h = 3.2;
+      const sv = L('service', -3.5, 0);
+      S.A = L('ground', 0, 0);
+      const ids = floors(F, h, () => Math.round(rooms * 1.6));
+      S.pop = ids.reduce((a, i) => a + S.levels[i].pop, 0);
+      const d5 = 0.08 * S.pop;
+      spread(ids, d5 * 0.45, (i, x) => st(S.A, i, 'p', x));
+      spread(ids, d5 * 0.45, (i, x) => st(i, S.A, 'p', x));
+      spread(ids, d5 * 0.02, (i, x) => st(S.A, i, 'w', x));
+      spread(ids, rooms * F * 0.012, (i, x) => st(sv, i, 'k', x));
+      spread(ids, rooms * F * 0.006, (i, x) => st(sv, i, 'm', x));
+      S.targets = { interval: 40, awt: 30, awtK: 150 };
+      S.reqs.svc = true;
+      break;
+    }
+    case 'hosp': {
+      const F = [ri(R, 4, 6), ri(R, 6, 10), ri(R, 9, 16)][diff], beds = ri(R, 8, 16) * F * 2, h = 4.2;
+      const sv = L('service', -4.2, 0);
+      S.A = L('ground', 0, 0);
+      const ids = floors(F, h, () => Math.round(beds / F * 2));
+      S.pop = beds * 2;
+      const d5 = 0.06 * S.pop;
+      spread(ids, d5 * 0.45, (i, x) => st(S.A, i, 'p', x));
+      spread(ids, d5 * 0.45, (i, x) => st(i, S.A, 'p', x));
+      spread(ids, d5 * 0.06, (i, x) => st(S.A, i, 'w', x));
+      const surg = ids[1], img = ids[0];
+      spread(ids.slice(2), beds * 0.012, (i, x) => { st(i, surg, 'b', x / 2); st(i, img, 'b', x / 2); st(surg, i, 'b', x / 2); });
+      spread(ids, beds * 0.01, (i, x) => st(sv, i, 'f', x));
+      spread(ids, beds * 0.015, (i, x) => st(sv, i, 'm', x));
+      S.targets = { awt: 35, awtB: 90, awtF: 240 };
+      S.reqs.bed = Math.max(2, Math.ceil(beds / 150)); S.reqs.svc = true; S.beds = beds;
+      break;
+    }
+    case 'mall': {
+      const F = [ri(R, 2, 3), ri(R, 3, 4), ri(R, 4, 5)][diff], V = [ri(R, 20, 50), ri(R, 50, 110), ri(R, 90, 180)][diff] * 100, h = 5.5;
+      const park = diff === 0 ? [] : diff === 1 ? [L('garage', -4, 0)] : [L('garage', -8, 0), L('garage', -4, 0)];
+      S.A = L('ground', 0, 0);
+      const ids = [S.A].concat(floors(F - 1, h, () => 0)).concat([]);
+      const retail = ids;
+      const per5 = V / 12;
+      retail.forEach((i) => { S.levels[i].pop = 1; });
+      const entries = [S.A].concat(park);
+      retail.slice(1).forEach((i) => entries.forEach((e) => { const x = per5 * 0.25 / (retail.length - 1) / entries.length; st(e, i, 'p', x); st(i, e, 'p', x); st(e, i, 'w', x * 0.06); st(i, e, 'w', x * 0.06); }));
+      park.forEach((pk) => { const x = per5 * 0.12 / park.length; st(S.A, pk, 'p', x); st(pk, S.A, 'p', x); st(S.A, pk, 'k', x * 0.15); });
+      for (let a = 0; a < retail.length; a++) for (let b = 0; b < retail.length; b++) if (a !== b) st(retail[a], retail[b], 'p', per5 * 0.3 / (retail.length * (retail.length - 1)));
+      st(S.A, retail[retail.length - 1], 'f', per5 * 0.004);
+      S.window = 900;
+      S.targets = { awt: 45, maxQ: 40, journey: 150 };
+      S.reqs.escAll = retail.concat(park).sort((a, b) => a - b); S.reqs.svc = true;
+      S.pop = V;
+      break;
+    }
+    case 'airport': {
+      const tr = diff === 2 ? L('train', -8, 0) : -1;
+      S.A = L('arr', 0, 0);
+      const dep = L('dep', 7, 0);
+      const D = [ri(R, 15, 30), ri(R, 30, 60), ri(R, 50, 100)][diff] * 100;
+      const srcs = tr >= 0 ? [S.A, tr] : [S.A];
+      srcs.forEach((s) => { const x = D / 12 / srcs.length; st(s, dep, 'p', x * 0.9); st(dep, s, 'p', x * 0.9); st(s, dep, 'k', x * 0.07); st(dep, s, 'k', x * 0.07); st(s, dep, 'w', x * 0.03); st(dep, s, 'w', x * 0.03); });
+      const G = [ri(R, 4, 6), ri(R, 8, 12), ri(R, 14, 22)][diff];
+      const mix = diff === 2 ? ['reg', 'nar', 'nar', 'wide', 'wide', 'jumbo'] : diff === 1 ? ['reg', 'nar', 'nar', 'nar', 'wide'] : ['reg', 'nar', 'nar'];
+      for (let g = 0; g < G; g++) { const c = pick(R, mix); S.gates.push({ cls: c, pax: ri(R, AIRCRAFT[c].pax[0], AIRCRAFT[c].pax[1]), t: ri(R, 0, 20) * 60 }); }
+      S.pier = [ri(R, 3, 5), ri(R, 5, 8), ri(R, 8, 12)][diff] * 100;
+      S.window = 1500;
+      S.targets = { awt: 45, maxQ: 50, flights: 0.9, walk: Math.round(S.pier / 1.6) };
+      S.reqs.escAll = srcs.concat([dep]).sort((a, b) => a - b);
+      S.pop = D;
+      break;
+    }
+    case 'metro': {
+      const deep = diff === 2;
+      const plat = L('platform', deep ? -24 : -14, 0);
+      const mez2 = deep ? L('mezz', -14, 0) : -1;
+      const mez = L('mezz', -7, 0);
+      S.A = L('street', 0, 0);
+      const H = ri(R, 4, 10) * 30, load = [0, ri(R, 3, 8), ri(R, 6, 14)][diff] * 100;
+      S.train = { H, load };
+      for (let t = 30; t < 1200; t += H) S.bursts.push({ t, o: plat, d: S.A, k: 'p', n: Math.round(load * 0.985) }, { t, o: plat, d: S.A, k: 'w', n: Math.max(1, Math.round(load * 0.015)) });
+      st(S.A, plat, 'p', load * 0.4 * 300 / H); st(S.A, plat, 'w', Math.max(0.5, load * 0.004 * 300 / H));
+      S.window = 1500;
+      S.targets = { clear: Math.round(H * 0.7), awtW: 120 };
+      S.reqs.escUp = [plat, mez2, mez, S.A].filter((x) => x >= 0).sort((a, b) => a - b);
+      S.pop = load;
+      break;
+    }
+    case 'stadium': {
+      S.A = L('esplanade', 0, 0);
+      const T = [1, ri(R, 1, 2), ri(R, 2, 3)][diff];
+      const ids = floors(T, 7, () => ri(R, 30, 80) * 100);
+      S.window = 1800; S.warm = 0;
+      let tot = 0;
+      ids.forEach((i) => { const p = S.levels[i].pop, mech = p * 0.5; tot += mech; S.streams.push({ o: i, d: S.A, k: 'p', rate: mech * 0.99 / 1200, t0: 0, t1: 1200, crowd: 1 }); S.streams.push({ o: i, d: S.A, k: 'w', rate: Math.max(4, p * 0.004) / 1200, t0: 0, t1: 1200 }); });
+      S.mechTotal = tot;
+      S.targets = { moved: 0.9, awtW: 240 };
+      S.reqs.escDown = [S.A].concat(ids);
+      S.pop = ids.reduce((a, i) => a + S.levels[i].pop, 0);
+      break;
+    }
+    case 'parking': {
+      const B = [ri(R, 2, 3), ri(R, 3, 5), ri(R, 5, 7)][diff], sp = ri(R, 8, 30) * 10;
+      const ids = []; for (let i = B; i >= 1; i--) ids.push(L('garage', -3 * i, sp));
+      S.A = L('street', 0, 0);
+      const noRamp = diff > 0 && R() < (diff === 1 ? 0.35 : 0.6);
+      const d5 = sp * B * 0.06;
+      spread(ids, d5 * 0.5, (i, x) => { st(i, S.A, 'p', x); st(S.A, i, 'p', x); st(i, S.A, 'w', x * 0.03); });
+      if (noRamp) { spread(ids, sp * B * 0.012, (i, x) => { st(S.A, i, 'c', x); st(i, S.A, 'c', x); }); S.reqs.car = true; S.targets.awtC = 150; }
+      S.targets.awt = 45;
+      S.noRamp = noRamp;
+      S.pop = sp * B;
+      break;
+    }
+    case 'warehouse': {
+      const M = [1, ri(R, 2, 3), ri(R, 4, 5)][diff], ph = [ri(R, 30, 60), ri(R, 60, 150), ri(R, 140, 300)][diff];
+      S.A = L('dock', 0, 0);
+      const ids = floors(M, 7, () => 1);
+      spread(ids, ph / 12 * 0.6, (i, x) => st(S.A, i, 'f', x, { thr: 1, t1: 1500 }));
+      spread(ids, ph / 12 * 0.4, (i, x) => st(i, S.A, 'f', x, { thr: 1, t1: 1500 }));
+      if (diff > 0) { const off = ids[ids.length - 1]; st(S.A, off, 'p', 2); st(off, S.A, 'p', 2); st(S.A, off, 'w', 0.3); }
+      else S.reqs.access = false;
+      S.window = 1800;
+      S.targets = { thr: 0.95, awtF: 240 };
+      S.reqs.freight = true; S.pallets = ph;
+      break;
+    }
+    case 'supertall': {
+      const F = ri(R, 70, 110), h = 4;
+      S.A = L('ground', 0, 0);
+      const ids = floors(F, h, () => 0);
+      const o1 = Math.round(F * 0.45), h1 = Math.round(F * 0.7), r1 = F - 1;
+      ids.forEach((i, k) => { S.levels[i].pop = k < o1 ? 140 : k < h1 ? 60 : k < r1 ? 24 : 0; });
+      const obs = ids[ids.length - 1];
+      const office = ids.slice(0, o1), hotel = ids.slice(o1, h1), res = ids.slice(h1, r1);
+      const op = office.reduce((a, i) => a + S.levels[i].pop, 0);
+      spread(office, 0.12 * op, (i, x) => st(S.A, i, 'p', x * 0.95, { hc: 1 }));
+      spread(hotel, 0.08 * hotel.reduce((a, i) => a + S.levels[i].pop, 0), (i, x) => { st(S.A, i, 'p', x / 2); st(i, S.A, 'p', x / 2); });
+      spread(res, 0.05 * res.reduce((a, i) => a + S.levels[i].pop, 0), (i, x) => st(i, S.A, 'p', x));
+      st(S.A, obs, 'p', 60); st(obs, S.A, 'p', 40); st(S.A, obs, 'w', 2);
+      spread(office, 0.003 * op, (i, x) => st(S.A, i, 'w', x));
+      spread(hotel.concat(res), 4, (i, x) => st(S.A, i, 'k', x));
+      S.hcPop = op; S.pop = op + hotel.length * 60 + res.length * 24;
+      S.targets = { hc5: 0.11, awt: 40, journey: 150 };
+      S.reqs.svc = true; S.obs = obs;
+      break;
+    }
+  }
+  const top = Math.max(...S.levels.map((l) => l.z)), bot = Math.min(...S.levels.map((l) => l.z));
+  S.height = top - bot;
+  if (top > 30 || S.levels.length > 10 && kind !== 'mall') S.reqs.fire = top > 30;
+  S.levels.forEach((l, i) => { if (l.n == null) l.n = i - S.A; });
+  return S;
+}
+
+/* ===================== Projeto: validação, custo ===================== */
+function served(scn, g) {
+  const set = new Set([g.lobby]);
+  for (let i = Math.min(g.from, g.to); i <= Math.max(g.from, g.to); i++) set.add(i);
+  return [...set].filter((i) => i >= 0 && i < scn.levels.length).sort((a, b) => a - b);
+}
+function liftIssues(scn, g) {
+  const T = LIFTS[g.type], fl = served(scn, g), out = [];
+  const z = fl.map((i) => scn.levels[i].z), travel = Math.max(...z) - Math.min(...z);
+  if (travel > T.maxTravel) out.push(['iss.travel', T.maxTravel]);
+  if (fl.length > T.maxStops) out.push(['iss.stops', T.maxStops]);
+  if (T.minLevels && scn.levels.length < T.minLevels) out.push(['iss.ddMin', T.minLevels]);
+  if (fl.length < 2) out.push(['iss.oneStop']);
+  return out;
+}
+function costOf(scn, D) {
+  let c = 0, parts = { lift: 0, esc: 0, walk: 0, pbb: 0 };
+  D.lifts.forEach((g) => { const T = LIFTS[g.type], n = served(scn, g).length; const v = T.perV * Math.max(0, g.speed - 1); const x = g.qty * (T.base + T.stop * n + v + (T.caps.indexOf(g.cap) * 8)); parts.lift += x; });
+  D.escs.forEach((e) => { const rise = Math.abs(scn.levels[e.to].z - scn.levels[e.from].z); const x = e.qty * (e.inc ? 70 : ESC_COST[e.width]) * (1 + rise / 8) * (e.dir === 'both' ? 2 : 1); parts.esc += x; });
+  parts.walk = (D.walk || 0) * WALK_COST;
+  Object.keys(D.pbb || {}).forEach((cls) => { const n = scn.gates.filter((g) => g.cls === cls).length; (D.pbb[cls] || []).forEach((t) => { if (t) parts.pbb += n * PBB[t].cost; }); });
+  Object.values(parts).forEach((v) => c += v);
+  return { total: Math.round(c), parts };
+}
+function energyOf(sim) { return Math.round(sim.energy); }
+
+/* ===================== Rotas ===================== */
+function buildRoutes(scn, D, live) {
+  const N = scn.levels.length, edges = [];
+  D.lifts.forEach((g, gi) => {
+    const T = LIFTS[g.type], fl = served(scn, g);
+    if (liftIssues(scn, g).length) return;
+    const base = 25 + 60 / g.qty;
+    fl.forEach((a) => fl.forEach((b) => { if (a !== b) edges.push({ a, b, mode: 'lift', gi, serves: T.serves, base, cost: base + Math.abs(scn.levels[a].z - scn.levels[b].z) / g.speed + 8, tr: Math.abs(scn.levels[a].z - scn.levels[b].z) / g.speed + 8 }); }));
+  });
+  D.escs.forEach((e, ei) => {
+    const rise = Math.abs(scn.levels[e.to].z - scn.levels[e.from].z), t = rise / Math.sin(Math.PI / 6) / 0.5;
+    const add = (a, b) => edges.push({ a, b, mode: 'esc', ei, serves: e.inc ? 'pk' : 'p', cost: t * 0.6 + 2 });
+    if (e.dir === 'up' || e.dir === 'both') add(Math.min(e.from, e.to), Math.max(e.from, e.to));
+    if (e.dir === 'down' || e.dir === 'both') add(Math.max(e.from, e.to), Math.min(e.from, e.to));
+  });
+  let cache = {};
+  const adj = Array.from({ length: N }, () => []);
+  edges.forEach((e) => adj[e.a].push(e));
+  const route = function route(o, d, k) {
+    const key = o + ':' + k;
+    if (!cache[key]) {
+      const dist = new Array(N).fill(Infinity), prev = new Array(N).fill(null), done = new Array(N).fill(false);
+      dist[o] = 0;
+      for (;;) {
+        let u = -1; for (let i = 0; i < N; i++) if (!done[i] && dist[i] < Infinity && (u < 0 || dist[i] < dist[u])) u = i;
+        if (u < 0) break; done[u] = true;
+        for (const e of adj[u]) if (e.serves.includes(k)) { const nd = dist[u] + e.cost + (prev[u] && (prev[u].mode === 'lift' || e.mode === 'lift') ? 15 : 0); if (nd < dist[e.b]) { dist[e.b] = nd; prev[e.b] = e; } }
+      }
+      cache[key] = prev;
+    }
+    const prev = cache[key];
+    if (o === d) return [];
+    if (!prev[d]) return null;
+    const legs = []; let x = d;
+    while (x !== o) { const e = prev[x]; legs.unshift(e); x = e.a; }
+    return legs;
+  };
+  route.refresh = (waitOf) => { edges.forEach((e) => { if (e.mode === 'lift') e.cost = e.base + waitOf(e.gi) + e.tr; }); cache = {}; };
+  return route;
+}
+
+/* ===================== Simulação ===================== */
+const ACC = 1.0;
+function travelTime(d, v) { if (d <= 0) return 0; const dc = v * v / ACC; return d >= dc ? d / v + v / ACC : 2 * Math.sqrt(d / ACC); }
+function Sim(scn, D, seed) {
+  const R = mulberry((seed ^ 0x5bd1e995) >>> 0);
+  const route = buildRoutes(scn, D);
+  const lv = scn.levels;
+  const sim = { t: 0, scn, D, agents: 0, done: [], groups: [], escs: [], energy: 0, noRoute: {}, delivered: [], deps: [], doneN: 0, waitSum: 0, waitN: 0, maxQ: 0, kindWait: {}, kindN: {}, journeySum: 0, journeyN: 0, maxWait: 0, platClear: [], thrDone: 0, thrDem: 0, movedMech: 0, finished: false };
+  const crowdN = scn.kind === 'stadium' || scn.kind === 'metro' ? 5 : 1;
+  sim.crowdN = crowdN;
+  D.lifts.forEach((g, gi) => {
+    const T = LIFTS[g.type], fl = served(scn, g), ok = !liftIssues(scn, g).length;
+    const base = fl[0];
+    const key = (f) => T.double ? f - ((f - base) % 2) : f;
+    const grp = { gi, g, T, fl, ok, key, cap: g.cap * (T.double ? 2 : 1), cars: [], wait: {}, hall: {}, waitN: 0 };
+    fl.forEach((f) => grp.wait[f] = []);
+    if (ok) for (let c = 0; c < g.qty; c++) grp.cars.push({ i: c, f: key(g.lobby), y: lv[key(g.lobby)].z, st: 'idle', dir: 0, load: [], units: 0, t0: 0, t1: 0, y0: 0, y1: 0, target: null, assigned: 0 });
+    sim.groups.push(grp);
+  });
+  D.escs.forEach((e, ei) => {
+    const rise = Math.abs(lv[e.to].z - lv[e.from].z);
+    const cap = (e.inc ? INC_CAP[e.width] || 5000 : ESC_CAP[e.width]) * ESC_PRACTICAL / 3600 * e.qty;
+    const mk = (a, b) => ({ ei, a, b, cap, tt: rise / Math.sin(Math.PI / 6) / 0.5, q: [], budget: 0, ride: [], moved: 0 });
+    const lo = Math.min(e.from, e.to), hi = Math.max(e.from, e.to);
+    const pair = [];
+    if (e.dir === 'up' || e.dir === 'both') pair.push(mk(lo, hi));
+    if (e.dir === 'down' || e.dir === 'both') pair.push(mk(hi, lo));
+    sim.escs.push(pair);
+  });
+  const finishAgent = (a) => {
+    const j = sim.t - a.t0;
+    sim.doneN += a.n; sim.journeySum += j * a.n; sim.journeyN += a.n;
+    sim.waitSum += a.w * a.n; sim.waitN += a.n; sim.maxWait = Math.max(sim.maxWait, a.w);
+    sim.kindWait[a.k] = (sim.kindWait[a.k] || 0) + a.w * a.n; sim.kindN[a.k] = (sim.kindN[a.k] || 0) + a.n;
+    if (a.hc) sim.delivered.push([sim.t, a.n]);
+    if (a.thr) sim.thrDone += a.n;
+    if (a.mech) sim.movedMech += a.n;
+  };
+  const startLeg = (a) => {
+    if (a.li >= a.legs.length) { finishAgent(a); return; }
+    const e = a.legs[a.li]; a.ws = sim.t;
+    if (e.mode === 'lift') {
+      const grp = sim.groups[e.gi]; a.dir = e.b > e.a ? 1 : -1; a.from = e.a; a.to = e.b; a.car = null;
+      grp.wait[e.a].push(a); grp.waitN += a.n;
+      if (D.lifts[e.gi].ctl === 'dd') assignDD(grp, a); else hallCall(grp, e.a, a.dir);
+    } else {
+      const pr = sim.escs[e.ei].find((x) => x.a === e.a && x.b === e.b); pr.q.push(a);
+    }
+  };
+  const newAgent = (o, d, k, n, extra) => {
+    const legs = route(o, d, k);
+    if (!legs) { sim.noRoute[k] = (sim.noRoute[k] || 0) + n; return; }
+    const a = Object.assign({ o, d, k, n, t0: sim.t, w: 0, legs, li: 0 }, extra || {});
+    sim.agents += n; startLeg(a);
+  };
+  /* --- elevadores --- */
+  const carPos = (c) => c.st === 'moving' ? c.y0 + (c.y1 - c.y0) * Math.min(1, (sim.t - c.t0) / Math.max(0.01, c.t1 - c.t0)) : c.y;
+  const stopsOf = (grp, c) => {
+    const s = new Set();
+    c.load.forEach((a) => s.add(grp.key(a.to)));
+    Object.keys(grp.hall).forEach((h) => { if (grp.hall[h] === c.i) s.add(grp.key(+h.split(':')[0])); });
+    grp.fl.forEach((f) => grp.wait[f].forEach((a) => { if (a.car === c.i) s.add(grp.key(f)); }));
+    return s;
+  };
+  const eta = (grp, c, f, dir) => {
+    const y = carPos(c), zf = lv[grp.key(f)].z, v = grp.g.speed;
+    const s = stopsOf(grp, c).size;
+    let d;
+    if (c.st === 'idle' || c.dir === 0) d = Math.abs(zf - y);
+    else if ((c.dir > 0 && zf >= y && dir > 0) || (c.dir < 0 && zf <= y && dir < 0)) d = Math.abs(zf - y);
+    else { const ext = c.dir > 0 ? Math.max(...grp.fl.map((x) => lv[x].z)) : Math.min(...grp.fl.map((x) => lv[x].z)); d = Math.abs(ext - y) + Math.abs(ext - zf); }
+    return d / v + s * 7 + (c.units / grp.cap) * 10;
+  };
+  const hallCall = (grp, f, dir) => {
+    const k = f + ':' + dir;
+    if (grp.hall[k] != null) return;
+    let best = null, bc = Infinity;
+    grp.cars.forEach((c) => { const x = eta(grp, c, f, dir); if (x < bc) { bc = x; best = c; } });
+    if (best) grp.hall[k] = best.i;
+  };
+  const assignDD = (grp, a) => {
+    let best = null, bc = Infinity;
+    grp.cars.forEach((c) => {
+      const s = stopsOf(grp, c);
+      const pend = grp.fl.reduce((n, f) => n + grp.wait[f].filter((x) => x.car === c.i).reduce((m, x) => m + UNITS[x.k] * x.n, 0), 0);
+      const sat = grp.waitN > 0.5 * grp.cars.length * grp.cap;
+      let x = eta(grp, c, a.from, a.dir) * (sat ? 0.4 : 1) + (s.has(grp.key(a.to)) ? 0 : sat ? 30 : 6) + (s.has(grp.key(a.from)) ? 0 : sat ? 2 : 4);
+      if (pend + c.units + UNITS[a.k] * a.n > grp.cap) x += 40;
+      if (x < bc) { bc = x; best = c; }
+    });
+    a.car = best ? best.i : null;
+  };
+  const depart = (grp, c) => {
+    const s = stopsOf(grp, c), y = c.y;
+    s.delete(grp.key(c.f));
+    const cand = [...s];
+    if (!cand.length) {
+      const home = grp.key(grp.g.lobby);
+      if (c.f !== home && (scn.kind === 'office' || scn.kind === 'supertall' || scn.kind === 'hotel') && grp.T.serves.includes('p')) { moveTo(grp, c, home); c.homing = true; return; }
+      c.st = 'idle'; c.dir = 0; return;
+    }
+    const ahead = cand.filter((f) => c.dir > 0 ? lv[f].z > y : c.dir < 0 ? lv[f].z < y : true);
+    let pool = ahead.length ? ahead : cand;
+    pool.sort((a, b) => Math.abs(lv[a].z - y) - Math.abs(lv[b].z - y));
+    moveTo(grp, c, pool[0]);
+  };
+  const moveTo = (grp, c, f) => {
+    const d = Math.abs(lv[f].z - c.y);
+    c.dir = lv[f].z > c.y ? 1 : -1;
+    if (grp.key(grp.g.lobby) === c.f && !c.homing) sim.deps.push([grp.gi, sim.t]);
+    c.st = 'moving'; c.t0 = sim.t; c.t1 = sim.t + travelTime(d, grp.g.speed); c.y0 = c.y; c.y1 = lv[f].z; c.target = f;
+    sim.energy += d * grp.T.energy * (1 + c.units / grp.cap) * 0.01;
+  };
+  const arrive = (grp, c) => {
+    c.st = 'doors'; c.td0 = sim.t; c.y = c.y1; c.f = c.target; c.homing = false;
+    let tr = 0;
+    const out = c.load.filter((a) => grp.key(a.to) === c.f);
+    c.load = c.load.filter((a) => grp.key(a.to) !== c.f);
+    out.forEach((a) => { c.units -= UNITS[a.k] * a.n; tr += TRANSFER[a.k] * Math.min(a.n, 4); });
+    /* direção depois desta parada */
+    const s = stopsOf(grp, c); s.delete(c.f);
+    const y = c.y;
+    let nd = c.dir;
+    const aheadAny = [...s].some((f) => nd > 0 ? lv[f].z > y : lv[f].z < y);
+    const here = grp.fl.filter((f) => grp.key(f) === c.f);
+    const waiting = [].concat(...here.map((f) => grp.wait[f]));
+    if (!aheadAny) {
+      const mine = waiting.filter((a) => grp.g.ctl !== 'dd' || a.car === c.i);
+      if (mine.length) nd = mine[0].dir; else if (s.size) nd = -nd; else nd = 0;
+    }
+    if (nd === 0 && waiting.length) nd = waiting[0].dir;
+    c.dir = nd;
+    here.forEach((f) => {
+      const q = grp.wait[f], keep = [];
+      for (const a of q) {
+        const okCar = grp.g.ctl !== 'dd' || a.car === c.i;
+        if (!okCar || a.dir !== c.dir) { keep.push(a); continue; }
+        const free = grp.cap - c.units, u = UNITS[a.k];
+        if (free < u) { keep.push(a); continue; }
+        let take = a;
+        if (u * a.n > free) { const m = Math.floor(free / u); take = Object.assign({}, a, { n: m }); a.n -= m; keep.push(a); }
+        take.w += sim.t - take.ws; c.load.push(take); c.units += u * take.n; grp.waitN -= take.n; tr += TRANSFER[take.k] * Math.min(take.n, 4);
+      }
+      grp.wait[f] = keep;
+      [1, -1].forEach((d) => { const k = f + ':' + d; if (grp.hall[k] === c.i) { delete grp.hall[k]; if (keep.some((a) => a.dir === d)) hallCall(grp, f, d); } });
+      if (grp.g.ctl === 'dd') keep.filter((a) => a.car === c.i && a.dir === c.dir).forEach((a) => assignDD(grp, a));
+    });
+    c.t1 = sim.t + grp.T.door + tr;
+    out.forEach((a) => { a.li++; startLeg(a); });
+  };
+  const stepLifts = () => {
+    sim.groups.forEach((grp) => grp.cars.forEach((c) => {
+      if (c.st === 'moving') { if (sim.t >= c.t1) arrive(grp, c); }
+      else if (c.st === 'doors') { if (sim.t >= c.t1) depart(grp, c); }
+      if (c.st === 'idle') {
+        const s = stopsOf(grp, c);
+        if (s.has(c.f)) { c.target = c.f; c.y1 = c.y; arrive(grp, c); }
+        else if (s.size) depart(grp, c);
+      }
+    }));
+  };
+  /* --- escadas rolantes --- */
+  const stepEsc = (dt) => {
+    sim.escs.forEach((pair) => pair.forEach((e) => {
+      e.budget = Math.min(e.budget + e.cap * dt, e.cap * 2 + 1);
+      while (e.q.length && e.budget >= 1) {
+        const a = e.q[0];
+        if (a.n <= e.budget) { e.q.shift(); e.budget -= a.n; a.w += sim.t - a.ws; e.ride.push([sim.t + e.tt, a]); e.moved += a.n; }
+        else { const m = Math.floor(e.budget); const part = Object.assign({}, a, { n: m }); a.n -= m; e.budget -= m; part.w += sim.t - part.ws; e.ride.push([sim.t + e.tt, part]); e.moved += m; break; }
+      }
+      const qn = e.q.reduce((s, a) => s + a.n, 0); if (sim.t > scn.warm) sim.maxQ = Math.max(sim.maxQ, qn); e.qn = qn;
+      while (e.ride.length && e.ride[0][0] <= sim.t) { const a = e.ride.shift()[1]; a.li++; startLeg(a); }
+      if (e.q.length || e.ride.length) sim.energy += 0.02 * dt;
+    }));
+  };
+  /* --- chegadas --- */
+  const stepArrivals = (dt) => {
+    scn.streams.forEach((s) => {
+      if (sim.t < s.t0 || sim.t >= s.t1) return;
+      const lam = s.rate * dt;
+      if (s.crowd) { const tot = poisson(R, lam); let left = tot; while (left > 0) { const n = Math.min(crowdN, left); left -= n; newAgent(s.o, s.d, s.k, n, { mech: 1 }); } }
+      else { const n = poisson(R, lam); for (let i = 0; i < n; i++) newAgent(s.o, s.d, s.k, 1, { hc: s.hc, thr: s.thr, mech: scn.kind === 'stadium' ? 1 : 0 }); if (s.thr) sim.thrDem += n; }
+    });
+    scn.bursts.forEach((b) => { if (!b.fired && sim.t >= b.t) { b.fired = true; let left = b.n; while (left > 0) { const n = Math.min(crowdN, left); left -= n; newAgent(b.o, b.d, b.k, n, { burst: b.t }); } sim.platWatch = sim.platWatch || []; if (b.k === 'p') sim.platWatch.push({ t: b.t, lvl: b.o, done: false }); } });
+  };
+  const platQueue = (lvl) => {
+    let n = 0;
+    sim.escs.forEach((pair) => pair.forEach((e) => { if (e.a === lvl) n += e.qn || 0; }));
+    sim.groups.forEach((g) => { if (g.wait[lvl]) n += g.wait[lvl].reduce((s, a) => s + a.n, 0); });
+    return n;
+  };
+  sim.step = (dt) => {
+    if (sim.finished) return;
+    stepArrivals(dt);
+    stepLifts();
+    stepEsc(dt);
+    if (sim.platWatch) sim.platWatch.forEach((w) => { if (!w.done && sim.t > w.t + 5 && platQueue(w.lvl) < Math.max(10, scn.train.load * 0.03)) { w.done = true; sim.platClear.push(sim.t - w.t); } });
+    sim.t += dt;
+    if (Math.floor(sim.t / 30) !== Math.floor((sim.t - dt) / 30)) route.refresh((gi) => { const g = sim.groups[gi]; return g.cars.length ? g.waitN / (g.cars.length * g.cap * 0.8) * 90 : 0; });
+    if (sim.t >= scn.window) sim.finish();
+  };
+  sim.waitingNow = () => {
+    let n = 0, w = 0, wt = 0, wk = {};
+    const add = (a) => { n += a.n; const x = a.w + (sim.t - a.ws); wt += x * a.n; w = Math.max(w, x); wk[a.k] = wk[a.k] || [0, 0]; wk[a.k][0] += x * a.n; wk[a.k][1] += a.n; };
+    sim.groups.forEach((g) => g.fl.forEach((f) => g.wait[f].forEach(add)));
+    sim.escs.forEach((pair) => pair.forEach((e) => e.q.forEach(add)));
+    return { n, w, wt, wk };
+  };
+  sim.finish = () => {
+    if (sim.finished) return;
+    sim.finished = true;
+    sim.M = metrics(sim);
+  };
+  return sim;
+}
+
+function metrics(sim) {
+  const scn = sim.scn, M = {};
+  const pend = sim.waitingNow();
+  const waitAll = (sim.waitSum + pend.wt) / Math.max(1, sim.waitN + pend.n);
+  M.awt = waitAll;
+  M.journey = sim.journeyN ? sim.journeySum / sim.journeyN : 0;
+  M.maxWait = Math.max(sim.maxWait, pend.w);
+  M.left = pend.n;
+  M.noRoute = Object.values(sim.noRoute).reduce((a, b) => a + b, 0);
+  M.noRouteK = sim.noRoute;
+  const kw = (k) => { const a = (sim.kindWait[k] || 0) + (pend.wk[k] ? pend.wk[k][0] : 0), n = (sim.kindN[k] || 0) + (pend.wk[k] ? pend.wk[k][1] : 0); return n ? a / n : null; };
+  ['p', 'w', 'b', 'f', 'm', 'k', 'c'].forEach((k) => M['awt_' + k] = kw(k));
+  M.maxQ = sim.maxQ;
+  if (scn.hcPop) {
+    const b = new Array(Math.ceil(scn.window / 10) + 1).fill(0);
+    sim.delivered.forEach(([t, n]) => { b[Math.floor(t / 10)] += n; });
+    let best = 0; for (let i = 0; i + 30 <= b.length; i++) { let s = 0; for (let j = i; j < i + 30; j++) s += b[j]; best = Math.max(best, s); }
+    M.hc5 = best / scn.hcPop;
+  }
+  const ints = [];
+  sim.groups.forEach((g) => {
+    if (!g.T.serves.includes('p') || g.g.type === 'fire') return;
+    const ds = sim.deps.filter((d) => d[0] === g.gi && d[1] > scn.warm).map((d) => d[1]);
+    if (ds.length >= 3) ints.push((ds[ds.length - 1] - ds[0]) / (ds.length - 1));
+    else if (g.fl.includes(scn.A) && g.cars.length) ints.push(scn.window);
+  });
+  M.interval = ints.length ? Math.max(...ints) : null;
+  if (scn.train) M.clear = sim.platClear.length ? sim.platClear.reduce((a, b) => a + b, 0) / sim.platClear.length : (scn.train ? scn.window : null);
+  if (scn.kind === 'warehouse') M.thr = sim.thrDem ? sim.thrDone / sim.thrDem : 0;
+  if (scn.kind === 'stadium') M.moved = sim.movedMech / Math.max(1, scn.mechTotal);
+  if (scn.kind === 'airport') Object.assign(M, airportMetrics(scn, sim.D));
+  M.energy = Math.round(sim.energy);
+  return M;
+}
+
+function boardingTime(cls, pax, bridges) {
+  const ok = bridges.filter((t) => t && PBB[t].cls.includes(cls));
+  const front = ok.filter((t) => !PBB[t].second);
+  let doors = 0;
+  if (front.length) { doors = Math.min(AIRCRAFT[cls].doors, ok.length); }
+  if (!doors) return pax / BUS_RATE + BUS_OVERHEAD;
+  return pax / (BRIDGE_RATE * doors);
+}
+function airportMetrics(scn, D) {
+  let ok = 0;
+  const per = scn.gates.map((g) => { const tb = boardingTime(g.cls, g.pax, (D.pbb && D.pbb[g.cls]) || []); const good = tb <= AIRCRAFT[g.cls].target; if (good) ok++; return { tb, good }; });
+  const c = Math.min(D.walk || 0, scn.pier);
+  const walk = (scn.pier - c) / WALK + c / (WALK + BELT);
+  return { flights: scn.gates.length ? ok / scn.gates.length : 1, gateTimes: per, walk };
+}
+
+/* ===================== Requisitos ===================== */
+function checkReqs(scn, D) {
+  const out = [];
+  const route = buildRoutes(scn, D);
+  const goodLifts = D.lifts.filter((g) => !liftIssues(scn, g).length);
+  const used = scn.levels.map((l, i) => i).filter((i) => scn.streams.some((s) => s.o === i || s.d === i) || scn.bursts.some((b) => b.o === i));
+  if (scn.reqs.access) {
+    const bad = used.filter((i) => i !== scn.A && !route(scn.A, i, 'w') && scn.streams.concat(scn.bursts).some((s) => (s.o === i || s.d === i) && s.k !== 'f' && s.k !== 'c'));
+    out.push({ id: 'access', ok: !bad.length, n: bad.length });
+  }
+  if (scn.reqs.fire) {
+    const all = scn.levels.map((l, i) => i);
+    const ok = goodLifts.some((g) => g.type === 'fire' && all.every((i) => served(scn, g).includes(i)));
+    out.push({ id: 'fire', ok });
+  }
+  if (scn.reqs.bed) { const n = goodLifts.filter((g) => g.type === 'bed').reduce((a, g) => a + g.qty, 0); out.push({ id: 'bed', ok: n >= scn.reqs.bed, n, need: scn.reqs.bed }); }
+  if (scn.reqs.svc) { const ks = scn.streams.filter((s) => 'fmk'.includes(s.k)); const ok = ks.every((s) => route(s.o, s.d, s.k)); out.push({ id: 'svc', ok }); }
+  if (scn.reqs.freight) { const ok = scn.streams.filter((s) => s.k === 'f').every((s) => route(s.o, s.d, 'f')); out.push({ id: 'freight', ok }); }
+  if (scn.reqs.car) { const ok = scn.streams.filter((s) => s.k === 'c').every((s) => route(s.o, s.d, 'c')); out.push({ id: 'car', ok }); }
+  if (scn.reqs.wheel) out.push({ id: 'wheel', ok: scn.streams.filter((s) => s.k === 'w').every((s) => route(s.o, s.d, 'w')) });
+  const escHas = (a, b) => D.escs.some((e) => { const lo = Math.min(e.from, e.to), hi = Math.max(e.from, e.to); if (Math.min(a, b) !== lo || Math.max(a, b) !== hi) return false; return e.dir === 'both' || (b > a ? e.dir === 'up' : e.dir === 'down'); });
+  if (scn.reqs.escAll) { const L = scn.reqs.escAll; let ok = true; for (let i = 0; i + 1 < L.length; i++) if (!escHas(L[i], L[i + 1]) || !escHas(L[i + 1], L[i])) ok = false; out.push({ id: 'escAll', ok }); }
+  if (scn.reqs.escUp) { const L = scn.reqs.escUp; let ok = true; for (let i = 0; i + 1 < L.length; i++) if (!escHas(L[i], L[i + 1])) ok = false; out.push({ id: 'escUp', ok }); }
+  if (scn.reqs.escDown) { const L = scn.reqs.escDown; let ok = true; for (let i = 0; i + 1 < L.length; i++) if (!escHas(L[i + 1], L[i])) ok = false; out.push({ id: 'escDown', ok }); }
+  if (scn.gates.length) { const miss = Object.keys(AIRCRAFT).filter((c) => scn.gates.some((g) => g.cls === c) && !((D.pbb && D.pbb[c]) || []).some((t) => t && PBB[t].cls.includes(c) && !PBB[t].second)); out.push({ id: 'pbb', ok: !miss.length, soft: true, miss }); }
+  const invalid = D.lifts.filter((g) => liftIssues(scn, g).length).length;
+  if (invalid) out.push({ id: 'invalid', ok: false, n: invalid });
+  return out;
+}
+
+/* ===================== Avaliação ===================== */
+function evaluate(scn, D, M) {
+  const T = scn.targets, rows = [];
+  const add = (id, val, tgt, better, fmt) => rows.push({ id, val, tgt, ok: val != null && (better === 'low' ? val <= tgt : val >= tgt), fmt });
+  if (T.hc5 != null) add('hc5', M.hc5 || 0, T.hc5 * 0.95, 'high', 'pct');
+  if (T.interval != null) add('interval', M.interval, T.interval, 'low', 's');
+  if (T.awt != null) add('awt', M.awt_p != null ? M.awt_p : M.awt, T.awt, 'low', 's');
+  if (T.awtB != null) add('awtB', M.awt_b == null ? 0 : M.awt_b, T.awtB, 'low', 's');
+  if (T.awtF != null) add('awtF', M.awt_f == null ? 0 : M.awt_f, T.awtF, 'low', 's');
+  if (T.awtK != null) add('awtK', M.awt_k == null ? 0 : M.awt_k, T.awtK, 'low', 's');
+  if (T.awtC != null) add('awtC', M.awt_c == null ? 0 : M.awt_c, T.awtC, 'low', 's');
+  if (T.awtW != null) add('awtW', M.awt_w == null ? 0 : M.awt_w, T.awtW, 'low', 's');
+  if (T.maxQ != null) add('maxQ', M.maxQ, T.maxQ, 'low', 'n');
+  if (T.journey != null) add('journey', M.journey, T.journey, 'low', 's');
+  if (T.clear != null) add('clear', M.clear, T.clear, 'low', 's');
+  if (T.moved != null) add('moved', M.moved, T.moved, 'high', 'pct');
+  if (T.thr != null) add('thr', M.thr, T.thr, 'high', 'pct');
+  if (T.flights != null) add('flights', M.flights, T.flights, 'high', 'pct');
+  if (T.walk != null) add('walk', M.walk, T.walk, 'low', 's');
+  rows.push({ id: 'noRoute', val: M.noRoute, tgt: 0, ok: M.noRoute === 0, fmt: 'n' });
+  return rows;
+}
+function stars(reqs, rows, cost, budget, helped) {
+  const hard = reqs.filter((r) => !r.soft).every((r) => r.ok);
+  const tg = rows.every((r) => r.ok);
+  let s = 0;
+  if (hard && tg) { s = 1; if (cost <= budget) s = 2; if (cost <= budget * 0.9 && reqs.every((r) => r.ok)) s = 3; }
+  if (helped) s = Math.min(s, 1);
+  return s;
+}
+
+/* ===================== Projeto de referência (heurística) ===================== */
+function refDesign(scn) {
+  const D = { lifts: [], escs: [], walk: 0, pbb: {} };
+  const lv = scn.levels, A = scn.A, top = lv.length - 1;
+  const speedFor = (h, list) => list.reduce((b, v) => (h / v <= 30 || v === list[list.length - 1]) && b == null ? v : b, null) || list[list.length - 1];
+  const typeFor = (lo, hi, n) => { const h = Math.abs(lv[hi].z - lv[lo].z); if (h <= 18 && n <= 6) return 'hyd'; if (h <= 76 && n <= 30) return 'mrl'; return 'trac'; };
+  const addZone = (lo, hi, lobby, pop5, ctl) => {
+    const n = hi - lo + 1, ty = typeFor(Math.min(lo, lobby), hi, n + 1), T = LIFTS[ty], h = Math.abs(lv[hi].z - lv[lobby].z);
+    const v = speedFor(h, T.speeds), cap = (scn.kind === 'office' || scn.kind === 'supertall') ? T.caps[T.caps.length - 1] : T.caps[Math.min(T.caps.length - 1, n > 10 ? 2 : 1)];
+    const p = cap * 0.8, S = n * (1 - Math.pow(1 - 1 / n, p));
+    const rtt = 2 * h / v + (S + 1) * (T.door + 4) + 2 * p * 1.2;
+    const cars = Math.min(12, Math.max(1, Math.ceil(Math.max(rtt / (scn.targets.interval || 40), pop5 * rtt / (300 * p)) * (scn.kind === 'office' ? (scn.diff === 2 ? 2.1 : 1.75) : 1.5))));
+    D.lifts.push({ type: ty, qty: cars, cap, speed: v, lobby, from: lo, to: hi, ctl: ctl || 'conv' });
+  };
+  const pf = (ids) => ids.reduce((a, i) => a + lv[i].pop, 0);
+  const above = lv.map((l, i) => i).filter((i) => i > A && lv[i].pop > 0);
+  const below = lv.map((l, i) => i).filter((i) => i < A);
+  const k = scn.kind;
+  if (['resid', 'office', 'hotel', 'hosp', 'supertall'].includes(k)) {
+    const pct = k === 'office' ? 0.13 : k === 'supertall' ? 0.1 : 0.08;
+    const zones = Math.max(1, Math.ceil(above.length / (k === 'resid' ? 22 : k === 'office' ? (scn.diff === 2 ? 8 : 10) : k === 'supertall' ? 10 : 14)));
+    const shuttle = below.length && (k === 'office' || k === 'supertall');
+    if (shuttle) { const dem = pf(above) * (k === 'office' ? 0.155 * 0.85 * 0.3 : 0.03); D.lifts.push({ type: 'mrl', qty: Math.max(2, Math.ceil(dem / (300 / 80 * 0.8 * 21) * 1.4)), cap: 21, speed: 1, lobby: A, from: below[0], to: A, ctl: 'conv' }); }
+    const per = Math.ceil(above.length / zones);
+    for (let z = 0; z < zones; z++) { const ids = above.slice(z * per, (z + 1) * per); if (!ids.length) continue; addZone(below.length && !shuttle && z === 0 ? below[0] : ids[0], ids[ids.length - 1], A, pf(ids) * pct * (k === 'hosp' ? 1.5 : 1), above.length > 30 ? 'dd' : 'conv'); }
+    if (k === 'supertall') { const obs = scn.obs; D.lifts.push({ type: 'trac', qty: 2, cap: 21, speed: 10, lobby: A, from: obs, to: obs, ctl: 'conv' }); }
+  }
+  if (k === 'house') D.lifts.push({ type: 'home', qty: 1, cap: 3, speed: 0.3, lobby: A, from: A, to: top, ctl: 'conv' });
+  if (k === 'parking') { const h = Math.abs(lv[0].z), hy = h <= 18 && lv.length <= 6; D.lifts.push({ type: hy ? 'hyd' : 'mrl', qty: Math.max(2, Math.ceil(scn.pop / 500)), cap: 13, speed: hy ? 0.63 : 1.6, lobby: A, from: 0, to: A, ctl: 'conv' }); if (scn.reqs.car) D.lifts.push({ type: 'car', qty: Math.max(4, Math.ceil(scn.pop / 160)), cap: 20, speed: 0.5, lobby: A, from: 0, to: A, ctl: 'conv' }); }
+  if (k === 'warehouse') { const ph = scn.pallets, h = lv[top].z; const trip = 2 * h / 1 + 2 * (8 + 20 * 3); const per = 3 * 3600 / trip; D.lifts.push({ type: 'svc', qty: Math.max(1, Math.ceil(ph / per * 2.2)), cap: 30, speed: 1.6, lobby: A, from: A, to: top, ctl: 'conv' }); if (scn.diff > 0) D.lifts.push({ type: h <= 18 ? 'hyd' : 'mrl', qty: 1, cap: 8, speed: h <= 18 ? 0.63 : 1, lobby: A, from: A, to: top, ctl: 'conv' }); }
+  const escFlow = (a, b, perHour, inc) => { const w = perHour > 2500 ? 1000 : 800; const capH = (inc ? INC_CAP[1000] : ESC_CAP[w]) * ESC_PRACTICAL; return { from: a, to: b, width: inc ? 1000 : w, qty: Math.max(1, Math.ceil(perHour / capH * 1.3)), inc: !!inc }; };
+  if (k === 'mall' || k === 'airport') {
+    const L = scn.reqs.escAll, flow = scn.pop * (k === 'airport' ? 1 : 0.5);
+    for (let i = 0; i + 1 < L.length; i++) { const e = escFlow(L[i], L[i + 1], flow); D.escs.push(Object.assign({}, e, { dir: 'both' })); }
+    const lo = L[0], hi = L[L.length - 1];
+    D.lifts.push({ type: Math.abs(lv[hi].z - lv[lo].z) <= 18 ? 'hyd' : 'mrl', qty: k === 'airport' ? 3 : 2, cap: 13, speed: Math.abs(lv[hi].z - lv[lo].z) <= 18 ? 0.63 : 1, lobby: A, from: lo, to: hi, ctl: 'conv' });
+    if (k === 'mall') D.lifts.push({ type: 'svc', qty: 1, cap: 20, speed: 1, lobby: A, from: lo, to: hi, ctl: 'conv' });
+    if (k === 'mall' && lo < A) D.escs.push({ from: lo, to: A, width: 1000, qty: 1, inc: true, dir: 'both' });
+  }
+  if (k === 'airport') {
+    D.walk = Math.round(scn.pier * 0.65);
+    Object.keys(AIRCRAFT).forEach((c) => { if (!scn.gates.some((g) => g.cls === c)) return; D.pbb[c] = c === 'reg' ? ['com'] : c === 'nar' ? ['nose'] : c === 'wide' ? ['apron', 'otw'] : ['apron', 'a380', 'otw']; });
+    D.escs.filter((e) => e.from < scn.A || e.to < scn.A); D.escs.push({ from: Math.min(...scn.reqs.escAll), to: Math.max(...scn.reqs.escAll) === scn.A ? scn.A : scn.A, width: 1000, qty: 1, inc: true, dir: 'both' });
+    D.escs = D.escs.filter((e) => e.from !== e.to);
+  }
+  if (k === 'metro') {
+    const L = scn.reqs.escUp, perH = scn.train.load / (scn.train.H * 0.45) * 3600;
+    for (let i = 0; i + 1 < L.length; i++) { D.escs.push(Object.assign(escFlow(L[i], L[i + 1], perH), { dir: 'up' })); D.escs.push(Object.assign(escFlow(L[i], L[i + 1], perH * 0.4), { dir: 'down' })); }
+    D.lifts.push({ type: lv[A].z - lv[0].z <= 18 ? 'hyd' : 'mrl', qty: Math.max(2, Math.ceil(scn.train.load * 0.015 / 5)), cap: 13, speed: lv[A].z - lv[0].z <= 18 ? 0.63 : 1, lobby: A, from: 0, to: A, ctl: 'conv' });
+  }
+  if (k === 'stadium') {
+    const L = scn.reqs.escDown;
+    for (let i = 0; i + 1 < L.length; i++) { const perH = lv.slice(L[i + 1]).reduce((a, l) => a + l.pop * 0.5, 0) / (1200 / 3600); D.escs.push(Object.assign(escFlow(L[i], L[i + 1], perH), { dir: 'down' })); }
+    D.lifts.push({ type: 'mrl', qty: 3, cap: 21, speed: 1, lobby: A, from: A, to: top, ctl: 'conv' });
+  }
+  if (scn.reqs.fire) D.lifts.push({ type: 'fire', qty: 1, cap: 13, speed: lv[top].z > 150 ? 6 : lv[top].z > 60 ? 4 : 1.6, lobby: A, from: 0, to: top, ctl: 'conv' });
+  if (scn.reqs.bed) D.lifts.push({ type: 'bed', qty: scn.reqs.bed + 1, cap: 26, speed: 1.6, lobby: A, from: 0, to: top, ctl: 'conv' });
+  if (scn.reqs.svc && !['mall'].includes(k)) D.lifts.push({ type: 'svc', qty: k === 'hosp' ? 3 : k === 'supertall' ? 3 : 2, cap: 20, speed: lv[top].z > 60 ? 1.6 : 1, lobby: A, from: 0, to: top, ctl: 'conv' });
+  return D;
+}
+
+const I18N = {
+'title':['Elevadores','Lifts','Ascensori','Ascensores'],
+'subtitle':['Simulador de transporte vertical','Vertical transport simulator','Simulatore di trasporto verticale','Simulador de transporte vertical'],
+'lang':['Idioma','Language','Lingua','Idioma'],
+'close':['Fechar','Close','Chiudi','Cerrar'],
+'a11y.ok':['cumprido','met','rispettato','cumplido'],'a11y.no':['não cumprido','not met','non rispettato','no cumplido'],
+'b.new':['Nova construção','New building','Nuova costruzione','Nueva construcción'],
+'b.help':['Regras','Rules','Regole','Reglas'],
+'b.theme':['Alternar tema claro ou escuro','Toggle light or dark theme','Cambia tema chiaro o scuro','Cambiar tema claro u oscuro'],
+'b.addLift':['+ Elevadores','+ Lifts','+ Ascensori','+ Ascensores'],
+'b.addEsc':['+ Escada rolante','+ Escalator','+ Scala mobile','+ Escalera mecánica'],
+'b.remove':['Remover','Remove','Rimuovi','Quitar'],
+'b.ref':['Projeto de referência','Reference design','Progetto di riferimento','Proyecto de referencia'],
+'b.clear':['Limpar','Clear','Svuota','Limpiar'],
+'view.title':['Corte da construção','Building section','Sezione dell’edificio','Corte de la construcción'],
+'sim.run':['Simular','Simulate','Simula','Simular'],'sim.pause':['Pausar','Pause','Pausa','Pausar'],'sim.resume':['Continuar','Resume','Riprendi','Continuar'],
+'sim.instant':['Resultado imediato','Instant result','Risultato immediato','Resultado inmediato'],'sim.reset':['Reiniciar','Reset','Ricomincia','Reiniciar'],'sim.speed':['Velocidade','Speed','Velocità','Velocidad'],
+'new.title':['Nova construção','New building','Nuova costruzione','Nueva construcción'],'new.kind':['Tipo','Type','Tipo','Tipo'],'new.diff':['Dificuldade','Difficulty','Difficoltà','Dificultad'],
+'new.seed':['Semente (opcional)','Seed (optional)','Seme (facoltativo)','Semilla (opcional)'],'new.go':['Gerar','Generate','Genera','Generar'],'new.random':['Sorteado','Random','Casuale','Al azar'],
+'new.adjusted':['Dificuldade ajustada para este tipo de construção.','Difficulty adjusted for this type of building.','Difficoltà adattata a questo tipo di costruzione.','Dificultad ajustada para este tipo de construcción.'],
+'diff.0':['Fácil','Easy','Facile','Fácil'],'diff.1':['Médio','Medium','Medio','Media'],'diff.2':['Difícil','Hard','Difficile','Difícil'],
+'kind.house':['Casa','House','Casa','Casa'],'kind.resid':['Edifício residencial','Apartment building','Condominio','Edificio residencial'],'kind.office':['Torre de escritórios','Office tower','Torre di uffici','Torre de oficinas'],
+'kind.hotel':['Hotel','Hotel','Hotel','Hotel'],'kind.hosp':['Hospital','Hospital','Ospedale','Hospital'],'kind.mall':['Shopping center','Shopping mall','Centro commerciale','Centro comercial'],
+'kind.airport':['Aeroporto','Airport','Aeroporto','Aeropuerto'],'kind.metro':['Estação de metrô','Metro station','Stazione della metropolitana','Estación de metro'],'kind.stadium':['Estádio','Stadium','Stadio','Estadio'],
+'kind.parking':['Garagem','Car park','Parcheggio','Estacionamiento'],'kind.warehouse':['Armazém','Warehouse','Magazzino','Almacén'],'kind.supertall':['Arranha-céu','Supertall tower','Grattacielo','Rascacielos'],
+'name.house':['Casa {0}','{0} House','Casa {0}','Casa {0}'],'name.resid':['Residencial {0}','{0} Apartments','Residenza {0}','Residencial {0}'],'name.office':['Torre {0}','{0} Tower','Torre {0}','Torre {0}'],
+'name.hotel':['Hotel {0}','Hotel {0}','Hotel {0}','Hotel {0}'],'name.hosp':['Hospital {0}','{0} Hospital','Ospedale {0}','Hospital {0}'],'name.mall':['Shopping {0}','{0} Mall','Centro {0}','Centro {0}'],
+'name.airport':['Aeroporto {0}','{0} Airport','Aeroporto {0}','Aeropuerto {0}'],'name.metro':['Estação {0}','{0} Station','Stazione {0}','Estación {0}'],'name.stadium':['Arena {0}','{0} Arena','Arena {0}','Arena {0}'],
+'name.parking':['Garagem {0}','{0} Car Park','Parcheggio {0}','Estacionamiento {0}'],'name.warehouse':['Armazém {0}','{0} Warehouse','Magazzino {0}','Almacén {0}'],'name.supertall':['Torre {0}','{0} Tower','Torre {0}','Torre {0}'],
+'need.house':['Uma casa com uma moradora cadeirante precisa de acesso a todos os andares, gastando pouco.','A house with a wheelchair user needs access to every floor, on a small budget.','Una casa con una persona in sedia a rotelle ha bisogno di accesso a tutti i piani, spendendo poco.','Una casa con una persona en silla de ruedas necesita acceso a todos los pisos, gastando poco.'],
+'need.resid':['Pico da manhã: os moradores descem para o térreo e a garagem.','Morning peak: residents go down to the ground floor and the car park.','Punta del mattino: i residenti scendono al piano terra e al garage.','Pico de la mañana: los vecinos bajan a la planta baja y al garaje.'],
+'need.office':['Pico de chegada: quase todos sobem a partir do térreo.','Arrival peak: almost everyone goes up from the ground floor.','Punta d’arrivo: quasi tutti salgono dal piano terra.','Pico de llegada: casi todos suben desde la planta baja.'],
+'need.hotel':['Hóspedes subindo e descendo, mais carrinhos de limpeza e serviço de quarto vindos do subsolo.','Guests going up and down, plus housekeeping trolleys and room service from the basement.','Ospiti che salgono e scendono, più carrelli delle pulizie e servizio in camera dal seminterrato.','Huéspedes que suben y bajan, más carros de limpieza y servicio de habitaciones desde el sótano.'],
+'need.hosp':['Visitantes e equipe, leitos entre andares, insumos e farmácia vindos do subsolo.','Visitors and staff, beds between floors, supplies and pharmacy from the basement.','Visitatori e personale, letti tra i piani, forniture e farmacia dal seminterrato.','Visitas y personal, camas entre pisos, insumos y farmacia desde el sótano.'],
+'need.mall':['Sábado à tarde: muito movimento entre os pisos e a garagem.','Saturday afternoon: heavy traffic between floors and the car park.','Sabato pomeriggio: molto movimento tra i piani e il parcheggio.','Sábado por la tarde: mucho movimiento entre pisos y el estacionamiento.'],
+'need.airport':['Passageiros entre embarque e desembarque, portões com voos e um píer longo.','Passengers between departures and arrivals, gates with flights and a long pier.','Passeggeri tra partenze e arrivi, gate con voli e un molo lungo.','Pasajeros entre salidas y llegadas, puertas con vuelos y un muelle largo.'],
+'need.metro':['Cada trem despeja uma multidão na plataforma, que precisa subir à rua antes do próximo.','Each train drops a crowd on the platform, which must reach the street before the next one.','Ogni treno lascia una folla sulla banchina, che deve salire in strada prima del prossimo.','Cada tren deja una multitud en el andén, que debe subir a la calle antes del siguiente.'],
+'need.stadium':['Fim de jogo: as arquibancadas superiores precisam esvaziar.','Final whistle: the upper tiers must empty.','Fine partita: le tribune superiori devono svuotarsi.','Fin del partido: las tribunas superiores deben vaciarse.'],
+'need.parking':['Garagem subterrânea: motoristas indo e vindo da rua.','Underground car park: drivers coming and going from the street.','Parcheggio sotterraneo: automobilisti che vanno e vengono dalla strada.','Estacionamiento subterráneo: conductores que van y vienen de la calle.'],
+'need.parking.noramp':['Garagem sem rampas: os carros também sobem e descem por elevador.','Car park without ramps: cars also go up and down by lift.','Parcheggio senza rampe: anche le auto salgono e scendono in ascensore.','Estacionamiento sin rampas: los autos también suben y bajan en ascensor.'],
+'need.warehouse':['Paletes entre a doca e os mezaninos, o tempo todo.','Pallets between the dock and the mezzanines, all day long.','Pallet tra la banchina e i soppalchi, tutto il giorno.','Palés entre el muelle y los entrepisos, todo el día.'],
+'need.supertall':['Escritórios, hotel, residências e mirante no topo, no pico da manhã.','Offices, hotel, homes and a sky deck on top, in the morning peak.','Uffici, hotel, abitazioni e belvedere in cima, nella punta del mattino.','Oficinas, hotel, viviendas y mirador en la cima, en el pico de la mañana.'],
+'lv.fl':['Andar {0}','Floor {0}','Piano {0}','Piso {0}'],'lv.garage':['Garagem {0}','Car park {0}','Garage {0}','Garaje {0}'],'lv.ground':['Térreo','Ground floor','Piano terra','Planta baja'],
+'lv.service':['Subsolo de serviço','Service basement','Seminterrato di servizio','Sótano de servicio'],'lv.arr':['Desembarque','Arrivals','Arrivi','Llegadas'],'lv.dep':['Embarque','Departures','Partenze','Salidas'],
+'lv.train':['Estação de trem','Rail station','Stazione ferroviaria','Estación de tren'],'lv.platform':['Plataforma','Platform','Banchina','Andén'],'lv.mezz':['Mezanino','Mezzanine','Mezzanino','Vestíbulo'],
+'lv.street':['Rua','Street','Strada','Calle'],'lv.esplanade':['Esplanada','Concourse','Piazzale','Explanada'],'lv.dock':['Doca','Dock','Banchina di carico','Muelle'],
+'lv.short.A':['T','G','T','PB'],'lv.short.dep':['Emb','Dep','Part','Sal'],
+'brief.title':['Briefing','Brief','Brief','Encargo'],'brief.demand':['Demanda','Demand','Domanda','Demanda'],'brief.targets':['Metas','Targets','Obiettivi','Metas'],'brief.reqs':['Exigências','Requirements','Requisiti','Requisitos'],
+'brief.seed':['Semente {0}: a mesma semente gera a mesma construção e os mesmos passageiros.','Seed {0}: the same seed creates the same building and the same passengers.','Seme {0}: lo stesso seme genera la stessa costruzione e gli stessi passeggeri.','Semilla {0}: la misma semilla genera la misma construcción y los mismos pasajeros.'],
+'f.levels':['Níveis','Levels','Livelli','Niveles'],'f.height':['Altura','Height','Altezza','Altura'],'f.beds':['Leitos','Beds','Posti letto','Camas'],'f.pallets':['Paletes','Pallets','Pallet','Palés'],
+'f.headway':['Intervalo entre trens','Train headway','Frequenza dei treni','Intervalo entre trenes'],'f.trainLoad':['Passageiros por trem','Passengers per train','Passeggeri per treno','Pasajeros por tren'],
+'f.people.stadium':['Público nas arquibancadas superiores','Crowd in the upper tiers','Pubblico nelle tribune superiori','Público en las tribunas superiores'],'f.people.mall':['Visitantes por hora','Visitors per hour','Visitatori all’ora','Visitantes por hora'],'f.people.airport':['Passageiros por hora','Passengers per hour','Passeggeri all’ora','Pasajeros por hora'],
+'f.pop':['População','Population','Popolazione','Población'],'f.gates':['Portões','Gates','Gate','Puertas'],'f.pier':['Píer','Pier','Molo','Muelle'],'f.budget':['Orçamento','Budget','Budget','Presupuesto'],
+'f.burst':['Chegada de trem','Train arrival','Arrivo del treno','Llegada del tren'],'f.burstV':['{0} a cada {1}','{0} every {1}','{0} ogni {1}','{0} cada {1}'],
+'k.p':['Pessoas','People','Persone','Personas'],'k.w':['Cadeirantes e carrinhos de bebê','Wheelchairs and prams','Sedie a rotelle e passeggini','Sillas de ruedas y carritos de bebé'],'k.k':['Carrinhos','Trolleys','Carrelli','Carritos'],
+'k.b':['Leitos','Beds','Letti','Camas'],'k.f':['Paletes','Pallets','Pallet','Palés'],'k.m':['Pequenas cargas','Small goods','Piccoli carichi','Cargas pequeñas'],'k.c':['Veículos','Cars','Veicoli','Vehículos'],
+'k.list.pwk':['pessoas, cadeirantes e carrinhos','people, wheelchairs and trolleys','persone, sedie a rotelle e carrelli','personas, sillas de ruedas y carritos'],'k.list.w':['só cadeirantes','wheelchairs only','solo sedie a rotelle','solo sillas de ruedas'],
+'k.list.fmk':['paletes, pequenas cargas e carrinhos','pallets, small goods and trolleys','pallet, piccoli carichi e carrelli','palés, cargas pequeñas y carritos'],'k.list.c':['veículos','cars','veicoli','vehículos'],'k.list.m':['pequenas cargas','small goods','piccoli carichi','cargas pequeñas'],
+'k.list.pwkb':['pessoas, cadeirantes, carrinhos e leitos','people, wheelchairs, trolleys and beds','persone, sedie a rotelle, carrelli e letti','personas, sillas de ruedas, carritos y camas'],
+'u.s':['{0} s','{0} s','{0} s','{0} s'],'u.min':['{0} min','{0} min','{0} min','{0} min'],'u.m':['{0} m','{0} m','{0} m','{0} m'],'u.perh':['{0}/h','{0}/h','{0}/h','{0}/h'],'u.cr':['{0} créditos','{0} credits','{0} crediti','{0} créditos'],
+'u.per5':['{0} a cada 5 min','{0} per 5 min','{0} ogni 5 min','{0} cada 5 min'],'u.ms':['{0} m/s','{0} m/s','{0} m/s','{0} m/s'],'u.mm':['{0} mm','{0} mm','{0} mm','{0} mm'],
+'m.hc5':['Capacidade de 5 minutos','5-minute handling capacity','Capacità in 5 minuti','Capacidad de 5 minutos'],'m.interval':['Intervalo no térreo','Lobby interval','Intervallo al piano terra','Intervalo en planta baja'],
+'m.awt':['Espera média','Average wait','Attesa media','Espera media'],'m.awtB':['Espera média dos leitos','Average bed wait','Attesa media dei letti','Espera media de las camas'],'m.awtF':['Espera média das cargas','Average goods wait','Attesa media dei carichi','Espera media de las cargas'],
+'m.awtK':['Espera média dos carrinhos','Average trolley wait','Attesa media dei carrelli','Espera media de los carritos'],'m.awtC':['Espera média dos veículos','Average car wait','Attesa media dei veicoli','Espera media de los vehículos'],'m.awtW':['Espera média dos cadeirantes','Average wheelchair wait','Attesa media delle sedie a rotelle','Espera media de las sillas de ruedas'],
+'m.maxQ':['Maior fila de escada rolante','Longest escalator queue','Coda più lunga alla scala mobile','Mayor fila de escalera mecánica'],'m.journey':['Viagem média','Average journey','Viaggio medio','Viaje medio'],
+'m.clear':['Esvaziar a plataforma','Platform clearance','Svuotamento della banchina','Vaciar el andén'],'m.moved':['Público retirado a tempo','Crowd cleared in time','Pubblico evacuato in tempo','Público retirado a tiempo'],
+'m.thr':['Paletes entregues','Pallets delivered','Pallet consegnati','Palés entregados'],'m.flights':['Voos embarcados no prazo','Flights boarded on time','Voli imbarcati in tempo','Vuelos embarcados a tiempo'],
+'m.walk':['Caminhada até o portão mais distante','Walk to the farthest gate','Cammino fino al gate più lontano','Caminata hasta la puerta más lejana'],'m.noRoute':['Pessoas ou cargas sem rota','People or goods with no route','Persone o carichi senza percorso','Personas o cargas sin ruta'],
+'m.hc5.d':['parte da população levada no melhor intervalo de 5 minutos da simulação.','share of the population carried in the best 5-minute window of the simulation.','quota della popolazione trasportata nella migliore finestra di 5 minuti della simulazione.','parte de la población llevada en la mejor ventana de 5 minutos de la simulación.'],
+'m.interval.d':['tempo médio entre partidas de cabines do andar de embarque, no grupo mais lento.','average time between car departures from the main floor, in the slowest group.','tempo medio tra le partenze delle cabine dal piano principale, nel gruppo più lento.','tiempo medio entre salidas de cabinas del piso principal, en el grupo más lento.'],
+'m.awt.d':['tempo médio nas filas de elevadores e escadas, contando quem ainda espera no fim.','average time in lift and escalator queues, counting those still waiting at the end.','tempo medio nelle code di ascensori e scale, contando chi aspetta ancora alla fine.','tiempo medio en las filas de ascensores y escaleras, contando a quien aún espera al final.'],
+'m.maxQ.d':['maior número de pessoas esperando numa entrada de escada rolante.','largest number of people waiting at an escalator entry.','numero massimo di persone in attesa all’ingresso di una scala mobile.','mayor número de personas esperando en la entrada de una escalera mecánica.'],
+'m.clear.d':['tempo médio para a plataforma esvaziar depois de cada trem.','average time for the platform to clear after each train.','tempo medio per svuotare la banchina dopo ogni treno.','tiempo medio para vaciar el andén después de cada tren.'],
+'m.flights.d':['voos cujo embarque termina dentro do tempo-alvo da aeronave.','flights whose boarding ends within the aircraft’s target time.','voli il cui imbarco finisce entro il tempo previsto per l’aereo.','vuelos cuyo embarque termina dentro del tiempo objetivo del avión.'],
+'m.walk.d':['tempo de caminhada até o portão mais distante, contando as esteiras.','walking time to the farthest gate, counting the walkways.','tempo di cammino fino al gate più lontano, contando i tappeti mobili.','tiempo de caminata hasta la puerta más lejana, contando los pasillos rodantes.'],
+'req.access':['Rota acessível do térreo a todos os níveis usados','Step-free route from the main floor to every level in use','Percorso accessibile dal piano principale a tutti i livelli usati','Ruta accesible desde el piso principal a todos los niveles usados'],
+'req.access.n':['({0} sem rota)','({0} without a route)','({0} senza percorso)','({0} sin ruta)'],
+'req.fire':['Elevador de bombeiros atendendo todos os níveis (regra do jogo: construção com mais de 30 m)','Firefighter lift serving every level (game rule: building over 30 m)','Ascensore antincendio a tutti i livelli (regola del gioco: edificio oltre 30 m)','Ascensor de bomberos en todos los niveles (regla del juego: construcción de más de 30 m)'],
+'req.bed':['Elevadores-maca: {0} exigidos, {1} no projeto','Bed lifts: {0} required, {1} in the design','Montaletti: {0} richiesti, {1} nel progetto','Montacamas: {0} exigidos, {1} en el proyecto'],
+'req.svc':['Elevador de serviço para cargas e carrinhos','Service lift for goods and trolleys','Montacarichi di servizio per carichi e carrelli','Ascensor de servicio para cargas y carritos'],
+'req.freight':['Elevadores de carga para os paletes','Goods lifts for the pallets','Montacarichi per i pallet','Montacargas para los palés'],
+'req.car':['Elevadores de veículos ligando a rua aos níveis','Car lifts linking the street to the levels','Montauto che collegano la strada ai livelli','Montacoches que unen la calle con los niveles'],
+'req.wheel':['A moradora cadeirante chega a todos os andares','The wheelchair user reaches every floor','La persona in sedia a rotelle raggiunge tutti i piani','La persona en silla de ruedas llega a todos los pisos'],
+'req.escAll':['Escadas rolantes nos dois sentidos entre níveis vizinhos','Escalators both ways between neighbouring levels','Scale mobili in entrambi i sensi tra livelli vicini','Escaleras mecánicas en los dos sentidos entre niveles vecinos'],
+'req.escUp':['Escada rolante de subida em cada lance','Up escalator on every flight','Scala mobile in salita a ogni rampa','Escalera mecánica de subida en cada tramo'],
+'req.escDown':['Escada rolante de descida em cada lance','Down escalator on every flight','Scala mobile in discesa a ogni rampa','Escalera mecánica de bajada en cada tramo'],
+'req.pbb':['Ponte de embarque compatível com cada aeronave (recomendado)','A compatible boarding bridge for each aircraft (recommended)','Ponte d’imbarco compatibile con ogni aereo (consigliato)','Pasarela compatible con cada avión (recomendado)'],
+'req.invalid':['{0} grupo(s) de elevadores inválido(s)','{0} invalid lift group(s)','{0} gruppo/i di ascensori non valido/i','{0} grupo(s) de ascensores no válido(s)'],
+'design.title':['Projeto','Design','Progetto','Proyecto'],'design.empty':['Nenhum equipamento ainda. Comece adicionando elevadores.','No equipment yet. Start by adding lifts.','Ancora nessun impianto. Comincia aggiungendo ascensori.','Todavía no hay equipos. Empieza agregando ascensores.'],
+'design.cost':['Custo','Cost','Costo','Costo'],'design.costA':['Custo de {0} de {1} créditos','Cost {0} of {1} credits','Costo {0} su {1} crediti','Costo {0} de {1} créditos'],'design.costT':['{0} de {1} créditos','{0} of {1} credits','{0} su {1} crediti','{0} de {1} créditos'],
+'design.over':['acima do orçamento','over budget','oltre il budget','por encima del presupuesto'],
+'fd.type':['Tipo','Type','Tipo','Tipo'],'fd.qty':['Quantidade','Quantity','Quantità','Cantidad'],'fd.cap':['Capacidade','Capacity','Capacità','Capacidad'],'fd.speed':['Velocidade','Speed','Velocità','Velocidad'],
+'fd.ctl':['Controle','Control','Comando','Control'],'fd.lobby':['Andar de embarque','Main boarding floor','Piano d’imbarco','Piso de embarque'],'fd.from':['Atende de','Serves from','Serve da','Atiende desde'],'fd.to':['até','to','a','hasta'],
+'fd.between':['Entre','Between','Tra','Entre'],'fd.dir':['Sentido','Direction','Senso','Sentido'],'fd.width':['Largura do degrau','Step width','Larghezza del gradino','Ancho del peldaño'],
+'ctl.conv':['Convencional','Conventional','Convenzionale','Convencional'],'ctl.dd':['Por destino','Destination dispatch','A destinazione','Por destino'],
+'dir.up':['Subida','Up','Salita','Subida'],'dir.down':['Descida','Down','Discesa','Bajada'],'dir.both':['Os dois (par)','Both (pair)','Entrambi (coppia)','Ambos (par)'],
+'cap.p':['{0} pessoas','{0} people','{0} persone','{0} personas'],'cap.bed':['{0} unidades (leito = 10)','{0} units (bed = 10)','{0} unità (letto = 10)','{0} unidades (cama = 10)'],'cap.pallet':['{0} palete(s)','{0} pallet(s)','{0} pallet','{0} palé(s)'],
+'cap.car':['{0} veículo(s)','{0} car(s)','{0} veicolo/i','{0} vehículo(s)'],'cap.chair':['1 cadeira de rodas','1 wheelchair','1 sedia a rotelle','1 silla de ruedas'],'cap.trolley':['1 carrinho','1 trolley','1 carrello','1 carrito'],
+'g.info':['{0} paradas · percurso de {1} m · leva {2} · {3} créditos','{0} stops · {1} m travel · carries {2} · {3} credits','{0} fermate · corsa di {1} m · porta {2} · {3} crediti','{0} paradas · recorrido de {1} m · lleva {2} · {3} créditos'],
+'e.info':['Capacidade prática: {0} pessoas/h por sentido · {1} créditos','Practical capacity: {0} people/h per direction · {1} credits','Capacità pratica: {0} persone/h per senso · {1} crediti','Capacidad práctica: {0} personas/h por sentido · {1} créditos'],
+'et.esc':['Escada rolante','Escalator','Scala mobile','Escalera mecánica'],'et.inc':['Esteira inclinada','Inclined moving walk','Tappeto mobile inclinato','Rampa mecánica'],
+'lt.home':['Residencial (casas)','Home lift','Ascensore domestico','Ascensor doméstico'],'lt.plat':['Plataforma de acessibilidade','Platform lift','Piattaforma elevatrice','Plataforma elevadora'],'lt.hyd':['Hidráulico','Hydraulic','Idraulico','Hidráulico'],
+'lt.mrl':['Tração sem casa de máquinas','Machine-room-less traction','Trazione senza locale macchine','Tracción sin sala de máquinas'],'lt.trac':['Tração com casa de máquinas','Traction with machine room','Trazione con locale macchine','Tracción con sala de máquinas'],
+'lt.dd':['Dois andares (double-deck)','Double-deck','A due piani (double-deck)','Doble cabina (double-deck)'],'lt.pan':['Panorâmico','Panoramic','Panoramico','Panorámico'],'lt.fire':['Bombeiros','Firefighter lift','Antincendio','Bomberos'],
+'lt.bed':['Maca (leitos)','Bed lift','Montaletti','Montacamas'],'lt.svc':['Carga e serviço','Goods and service','Montacarichi di servizio','Carga y servicio'],'lt.car':['Veículos','Car lift','Montauto','Montacoches'],'lt.dumb':['Monta-cargas pequeno','Dumbwaiter','Montavivande','Montaplatos'],
+'iss.travel':['Percurso acima do máximo de {0} m para este tipo.','Travel above the {0} m maximum for this type.','Corsa oltre il massimo di {0} m per questo tipo.','Recorrido por encima del máximo de {0} m para este tipo.'],
+'iss.stops':['Mais de {0} paradas para este tipo.','More than {0} stops for this type.','Più di {0} fermate per questo tipo.','Más de {0} paradas para este tipo.'],
+'iss.ddMin':['Dois andares só em construções com {0} níveis ou mais.','Double-deck only in buildings with {0} levels or more.','Double-deck solo in edifici con {0} livelli o più.','Doble cabina solo en construcciones con {0} niveles o más.'],
+'iss.oneStop':['O grupo precisa atender pelo menos dois níveis.','The group must serve at least two levels.','Il gruppo deve servire almeno due livelli.','El grupo debe atender al menos dos niveles.'],
+'pbb.title':['Pontes de embarque','Boarding bridges','Ponti d’imbarco','Pasarelas de embarque'],
+'pbb.help':['Escolha a ponte de cada porta, por tipo de aeronave. ✗ marca ponte incompatível. Sem ponte, o embarque é por ônibus.','Pick the bridge for each door, by aircraft type. ✗ marks an incompatible bridge. Without a bridge, boarding is by bus.','Scegli il ponte per ogni porta, per tipo di aereo. ✗ indica un ponte incompatibile. Senza ponte, l’imbarco è in autobus.','Elige la pasarela de cada puerta, por tipo de avión. ✗ marca una pasarela incompatible. Sin pasarela, el embarque es en autobús.'],
+'pbb.door':['{0}, porta {1}','{0}, door {1}','{0}, porta {1}','{0}, puerta {1}'],'pbb.none':['Sem ponte (ônibus)','No bridge (bus)','Nessun ponte (autobus)','Sin pasarela (autobús)'],'pbb.gates':['{0} portão(ões)','{0} gate(s)','{0} gate','{0} puerta(s)'],
+'pbbt.apron':['Apron drive','Apron drive','Apron drive','Apron drive'],'pbbt.nose':['Nose loader','Nose loader','Nose loader','Nose loader'],'pbbt.tb':['Ponte em T','T-bridge','Ponte a T','Pasarela en T'],
+'pbbt.com':['Commuter','Commuter','Commuter','Commuter'],'pbbt.otw':['Sobre a asa','Over-the-wing','Sopra l’ala','Sobre el ala'],'pbbt.a380':['A380 (deque superior)','A380 (upper deck)','A380 (ponte superiore)','A380 (cubierta superior)'],
+'ac.reg':['Regional','Regional','Regionale','Regional'],'ac.nar':['Corredor único','Narrow-body','Corridoio singolo','Pasillo único'],'ac.wide':['Widebody','Wide-body','Widebody','Fuselaje ancho'],'ac.jumbo':['A380','A380','A380','A380'],
+'walk.title':['Esteiras rolantes no píer','Moving walkways on the pier','Tappeti mobili sul molo','Pasillos rodantes en el muelle'],'walk.help':['Metros cobertos (píer de {0} m)','Metres covered (pier of {0} m)','Metri coperti (molo di {0} m)','Metros cubiertos (muelle de {0} m)'],
+'live.idle':['Monte o projeto e clique em Simular.','Build the design and click Simulate.','Prepara il progetto e clicca su Simula.','Arma el proyecto y haz clic en Simular.'],'live.waiting':['Esperando','Waiting','In attesa','Esperando'],
+'live.done':['Chegaram','Arrived','Arrivati','Llegaron'],'live.avg':['Espera média','Average wait','Attesa media','Espera media'],'live.noRoute':['Sem rota','No route','Senza percorso','Sin ruta'],
+'res.title':['Resultado','Result','Risultato','Resultado'],'res.stars':['{0} de 3 estrelas','{0} of 3 stars','{0} stelle su 3','{0} de 3 estrellas'],'res.best':['Novo recorde nesta construção!','New record for this building!','Nuovo record per questa costruzione!','¡Nuevo récord en esta construcción!'],
+'res.metric':['Indicador','Measure','Indicatore','Indicador'],'res.goal':['Meta','Target','Obiettivo','Meta'],'res.value':['Resultado','Result','Risultato','Resultado'],'res.cost':['Custo (créditos)','Cost (credits)','Costo (crediti)','Costo (créditos)'],
+'res.extra':['Viagem média {0} · maior espera {1} · {2} ainda esperando no fim · energia {3} unidades.','Average journey {0} · longest wait {1} · {2} still waiting at the end · energy {3} units.','Viaggio medio {0} · attesa massima {1} · {2} ancora in attesa alla fine · energia {3} unità.','Viaje medio {0} · espera máxima {1} · {2} aún esperando al final · energía {3} unidades.'],
+'res.gates':['Embarque por tipo de aeronave','Boarding by aircraft type','Imbarco per tipo di aereo','Embarque por tipo de avión'],'res.class':['Aeronave','Aircraft','Aereo','Avión'],'res.ontime':['No prazo','On time','In tempo','A tiempo'],'res.worst':['Pior embarque','Slowest boarding','Imbarco più lento','Embarque más lento'],
+'res.tips':['O que melhorar','What to improve','Cosa migliorare','Qué mejorar'],
+'res.model':['Números da simulação deste jogo, um modelo simplificado; não são medições de prédios reais.','Numbers from this game’s simulation, a simplified model; they are not measurements of real buildings.','Numeri della simulazione di questo gioco, un modello semplificato; non sono misure di edifici reali.','Números de la simulación de este juego, un modelo simplificado; no son mediciones de edificios reales.'],
+'res.again':['Ajustar o projeto','Adjust the design','Modifica il progetto','Ajustar el proyecto'],'res.next':['Nova construção','New building','Nuova costruzione','Nueva construcción'],
+'tip.hc5':['Faltou capacidade no pico: mais cabines, cabines maiores, mais velocidade ou zonas menores.','Not enough peak capacity: more cars, bigger cars, more speed or smaller zones.','Capacità insufficiente nella punta: più cabine, cabine più grandi, più velocità o zone più piccole.','Faltó capacidad en el pico: más cabinas, cabinas más grandes, más velocidad o zonas más chicas.'],
+'tip.interval':['O intervalo no andar de embarque está alto: aumente os carros do grupo mais lento.','The lobby interval is too long: add cars to the slowest group.','L’intervallo al piano principale è alto: aggiungi cabine al gruppo più lento.','El intervalo en el piso principal es alto: agrega cabinas al grupo más lento.'],
+'tip.awt':['Espera alta: veja no desenho onde as filas crescem e reforce aquele grupo ou escada.','Long waits: look at where queues grow in the drawing and reinforce that group or escalator.','Attese lunghe: guarda nel disegno dove crescono le code e rinforza quel gruppo o scala.','Espera alta: mira en el dibujo dónde crecen las filas y refuerza ese grupo o escalera.'],
+'tip.awtB':['Leitos esperam demais: mais elevadores-maca, ou mais rápidos.','Beds wait too long: more bed lifts, or faster ones.','I letti aspettano troppo: più montaletti, o più veloci.','Las camas esperan demasiado: más montacamas, o más rápidos.'],
+'tip.awtF':['Cargas esperam demais: reforce os elevadores de carga.','Goods wait too long: reinforce the goods lifts.','I carichi aspettano troppo: rinforza i montacarichi.','Las cargas esperan demasiado: refuerza los montacargas.'],
+'tip.awtK':['Carrinhos esperam demais: reforce o elevador de serviço ou use esteira inclinada.','Trolleys wait too long: reinforce the service lift or use an inclined moving walk.','I carrelli aspettano troppo: rinforza il montacarichi di servizio o usa un tappeto inclinato.','Los carritos esperan demasiado: refuerza el ascensor de servicio o usa una rampa mecánica.'],
+'tip.awtC':['Veículos esperam demais: mais elevadores de veículos.','Cars wait too long: more car lifts.','I veicoli aspettano troppo: più montauto.','Los vehículos esperan demasiado: más montacoches.'],
+'tip.awtW':['Cadeirantes esperam demais: mais elevadores acessíveis onde as filas se formam.','Wheelchair users wait too long: more accessible lifts where queues form.','Le sedie a rotelle aspettano troppo: più ascensori accessibili dove si formano le code.','Las sillas de ruedas esperan demasiado: más ascensores accesibles donde se forman filas.'],
+'tip.maxQ':['Fila longa na escada rolante: mais unidades ou degraus mais largos naquele lance.','Long escalator queue: more units or wider steps on that flight.','Coda lunga alla scala mobile: più unità o gradini più larghi su quella rampa.','Fila larga en la escalera mecánica: más unidades o peldaños más anchos en ese tramo.'],
+'tip.journey':['Viagens longas: menos paradas por cabine (zonas ou controle por destino) e mais velocidade.','Long journeys: fewer stops per car (zones or destination dispatch) and more speed.','Viaggi lunghi: meno fermate per cabina (zone o comando a destinazione) e più velocità.','Viajes largos: menos paradas por cabina (zonas o control por destino) y más velocidad.'],
+'tip.clear':['A plataforma não esvazia antes do próximo trem: mais escadas rolantes de subida.','The platform does not clear before the next train: more up escalators.','La banchina non si svuota prima del prossimo treno: più scale mobili in salita.','El andén no se vacía antes del próximo tren: más escaleras mecánicas de subida.'],
+'tip.moved':['O público não sai a tempo: mais escadas rolantes de descida.','The crowd does not leave in time: more down escalators.','Il pubblico non esce in tempo: più scale mobili in discesa.','El público no sale a tiempo: más escaleras mecánicas de bajada.'],
+'tip.thr':['Os paletes acumulam: mais elevadores de carga ou mais capacidade.','Pallets pile up: more goods lifts or more capacity.','I pallet si accumulano: più montacarichi o più capacità.','Los palés se acumulan: más montacargas o más capacidad.'],
+'tip.flights':['Voos atrasados: pontes compatíveis com cada aeronave e todas as portas atendidas.','Late flights: bridges compatible with each aircraft, serving every door.','Voli in ritardo: ponti compatibili con ogni aereo, a tutte le porte.','Vuelos atrasados: pasarelas compatibles con cada avión, en todas las puertas.'],
+'tip.walk':['Caminhada longa: cubra mais o píer com esteiras.','Long walk: cover more of the pier with walkways.','Cammino lungo: copri di più il molo con tappeti mobili.','Caminata larga: cubre más el muelle con pasillos rodantes.'],
+'tip.noRoute':['Há gente ou carga sem caminho: confira se cada tipo tem um equipamento que chega ao destino.','Some people or goods have no path: check that each type has equipment reaching its destination.','Alcune persone o carichi non hanno percorso: controlla che ogni tipo abbia un impianto che arrivi a destinazione.','Hay personas o cargas sin camino: revisa que cada tipo tenga un equipo que llegue al destino.'],
+'tip.req.access':['Ligue todos os níveis usados ao térreo com elevadores que levam cadeirantes.','Link every level in use to the main floor with lifts that carry wheelchairs.','Collega tutti i livelli usati al piano principale con ascensori per sedie a rotelle.','Conecta todos los niveles usados con el piso principal con ascensores para sillas de ruedas.'],
+'tip.req.fire':['Adicione um elevador de bombeiros que atenda todos os níveis.','Add a firefighter lift serving every level.','Aggiungi un ascensore antincendio che serva tutti i livelli.','Agrega un ascensor de bomberos que atienda todos los niveles.'],
+'tip.req.bed':['Adicione elevadores-maca até a quantidade exigida.','Add bed lifts up to the required number.','Aggiungi montaletti fino al numero richiesto.','Agrega montacamas hasta la cantidad exigida.'],
+'tip.req.svc':['Adicione um elevador de serviço do subsolo a todos os andares.','Add a service lift from the basement to every floor.','Aggiungi un montacarichi di servizio dal seminterrato a tutti i piani.','Agrega un ascensor de servicio del sótano a todos los pisos.'],
+'tip.req.freight':['Adicione elevadores de carga entre a doca e os pisos.','Add goods lifts between the dock and the floors.','Aggiungi montacarichi tra la banchina e i piani.','Agrega montacargas entre el muelle y los pisos.'],
+'tip.req.car':['Adicione elevadores de veículos ligando a rua a cada nível.','Add car lifts linking the street to each level.','Aggiungi montauto che colleghino la strada a ogni livello.','Agrega montacoches que unan la calle con cada nivel.'],
+'tip.req.wheel':['A moradora cadeirante precisa chegar a todos os andares.','The wheelchair user must reach every floor.','La persona in sedia a rotelle deve raggiungere tutti i piani.','La persona en silla de ruedas debe llegar a todos los pisos.'],
+'tip.req.escAll':['Ligue cada par de níveis vizinhos com escadas rolantes nos dois sentidos.','Link each pair of neighbouring levels with escalators both ways.','Collega ogni coppia di livelli vicini con scale mobili in entrambi i sensi.','Une cada par de niveles vecinos con escaleras mecánicas en los dos sentidos.'],
+'tip.req.escUp':['Cada lance precisa de escada rolante de subida.','Every flight needs an up escalator.','Ogni rampa ha bisogno di una scala mobile in salita.','Cada tramo necesita una escalera mecánica de subida.'],
+'tip.req.escDown':['Cada lance precisa de escada rolante de descida.','Every flight needs a down escalator.','Ogni rampa ha bisogno di una scala mobile in discesa.','Cada tramo necesita una escalera mecánica de bajada.'],
+'tip.req.pbb':['Faltam pontes compatíveis para algumas aeronaves.','Some aircraft lack a compatible bridge.','Alcuni aerei non hanno un ponte compatibile.','A algunos aviones les falta una pasarela compatible.'],
+'tip.req.invalid':['Há grupos inválidos: veja os avisos em vermelho no projeto.','There are invalid groups: see the red warnings in the design.','Ci sono gruppi non validi: guarda gli avvisi in rosso nel progetto.','Hay grupos no válidos: mira los avisos en rojo en el proyecto.'],
+'tip.cost':['Acima do orçamento: corte excessos onde as filas ficaram vazias.','Over budget: trim the excess where queues stayed empty.','Oltre il budget: taglia gli eccessi dove le code sono rimaste vuote.','Por encima del presupuesto: recorta excesos donde las filas quedaron vacías.'],
+'tip.cheaper':['Tudo atendido. Para mais estrelas, tente o mesmo resultado gastando menos.','Everything met. For more stars, try the same result for less money.','Tutto rispettato. Per più stelle, prova lo stesso risultato spendendo meno.','Todo cumplido. Para más estrellas, intenta el mismo resultado gastando menos.'],
+'tip.perfect':['Projeto completo: metas, exigências e orçamento atendidos. Experimente outra construção.','Complete design: targets, requirements and budget met. Try another building.','Progetto completo: obiettivi, requisiti e budget rispettati. Prova un’altra costruzione.','Proyecto completo: metas, requisitos y presupuesto cumplidos. Prueba otra construcción.'],
+'tip.helped':['Com o projeto de referência, a nota máxima é uma estrela.','With the reference design, the top score is one star.','Con il progetto di riferimento, il massimo è una stella.','Con el proyecto de referencia, la nota máxima es una estrella.'],
+'cv.pier':['Píer de {0} m','Pier of {0} m','Molo di {0} m','Muelle de {0} m'],
+'cv.aria':['Corte da construção {0}: {1} níveis, {2} cabines e {3} escadas rolantes.','Section of {0}: {1} levels, {2} cars and {3} escalators.','Sezione di {0}: {1} livelli, {2} cabine e {3} scale mobili.','Corte de {0}: {1} niveles, {2} cabinas y {3} escaleras mecánicas.'],
+'leg.queue':['Números: pessoas na fila','Numbers: people queuing','Numeri: persone in coda','Números: personas en fila'],
+'ref.confirm':['Carregar o projeto de referência? Ele substitui o seu e limita esta construção a 1 estrela.','Load the reference design? It replaces yours and limits this building to 1 star.','Caricare il progetto di riferimento? Sostituisce il tuo e limita questa costruzione a 1 stella.','¿Cargar el proyecto de referencia? Reemplaza el tuyo y limita esta construcción a 1 estrella.'],
+'ref.done':['Projeto de referência carregado.','Reference design loaded.','Progetto di riferimento caricato.','Proyecto de referencia cargado.'],
+'clear.confirm':['Apagar todos os equipamentos do projeto?','Delete all equipment from the design?','Eliminare tutti gli impianti dal progetto?','¿Borrar todos los equipos del proyecto?'],
+'help.intro':['A cada partida o jogo sorteia uma construção e uma necessidade. Você projeta o transporte vertical e a simulação mostra se ele dá conta do pico.','Each game draws a building and a need. You design the vertical transport and the simulation shows whether it copes with the peak.','A ogni partita il gioco estrae una costruzione e un’esigenza. Tu progetti il trasporto verticale e la simulazione mostra se regge la punta.','En cada partida el juego sortea una construcción y una necesidad. Tú proyectas el transporte vertical y la simulación muestra si aguanta el pico.'],
+'help.how':['Como jogar','How to play','Come si gioca','Cómo jugar'],
+'help.s1':['Leia o briefing: níveis, demanda, metas e exigências.','Read the brief: levels, demand, targets and requirements.','Leggi il brief: livelli, domanda, obiettivi e requisiti.','Lee el encargo: niveles, demanda, metas y requisitos.'],
+'help.s2':['Adicione grupos de elevadores e escolha tipo, quantidade, capacidade, velocidade, controle, andar de embarque e andares atendidos.','Add lift groups and choose type, quantity, capacity, speed, control, main floor and floors served.','Aggiungi gruppi di ascensori e scegli tipo, quantità, capacità, velocità, comando, piano d’imbarco e piani serviti.','Agrega grupos de ascensores y elige tipo, cantidad, capacidad, velocidad, control, piso de embarque y pisos atendidos.'],
+'help.s3':['Em shoppings, aeroportos, metrôs e estádios, ponha escadas rolantes entre níveis vizinhos; no aeroporto, escolha pontes de embarque e esteiras.','In malls, airports, metro stations and stadiums, put escalators between neighbouring levels; at the airport, choose boarding bridges and walkways.','Nei centri commerciali, aeroporti, metropolitane e stadi, metti scale mobili tra livelli vicini; in aeroporto, scegli ponti d’imbarco e tappeti mobili.','En centros comerciales, aeropuertos, metros y estadios, pon escaleras mecánicas entre niveles vecinos; en el aeropuerto, elige pasarelas y pasillos rodantes.'],
+'help.s4':['Clique em Simular para ver o pico em movimento, ou em Resultado imediato.','Click Simulate to watch the peak, or Instant result.','Clicca su Simula per vedere la punta in movimento, o su Risultato immediato.','Haz clic en Simular para ver el pico en movimiento, o en Resultado inmediato.'],
+'help.s5':['Ajuste até cumprir metas e exigências dentro do orçamento.','Adjust until you meet the targets and requirements within budget.','Modifica finché rispetti obiettivi e requisiti nel budget.','Ajusta hasta cumplir metas y requisitos dentro del presupuesto.'],
+'help.types':['Equipamentos','Equipment','Impianti','Equipos'],
+'ld.home':['elevador para casas, lento e barato.','for houses, slow and cheap.','per case, lento ed economico.','para casas, lento y barato.'],
+'ld.plat':['plataforma para cadeira de rodas, para poucos metros.','for a wheelchair, over a few metres.','per una sedia a rotelle, per pochi metri.','para una silla de ruedas, para pocos metros.'],
+'ld.hyd':['empurrado por pistão hidráulico; bom para prédios baixos.','pushed by a hydraulic piston; good for low-rise buildings.','spinto da un pistone idraulico; adatto a edifici bassi.','empujado por un pistón hidráulico; bueno para edificios bajos.'],
+'ld.mrl':['tração por cabos sem casa de máquinas; comum em prédios médios.','rope traction without a machine room; common in mid-rise buildings.','trazione a funi senza locale macchine; comune negli edifici medi.','tracción por cables sin sala de máquinas; común en edificios medianos.'],
+'ld.trac':['tração com casa de máquinas, para prédios altos e velocidades maiores.','traction with a machine room, for tall buildings and higher speeds.','trazione con locale macchine, per edifici alti e velocità maggiori.','tracción con sala de máquinas, para edificios altos y mayores velocidades.'],
+'ld.dd':['duas cabines empilhadas que param em dois andares de uma vez.','two stacked cars that stop at two floors at once.','due cabine sovrapposte che si fermano a due piani insieme.','dos cabinas apiladas que paran en dos pisos a la vez.'],
+'ld.pan':['cabine envidraçada, para mirantes e átrios.','glass car, for sky decks and atriums.','cabina vetrata, per belvedere e atri.','cabina de vidrio, para miradores y atrios.'],
+'ld.fire':['para uso dos bombeiros; precisa atender todos os níveis.','for firefighters; must serve every level.','per i vigili del fuoco; deve servire tutti i livelli.','para los bomberos; debe atender todos los niveles.'],
+'ld.bed':['cabine funda para leitos hospitalares.','deep car for hospital beds.','cabina profonda per letti ospedalieri.','cabina profunda para camas de hospital.'],
+'ld.svc':['carga e serviço: paletes, carrinhos e pequenas cargas.','goods and service: pallets, trolleys and small goods.','carichi e servizio: pallet, carrelli e piccoli carichi.','carga y servicio: palés, carritos y cargas pequeñas.'],
+'ld.car':['leva veículos entre níveis de garagem.','carries cars between car park levels.','porta veicoli tra i livelli del parcheggio.','lleva vehículos entre niveles del estacionamiento.'],
+'ld.dumb':['monta-cargas pequeno para refeições e remédios.','small lift for meals and medicines.','piccolo montacarichi per pasti e medicinali.','montacargas pequeño para comidas y medicamentos.'],
+'ld.specs':['No jogo: {0} m/s; percurso até {1} m; até {2} paradas.','In the game: {0} m/s; travel up to {1} m; up to {2} stops.','Nel gioco: {0} m/s; corsa fino a {1} m; fino a {2} fermate.','En el juego: {0} m/s; recorrido hasta {1} m; hasta {2} paradas.'],
+'ld.esc':['liga dois níveis vizinhos num sentido, ou nos dois com um par; não leva cadeirantes nem carrinhos.','links two neighbouring levels one way, or both with a pair; does not take wheelchairs or trolleys.','collega due livelli vicini in un senso, o in entrambi con una coppia; non porta sedie a rotelle né carrelli.','une dos niveles vecinos en un sentido, o en ambos con un par; no lleva sillas de ruedas ni carritos.'],
+'ld.inc':['esteira inclinada que também leva carrinhos de compra e bagagem.','inclined walk that also takes shopping and luggage trolleys.','tappeto inclinato che porta anche carrelli della spesa e bagagli.','rampa que también lleva carritos de compras y equipaje.'],
+'ld.walk':['esteira plana no píer do aeroporto; encurta a caminhada até os portões.','flat walkway on the airport pier; shortens the walk to the gates.','tappeto piano sul molo dell’aeroporto; accorcia il cammino ai gate.','pasillo plano en el muelle del aeropuerto; acorta la caminata a las puertas.'],
+'pd.apron':['a mais flexível e usada; atende corredor único, widebody e o deque inferior do A380.','the most flexible and widely used; serves narrow-body, wide-body and the A380 lower deck.','la più flessibile e diffusa; serve corridoio singolo, widebody e il ponte inferiore dell’A380.','la más flexible y usada; atiende pasillo único, fuselaje ancho y la cubierta inferior del A380.'],
+'pd.nose':['presa ao prédio, para pátios apertados; no jogo, só corredor único.','anchored to the building, for tight stands; in the game, narrow-body only.','ancorata all’edificio, per piazzole strette; nel gioco, solo corridoio singolo.','anclada al edificio, para plataformas estrechas; en el juego, solo pasillo único.'],
+'pd.tb':['ponte em T, para posições onde a nose loader não cabe; corredor único e widebody.','T-bridge, for stands where a nose loader does not fit; narrow-body and wide-body.','ponte a T, per piazzole dove la nose loader non entra; corridoio singolo e widebody.','pasarela en T, para posiciones donde no cabe la nose loader; pasillo único y fuselaje ancho.'],
+'pd.com':['para aviões regionais.','for regional aircraft.','per aerei regionali.','para aviones regionales.'],
+'pd.otw':['chega à porta traseira por cima da asa; complementa uma ponte dianteira em widebody e A380.','reaches the rear door over the wing; complements a front bridge on wide-body and A380.','raggiunge la porta posteriore sopra l’ala; completa un ponte anteriore su widebody e A380.','llega a la puerta trasera por encima del ala; complementa una pasarela delantera en fuselaje ancho y A380.'],
+'pd.a380':['ponte alta para o deque superior do A380.','high bridge for the A380 upper deck.','ponte alto per il ponte superiore dell’A380.','pasarela alta para la cubierta superior del A380.'],
+'help.metrics':['Indicadores','Measures','Indicatori','Indicadores'],'help.stars':['Estrelas','Stars','Stelle','Estrellas'],
+'help.starsT':['1 estrela: todas as metas e exigências cumpridas. 2: e dentro do orçamento. 3: e gastando até 90% do orçamento, com as recomendações atendidas. Usar o projeto de referência limita a 1 estrela.','1 star: every target and requirement met. 2: and within budget. 3: and spending at most 90% of the budget, with the recommendations met. Using the reference design caps the score at 1 star.','1 stella: tutti gli obiettivi e requisiti rispettati. 2: e nel budget. 3: e spendendo al massimo il 90% del budget, con le raccomandazioni rispettate. Usare il progetto di riferimento limita a 1 stella.','1 estrella: todas las metas y requisitos cumplidos. 2: y dentro del presupuesto. 3: y gastando como máximo el 90% del presupuesto, con las recomendaciones cumplidas. Usar el proyecto de referencia limita a 1 estrella.'],
+'help.model':['Sobre o modelo','About the model','Sul modello','Sobre el modelo'],
+'help.m1':['Cada passageiro escolhe a rota de menor tempo estimado, revista a cada 30 s de simulação conforme as filas.','Each passenger picks the route with the shortest estimated time, revised every 30 simulated seconds according to the queues.','Ogni passeggero sceglie il percorso col tempo stimato più breve, rivisto ogni 30 s di simulazione secondo le code.','Cada pasajero elige la ruta de menor tiempo estimado, revisada cada 30 s de simulación según las filas.'],
+'help.m2':['As cabines aceleram a 1 m/s², param só onde há chamada e escolhem a próxima parada ao partir.','Cars accelerate at 1 m/s², stop only where there is a call and choose the next stop when they leave.','Le cabine accelerano a 1 m/s², si fermano solo dove c’è una chiamata e scelgono la fermata successiva alla partenza.','Las cabinas aceleran a 1 m/s², paran solo donde hay llamada y eligen la siguiente parada al salir.'],
+'help.m3':['O controle por destino agrupa passageiros do mesmo destino na mesma cabine; o convencional manda a cabine mais próxima a cada chamada de andar.','Destination dispatch groups passengers with the same destination in the same car; conventional control sends the nearest car to each landing call.','Il comando a destinazione raggruppa i passeggeri con la stessa destinazione nella stessa cabina; quello convenzionale manda la cabina più vicina a ogni chiamata.','El control por destino agrupa pasajeros con el mismo destino en la misma cabina; el convencional manda la cabina más cercana a cada llamada.'],
+'help.m4':['Escadas rolantes usam 60% da capacidade teórica como capacidade prática. Embarque por ponte: 12 passageiros por minuto por porta; por ônibus: 8 por minuto mais 6 minutos. Esses valores são regras do jogo.','Escalators use 60% of the theoretical capacity as practical capacity. Boarding by bridge: 12 passengers per minute per door; by bus: 8 per minute plus 6 minutes. These values are game rules.','Le scale mobili usano il 60% della capacità teorica come capacità pratica. Imbarco con ponte: 12 passeggeri al minuto per porta; con autobus: 8 al minuto più 6 minuti. Questi valori sono regole del gioco.','Las escaleras mecánicas usan el 60% de la capacidad teórica como capacidad práctica. Embarque por pasarela: 12 pasajeros por minuto por puerta; por autobús: 8 por minuto más 6 minutos. Estos valores son reglas del juego.'],
+'help.m5':['Os números são resultado deste modelo, não medição de prédios reais. Custos e energia estão em unidades do jogo.','The numbers come from this model, not from measuring real buildings. Costs and energy are in game units.','I numeri vengono da questo modello, non da misure di edifici reali. Costi ed energia sono in unità del gioco.','Los números salen de este modelo, no de medir edificios reales. Costos y energía están en unidades del juego.'],
+'help.src':['Fontes e regras do jogo','Sources and game rules','Fonti e regole del gioco','Fuentes y reglas del juego'],
+'help.srcT':['As metas de escritório (12% da população em 5 minutos e intervalo de até 30 s) e a residencial (6%) seguem os valores citados para a ISO 8100-32:2020 e o CIBSE Guide D em um resumo da revista Elevator World, cujo texto completo não pude consultar. Capacidade teórica de escada rolante a 0,5 m/s: 6.750 e 9.000 pessoas por hora para degraus de 800 e 1.000 mm (AmadaTECH); para 600 mm, a AmadaTECH dá 2.500 e um catálogo da Mitsubishi Electric dá 4.500, e o jogo usa 4.500. Os tipos de ponte de embarque seguem a ADELTE; a EN 81-72 trata dos elevadores de bombeiros. As demais metas, os limites de percurso, as velocidades, os custos e a regra dos 30 m são do jogo.','The office targets (12% of the population in 5 minutes and an interval up to 30 s) and the residential one (6%) follow the values cited for ISO 8100-32:2020 and CIBSE Guide D in an Elevator World summary, whose full text I could not consult. Theoretical escalator capacity at 0.5 m/s: 6,750 and 9,000 people per hour for 800 and 1,000 mm steps (AmadaTECH); for 600 mm, AmadaTECH gives 2,500 and a Mitsubishi Electric brochure gives 4,500, and the game uses 4,500. The boarding bridge types follow ADELTE; EN 81-72 covers firefighter lifts. The other targets, travel limits, speeds, costs and the 30 m rule are game rules.','Gli obiettivi per uffici (12% della popolazione in 5 minuti e intervallo fino a 30 s) e per residenze (6%) seguono i valori citati per la ISO 8100-32:2020 e il CIBSE Guide D in un riassunto della rivista Elevator World, il cui testo completo non ho potuto consultare. Capacità teorica delle scale mobili a 0,5 m/s: 6.750 e 9.000 persone all’ora per gradini da 800 e 1.000 mm (AmadaTECH); per 600 mm, AmadaTECH indica 2.500 e un catalogo Mitsubishi Electric 4.500, e il gioco usa 4.500. I tipi di ponte d’imbarco seguono ADELTE; la EN 81-72 tratta gli ascensori antincendio. Gli altri obiettivi, i limiti di corsa, le velocità, i costi e la regola dei 30 m sono del gioco.','Las metas de oficinas (12% de la población en 5 minutos e intervalo de hasta 30 s) y la residencial (6%) siguen los valores citados para la ISO 8100-32:2020 y el CIBSE Guide D en un resumen de la revista Elevator World, cuyo texto completo no pude consultar. Capacidad teórica de escalera mecánica a 0,5 m/s: 6.750 y 9.000 personas por hora para peldaños de 800 y 1.000 mm (AmadaTECH); para 600 mm, AmadaTECH da 2.500 y un catálogo de Mitsubishi Electric da 4.500, y el juego usa 4.500. Los tipos de pasarela siguen a ADELTE; la EN 81-72 trata de los ascensores de bomberos. Las demás metas, los límites de recorrido, las velocidades, los costos y la regla de los 30 m son del juego.']
+};
+
+/* ===================== Idioma e utilidades ===================== */
+const LANGS = ['pt', 'en', 'it', 'es'], HTML_LANG = { pt: 'pt-BR', en: 'en', it: 'it', es: 'es' };
+let LANG = 'pt';
+function t(k, ...a) { const r = I18N[k]; let s = r ? r[LANGS.indexOf(LANG)] : k; a.forEach((v, i) => { s = s.split('{' + i + '}').join(v); }); return s; }
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const $ = (s) => document.querySelector(s);
+const store = {
+  get(k) { try { return JSON.parse(localStorage.getItem('elevadores.' + k)); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem('elevadores.' + k, JSON.stringify(v)); } catch (e) { /* sem armazenamento */ } }
+};
+const nf = (x, d) => { const v = Number(x); return isFinite(v) ? v.toLocaleString(HTML_LANG[LANG], { maximumFractionDigits: d == null ? 0 : d, minimumFractionDigits: d == null ? 0 : d }) : '—'; };
+const fmtS = (s) => s == null || !isFinite(s) ? '—' : s < 90 ? t('u.s', nf(s)) : t('u.min', nf(s / 60, 1));
+const fmtPct = (x) => x == null ? '—' : nf(x * 100, 1) + '%';
+function toast(msg) { const e = $('#toast'); e.textContent = msg; e.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => { e.classList.remove('on'); setTimeout(() => { e.textContent = ''; }, 300); }, 2600); }
+const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function lvName(i) {
+  const l = G.scn.levels[i];
+  switch (l.lab) {
+    case 'fl': return t('lv.fl', l.n);
+    case 'garage': return t('lv.garage', l.n);
+    default: { const dup = G.scn.levels.filter((x) => x.lab === l.lab).length > 1; return t('lv.' + l.lab) + (dup ? ' ' + l.n : ''); }
+  }
+}
+function lvShort(i) { const l = G.scn.levels[i]; if (l.lab === 'fl') return String(l.n); if (i === G.scn.A) return t('lv.short.A'); return l.n < 0 ? String(l.n) : t('lv.short.' + l.lab); }
+
+/* ===================== Estado ===================== */
+const DIFF_SLACK = [1.35, 1.2, 1.1];
+const G = { scn: null, D: null, budget: 0, helped: false, sim: null, running: false, last: 0, result: null };
+const LIFT_COLOR = { home: '#8D6E63', plat: '#78909C', hyd: '#FB8C00', mrl: '#0E8074', trac: '#3A86FF', dd: '#5B2A86', pan: '#26A69A', fire: '#D32F2F', bed: '#EC407A', svc: '#6D4C41', car: '#455A64', dumb: '#9E9D24' };
+const KIND_COLOR = { p: '#3A86FF', w: '#0E8074', k: '#FB8C00', b: '#EC407A', f: '#6D4C41', m: '#9E9D24', c: '#455A64' };
+
+function newScenario(seed, kind, diff) {
+  stopSim();
+  G.scn = genScenario(seed, kind, diff);
+  G.budget = Math.round(costOf(G.scn, refDesign(G.scn)).total * DIFF_SLACK[G.scn.diff] / 10) * 10;
+  G.D = { lifts: [], escs: [], walk: 0, pbb: {} };
+  G.helped = false; G.sim = null; G.result = null;
+  save(); renderAll();
+}
+function save() { store.set('state', { seed: G.scn.seed, kind: G.scn.kind, diff: G.scn.diff, D: G.D, helped: G.helped }); }
+function load() {
+  const s = store.get('state');
+  if (!s || !KINDS.includes(s.kind)) return false;
+  G.scn = genScenario(s.seed, s.kind, s.diff);
+  G.budget = Math.round(costOf(G.scn, refDesign(G.scn)).total * DIFF_SLACK[G.scn.diff] / 10) * 10;
+  G.D = sanitize(s.D); G.helped = !!s.helped;
+  return true;
+}
+function sanitize(D) {
+  const n = G.scn.levels.length, okL = (i) => Number.isInteger(i) && i >= 0 && i < n;
+  const out = { lifts: [], escs: [], walk: 0, pbb: {} };
+  ((D && D.lifts) || []).forEach((g) => { if (!LIFTS[g.type]) return; const T = LIFTS[g.type]; out.lifts.push({ type: g.type, qty: Math.max(1, Math.min(16, g.qty | 0)), cap: T.caps.includes(g.cap) ? g.cap : T.caps[0], speed: T.speeds.includes(g.speed) ? g.speed : T.speeds[0], lobby: okL(g.lobby) ? g.lobby : G.scn.A, from: okL(g.from) ? g.from : 0, to: okL(g.to) ? g.to : n - 1, ctl: g.ctl === 'dd' ? 'dd' : 'conv' }); });
+  ((D && D.escs) || []).forEach((e) => { if (!okL(e.from) || !okL(e.to)) return; out.escs.push({ from: e.from, to: e.to, width: [600, 800, 1000, 1400].includes(e.width) ? e.width : 1000, qty: Math.max(1, Math.min(6, e.qty | 0)), dir: ['up', 'down', 'both'].includes(e.dir) ? e.dir : 'both', inc: !!e.inc }); });
+  out.walk = Math.max(0, Math.min(G.scn.pier || 0, +(D && D.walk) || 0));
+  Object.keys(AIRCRAFT).forEach((c) => { const arr = (D && D.pbb && D.pbb[c]) || []; out.pbb[c] = arr.slice(0, AIRCRAFT[c].doors).map((x) => PBB[x] ? x : ''); });
+  return out;
+}
+
+/* ===================== Ícones dos tipos de construção ===================== */
+const KIND_ICON = {
+  house: '<path d="M4 15 16 5l12 10v13H4z" fill="#FB8C00"/><rect x="13" y="19" width="6" height="9" fill="#fff"/>',
+  resid: '<rect x="7" y="3" width="18" height="26" rx="2" fill="#0E8074"/><g fill="#fff"><rect x="10" y="7" width="4" height="3"/><rect x="18" y="7" width="4" height="3"/><rect x="10" y="13" width="4" height="3"/><rect x="18" y="13" width="4" height="3"/><rect x="10" y="19" width="4" height="3"/><rect x="18" y="19" width="4" height="3"/></g>',
+  office: '<rect x="8" y="2" width="16" height="27" fill="#3A86FF"/><g stroke="#fff" stroke-width="1.5"><path d="M8 7h16M8 12h16M8 17h16M8 22h16"/></g>',
+  hotel: '<rect x="6" y="5" width="20" height="24" fill="#5B2A86"/><path d="M11 12h10v6H11z" fill="#FFB703"/><text x="16" y="17" font-size="6" text-anchor="middle" fill="#2B1B3D" font-family="Arial" font-weight="bold">H</text>',
+  hosp: '<rect x="5" y="6" width="22" height="23" fill="#EC407A"/><path d="M14 10h4v4h4v4h-4v4h-4v-4h-4v-4h4z" fill="#fff"/>',
+  mall: '<rect x="3" y="12" width="26" height="17" fill="#26A69A"/><path d="M3 12 8 5h16l5 7z" fill="#FFB703"/><rect x="12" y="19" width="8" height="10" fill="#fff"/>',
+  airport: '<path d="M16 3c1.2 0 2 1 2 2.5V13l9 5v3l-9-2.5V25l3 2v2l-5-1.2L11 29v-2l3-2v-6.5L5 21v-3l9-5V5.5C14 4 14.8 3 16 3z" fill="#3A86FF"/>',
+  metro: '<rect x="7" y="4" width="18" height="21" rx="5" fill="#C2185B"/><rect x="10" y="8" width="12" height="7" rx="1" fill="#fff"/><circle cx="12" cy="20" r="2" fill="#fff"/><circle cx="20" cy="20" r="2" fill="#fff"/><path d="M9 29l3-4M23 29l-3-4" stroke="#C2185B" stroke-width="2"/>',
+  stadium: '<ellipse cx="16" cy="18" rx="13" ry="9" fill="#0E8074"/><ellipse cx="16" cy="18" rx="8" ry="5" fill="#7CCF7C"/>',
+  parking: '<rect x="5" y="4" width="22" height="24" rx="4" fill="#455A64"/><text x="16" y="23" font-size="17" text-anchor="middle" fill="#fff" font-family="Arial" font-weight="bold">P</text>',
+  warehouse: '<path d="M3 13 16 5l13 8v16H3z" fill="#6D4C41"/><rect x="9" y="17" width="14" height="12" fill="#FFB703"/>',
+  supertall: '<path d="M13 29V9l3-7 3 7v20z" fill="#5B2A86"/><path d="M9 29V15h4v14zM19 29V13h4v16z" fill="#3A86FF"/>'
+};
+const kindSVG = (k) => `<svg viewBox="0 0 32 32" aria-hidden="true">${KIND_ICON[k]}</svg>`;
+
+/* ===================== Briefing ===================== */
+function renderBrief() {
+  const S = G.scn;
+  const ks = {};
+  S.streams.forEach((s) => { ks[s.k] = (ks[s.k] || 0) + s.rate * 300; });
+  S.bursts.forEach((b) => { ks[b.k] = (ks[b.k] || 0); });
+  const top = Math.max(...S.levels.map((l) => l.z)), bot = Math.min(...S.levels.map((l) => l.z));
+  const reqs = checkReqs(S, G.D);
+  const tg = S.targets;
+  const tgRows = [];
+  if (tg.hc5 != null) tgRows.push([t('m.hc5'), '≥ ' + fmtPct(tg.hc5)]);
+  if (tg.interval != null) tgRows.push([t('m.interval'), '≤ ' + fmtS(tg.interval)]);
+  ['awt', 'awtB', 'awtF', 'awtK', 'awtC', 'awtW'].forEach((k) => { if (tg[k] != null) tgRows.push([t('m.' + k), '≤ ' + fmtS(tg[k])]); });
+  if (tg.maxQ != null) tgRows.push([t('m.maxQ'), '≤ ' + nf(tg.maxQ)]);
+  if (tg.journey != null) tgRows.push([t('m.journey'), '≤ ' + fmtS(tg.journey)]);
+  if (tg.clear != null) tgRows.push([t('m.clear'), '≤ ' + fmtS(tg.clear)]);
+  if (tg.moved != null) tgRows.push([t('m.moved'), '≥ ' + fmtPct(tg.moved)]);
+  if (tg.thr != null) tgRows.push([t('m.thr'), '≥ ' + fmtPct(tg.thr)]);
+  if (tg.flights != null) tgRows.push([t('m.flights'), '≥ ' + fmtPct(tg.flights)]);
+  if (tg.walk != null) tgRows.push([t('m.walk'), '≤ ' + fmtS(tg.walk)]);
+  const facts = [[t('f.levels'), S.levels.length], [t('f.height'), t('u.m', nf(top - bot))]];
+  if (S.kind === 'hosp') facts.push([t('f.beds'), nf(S.beds)]);
+  if (S.kind === 'warehouse') facts.push([t('f.pallets'), t('u.perh', nf(S.pallets))]);
+  if (S.train) { facts.push([t('f.headway'), fmtS(S.train.H)]); facts.push([t('f.trainLoad'), nf(S.train.load)]); }
+  if (S.kind === 'stadium' || S.kind === 'mall' || S.kind === 'airport') facts.push([t('f.people.' + S.kind), nf(S.pop)]);
+  else if (S.pop) facts.push([t('f.pop'), nf(S.pop)]);
+  if (S.gates.length) { facts.push([t('f.gates'), S.gates.length]); facts.push([t('f.pier'), t('u.m', nf(S.pier))]); }
+  facts.push([t('f.budget'), t('u.cr', nf(G.budget))]);
+  const dem = Object.keys(ks).filter((k) => ks[k] > 0).map((k) => `<li><span><i class="sw" style="background:${KIND_COLOR[k]}"></i> ${esc(t('k.' + k))}</span><b>${esc(t('u.per5', nf(ks[k] < 10 ? Math.round(ks[k] * 10) / 10 : ks[k], ks[k] < 10 ? 1 : 0)))}</b></li>`).join('');
+  $('#brief').innerHTML = `<h2 id="hBrief" class="sr">${esc(t('brief.title'))}</h2>
+    <div class="btype">${kindSVG(S.kind)}<span>${esc(t('kind.' + S.kind))} · ${esc(t('diff.' + S.diff))}</span></div>
+    <p class="bname">${esc(t('name.' + S.kind, S.name))}</p>
+    <p class="note">${esc(t('need.' + S.kind + (S.noRamp ? '.noramp' : '')))}</p>
+    <ul class="facts">${facts.map(([a, b]) => `<li><span>${esc(a)}</span><b>${esc(String(b))}</b></li>`).join('')}</ul>
+    <h3>${esc(t('brief.demand'))}</h3><ul class="facts">${dem}${S.train ? `<li><span>${esc(t('f.burst'))}</span><b>${esc(t('f.burstV', nf(S.train.load), fmtS(S.train.H)))}</b></li>` : ''}</ul>
+    <h3>${esc(t('brief.targets'))}</h3><ul class="facts">${tgRows.map(([a, b]) => `<li><span>${esc(a)}</span><b>${esc(b)}</b></li>`).join('')}</ul>
+    <h3>${esc(t('brief.reqs'))}</h3><ul class="chk">${reqs.map(reqLi).join('')}</ul>
+    <p class="note">${esc(t('brief.seed', S.seed))}</p>`;
+}
+function reqLi(r) {
+  const cls = r.ok ? 'ok' : r.soft ? 'soft' : 'bad', mk = r.ok ? '✓' : r.soft ? '!' : '✗';
+  let txt = t('req.' + r.id);
+  if (r.id === 'bed') txt = t('req.bed', r.need, r.n);
+  if (r.id === 'access' && !r.ok) txt += ' ' + t('req.access.n', r.n);
+  if (r.id === 'pbb' && !r.ok) txt += ' ' + r.miss.map((c) => t('ac.' + c)).join(', ');
+  if (r.id === 'invalid') txt = t('req.invalid', r.n);
+  return `<li><span class="m ${cls}" aria-hidden="true">${mk}</span><span><span class="sr">${esc(t(r.ok ? 'a11y.ok' : 'a11y.no'))}: </span>${esc(txt)}</span></li>`;
+}
+
+/* ===================== Editor do projeto ===================== */
+function levelOptsDesc(sel) { return G.scn.levels.map((l, i) => i).reverse().map((i) => `<option value="${i}"${i === sel ? ' selected' : ''}>${esc(lvName(i))}</option>`).join(''); }
+function capLabel(type, c) { if (type === 'svc') return t('cap.pallet', c / 10); if (type === 'car') return t('cap.car', c / 10); if (type === 'plat') return t('cap.chair'); if (type === 'dumb') return t('cap.trolley'); if (type === 'bed') return t('cap.bed', c); return t('cap.p', c); }
+function renderDesign() {
+  const S = G.scn, D = G.D, cost = costOf(S, D);
+  const pct = Math.min(100, cost.total / Math.max(1, G.budget) * 100);
+  const lifts = D.lifts.map((g, i) => {
+    const T = LIFTS[g.type], iss = liftIssues(S, g), fl = served(S, g), z = fl.map((x) => S.levels[x].z), trav = Math.max(...z) - Math.min(...z);
+    const one = costOf(S, { lifts: [g], escs: [], walk: 0, pbb: {} }).total;
+    return `<div class="grp${iss.length ? ' bad' : ''}" data-g="${i}">
+      <header><b><i class="sw" style="background:${LIFT_COLOR[g.type]}"></i>${esc(t('lt.' + g.type))}</b><button type="button" class="btn sm icon" data-rm="l${i}" aria-label="${esc(t('b.remove'))}" title="${esc(t('b.remove'))}">×</button></header>
+      <div class="fields">
+        <label class="full">${esc(t('fd.type'))}<select data-f="type">${LIFT_ORDER.map((k) => `<option value="${k}"${k === g.type ? ' selected' : ''}>${esc(t('lt.' + k))}</option>`).join('')}</select></label>
+        <label>${esc(t('fd.qty'))}<input type="number" min="1" max="16" step="1" value="${g.qty}" data-f="qty"></label>
+        <label>${esc(t('fd.cap'))}<select data-f="cap">${T.caps.map((c) => `<option value="${c}"${c === g.cap ? ' selected' : ''}>${esc(capLabel(g.type, c))}</option>`).join('')}</select></label>
+        <label>${esc(t('fd.speed'))}<select data-f="speed">${T.speeds.map((v) => `<option value="${v}"${v === g.speed ? ' selected' : ''}>${esc(t('u.ms', nf(v, v < 1 ? 2 : v % 1 ? 1 : 0)))}</option>`).join('')}</select></label>
+        <label>${esc(t('fd.ctl'))}<select data-f="ctl"><option value="conv"${g.ctl !== 'dd' ? ' selected' : ''}>${esc(t('ctl.conv'))}</option><option value="dd"${g.ctl === 'dd' ? ' selected' : ''}>${esc(t('ctl.dd'))}</option></select></label>
+        <label class="full">${esc(t('fd.lobby'))}<select data-f="lobby">${levelOptsDesc(g.lobby)}</select></label>
+        <label>${esc(t('fd.from'))}<select data-f="from">${levelOptsDesc(g.from)}</select></label>
+        <label>${esc(t('fd.to'))}<select data-f="to">${levelOptsDesc(g.to)}</select></label>
+      </div>
+      ${iss.length ? `<ul class="issues">${iss.map(([k, v]) => `<li>${esc(t(k, v))}</li>`).join('')}</ul>` : ''}
+      <p class="ginfo">${esc(t('g.info', fl.length, nf(trav), t('k.list.' + T.serves), nf(one)))}</p>
+    </div>`;
+  }).join('');
+  const escs = D.escs.map((e, i) => {
+    const pairs = []; for (let a = 0; a + 1 < S.levels.length; a++) pairs.push(a);
+    const lo = Math.min(e.from, e.to);
+    const widths = e.inc ? [1000, 1400] : [600, 800, 1000];
+    const one = costOf(S, { lifts: [], escs: [e], walk: 0, pbb: {} }).total;
+    const capH = (e.inc ? INC_CAP[e.width] : ESC_CAP[e.width]) * ESC_PRACTICAL * e.qty;
+    return `<div class="grp" data-e="${i}">
+      <header><b><i class="sw" style="background:${e.inc ? '#26A69A' : '#FFB703'}"></i>${esc(t(e.inc ? 'et.inc' : 'et.esc'))}</b><button type="button" class="btn sm icon" data-rm="e${i}" aria-label="${esc(t('b.remove'))}" title="${esc(t('b.remove'))}">×</button></header>
+      <div class="fields">
+        <label class="full">${esc(t('fd.type'))}<select data-f="inc"><option value="0"${e.inc ? '' : ' selected'}>${esc(t('et.esc'))}</option><option value="1"${e.inc ? ' selected' : ''}>${esc(t('et.inc'))}</option></select></label>
+        <label class="full">${esc(t('fd.between'))}<select data-f="pair">${pairs.reverse().map((a) => `<option value="${a}"${a === lo ? ' selected' : ''}>${esc(lvName(a) + ' ↔ ' + lvName(a + 1))}</option>`).join('')}</select></label>
+        <label>${esc(t('fd.dir'))}<select data-f="dir">${['up', 'down', 'both'].map((d) => `<option value="${d}"${d === e.dir ? ' selected' : ''}>${esc(t('dir.' + d))}</option>`).join('')}</select></label>
+        <label>${esc(t('fd.width'))}<select data-f="width">${widths.map((w) => `<option value="${w}"${w === e.width ? ' selected' : ''}>${esc(t('u.mm', w))}</option>`).join('')}</select></label>
+        <label>${esc(t('fd.qty'))}<input type="number" min="1" max="6" step="1" value="${e.qty}" data-f="qty"></label>
+      </div>
+      <p class="ginfo">${esc(t('e.info', nf(capH), nf(one)))}</p>
+    </div>`;
+  }).join('');
+  let air = '';
+  if (S.gates.length) {
+    const classes = Object.keys(AIRCRAFT).filter((c) => S.gates.some((g) => g.cls === c));
+    air = `<h3>${esc(t('pbb.title'))}</h3><p class="note">${esc(t('pbb.help'))}</p><div class="pbb">${classes.map((c) => {
+      const n = S.gates.filter((g) => g.cls === c).length, arr = D.pbb[c] || [];
+      const sel = (j) => `<select data-pbb="${c}:${j}" aria-label="${esc(t('pbb.door', t('ac.' + c), j + 1))}"><option value="">${esc(t('pbb.none'))}</option>${PBB_ORDER.map((k) => `<option value="${k}"${arr[j] === k ? ' selected' : ''}>${esc(t('pbbt.' + k))}${PBB[k].cls.includes(c) ? '' : ' ✗'}</option>`).join('')}</select>`;
+      return `<div class="pbbrow"><span><b>${esc(t('ac.' + c))}</b><br><span class="note">${esc(t('pbb.gates', n))}</span></span>${[0, 1, 2].map((j) => j < AIRCRAFT[c].doors ? sel(j) : '<span></span>').join('')}</div>`;
+    }).join('')}</div>
+    <h3>${esc(t('walk.title'))}</h3><label class="note" style="display:grid;gap:.2rem">${esc(t('walk.help', nf(S.pier)))}<input type="number" min="0" max="${S.pier}" step="50" value="${D.walk}" data-walk="1"></label>`;
+  }
+  $('#design').innerHTML = `<h2 id="hDesign">${esc(t('design.title'))}</h2>
+    <div class="adds"><button type="button" class="btn sm" data-add="lift">${esc(t('b.addLift'))}</button><button type="button" class="btn sm" data-add="esc">${esc(t('b.addEsc'))}</button></div>
+    ${lifts || escs ? '' : `<p class="note">${esc(t('design.empty'))}</p>`}${lifts}${escs}${air}
+    <h3>${esc(t('design.cost'))}</h3>
+    <div class="costbar" role="img" aria-label="${esc(t('design.costA', nf(cost.total), nf(G.budget)))}"><span class="${cost.total > G.budget ? 'over' : ''}" style="width:${pct}%"></span></div>
+    <p class="note">${esc(t('design.costT', nf(cost.total), nf(G.budget)))}${cost.total > G.budget ? ' · ' + esc(t('design.over')) : ''}</p>
+    <div class="row"><button type="button" class="btn sm" id="bRef">${esc(t('b.ref'))}</button><button type="button" class="btn sm" id="bClear">${esc(t('b.clear'))}</button></div>`;
+}
+function onDesignChange(e) {
+  const el = e.target;
+  if (el.dataset.walk) { G.D.walk = Math.max(0, Math.min(G.scn.pier, +el.value || 0)); return changed(); }
+  if (el.dataset.pbb) { const [c, j] = el.dataset.pbb.split(':'); G.D.pbb[c] = G.D.pbb[c] || []; G.D.pbb[c][+j] = el.value; return changed(); }
+  const box = el.closest('[data-g],[data-e]'); if (!box || !el.dataset.f) return;
+  if (box.dataset.g != null) {
+    const g = G.D.lifts[+box.dataset.g], f = el.dataset.f;
+    if (f === 'type') { const T = LIFTS[el.value]; g.type = el.value; if (!T.caps.includes(g.cap)) g.cap = T.caps[Math.min(1, T.caps.length - 1)]; if (!T.speeds.includes(g.speed)) g.speed = T.speeds[0]; }
+    else if (f === 'qty') g.qty = Math.max(1, Math.min(16, Math.round(+el.value) || 1));
+    else if (f === 'cap' || f === 'speed') g[f] = +el.value;
+    else if (f === 'ctl') g.ctl = el.value;
+    else g[f] = +el.value;
+  } else {
+    const x = G.D.escs[+box.dataset.e], f = el.dataset.f;
+    if (f === 'pair') { x.from = +el.value; x.to = +el.value + 1; }
+    else if (f === 'inc') { x.inc = el.value === '1'; x.width = x.inc ? 1000 : 1000; }
+    else if (f === 'dir') x.dir = el.value;
+    else if (f === 'width') x.width = +el.value;
+    else if (f === 'qty') x.qty = Math.max(1, Math.min(6, Math.round(+el.value) || 1));
+  }
+  changed();
+}
+function changed(keepFocus) {
+  const a = document.activeElement, path = a && a.closest('#design') ? [a.closest('[data-g],[data-e]') ? (a.closest('[data-g]') ? 'g' + a.closest('[data-g]').dataset.g : 'e' + a.closest('[data-e]').dataset.e) : '', a.dataset.f || a.dataset.pbb || a.dataset.walk || a.dataset.add || a.id] : null;
+  stopSim(); G.sim = null; G.result = null;
+  save(); renderDesign(); renderBrief(); renderResults(); renderLegend(); drawStatic();
+  if (path) {
+    const box = path[0] ? document.querySelector(path[0][0] === 'g' ? `[data-g="${path[0].slice(1)}"]` : `[data-e="${path[0].slice(1)}"]`) : $('#design');
+    const el = box && (box.querySelector(`[data-f="${path[1]}"]`) || box.querySelector(`[data-pbb="${path[1]}"]`) || box.querySelector(`[data-walk]`) || (path[1] ? document.getElementById(path[1]) : null));
+    if (el) el.focus();
+  }
+}
+function addLift() {
+  const S = G.scn, top = S.levels.length - 1;
+  const h = S.levels[top].z - S.levels[0].z;
+  const type = h <= 18 && S.levels.length <= 6 ? 'hyd' : h <= 76 ? 'mrl' : 'trac';
+  const T = LIFTS[type];
+  G.D.lifts.push({ type, qty: 2, cap: T.caps[Math.min(1, T.caps.length - 1)], speed: T.speeds[Math.min(1, T.speeds.length - 1)], lobby: S.A, from: 0, to: top, ctl: 'conv' });
+  changed(); const last = document.querySelector('#design [data-g]:last-of-type select'); if (last) last.focus();
+}
+function addEsc() {
+  const S = G.scn, a = Math.max(0, Math.min(S.A, S.levels.length - 2));
+  G.D.escs.push({ from: a, to: a + 1, width: 1000, qty: 1, dir: 'both', inc: false });
+  changed();
+}
+
+/* ===================== Simulação na tela ===================== */
+function stopSim() { G.running = false; updateRunBtn(); }
+function ensureSim() { if (!G.sim) { G.sim = Sim(G.scn, G.D, G.scn.seed); G.result = null; } }
+function runToggle() {
+  if (G.sim && G.sim.finished) { G.sim = null; }
+  ensureSim();
+  G.running = !G.running; G.last = performance.now(); updateRunBtn();
+  if (G.running) requestAnimationFrame(frame);
+}
+function instant() {
+  stopSim(); if (!G.sim || G.sim.finished) G.sim = Sim(G.scn, G.D, G.scn.seed);
+  while (!G.sim.finished) G.sim.step(0.5);
+  done();
+}
+function frame(now) {
+  if (!G.running || !G.sim) return;
+  const dt = Math.min(0.1, (now - G.last) / 1000); G.last = now;
+  const sp = +$('#speed').value;
+  let steps = Math.max(1, Math.round(sp * dt / 0.5)); steps = Math.min(steps, 240);
+  for (let i = 0; i < steps && !G.sim.finished; i++) G.sim.step(0.5);
+  draw(); renderLive();
+  if (G.sim.finished) { done(); return; }
+  requestAnimationFrame(frame);
+}
+function done() {
+  G.running = false; updateRunBtn(); draw(); renderLive();
+  const reqs = checkReqs(G.scn, G.D), rows = evaluate(G.scn, G.D, G.sim.M), cost = costOf(G.scn, G.D).total;
+  const st = stars(reqs, rows, cost, G.budget, G.helped);
+  G.result = { reqs, rows, cost, st, M: G.sim.M };
+  const key = G.scn.kind + '-' + G.scn.diff + '-' + G.scn.seed, best = store.get('best') || {};
+  G.result.isBest = st > (best[key] || 0) && st > 0;
+  if (G.result.isBest) { best[key] = st; store.set('best', best); }
+  renderResults();
+  const r = $('#results'); if (r && !r.hidden) r.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'nearest' });
+}
+function updateRunBtn() { const b = $('#bRun'); if (b) b.textContent = G.running ? t('sim.pause') : (G.sim && !G.sim.finished && G.sim.t > 0 ? t('sim.resume') : t('sim.run')); }
+function renderLive() {
+  const s = G.sim, W = G.scn.window;
+  const tt = s ? s.t : 0, mm = (x) => `${Math.floor(x / 60)}:${String(Math.floor(x % 60)).padStart(2, '0')}`;
+  $('#clock').textContent = `${mm(tt)} / ${mm(W)}`;
+  if (!s) { $('#live').innerHTML = `<span>${esc(t('live.idle'))}</span>`; return; }
+  const w = s.waitingNow();
+  const avg = (s.waitSum + w.wt) / Math.max(1, s.waitN + w.n);
+  $('#live').innerHTML = `<span>${esc(t('live.waiting'))}: <b>${nf(w.n)}</b></span><span>${esc(t('live.done'))}: <b>${nf(s.doneN)}</b></span><span>${esc(t('live.avg'))}: <b>${esc(fmtS(avg))}</b></span>${s.noRoute && Object.keys(s.noRoute).length ? `<span>${esc(t('live.noRoute'))}: <b>${nf(Object.values(s.noRoute).reduce((a, b) => a + b, 0))}</b></span>` : ''}`;
+}
+
+/* ===================== Resultado ===================== */
+function renderResults() {
+  const box = $('#results');
+  if (!G.result) { box.hidden = true; box.innerHTML = ''; return; }
+  box.hidden = false;
+  const R = G.result, M = R.M, S = G.scn;
+  const fmt = (r, v) => r.fmt === 'pct' ? fmtPct(v) : r.fmt === 's' ? fmtS(v) : nf(v);
+  const star = [0, 1, 2].map((i) => `<span class="${i < R.st ? '' : 'off'}">★</span>`).join('');
+  const tips = [];
+  R.rows.filter((r) => !r.ok).forEach((r) => tips.push(t('tip.' + r.id)));
+  R.reqs.filter((r) => !r.ok).forEach((r) => tips.push(t('tip.req.' + r.id)));
+  if (R.cost > G.budget) tips.push(t('tip.cost'));
+  if (!tips.length && R.st < 3) tips.push(t('tip.cheaper'));
+  if (!tips.length) tips.push(t('tip.perfect'));
+  if (G.helped) tips.push(t('tip.helped'));
+  let gates = '';
+  if (S.gates.length && M.gateTimes) {
+    const byC = {};
+    S.gates.forEach((g, i) => { const c = g.cls; byC[c] = byC[c] || { n: 0, ok: 0, tb: 0 }; byC[c].n++; byC[c].ok += M.gateTimes[i].good ? 1 : 0; byC[c].tb = Math.max(byC[c].tb, M.gateTimes[i].tb); });
+    gates = `<h3>${esc(t('res.gates'))}</h3><div style="overflow-x:auto"><table><thead><tr><th>${esc(t('res.class'))}</th><th class="num">${esc(t('res.ontime'))}</th><th class="num">${esc(t('res.worst'))}</th><th class="num">${esc(t('res.goal'))}</th></tr></thead><tbody>${Object.keys(byC).map((c) => `<tr><td>${esc(t('ac.' + c))}</td><td class="num">${byC[c].ok}/${byC[c].n}</td><td class="num">${esc(t('u.min', nf(byC[c].tb, 1)))}</td><td class="num">${esc(t('u.min', AIRCRAFT[c].target))}</td></tr>`).join('')}</tbody></table></div>`;
+  }
+  box.innerHTML = `<div class="result-head"><h2 id="hRes">${esc(t('res.title'))}</h2><div class="stars" role="img" aria-label="${esc(t('res.stars', R.st))}">${star}</div></div>
+    ${R.isBest ? `<p class="note"><b>${esc(t('res.best'))}</b></p>` : ''}
+    <div style="overflow-x:auto"><table><thead><tr><th>${esc(t('res.metric'))}</th><th class="num">${esc(t('res.goal'))}</th><th class="num">${esc(t('res.value'))}</th><th></th></tr></thead><tbody>
+    ${R.rows.map((r) => `<tr><td>${esc(t('m.' + r.id))}</td><td class="num">${r.id === 'noRoute' ? '0' : (['hc5', 'moved', 'thr', 'flights'].includes(r.id) ? '≥ ' : '≤ ') + esc(fmt(r, r.id === 'hc5' ? S.targets.hc5 : r.tgt))}</td><td class="num">${esc(fmt(r, r.val))}</td><td><span class="m ${r.ok ? 'ok' : 'bad'}" style="display:inline-flex;width:1.2rem;height:1.2rem;border-radius:50%;align-items:center;justify-content:center;font-weight:800;font-size:.75rem">${r.ok ? '✓' : '✗'}</span><span class="sr">${esc(t(r.ok ? 'a11y.ok' : 'a11y.no'))}</span></td></tr>`).join('')}
+    <tr><td>${esc(t('res.cost'))}</td><td class="num">≤ ${esc(nf(G.budget))}</td><td class="num">${esc(nf(R.cost))}</td><td><span class="m ${R.cost <= G.budget ? 'ok' : 'bad'}" style="display:inline-flex;width:1.2rem;height:1.2rem;border-radius:50%;align-items:center;justify-content:center;font-weight:800;font-size:.75rem">${R.cost <= G.budget ? '✓' : '✗'}</span></td></tr>
+    </tbody></table></div>
+    <p class="note">${esc(t('res.extra', fmtS(M.journey), fmtS(M.maxWait), nf(M.left), nf(M.energy)))}</p>
+    ${gates}
+    <h3>${esc(t('brief.reqs'))}</h3><ul class="chk">${R.reqs.map(reqLi).join('')}</ul>
+    <h3>${esc(t('res.tips'))}</h3><ul class="tips">${tips.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>
+    <p class="note">${esc(t('res.model'))}</p>
+    <div class="row end"><button type="button" class="btn" id="bAgain">${esc(t('res.again'))}</button><button type="button" class="btn primary" id="bNext">${esc(t('res.next'))}</button></div>`;
+}
+
+/* ===================== Desenho realista (corte da construção) ===================== */
+const TRACTION = { mrl: 1, trac: 1, dd: 1, pan: 1, fire: 1, bed: 1, svc: 1, dumb: 1 };
+const MACHINE_ROOM = { trac: 1, dd: 1, fire: 1, bed: 1 };
+const HYDRAULIC = { hyd: 1, home: 1, plat: 1, car: 1 };
+const FACADE = {
+  house: { wall: '#F3E3C8', win: 'punch', roof: 'gable' }, resid: { wall: '#E9DCC8', win: 'punch', roof: 'flat' }, office: { wall: '#8FB8D6', win: 'glass', roof: 'flat' },
+  hotel: { wall: '#D8A48F', win: 'punch', roof: 'flat' }, hosp: { wall: '#F2F4F7', win: 'band', roof: 'heli' }, mall: { wall: '#EFE7DA', win: 'store', roof: 'flat' },
+  airport: { wall: '#B9D3E6', win: 'glass', roof: 'curve' }, metro: { wall: '#C9C3BA', win: 'none', roof: 'canopy' }, stadium: { wall: '#CFC8BE', win: 'none', roof: 'stand' },
+  parking: { wall: '#C7C2BA', win: 'open', roof: 'flat' }, warehouse: { wall: '#B7A58E', win: 'band', roof: 'shed' }, supertall: { wall: '#7FA8C9', win: 'glass', roof: 'spire' }
+};
+let CV = null, BG = { key: '', canvas: null };
+function themeDark() { return document.documentElement.dataset.theme === 'dark'; }
+function colors() { const cs = getComputedStyle(document.documentElement); const v = (n) => cs.getPropertyValue(n).trim(); return { ink: v('--ink'), muted: v('--muted'), line: v('--line'), surface: v('--surface'), gold: v('--gold'), bad: v('--bad'), ok: v('--ok'), accent: v('--accent') }; }
+function shade(hex, f) { const n = parseInt(hex.slice(1), 16); let r = n >> 16, g = (n >> 8) & 255, b = n & 255; const m = (c) => Math.max(0, Math.min(255, Math.round(f < 0 ? c * (1 + f) : c + (255 - c) * f))); return `rgb(${m(r)},${m(g)},${m(b)})`; }
+function layout() {
+  const S = G.scn, wrap = $('#cwrap');
+  const W = Math.max(300, wrap.clientWidth - 2);
+  const n = S.levels.length;
+  const per = Math.max(5, Math.min(40, 560 / n));
+  const zs = S.levels.map((l) => l.z), zmin = Math.min(...zs), zmax = Math.max(...zs);
+  const roofH = Math.max(26, per * 1.2), skyH = 34;
+  const bodyH = skyH + roofH + per * (n - 1) + per + 30;
+  const nG = S.gates.length, rows = nG > 10 ? 2 : 1, perRow = Math.ceil(nG / rows), gw = (W - 20) / Math.max(1, perRow), pmax = Math.min(gw * 0.95, 90);
+  const gateH = nG ? 30 + rows * (pmax + 26) : 0;
+  const H = bodyH + gateH + 10;
+  const y1 = bodyH - 30, y0 = skyH + roofH + per;
+  const yOf = (z) => y1 - (z - zmin) / Math.max(1, zmax - zmin) * (y1 - y0);
+  const labW = W < 420 ? 30 : 44;
+  const slot = G.D.escs.map(() => 0), per0 = {};
+  G.D.escs.forEach((e, i) => { const lo = Math.min(e.from, e.to); slot[i] = per0[lo] || 0; per0[lo] = slot[i] + (e.dir === 'both' ? 2 : 1); });
+  const cols = Math.max(0, ...Object.values(per0));
+  const escW = G.D.escs.length ? Math.min(W * 0.42, 70 + cols * 26) : 0;
+  const bx0 = labW + 6, bx1 = W - 8;
+  const groups = G.D.lifts.map((g, gi) => ({ g, gi, n: liftIssues(S, g).length ? 0 : g.qty }));
+  const totalCars = groups.reduce((a, x) => a + x.n, 0);
+  const avail = bx1 - bx0 - escW - 20 - groups.length * 34;
+  const carW = Math.max(4, Math.min(28, avail / Math.max(1, totalCars) - 5));
+  let x = bx0 + 14;
+  groups.forEach((gr) => { gr.qx = x; x += 26; gr.x = x; x += gr.n * (carW + 5) + 8; });
+  return { W, H, bodyH, gateH, yOf, labW, escX: bx1 - escW, escW, groups, carW, per, slot, bx0, bx1, zmin, zmax, roofH, skyH, ch: Math.max(5, Math.min(per * 0.82, carW * 1.45, 30)), gate: { rows, perRow, gw, pmax } };
+}
+/* ---------- camada fixa ---------- */
+function bgKey(L) { return [G.scn.kind, G.scn.seed, G.scn.diff, L.W, L.H, themeDark(), LANG, JSON.stringify(G.D.lifts.map((g) => [g.type, g.qty, g.from, g.to, g.lobby])), JSON.stringify(G.D.escs), JSON.stringify(G.D.pbb), devicePixelRatio || 1].join('|'); }
+function drawBackground(L, dpr) {
+  const S = G.scn, dark = themeDark(), C = colors();
+  const cv = document.createElement('canvas'); cv.width = Math.round(L.W * dpr); cv.height = Math.round(L.H * dpr);
+  const x = cv.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const gy = L.yOf(0), F = FACADE[S.kind];
+  /* céu */
+  const sky = x.createLinearGradient(0, 0, 0, gy);
+  if (dark) { sky.addColorStop(0, '#08102A'); sky.addColorStop(1, '#22305A'); } else { sky.addColorStop(0, '#9FD3F7'); sky.addColorStop(1, '#E8F5FF'); }
+  x.fillStyle = sky; x.fillRect(0, 0, L.W, gy);
+  if (dark) { const R = mulberry(S.seed); x.fillStyle = '#FFFFFF'; for (let i = 0; i < 60; i++) { const sx = R() * L.W, sy = R() * gy * 0.7; x.globalAlpha = 0.3 + R() * 0.6; x.fillRect(sx, sy, 1.2, 1.2); } x.globalAlpha = 1; x.fillStyle = '#F5F3CE'; x.beginPath(); x.arc(L.W - 40, 26, 10, 0, 7); x.fill(); }
+  else { x.fillStyle = '#FFE07A'; x.beginPath(); x.arc(L.W - 40, 26, 12, 0, 7); x.fill(); x.fillStyle = 'rgba(255,255,255,.85)'; [[0.18, 24], [0.55, 40]].forEach(([fx, fy]) => { const cx = L.W * fx; x.beginPath(); x.arc(cx, fy, 9, 0, 7); x.arc(cx + 11, fy - 4, 11, 0, 7); x.arc(cx + 23, fy, 8, 0, 7); x.fill(); }); }
+  /* solo */
+  const soil = x.createLinearGradient(0, gy, 0, L.bodyH);
+  soil.addColorStop(0, dark ? '#4A3A2A' : '#C9A77C'); soil.addColorStop(1, dark ? '#251B13' : '#8A6A47');
+  x.fillStyle = soil; x.fillRect(0, gy, L.W, L.bodyH - gy + (L.gateH ? 0 : 10));
+  x.fillStyle = dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.08)';
+  const R2 = mulberry(S.seed + 7); for (let i = 0; i < 90; i++) x.fillRect(R2() * L.W, gy + 6 + R2() * (L.bodyH - gy), 2, 2);
+  x.fillStyle = dark ? '#2F6B3A' : '#6BBF59'; x.fillRect(0, gy - 3, L.W, 4);
+  x.fillStyle = dark ? '#5C5650' : '#BDB6AC'; x.fillRect(L.bx0 - 10, gy - 3, L.bx1 - L.bx0 + 20, 4);
+  /* edifício */
+  const topZ = L.zmax, top = L.yOf(topZ) - L.per, bot = L.yOf(L.zmin) + 4;
+  const above = Math.min(gy, bot), wallC = F.wall;
+  x.fillStyle = dark ? shade(wallC, -0.55) : shade(wallC, -0.05);
+  x.fillRect(L.bx0, top, L.bx1 - L.bx0, Math.max(0, above - top));
+  if (bot > gy) { x.fillStyle = dark ? '#3B3631' : '#B5ADA2'; x.fillRect(L.bx0, gy, L.bx1 - L.bx0, bot - gy); }
+  /* paredes de fundo com janelas por andar */
+  S.levels.forEach((l, i) => {
+    const y = L.yOf(l.z), yUp = i + 1 < S.levels.length ? L.yOf(S.levels[i + 1].z) : y - L.per;
+    const h = y - yUp; if (h < 4) return;
+    const under = l.z < 0;
+    if (under || F.win === 'none') return;
+    const wy = yUp + h * 0.22, wh = h * 0.5;
+    x.fillStyle = dark ? (i % 3 ? '#FFD98A' : '#3A4A66') : '#CFE6F5';
+    if (F.win === 'glass') { x.fillStyle = dark ? 'rgba(255,214,120,.55)' : 'rgba(255,255,255,.45)'; x.fillRect(L.bx0 + 3, yUp + 2, L.bx1 - L.bx0 - 6, h - 4); x.strokeStyle = dark ? 'rgba(0,0,0,.35)' : 'rgba(40,70,100,.35)'; x.lineWidth = 1; for (let wx = L.bx0 + 3; wx < L.bx1; wx += 14) { x.beginPath(); x.moveTo(wx, yUp + 2); x.lineTo(wx, y - 2); x.stroke(); } }
+    else if (F.win === 'band') x.fillRect(L.bx0 + 4, wy, L.bx1 - L.bx0 - 8, wh);
+    else if (F.win === 'store') { x.fillRect(L.bx0 + 4, yUp + h * 0.15, L.bx1 - L.bx0 - 8, h * 0.7); x.fillStyle = ['#EF476F', '#3A86FF', '#FFB703', '#2A9D8F'][i % 4]; for (let wx = L.bx0 + 10; wx < L.bx1 - 30; wx += 60) x.fillRect(wx, yUp + h * 0.15, 30, Math.max(2, h * 0.08)); }
+    else if (F.win === 'open') { x.fillStyle = dark ? '#2A2622' : '#8F887E'; x.fillRect(L.bx0 + 4, wy, L.bx1 - L.bx0 - 8, wh); }
+    else for (let wx = L.bx0 + 8; wx < L.bx1 - 10; wx += 18) { x.fillStyle = dark ? (((wx + i * 7) % 5) ? '#FFD98A' : '#33415C') : '#CFE6F5'; x.fillRect(wx, wy, 10, wh); }
+  });
+  /* lajes */
+  S.levels.forEach((l, i) => { const y = L.yOf(l.z); x.fillStyle = dark ? '#7B7468' : '#8E8579'; x.fillRect(L.bx0, y, L.bx1 - L.bx0, Math.max(2, Math.min(4, L.per * 0.18))); });
+  /* paredes externas */
+  x.fillStyle = dark ? '#5E574E' : '#7D7366'; x.fillRect(L.bx0 - 4, top, 4, bot - top); x.fillRect(L.bx1, top, 4, bot - top);
+  /* cobertura */
+  const rx0 = L.bx0 - 4, rx1 = L.bx1 + 4, ry = top;
+  x.fillStyle = dark ? '#6A6158' : '#7D7366';
+  if (F.roof === 'gable') { x.beginPath(); x.moveTo(rx0 - 8, ry + 2); x.lineTo((rx0 + rx1) / 2, ry - L.roofH + 4); x.lineTo(rx1 + 8, ry + 2); x.closePath(); x.fillStyle = dark ? '#7A3B2E' : '#B5523B'; x.fill(); }
+  else if (F.roof === 'curve') { x.beginPath(); x.moveTo(rx0 - 6, ry + 2); x.quadraticCurveTo((rx0 + rx1) / 2, ry - L.roofH, rx1 + 6, ry + 2); x.closePath(); x.fillStyle = dark ? '#4E6A80' : '#E7EEF4'; x.fill(); x.strokeStyle = dark ? '#8FB1CC' : '#8FA9BF'; x.stroke(); }
+  else if (F.roof === 'spire') { x.fillRect(rx0, ry - 4, rx1 - rx0, 4); x.beginPath(); x.moveTo((rx0 + rx1) / 2 - 6, ry - 4); x.lineTo((rx0 + rx1) / 2, ry - L.roofH - 10); x.lineTo((rx0 + rx1) / 2 + 6, ry - 4); x.fill(); }
+  else if (F.roof === 'shed') { x.beginPath(); x.moveTo(rx0, ry + 2); x.lineTo(rx0, ry - L.roofH * 0.5); x.lineTo(rx1, ry - 4); x.lineTo(rx1, ry + 2); x.closePath(); x.fill(); }
+  else if (F.roof === 'heli') { x.fillRect(rx0, ry - 4, rx1 - rx0, 4); const hx = rx1 - 40; x.fillStyle = dark ? '#3D3D3D' : '#5E5E5E'; x.fillRect(hx - 16, ry - 7, 32, 3); x.fillStyle = '#FFF'; x.font = 'bold 9px Arial'; x.textAlign = 'center'; x.fillText('H', hx, ry - 9); }
+  else if (F.roof === 'stand') { /* arquibancadas: degraus inclinados à direita */
+    S.levels.forEach((l, i) => { if (l.z <= 0 || l.pop <= 0) return; const y = L.yOf(l.z); const x0 = L.escX - 10 > L.bx0 + 60 ? L.bx0 + (L.bx1 - L.bx0) * 0.45 : L.bx0 + 40; x.fillStyle = dark ? '#4B4F57' : '#9CA3AF'; x.beginPath(); x.moveTo(x0, y); x.lineTo(L.bx1, y - L.per * 0.95); x.lineTo(L.bx1, y); x.closePath(); x.fill(); const R3 = mulberry(S.seed + i); for (let k = 0; k < 40; k++) { const f = R3(); x.fillStyle = ['#EF476F', '#3A86FF', '#FFB703', '#2A9D8F', '#FFFFFF'][k % 5]; x.fillRect(x0 + f * (L.bx1 - x0), y - f * L.per * 0.9 - 3 + R3() * 2, 2, 2); } });
+    x.fillRect(rx0, ry - 3, rx1 - rx0, 3); }
+  else if (F.roof === 'canopy') { const cx = L.bx0 + 30; x.fillStyle = dark ? '#7B8794' : '#5B6B7A'; x.fillRect(cx - 4, gy - 22, 3, 20); x.fillRect(cx + 40, gy - 22, 3, 20); x.beginPath(); x.moveTo(cx - 12, gy - 22); x.lineTo(cx + 52, gy - 28); x.lineTo(cx + 52, gy - 24); x.lineTo(cx - 12, gy - 18); x.fill(); x.fillStyle = '#C2185B'; x.beginPath(); x.arc(cx + 20, gy - 34, 7, 0, 7); x.fill(); x.fillStyle = '#FFF'; x.font = 'bold 8px Arial'; x.textAlign = 'center'; x.fillText('M', cx + 20, gy - 31); }
+  else { x.fillRect(rx0, ry - 4, rx1 - rx0, 4); }
+  /* trilhos do metrô */
+  if (S.train) { const lp = S.levels.findIndex((l) => l.lab === 'platform'); const y = L.yOf(S.levels[lp].z); x.fillStyle = dark ? '#1C1814' : '#5A4A3A'; x.fillRect(L.bx0, y + 2, L.bx1 - L.bx0, 6); x.fillStyle = '#9AA0A6'; x.fillRect(L.bx0, y - 1, L.bx1 - L.bx0, 2); }
+  /* rótulos dos andares */
+  x.font = `${L.per < 9 ? 9 : 11}px Segoe UI, Arial, sans-serif`; x.textBaseline = 'middle';
+  const every = L.per < 9 ? Math.ceil(11 / L.per) : 1;
+  S.levels.forEach((l, i) => {
+    if (!(i % every === 0 || i === S.A || i === S.levels.length - 1)) return;
+    const y = L.yOf(l.z) - Math.min(L.per / 2, 9);
+    x.fillStyle = i === S.A ? (dark ? '#FFC94D' : '#5B2A86') : (dark ? '#E2D8F0' : '#2B1B3D');
+    x.textAlign = 'right'; x.fillText(lvShort(i), L.labW, y);
+  });
+  /* poços: núcleo de concreto, guias, casa de máquinas, poço do pistão */
+  L.groups.forEach((gr) => {
+    if (!gr.n) return;
+    const g = gr.g, fl = served(S, g), ys = fl.map((f) => L.yOf(S.levels[f].z));
+    const sTop = Math.min(...ys) - L.ch - 6, sBot = Math.max(...ys) + 6, w = gr.n * (L.carW + 5) + 3;
+    x.fillStyle = dark ? '#5B5550' : '#B9B1A6'; x.fillRect(gr.x - 4, sTop - 3, w + 5, sBot - sTop + 6);
+    x.fillStyle = dark ? '#2E2A33' : '#E9E3DA'; x.fillRect(gr.x - 2, sTop, w + 1, sBot - sTop);
+    for (let c = 0; c < gr.n; c++) { const cx = gr.x + c * (L.carW + 5); x.fillStyle = dark ? '#77706A' : '#9C9387'; x.fillRect(cx - 1, sTop, 1, sBot - sTop); x.fillRect(cx + L.carW, sTop, 1, sBot - sTop); }
+    fl.forEach((f) => { const y = L.yOf(S.levels[f].z); x.fillStyle = dark ? '#C9A7F5' : '#5B2A86'; x.fillRect(gr.x - 4, y - L.ch, 2, L.ch); });
+    if (MACHINE_ROOM[g.type]) { x.fillStyle = dark ? '#6F665C' : '#8C8174'; x.fillRect(gr.x - 4, sTop - 14, w + 5, 11); x.fillStyle = dark ? '#3B342D' : '#5E554B'; for (let c = 0; c < gr.n; c++) { x.beginPath(); x.arc(gr.x + c * (L.carW + 5) + L.carW / 2, sTop - 8, Math.min(4, L.carW / 3), 0, 7); x.fill(); } }
+    if (HYDRAULIC[g.type]) { x.fillStyle = dark ? '#3A3530' : '#7A7064'; x.fillRect(gr.x - 2, sBot, w + 1, 10); }
+  });
+  /* escadas rolantes: treliça e corrimão */
+  G.D.escs.forEach((e, i) => {
+    const lo = Math.min(e.from, e.to), hi = Math.max(e.from, e.to);
+    const yl = L.yOf(S.levels[lo].z), yh = L.yOf(S.levels[hi].z), span = Math.max(30, Math.min(56, (yl - yh) * 1.1));
+    (e.dir === 'both' ? ['up', 'down'] : [e.dir]).forEach((d, k) => {
+      const cx = L.escX + 10 + (L.slot[i] + k) * 26, a = lo % 2 ? cx + span : cx, z = lo % 2 ? cx : cx + span;
+      x.strokeStyle = dark ? '#8A8178' : '#6F665C'; x.lineWidth = 7; x.lineCap = 'round'; x.beginPath(); x.moveTo(a, yl - 2); x.lineTo(z, yh - 2); x.stroke();
+      x.strokeStyle = e.inc ? '#3BB9A9' : (dark ? '#D9D4CC' : '#E6E0D6'); x.lineWidth = 3; x.beginPath(); x.moveTo(a, yl - 3); x.lineTo(z, yh - 3); x.stroke();
+      x.strokeStyle = dark ? '#111' : '#2B1B3D'; x.lineWidth = 1.2; x.beginPath(); x.moveTo(a, yl - 9); x.lineTo(z, yh - 9); x.stroke();
+      x.lineCap = 'butt';
+      x.fillStyle = dark ? '#E2D8F0' : '#2B1B3D'; x.font = 'bold 9px Segoe UI, Arial'; x.textAlign = 'center';
+      if (yl - yh > 22) x.fillText((d === 'up' ? '↑' : '↓') + (e.qty > 1 ? e.qty : ''), (a + z) / 2 + (lo % 2 ? -9 : 9), (yl + yh) / 2 + 4);
+    });
+  });
+  /* pátio do aeroporto */
+  if (S.gates.length) {
+    const top2 = L.bodyH + 6, p0 = gatePos(L, 0, 'nar');
+    x.fillStyle = dark ? '#2C2F36' : '#7F858C'; x.fillRect(0, top2, L.W, L.gateH);
+    x.strokeStyle = '#FFD24D'; x.setLineDash([8, 6]); x.lineWidth = 1.5; x.beginPath(); x.moveTo(0, top2 + L.gateH - 8); x.lineTo(L.W, top2 + L.gateH - 8); x.stroke(); x.setLineDash([]);
+    x.fillStyle = dark ? '#5B6B7A' : '#B9D3E6'; x.fillRect(8, p0.pierY, L.W - 16, 16); x.strokeStyle = dark ? '#8FB1CC' : '#6F8FA8'; x.strokeRect(8.5, p0.pierY + 0.5, L.W - 17, 15);
+    x.fillStyle = dark ? '#E2D8F0' : '#2B1B3D'; x.font = '10px Segoe UI, Arial'; x.textAlign = 'left'; x.fillText(t('cv.pier', nf(S.pier)), 12, p0.pierY + 9);
+    S.gates.forEach((g, i) => {
+      const P = gatePos(L, i, g.cls);
+      plane(x, P.cx, P.ny, P.len, dark, P.up);
+      (G.D.pbb[g.cls] || []).forEach((tp, j) => {
+        if (!tp) return; const ok = PBB[tp].cls.includes(g.cls);
+        const dx = PBB[tp].second ? P.len * 0.14 : PBB[tp].upper ? -P.len * 0.05 : -P.len * 0.18;
+        x.fillStyle = ok ? (dark ? '#8FA3B5' : '#5E6E7C') : C.bad;
+        const y0 = P.up ? P.pierY : P.pierY + 16, y1 = P.up ? P.ny + P.len * 0.88 : P.ny + P.len * 0.12;
+        x.fillRect(P.cx + dx - 2.5 + (j - 1) * 2, Math.min(y0, y1), 5, Math.abs(y1 - y0));
+      });
+    });
+  }
+  return cv;
+}
+function gatePos(L, i, cls) {
+  const G2 = L.gate, row = L.gate.rows === 2 ? i % 2 : 0, k = L.gate.rows === 2 ? Math.floor(i / 2) : i;
+  const top2 = L.bodyH + 6, pierY = L.gate.rows === 2 ? top2 + 14 + G2.pmax + 18 : top2 + 8;
+  const len = G2.pmax * { reg: 0.5, nar: 0.68, wide: 0.86, jumbo: 1 }[cls];
+  const cx = 10 + G2.gw * k + G2.gw / 2;
+  return { cx, len, pierY, up: row === 0 && L.gate.rows === 2, ny: row === 0 && L.gate.rows === 2 ? pierY - 14 - len : pierY + 30 };
+}
+function plane(x, cx, cy, len, dark, flip) {
+  if (flip) { x.save(); x.translate(cx, cy + len / 2); x.scale(1, -1); x.translate(-cx, -(cy + len / 2)); }
+  const w = len * 0.1, c = dark ? '#E6EAF0' : '#FFFFFF', e = dark ? '#9AA5B1' : '#6B7785';
+  x.fillStyle = c; x.strokeStyle = e; x.lineWidth = 1;
+  x.beginPath(); x.ellipse(cx, cy + len * 0.5, w, len * 0.5, 0, 0, 7); x.fill(); x.stroke();
+  x.beginPath(); x.moveTo(cx - w * 0.6, cy + len * 0.38); x.lineTo(cx - len * 0.48, cy + len * 0.58); x.lineTo(cx - len * 0.46, cy + len * 0.64); x.lineTo(cx - w * 0.6, cy + len * 0.55); x.lineTo(cx + w * 0.6, cy + len * 0.55); x.lineTo(cx + len * 0.46, cy + len * 0.64); x.lineTo(cx + len * 0.48, cy + len * 0.58); x.lineTo(cx + w * 0.6, cy + len * 0.38); x.closePath(); x.fill(); x.stroke();
+  x.beginPath(); x.moveTo(cx - len * 0.17, cy + len * 0.93); x.lineTo(cx, cy + len * 0.84); x.lineTo(cx + len * 0.17, cy + len * 0.93); x.lineTo(cx, cy + len * 0.97); x.closePath(); x.fill(); x.stroke();
+  x.fillStyle = '#3A86FF'; x.fillRect(cx - w * 0.5, cy + len * 0.06, w, len * 0.03);
+  if (flip) x.restore();
+}
+/* ---------- pessoinhas ---------- */
+function person(x, px, py, s, color, kind) {
+  x.fillStyle = color;
+  x.beginPath(); x.arc(px, py - s * 2.6, s * 0.75, 0, 7); x.fill();
+  x.fillRect(px - s * 0.7, py - s * 1.9, s * 1.4, s * 1.9);
+  if (kind === 'w') { x.strokeStyle = color; x.lineWidth = 1; x.beginPath(); x.arc(px + s * 0.6, py - s * 0.6, s * 0.7, 0, 7); x.stroke(); }
+  if (kind === 'k' || kind === 'f' || kind === 'b' || kind === 'm' || kind === 'c') { x.fillRect(px + s * 0.9, py - s * 1.3, s * 1.8, s * 1.3); }
+}
+/* ---------- desenho por quadro ---------- */
+function draw() {
+  if (!G.scn) return;
+  const cv = $('#cv'), L = layout(), dpr = window.devicePixelRatio || 1, S = G.scn, dark = themeDark(), C = colors();
+  if (cv.width !== Math.round(L.W * dpr) || cv.height !== Math.round(L.H * dpr)) { cv.width = Math.round(L.W * dpr); cv.height = Math.round(L.H * dpr); cv.style.width = L.W + 'px'; cv.style.height = L.H + 'px'; }
+  const key = bgKey(L);
+  if (BG.key !== key) { BG.canvas = drawBackground(L, dpr); BG.key = key; }
+  const x = cv.getContext('2d'); x.setTransform(1, 0, 0, 1, 0, 0); x.drawImage(BG.canvas, 0, 0); x.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const sim = G.sim, now = sim ? sim.t : 0, ps = Math.max(1.1, Math.min(2.6, L.per / 9));
+  /* cabines, cabos, contrapesos, pistões */
+  L.groups.forEach((gr) => {
+    const g = gr.g, T = LIFTS[g.type], fl = served(S, g);
+    if (!gr.n) return;
+    const ys = fl.map((f) => L.yOf(S.levels[f].z)), sTop = Math.min(...ys) - L.ch - 6, sBot = Math.max(...ys) + 6;
+    const ch = L.ch * (T.double ? 1.9 : 1), sg = sim && sim.groups[gr.gi];
+    for (let c = 0; c < gr.n; c++) {
+      let yy = S.levels[g.lobby].z, st = 'idle', open = 0, inside = 0;
+      if (sg && sg.cars[c]) {
+        const car = sg.cars[c];
+        yy = car.st === 'moving' ? car.y0 + (car.y1 - car.y0) * easePos(Math.min(1, (now - car.t0) / Math.max(0.01, car.t1 - car.t0))) : car.y;
+        st = car.st; inside = car.load.reduce((s, a) => s + a.n, 0);
+        if (st === 'doors') { const e = now - (car.td0 || car.t1 - 5), r = car.t1 - now; open = Math.max(0, Math.min(1, e / 1.4, r / 1.4)); }
+      }
+      const y = L.yOf(yy), cx = gr.x + c * (L.carW + 5);
+      if (TRACTION[g.type]) {
+        const cwY = sBot - (y - sTop) * 0.92 + (sTop - sBot) * 0.04;
+        x.strokeStyle = dark ? '#BBB' : '#444'; x.lineWidth = 0.8;
+        x.beginPath(); x.moveTo(cx + L.carW / 2, sTop); x.lineTo(cx + L.carW / 2, y - ch); x.stroke();
+        x.beginPath(); x.moveTo(cx + L.carW - 1.5, sTop); x.lineTo(cx + L.carW - 1.5, cwY); x.stroke();
+        x.fillStyle = dark ? '#8A8A8A' : '#4A4A4A'; x.fillRect(cx + L.carW - 3, cwY, 3, Math.max(4, ch * 0.7));
+      }
+      if (HYDRAULIC[g.type]) { x.fillStyle = dark ? '#B8C2CC' : '#9AA6B2'; x.fillRect(cx + L.carW / 2 - 1.5, y, 3, sBot + 8 - y); }
+      /* caixa da cabine */
+      const body = dark ? '#3B3350' : '#F7F3EC', light = dark ? '#FFE9A8' : '#FFF9E3';
+      x.fillStyle = LIFT_COLOR[g.type]; x.fillRect(cx - 1, y - ch - 1, L.carW + 2, ch + 2);
+      const decks = T.double ? 2 : 1, dh = ch / decks;
+      for (let d = 0; d < decks; d++) {
+        const dy = y - ch + d * dh;
+        x.fillStyle = st === 'doors' ? light : body; x.fillRect(cx + 0.5, dy + 0.5, L.carW - 1, dh - 1);
+        if (L.carW >= 6) { const half = (L.carW - 1) / 2, gap = half * open; x.fillStyle = dark ? '#8B93A0' : '#B7BEC8'; x.fillRect(cx + 0.5, dy + 0.5, half - gap, dh - 1); x.fillRect(cx + 0.5 + half + gap, dy + 0.5, half - gap, dh - 1); x.strokeStyle = dark ? '#5B6370' : '#8D96A3'; x.lineWidth = 0.6; if (open < 0.05) { x.beginPath(); x.moveTo(cx + 0.5 + half, dy + 1); x.lineTo(cx + 0.5 + half, dy + dh - 1); x.stroke(); } }
+        /* corte: os passageiros aparecem por cima das portas, para a lotação ficar visível */
+        const perRow = Math.max(1, Math.floor((L.carW - 1) / (ps * 2.1)));
+        const show = Math.min(Math.ceil(inside / decks), perRow * (dh > ps * 7 ? 2 : 1));
+        for (let k = 0; k < show; k++) { const row = Math.floor(k / perRow), col = k % perRow; person(x, cx + ps * 1.2 + col * ps * 2.1, dy + dh - 1 - row * ps * 3, ps * 0.8, dark ? '#F2E6FF' : '#2B1B3D', 'p'); }
+      }
+    }
+    /* filas nos andares: pessoinhas */
+    if (sg) fl.forEach((f) => {
+      const q = sg.wait[f]; if (!q || !q.length) return;
+      const n = q.reduce((s, a) => s + a.n, 0), y = L.yOf(S.levels[f].z), maxShow = Math.max(1, Math.floor(22 / (ps * 2)));
+      let k = 0;
+      for (const a of q) { if (k >= maxShow) break; person(x, gr.qx + 20 - k * ps * 2, y - 1, ps, KIND_COLOR[a.k], a.k); k++; }
+      if (n > maxShow) { x.font = 'bold 9px Segoe UI, Arial'; x.textAlign = 'right'; const txt = '+' + (n > 999 ? '999' : n - maxShow); x.fillStyle = dark ? '#000' : '#FFF'; x.fillText(txt, gr.qx + 21, y - ps * 4 - 4); x.fillStyle = KIND_COLOR[q[0].k]; x.fillText(txt, gr.qx + 20, y - ps * 4 - 5); }
+    });
+  });
+  /* escadas rolantes: degraus em movimento, passageiros e filas */
+  G.D.escs.forEach((e, i) => {
+    const lo = Math.min(e.from, e.to), hi = Math.max(e.from, e.to);
+    const yl = L.yOf(S.levels[lo].z) - 3, yh = L.yOf(S.levels[hi].z) - 3, span = Math.max(30, Math.min(56, (yl - yh + 3) * 1.1));
+    (e.dir === 'both' ? ['up', 'down'] : [e.dir]).forEach((d, k) => {
+      const cx = L.escX + 10 + (L.slot[i] + k) * 26, a = lo % 2 ? cx + span : cx, z = lo % 2 ? cx : cx + span;
+      const run = !reduced() && G.running, ph = run ? (now * 0.5) % 1 : 0;
+      x.fillStyle = dark ? '#6F665C' : '#9C9387';
+      for (let s2 = 0; s2 < 6; s2++) { const f = (s2 / 6 + (d === 'down' ? 1 - ph : ph)) % 1; x.fillRect(a + (z - a) * f - 1, yl + (yh - yl) * f - 1, 2, 2); }
+      const pe = sim && sim.escs[i] ? sim.escs[i].find((q) => (d === 'up' ? q.a === lo : q.a === hi)) : null;
+      if (pe) {
+        pe.ride.slice(0, 18).forEach(([tEnd, ag]) => { let f = 1 - (tEnd - now) / pe.tt; f = Math.max(0, Math.min(1, f)); if (d === 'down') f = 1 - f; person(x, a + (z - a) * f, yl + (yh - yl) * f - 1, ps * 0.9, KIND_COLOR[ag.k], ag.k); });
+        const n = pe.qn || 0;
+        if (n > 0) { const ex = d === 'up' ? a : z, ey = d === 'up' ? yl : yh, dirx = (d === 'up' ? (lo % 2 ? 1 : -1) : (lo % 2 ? -1 : 1)); const m = Math.min(5, n); for (let j = 0; j < m; j++) person(x, ex + dirx * (6 + j * ps * 2), ey + 2, ps, KIND_COLOR.p, 'p'); x.font = 'bold 9px Segoe UI, Arial'; x.textAlign = 'center'; x.fillStyle = dark ? '#FFF' : '#2B1B3D'; x.fillText(n > 999 ? '999+' : String(n), ex + dirx * (8 + m * ps * 2), ey - ps * 4); }
+      }
+    });
+  });
+  /* metrô: trem chegando e partindo */
+  if (S.train && sim) {
+    const last = S.bursts.filter((b) => b.t <= now + 8).pop();
+    if (last) {
+      const dt = now - last.t, lp = last.o, y = L.yOf(S.levels[lp].z);
+      if (dt > -8 && dt < 30) {
+        const len = Math.min(L.bx1 - L.bx0 - 20, 260), pos = dt < 0 ? (dt / 8) : dt > 22 ? (dt - 22) / 8 : 0;
+        const sx = Math.max(L.bx0, ...L.groups.filter((g) => g.n).map((g) => g.x + g.n * (L.carW + 5) + 6));
+        const ex = G.D.escs.length ? L.escX - 4 : L.bx1, len2 = Math.min(len, ex - sx - 12);
+        const x0 = sx + 6 + pos * (ex - sx);
+        x.save(); x.beginPath(); x.rect(sx, y - 30, ex - sx, 40); x.clip();
+        for (let k = 0; k < 4; k++) { const cx = x0 + k * (len2 / 4); x.fillStyle = '#C2185B'; x.fillRect(cx, y - Math.min(18, L.per * 0.8), len2 / 4 - 3, Math.min(16, L.per * 0.72)); x.fillStyle = dark ? '#FFE9A8' : '#E3F2FD'; for (let w = 0; w < 3; w++) x.fillRect(cx + 4 + w * (len2 / 12), y - Math.min(15, L.per * 0.66), len2 / 18, Math.min(5, L.per * 0.25)); }
+        x.restore();
+      }
+    }
+  }
+  /* aeroporto: embarque nos portões */
+  if (S.gates.length) {
+    S.gates.forEach((g, i) => {
+      const P = gatePos(L, i, g.cls);
+      const tb = boardingTime(g.cls, g.pax, (G.D.pbb[g.cls]) || []) * 60;
+      const p = sim ? Math.max(0, Math.min(1, (now - g.t) / tb)) : 0, late = tb / 60 > AIRCRAFT[g.cls].target;
+      const y0 = P.up ? P.pierY : P.pierY + 16, y1 = P.up ? P.ny + P.len * 0.88 : P.ny + P.len * 0.12;
+      if (sim && now >= g.t && p < 1 && G.running) for (let k = 0; k < 3; k++) { const f = ((now * 0.7 + k / 3) % 1); person(x, P.cx - P.len * 0.18, y0 + (y1 - y0) * f + 2, 1.1, KIND_COLOR.p, 'p'); }
+      const by = P.up ? P.ny - 9 : P.ny + P.len + 4, bw = Math.min(L.gate.gw * 0.8, 50);
+      x.fillStyle = dark ? '#555' : '#D8D8D8'; x.fillRect(P.cx - bw / 2, by, bw, 4);
+      x.fillStyle = late ? C.bad : C.ok; x.fillRect(P.cx - bw / 2, by, bw * p, 4);
+    });
+  }
+  cv.setAttribute('aria-label', t('cv.aria', t('name.' + S.kind, S.name), S.levels.length, G.D.lifts.reduce((a, g) => a + g.qty, 0), G.D.escs.reduce((a, e) => a + e.qty, 0)));
+}
+/* posição ao longo da viagem com aceleração e frenagem suaves (só para o desenho) */
+function easePos(f) { return f < 0.5 ? 2 * f * f : 1 - 2 * (1 - f) * (1 - f); }
+function drawStatic() { draw(); }
+
+/* ===================== Legenda, janelas, textos fixos ===================== */
+function renderLegend() {
+  const used = [...new Set(G.D.lifts.map((g) => g.type))];
+  $('#legend').innerHTML = used.map((k) => `<span><i style="background:${LIFT_COLOR[k]}"></i>${esc(t('lt.' + k))}</span>`).join('') + (G.D.escs.length ? `<span><i style="background:#FFB703"></i>${esc(t('et.esc'))}</span>` : '') + `<span>${esc(t('leg.queue'))}</span>`;
+}
+function renderHelp() {
+  const li = (k) => `<li>${esc(t(k))}</li>`;
+  $('#helpBody').innerHTML = `<p>${esc(t('help.intro'))}</p>
+  <h3>${esc(t('help.how'))}</h3><ol>${['help.s1', 'help.s2', 'help.s3', 'help.s4', 'help.s5'].map(li).join('')}</ol>
+  <h3>${esc(t('help.types'))}</h3><ul>${LIFT_ORDER.map((k) => `<li><b>${esc(t('lt.' + k))}</b>: ${esc(t('ld.' + k))} ${esc(t('ld.specs', LIFTS[k].speeds.map((v) => nf(v, v < 1 ? 2 : v % 1 ? 1 : 0)).join('–'), LIFTS[k].maxTravel, LIFTS[k].maxStops))}</li>`).join('')}
+  <li><b>${esc(t('et.esc'))}</b>: ${esc(t('ld.esc'))}</li><li><b>${esc(t('et.inc'))}</b>: ${esc(t('ld.inc'))}</li><li><b>${esc(t('walk.title'))}</b>: ${esc(t('ld.walk'))}</li></ul>
+  <h3>${esc(t('pbb.title'))}</h3><ul>${PBB_ORDER.map((k) => `<li><b>${esc(t('pbbt.' + k))}</b>: ${esc(t('pd.' + k))}</li>`).join('')}</ul>
+  <h3>${esc(t('help.metrics'))}</h3><ul>${['m.hc5', 'm.interval', 'm.awt', 'm.maxQ', 'm.clear', 'm.flights', 'm.walk'].map((k) => `<li><b>${esc(t(k))}</b>: ${esc(t(k + '.d'))}</li>`).join('')}</ul>
+  <h3>${esc(t('help.stars'))}</h3><p>${esc(t('help.starsT'))}</p>
+  <h3>${esc(t('help.model'))}</h3><ul>${['help.m1', 'help.m2', 'help.m3', 'help.m4', 'help.m5'].map(li).join('')}</ul>
+  <h3>${esc(t('help.src'))}</h3><p>${esc(t('help.srcT'))}</p>
+  <ul class="note"><li><a href="https://www.iso.org/standard/76389.html" rel="noopener" target="_blank">ISO 8100-32:2020</a> · <a href="https://www.cibse.org/knowledge-research/knowledge-portal/guide-d-transportation-systems-in-buildings-2020" rel="noopener" target="_blank">CIBSE Guide D</a></li>
+  <li><a href="https://amadatech.com/de/escalator-speed-and-capacity/" rel="noopener" target="_blank">AmadaTECH, “Escalator speed and capacity”</a></li>
+  <li><a href="https://www.adelte.com/airports/passenger-boarding-bridges/" rel="noopener" target="_blank">ADELTE, “Passenger Boarding Bridges for Airports”</a></li>
+  <li><a href="https://www.kone.com/en-in/blog/different-types-of-elevators.html" rel="noopener" target="_blank">KONE, “Different Types of Elevators”</a></li>
+  <li><a href="https://genorma.com/en/standards/en-81-72-2020" rel="noopener" target="_blank">EN 81-72:2020</a></li></ul>`;
+}
+function renderNewDialog() {
+  const s = store.get('newPrefs') || { kind: '', diff: 1 };
+  $('#kindChoice').innerHTML = `<label><input type="radio" name="kind" value=""${!s.kind ? ' checked' : ''}> ${esc(t('new.random'))}</label>` + KINDS.map((k) => `<label><input type="radio" name="kind" value="${k}"${s.kind === k ? ' checked' : ''}> ${kindSVG(k).replace('<svg', '<svg width="18" height="18"')} ${esc(t('kind.' + k))}</label>`).join('');
+  $('#diffChoice').innerHTML = [0, 1, 2].map((d) => `<label><input type="radio" name="diff" value="${d}"${s.diff === d ? ' checked' : ''}> ${esc(t('diff.' + d))}</label>`).join('');
+}
+function applyStatic() {
+  document.documentElement.lang = HTML_LANG[LANG];
+  document.title = t('title') + ' · Giovani Perotto Mesquita';
+  document.querySelectorAll('[data-t]').forEach((e) => { e.textContent = t(e.dataset.t); });
+  document.querySelectorAll('[data-ta]').forEach((e) => { e.setAttribute('aria-label', t(e.dataset.ta)); e.title = t(e.dataset.ta); });
+  $('#lang').value = LANG;
+}
+function renderAll() { applyStatic(); renderBrief(); renderDesign(); renderResults(); renderLegend(); updateRunBtn(); renderLive(); draw(); }
+function setLang(L, push) { if (!LANGS.includes(L)) L = 'pt'; LANG = L; store.set('lang', L); if (push !== false) history.replaceState(null, '', L === 'pt' ? location.pathname + location.search : '#' + L); renderAll(); if ($('#dHelp').open) renderHelp(); if ($('#dNew').open) renderNewDialog(); }
+
+/* ===================== Eventos ===================== */
+$('#design').addEventListener('change', onDesignChange);
+$('#design').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.add === 'lift') addLift();
+  else if (b.dataset.add === 'esc') addEsc();
+  else if (b.dataset.rm) { const k = b.dataset.rm[0], i = +b.dataset.rm.slice(1); (k === 'l' ? G.D.lifts : G.D.escs).splice(i, 1); changed(); $('#design').querySelector('[data-add="lift"]').focus(); }
+  else if (b.id === 'bRef') { if (!G.helped && !confirm(t('ref.confirm'))) return; G.D = sanitize(refDesign(G.scn)); G.helped = true; changed(); toast(t('ref.done')); }
+  else if (b.id === 'bClear') { if (!confirm(t('clear.confirm'))) return; G.D = { lifts: [], escs: [], walk: 0, pbb: {} }; changed(); }
+});
+$('#results').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.id === 'bAgain') { $('#design').scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth' }); const f = $('#design select, #design button'); if (f) f.focus(); }
+  if (b.id === 'bNext') openNew();
+});
+$('#bRun').addEventListener('click', runToggle);
+$('#bInstant').addEventListener('click', instant);
+$('#bReset').addEventListener('click', () => { stopSim(); G.sim = null; G.result = null; renderResults(); renderLive(); draw(); updateRunBtn(); });
+function openNew() { renderNewDialog(); $('#dNew').showModal(); }
+$('#bNew').addEventListener('click', openNew);
+$('#bNewCancel').addEventListener('click', () => $('#dNew').close());
+$('#fNew').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const f = e.target, kind = (f.querySelector('[name=kind]:checked') || {}).value || '', diff = +((f.querySelector('[name=diff]:checked') || {}).value || 1);
+  const raw = f.seed.value.trim(), seed = raw && /^\d{1,9}$/.test(raw) ? +raw : (Math.random() * 1e9) >>> 0;
+  let k = kind || null;
+  if (k && !KIND_DIFF[k].includes(diff)) { toast(t('new.adjusted')); }
+  const d = k && !KIND_DIFF[k].includes(diff) ? KIND_DIFF[k][0] === 2 ? 2 : KIND_DIFF[k].includes(1) ? 1 : 2 : diff;
+  store.set('newPrefs', { kind, diff });
+  $('#dNew').close(); newScenario(seed, k, d);
+});
+$('#bHelp').addEventListener('click', () => { renderHelp(); $('#dHelp').showModal(); $('#hHelp').focus(); $('#dHelp').scrollTop = 0; });
+$('#bHelpClose').addEventListener('click', () => $('#dHelp').close());
+$('#bTheme').addEventListener('click', () => { const th = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = th; store.set('theme', th); draw(); });
+$('#lang').addEventListener('change', (e) => setLang(e.target.value));
+window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (LANGS.includes(h) && h !== LANG) setLang(h, false); });
+let rz = 0; window.addEventListener('resize', () => { cancelAnimationFrame(rz); rz = requestAnimationFrame(draw); });
+
+/* ===================== Início ===================== */
+(function init() {
+  const th = store.get('theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  document.documentElement.dataset.theme = th;
+  const h = location.hash.slice(1), saved = store.get('lang'), nav = (navigator.language || 'pt').slice(0, 2).toLowerCase();
+  LANG = LANGS.includes(h) ? h : LANGS.includes(saved) ? saved : LANGS.includes(nav) ? nav : 'pt';
+  if (!load()) { G.scn = null; newScenario((Math.random() * 1e9) >>> 0, null, 1); return; }
+  renderAll();
+})();
+
+</script>
+</body>
+</html>

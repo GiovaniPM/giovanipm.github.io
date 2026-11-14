@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; base-uri 'none'; form-action 'none'">
+<title>General · Giovani Perotto Mesquita</title>
+<meta name="description" content="General: jogo de dados com cinco dados e três lançamentos por vez, com regras brasileiras (Bozó/General) ou americanas, contra o computador ou entre amigos. Em português, inglês, italiano e espanhol.">
+<meta name="author" content="Giovani Perotto Mesquita">
+<style>
+:root{
+  --bg:#FFF7EC; --surface:#FFFFFF; --surface-2:#FBF1E3; --ink:#2B1B3D; --text:#3E3350; --muted:#756986; --line:#F1E2CF;
+  --accent:#0E8074; --accent-ink:#FFFFFF; --accent-soft:#E2F6F2; --navy:#5B2A86; --gold:#FFB703; --gold-ink:#B35300; --gold-soft:#FFF1C9;
+  --coral:#C2185B; --felt:#0E6B60; --felt-2:#0A4F47; --die:#FFFDF8; --pip:#2B1B3D; --bad:#B3261E;
+  --sans:"Segoe UI","Helvetica Neue",Arial,sans-serif; --serif:Georgia,"Times New Roman",serif; --radius:14px;
+}
+:root[data-theme="dark"]{
+  --bg:#1A1328; --surface:#241A36; --surface-2:#2D2244; --ink:#F7F0FF; --text:#E2D8F0; --muted:#A898C0; --line:#3A2D52;
+  --accent:#5FD3C4; --accent-ink:#10231F; --accent-soft:#1D3A38; --navy:#C9A7F5; --gold:#FFC94D; --gold-ink:#FFC94D; --gold-soft:#3A2E12;
+  --coral:#FF6F91; --felt:#0D4A43; --felt-2:#08302C; --die:#F4EFE6; --pip:#2B1B3D; --bad:#FF8A80;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-tap-highlight-color:transparent}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+button:disabled{cursor:default;opacity:.45}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.top{display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap;padding:.6rem 1rem;background:var(--surface);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:.6rem;min-width:0}
+.brand svg{width:38px;height:38px;flex:none}
+.brand h1{font-family:var(--serif);font-size:1.35rem;margin:0;color:var(--ink);line-height:1.1}
+.brand p{margin:0;font-size:.82rem;color:var(--muted)}
+.tools{display:flex;gap:.4rem;flex-wrap:wrap;align-items:center}
+.btn{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:.45rem .8rem;min-height:40px;color:var(--ink)}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.btn.big{font-size:1.05rem;padding:.6rem 1.3rem;min-height:48px}
+select{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:.4rem .5rem;min-height:40px;color:var(--ink)}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(330px,1.05fr);gap:1rem;max-width:1120px;margin:0 auto;padding:1rem}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1rem}
+.tray{display:flex;flex-direction:column;gap:.8rem;min-width:0}
+.status{min-height:2.8em;color:var(--ink);font-weight:600;line-height:1.35}
+.status small{display:block;font-weight:400;color:var(--muted)}
+/* mesa: moldura de madeira, feltro em perspectiva e dados em 3D */
+.table{--ds:clamp(42px,9.5vw,60px);padding:14px;border-radius:22px;
+  background:repeating-linear-gradient(97deg,rgba(255,255,255,.05) 0 2px,transparent 2px 9px),repeating-linear-gradient(90deg,rgba(0,0,0,.08) 0 1px,transparent 1px 23px),linear-gradient(180deg,#8A5530,#5E3518 55%,#4A2911);
+  box-shadow:0 10px 24px rgba(0,0,0,.35),inset 0 2px 0 rgba(255,255,255,.18),inset 0 -3px 0 rgba(0,0,0,.35)}
+.felt{position:relative;height:clamp(250px,40vw,320px);border-radius:12px;overflow:hidden;perspective:900px;perspective-origin:50% 0%;
+  background:#0B5A50;box-shadow:inset 0 0 0 2px rgba(0,0,0,.35),inset 0 8px 18px rgba(0,0,0,.45)}
+.plane{position:absolute;left:-4%;right:-4%;top:-6%;bottom:-14%;transform-origin:50% 100%;transform:rotateX(30deg);transform-style:preserve-3d;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .28 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"),radial-gradient(ellipse at 50% 40%,var(--felt) 0%,var(--felt-2) 85%)}
+.rail{position:absolute;left:7%;right:7%;bottom:12%;height:22%;border-radius:14px;background:linear-gradient(180deg,rgba(0,0,0,.28),rgba(0,0,0,.12));box-shadow:inset 0 3px 8px rgba(0,0,0,.45),0 1px 0 rgba(255,255,255,.12)}
+.rail span{position:absolute;left:12px;top:-1.35em;font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,241,201,.75)}
+.shadow{position:absolute;width:var(--ds);height:var(--ds);margin:calc(var(--ds)/-2) 0 0 calc(var(--ds)/-2);border-radius:22%;background:rgba(0,0,0,.5);filter:blur(7px);transform:translate(10%,14%);
+  transition:left .9s cubic-bezier(.2,.7,.3,1),top .9s cubic-bezier(.2,.7,.3,1),opacity .3s;pointer-events:none}
+.die{position:absolute;width:var(--ds);height:var(--ds);margin:calc(var(--ds)/-2) 0 0 calc(var(--ds)/-2);padding:0;border:0;background:none;transform-style:preserve-3d;
+  transition:left .9s cubic-bezier(.2,.7,.3,1),top .9s cubic-bezier(.2,.7,.3,1),transform .9s cubic-bezier(.2,.7,.3,1),opacity .3s;border-radius:18%}
+.die:disabled{opacity:1}
+.die.idle{opacity:.55}
+.die.moving{pointer-events:none}
+.die:focus-visible{outline:3px solid var(--gold);outline-offset:4px}
+.hop{position:absolute;inset:0;transform-style:preserve-3d;transform:translateZ(calc(var(--ds)/2))}
+.hop.go{animation:hop .9s cubic-bezier(.3,.6,.4,1)}
+@keyframes hop{0%{transform:translateZ(calc(var(--ds)*2.2))}35%{transform:translateZ(calc(var(--ds)/2))}55%{transform:translateZ(calc(var(--ds)*.95))}75%{transform:translateZ(calc(var(--ds)/2))}87%{transform:translateZ(calc(var(--ds)*.62))}100%{transform:translateZ(calc(var(--ds)/2))}}
+.cube{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .9s cubic-bezier(.15,.6,.25,1)}
+.face,.core{position:absolute;inset:0;border-radius:18%}
+.core{inset:6%}
+.face{display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:13%;backface-visibility:hidden;
+  background:radial-gradient(circle at 30% 25%,#FFFFFF 0%,var(--die) 45%,#E6DAC6 100%);box-shadow:inset 0 0 0 1px rgba(120,95,60,.25),inset -3px -4px 8px rgba(120,95,60,.22)}
+.core{background:#E3D7C3}
+.face i{width:72%;height:72%;margin:auto;border-radius:50%;background:radial-gradient(circle at 38% 32%,#5A4670,var(--pip) 70%);box-shadow:inset 0 1.5px 2px rgba(0,0,0,.65),0 .5px 0 rgba(255,255,255,.8)}
+.die.held .face{box-shadow:inset 0 0 0 3px var(--gold),inset -3px -4px 8px rgba(120,95,60,.22)}
+.f1{transform:translateZ(calc(var(--ds)/2))}.f6{transform:rotateY(180deg) translateZ(calc(var(--ds)/2))}
+.f2{transform:rotateY(90deg) translateZ(calc(var(--ds)/2))}.f5{transform:rotateY(-90deg) translateZ(calc(var(--ds)/2))}
+.f3{transform:rotateX(90deg) translateZ(calc(var(--ds)/2))}.f4{transform:rotateX(-90deg) translateZ(calc(var(--ds)/2))}
+.c1{transform:rotateY(90deg)}.c2{transform:rotateX(90deg)}
+.rollrow{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;justify-content:center}
+.pips{display:flex;gap:6px}
+.pips i{width:12px;height:12px;border-radius:50%;border:2px solid var(--accent);display:block}
+.pips i.on{background:var(--accent)}
+.muted{color:var(--muted)}
+.small{font-size:.82rem}
+.logwrap h2,.sheet h2{font-size:.95rem;margin:0 0 .4rem;color:var(--ink)}
+.log{list-style:none;margin:0;padding:0;max-height:220px;overflow:auto;font-size:.88rem;display:flex;flex-direction:column-reverse;gap:.2rem}
+.log li{padding:.25rem .4rem;border-radius:6px;background:var(--surface-2)}
+.sheet{min-width:0}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{border-bottom:1px solid var(--line);padding:.25rem .3rem;text-align:center;height:2.35rem}
+th:first-child,td:first-child{text-align:left}
+thead th{font-size:.8rem;color:var(--muted);font-weight:700;vertical-align:bottom}
+thead th.cur{color:var(--ink);background:var(--gold-soft);border-radius:8px 8px 0 0}
+thead th .nm{display:block;max-width:7.5em;margin:0 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+thead th .kd{font-weight:400;font-size:.72rem}
+td.cur{background:var(--gold-soft)}
+.catn{font-weight:600;color:var(--ink)}
+.catn small{display:block;font-weight:400;color:var(--muted);font-size:.74rem}
+tr.sub td{font-weight:700;background:var(--surface-2);color:var(--ink);height:2rem}
+tr.total td{font-weight:800;font-size:1.02rem;color:var(--ink);background:var(--accent-soft)}
+.val{font-weight:700;color:var(--ink)}
+.val.zero{color:var(--muted);text-decoration:line-through}
+.cell{width:100%;min-height:2rem;border:1.5px dashed var(--accent);border-radius:8px;background:transparent;color:var(--accent);font-weight:700;font-style:italic;padding:.1rem .2rem}
+.cell.z{border-color:var(--muted);color:var(--muted)}
+.cell:hover,.cell:focus-visible{background:var(--accent);color:var(--accent-ink);font-style:normal}
+.cell .b{font-size:.7rem;font-style:normal;display:block}
+dialog{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);color:var(--text);padding:1.1rem 1.2rem;width:min(640px,calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow:auto}
+dialog::backdrop{background:rgba(20,10,30,.55)}
+dialog h2{font-family:var(--serif);margin:0 0 .7rem;color:var(--ink)}
+dialog h3{font-size:1rem;margin:1rem 0 .35rem;color:var(--ink)}
+fieldset{border:1px solid var(--line);border-radius:10px;padding:.6rem .8rem;margin:0 0 .8rem}
+legend{font-weight:700;color:var(--ink);padding:0 .3rem}
+.opt{display:flex;gap:.55rem;align-items:flex-start;padding:.35rem 0}
+.opt input{margin-top:.25rem;width:18px;height:18px;flex:none}
+.opt span small{display:block;color:var(--muted);font-size:.82rem}
+.prow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:.4rem;margin-bottom:.4rem}
+.prow input,.seed input{width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:.45rem .55rem;min-height:40px;color:var(--ink)}
+.seed{display:grid;gap:.25rem;font-size:.9rem}
+.row{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:flex-end;margin-top:.8rem}
+.rules{padding-left:1.15rem;margin:.2rem 0;display:grid;gap:.35rem;line-height:1.45;font-size:.93rem}
+.rank{list-style:none;padding:0;margin:.4rem 0;display:grid;gap:.35rem}
+.rank li{display:flex;justify-content:space-between;gap:1rem;padding:.45rem .7rem;border-radius:9px;background:var(--surface-2);font-weight:600}
+.rank li:first-child{background:var(--gold-soft);color:var(--ink)}
+.note{background:var(--gold-soft);border-radius:10px;padding:.55rem .75rem;font-size:.88rem;color:var(--ink)}
+a{color:var(--accent)}
+@media (max-width:900px){.layout{grid-template-columns:minmax(0,1fr);padding:.6rem}}
+@media (max-width:480px){
+  .top{padding:.5rem .6rem}.brand p{display:none}.btn{padding:.4rem .55rem}
+  .card{padding:.7rem}th,td{padding:.2rem .15rem;font-size:.85rem}
+  .catn small{display:none}thead th .nm{max-width:4.6em}
+  .prow{grid-template-columns:minmax(0,1fr) auto;padding-bottom:.4rem;border-bottom:1px solid var(--line)}.prow input{grid-column:1/-1}
+}
+@media (prefers-reduced-motion:reduce){.die,.shadow,.cube{transition:none}.hop.go{animation:none}}
+@media print{.tools,.tray .rollrow,.table{display:none}body{background:#fff}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <svg viewBox="0 0 40 40" aria-hidden="true"><rect x="3" y="3" width="34" height="34" rx="8" fill="#0E8074"/><circle cx="12" cy="12" r="3.3" fill="#fff"/><circle cx="28" cy="12" r="3.3" fill="#fff"/><circle cx="20" cy="20" r="3.3" fill="#FFB703"/><circle cx="12" cy="28" r="3.3" fill="#fff"/><circle cx="28" cy="28" r="3.3" fill="#fff"/></svg>
+    <div><h1 data-t="title">General</h1><p data-t="subtitle"></p></div>
+  </div>
+  <div class="tools">
+    <button type="button" class="btn" id="bNew" data-t="btn.new"></button>
+    <button type="button" class="btn" id="bRules" data-t="btn.rules"></button>
+    <label class="sr" for="lang" data-t="lang"></label>
+    <select id="lang"><option value="pt">PT</option><option value="en">EN</option><option value="it">IT</option><option value="es">ES</option></select>
+    <button type="button" class="btn" id="bTheme" aria-label="" data-ta="btn.theme">◐</button>
+  </div>
+</header>
+
+<main class="layout" id="game">
+  <section class="card tray" aria-labelledby="hTray">
+    <h2 class="sr" id="hTray" data-t="tray"></h2>
+    <div class="status" id="status" aria-live="polite"></div>
+    <div class="table"><div class="felt"><div class="plane" id="dice" role="group"><div class="rail"><span data-t="rail"></span></div></div></div></div>
+    <div class="rollrow">
+      <button type="button" class="btn primary big" id="bRoll"></button>
+      <div class="pips" id="pips" aria-hidden="true"><i></i><i></i><i></i></div>
+    </div>
+    <p class="muted small" id="help"></p>
+    <div class="logwrap"><h2 data-t="log"></h2><ol class="log" id="log" aria-live="polite"></ol></div>
+    <p class="muted small" id="seedInfo"></p>
+  </section>
+  <section class="card sheet" aria-labelledby="hSheet">
+    <h2 id="hSheet" data-t="sheet"></h2>
+    <div class="scroll"><table id="sheetT"></table></div>
+  </section>
+</main>
+
+<dialog id="dSetup" aria-labelledby="hSetup">
+  <form method="dialog" id="fSetup">
+    <h2 id="hSetup" data-t="setup.title"></h2>
+    <fieldset><legend data-t="setup.rules"></legend>
+      <label class="opt"><input type="radio" name="rules" value="br" checked><span><b data-t="r.br"></b><small data-t="r.brD"></small></span></label>
+      <label class="opt"><input type="radio" name="rules" value="us"><span><b data-t="r.us"></b><small data-t="r.usD"></small></span></label>
+      <label class="opt" id="optGen"><input type="checkbox" name="genWins"><span><span data-t="opt.genWins"></span><small data-t="opt.genWinsD"></small></span></label>
+    </fieldset>
+    <fieldset><legend data-t="setup.players"></legend>
+      <div id="pList"></div>
+      <button type="button" class="btn" id="bAddP" data-t="p.add"></button>
+    </fieldset>
+    <label class="seed"><span data-t="setup.seed"></span><input name="seed" inputmode="numeric" autocomplete="off"><small class="muted" data-t="setup.seedHelp"></small></label>
+    <div class="row"><button type="button" class="btn" id="bCancel" data-t="close"></button><button type="submit" class="btn primary" data-t="setup.start"></button></div>
+  </form>
+</dialog>
+
+<dialog id="dRules" aria-labelledby="hRules">
+  <h2 id="hRules" data-t="btn.rules" tabindex="-1" autofocus></h2>
+  <p data-t="rd.common"></p>
+  <h3 data-t="r.br"></h3>
+  <ul class="rules" id="rBr"></ul>
+  <h3 data-t="r.us"></h3>
+  <ul class="rules" id="rUs"></ul>
+  <h3 data-t="rd.keysH"></h3>
+  <p data-t="rd.keys"></p>
+  <p class="note" data-t="rd.var"></p>
+  <h3 data-t="rd.src"></h3>
+  <ul class="rules small">
+    <li><a href="https://valorfinal.com.br/jogos/bozo" rel="noopener" target="_blank">Valor Final, “Bozó”</a></li>
+    <li><a href="https://pt.wikipedia.org/wiki/General_(jogo)" rel="noopener" target="_blank">Wikipédia, “General (jogo)”</a></li>
+    <li><a href="https://en.wikipedia.org/wiki/Yahtzee" rel="noopener" target="_blank">Wikipedia, “Yahtzee”</a></li>
+    <li><a href="https://en.wikipedia.org/wiki/Yacht_(dice_game)" rel="noopener" target="_blank">Wikipedia, “Yacht (dice game)”</a></li>
+  </ul>
+  <div class="row"><button type="button" class="btn primary" id="bRulesClose" data-t="close"></button></div>
+</dialog>
+
+<dialog id="dEnd" aria-labelledby="hEnd">
+  <h2 id="hEnd" data-t="e.title"></h2>
+  <p id="endMsg" class="note"></p>
+  <ol class="rank" id="endRank"></ol>
+  <p id="endBest" class="muted small"></p>
+  <div class="row"><button type="button" class="btn" id="bEndClose" data-t="close"></button><button type="button" class="btn" id="bEndNew" data-t="e.new"></button><button type="button" class="btn primary" id="bEndAgain" data-t="e.again"></button></div>
+</dialog>
+
+<script>
+'use strict';
+/* ===================== Textos ===================== */
+const I18N = {
+  'title':['General','General','General','General'],
+  'docTitle':['General · jogo de dados','General · dice game','General · gioco di dadi','General · juego de dados'],
+  'subtitle':['Jogo de dados: regras brasileiras ou americanas','Dice game: Brazilian or American rules','Gioco di dadi: regole brasiliane o americane','Juego de dados: reglas brasileñas o americanas'],
+  'lang':['Idioma','Language','Lingua','Idioma'],
+  'btn.new':['Nova partida','New game','Nuova partita','Nueva partida'],
+  'btn.rules':['Regras','Rules','Regole','Reglas'],
+  'btn.theme':['Alternar tema claro ou escuro','Toggle light or dark theme','Cambia tema chiaro o scuro','Cambiar tema claro u oscuro'],
+  'close':['Fechar','Close','Chiudi','Cerrar'],
+  'tray':['Mesa e dados','Table and dice','Tavolo e dadi','Mesa y dados'],
+  'sheet':['Cartela','Score sheet','Segnapunti','Planilla'],
+  'log':['Jogadas','Moves','Mosse','Jugadas'],
+  'setup.title':['Nova partida','New game','Nuova partita','Nueva partida'],
+  'setup.rules':['Regras','Rules','Regole','Reglas'],
+  'r.br':['Regras brasileiras','Brazilian rules','Regole brasiliane','Reglas brasileñas'],
+  'r.brD':['Bozó/General: 10 casas; Full 20, Seguida 30, Quadrada 40, General 50; +5 de boca.','Bozó/General: 10 boxes; Full house 20, Straight 30, Four of a kind 40, General 50; +5 on the first roll.','Bozó/General: 10 caselle; Full 20, Scala 30, Poker 40, General 50; +5 al primo lancio.','Bozó/General: 10 casillas; Full 20, Escalera 30, Póker 40, Generala 50; +5 servida.'],
+  'r.us':['Regras americanas','American rules','Regole americane','Reglas americanas'],
+  'r.usD':['13 casas; +35 com 63 na parte de cima; Full 25, sequências 30 e 40, cinco iguais 50, bônus de 100.','13 boxes; +35 for 63 in the upper section; Full house 25, straights 30 and 40, five of a kind 50, 100 bonus.','13 caselle; +35 con 63 nella parte alta; Full 25, scale 30 e 40, cinque uguali 50, bonus di 100.','13 casillas; +35 con 63 en la parte de arriba; Full 25, escaleras 30 y 40, cinco iguales 50, bono de 100.'],
+  'opt.genWins':['General de boca vence a partida','General on the first roll wins the game','General al primo lancio vince la partita','Generala servida gana la partida'],
+  'opt.genWinsD':['Variante regional: cinco iguais no primeiro lançamento encerram o jogo.','Regional variant: five of a kind on the first roll ends the game.','Variante regionale: cinque uguali al primo lancio chiudono il gioco.','Variante regional: cinco iguales en el primer tiro terminan el juego.'],
+  'setup.players':['Jogadores (até 4)','Players (up to 4)','Giocatori (fino a 4)','Jugadores (hasta 4)'],
+  'p.human':['Pessoa','Person','Persona','Persona'],
+  'p.cpu':['Computador','Computer','Computer','Computadora'],
+  'p.add':['+ Jogador','+ Player','+ Giocatore','+ Jugador'],
+  'p.remove':['Remover','Remove','Rimuovi','Quitar'],
+  'p.name':['Nome do jogador {0}','Name of player {0}','Nome del giocatore {0}','Nombre del jugador {0}'],
+  'p.type':['Tipo do jogador {0}','Type of player {0}','Tipo del giocatore {0}','Tipo del jugador {0}'],
+  'def.human':['Você','You','Tu','Tú'],
+  'def.cpu':['Computador {0}','Computer {0}','Computer {0}','Computadora {0}'],
+  'def.player':['Jogador {0}','Player {0}','Giocatore {0}','Jugador {0}'],
+  'setup.seed':['Semente (opcional)','Seed (optional)','Seme (facoltativo)','Semilla (opcional)'],
+  'setup.seedHelp':['Mesma semente e mesmas escolhas, mesmos dados. Em branco, o app sorteia uma.','Same seed and same choices, same dice. Leave blank for a random one.','Stesso seme e stesse scelte, stessi dadi. Vuoto, l’app ne sceglie uno.','Misma semilla y mismas elecciones, mismos dados. En blanco, el app elige una.'],
+  'setup.start':['Começar','Start','Inizia','Empezar'],
+  'confirmNew':['Abandonar a partida em andamento?','Abandon the game in progress?','Abbandonare la partita in corso?','¿Abandonar la partida en curso?'],
+  'g.roll':['Rolar os dados','Roll the dice','Lancia i dadi','Tirar los dados'],
+  'g.rollAgain':['Rolar de novo','Roll again','Rilancia','Volver a tirar'],
+  'g.rollsLeft':['{0} lançamento(s) restante(s)','{0} roll(s) left','{0} lancio/i rimasto/i','{0} tiro(s) restante(s)'],
+  'g.turn':['Vez: {0} · rodada {1} de {2}','Turn: {0} · round {1} of {2}','Turno: {0} · giro {1} di {2}','Turno: {0} · ronda {1} de {2}'],
+  'g.start':['Role os dados para começar a vez.','Roll the dice to start the turn.','Lancia i dadi per iniziare il turno.','Tira los dados para empezar el turno.'],
+  'g.hold':['Toque nos dados que quer guardar e role de novo, ou marque uma casa na cartela.','Tap the dice you want to keep and roll again, or score a box on the sheet.','Tocca i dadi da tenere e rilancia, oppure segna una casella.','Toca los dados que quieres guardar y vuelve a tirar, o anota una casilla.'],
+  'g.noRolls':['Acabaram os lançamentos: marque uma casa na cartela.','No rolls left: score a box on the sheet.','Lanci finiti: segna una casella.','Sin tiros: anota una casilla en la planilla.'],
+  'g.cpu':['Jogando: {0}…','Playing: {0}…','In gioco: {0}…','Jugando: {0}…'],
+  'g.over':['Partida encerrada.','Game over.','Partita finita.','Partida terminada.'],
+  'g.boca':['De boca: as combinações valem +5.','First roll: combinations are worth +5.','Primo lancio: le combinazioni valgono +5.','Servida: las combinaciones valen +5.'],
+  'g.joker':['Cinco iguais de novo: vale a regra do coringa.','Five of a kind again: the joker rule applies.','Di nuovo cinque uguali: vale la regola del jolly.','Cinco iguales otra vez: vale la regla del comodín.'],
+  'g.seed':['Semente desta partida: {0}','Seed of this game: {0}','Seme di questa partita: {0}','Semilla de esta partida: {0}'],
+  'g.keys':['Teclado: R ou Espaço rola; 1 a 5 guardam os dados; Tab chega à cartela.','Keyboard: R or Space rolls; 1 to 5 keep dice; Tab reaches the sheet.','Tastiera: R o Spazio lancia; da 1 a 5 tengono i dadi; Tab porta al segnapunti.','Teclado: R o Espacio tira; 1 a 5 guardan dados; Tab llega a la planilla.'],
+  'die.label':['Dado {0}: {1}','Die {0}: {1}','Dado {0}: {1}','Dado {0}: {1}'],
+  'die.empty':['Dado {0}: ainda não rolado','Die {0}: not rolled yet','Dado {0}: non ancora lanciato','Dado {0}: sin tirar'],
+  'die.held':['guardado','kept','tenuto','guardado'],
+  'rail':['Guardados','Kept','Tenuti','Guardados'],
+  's.cat':['Casa','Box','Casella','Casilla'],
+  's.upper':['Soma de cima','Upper total','Totale alto','Suma de arriba'],
+  's.bonus':['Bônus (63 ou mais)','Bonus (63 or more)','Bonus (63 o più)','Bono (63 o más)'],
+  's.extra':['Bônus de cinco iguais','Five-of-a-kind bonus','Bonus cinque uguali','Bono de cinco iguales'],
+  's.total':['Total','Total','Totale','Total'],
+  's.cpu':['computador','computer','computer','computadora'],
+  's.mark':['Marcar {0} em {1}','Score {0} in {1}','Segna {0} in {1}','Anotar {0} en {1}'],
+  's.scratch':['Riscar {0} (0)','Scratch {0} (0)','Cancella {0} (0)','Tachar {0} (0)'],
+  's.need':['{0}/63','{0}/63','{0}/63','{0}/63'],
+  'l.start':['Nova partida: {0}, semente {1}.','New game: {0}, seed {1}.','Nuova partita: {0}, seme {1}.','Nueva partida: {0}, semilla {1}.'],
+  'l.score':['{0} · {2}: {1}','{0} · {2}: {1}','{0} · {2}: {1}','{0} · {2}: {1}'],
+  'l.scratch':['{0} · {2}: riscada (0)','{0} · {2}: scratched (0)','{0} · {2}: cancellata (0)','{0} · {2}: tachada (0)'],
+  'l.bonus':['{0} · bônus de cinco iguais: +100','{0} · five-of-a-kind bonus: +100','{0} · bonus cinque uguali: +100','{0} · bono de cinco iguales: +100'],
+  'l.instant':['{0} · General de boca: vitória!','{0} · General on the first roll: victory!','{0} · General al primo lancio: vittoria!','{0} · Generala servida: ¡victoria!'],
+  'l.roll':['{0} · dados: {1}','{0} · dice: {1}','{0} · dadi: {1}','{0} · dados: {1}'],
+  'e.title':['Fim de partida','Game over','Fine partita','Fin de la partida'],
+  'e.win':['Vencedor: {0}, com {1} pontos.','Winner: {0}, with {1} points.','Vince: {0}, con {1} punti.','Ganador: {0}, con {1} puntos.'],
+  'e.tie':['Empate em {1} pontos: {0}.','Tie at {1} points: {0}.','Pareggio a {1} punti: {0}.','Empate en {1} puntos: {0}.'],
+  'e.instant':['Vencedor: {0}, com General de boca.','Winner: {0}, with a General on the first roll.','Vince: {0}, con General al primo lancio.','Ganador: {0}, con Generala servida.'],
+  'e.again':['Jogar de novo','Play again','Gioca ancora','Jugar de nuevo'],
+  'e.new':['Mudar configuração','Change setup','Cambia impostazioni','Cambiar configuración'],
+  'e.best':['Recorde nas {0}: {1} pontos, de {2}.','Record with {0}: {1} points, by {2}.','Record con le {0}: {1} punti, di {2}.','Récord con las {0}: {1} puntos, de {2}.'],
+  'e.newBest':['Novo recorde!','New record!','Nuovo record!','¡Nuevo récord!'],
+  'e.pts':['{0} pts','{0} pts','{0} pt','{0} pts'],
+  'rd.common':['Cada jogador, na sua vez, rola cinco dados até três vezes. Depois de cada lançamento, guarde os dados que quiser e role os outros. Ao fim da vez, marque o resultado em uma casa livre da cartela; se nada servir, risque uma casa com zero. Quando todas as casas estiverem preenchidas, vence quem somar mais pontos.','On your turn, roll five dice up to three times. After each roll, keep any dice you like and roll the rest. At the end of the turn, score the result in a free box on the sheet; if nothing fits, scratch a box with zero. When every box is filled, the highest total wins.','Nel tuo turno lanci cinque dadi fino a tre volte. Dopo ogni lancio tieni i dadi che vuoi e rilanci gli altri. Alla fine del turno segni il risultato in una casella libera; se nulla va bene, cancelli una casella con zero. Quando tutte le caselle sono piene, vince chi ha più punti.','En tu turno tiras cinco dados hasta tres veces. Después de cada tiro guarda los dados que quieras y tira los demás. Al final del turno anota el resultado en una casilla libre; si nada sirve, tacha una casilla con cero. Cuando todas las casillas están llenas, gana quien suma más puntos.'],
+  'rd.br1':['Ás a Sena (1 a 6): soma dos dados daquele número.','Ones to Sixes: the sum of the dice showing that number.','Da Uno a Sei: somma dei dadi con quel numero.','Unos a Seises: suma de los dados de ese número.'],
+  'rd.br2':['Full (trinca e par de outro número): 20. Cinco iguais não valem Full.','Full house (three of one number and two of another): 20. Five of a kind is not a full house.','Full (tris e coppia di un altro numero): 20. Cinque uguali non valgono Full.','Full (trío y par de otro número): 20. Cinco iguales no valen Full.'],
+  'rd.br3':['Seguida (1-2-3-4-5 ou 2-3-4-5-6): 30.','Straight (1-2-3-4-5 or 2-3-4-5-6): 30.','Scala (1-2-3-4-5 o 2-3-4-5-6): 30.','Escalera (1-2-3-4-5 o 2-3-4-5-6): 30.'],
+  'rd.br4':['Quadrada (quatro iguais, o quinto não importa): 40.','Four of a kind (the fifth die does not matter): 40.','Poker (quattro uguali, il quinto non conta): 40.','Póker (cuatro iguales, el quinto no importa): 40.'],
+  'rd.br5':['General (cinco iguais): 50.','General (five of a kind): 50.','General (cinque uguali): 50.','Generala (cinco iguales): 50.'],
+  'rd.br6':['De boca: Full, Seguida, Quadrada ou General feitos no primeiro lançamento da vez valem +5. Não há bônus na parte de cima; o máximo teórico é 265.','First roll: a full house, straight, four of a kind or General made on the first roll of the turn is worth +5. There is no upper bonus; the theoretical maximum is 265.','Primo lancio: Full, Scala, Poker o General fatti al primo lancio valgono +5. Non c’è bonus nella parte alta; il massimo teorico è 265.','Servida: Full, Escalera, Póker o Generala hechos en el primer tiro valen +5. No hay bono arriba; el máximo teórico es 265.'],
+  'rd.br7':['Opcional: General de boca vence a partida na hora.','Optional: a General on the first roll wins the game at once.','Facoltativo: General al primo lancio vince subito la partita.','Opcional: Generala servida gana la partida en el acto.'],
+  'rd.us1':['Uns a Seis: soma dos dados daquele número. Com 63 pontos ou mais nessas seis casas, ganha +35.','Ones to Sixes: the sum of the dice showing that number. With 63 or more in these six boxes, you get +35.','Da Uno a Sei: somma dei dadi con quel numero. Con 63 punti o più in queste sei caselle, +35.','Unos a Seises: suma de los dados de ese número. Con 63 o más en esas seis casillas, +35.'],
+  'rd.us2':['Trinca e Quadra (três ou quatro iguais): soma de todos os dados. Chance: soma de todos os dados, sem condição.','Three and Four of a kind: the sum of all dice. Chance: the sum of all dice, no condition.','Tris e Poker (tre o quattro uguali): somma di tutti i dadi. Chance: somma di tutti i dadi, senza condizioni.','Trío y Póker (tres o cuatro iguales): suma de todos los dados. Chance: suma de todos los dados, sin condición.'],
+  'rd.us3':['Full: 25. Sequência de quatro: 30. Sequência de cinco: 40. Cinco iguais: 50.','Full house: 25. Small straight (four in a row): 30. Large straight (five in a row): 40. Five of a kind: 50.','Full: 25. Scala di quattro: 30. Scala di cinque: 40. Cinque uguali: 50.','Full: 25. Escalera de cuatro: 30. Escalera de cinco: 40. Cinco iguales: 50.'],
+  'rd.us4':['Cinco iguais de novo, com 50 já marcado: +100. Regra do coringa: se a casa daquele número estiver livre, é obrigatório usá-la; senão, qualquer combinação livre vale cheia (Full 25, sequências 30 e 40); sem combinação livre, risca-se uma casa de cima. Com 0 na casa de cinco iguais, o coringa vale, mas sem os 100.','Five of a kind again, with 50 already scored: +100. Joker rule: if that number’s upper box is free you must use it; otherwise any free lower box scores in full (full house 25, straights 30 and 40); with no free lower box, scratch an upper box. With a 0 in the five-of-a-kind box, the joker applies but without the 100.','Di nuovo cinque uguali, con 50 già segnato: +100. Regola del jolly: se la casella di quel numero è libera, va usata; altrimenti ogni combinazione libera vale piena (Full 25, scale 30 e 40); senza combinazioni libere, si cancella una casella alta. Con 0 nei cinque uguali, il jolly vale ma senza i 100.','Cinco iguales otra vez, con 50 ya anotado: +100. Regla del comodín: si la casilla de ese número está libre, hay que usarla; si no, cualquier combinación libre vale completa (Full 25, escaleras 30 y 40); sin combinaciones libres, se tacha una casilla de arriba. Con 0 en cinco iguales, el comodín vale, pero sin los 100.'],
+  'rd.keysH':['Teclado','Keyboard','Tastiera','Teclado'],
+  'rd.keys':['R ou Espaço rola os dados. As teclas 1 a 5 guardam ou soltam cada dado. Tab chega às casas da cartela; Enter marca.','R or Space rolls the dice. Keys 1 to 5 keep or release each die. Tab reaches the boxes on the sheet; Enter scores.','R o Spazio lancia i dadi. I tasti da 1 a 5 tengono o liberano ogni dado. Tab porta alle caselle; Invio segna.','R o Espacio tira los dados. Las teclas 1 a 5 guardan o sueltan cada dado. Tab llega a las casillas; Enter anota.'],
+  'rd.var':['As regras brasileiras mudam de região para região. Este app segue o Bozó descrito pelo Valor Final (Full 20, Seguida 30, Quadrada 40, General 50, +5 de boca). A Wikipédia em português descreve um General de 13 casas, parecido com as regras americanas, e cita a variante em que o General de boca vence a partida, que aqui é opcional. As regras americanas seguem o jogo de 13 casas descrito na Wikipédia em inglês.','Brazilian rules vary from region to region. This app follows the Bozó described by Valor Final (full house 20, straight 30, four of a kind 40, General 50, +5 on the first roll). The Portuguese Wikipedia describes a 13-box General, close to the American rules, and mentions the variant in which a General on the first roll wins, optional here. The American rules follow the 13-box game described on the English Wikipedia.','Le regole brasiliane cambiano da regione a regione. Questa app segue il Bozó descritto da Valor Final (Full 20, Scala 30, Poker 40, General 50, +5 al primo lancio). La Wikipedia in portoghese descrive un General a 13 caselle, simile alle regole americane, e cita la variante in cui il General al primo lancio vince, qui facoltativa. Le regole americane seguono il gioco a 13 caselle descritto dalla Wikipedia in inglese.','Las reglas brasileñas cambian de región en región. Este app sigue el Bozó descrito por Valor Final (Full 20, Escalera 30, Póker 40, Generala 50, +5 servida). La Wikipedia en portugués describe un General de 13 casillas, parecido a las reglas americanas, y menciona la variante en la que la Generala servida gana, aquí opcional. Las reglas americanas siguen el juego de 13 casillas de la Wikipedia en inglés.'],
+  'rd.src':['Fontes','Sources','Fonti','Fuentes'],
+  'c.br.1':['Ás (1)','Ones','Uno','Unos'],'c.br.2':['Duque (2)','Twos','Due','Doses'],'c.br.3':['Terno (3)','Threes','Tre','Treses'],
+  'c.br.4':['Quadra (4)','Fours','Quattro','Cuatros'],'c.br.5':['Quina (5)','Fives','Cinque','Cincos'],'c.br.6':['Sena (6)','Sixes','Sei','Seises'],
+  'c.br.full':['Full','Full house','Full','Full'],'c.br.seq':['Seguida','Straight','Scala','Escalera'],'c.br.quad':['Quadrada','Four of a kind','Poker','Póker'],'c.br.gen':['General','General','General','Generala'],
+  'h.br.full':['trinca + par · 20','3 + 2 · 20','tris + coppia · 20','trío + par · 20'],'h.br.seq':['1–5 ou 2–6 · 30','1–5 or 2–6 · 30','1–5 o 2–6 · 30','1–5 o 2–6 · 30'],
+  'h.br.quad':['quatro iguais · 40','four alike · 40','quattro uguali · 40','cuatro iguales · 40'],'h.br.gen':['cinco iguais · 50','five alike · 50','cinque uguali · 50','cinco iguales · 50'],
+  'c.us.1':['Uns','Ones','Uno','Unos'],'c.us.2':['Dois','Twos','Due','Doses'],'c.us.3':['Três','Threes','Tre','Treses'],
+  'c.us.4':['Quatros','Fours','Quattro','Cuatros'],'c.us.5':['Cincos','Fives','Cinque','Cincos'],'c.us.6':['Seis','Sixes','Sei','Seises'],
+  'c.us.3k':['Trinca','Three of a kind','Tris','Trío'],'c.us.4k':['Quadra','Four of a kind','Poker','Póker'],'c.us.fh':['Full','Full house','Full','Full'],
+  'c.us.ss':['Sequência de 4','Small straight','Scala di 4','Escalera de 4'],'c.us.ls':['Sequência de 5','Large straight','Scala di 5','Escalera de 5'],
+  'c.us.yz':['Cinco iguais','Five of a kind','Cinque uguali','Cinco iguales'],'c.us.ch':['Chance','Chance','Chance','Chance'],
+  'h.us.3k':['soma dos dados','sum of dice','somma dei dadi','suma de dados'],'h.us.4k':['soma dos dados','sum of dice','somma dei dadi','suma de dados'],
+  'h.us.fh':['trinca + par · 25','3 + 2 · 25','tris + coppia · 25','trío + par · 25'],'h.us.ss':['4 em sequência · 30','4 in a row · 30','4 in fila · 30','4 seguidos · 30'],
+  'h.us.ls':['5 em sequência · 40','5 in a row · 40','5 in fila · 40','5 seguidos · 40'],'h.us.yz':['50 · extras +100','50 · extras +100','50 · extra +100','50 · extras +100'],
+  'h.us.ch':['soma dos dados','sum of dice','somma dei dadi','suma de dados']
+};
+const LANGS = ['pt','en','it','es'];
+const HTML_LANG = {pt:'pt-BR',en:'en',it:'it',es:'es'};
+let LANG = 'pt';
+function t(k, ...a) {
+  const r = I18N[k]; let s = r ? r[LANGS.indexOf(LANG)] : k;
+  a.forEach((v, i) => { s = s.split('{' + i + '}').join(v); });
+  return s;
+}
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store = {
+  get(k) { try { return JSON.parse(localStorage.getItem('general.' + k)); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem('general.' + k, JSON.stringify(v)); } catch (e) { /* sem armazenamento */ } },
+  del(k) { try { localStorage.removeItem('general.' + k); } catch (e) { /* sem armazenamento */ } }
+};
+
+/* ===================== Regras e pontuação ===================== */
+const UPPER = ['1','2','3','4','5','6'];
+const RULES = {
+  br: { cats: [...UPPER, 'full', 'seq', 'quad', 'gen'] },
+  us: { cats: [...UPPER, '3k', '4k', 'fh', 'ss', 'ls', 'yz', 'ch'] }
+};
+function counts(d) { const c = [0,0,0,0,0,0,0]; d.forEach((v) => c[v]++); return c; }
+const maxOf = (c) => Math.max(c[1], c[2], c[3], c[4], c[5], c[6]);
+const isLarge = (c) => !!((c[1] && c[2] && c[3] && c[4] && c[5]) || (c[2] && c[3] && c[4] && c[5] && c[6]));
+const isSmall = (c) => [1,2,3].some((s) => c[s] && c[s+1] && c[s+2] && c[s+3]);
+const isFull = (c) => { const v = c.slice(1).filter((x) => x); return v.length === 2 && v.includes(3); };
+const sumOf = (d) => d.reduce((a, b) => a + b, 0);
+/* pontos de uma casa, sem a regra do coringa; first = primeiro lançamento da vez */
+function rawScore(rules, cat, d, first) {
+  const c = counts(d);
+  if (UPPER.includes(cat)) return c[+cat] * +cat;
+  if (rules === 'br') {
+    const b = first ? 5 : 0;
+    switch (cat) {
+      case 'full': return isFull(c) ? 20 + b : 0;
+      case 'seq': return isLarge(c) ? 30 + b : 0;
+      case 'quad': return maxOf(c) >= 4 ? 40 + b : 0;
+      case 'gen': return maxOf(c) === 5 ? 50 + b : 0;
+    }
+  } else {
+    switch (cat) {
+      case '3k': return maxOf(c) >= 3 ? sumOf(d) : 0;
+      case '4k': return maxOf(c) >= 4 ? sumOf(d) : 0;
+      case 'fh': return isFull(c) ? 25 : 0;
+      case 'ss': return isSmall(c) ? 30 : 0;
+      case 'ls': return isLarge(c) ? 40 : 0;
+      case 'yz': return maxOf(c) === 5 ? 50 : 0;
+      case 'ch': return sumOf(d);
+    }
+  }
+  return 0;
+}
+/* casas permitidas agora, com pontos e bônus (inclui a regra do coringa americana) */
+function options(rules, sheet, d, first) {
+  const open = RULES[rules].cats.filter((k) => sheet[k] == null);
+  if (rules === 'us' && maxOf(counts(d)) === 5 && sheet.yz != null) {
+    const face = String(d[0]), bonus = sheet.yz === 50 ? 100 : 0;
+    if (sheet[face] == null) return [{ cat: face, pts: rawScore(rules, face, d), bonus, joker: true }];
+    const low = open.filter((k) => !UPPER.includes(k));
+    const fixed = { fh: 25, ss: 30, ls: 40 };
+    if (low.length) return low.map((k) => ({ cat: k, pts: fixed[k] != null ? fixed[k] : rawScore(rules, k, d), bonus, joker: true }));
+    return open.map((k) => ({ cat: k, pts: 0, bonus, joker: true }));
+  }
+  return open.map((k) => ({ cat: k, pts: rawScore(rules, k, d, first), bonus: 0 }));
+}
+function totals(rules, p) {
+  const s = p.sheet, upper = UPPER.reduce((a, k) => a + (s[k] || 0), 0);
+  const lower = RULES[rules].cats.filter((k) => !UPPER.includes(k)).reduce((a, k) => a + (s[k] || 0), 0);
+  const bonus = rules === 'us' && upper >= 63 ? 35 : 0;
+  return { upper, lower, bonus, extra: p.extra || 0, total: upper + lower + bonus + (p.extra || 0) };
+}
+const filled = (rules, p) => RULES[rules].cats.every((k) => p.sheet[k] != null);
+
+/* ===================== Gerador semeado (mulberry32) ===================== */
+function rand(S) {
+  S.rng = (S.rng + 0x6D2B79F5) | 0;
+  let x = Math.imul(S.rng ^ (S.rng >>> 15), 1 | S.rng);
+  x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
+  return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+}
+
+/* ===================== Computador: melhor vez por programação dinâmica ===================== */
+const MS = [];          // MS[k] = [{d:[...ordenados], p}] para k dados
+(function buildMS() {
+  const fact = [1,1,2,6,24,120];
+  for (let k = 0; k <= 5; k++) {
+    const out = [];
+    (function rec(start, arr) {
+      if (arr.length === k) {
+        const c = counts(arr); let m = fact[k]; for (let f = 1; f <= 6; f++) m /= fact[c[f]];
+        out.push({ d: arr.slice(), p: m / Math.pow(6, k) }); return;
+      }
+      for (let v = start; v <= 6; v++) { arr.push(v); rec(v, arr); arr.pop(); }
+    })(1, []);
+    MS.push(out);
+  }
+})();
+const keyOf = (arr) => arr.slice().sort((a, b) => a - b).join('');
+function subHolds(sorted) {
+  const seen = new Map();
+  for (let m = 0; m < 32; m++) {
+    const h = []; for (let i = 0; i < 5; i++) if (m & (1 << i)) h.push(sorted[i]);
+    const k = h.join(''); if (!seen.has(k)) seen.set(k, { hold: h, mask: m });
+  }
+  return [...seen.values()];
+}
+const BASE = {
+  br: { '1':2, '2':5, '3':8, '4':11, '5':14, '6':17, full:13, seq:16, quad:12, gen:7 },
+  us: { '1':2, '2':5, '3':8.5, '4':12, '5':15.5, '6':19, '3k':21, '4k':13, fh:22, ss:28, ls:31, yz:17, ch:22 }
+};
+function aiUtility(S, p, d, first) {
+  let best = -Infinity, bestOpt = null;
+  for (const o of options(S.rules, p.sheet, d, first)) {
+    let u = o.pts + o.bonus - BASE[S.rules][o.cat];
+    if (S.rules === 'us' && UPPER.includes(o.cat)) {
+      const face = +o.cat, up = UPPER.reduce((a, k) => a + (p.sheet[k] || 0), 0);
+      if (up < 63) { u += 0.6 * (o.pts - 3 * face); if (up + o.pts >= 63) u += 25; }
+    }
+    if (S.rules === 'br' && S.opt.genWins && first && o.cat === 'gen' && o.pts) u += 1000;
+    if (S.rules === 'us' && o.cat === 'ch') u -= 3;          /* guarda a Chance para o fim */
+    if (u > best) { best = u; bestOpt = o; }
+  }
+  return { u: best, opt: bestOpt };
+}
+function aiDecide(S) {
+  const p = S.players[S.cur], left = 3 - S.rolls, first = S.rolls === 1;
+  const now = aiUtility(S, p, S.dice, first);
+  if (left === 0) return { score: now.opt.cat };
+  const V0 = new Map();
+  for (const s of MS[5]) V0.set(s.d.join(''), aiUtility(S, p, s.d, false).u);
+  const expect = (hold, V) => { let e = 0; for (const o of MS[5 - hold.length]) e += o.p * V.get(keyOf(hold.concat(o.d))); return e; };
+  let V = V0;
+  if (left === 2) {
+    const EH = new Map(), V1 = new Map();
+    for (const s of MS[5]) {
+      let b = V0.get(s.d.join(''));
+      for (const h of subHolds(s.d)) {
+        const k = h.hold.join('');
+        if (!EH.has(k)) EH.set(k, expect(h.hold, V0));
+        if (EH.get(k) > b) b = EH.get(k);
+      }
+      V1.set(s.d.join(''), b);
+    }
+    V = V1;
+  }
+  const sorted = S.dice.slice().sort((a, b) => a - b);
+  let bestE = -Infinity, bestHold = null;
+  for (const h of subHolds(sorted)) { const e = expect(h.hold, V); if (e > bestE + 1e-9) { bestE = e; bestHold = h.hold; } }
+  if (now.u >= bestE - 1e-9) return { score: now.opt.cat };
+  /* traduz o multiconjunto guardado em posições dos dados */
+  const need = counts(bestHold), held = S.dice.map((v) => { if (need[v] > 0) { need[v]--; return true; } return false; });
+  return { held };
+}
+
+/* ===================== Estado da partida ===================== */
+let S = null, aiTimer = null;
+const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function newGame(cfg) {
+  clearTimeout(aiTimer);
+  const seed = cfg.seed != null && cfg.seed !== '' && isFinite(+cfg.seed) ? (+cfg.seed >>> 0) : ((Math.random() * 4294967295) >>> 0);
+  S = { v: 1, rules: cfg.rules, opt: { genWins: cfg.rules === 'br' && !!cfg.genWins }, seed, rng: seed | 0,
+        players: cfg.players.map((p) => ({ name: p.name, kind: p.kind, sheet: {}, extra: 0 })),
+        cur: 0, round: 1, dice: [0,0,0,0,0], held: [false,false,false,false,false], rolls: 0, log: [], over: false, instant: null };
+  addLog('l.start', [{ k: S.rules === 'br' ? 'r.br' : 'r.us' }, seed]);
+  store.set('setup', cfg); save(); render(); schedule();
+}
+function addLog(k, a) { S.log.push({ k, a }); if (S.log.length > 200) S.log.shift(); }
+function save() { if (S) store.set('game', S); }
+function curP() { return S.players[S.cur]; }
+function canRoll() { return S && !S.over && S.rolls < 3 && curP().kind === 'human'; }
+function doRoll(byAI) {
+  if (!S || S.over || S.rolls >= 3) return;
+  if (!byAI && curP().kind !== 'human') return;
+  const changed = [];
+  for (let i = 0; i < 5; i++) if (!S.held[i] || S.rolls === 0) { S.dice[i] = 1 + Math.floor(rand(S) * 6); changed.push(i); }
+  if (S.rolls === 0) S.held = [false,false,false,false,false];
+  S.rolls++;
+  addLog('l.roll', [curP().name, S.dice.join(' ')]);
+  scatter(changed);
+  if (S.rules === 'br' && S.opt.genWins && S.rolls === 1 && maxOf(counts(S.dice)) === 5 && curP().sheet.gen == null) {
+    curP().sheet.gen = 55; S.instant = S.cur; addLog('l.instant', [curP().name]); finish(); return;
+  }
+  save(); render(changed);
+  if (S.rolls >= 3 || byAI) schedule();
+}
+function toggleHold(i) {
+  if (!S || S.over || S.rolls === 0 || S.rolls >= 3 || curP().kind !== 'human') return;
+  S.held[i] = !S.held[i]; save(); renderDice(); renderStatus();
+}
+function doScore(cat) {
+  if (!S || S.over || S.rolls === 0) return;
+  const p = curP(), o = options(S.rules, p.sheet, S.dice, S.rolls === 1).find((x) => x.cat === cat);
+  if (!o) return;
+  p.sheet[cat] = o.pts;
+  if (o.bonus) { p.extra = (p.extra || 0) + o.bonus; addLog('l.bonus', [p.name]); }
+  addLog(o.pts ? 'l.score' : 'l.scratch', [p.name, o.pts, { c: cat }]);
+  S.rolls = 0; S.held = [false,false,false,false,false]; S.dice = [0,0,0,0,0];
+  if (S.players.every((q) => filled(S.rules, q))) { finish(); return; }
+  S.cur = (S.cur + 1) % S.players.length; if (S.cur === 0) S.round++;
+  save(); render(); schedule();
+}
+function schedule() {
+  clearTimeout(aiTimer);
+  if (!S || S.over || curP().kind !== 'cpu') return;
+  const delay = reduced() ? 250 : (S.rolls > 0 ? 1250 : 750);
+  aiTimer = setTimeout(() => {
+    if (!S || S.over || curP().kind !== 'cpu') return;
+    if (S.rolls === 0) { doRoll(true); return; }
+    const dec = aiDecide(S);
+    if (dec.score) { doScore(dec.score); return; }
+    S.held = dec.held; save(); renderDice();
+    aiTimer = setTimeout(() => doRoll(true), delay);
+  }, delay);
+}
+function finish() {
+  S.over = true; clearTimeout(aiTimer); save(); render();
+  const best = store.get('best') || {};
+  const tot = S.players.map((p, i) => ({ i, name: p.name, kind: p.kind, total: totals(S.rules, p).total }));
+  const top = Math.max(...tot.map((x) => x.total));
+  let isNew = false;
+  if (S.instant == null) {
+    for (const x of tot) if (x.kind === 'human' && (!best[S.rules] || x.total > best[S.rules].score)) { best[S.rules] = { score: x.total, name: x.name }; isNew = true; }
+    store.set('best', best);
+  }
+  S.endInfo = { isNew }; save();
+  showEnd();
+}
+function showEnd() {
+  const tot = S.players.map((p) => ({ name: p.name, total: totals(S.rules, p).total })).sort((a, b) => b.total - a.total);
+  let msg;
+  if (S.instant != null) msg = t('e.instant', S.players[S.instant].name);
+  else {
+    const w = tot.filter((x) => x.total === tot[0].total);
+    msg = w.length > 1 ? t('e.tie', w.map((x) => x.name).join(', '), tot[0].total) : t('e.win', w[0].name, w[0].total);
+  }
+  $('#endMsg').textContent = msg;
+  $('#endRank').innerHTML = tot.map((x) => `<li><span>${esc(x.name)}</span><span>${esc(t('e.pts', x.total))}</span></li>`).join('');
+  const best = (store.get('best') || {})[S.rules];
+  $('#endBest').textContent = best ? ((S.endInfo && S.endInfo.isNew ? t('e.newBest') + ' ' : '') + t('e.best', t(S.rules === 'br' ? 'r.br' : 'r.us').toLowerCase(), best.score, best.name)) : '';
+  if (!$('#dEnd').open) $('#dEnd').showModal();
+}
+
+/* ===================== Desenho ===================== */
+const $ = (s) => document.querySelector(s);
+const PIPGRID = { 1: ['22'], 2: ['13','31'], 3: ['13','22','31'], 4: ['11','13','31','33'], 5: ['11','13','22','31','33'], 6: ['11','21','31','13','23','33'] };
+const FACE_ROT = { 1: [0, 0], 6: [0, 180], 2: [0, -90], 5: [0, 90], 3: [-90, 0], 4: [90, 0] };
+const faceHTML = (v) => `<div class="face f${v}">${PIPGRID[v].map((rc) => `<i style="grid-area:${rc[0]}/${rc[1]}"></i>`).join('')}</div>`;
+let diceBuilt = false;
+function buildDice() {
+  const plane = $('#dice');
+  for (let i = 0; i < 5; i++) {
+    const sh = document.createElement('div'); sh.className = 'shadow'; sh.dataset.s = i; plane.appendChild(sh);
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'die'; b.dataset.i = i;
+    b.innerHTML = `<div class="hop"><div class="cube"><div class="core"></div><div class="core c1"></div><div class="core c2"></div>${[1,2,3,4,5,6].map(faceHTML).join('')}</div></div>`;
+    plane.appendChild(b);
+  }
+  diceBuilt = true;
+}
+/* gerador só para a posição dos dados na mesa: não altera os resultados da partida */
+function lrng(salt) { const st = { rng: (S.seed ^ Math.imul(S.log.length + 1, 2654435761) ^ Math.imul(salt + 7, 40503)) | 0 }; return () => rand(st); }
+function scatter(changed) {
+  S.pos = S.pos || [];
+  const plane = $('#dice'), W = plane.clientWidth || 560, H = plane.clientHeight || 330, ds = (plane.querySelector('.die') || {}).offsetWidth || 56;
+  const L = lrng(99), placed = [];
+  for (const i of changed) {
+    let best = null, bd = -1;
+    for (let k = 0; k < 60; k++) {
+      const c = { x: 14 + L() * 72, y: 13 + L() * 35, r: Math.round(L() * 80 - 40) };
+      const d = placed.length ? Math.min(...placed.map((q) => Math.hypot((q.x - c.x) * W / 100, (q.y - c.y) * H / 100))) : 1e9;
+      if (d > ds * 1.5) { best = c; break; }
+      if (d > bd) { bd = d; best = c; }
+    }
+    placed.push(best); S.pos[i] = best;
+  }
+}
+function slot(i) {
+  if (!S.dice[i]) return { x: 22 + i * 14, y: 40, r: [-6, 4, -2, 7, -4][i] };
+  if (S.held[i] && S.rolls > 0) return { x: 18 + i * 16, y: 77, r: 0 };
+  return (S.pos && S.pos[i]) || { x: 22 + i * 14, y: 40, r: 0 };
+}
+function renderDice(thrown) {
+  if (!diceBuilt) buildDice();
+  const human = S && !S.over && curP().kind === 'human', plane = $('#dice'), anim = thrown && !reduced();
+  plane.setAttribute('aria-label', t('tray'));
+  S.dice.forEach((v, i) => {
+    const b = plane.querySelector(`.die[data-i="${i}"]`), sh = plane.querySelector(`.shadow[data-s="${i}"]`), cube = b.querySelector('.cube'), hop = b.querySelector('.hop');
+    const p = slot(i), [ax, ay] = FACE_ROT[v || i + 1], held = !!(S.held[i] && S.rolls > 0);
+    b.disabled = !human || S.rolls === 0 || S.rolls >= 3;
+    b.setAttribute('aria-pressed', held ? 'true' : 'false');
+    b.setAttribute('aria-label', v ? t('die.label', i + 1, v) + (held ? ', ' + t('die.held') : '') : t('die.empty', i + 1));
+    if (b.dataset.held !== String(held) || (thrown && thrown.includes(i))) { b.classList.add('moving'); clearTimeout(b._mv); b._mv = setTimeout(() => b.classList.remove('moving'), reduced() ? 0 : 950); }
+    b.dataset.held = String(held);
+    b.classList.toggle('held', held); b.classList.toggle('idle', !v);
+    const place = () => {
+      b.style.left = sh.style.left = p.x + '%'; b.style.top = sh.style.top = p.y + '%';
+      b.style.transform = `rotateZ(${p.r}deg)`; cube.style.transform = `rotateX(${ax}deg) rotateY(${ay}deg)`;
+    };
+    if (anim && thrown.includes(i)) {
+      const L = lrng(i), sx = p.x + L() * 30 - 15;
+      b.style.transition = sh.style.transition = cube.style.transition = 'none';
+      b.style.left = sh.style.left = sx + '%'; b.style.top = sh.style.top = '112%';
+      b.style.transform = `rotateZ(${p.r + (L() < .5 ? -1 : 1) * (90 + L() * 180)}deg)`;
+      const kx = (L() < .5 ? -1 : 1) * (2 + Math.floor(L() * 2)) * 360, ky = (L() < .5 ? -1 : 1) * (1 + Math.floor(L() * 2)) * 360;
+      cube.style.transform = `rotateX(${ax + kx}deg) rotateY(${ay + ky}deg)`;
+      void b.offsetWidth;
+      b.style.transition = sh.style.transition = cube.style.transition = '';
+      hop.classList.remove('go'); void hop.offsetWidth; hop.classList.add('go');
+    }
+    place();
+  });
+}
+function renderStatus() {
+  const p = curP(), st = $('#status');
+  if (S.over) { st.innerHTML = esc(t('g.over')); }
+  else {
+    let sub = '';
+    if (p.kind === 'cpu') sub = t('g.cpu', p.name);
+    else if (S.rolls === 0) sub = t('g.start');
+    else if (S.rolls >= 3) sub = t('g.noRolls');
+    else sub = t('g.hold');
+    const extra = [];
+    if (S.rules === 'br' && S.rolls === 1 && ['full','seq','quad','gen'].some((k) => p.sheet[k] == null && rawScore('br', k, S.dice, false))) extra.push(t('g.boca'));
+    if (S.rules === 'us' && S.rolls > 0 && maxOf(counts(S.dice)) === 5 && p.sheet.yz != null) extra.push(t('g.joker'));
+    st.innerHTML = `${esc(t('g.turn', p.name, S.round, RULES[S.rules].cats.length))}<small>${esc(sub)}${extra.length ? ' ' + esc(extra.join(' ')) : ''}</small>`;
+  }
+  const b = $('#bRoll');
+  b.textContent = S.rolls === 0 ? t('g.roll') : t('g.rollAgain');
+  b.disabled = !canRoll();
+  b.setAttribute('aria-describedby', 'pips');
+  $('#pips').innerHTML = [0,1,2].map((i) => `<i class="${i < 3 - S.rolls ? 'on' : ''}"></i>`).join('');
+  $('#pips').setAttribute('title', t('g.rollsLeft', 3 - S.rolls));
+  $('#help').textContent = t('g.rollsLeft', 3 - S.rolls) + ' · ' + t('g.keys');
+  $('#seedInfo').textContent = t('g.seed', S.seed);
+}
+function logText(e) {
+  const a = (e.a || []).map((x) => (x && typeof x === 'object') ? (x.c ? t('c.' + S.rules + '.' + x.c) : t(x.k)) : x);
+  return t(e.k, ...a);
+}
+function renderLog() { $('#log').innerHTML = S.log.slice(-60).map((e) => `<li>${esc(logText(e))}</li>`).join(''); }
+function renderSheet() {
+  const P = S.players, R = S.rules, cur = S.cur;
+  const human = !S.over && P[cur].kind === 'human' && S.rolls > 0;
+  const opts = human ? options(R, P[cur].sheet, S.dice, S.rolls === 1) : [];
+  const th = P.map((p, i) => `<th scope="col" class="${i === cur && !S.over ? 'cur' : ''}"><span class="nm" title="${esc(p.name)}">${esc(p.name)}</span>${p.kind === 'cpu' ? `<span class="kd">${esc(t('s.cpu'))}</span>` : ''}</th>`).join('');
+  const row = (cat) => {
+    const hint = I18N['h.' + R + '.' + cat] ? `<small>${esc(t('h.' + R + '.' + cat))}</small>` : '';
+    const cells = P.map((p, i) => {
+      const v = p.sheet[cat], cl = i === cur && !S.over ? ' class="cur"' : '';
+      if (v != null) return `<td${cl}><span class="val${v ? '' : ' zero'}">${v}</span></td>`;
+      const o = i === cur ? opts.find((x) => x.cat === cat) : null;
+      if (o) {
+        const name = t('c.' + R + '.' + cat), lab = o.pts || o.bonus ? t('s.mark', o.pts + o.bonus, name) : t('s.scratch', name);
+        return `<td${cl}><button type="button" class="cell${o.pts ? '' : ' z'}" data-cat="${cat}" aria-label="${esc(lab)}">${o.pts}${o.bonus ? `<span class="b">+${o.bonus}</span>` : ''}</button></td>`;
+      }
+      return `<td${cl}></td>`;
+    }).join('');
+    return `<tr><th scope="row" class="catn">${esc(t('c.' + R + '.' + cat))}${hint}</th>${cells}</tr>`;
+  };
+  const sub = (label, fn, cls) => `<tr class="${cls || 'sub'}"><th scope="row">${esc(label)}</th>${P.map((p) => `<td>${fn(p)}</td>`).join('')}</tr>`;
+  let body = UPPER.map(row).join('');
+  if (R === 'us') {
+    body += sub(t('s.upper'), (p) => totals(R, p).upper);
+    body += sub(t('s.bonus'), (p) => { const tt = totals(R, p); return tt.bonus ? '35' : (UPPER.every((k) => p.sheet[k] != null) ? '0' : `<span class="small muted">${esc(t('s.need', tt.upper))}</span>`); });
+  }
+  body += RULES[R].cats.filter((k) => !UPPER.includes(k)).map(row).join('');
+  if (R === 'us') body += sub(t('s.extra'), (p) => p.extra || 0);
+  body += sub(t('s.total'), (p) => totals(R, p).total, 'total');
+  $('#sheetT').innerHTML = `<caption class="sr">${esc(t('sheet'))}</caption><thead><tr><th scope="col">${esc(t('s.cat'))}</th>${th}</tr></thead><tbody>${body}</tbody>`;
+}
+function render(thrown) { if (!S) return; renderDice(thrown); renderStatus(); renderSheet(); renderLog(); }
+
+/* ===================== Idioma, tema e textos fixos ===================== */
+function applyStatic() {
+  document.documentElement.lang = HTML_LANG[LANG];
+  document.title = t('docTitle') + ' · Giovani Perotto Mesquita';
+  document.querySelectorAll('[data-t]').forEach((e) => { e.textContent = t(e.dataset.t); });
+  document.querySelectorAll('[data-ta]').forEach((e) => { e.setAttribute('aria-label', t(e.dataset.ta)); e.title = t(e.dataset.ta); });
+  $('#rBr').innerHTML = ['rd.br1','rd.br2','rd.br3','rd.br4','rd.br5','rd.br6','rd.br7'].map((k) => `<li>${esc(t(k))}</li>`).join('');
+  $('#rUs').innerHTML = ['rd.us1','rd.us2','rd.us3','rd.us4'].map((k) => `<li>${esc(t(k))}</li>`).join('');
+  $('#lang').value = LANG;
+  if ($('#dSetup').open) renderPlayers(readPlayers());
+  if (S && S.over && $('#dEnd').open) showEnd();
+}
+function setLang(L, push) {
+  if (!LANGS.includes(L)) L = 'pt';
+  LANG = L; store.set('lang', L);
+  if (push !== false) history.replaceState(null, '', L === 'pt' ? location.pathname + location.search : '#' + L);
+  applyStatic(); render();
+}
+function setTheme(th) { document.documentElement.dataset.theme = th; }
+
+/* ===================== Configuração ===================== */
+let setupPlayers = [];
+function readPlayers() {
+  return [...document.querySelectorAll('#pList .prow')].map((r) => ({ name: r.querySelector('input').value, kind: r.querySelector('select').value }));
+}
+function renderPlayers(list) {
+  setupPlayers = list;
+  $('#pList').innerHTML = list.map((p, i) => `<div class="prow"><input aria-label="${esc(t('p.name', i + 1))}" maxlength="18" value="${esc(p.name)}"><select aria-label="${esc(t('p.type', i + 1))}"><option value="human"${p.kind === 'human' ? ' selected' : ''}>${esc(t('p.human'))}</option><option value="cpu"${p.kind === 'cpu' ? ' selected' : ''}>${esc(t('p.cpu'))}</option></select><button type="button" class="btn" data-rm="${i}" ${list.length < 2 ? 'disabled' : ''}>${esc(t('p.remove'))}</button></div>`).join('');
+  $('#bAddP').disabled = list.length >= 4;
+}
+function openSetup() {
+  const cfg = store.get('setup');
+  const f = $('#fSetup');
+  f.rules.value = cfg && cfg.rules === 'us' ? 'us' : 'br';
+  f.genWins.checked = !!(cfg && cfg.genWins);
+  f.seed.value = '';
+  renderPlayers(cfg && cfg.players && cfg.players.length ? cfg.players : [{ name: t('def.human'), kind: 'human' }, { name: t('def.cpu', 1), kind: 'cpu' }]);
+  syncGen();
+  $('#bCancel').hidden = !S;
+  $('#dSetup').showModal();
+}
+function syncGen() { $('#optGen').hidden = $('#fSetup').rules.value !== 'br'; }
+
+/* ===================== Eventos ===================== */
+$('#dice').addEventListener('click', (e) => { const b = e.target.closest('.die'); if (b) toggleHold(+b.dataset.i); });
+$('#bRoll').addEventListener('click', () => doRoll(false));
+$('#sheetT').addEventListener('click', (e) => { const b = e.target.closest('button.cell'); if (b) doScore(b.dataset.cat); });
+$('#bNew').addEventListener('click', () => { if (S && !S.over && !confirm(t('confirmNew'))) return; openSetup(); });
+$('#bRules').addEventListener('click', () => { $('#dRules').showModal(); $('#dRules').scrollTop = 0; $('#hRules').focus(); });
+$('#bRulesClose').addEventListener('click', () => $('#dRules').close());
+$('#bTheme').addEventListener('click', () => { const th = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; setTheme(th); store.set('theme', th); });
+$('#lang').addEventListener('change', (e) => setLang(e.target.value));
+window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (LANGS.includes(h) && h !== LANG) setLang(h, false); });
+$('#fSetup').addEventListener('change', (e) => { if (e.target.name === 'rules') syncGen(); });
+$('#bAddP').addEventListener('click', () => { const l = readPlayers(); if (l.length < 4) { l.push({ name: t('def.cpu', l.filter((x) => x.kind === 'cpu').length + 1), kind: 'cpu' }); renderPlayers(l); } });
+$('#pList').addEventListener('click', (e) => { const b = e.target.closest('[data-rm]'); if (!b) return; const l = readPlayers(); l.splice(+b.dataset.rm, 1); renderPlayers(l); });
+$('#bCancel').addEventListener('click', () => $('#dSetup').close());
+$('#dSetup').addEventListener('cancel', (e) => { if (!S) e.preventDefault(); });
+$('#fSetup').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const f = e.target, players = readPlayers().map((p, i) => ({ name: p.name.trim().slice(0, 18) || t('def.player', i + 1), kind: p.kind === 'cpu' ? 'cpu' : 'human' }));
+  $('#dSetup').close();
+  newGame({ rules: f.rules.value === 'us' ? 'us' : 'br', genWins: f.genWins.checked, players, seed: f.seed.value.trim() });
+});
+$('#bEndClose').addEventListener('click', () => $('#dEnd').close());
+$('#bEndNew').addEventListener('click', () => { $('#dEnd').close(); openSetup(); });
+$('#bEndAgain').addEventListener('click', () => { $('#dEnd').close(); const c = store.get('setup'); if (c) newGame(Object.assign({}, c, { seed: '' })); else openSetup(); });
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey || e.metaKey || e.altKey || document.querySelector('dialog[open]')) return;
+  const tag = (e.target.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'select' || tag === 'textarea') return;
+  if ((e.key === 'r' || e.key === 'R' || (e.key === ' ' && tag !== 'button')) && canRoll()) { e.preventDefault(); doRoll(false); }
+  else if (/^[1-5]$/.test(e.key)) { e.preventDefault(); toggleHold(+e.key - 1); }
+});
+
+/* ===================== Início ===================== */
+(function init() {
+  const th = store.get('theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  setTheme(th);
+  const h = location.hash.slice(1), saved = store.get('lang'), nav = (navigator.language || 'pt').slice(0, 2).toLowerCase();
+  LANG = LANGS.includes(h) ? h : LANGS.includes(saved) ? saved : LANGS.includes(nav) ? nav : 'pt';
+  applyStatic();
+  const g = store.get('game');
+  if (g && g.v === 1 && RULES[g.rules] && Array.isArray(g.players) && g.players.length) {
+    S = g; render();
+    if (S.over) showEnd(); else schedule();
+  } else {
+    S = null; openSetup();
+  }
+})();
+</script>
+</body>
+</html>
