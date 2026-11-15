@@ -70,7 +70,7 @@ dialog::backdrop{background:rgba(10,20,15,.6)}
 .acts{display:flex;gap:.5rem;justify-content:flex-end;flex-wrap:wrap;margin-top:1rem}
 kbd{display:inline-block;border:1px solid var(--line);border-bottom-width:3px;border-radius:6px;padding:0 .4rem;font-family:var(--sans);font-weight:700;background:var(--surface-2);color:var(--ink)}
 @media (max-width:760px){.setup{grid-template-columns:1fr}.brand p{display:none}.preview canvas{max-width:260px;align-self:center}}
-@media (max-width:480px){.form{grid-template-columns:1fr}.tools .btn{padding:.35rem .5rem}.brand h1{font-size:1.05rem}.hint{max-width:calc(100% - 24px);bottom:110px}}
+@media (max-width:480px){.form{grid-template-columns:1fr}.tools .btn{padding:.35rem .5rem}.brand h1{font-size:1.05rem}.hint{max-width:calc(100% - 24px);bottom:196px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -84,6 +84,7 @@ kbd{display:inline-block;border:1px solid var(--line);border-bottom-width:3px;bo
     <button type="button" class="btn primary" id="bNew" data-i="newRace"></button>
     <button type="button" class="btn" id="bPause" data-i="pause"></button>
     <button type="button" class="btn" id="bHelp" data-i="help"></button>
+    <button type="button" class="btn" id="bMouse" aria-pressed="true" data-ta="mouseToggle">🖱️</button>
     <button type="button" class="btn" id="bSound" aria-pressed="true" data-ta="sound">🔊</button>
     <button type="button" class="btn" id="bTheme" data-ta="theme">◐</button>
     <select id="sLang" data-ta="lang"><option value="pt">🇧🇷 PT</option><option value="en">🇬🇧 EN</option><option value="it">🇮🇹 IT</option><option value="es">🇪🇸 ES</option></select>
@@ -108,6 +109,7 @@ kbd{display:inline-block;border:1px solid var(--line);border-bottom-width:3px;bo
       <label><span data-i="grid"></span><select id="fGrid"><option value="last" data-i="gLast"></option><option value="mid" data-i="gMid"></option><option value="pole" data-i="gPole"></option></select></label>
       <label><span data-i="steer"></span><select id="fSteer"><option value="aim" data-i="stAim"></option><option value="wheel" data-i="stWheel"></option></select></label>
       <label><span data-i="camera"></span><select id="fCam"><option value="north" data-i="camNorth"></option><option value="follow" data-i="camFollow"></option></select></label>
+      <label><span data-i="mouseOpt"></span><select id="fMouse"><option value="on" data-i="mouseOn"></option><option value="off" data-i="mouseOff"></option></select></label>
       <label><span data-i="lineOpt"></span><select id="fLine"><option value="off" data-i="lineOff"></option><option value="on" data-i="lineOn"></option></select></label>
       <label><span data-i="pedalOpt"></span><select id="fPedal"><option value="manual" data-i="pManual"></option><option value="auto" data-i="pAuto"></option></select></label>
       <label><span data-i="seed"></span><input type="text" id="fSeed" inputmode="numeric" maxlength="9" autocomplete="off"></label>
@@ -168,6 +170,14 @@ const I18N = {
   camera:['Câmera','Camera','Telecamera','Cámara'],
   camNorth:['Fixa, norte para cima','Fixed, north up','Fissa, nord in alto','Fija, norte arriba'],
   camFollow:['Gira com o carro','Rotates with the car','Ruota con l’auto','Gira con el coche'],
+  mouseOpt:['Mouse','Mouse','Mouse','Ratón'],
+  mouseOn:['Ativado','On','Attivo','Activado'], mouseOff:['Desativado (teclado)','Off (keyboard)','Disattivato (tastiera)','Desactivado (teclado)'],
+  mouseToggle:['Ativar ou desativar o mouse','Turn the mouse on or off','Attiva o disattiva il mouse','Activar o desactivar el ratón'],
+  mouseIsOn:['Mouse ativado','Mouse on','Mouse attivato','Ratón activado'],
+  mouseIsOff:['Mouse desativado: , e . viram','Mouse off: , and . steer','Mouse disattivato: , e . sterzano','Ratón desactivado: , y . giran'],
+  hintTouch:['Toque na pista para mirar · segure A para acelerar e Z para frear','Tap the track to aim · hold A to accelerate and Z to brake','Tocca la pista per mirare · tieni premuto A per accelerare e Z per frenare','Toca la pista para apuntar · mantén A para acelerar y Z para frenar'],
+  hintKeys:[', e . viram · A acelera · Z freia',', and . steer · A throttle · Z brake',', e . sterzano · A accelera · Z frena',', y . giran · A acelera · Z frena'],
+  hintAutoKeys:['Dirija com , e .; o carro acelera e freia sozinho (Z ainda freia)','Steer with , and .; the car throttles and brakes by itself (Z still brakes)','Sterza con , e .; l’auto accelera e frena da sola (Z frena comunque)','Dirige con , y .; el coche acelera y frena solo (Z sigue frenando)'],
   lineOpt:['Traçado ideal','Racing line','Traiettoria ideale','Trazada ideal'],
   lineOff:['Desligado','Off','Disattivata','Desactivada'], lineOn:['Ligado','On','Attivata','Activada'],
   pedalOpt:['Acelerador e freio','Throttle and brake','Acceleratore e freno','Acelerador y freno'],
@@ -199,8 +209,8 @@ const I18N = {
   waiting:['Esperando os outros carros… (tempo acelerado)','Waiting for the other cars… (fast-forward)','In attesa delle altre auto… (tempo accelerato)','Esperando a los demás coches… (tiempo acelerado)'],
   paused:['PAUSA — P ou Esc para continuar','PAUSED — P or Esc to resume','PAUSA — P o Esc per riprendere','PAUSA — P o Esc para continuar'],
   practiceHint:['Treino livre: Esc para encerrar e ver as voltas','Free practice: Esc to finish and see your laps','Prove libere: Esc per finire e vedere i giri','Entrenamiento libre: Esc para terminar y ver las vueltas'],
-  steerHintAim:['Aponte o mouse para onde quer ir · A acelera · Z freia','Point the mouse where you want to go · A throttle · Z brake','Punta il mouse dove vuoi andare · A accelera · Z frena','Apunta el ratón hacia donde quieres ir · A acelera · Z frena'],
-  steerHintWheel:['Mouse à esquerda ou à direita vira o volante · A acelera · Z freia','Mouse left or right turns the wheel · A throttle · Z brake','Mouse a sinistra o a destra gira il volante · A accelera · Z frena','Ratón a la izquierda o a la derecha gira el volante · A acelera · Z frena'],
+  steerHintAim:['Aponte o mouse para onde quer ir · botão esquerdo acelera · direito freia (ou A e Z)','Point the mouse where you want to go · left button throttle · right button brake (or A and Z)','Punta il mouse dove vuoi andare · tasto sinistro accelera · destro frena (o A e Z)','Apunta el ratón hacia donde quieres ir · botón izquierdo acelera · derecho frena (o A y Z)'],
+  steerHintWheel:['Mouse à esquerda ou à direita vira o volante · botão esquerdo acelera · direito freia','Mouse left or right turns the wheel · left button throttle · right button brake','Mouse a sinistra o a destra gira il volante · tasto sinistro accelera · destro frena','Ratón a la izquierda o a la derecha gira el volante · botón izquierdo acelera · derecho frena'],
   you:['Você','You','Tu','Tú'], youShort:['VOC','YOU','TU','TÚ'],
   resultTitle:['Resultado','Result','Risultato','Resultado'],
   practiceTitle:['Treino livre','Free practice','Prove libere','Entrenamiento libre'],
@@ -219,16 +229,18 @@ const I18N = {
   confirmNew:['Abandonar a corrida atual?','Abandon the current race?','Abbandonare la gara in corso?','¿Abandonar la carrera actual?'],
   liveLap:['Volta {0} de {1}. Posição {2}.','Lap {0} of {1}. Position {2}.','Giro {0} di {1}. Posizione {2}.','Vuelta {0} de {1}. Posición {2}.'],
   liveLapTime:['Volta em {0}.','Lap in {0}.','Giro in {0}.','Vuelta en {0}.'],
-  canvasLabel:['Pista de corrida. Mouse dirige, A acelera, Z freia, P pausa.','Race track. Mouse steers, A throttle, Z brake, P pause.','Pista di gara. Il mouse sterza, A accelera, Z frena, P pausa.','Pista de carreras. El ratón dirige, A acelera, Z frena, P pausa.'],
+  canvasLabel:['Pista de corrida. Mouse dirige, botão esquerdo acelera, direito freia. Teclado: vírgula e ponto viram, A acelera, Z freia, P pausa.','Race track. The mouse steers, left button throttle, right button brake. Keyboard: comma and full stop steer, A throttle, Z brake, P pause.','Pista di gara. Il mouse sterza, tasto sinistro accelera, destro frena. Tastiera: virgola e punto sterzano, A accelera, Z frena, P pausa.','Pista de carreras. El ratón dirige, botón izquierdo acelera, derecho frena. Teclado: coma y punto giran, A acelera, Z frena, P pausa.'],
   helpTitle:['Como se joga','How to play','Come si gioca','Cómo se juega'],
   colRed:['Vermelho','Red','Rosso','Rojo'], colBlue:['Azul','Blue','Blu','Azul'], colYellow:['Amarelo','Yellow','Giallo','Amarillo'], colGreen:['Verde','Green','Verde','Verde'], colOrange:['Laranja','Orange','Arancione','Naranja'], colWhite:['Branco','White','Bianco','Blanco'], colBlack:['Preto','Black','Nero','Negro'], colPurple:['Roxo','Purple','Viola','Morado'],
   helpBody:[`<h3>Controles</h3>
 <table><tbody>
 <tr><td><strong>Mouse</strong></td><td>No modo <em>Mira</em>, o carro vira em direção ao cursor; deixe o cursor um pouco à frente do carro. No modo <em>Volante</em>, mouse à esquerda ou à direita do centro da tela vira as rodas.</td></tr>
+<tr><td><strong>Botões do mouse</strong></td><td>esquerdo acelera, direito freia</td></tr>
 <tr><td><kbd>A</kbd></td><td>acelerador</td></tr>
 <tr><td><kbd>Z</kbd></td><td>freio; com o carro parado, segure para dar ré</td></tr>
-<tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>alternativa ao mouse para virar</td></tr>
+<tr><td><kbd>,</kbd> <kbd>.</kbd></td><td>viram para a esquerda e para a direita (as setas <kbd>←</kbd> <kbd>→</kbd> também)</td></tr>
 <tr><td><kbd>P</kbd> ou <kbd>Esc</kbd></td><td>pausa (no treino livre, Esc encerra)</td></tr>
+<tr><td>🖱️</td><td>ativa e desativa o mouse, também na opção <em>Mouse</em>. Desativado, você dirige só pelo teclado.</td></tr>
 <tr><td>Toque</td><td>toque e arraste na pista para mirar; botões A e Z no canto</td></tr>
 </tbody></table>
 <h3>Pilotagem</h3>
@@ -241,14 +253,16 @@ const I18N = {
 <li><strong>Acelerador e freio automáticos:</strong> o carro acelera e freia sozinho conforme a curva à frente, e você só dirige. A tecla Z continua freando. Voltas feitas assim não contam como recorde pessoal.</li></ul>
 <h3>As pistas</h3>
 <p>São as 16 corridas do campeonato mundial de 1990, na ordem do calendário, de Phoenix a Adelaide. Cada pista tem o comprimento oficial da volta naquele ano, mas o desenho é <strong>simplificado</strong>: as curvas foram desenhadas à mão para lembrar o traçado, não copiadas de mapas. Em Suzuka, o oito passa por uma ponte. Datas, comprimentos e número de voltas vêm dos artigos da Wikipédia em inglês sobre cada Grande Prêmio de 1990 (consulta em 15/11/2026).</p>
-<p>Os pilotos adversários são fictícios, e os carros não reproduzem pintura de nenhuma equipe.</p>`,
+<p>Os pilotos adversários são fictícios, e os carros não reproduzem pintura de nenhuma equipe. As placas de patrocínio também são de marcas inventadas, no estilo da época: as marcas reais de 1990 são registradas, e muitas eram de cigarro.</p>`,
 `<h3>Controls</h3>
 <table><tbody>
 <tr><td><strong>Mouse</strong></td><td>In <em>Aim</em> mode, the car turns toward the cursor; keep the cursor a little ahead of the car. In <em>Wheel</em> mode, moving the mouse left or right of the screen centre turns the wheels.</td></tr>
+<tr><td><strong>Mouse buttons</strong></td><td>left accelerates, right brakes</td></tr>
 <tr><td><kbd>A</kbd></td><td>throttle</td></tr>
 <tr><td><kbd>Z</kbd></td><td>brake; when stopped, hold it to reverse</td></tr>
-<tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>an alternative to the mouse for steering</td></tr>
+<tr><td><kbd>,</kbd> <kbd>.</kbd></td><td>steer left and right (the <kbd>←</kbd> <kbd>→</kbd> arrows too)</td></tr>
 <tr><td><kbd>P</kbd> or <kbd>Esc</kbd></td><td>pause (in free practice, Esc ends the session)</td></tr>
+<tr><td>🖱️</td><td>turns the mouse on and off, also in the <em>Mouse</em> option. When it is off, you drive with the keyboard only.</td></tr>
 <tr><td>Touch</td><td>touch and drag on the track to aim; A and Z buttons in the corner</td></tr>
 </tbody></table>
 <h3>Driving</h3>
@@ -261,14 +275,16 @@ const I18N = {
 <li><strong>Automatic throttle and brake:</strong> the car accelerates and brakes by itself for the corner ahead, and you only steer. The Z key still brakes. Laps driven this way do not count as personal records.</li></ul>
 <h3>The tracks</h3>
 <p>These are the 16 races of the 1990 world championship, in calendar order, from Phoenix to Adelaide. Each track has the official lap length of that year, but the layout is <strong>simplified</strong>: the corners were drawn by hand to resemble the circuit, not copied from maps. At Suzuka, the figure eight passes over a bridge. Dates, lengths and lap counts come from the English Wikipedia articles on each 1990 Grand Prix (consulted on 15 November 2026).</p>
-<p>The rival drivers are fictional, and the cars do not reproduce any team’s livery.</p>`,
+<p>The rival drivers are fictional, and the cars do not reproduce any team’s livery. The sponsor boards are also made-up brands in the style of the period: the real 1990 brands are registered trademarks, and many were tobacco brands.</p>`,
 `<h3>Comandi</h3>
 <table><tbody>
 <tr><td><strong>Mouse</strong></td><td>In modalità <em>Mira</em>, l’auto gira verso il cursore; tieni il cursore un po’ davanti all’auto. In modalità <em>Volante</em>, il mouse a sinistra o a destra del centro dello schermo gira le ruote.</td></tr>
+<tr><td><strong>Tasti del mouse</strong></td><td>sinistro accelera, destro frena</td></tr>
 <tr><td><kbd>A</kbd></td><td>acceleratore</td></tr>
 <tr><td><kbd>Z</kbd></td><td>freno; ad auto ferma, tienilo premuto per la retromarcia</td></tr>
-<tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>alternativa al mouse per sterzare</td></tr>
+<tr><td><kbd>,</kbd> <kbd>.</kbd></td><td>sterzano a sinistra e a destra (anche le frecce <kbd>←</kbd> <kbd>→</kbd>)</td></tr>
 <tr><td><kbd>P</kbd> o <kbd>Esc</kbd></td><td>pausa (nelle prove libere, Esc termina la sessione)</td></tr>
+<tr><td>🖱️</td><td>attiva e disattiva il mouse, anche nell’opzione <em>Mouse</em>. Disattivato, guidi solo con la tastiera.</td></tr>
 <tr><td>Tocco</td><td>tocca e trascina sulla pista per mirare; pulsanti A e Z nell’angolo</td></tr>
 </tbody></table>
 <h3>Guida</h3>
@@ -281,14 +297,16 @@ const I18N = {
 <li><strong>Acceleratore e freno automatici:</strong> l’auto accelera e frena da sola in base alla curva davanti, e tu sterzi soltanto. Il tasto Z frena comunque. I giri fatti così non valgono come record personale.</li></ul>
 <h3>Le piste</h3>
 <p>Sono le 16 gare del campionato mondiale del 1990, nell’ordine del calendario, da Phoenix ad Adelaide. Ogni pista ha la lunghezza ufficiale del giro di quell’anno, ma il disegno è <strong>semplificato</strong>: le curve sono state disegnate a mano per ricordare il tracciato, non copiate da mappe. A Suzuka, l’otto passa su un ponte. Date, lunghezze e numero di giri vengono dagli articoli della Wikipedia in inglese su ogni Gran Premio del 1990 (consultati il 15/11/2026).</p>
-<p>I piloti avversari sono inventati, e le auto non riproducono la livrea di alcuna squadra.</p>`,
+<p>I piloti avversari sono inventati, e le auto non riproducono la livrea di alcuna squadra. Anche i cartelloni degli sponsor sono marchi inventati, nello stile dell’epoca: i marchi reali del 1990 sono registrati, e molti erano di sigarette.</p>`,
 `<h3>Controles</h3>
 <table><tbody>
 <tr><td><strong>Ratón</strong></td><td>En el modo <em>Mira</em>, el coche gira hacia el cursor; deja el cursor un poco por delante del coche. En el modo <em>Volante</em>, el ratón a la izquierda o a la derecha del centro de la pantalla gira las ruedas.</td></tr>
+<tr><td><strong>Botones del ratón</strong></td><td>izquierdo acelera, derecho frena</td></tr>
 <tr><td><kbd>A</kbd></td><td>acelerador</td></tr>
 <tr><td><kbd>Z</kbd></td><td>freno; con el coche parado, mantenlo para dar marcha atrás</td></tr>
-<tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>alternativa al ratón para girar</td></tr>
+<tr><td><kbd>,</kbd> <kbd>.</kbd></td><td>giran a la izquierda y a la derecha (también las flechas <kbd>←</kbd> <kbd>→</kbd>)</td></tr>
 <tr><td><kbd>P</kbd> o <kbd>Esc</kbd></td><td>pausa (en el entrenamiento libre, Esc termina la sesión)</td></tr>
+<tr><td>🖱️</td><td>activa y desactiva el ratón, también en la opción <em>Ratón</em>. Desactivado, conduces solo con el teclado.</td></tr>
 <tr><td>Toque</td><td>toca y arrastra en la pista para apuntar; botones A y Z en la esquina</td></tr>
 </tbody></table>
 <h3>Conducción</h3>
@@ -301,7 +319,7 @@ const I18N = {
 <li><strong>Acelerador y freno automáticos:</strong> el coche acelera y frena solo según la curva que viene, y tú solo diriges. La tecla Z sigue frenando. Las vueltas hechas así no cuentan como récord personal.</li></ul>
 <h3>Las pistas</h3>
 <p>Son las 16 carreras del campeonato mundial de 1990, en el orden del calendario, de Phoenix a Adelaida. Cada pista tiene la longitud oficial de la vuelta de ese año, pero el dibujo está <strong>simplificado</strong>: las curvas se dibujaron a mano para recordar el trazado, no se copiaron de mapas. En Suzuka, el ocho pasa por un puente. Fechas, longitudes y número de vueltas vienen de los artículos de la Wikipedia en inglés sobre cada Gran Premio de 1990 (consulta del 15/11/2026).</p>
-<p>Los pilotos rivales son ficticios, y los coches no reproducen la decoración de ningún equipo.</p>`]
+<p>Los pilotos rivales son ficticios, y los coches no reproducen la decoración de ningún equipo. Los carteles de patrocinio también son marcas inventadas, al estilo de la época: las marcas reales de 1990 son registradas, y muchas eran de tabaco.</p>`]
 };
 const LANGS = ['pt','en','it','es'], HTML_LANG = {pt:'pt-BR',en:'en',it:'it',es:'es'};
 let LANG = 'pt';
@@ -664,7 +682,7 @@ const SND = {
     const engine = (vol) => { const o1 = c.createOscillator(), o2 = c.createOscillator(), f = c.createBiquadFilter(), g = c.createGain(); o1.type = 'sawtooth'; o2.type = 'square'; f.type = 'lowpass'; f.frequency.value = 1200; f.Q.value = 3; g.gain.value = 0; o1.connect(f); o2.connect(f); f.connect(g); g.connect(this.master); o1.start(); o2.start(); return { o1, o2, f, g, vol }; };
     this.eng = engine(.16); this.other = engine(.08);
     const loop = (type, freq, q) => { const s = c.createBufferSource(); s.buffer = buf; s.loop = true; const f = c.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q; const g = c.createGain(); g.gain.value = 0; s.connect(f); f.connect(g); g.connect(this.master); s.start(); return g; };
-    this.skid = loop('bandpass', 1900, 6); this.rumble = loop('lowpass', 260, 1);
+    this.skid = loop('bandpass', 1900, 6); this.rumble = loop('lowpass', 260, 1); this.crowd = loop('bandpass', 760, .45);
   },
   ok() { return this.on && this.ctx && this.ctx.state === 'running'; },
   setEngine(e, rpm, load, vol) {
@@ -672,12 +690,13 @@ const SND = {
     e.o1.frequency.setTargetAtTime(f, t0, .03); e.o2.frequency.setTargetAtTime(f * 2.01, t0, .03);
     e.f.frequency.setTargetAtTime(600 + load * 2600 + rpm * .12, t0, .05); e.g.gain.setTargetAtTime(vol, t0, .05);
   },
-  update(car, near, nearD, paused) {
+  update(car, near, nearD, paused, crowd, crowdPaused) {
     if (!this.ctx) return;
     const t0 = this.ctx.currentTime, mute = !this.on || paused;
     this.setEngine(this.eng, car ? car.rpm : 4000, car ? car.thr : 0, mute || !car ? 0 : this.eng.vol * (.45 + .55 * (car.thr || .2)));
     this.setEngine(this.other, near ? near.rpm : 4000, near ? near.thr : 0, mute || !near ? 0 : this.other.vol / (1 + nearD / 25));
     this.skid.gain.setTargetAtTime(mute || !car ? 0 : clamp((car.slip - .8) / 3, 0, .35), t0, .05);
+    this.crowd.gain.setTargetAtTime(!this.on || crowdPaused ? 0 : crowd || 0, t0, .35);
     this.rumble.gain.setTargetAtTime(mute || !car ? 0 : (car.surf === 1 ? .25 : car.surf >= 2 ? .35 : 0) * clamp(Math.abs(car.u) / 20, 0, 1), t0, .06);
   },
   blip(f0, dur, vol, type) { if (!this.ok()) return; const c = this.ctx, t0 = c.currentTime, o = c.createOscillator(), g = c.createGain(); o.type = type || 'sine'; o.frequency.value = f0; g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(.0001, t0 + dur); o.connect(g); g.connect(this.master); o.start(t0); o.stop(t0 + dur + .05); },
@@ -685,12 +704,13 @@ const SND = {
 };
 
 /* ===================== Corrida ===================== */
-const DEF_OPTS = { track: 'phx', mode: 'race', laps: 3, opp: 7, level: 'normal', grid: 'last', steer: 'aim', cam: 'north', line: 'off', pedal: 'manual', color: 'red', seed: '' };
+const DEF_OPTS = { track: 'phx', mode: 'race', laps: 3, opp: 7, level: 'normal', grid: 'last', steer: 'aim', cam: 'north', mouse: 'on', line: 'off', pedal: 'manual', color: 'red', seed: '' };
 let OPTS = Object.assign({}, DEF_OPTS, store.get('opts') || {});
 let R = null;   // corrida atual
 const SKILL = { easy: [.82, .88], normal: [.9, .955], hard: [.965, 1.0] };
 function newRace(seed) {
   const def = TRACKS.find((d) => d.id === OPTS.track) || TRACKS[0], tr = prepTrack(def), rng = mulberry(seed);
+  buildScenery(tr);
   fxr = mulberry(seed ^ 0x2545F491);
   const practice = OPTS.mode === 'practice', nOpp = practice ? 0 : OPTS.opp;
   const col = COLORS.find((c) => c[0] === OPTS.color) || COLORS[0];
@@ -714,10 +734,22 @@ function newRace(seed) {
   R = { tr, def, cars, player, rng, seed, practice, laps: practice ? Infinity : OPTS.laps, time: 0, phase: practice ? 'race' : 'lights', lightsT: 0, goT: practice ? 0 : 5 + .4 + rng() * 1.6, started: practice, over: false, jump: false, penalty: 0, msg: [], skids: [], parts: [], fastest: { t: Infinity, who: '' }, finishOrder: [], ffT: 0, ff: 1, paused: false, cam: { x: player.x, y: player.y, z: 6, a: 0 }, lightsOn: 0 };
   if (practice) { cars.forEach((c) => { c.held = false; c.lastCross = 0; }); R.goT = 0; }
   minimap = null;
-  $('#hint').textContent = practice ? t('practiceHint') : OPTS.pedal === 'auto' ? t('hintAuto') : (OPTS.steer === 'aim' ? t('steerHintAim') : t('steerHintWheel'));
+  $('#hint').textContent = hintText();
   $('#hint').hidden = false; setTimeout(() => { if (R && R.time > 4) $('#hint').hidden = true; }, 9000);
   if (OPTS.cam === 'follow') R.cam.a = -player.h - Math.PI / 2;
   if (!practice) say(t('ready'));
+}
+const COARSE = window.matchMedia('(pointer: coarse)').matches;
+function hintText() {
+  if (R && R.practice) return t('practiceHint');
+  if (COARSE) return t('hintTouch');
+  if (OPTS.pedal === 'auto') return mouseOn() ? t('hintAuto') : t('hintAutoKeys');
+  if (!mouseOn()) return t('hintKeys');
+  return OPTS.steer === 'aim' ? t('steerHintAim') : t('steerHintWheel');
+}
+function syncMouse() {
+  const b = $('#bMouse'); b.textContent = mouseOn() ? '🖱️' : '⌨️'; b.setAttribute('aria-pressed', String(mouseOn()));
+  cv.style.cursor = mouseOn() ? 'crosshair' : 'default'; MOUSE.btn = 0;
 }
 function flash(text, dur, big) { R.msg.push({ text, t: 0, dur: dur || 2.2, big: !!big }); }
 function say(s) { $('#live').textContent = s; }
@@ -741,7 +773,7 @@ function crossCheck(c, prevS) {
     }
     if (!R.practice && c.lap >= R.laps && !c.finished) {
       c.finished = true; c.finishT = tc - R.goT + (c.player ? R.penalty : 0); R.finishOrder.push(c);
-      if (c.player) { flash(t('checkered'), 3, true); c.ai = true; c.skill = .62; c.react = 0; R.ffT = 0; }
+      if (c.player) { R.cheer = 1; flash(t('checkered'), 3, true); c.ai = true; c.skill = .62; c.react = 0; R.ffT = 0; }
     }
   } else if (prevS < 80 && c.s > L - 80 && c.lap >= 0) { c.cp = true; } // ré sobre a linha: não perde a volta já iniciada
 }
@@ -761,7 +793,7 @@ function step(dt) {
   if (R.phase === 'lights') {
     const lit = Math.min(5, Math.floor(R.time));
     if (lit > R.lightsOn) { R.lightsOn = lit; SND.blip(660, .18, .25, 'square'); }
-    if (R.time >= R.goT) { R.phase = 'race'; R.lightsOn = 0; R.started = true; flash(t('go'), 1.2, true); SND.blip(1320, .45, .3, 'square'); }
+    if (R.time >= R.goT) { R.phase = 'race'; R.lightsOn = 0; R.started = true; R.cheer = 1; flash(t('go'), 1.2, true); SND.blip(1320, .45, .3, 'square'); }
   }
   for (const c of R.cars) {
     if (c.player && !c.ai) readPlayer(c);
@@ -780,6 +812,7 @@ function step(dt) {
   for (let a = 0; a < R.cars.length; a++) for (let b = a + 1; b < R.cars.length; b++) collide(R.cars[a], R.cars[b], tr);
   // mistakes ocasionais no nível fácil
   if (OPTS.level === 'easy') for (const c of R.cars) if (c.ai && !c.player) { if (c.mist > 0) c.mist = Math.max(0, c.mist - dt * .2); else if (R.rng() < dt * .02) c.mist = .12; }
+  R.cheer = Math.max(0, (R.cheer || 0) - dt * .22);
   for (const m of R.msg) m.t += dt; R.msg = R.msg.filter((m) => m.t < m.dur);
   // fim da corrida
   if (!R.practice && R.player.finished && !R.over) {
@@ -809,7 +842,8 @@ function endRace() {
 }
 
 /* ===================== Entrada ===================== */
-const KEYS = new Set(); let MOUSE = { x: 0, y: 0, on: false }, TOUCH = { gas: false, brake: false };
+const KEYS = new Set(); let MOUSE = { x: 0, y: 0, on: false, btn: 0 }, TOUCH = { gas: false, brake: false };
+const mouseOn = () => OPTS.mouse !== 'off';
 function autoPedals(c) { // velocidade alvo pelo perfil da pista, com folga quando o carro sai da linha ideal
   const tr = R.tr, n = tr.n, u = Math.max(c.u, 0);
   if (!R.started) return [0, 0];
@@ -822,7 +856,8 @@ function autoPedals(c) { // velocidade alvo pelo perfil da pista, com folga quan
   return [dv > 0 ? clamp(dv / 3, 0, 1) : 0, dv < -1.2 ? clamp(-dv / 5, 0, 1) : 0];
 }
 function readPlayer(c) {
-  const gasK = KEYS.has('a') || KEYS.has('ArrowUp') || TOUCH.gas, brkK = KEYS.has('z') || KEYS.has('ArrowDown') || TOUCH.brake;
+  const mb = mouseOn() ? MOUSE.btn : 0;
+  const gasK = KEYS.has('a') || KEYS.has('ArrowUp') || TOUCH.gas || !!(mb & 1), brkK = KEYS.has('z') || KEYS.has('ArrowDown') || TOUCH.brake || !!(mb & 2);
   if (OPTS.pedal === 'auto') {
     const [th, br] = autoPedals(c);
     c.thr += clamp((brkK ? 0 : th) - c.thr, -8 * FIXED, 6 * FIXED); c.brk = brkK ? 1 : br;
@@ -834,9 +869,9 @@ function readPlayer(c) {
   }
   const dmax = delMax(c.u);
   let target = 0;
-  const kl = KEYS.has('ArrowLeft'), kr = KEYS.has('ArrowRight');
+  const kl = KEYS.has('ArrowLeft') || KEYS.has(','), kr = KEYS.has('ArrowRight') || KEYS.has('.');
   if (kl || kr) target = (kr ? 1 : 0) - (kl ? 1 : 0) ? ((kr ? 1 : -1) * dmax) : 0;
-  else if (MOUSE.on) {
+  else if (MOUSE.on && mouseOn()) {
     const cv = $('#cv'), w = cv.clientWidth, h = cv.clientHeight;
     if (OPTS.steer === 'wheel') target = clamp((MOUSE.x - w / 2) / (w * .3), -1, 1) * dmax * (c.u < -.5 ? -1 : 1);
     else {
@@ -851,20 +886,24 @@ function readPlayer(c) {
   }
   c.steer += clamp(target - c.steer, -2.4 * FIXED, 2.4 * FIXED);
 }
+function keyOf(e) { if (e.code === 'Comma') return ','; if (e.code === 'Period') return '.'; return e.key.length === 1 ? e.key.toLowerCase() : e.key; }
 document.addEventListener('keydown', (e) => {
   if (/INPUT|SELECT|TEXTAREA/.test(e.target.tagName) || document.querySelector('dialog[open]')) return;
-  const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-  if (['a', 'z', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(k)) e.preventDefault();
+  const k = keyOf(e);
+  if (['a', 'z', ',', '.', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(k)) e.preventDefault();
   if (k === 'r' && R && !R.over && R.started && !R.player.finished) { resetCar(R.player); return; }
   if (k === 'p' || k === 'Escape') { e.preventDefault(); if (R && R.practice && k === 'Escape' && !R.over) { setTimeout(endRace, 0); return; } togglePause(); return; }
   KEYS.add(k); SND.init();
 });
-document.addEventListener('keyup', (e) => { const k = e.key.length === 1 ? e.key.toLowerCase() : e.key; KEYS.delete(k); });
-window.addEventListener('blur', () => { KEYS.clear(); TOUCH.gas = TOUCH.brake = false; if (R && !R.over && !R.paused) togglePause(); });
+document.addEventListener('keyup', (e) => { KEYS.delete(keyOf(e)); });
+window.addEventListener('blur', () => { KEYS.clear(); MOUSE.btn = 0; TOUCH.gas = TOUCH.brake = false; if (R && !R.over && !R.paused) togglePause(); });
 const cv = $('#cv');
-cv.addEventListener('pointermove', (e) => { const r = cv.getBoundingClientRect(); MOUSE.x = e.clientX - r.left; MOUSE.y = e.clientY - r.top; MOUSE.on = true; });
-cv.addEventListener('pointerdown', (e) => { SND.init(); const r = cv.getBoundingClientRect(); MOUSE.x = e.clientX - r.left; MOUSE.y = e.clientY - r.top; MOUSE.on = true; cv.focus({ preventScroll: true }); if (e.pointerType !== 'mouse') cv.setPointerCapture(e.pointerId); });
-cv.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') MOUSE.on = false; });
+cv.addEventListener('pointermove', (e) => { const r = cv.getBoundingClientRect(); MOUSE.x = e.clientX - r.left; MOUSE.y = e.clientY - r.top; MOUSE.on = true; if (e.pointerType === 'mouse') MOUSE.btn = e.buttons; });
+cv.addEventListener('pointerdown', (e) => { SND.init(); const r = cv.getBoundingClientRect(); MOUSE.x = e.clientX - r.left; MOUSE.y = e.clientY - r.top; MOUSE.on = true; if (e.pointerType === 'mouse') { MOUSE.btn = e.buttons; if (mouseOn()) e.preventDefault(); } cv.focus({ preventScroll: true }); cv.setPointerCapture(e.pointerId); });
+cv.addEventListener('pointerup', (e) => { if (e.pointerType === 'mouse') MOUSE.btn = e.buttons; });
+cv.addEventListener('pointercancel', () => { MOUSE.btn = 0; });
+cv.addEventListener('contextmenu', (e) => { e.preventDefault(); });
+cv.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse' && !e.buttons) { MOUSE.on = false; MOUSE.btn = 0; } });
 for (const [id, k] of [['tGas', 'gas'], ['tBrake', 'brake']]) {
   const b = document.getElementById(id);
   const on = (v) => (e) => { e.preventDefault(); SND.init(); TOUCH[k] = v; b.classList.toggle('on', v); };
@@ -988,6 +1027,156 @@ function drawLine(tr) {
   }
   ctx.globalAlpha = 1;
 }
+/* ===================== Cenário: arquibancadas e patrocínios (marcas fictícias) ===================== */
+const BRANDS = [['VELOTROX', '#FFD100', '#D2001F'], ['KAPRANI', '#121212', '#FFD100'], ['ZENTAURA', '#FFFFFF', '#0B2E8A'], ['ROSSALINA', '#D2001F', '#FFFFFF'],
+  ['PIXAVOX', '#1452C8', '#FFFFFF'], ['ORBALUX', '#0F7A3D', '#FFFFFF'], ['FIZZORA', '#FF7A00', '#121212'], ['NORTALIS', '#5B1E8C', '#FFE066']];
+const SHIRTS = ['#E63946', '#FFD60A', '#F8F9FA', '#1D4ED8', '#2A9D8F', '#F77F00', '#FF5D8F', '#22252A', '#8ECAE6', '#B5179E', '#70E000', '#A0522D'];
+const HEADS = ['#2B1B12', '#4A2C1A', '#6B3E26', '#8D5524', '#C68642', '#E0AC69', '#F1C27D', '#D9A066', '#1B1B1B', '#B8860B'];
+function hashStr(s) { let h = 2166136261; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+function nearOther(tr, x, y, i, lim) { // outro trecho da pista a menos de lim metros?
+  const T = tr.T, cx = Math.floor(x / tr.CELL), cy = Math.floor(y / tr.CELL);
+  for (let gx = cx - 2; gx <= cx + 2; gx++) for (let gy = cy - 2; gy <= cy + 2; gy++) {
+    const arr = tr.grid.get(gx + ',' + gy); if (!arr) continue;
+    for (const j of arr) { let d = Math.abs(T.S[j] - T.S[i]); d = Math.min(d, T.total - d); if (d < 160) continue; if (Math.hypot(T.X[j] - x, T.Y[j] - y) < lim) return true; }
+  }
+  return false;
+}
+function clearOf(tr, x, y, i, need) { // o ponto está a pelo menos need metros de todo o asfalto, e o trecho mais perto é o próprio?
+  const T = tr.T, n = tr.n, cx = Math.floor(x / tr.CELL), cy = Math.floor(y / tr.CELL); let best = 1e9, bj = -1;
+  for (let gx = cx - 2; gx <= cx + 2; gx++) for (let gy = cy - 2; gy <= cy + 2; gy++) {
+    const arr = tr.grid.get(gx + ',' + gy); if (!arr) continue;
+    for (const j of arr) { const d = Math.hypot(T.X[j] - x, T.Y[j] - y); if (d < best) { best = d; bj = j; } }
+  }
+  if (bj < 0) return true;
+  let di = Math.abs(bj - i); di = Math.min(di, n - di);
+  return best >= need && di * tr.ds < 60;
+}
+function buildScenery(tr) {
+  if (tr.scen) return tr.scen;
+  const T = tr.T, n = tr.n, W = tr.W, ds = tr.ds, rng = mulberry(hashStr(tr.def.id)), street = !!tr.def.street;
+  const ix = (i) => ((i % n) + n) % n;
+  const wall = (i, sg) => W / 2 + (sg < 0 ? tr.runL[i] : tr.runR[i]);
+  const pt = (i, off) => [T.X[i] + tr.NX[i] * off, T.Y[i] + tr.NY[i] * off];
+  const stands = [], boards = [], used = { '-1': new Uint8Array(n), '1': new Uint8Array(n) };
+  // candidatos: reta da largada (dos dois lados) e o lado de fora das curvas mais lentas
+  const cands = [{ c: ix(Math.round(40 / ds)), sg: -1, len: 180, main: true }, { c: ix(Math.round(40 / ds)), sg: 1, len: 180, main: true }];
+  const mins = [];
+  for (let i = 0; i < n; i++) { const v = tr.vmax[i]; if (v > 62) continue; let ok = true; for (let k = -25; k <= 25 && ok; k++) if (tr.vmax[ix(i + k)] < v) ok = false; if (ok) mins.push(i); }
+  mins.sort((a, b) => tr.vmax[a] - tr.vmax[b]);
+  const chosen = [];
+  for (const i of mins) { if (chosen.every((j) => { let d = Math.abs(T.S[i] - T.S[j]); d = Math.min(d, T.total - d); return d > 350; })) chosen.push(i); if (chosen.length >= 5) break; }
+  for (const i of chosen) { let k = 0; for (let q = -8; q <= 8; q++) k += T.K[ix(i + q)]; cands.push({ c: i, sg: k > 0 ? -1 : 1, len: 120, main: false }); }
+  const depth = street ? 9 : 13, rowH = 1.25, rows = Math.floor((depth - 1.4) / rowH);
+  for (const cd of cands) {
+    const half = Math.round(cd.len / 2 / ds), ok = (i) => {
+      const b = wall(i, cd.sg) + 2.5;
+      for (const o of [b, b + depth / 2, b + depth]) { const [x, y] = pt(i, cd.sg * o); if (nearOther(tr, x, y, i, W / 2 + 8) || !clearOf(tr, x, y, i, W / 2 + 3)) return false; }
+      return !used[cd.sg][i];
+    };
+    if (!ok(cd.c)) continue;
+    let a = 0, b = 0; while (a < half && ok(ix(cd.c - a - 1))) a++; while (b < half && ok(ix(cd.c + b + 1))) b++;
+    if ((a + b) * ds < 50) continue;
+    const idx = []; for (let k = -a; k <= b; k++) { idx.push(ix(cd.c + k)); used[cd.sg][ix(cd.c + k)] = 1; }
+    // geometria e desenho fora da tela (6 px por metro)
+    const base = idx.map((i) => wall(i, cd.sg) + 2.5);
+    let mnx = 1e9, mny = 1e9, mxx = -1e9, mxy = -1e9;
+    idx.forEach((i, k) => { for (const o of [base[k], base[k] + depth]) { const [x, y] = pt(i, cd.sg * o); mnx = Math.min(mnx, x); mny = Math.min(mny, y); mxx = Math.max(mxx, x); mxy = Math.max(mxy, y); } });
+    mnx -= 2; mny -= 2; mxx += 2; mxy += 2;
+    const PPM = Math.min(6, 2600 / Math.max(mxx - mnx, mxy - mny)), cv2 = document.createElement('canvas');
+    cv2.width = Math.ceil((mxx - mnx) * PPM); cv2.height = Math.ceil((mxy - mny) * PPM);
+    const x = cv2.getContext('2d'); x.scale(PPM, PPM); x.translate(-mnx, -mny);
+    const strip = (o1, o2, fill) => { x.beginPath(); idx.forEach((i, k) => { const [px, py] = pt(i, cd.sg * (base[k] + o1)); k ? x.lineTo(px, py) : x.moveTo(px, py); }); for (let k = idx.length - 1; k >= 0; k--) { const [px, py] = pt(idx[k], cd.sg * (base[k] + o2)); x.lineTo(px, py); } x.closePath(); x.fillStyle = fill; x.fill(); };
+    strip(0, depth, '#A9AFB5');
+    strip(depth - 1.4, depth, '#5A616B');
+    x.strokeStyle = 'rgba(55,60,66,.45)'; x.lineWidth = .12;
+    for (let r = 0; r <= rows; r++) { x.beginPath(); idx.forEach((i, k) => { const [px, py] = pt(i, cd.sg * (base[k] + r * rowH)); k ? x.lineTo(px, py) : x.moveTo(px, py); }); x.stroke(); }
+    // torcedores: camiseta e cabeça vistas de cima
+    const occ = cd.main ? .93 : .8, flags = [];
+    for (let r = 0; r < rows; r++) {
+      let carry = rng() * .6;
+      for (let k = 0; k < idx.length - 1; k++) {
+        const i = idx[k], j = idx[k + 1], [ax, ay] = pt(i, cd.sg * (base[k] + (r + .55) * rowH)), [bx, by] = pt(j, cd.sg * (base[k + 1] + (r + .55) * rowH));
+        const L = Math.hypot(bx - ax, by - ay); let s = carry;
+        while (s < L) {
+          const f = s / L, px = ax + (bx - ax) * f + (rng() - .5) * .12, py = ay + (by - ay) * f + (rng() - .5) * .12;
+          if (rng() < occ) {
+            x.fillStyle = SHIRTS[Math.floor(rng() * SHIRTS.length)]; x.beginPath(); x.arc(px, py, .27, 0, 7); x.fill();
+            x.fillStyle = HEADS[Math.floor(rng() * HEADS.length)]; x.beginPath(); x.arc(px, py, .14, 0, 7); x.fill();
+            if (rng() < .012) { const co = BRANDS[Math.floor(rng() * BRANDS.length)], ph = rng() * 6.28; flags.push({ x: px, y: py, a: T.H[i] + (cd.sg > 0 ? Math.PI : 0), c1: SHIRTS[Math.floor(rng() * 6)], c2: co[1], ph }); }
+          }
+          s += .62 + (rng() - .5) * .1;
+        }
+        carry = s - L;
+      }
+    }
+    const centers = []; for (let k = 0; k < idx.length; k += Math.max(1, Math.round(20 / ds))) centers.push(pt(idx[k], cd.sg * (base[k] + depth / 2)));
+    stands.push({ cv: cv2, minx: mnx, miny: mny, w: mxx - mnx, h: mxy - mny, flags, centers, cx: (mnx + mxx) / 2, cy: (mny + mxy) / 2, main: cd.main });
+    // placas no muro em frente à arquibancada
+    for (let k = 0; k < idx.length; k += Math.max(1, Math.round(12 / ds))) addBoard(idx[k], cd.sg);
+  }
+  function addBoard(i, sg, brand) {
+    const o = wall(i, sg) + 2.0, [x, y] = pt(i, sg * o);
+    if (nearOther(tr, x, y, i, W / 2 + 3)) return;
+    for (const b2 of boards) if (b2.sg === sg && Math.hypot(b2.x - x, b2.y - y) < 11) return;
+    boards.push({ x, y, a: T.H[i], sg, len: 10, brand: brand === undefined ? Math.floor(rng() * BRANDS.length) : brand });
+  }
+  // placas antes das zonas de frenagem, no lado de fora da curva seguinte, e ao longo da reta da largada
+  for (let i = 0; i < n; i++) {
+    if (tr.lcol[i] === 2 && tr.lcol[ix(i - 1)] !== 2) {
+      let k = 0; for (let q = 10; q <= 40; q++) k += T.K[ix(i + q)];
+      const sg = k > 0 ? -1 : 1, br = Math.floor(rng() * BRANDS.length);
+      for (let q = 0; q < 4; q++) addBoard(ix(i + Math.round(q * 11 / ds)), sg, br);
+    }
+  }
+  for (let q = -Math.round(120 / ds); q < Math.round(220 / ds); q += Math.max(1, Math.round(11 / ds))) { addBoard(ix(q), -1); addBoard(ix(q), 1); }
+  // pórtico sobre a largada
+  const gi = ix(-Math.round(8 / ds));
+  const gantry = { x: T.X[gi], y: T.Y[gi], a: T.H[gi], span: W + 7, brand: Math.floor(rng() * BRANDS.length) };
+  tr.scen = { stands, boards, gantry };
+  return tr.scen;
+}
+function drawScenery(tr, c, m) {
+  const S = tr.scen; if (!S) return;
+  const tm = R ? R.time : 0;
+  for (const st of S.stands) {
+    if (st.minx + st.w < c.x - m || st.minx > c.x + m || st.miny + st.h < c.y - m || st.miny > c.y + m) continue;
+    ctx.drawImage(st.cv, st.minx, st.miny, st.w, st.h);
+    let near = false; for (const car of R.cars) if (Math.abs(car.x - st.cx) < st.w / 2 + 40 && Math.abs(car.y - st.cy) < st.h / 2 + 40) { near = true; break; }
+    const sp = near || R.cheer > .2 ? 11 : 3.5;
+    for (const f of st.flags) {
+      const wv = Math.sin(tm * sp + f.ph);
+      ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.a + wv * (near ? .55 : .25));
+      ctx.strokeStyle = '#2A2A2A'; ctx.lineWidth = .1; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -1.6); ctx.stroke();
+      ctx.fillStyle = f.c1; ctx.beginPath(); ctx.moveTo(0, -1.6); ctx.lineTo(1.4, -1.6 + wv * .25); ctx.lineTo(1.4, -1.15 + wv * .25); ctx.lineTo(0, -1.15); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = f.c2; ctx.beginPath(); ctx.moveTo(0, -1.15); ctx.lineTo(1.4, -1.15 + wv * .25); ctx.lineTo(1.4, -.7 + wv * .25); ctx.lineTo(0, -.7); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+  }
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '900 .74px "Arial Black","Segoe UI",Arial,sans-serif';
+  for (const b of S.boards) {
+    if (Math.abs(b.x - c.x) > m || Math.abs(b.y - c.y) > m) continue;
+    const br = BRANDS[b.brand];
+    let ang = b.a + c.a; ang = wrapA(ang); const flip = Math.abs(ang) > Math.PI / 2;
+    ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.a + (flip ? Math.PI : 0));
+    ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(-b.len / 2 + .2, -.45 + .2, b.len, .9);
+    ctx.fillStyle = br[1]; ctx.fillRect(-b.len / 2, -.45, b.len, .9);
+    ctx.fillStyle = br[2]; ctx.fillText(br[0], 0, .05, b.len - .8);
+    ctx.restore();
+  }
+}
+function drawGantry(tr, c, m) {
+  const S = tr.scen; if (!S || !S.gantry) return; const g = S.gantry;
+  if (Math.abs(g.x - c.x) > m || Math.abs(g.y - c.y) > m) return;
+  const br = BRANDS[g.brand];
+  ctx.save(); ctx.translate(g.x, g.y); ctx.rotate(g.a);
+  ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.fillRect(-1.1 + 1.2, -g.span / 2 + 1.2, 2.2, g.span);
+  ctx.fillStyle = '#2E3238'; ctx.fillRect(-1.1, -g.span / 2, 2.2, g.span);
+  ctx.fillStyle = '#1C1F23'; ctx.fillRect(-1.5, -g.span / 2 - .8, 3, 1.6); ctx.fillRect(-1.5, g.span / 2 - .8, 3, 1.6);
+  ctx.fillStyle = br[1]; ctx.fillRect(-.85, -g.span * .36, 1.7, g.span * .72);
+  ctx.rotate(Math.abs(wrapA(g.a + Math.PI / 2 + c.a)) > Math.PI / 2 ? -Math.PI / 2 : Math.PI / 2); ctx.fillStyle = br[2]; ctx.font = '900 1.25px "Arial Black","Segoe UI",Arial,sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(br[0], 0, .08, g.span * .66);
+  ctx.restore();
+}
 function drawCar(c) {
   ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(c.h);
   ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(.3, .35, 2.5, 1.2, 0, 0, 7); ctx.fill();
@@ -1022,6 +1211,7 @@ function drawWorld() {
   const vis = new Uint8Array(n), m = R2;
   for (let i = 0; i < n; i++) vis[i] = Math.abs(T.X[i] - c.x) < m && Math.abs(T.Y[i] - c.y) < m ? 1 : 0;
   drawTrack(tr, vis);
+  drawScenery(tr, c, m);
   // marcas de pneu
   ctx.lineWidth = .32; ctx.lineCap = 'round';
   for (const s of R.skids) { if (Math.abs(s[0] - c.x) > m || Math.abs(s[1] - c.y) > m) continue; ctx.strokeStyle = 'rgba(12,12,12,' + s[4] + ')'; ctx.beginPath(); ctx.moveTo(s[0], s[1]); ctx.lineTo(s[2], s[3]); ctx.stroke(); }
@@ -1033,6 +1223,7 @@ function drawWorld() {
   for (const car of vcars) if (under(car)) drawCar(car);
   if (tr.bridge && vis[tr.bridge.over]) drawBridge(tr);
   for (const car of vcars) if (!under(car)) drawCar(car);
+  drawGantry(tr, c, m);
   // partículas
   for (const p of R.parts) {
     const k = p.t / p.life;
@@ -1146,7 +1337,9 @@ function frame(now) {
     drawWorld(); drawHUD();
     // som do motor e do carro mais próximo
     let near = null, nd = 1e9; for (const c of R.cars) if (c !== R.player) { const d = Math.hypot(c.x - R.player.x, c.y - R.player.y); if (d < nd) { nd = d; near = c; } }
-    SND.update(R.player, near, nd, R.paused || R.player.finished);
+    let sd = 1e9; if (R.tr.scen) for (const st of R.tr.scen.stands) for (const [sx, sy] of st.centers) sd = Math.min(sd, Math.hypot(sx - R.player.x, sy - R.player.y));
+    const crowdVol = clamp(1 - sd / 190, 0, 1) * (.06 + .2 * (R.cheer || 0)) + .02 * (R.cheer || 0);
+    SND.update(R.player, near, nd, R.paused || R.player.finished, crowdVol, R.paused);
   }
   requestAnimationFrame(frame);
 }
@@ -1184,17 +1377,17 @@ function fillColors() {
 }
 function fillSetup() {
   fillTracks(); $('#fTrack').value = OPTS.track; $('#fMode').value = OPTS.mode; $('#fLaps').value = String(OPTS.laps); $('#fOpp').value = String(OPTS.opp);
-  $('#fLevel').value = OPTS.level; $('#fGrid').value = OPTS.grid; $('#fSteer').value = OPTS.steer; $('#fCam').value = OPTS.cam; $('#fLine').value = OPTS.line; $('#fPedal').value = OPTS.pedal; $('#fSeed').value = OPTS.seed;
+  $('#fLevel').value = OPTS.level; $('#fGrid').value = OPTS.grid; $('#fSteer').value = OPTS.steer; $('#fCam').value = OPTS.cam; $('#fMouse').value = OPTS.mouse; $('#fLine').value = OPTS.line; $('#fPedal').value = OPTS.pedal; $('#fSeed').value = OPTS.seed;
   fillColors(); drawPreview(); syncMode();
 }
 function syncMode() { const pr = $('#fMode').value === 'practice'; for (const id of ['#fLaps', '#fOpp', '#fLevel', '#fGrid']) $(id).closest('label').hidden = pr; }
 function readSetup() {
-  OPTS = Object.assign(OPTS, { track: $('#fTrack').value, mode: $('#fMode').value, laps: +$('#fLaps').value, opp: +$('#fOpp').value, level: $('#fLevel').value, grid: $('#fGrid').value, steer: $('#fSteer').value, cam: $('#fCam').value, line: $('#fLine').value, pedal: $('#fPedal').value, seed: ($('#fSeed').value.match(/\d+/) || [''])[0].slice(0, 9) });
+  OPTS = Object.assign(OPTS, { track: $('#fTrack').value, mode: $('#fMode').value, laps: +$('#fLaps').value, opp: +$('#fOpp').value, level: $('#fLevel').value, grid: $('#fGrid').value, steer: $('#fSteer').value, cam: $('#fCam').value, mouse: $('#fMouse').value, line: $('#fLine').value, pedal: $('#fPedal').value, seed: ($('#fSeed').value.match(/\d+/) || [''])[0].slice(0, 9) });
   store.set('opts', OPTS);
 }
 function openSetup() { if (R && !R.over) R.paused = true; fillSetup(); if ($('#dEnd').open) $('#dEnd').close(); $('#dSetup').showModal(); $('#bStart').focus(); }
 function newSeed() { return (Date.now() ^ Math.floor(performance.now() * 1000)) % 1000000000 >>> 0; }
-function begin(seed) { newRace(seed); $('#bPause').textContent = t('pause'); cv.focus({ preventScroll: true }); }
+function begin(seed) { syncMouse(); newRace(seed); $('#bPause').textContent = t('pause'); cv.focus({ preventScroll: true }); }
 function showEnd(rows) {
   const p = R.player, L = R.tr.T.total, head = $('#endHead'), body = $('#endRows'); head.textContent = ''; body.textContent = '';
   const tr = document.createElement('tr');
@@ -1247,6 +1440,12 @@ $('#bPause').addEventListener('click', () => { togglePause(); cv.focus({ prevent
 $('#bHelp').addEventListener('click', () => { if (R && !R.over && !R.paused) togglePause(); $('#dHelp').showModal(); $('#hHelp').focus(); });
 $('#bHelpClose').addEventListener('click', () => $('#dHelp').close());
 $('#bTheme').addEventListener('click', () => { const th = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; setTheme(th); store.set('theme', th); });
+$('#bMouse').addEventListener('click', () => {
+  OPTS.mouse = mouseOn() ? 'off' : 'on'; store.set('opts', OPTS); syncMouse();
+  $('#hint').textContent = hintText();
+  if (R && !R.over) { flash(mouseOn() ? t('mouseIsOn') : t('mouseIsOff'), 2); say(mouseOn() ? t('mouseIsOn') : t('mouseIsOff')); }
+  cv.focus({ preventScroll: true });
+});
 $('#bSound').addEventListener('click', () => { const on = !SND.on; store.set('sound', on); setSound(on); });
 $('#sLang').addEventListener('change', (e) => setLang(e.target.value, true));
 $('#bAgain').addEventListener('click', () => { $('#dEnd').close(); begin(OPTS.seed ? (R.seed + 1) >>> 0 : newSeed()); });
@@ -1259,8 +1458,8 @@ window.addEventListener('hashchange', () => { const h = location.hash.slice(1); 
   const snd = store.get('sound'); SND.on = snd === null ? true : !!snd; $('#bSound').textContent = SND.on ? '🔊' : '🔇';
   const h = location.hash.slice(1), saved = store.get('lang'), nav = (navigator.language || 'pt').slice(0, 2).toLowerCase();
   LANG = LANGS.includes(h) ? h : LANGS.includes(saved) ? saved : LANGS.includes(nav) ? nav : 'pt';
-  if (window.matchMedia('(pointer: coarse)').matches) $('#touch').hidden = false;
-  resize(); applyLang();
+  if (COARSE) { $('#touch').hidden = false; $('#bMouse').hidden = true; }
+  resize(); applyLang(); syncMouse();
   requestAnimationFrame(frame);
   openSetup();
 })();
