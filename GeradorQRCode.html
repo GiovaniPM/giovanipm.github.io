@@ -1,0 +1,1383 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gerador de QR Code: formatos, Pix e como funciona · Giovani Perotto Mesquita</title>
+<meta name="description" content="Tutorial do Gerador de QR Code: como funciona um QR Code, como gerar links, Wi-Fi, contatos, e-mail, SMS, WhatsApp, localização e eventos, e como montar e conferir um Pix estático, dinâmico ou de saque.">
+<meta name="author" content="Giovani Perotto Mesquita">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Paleta alegre: roxo e magenta vibrantes, amarelo-girassol, verde-água e coral */
+    --bg: #FFF7EC;
+    --surface: #FFFFFF;
+    --ink: #2B1B3D;
+    --text: #3E3350;
+    --muted: #756986;
+    --line: #F1E2CF;
+    --accent: #0E8074;
+    --accent-soft: #E2F6F2;
+    --accent-strong: #5B2A86;
+    --navy: #5B2A86;
+    --navy-deep: #C2185B;
+    --on-navy: #FFFFFF;
+    --on-navy-muted: #FCE4F0;
+    --gold: #FFB703;
+    --gold-ink: #B35300;
+    --gold-soft: #FFF1C9;
+    --coral: #FF6B6B;
+    --sky: #3A86FF;
+    --mint: #2A9D8F;
+    --pink: #EF476F;
+    --sans: "Hanken Grotesk", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1A1328; --surface: #241A36; --ink: #F7F0FF; --text: #E2D8F0; --muted: #A898C0;
+      --line: #3A2D52; --accent: #5FD3C4; --accent-soft: #1D3A38; --accent-strong: #C9A7F5;
+      --navy: #3D1A5C; --navy-deep: #7A1240; --gold: #FFC94D; --gold-ink: #FFC94D; --gold-soft: #3A2E12;
+      --coral: #FF8A8A; --sky: #6FA8FF; --mint: #4CC3B3; --pink: #FF6F91;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 4px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 1.5rem; }
+
+  /* navegação */
+  .nav {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: saturate(160%) blur(10px); -webkit-backdrop-filter: saturate(160%) blur(10px);
+    border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px);
+  }
+  .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 58px; gap: 1rem; }
+  .brand { font-family: var(--serif); font-weight: 600; color: var(--accent-strong); text-decoration: none; font-size: 1.05rem; }
+  .nav ul { list-style: none; display: flex; gap: 1.4rem; margin: 0; padding: 0; }
+  .nav ul a { color: var(--muted); text-decoration: none; font-size: 0.93rem; font-weight: 500; }
+  .nav ul a:hover, .nav ul a[aria-current="page"] { color: var(--ink); }
+  .nav-right { display: flex; align-items: center; gap: 1rem; }
+  .lang { position: relative; }
+  .lang button { font: inherit; cursor: pointer; }
+  .lang .flag { width: 18px; height: 12px; border-radius: 2px; flex: none; box-shadow: 0 0 0 1px rgba(0,0,0,.12); }
+  .lang-current { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.8rem; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 0.3rem 0.5rem 0.3rem 0.55rem; }
+  .lang-current:hover { border-color: var(--muted); }
+  .lang-now { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .lang .chev { width: 12px; height: 12px; color: var(--muted); transition: transform .15s ease; }
+  .lang-current[aria-expanded="true"] .chev { transform: rotate(180deg); }
+  .lang-list { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; min-width: 10.5rem; padding: 0.3rem; display: grid; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 12px 30px rgba(0,0,0,.18); }
+  .lang-list[hidden] { display: none; }
+  .lang-list [role="option"] { display: flex; align-items: center; gap: 0.6rem; width: 100%; text-align: left; font-size: 0.9rem; font-weight: 500; color: var(--ink); background: none; border: 0; border-radius: 6px; padding: 0.45rem 0.6rem; }
+  .lang-list [role="option"]:hover, .lang-list [role="option"]:focus-visible { background: color-mix(in srgb, var(--muted) 14%, transparent); }
+  .lang-list [role="option"][aria-selected="true"] { color: var(--accent-strong); font-weight: 600; }
+  .lang-list [role="option"][aria-selected="true"]::after { content: "✓"; margin-left: auto; }
+  @media (max-width: 480px) { .lang-now { font-size: 0; gap: 0; } }
+  [hidden] { display: none !important; }
+  .progress { position: absolute; left: 0; bottom: -1px; height: 3px; width: 0; background: linear-gradient(90deg, var(--coral), var(--gold), var(--mint)); }
+
+  /* abertura */
+  .hero-band {
+    background:
+      radial-gradient(900px 420px at 85% -10%, rgba(255,255,255,.07), transparent 60%),
+      linear-gradient(160deg, var(--navy) 0%, var(--navy-deep) 100%);
+    border-top: 4px solid var(--gold); color: var(--on-navy);
+  }
+  .hero { padding: 3.5rem 0 3.5rem; max-width: 820px; }
+  .crumb { margin: 0 0 1.4rem; font-size: 0.92rem; }
+  .crumb a { color: var(--on-navy-muted); text-decoration: none; }
+  .crumb a:hover { color: var(--gold); }
+  .eyebrow { color: var(--gold); font-weight: 600; font-size: 1rem; margin: 0 0 0.7rem; }
+  h1 { font-family: var(--serif); font-weight: 600; color: var(--on-navy); font-size: clamp(2.3rem, 5.5vw, 3.8rem); line-height: 1.05; letter-spacing: -0.025em; margin: 0; }
+  .dek { font-family: var(--serif); font-style: italic; font-size: clamp(1.1rem, 2.2vw, 1.35rem); color: var(--on-navy-muted); margin: 1.1rem 0 1.6rem; max-width: 58ch; }
+  .byline { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; font-size: 0.92rem; color: var(--on-navy-muted); }
+  .byline strong { color: var(--on-navy); font-weight: 600; }
+  .byline .credit { margin-left: auto; font-style: italic; }
+
+  /* layout do artigo */
+  .layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 3rem; padding: 3rem 0 4rem; align-items: start; }
+  .toc { position: sticky; top: 82px; font-size: 0.92rem; max-height: calc(100vh - 100px); overflow-y: auto; }
+  .toc h2 { font-family: var(--sans); font-size: 0.85rem; font-weight: 600; color: var(--muted); margin: 0 0 0.7rem; border: 0; padding: 0; }
+  .toc ol { list-style: none; margin: 0; padding: 0; counter-reset: toc; border-left: 2px solid var(--line); }
+  .toc li { counter-increment: toc; }
+  .toc a { display: block; padding: 0.3rem 0 0.3rem 1rem; margin-left: -2px; border-left: 2px solid transparent; color: var(--muted); text-decoration: none; line-height: 1.35; }
+  .toc a::before { content: counter(toc) ". "; color: var(--gold-ink); font-weight: 600; }
+  .toc a:hover { color: var(--ink); }
+  .toc a[aria-current="true"] { color: var(--accent-strong); border-left-color: var(--gold); font-weight: 600; }
+
+  article { background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: var(--radius); padding: 3rem clamp(1.25rem, 4vw, 3.5rem); min-width: 0; }
+  article section + section { margin-top: 3.2rem; }
+  article h2 { font-family: var(--serif); font-weight: 600; color: var(--ink); font-size: clamp(1.5rem, 2.8vw, 1.9rem); letter-spacing: -0.015em; line-height: 1.2; margin: 0 0 1.1rem; padding-left: 0.9rem; border-left: 3px solid var(--gold); }
+  article h3 { font-family: var(--sans); font-size: 1.1rem; font-weight: 600; color: var(--ink); margin: 2rem 0 0.8rem; }
+  article p, article li { font-family: var(--serif); font-size: 1.12rem; line-height: 1.7; color: var(--text); }
+  article p { margin: 0 0 1.1rem; max-width: 68ch; }
+  article ul, article ol { margin: 0 0 1.1rem; padding-left: 1.4rem; max-width: 68ch; }
+  article li { margin-bottom: 0.3rem; }
+  article strong { color: var(--ink); }
+  sup a { font-family: var(--sans); font-size: 0.72rem; font-weight: 700; text-decoration: none; padding: 0 0.15em; }
+
+  figure { margin: 2rem 0; }
+  figure img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: #FFF7EC; }
+  figcaption { margin-top: 0.6rem; font-size: 0.9rem; color: var(--muted); text-align: center; font-family: var(--sans); line-height: 1.5; }
+
+  blockquote { margin: 1.5rem 0; padding: 1.2rem 1.5rem; background: var(--accent-soft); border-left: 3px solid var(--gold); border-radius: 0 10px 10px 0; }
+  blockquote p { font-size: 1.05rem; margin: 0 0 0.8rem; }
+  blockquote p:last-child { margin-bottom: 0; }
+  blockquote.pull p { font-size: clamp(1.15rem, 2.3vw, 1.35rem); font-style: italic; line-height: 1.45; color: var(--ink); }
+  blockquote cite { font-family: var(--sans); font-size: 0.88rem; font-style: normal; color: var(--muted); }
+
+  /* tabelas */
+  .table-wrap { overflow-x: auto; margin: 1.5rem 0; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-family: var(--sans); font-size: 0.95rem; }
+  th, td { text-align: left; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.5; }
+  thead th { background: var(--gold-soft); color: var(--ink); font-weight: 600; }
+  tbody th { color: var(--ink); font-weight: 600; }
+  tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
+  td code, th code { font-size: 0.9em; }
+
+  /* mitos */
+  .myths { list-style: none; padding: 0; margin: 1.5rem 0; max-width: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
+  .myths li { margin: 0; padding: 1rem 1.2rem; border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: 10px; }
+  .myths li:nth-child(4n+2) { border-top-color: var(--sky); }
+  .myths li:nth-child(4n+3) { border-top-color: var(--mint); }
+  .myths li:nth-child(4n+4) { border-top-color: var(--gold); }
+  .myths h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+  .myths p { margin: 0; font-size: 1rem; line-height: 1.6; }
+
+  /* para fixar */
+  .recap { margin: 1.8rem 0 0; padding: 1.1rem 1.4rem; background: var(--gold-soft); border-left: 4px solid var(--mint); border-radius: 0 10px 10px 0; }
+  .recap h3 { margin: 0 0 0.5rem; font-size: 0.85rem; letter-spacing: .05em; text-transform: uppercase; color: var(--gold-ink); }
+  .recap ul { margin: 0; padding-left: 1.2rem; }
+  .recap li { font-family: var(--sans); font-size: 0.98rem; line-height: 1.55; margin-bottom: 0.25rem; }
+
+  /* revisão rápida */
+  .quiz { display: grid; gap: 0.7rem; margin: 1.5rem 0; }
+  .quiz details { border: 1px solid var(--line); border-left: 4px solid var(--sky); border-radius: 0 10px 10px 0; padding: 0.8rem 1.1rem; }
+  .quiz details:nth-child(3n+2) { border-left-color: var(--pink); }
+  .quiz details:nth-child(3n+3) { border-left-color: var(--mint); }
+  .quiz summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); line-height: 1.45; }
+  .quiz details[open] summary { margin-bottom: 0.5rem; }
+  .quiz p { margin: 0; font-size: 1.02rem; }
+
+  .refs { font-family: var(--sans); padding-left: 1.4rem; margin: 0; }
+  .refs li { font-family: var(--sans); font-size: 0.92rem; line-height: 1.55; margin-bottom: 0.7rem; word-break: break-word; }
+  .refs li:target { background: var(--gold-soft); border-radius: 6px; }
+
+  .back { display: inline-block; margin-top: 1rem; font-family: var(--sans); font-size: 0.85rem; text-decoration: none; }
+
+  footer { background: var(--navy-deep); color: var(--on-navy-muted); border-top: 3px solid var(--gold); padding: 1.5rem 0 calc(1.5rem + env(safe-area-inset-bottom, 0px)); font-size: 0.88rem; }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1.5rem; }
+  footer a { color: var(--on-navy); text-decoration: none; }
+  footer a:hover { color: var(--gold); }
+
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+    .toc { position: static; max-height: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.2rem 1.4rem; }
+  }
+  @media (max-width: 760px) {
+    .myths { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .nav ul { display: none; }
+    .hero { padding: 2.5rem 0; }
+    .wrap { padding: 0 1rem; }
+    article p, article li { font-size: 1.05rem; }
+    th, td { padding: 0.6rem 0.7rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  @media print {
+    .nav, .toc, footer, .back, .crumb { display: none !important; }
+    body { background: #fff; }
+    .hero-band { background: none; color: #111; border: 0; }
+    .hero-band h1 { color: #5B2A86; }
+    .dek, .byline, .byline strong { color: #333; }
+    .layout { display: block; padding: 0; }
+    article { border: 0; padding: 0; }
+    .table-wrap { overflow: visible; }
+    figure, blockquote, .myths li, .recap, .quiz details, tr { break-inside: avoid; }
+  }
+
+  /* blocos de código (Gherkin) */
+  pre.code { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: #2B1B3D; color: #F7F0FF; border-radius: 10px; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.92rem; line-height: 1.6; tab-size: 2; }
+  pre.code code { font-family: inherit; white-space: pre; }
+  pre.code .k { color: #FFB703; font-weight: 700; }
+  pre.code .s { color: #5FD3C4; font-weight: 700; }
+  pre.code .c { color: #A898C0; }
+  pre.code .p { color: #C9A7F5; }
+  article code { font-family: Consolas, "Courier New", monospace; font-size: 0.92em; }
+  article :not(pre) > code { background: var(--accent-soft); color: var(--ink); padding: 0.05em 0.35em; border-radius: 4px; }
+
+  /* fórmulas */
+  pre.formula { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.95rem; line-height: 1.5; }
+
+  /* glossário */
+  dl.glossary { margin: 1.2rem 0; display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  dl.glossary dt, dl.glossary dd { margin: 0; padding: 0.65rem 0.9rem; border-bottom: 1px solid var(--line); font-family: var(--sans); font-size: 0.95rem; line-height: 1.5; }
+  dl.glossary dt { font-weight: 600; color: var(--ink); background: color-mix(in srgb, var(--gold-soft) 60%, var(--surface)); }
+  dl.glossary dd { color: var(--text); }
+  dl.glossary dt:nth-last-of-type(1), dl.glossary dd:last-of-type { border-bottom: 0; }
+  @media (max-width: 720px) { dl.glossary { grid-template-columns: 1fr; } dl.glossary dt { border-bottom: 0; padding-bottom: 0.2rem; } }
+
+  /* figuras geradas pelo PlantUML e código recolhível */
+  figure.puml img { width: auto; max-width: 100%; margin: 0 auto; background: #FFFFFF; padding: 12px; }
+  details.codebox { margin: 1rem 0 1.5rem; border: 1px solid var(--line); border-radius: 10px; padding: 0.6rem 1rem; }
+  details.codebox summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); }
+  details.codebox pre.code { max-height: 480px; overflow: auto; }
+
+  /* nota de atenção */
+  aside.note { margin: 1.2rem 0 1.5rem; padding: 0.8rem 1.1rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; }
+  aside.note p { margin: 0; }
+
+  /* link para o simulador e teclas */
+  .launch { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--sans); font-weight: 600; font-size: 1rem; background: var(--accent-strong); color: var(--surface); text-decoration: none; padding: 0.65rem 1.2rem; border-radius: 10px; }
+  .launch:hover { background: var(--navy-deep); color: #FFFFFF; }
+  kbd { font-family: var(--sans); font-size: 0.85em; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 0.05em 0.4em; white-space: nowrap; }
+  .promptbox { position: relative; margin: 1rem 0 1.6rem; }
+  .promptbox pre.code { margin: 0; padding-top: 2.6rem; max-height: 420px; overflow: auto; }
+  .promptbox pre.code code { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .promptbox .copy { position: absolute; top: 8px; right: 14px; z-index: 1; font: 600 0.8rem var(--sans); color: #2B1B3D; background: #FFB703; border: 0; border-radius: 6px; padding: 0.3rem 0.65rem; cursor: pointer; }
+  figure.tall img { width: auto; max-width: min(100%, 420px); margin: 0 auto; }
+  @media (max-width: 720px) { figure { overflow-x: auto; } figure img { width: 680px; max-width: none; } figure.tall { overflow-x: visible; } figure.tall img { width: auto; max-width: 100%; } }
+</style>
+</head>
+<body id="top">
+
+<nav class="nav" aria-label="Navegação do site">
+  <div class="wrap">
+    <a class="brand" href="index.html" data-home>Giovani Perotto Mesquita</a>
+    <div class="nav-right">
+      <ul>
+        <li><a href="index.html" data-home>Início</a></li>
+        <li><a href="about.html" data-about>Sobre</a></li>
+        <li><a href="resume.html" data-resume>Currículo</a></li>
+        <li><a href="projects.html" data-projects aria-current="page">Projetos</a></li>
+        <li><a href="contact.html" data-contact>Contato</a></li>
+      </ul>
+      <div class="lang">
+        <button type="button" class="lang-current" aria-haspopup="listbox" aria-expanded="false" aria-controls="lang-list" data-label="Idioma / Language / Lingua" aria-label="Idioma / Language / Lingua: Português"><span class="lang-now"><svg class="flag" viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009C3B"/><path d="M10 1.6 18.4 7 10 12.4 1.6 7z" fill="#FEDF00"/><circle cx="10" cy="7" r="3.3" fill="#002776"/><path d="M6.8 6.3c2.1-.6 4.5-.2 6.4 1" stroke="#fff" stroke-width=".7" fill="none"/></svg>PT</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="lang-list" id="lang-list" role="listbox" aria-label="Idioma / Language / Lingua" hidden>
+          <button type="button" role="option" id="tab-pt" aria-controls="pt" aria-selected="true" lang="pt-BR" data-code="PT"><svg class="flag" viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009C3B"/><path d="M10 1.6 18.4 7 10 12.4 1.6 7z" fill="#FEDF00"/><circle cx="10" cy="7" r="3.3" fill="#002776"/><path d="M6.8 6.3c2.1-.6 4.5-.2 6.4 1" stroke="#fff" stroke-width=".7" fill="none"/></svg><span>Português</span></button>
+          <button type="button" role="option" id="tab-en" aria-controls="en" aria-selected="false" lang="en" tabindex="-1" data-code="EN"><svg class="flag" viewBox="0 0 19 10" aria-hidden="true"><rect width="19" height="10" fill="#B22234"/><rect y="0.769" width="19" height="0.769" fill="#fff"/><rect y="2.308" width="19" height="0.769" fill="#fff"/><rect y="3.846" width="19" height="0.769" fill="#fff"/><rect y="5.385" width="19" height="0.769" fill="#fff"/><rect y="6.923" width="19" height="0.769" fill="#fff"/><rect y="8.462" width="19" height="0.769" fill="#fff"/><rect width="7.6" height="5.385" fill="#3C3B6E"/></svg><span>English</span></button>
+          <button type="button" role="option" id="tab-it" aria-controls="it" aria-selected="false" lang="it" tabindex="-1" data-code="IT"><svg class="flag" viewBox="0 0 3 2" aria-hidden="true"><rect width="1" height="2" fill="#009246"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#CE2B37"/></svg><span>Italiano</span></button>
+          <button type="button" role="option" id="tab-es" aria-controls="es" aria-selected="false" lang="es" tabindex="-1" data-code="ES"><svg class="flag" viewBox="0 0 750 500" aria-hidden="true"><rect width="750" height="500" fill="#AA151B"/><rect y="125" width="750" height="250" fill="#F1BF00"/></svg><span>Español</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="progress" aria-hidden="true"></div>
+</nav>
+
+<!-- ===================== PT ===================== -->
+<div id="pt" role="tabpanel" aria-labelledby="tab-pt" lang="pt-BR">
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projetos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Gerador de QR Code: links, Wi-Fi, contatos e Pix</h1>
+      <p class="dek">Como funciona um QR Code, como gerar os formatos mais usados, como montar e conferir um Pix estático, dinâmico ou de saque, e o que muda quando você escolhe a correção de erros, as cores e o logo.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado em <time datetime="2026-11-15">15/11/2026</time></span>
+        <span class="credit">Revisado e formatado usando Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-pt">
+    <h2 id="toc-pt">Índice</h2>
+    <ol>
+      <li><a href="#intro-pt">O app</a></li>
+      <li><a href="#qr-pt">Como funciona um QR Code</a></li>
+      <li><a href="#passo-pt">Passo a passo: o primeiro QR Code</a></li>
+      <li><a href="#tipos-pt">Os tipos de conteúdo</a></li>
+      <li><a href="#pix-pt">Pix: estático, dinâmico e saque</a></li>
+      <li><a href="#lerpix-pt">Ler e conferir um Pix</a></li>
+      <li><a href="#aparencia-pt">Aparência e tamanho</a></li>
+      <li><a href="#testes-pt">Como o app foi testado</a></li>
+      <li><a href="#erros-pt">Erros comuns</a></li>
+      <li><a href="#revisao-pt">Revisão rápida</a></li>
+      <li><a href="#referencias-pt">Referências</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-pt" aria-labelledby="h-intro-pt">
+<h2 id="h-intro-pt">O app</h2>
+<p>O gerador é uma página única que transforma um texto, um link, os dados de uma rede Wi-Fi, um contato ou uma cobrança Pix num QR Code, sem enviar nada para a internet. <sup><a href="#ref-1-pt">[1]</a></sup> A página proíbe conexões de rede pela própria política de segurança, e o histórico fica só no seu navegador.</p>
+<ul>
+<li><strong>12 abas:</strong> texto, link, Wi-Fi, contato, e-mail, SMS, telefone, WhatsApp, localização, evento, Pix e Ler Pix.</li>
+<li><strong>Saídas:</strong> imagem PNG de 256 a 2048 pixels, vetor SVG, cópia da imagem ou do texto, e impressão.</li>
+<li><strong>Aparência:</strong> nível de correção de erros, margem, cores, três estilos de módulo e um logo no centro.</li>
+</ul>
+<p><a class="launch" href="gerador-qrcode.html">Abrir o gerador <span aria-hidden="true">→</span></a></p>
+<figure>
+<img src="rc_images/QRVisao.png" alt="Tela do gerador com a aba Link escolhida. O endereço giovanipm.github.io foi digitado, e o app avisa que acrescentou https://. À direita, o QR Code, a linha Versão 3, 29 por 29 módulos, correção M, máscara 4, 27 caracteres, o conteúdo codificado https://giovanipm.github.io e os botões Baixar PNG, Baixar SVG, Copiar imagem, Copiar texto, Imprimir e Salvar no histórico." width="1280" height="800" loading="lazy">
+<figcaption>A aba Link: o app completa o endereço e mostra o QR Code e os dados dele.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="qr-pt" aria-labelledby="h-qr-pt">
+<h2 id="h-qr-pt">Como funciona um QR Code</h2>
+<p>O QR Code foi lançado em 1994 pela DENSO WAVE. <sup><a href="#ref-2-pt">[2]</a></sup> É uma grade de quadradinhos, os <strong>módulos</strong>, que vai da versão 1, com 21 × 21 módulos, à versão 40, com 177 × 177. <sup><a href="#ref-2-pt">[2]</a></sup> Quanto mais conteúdo, maior a versão.</p>
+<figure>
+<img src="rc_images/QRAnatomia.svg" alt="Um QR Code versão 2 com correção M, gerado pelo app para o texto giovanipm.github.io, com cada região colorida. Os três padrões de localização, com seus separadores, ficam em três cantos. O padrão de alinhamento fica perto do canto inferior direito. As linhas de sincronismo ligam os padrões de localização. A informação de formato, que guarda o nível de correção e a máscara, fica ao lado dos padrões. O resto são 28 palavras-código de dados e 16 de correção de erros, em volta há uma margem de 4 módulos." width="1000" height="530" loading="lazy">
+<figcaption>As regiões de um QR Code real, gerado pelo app: o que é estrutura e o que é conteúdo.</figcaption>
+</figure>
+<ul>
+<li><strong>Padrões de localização:</strong> os três quadrados grandes nos cantos. Mostram ao leitor onde está o código e em que ângulo.</li>
+<li><strong>Padrões de alinhamento e linhas de sincronismo:</strong> ajudam a corrigir a perspectiva e a contar os módulos.</li>
+<li><strong>Informação de formato:</strong> diz qual nível de correção e qual máscara foram usados.</li>
+<li><strong>Dados e correção de erros:</strong> o conteúdo vem em palavras-código de 8 bits, seguidas de palavras extras que permitem recuperar partes sujas ou rasgadas. O método é o de Reed-Solomon. <sup><a href="#ref-2-pt">[2]</a></sup></li>
+<li><strong>Máscara:</strong> um de 8 padrões que inverte módulos para evitar manchas e listras que confundiriam o leitor. O app testa as 8 e fica com a de menor penalidade.</li>
+<li><strong>Margem:</strong> uma faixa clara de 4 módulos em volta, necessária para o uso real. <sup><a href="#ref-2-pt">[2]</a></sup></li>
+</ul>
+<p>Há quatro níveis de correção: L, M, Q e H. A DENSO WAVE diz que o M recupera 15% das palavras-código e é o mais escolhido, e dá o Q como exemplo de 25%. <sup><a href="#ref-2-pt">[2]</a></sup> O app mostra 7% para o L e 30% para o H, os valores usuais; eles estão numa tabela em imagem no site da DENSO WAVE, que não pôde ser lida.</p>
+<p>O conteúdo é gravado num de três modos: <strong>numérico</strong> (só dígitos), <strong>alfanumérico</strong> (maiúsculas, dígitos e alguns símbolos) ou <strong>byte</strong> (qualquer texto, em UTF-8). Medido com o app, o maior QR Code, a versão 40 com nível L, aceita 7.089 dígitos, 4.296 caracteres alfanuméricos ou 2.953 bytes; um caractere a mais é recusado.</p>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="passo-pt" aria-labelledby="h-passo-pt">
+<h2 id="h-passo-pt">Passo a passo: o primeiro QR Code</h2>
+<ol>
+<li><strong>Escolha a aba</strong> do tipo de conteúdo. As setas do teclado também mudam de aba.</li>
+<li><strong>Preencha os campos.</strong> O QR Code aparece à direita, ou logo abaixo do formulário no celular, a cada tecla. Se faltar algo, uma mensagem em vermelho diz o quê; avisos em amarelo dizem o que o app ajustou.</li>
+<li><strong>Confira o conteúdo codificado</strong> embaixo do QR Code: é exatamente o texto que o leitor vai receber.</li>
+<li><strong>Teste com o celular</strong> antes de imprimir ou divulgar: aponte a câmera para a tela.</li>
+<li><strong>Baixe ou copie.</strong> O PNG serve para mensagens e documentos; o SVG é vetor e não perde qualidade em cartazes. <strong>Salvar no histórico</strong> guarda os campos para você voltar depois.</li>
+</ol>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="tipos-pt" aria-labelledby="h-tipos-pt">
+<h2 id="h-tipos-pt">Os tipos de conteúdo</h2>
+<p>Cada aba monta o texto num formato que as câmeras dos celulares reconhecem e transformam numa ação: abrir um link, entrar numa rede, salvar um contato. Os exemplos abaixo são saídas do app, conferidas nos testes.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Aba</th><th scope="col">O que o leitor faz</th><th scope="col">Exemplo do conteúdo gerado</th></tr></thead>
+<tbody>
+<tr><th scope="row">Link</th><td>Abre o endereço</td><td><code>https://giovanipm.github.io</code></td></tr>
+<tr><th scope="row">Wi-Fi</th><td>Oferece entrar na rede</td><td><code>WIFI:T:WPA;S:Casa\;1;P:a\:b;;</code></td></tr>
+<tr><th scope="row">Contato</th><td>Oferece salvar o contato</td><td>vCard 3.0, com nome, celular, e-mail, empresa e endereço</td></tr>
+<tr><th scope="row">E-mail</th><td>Abre um e-mail pronto</td><td><code>mailto:x@y.com?subject=Ol%C3%A1%20mundo&amp;body=a%0D%0Ab</code></td></tr>
+<tr><th scope="row">SMS</th><td>Abre uma mensagem pronta</td><td><code>sms:+5551999990000?body=oi</code></td></tr>
+<tr><th scope="row">Telefone</th><td>Oferece ligar</td><td><code>tel:+5551999990000</code></td></tr>
+<tr><th scope="row">WhatsApp</th><td>Abre a conversa com o texto</td><td><code>https://wa.me/5551999990000?text=oi%20tudo</code></td></tr>
+<tr><th scope="row">Localização</th><td>Abre o mapa</td><td><code>geo:-30.0346,-51.2177</code> ou link do Google Maps</td></tr>
+<tr><th scope="row">Evento</th><td>Oferece salvar na agenda</td><td><code>BEGIN:VEVENT</code> com título, início, fim, local e descrição</td></tr>
+</tbody></table></div>
+<ul>
+<li><strong>Wi-Fi:</strong> barra invertida, ponto e vírgula, vírgula, aspas e dois-pontos no nome ou na senha recebem uma barra invertida antes, como manda o formato. <sup><a href="#ref-4-pt">[4]</a></sup> Para rede aberta, escolha Sem senha.</li>
+<li><strong>Telefone, SMS e WhatsApp:</strong> números com 10 ou 11 dígitos recebem +55; para outro país, comece com +. O SMS segue o formato <code>sms:</code>, em que o número internacional começa com + <sup><a href="#ref-5-pt">[5]</a></sup>; há também a opção <code>SMSTO:</code>, antiga, que a documentação do ZXing descreve apenas como “observada em uso”. <sup><a href="#ref-4-pt">[4]</a></sup> O WhatsApp pede o número completo, sem zeros, parênteses nem traços. <sup><a href="#ref-8-pt">[8]</a></sup></li>
+<li><strong>E-mail:</strong> espaços viram <code>%20</code> e quebras de linha viram <code>%0D%0A</code>. <sup><a href="#ref-6-pt">[6]</a></sup></li>
+<li><strong>Localização:</strong> o formato <code>geo:</code> usa latitude e longitude em graus decimais. <sup><a href="#ref-7-pt">[7]</a></sup> Alguns celulares abrem melhor o link do Google Maps, que o app também oferece.</li>
+</ul>
+<figure class="tall">
+<img src="rc_images/QRWifi.png" alt="Tela do app num celular, no tema escuro, com a aba Wi-Fi: nome da rede MinhaRede, senha senha-forte-123, segurança WPA/WPA2/WPA3 e a caixa Rede oculta desmarcada. Embaixo, o QR Code, a linha Versão 3, 29 por 29 módulos, correção M e o conteúdo WIFI:T:WPA;S:MinhaRede;P:senha-forte-123;;." width="390" height="844" loading="lazy">
+<figcaption>Wi-Fi no celular: quem ler o código entra na rede sem digitar a senha.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="pix-pt" aria-labelledby="h-pix-pt">
+<h2 id="h-pix-pt">Pix: estático, dinâmico e saque</h2>
+<p>O QR Code do Pix segue o padrão BR Code, que adota o padrão EMV de QR Codes para pagamentos. <sup><a href="#ref-3-pt">[3]</a></sup> O conteúdo é uma sequência de campos com identificador de 2 dígitos, tamanho de 2 dígitos e valor, terminada por um código de conferência, o CRC16. O texto inteiro é também o <strong>Pix Copia e Cola</strong>.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Tipo</th><th scope="col">O que vai no QR Code</th><th scope="col">Quando usar</th></tr></thead>
+<tbody>
+<tr><th scope="row">Estático</th><td>A chave Pix e, se quiser, valor, descrição e identificador (txid)</td><td>Cartaz no balcão, doação, cobrança simples. Pode ser pago várias vezes, a menos que você marque o uso único.</td></tr>
+<tr><th scope="row">Pix Saque</th><td>Os dados do estático e o ISPB do facilitador de saque (campo 03)</td><td>Estabelecimentos que oferecem saque. O Pix Troco não existe em QR estático. <sup><a href="#ref-3-pt">[3]</a></sup></td></tr>
+<tr><th scope="row">Dinâmico</th><td>Uma URL do banco ou PSP do recebedor, sem <code>https://</code>, com até 77 caracteres</td><td>Cobranças com valor, vencimento e conciliação geradas pelo seu banco. O app só monta o QR com a URL que o banco criou.</td></tr>
+</tbody></table></div>
+<figure>
+<img src="rc_images/QRPix.png" alt="Aba Pix com tipo Estático e chave aleatória 123e4567-e12b-12d1-a456-426655440000, nome Fulano de Tal, cidade BRASILIA, valor 25,00, descrição Cafe e txid PEDIDO123. A mensagem verde diz Pix válido, CRC confere, 2D74. À direita, o QR Code versão 9 e o conteúdo começando por 00020126660014br.gov.bcb.pix." width="1280" height="800" loading="lazy">
+<figcaption>Um Pix estático com valor, descrição e txid; a chave é a do exemplo do manual do Banco Central.</figcaption>
+</figure>
+<p>As regras que o app aplica vêm do manual do Banco Central, versão 2.10.0: <sup><a href="#ref-3-pt">[3]</a></sup></p>
+<ul>
+<li><strong>Chave:</strong> CPF e CNPJ só com os dígitos, celular no formato +55 com DDD, e-mail como digitado e chave aleatória com os traços. O app confere os dígitos verificadores de CPF e CNPJ numérico; no CNPJ alfanumérico, confere só o formato.</li>
+<li><strong>Chave, descrição e saque disputam 99 caracteres</strong> no campo 26: a chave vai até 77 e a descrição até 72. Se a descrição não couber, o app a corta e avisa.</li>
+<li><strong>txid:</strong> até 25 letras sem acento e dígitos. Vazio, vira <code>***</code>, como manda o padrão.</li>
+<li><strong>Uso único:</strong> o campo 01 com valor 12 indica que o código não deve ser pago mais de uma vez.</li>
+<li><strong>CRC16:</strong> polinômio 0x1021 e valor inicial 0xFFFF, calculado sobre todo o texto, incluindo o <code>6304</code> final.</li>
+<li><strong>Nome e cidade:</strong> o app limita a 25 e 15 caracteres, como fazem os geradores de BR Code, e remove os acentos. Esses limites estão no Manual do BR Code, que não pôde ser consultado.</li>
+</ul>
+<p>O app reproduz exatamente os dois exemplos do manual: o estático termina em <code>63041D3D</code>, e o dinâmico, em <code>630464E4</code>.</p>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="lerpix-pt" aria-labelledby="h-lerpix-pt">
+<h2 id="h-lerpix-pt">Ler e conferir um Pix</h2>
+<p>A aba <strong>Ler Pix</strong> recebe um Pix Copia e Cola, recalcula o CRC e mostra cada campo numa tabela. Serve para conferir um código antes de divulgá-lo ou para entender um código que você recebeu. Se um caractere tiver sido trocado, o CRC deixa de conferir e o app mostra os dois valores, o esperado e o encontrado.</p>
+<figure>
+<img src="rc_images/QRLerPix.png" alt="Aba Ler Pix com o código de exemplo do manual colado. Mensagens verdes: Pix estático e Pix válido, CRC confere, 1D3D. A tabela lista os campos 00 formato, 26 conta do recebedor com GUI br.gov.bcb.pix e a chave, 52 categoria 0000, 53 moeda 986, 58 país BR, 59 nome Fulano de Tal, 60 cidade BRASILIA, 62 com txid *** e 63 CRC16 1D3D." width="1280" height="800" loading="lazy">
+<figcaption>O exemplo de Pix estático do manual do Banco Central, decomposto campo a campo.</figcaption>
+</figure>
+<p>A leitura confere a estrutura e o CRC, não a conta: só o banco sabe se a chave existe e a quem pertence. Antes de usar um Pix para receber dinheiro, leia o QR Code no app do seu banco e confira nome, chave e valor na tela de confirmação, sem concluir o pagamento.</p>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="aparencia-pt" aria-labelledby="h-aparencia-pt">
+<h2 id="h-aparencia-pt">Aparência e tamanho</h2>
+<p>Mais correção de erros deixa o código mais resistente, mas também maior. A tabela mostra a versão e o número de módulos que o app escolheu para cinco conteúdos, medidos com o próprio codificador.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Conteúdo</th><th scope="col">Caracteres</th><th scope="col">L</th><th scope="col">M</th><th scope="col">Q</th><th scope="col">H</th></tr></thead>
+<tbody>
+<tr><th scope="row">20 dígitos (modo numérico)</th><td>20</td><td>v1&nbsp;·&nbsp;21</td><td>v1&nbsp;·&nbsp;21</td><td>v1&nbsp;·&nbsp;21</td><td>v2&nbsp;·&nbsp;25</td></tr>
+<tr><th scope="row">Link https://giovanipm.github.io</th><td>27</td><td>v2&nbsp;·&nbsp;25</td><td>v3&nbsp;·&nbsp;29</td><td>v3&nbsp;·&nbsp;29</td><td>v4&nbsp;·&nbsp;33</td></tr>
+<tr><th scope="row">Wi-Fi com senha</th><td>42</td><td>v3&nbsp;·&nbsp;29</td><td>v3&nbsp;·&nbsp;29</td><td>v4&nbsp;·&nbsp;33</td><td>v5&nbsp;·&nbsp;37</td></tr>
+<tr><th scope="row">Pix estático com valor e descrição</th><td>160</td><td>v8&nbsp;·&nbsp;49</td><td>v9&nbsp;·&nbsp;53</td><td>v11&nbsp;·&nbsp;61</td><td>v13&nbsp;·&nbsp;69</td></tr>
+<tr><th scope="row">Contato completo (vCard)</th><td>238</td><td>v10&nbsp;·&nbsp;57</td><td>v11&nbsp;·&nbsp;61</td><td>v13&nbsp;·&nbsp;69</td><td>v16&nbsp;·&nbsp;81</td></tr>
+</tbody></table></div>
+<p>Para o mesmo tamanho impresso, mais módulos significam módulos menores e mais difíceis de ler de longe. O nível M, o padrão do app, é um bom equilíbrio.</p>
+<figure>
+<img src="rc_images/QRAparencia.png" alt="Painel Aparência com correção H travada, tamanho 512 pixels, margem 4, estilo Pontos, cor dos módulos roxa e um logo carregado. Os avisos dizem que foi acrescentado https:// e que, com logo, a correção fica em H. À direita, o QR Code roxo com módulos em pontos, os padrões de localização quadrados e um logo laranja e roxo no centro, versão 4, 33 por 33 módulos." width="1280" height="800" loading="lazy">
+<figcaption>Estilo em pontos, cor roxa e logo: o app passa a correção para H.</figcaption>
+</figure>
+<ul>
+<li><strong>Logo:</strong> cobre cerca de 22% da largura do código, e o app força o nível H para compensar os módulos escondidos. A imagem fica só no navegador.</li>
+<li><strong>Cores:</strong> módulos escuros sobre fundo claro. O app avisa quando o contraste é baixo ou quando os módulos ficam mais claros que o fundo, o que muitos leitores não aceitam.</li>
+<li><strong>Estilos:</strong> pontos e cantos arredondados mudam só o desenho; os padrões de localização continuam quadrados.</li>
+<li><strong>Margem:</strong> o padrão de 4 módulos é o recomendado; o app avisa quando você diminui.</li>
+</ul>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="testes-pt" aria-labelledby="h-testes-pt">
+<h2 id="h-testes-pt">Como o app foi testado</h2>
+<ul>
+<li><strong>Codificador:</strong> comparado com o pacote <code>qrcode</code> do Node, um gerador independente. <sup><a href="#ref-9-pt">[9]</a></sup> Para 14 textos, dos só numéricos a emoji, nos 4 níveis e nas 8 máscaras, as 440 matrizes saíram idênticas módulo a módulo, e a versão e a máscara escolhidas automaticamente coincidiram nos 55 casos.</li>
+<li><strong>Pix:</strong> os dois exemplos do manual do Banco Central saem caractere por caractere iguais.</li>
+<li><strong>Imagens:</strong> os pixels do PNG, do SVG e dos três estilos, lidos de volta no centro de cada módulo, conferem com a matriz.</li>
+<li><strong>Interface:</strong> todas as abas foram usadas com cliques e teclado reais no Chrome, nos quatro idiomas e em 390 pixels de largura, sem erros nem requisições externas.</li>
+</ul>
+<p>O que não foi testado: a leitura das imagens por um leitor de QR independente, celulares reais e apps de banco, e os navegadores Safari e Firefox.</p>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="erros-pt" aria-labelledby="h-erros-pt">
+<h2 id="h-erros-pt">Erros comuns</h2>
+<ul class="myths">
+<li><h3>Imprimir sem testar</h3><p>Leia o código com o celular antes de mandar para a gráfica, principalmente com cores, estilo ou logo.</p></li>
+<li><h3>Inverter as cores</h3><p>Módulos claros em fundo escuro ficam bonitos, mas muitos leitores não leem. O app avisa.</p></li>
+<li><h3>Cortar a margem</h3><p>Sem a faixa clara em volta, o leitor confunde o código com o que está ao redor.</p></li>
+<li><h3>Usar QR estático para cobranças com vencimento</h3><p>Valor por vencimento, juros e conciliação automática são do Pix dinâmico, criado pelo banco.</p></li>
+<li><h3>Achar que o CRC certo garante o pagamento</h3><p>O CRC só prova que o texto não foi alterado. Confira nome e chave no app do banco.</p></li>
+<li><h3>Colocar acentos no nome do Pix</h3><p>O app remove os acentos e avisa, para cada caractere contar um byte no tamanho dos campos.</p></li>
+</ul>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="revisao-pt" aria-labelledby="h-revisao-pt">
+<h2 id="h-revisao-pt">Revisão rápida</h2>
+<div class="recap"><h3>Em resumo</h3><ul>
+<li>QR Code: módulos em grade, de 21 × 21 a 177 × 177, com padrões de localização, dados e correção de erros.</li>
+<li>Correção M, margem de 4 módulos e cores escuras sobre fundo claro são os padrões seguros.</li>
+<li>Pix estático leva a chave; o dinâmico leva a URL do banco; o saque leva o ISPB do facilitador.</li>
+<li>Ler Pix confere a estrutura e o CRC, não a conta.</li>
+</ul></div>
+<div class="quiz">
+<details><summary>1. Por que o app passa a correção para H quando você põe um logo?</summary><p>Porque o logo esconde módulos, e o nível H é o que mais permite recuperar partes faltantes.</p></details>
+<details><summary>2. Qual é o maior conteúdo que cabe num QR Code?</summary><p>Na versão 40 com nível L, 7.089 dígitos, 4.296 caracteres alfanuméricos ou 2.953 bytes, medidos com o app.</p></details>
+<details><summary>3. O que significa um txid igual a ***?</summary><p>Que o recebedor não usou identificador de transação nesse Pix estático.</p></details>
+<details><summary>4. Onde fica a URL num Pix dinâmico, e com que formato?</summary><p>No campo 26, subcampo 25, sem https:// e com até 77 caracteres.</p></details>
+<details><summary>5. O CRC conferiu. O Pix está certo?</summary><p>A estrutura está; a conta e o nome só o app do banco confirma.</p></details>
+</div>
+<p><a class="launch" href="gerador-qrcode.html">Abrir o gerador <span aria-hidden="true">→</span></a></p>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="referencias-pt" aria-labelledby="h-referencias-pt">
+<h2 id="h-referencias-pt">Referências</h2>
+<ol class="refs">
+<li id="ref-1-pt"><a href="gerador-qrcode.html">Gerador de QR Code</a>, app deste site, em um único arquivo e sem rede.</li>
+<li id="ref-2-pt">DENSO WAVE. <a href="https://www.qrcode.com/en/" rel="noopener">QR Code.com</a>: <a href="https://www.qrcode.com/en/history/" rel="noopener">histórico</a>, <a href="https://www.qrcode.com/en/about/version.html" rel="noopener">versões</a>, <a href="https://www.qrcode.com/en/about/error_correction.html" rel="noopener">correção de erros</a> e <a href="https://www.qrcode.com/en/faq.html" rel="noopener">perguntas frequentes</a>. “QR Code” é marca registrada da DENSO WAVE INCORPORATED.</li>
+<li id="ref-3-pt">Banco Central do Brasil. <a href="https://www.bcb.gov.br/content/estabilidadefinanceira/pix/Regulamento_Pix/II_ManualdePadroesparaIniciacaodoPix.pdf" rel="noopener">Manual de Padrões para Iniciação do Pix</a>, versão 2.10.0, seções 2.4 a 2.7.</li>
+<li id="ref-4-pt">ZXing. <a href="https://github.com/zxing/zxing/wiki/Barcode-Contents" rel="noopener">Barcode Contents</a>: formatos de Wi-Fi, SMS, e-mail, telefone, localização, contato e evento.</li>
+<li id="ref-5-pt">IETF. <a href="https://www.rfc-editor.org/rfc/rfc5724" rel="noopener">RFC 5724</a>: o esquema de URI <code>sms:</code>.</li>
+<li id="ref-6-pt">IETF. <a href="https://www.rfc-editor.org/rfc/rfc6068" rel="noopener">RFC 6068</a>: o esquema de URI <code>mailto:</code>.</li>
+<li id="ref-7-pt">IETF. <a href="https://www.rfc-editor.org/rfc/rfc5870" rel="noopener">RFC 5870</a>: o esquema de URI <code>geo:</code>.</li>
+<li id="ref-8-pt">WhatsApp. <a href="https://faq.whatsapp.com/5913398998672934" rel="noopener">Como usar o recurso de conversa por clique</a>.</li>
+<li id="ref-9-pt">Pacote <a href="https://www.npmjs.com/package/qrcode" rel="noopener">qrcode</a> para Node.js, usado como referência independente nos testes.</li>
+</ol>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== EN ===================== -->
+<div id="en" role="tabpanel" aria-labelledby="tab-en" lang="en" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html#en" data-projects>← Projects</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>QR Code Generator: links, Wi-Fi, contacts and Pix</h1>
+      <p class="dek">How a QR code works, how to generate the most common formats, how to build and check a static, dynamic or cash-out Pix, and what changes when you pick the error correction, the colours and the logo.</p>
+      <div class="byline">
+        <span>By <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Published on <time datetime="2026-11-15">15 November 2026</time></span>
+        <span class="credit">Reviewed and formatted using Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-en">
+    <h2 id="toc-en">Contents</h2>
+    <ol>
+      <li><a href="#intro-en">The app</a></li>
+      <li><a href="#qr-en">How a QR code works</a></li>
+      <li><a href="#passo-en">Step by step: your first QR code</a></li>
+      <li><a href="#tipos-en">The content types</a></li>
+      <li><a href="#pix-en">Pix: static, dynamic and cash-out</a></li>
+      <li><a href="#lerpix-en">Reading and checking a Pix</a></li>
+      <li><a href="#aparencia-en">Appearance and size</a></li>
+      <li><a href="#testes-en">How the app was tested</a></li>
+      <li><a href="#erros-en">Common mistakes</a></li>
+      <li><a href="#revisao-en">Quick review</a></li>
+      <li><a href="#referencias-en">References</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-en" aria-labelledby="h-intro-en">
+<h2 id="h-intro-en">The app</h2>
+<p>The generator is a single page that turns a text, a link, the details of a Wi-Fi network, a contact or a Pix charge into a QR code, without sending anything to the internet. <sup><a href="#ref-1-en">[1]</a></sup> The page blocks network connections through its own security policy, and the history stays only in your browser.</p>
+<ul>
+<li><strong>12 tabs:</strong> text, link, Wi-Fi, contact, e-mail, SMS, phone, WhatsApp, location, event, Pix and Read Pix.</li>
+<li><strong>Outputs:</strong> a PNG image from 256 to 2048 pixels, an SVG vector, a copy of the image or the text, and printing.</li>
+<li><strong>Appearance:</strong> error-correction level, margin, colours, three module styles and a logo in the centre.</li>
+</ul>
+<p><a class="launch" href="gerador-qrcode.html#en">Open the generator <span aria-hidden="true">→</span></a></p>
+<figure>
+<img src="rc_images/QRVisao-en.png" alt="The generator with the Link tab selected. The address giovanipm.github.io was typed, and the app says it added https://. On the right, the QR code, the line Version 3, 29 by 29 modules, correction M, mask 4, 27 characters, the encoded content https://giovanipm.github.io and the buttons Download PNG, Download SVG, Copy image, Copy text, Print and Save to history." width="1280" height="800" loading="lazy">
+<figcaption>The Link tab: the app completes the address and shows the QR code and its details.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="qr-en" aria-labelledby="h-qr-en">
+<h2 id="h-qr-en">How a QR code works</h2>
+<p>DENSO WAVE released the QR code in 1994. <sup><a href="#ref-2-en">[2]</a></sup> It is a grid of small squares, the <strong>modules</strong>, ranging from version 1, with 21 × 21 modules, to version 40, with 177 × 177. <sup><a href="#ref-2-en">[2]</a></sup> The more content, the higher the version.</p>
+<figure>
+<img src="rc_images/QRAnatomia-en.svg" alt="A version 2 QR code with correction level M, generated by the app for the text giovanipm.github.io, with each region coloured. The three finder patterns, with their separators, sit in three corners. The alignment pattern sits near the bottom right corner. The timing lines join the finder patterns. The format information, which stores the correction level and the mask, sits beside the finder patterns. The rest are 28 data codewords and 16 error-correction codewords; around it is a 4-module margin." width="1000" height="530" loading="lazy">
+<figcaption>The regions of a real QR code generated by the app: what is structure and what is content.</figcaption>
+</figure>
+<ul>
+<li><strong>Finder patterns:</strong> the three large squares in the corners. They tell the reader where the code is and at what angle.</li>
+<li><strong>Alignment pattern and timing lines:</strong> help correct the perspective and count the modules.</li>
+<li><strong>Format information:</strong> says which correction level and which mask were used.</li>
+<li><strong>Data and error correction:</strong> the content comes in 8-bit codewords, followed by extra codewords that let the reader recover dirty or torn parts. The method is Reed-Solomon. <sup><a href="#ref-2-en">[2]</a></sup></li>
+<li><strong>Mask:</strong> one of 8 patterns that flips modules to avoid blotches and stripes that would confuse the reader. The app tries all 8 and keeps the one with the lowest penalty.</li>
+<li><strong>Margin:</strong> a light band 4 modules wide around the code, needed in real use. <sup><a href="#ref-2-en">[2]</a></sup></li>
+</ul>
+<p>There are four correction levels: L, M, Q and H. DENSO WAVE says M recovers 15% of the codewords and is the most often chosen, and gives Q as an example of 25%. <sup><a href="#ref-2-en">[2]</a></sup> The app shows 7% for L and 30% for H, the usual values; they are in a table drawn as an image on the DENSO WAVE site, which could not be read.</p>
+<p>The content is stored in one of three modes: <strong>numeric</strong> (digits only), <strong>alphanumeric</strong> (capitals, digits and a few symbols) or <strong>byte</strong> (any text, in UTF-8). Measured with the app, the largest QR code, version 40 at level L, accepts 7,089 digits, 4,296 alphanumeric characters or 2,953 bytes; one more character is rejected.</p>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="passo-en" aria-labelledby="h-passo-en">
+<h2 id="h-passo-en">Step by step: your first QR code</h2>
+<ol>
+<li><strong>Choose the tab</strong> for the type of content. The arrow keys also switch tabs.</li>
+<li><strong>Fill in the fields.</strong> The QR code appears on the right, or just below the form on a phone, at every keystroke. If something is missing, a red message says what; yellow notices say what the app adjusted.</li>
+<li><strong>Check the encoded content</strong> below the QR code: it is exactly the text the reader will receive.</li>
+<li><strong>Test it with your phone</strong> before printing or sharing: point the camera at the screen.</li>
+<li><strong>Download or copy.</strong> PNG suits messages and documents; SVG is a vector and keeps its quality on posters. <strong>Save to history</strong> keeps the fields so you can come back later.</li>
+</ol>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="tipos-en" aria-labelledby="h-tipos-en">
+<h2 id="h-tipos-en">The content types</h2>
+<p>Each tab builds the text in a format that phone cameras recognise and turn into an action: open a link, join a network, save a contact. The examples below are outputs of the app, checked in the tests.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Tab</th><th scope="col">What the reader does</th><th scope="col">Example of the generated content</th></tr></thead>
+<tbody>
+<tr><th scope="row">Link</th><td>Opens the address</td><td><code>https://giovanipm.github.io</code></td></tr>
+<tr><th scope="row">Wi-Fi</th><td>Offers to join the network</td><td><code>WIFI:T:WPA;S:Casa\;1;P:a\:b;;</code></td></tr>
+<tr><th scope="row">Contact</th><td>Offers to save the contact</td><td>vCard 3.0, with name, mobile, e-mail, company and address</td></tr>
+<tr><th scope="row">E-mail</th><td>Opens a ready e-mail</td><td><code>mailto:x@y.com?subject=Ol%C3%A1%20mundo&amp;body=a%0D%0Ab</code></td></tr>
+<tr><th scope="row">SMS</th><td>Opens a ready message</td><td><code>sms:+5551999990000?body=oi</code></td></tr>
+<tr><th scope="row">Phone</th><td>Offers to call</td><td><code>tel:+5551999990000</code></td></tr>
+<tr><th scope="row">WhatsApp</th><td>Opens the chat with the text</td><td><code>https://wa.me/5551999990000?text=oi%20tudo</code></td></tr>
+<tr><th scope="row">Location</th><td>Opens the map</td><td><code>geo:-30.0346,-51.2177</code> or a Google Maps link</td></tr>
+<tr><th scope="row">Event</th><td>Offers to save it in the calendar</td><td><code>BEGIN:VEVENT</code> with title, start, end, location and description</td></tr>
+</tbody></table></div>
+<ul>
+<li><strong>Wi-Fi:</strong> a backslash, semicolon, comma, quote or colon in the name or password gets a backslash in front, as the format requires. <sup><a href="#ref-4-en">[4]</a></sup> For an open network, choose No password.</li>
+<li><strong>Phone, SMS and WhatsApp:</strong> numbers with 10 or 11 digits get +55, the code for Brazil; for another country, start with +. SMS follows the <code>sms:</code> format, where an international number starts with + <sup><a href="#ref-5-en">[5]</a></sup>; there is also the older <code>SMSTO:</code> option, which the ZXing documentation describes only as “observed in the wild”. <sup><a href="#ref-4-en">[4]</a></sup> WhatsApp asks for the full number, without zeros, brackets or dashes. <sup><a href="#ref-8-en">[8]</a></sup></li>
+<li><strong>E-mail:</strong> spaces become <code>%20</code> and line breaks become <code>%0D%0A</code>. <sup><a href="#ref-6-en">[6]</a></sup></li>
+<li><strong>Location:</strong> the <code>geo:</code> format uses latitude and longitude in decimal degrees. <sup><a href="#ref-7-en">[7]</a></sup> Some phones open the Google Maps link better, and the app offers it too.</li>
+</ul>
+<figure class="tall">
+<img src="rc_images/QRWifi-en.png" alt="The app on a phone, in the dark theme, with the Wi-Fi tab: network name MinhaRede, password senha-forte-123, security WPA/WPA2/WPA3 and the Hidden network box unchecked. Below, the QR code, the line Version 3, 29 by 29 modules, correction M and the content WIFI:T:WPA;S:MinhaRede;P:senha-forte-123;;." width="390" height="844" loading="lazy">
+<figcaption>Wi-Fi on a phone: whoever scans the code joins the network without typing the password.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="pix-en" aria-labelledby="h-pix-en">
+<h2 id="h-pix-en">Pix: static, dynamic and cash-out</h2>
+<p>Pix is the instant payment system of the Central Bank of Brazil. Its QR code follows the BR Code standard, which adopts the EMV standard for payment QR codes. <sup><a href="#ref-3-en">[3]</a></sup> The content is a sequence of fields with a 2-digit identifier, a 2-digit length and a value, ending with a check code, the CRC16. The whole text is also the <strong>Pix Copy and Paste</strong> code (<em>Pix Copia e Cola</em>).</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Type</th><th scope="col">What goes into the QR code</th><th scope="col">When to use it</th></tr></thead>
+<tbody>
+<tr><th scope="row">Static</th><td>The Pix key and, optionally, amount, description and identifier (txid)</td><td>A sign at the counter, donations, simple charges. It can be paid many times, unless you tick single use.</td></tr>
+<tr><th scope="row">Pix Saque (cash-out)</th><td>The static data plus the ISPB of the cash-out facilitator (field 03)</td><td>Shops that offer cash withdrawal. Pix Troco does not exist in static QR codes. <sup><a href="#ref-3-en">[3]</a></sup></td></tr>
+<tr><th scope="row">Dynamic</th><td>A URL from the receiver’s bank or PSP, without <code>https://</code>, up to 77 characters</td><td>Charges with amount, due date and reconciliation created by your bank. The app only builds the QR code from the URL the bank created.</td></tr>
+</tbody></table></div>
+<figure>
+<img src="rc_images/QRPix-en.png" alt="The Pix tab with type Static and random key 123e4567-e12b-12d1-a456-426655440000, name Fulano de Tal, city BRASILIA, amount 25,00, description Cafe and txid PEDIDO123. The green message says Valid Pix, CRC matches, 2D74. On the right, the version 9 QR code and the content starting with 00020126660014br.gov.bcb.pix." width="1280" height="800" loading="lazy">
+<figcaption>A static Pix with amount, description and txid; the key is the one from the Central Bank manual’s example.</figcaption>
+</figure>
+<p>The rules the app applies come from the Central Bank manual, version 2.10.0: <sup><a href="#ref-3-en">[3]</a></sup></p>
+<ul>
+<li><strong>Key:</strong> CPF and CNPJ (Brazilian tax numbers) as digits only, mobile as +55 with area code, e-mail as typed and random key with the dashes. The app checks the check digits of CPF and numeric CNPJ; for the alphanumeric CNPJ it checks the format only.</li>
+<li><strong>Key, description and cash-out share 99 characters</strong> in field 26: the key takes up to 77 and the description up to 72. If the description does not fit, the app cuts it and says so.</li>
+<li><strong>txid:</strong> up to 25 unaccented letters and digits. When empty, it becomes <code>***</code>, as the standard requires.</li>
+<li><strong>Single use:</strong> field 01 with value 12 says the code should not be paid more than once.</li>
+<li><strong>CRC16:</strong> polynomial 0x1021 and initial value 0xFFFF, computed over the whole text, including the final <code>6304</code>.</li>
+<li><strong>Name and city:</strong> the app limits them to 25 and 15 characters, as BR Code generators do, and removes accents. These limits are in the BR Code Manual, which could not be consulted.</li>
+</ul>
+<p>The app reproduces both examples in the manual exactly: the static one ends in <code>63041D3D</code>, and the dynamic one in <code>630464E4</code>.</p>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="lerpix-en" aria-labelledby="h-lerpix-en">
+<h2 id="h-lerpix-en">Reading and checking a Pix</h2>
+<p>The <strong>Read Pix</strong> tab takes a Pix Copy and Paste code, recomputes the CRC and shows each field in a table. Use it to check a code before sharing it, or to understand a code you received. If one character was changed, the CRC no longer matches and the app shows both values, the expected and the found one.</p>
+<figure>
+<img src="rc_images/QRLerPix-en.png" alt="The Read Pix tab with the manual’s example code pasted. Green messages: Static Pix and Valid Pix, CRC matches, 1D3D. The table lists fields 00 payload format, 26 receiver account with GUI br.gov.bcb.pix and the key, 52 category 0000, 53 currency 986, 58 country BR, 59 name Fulano de Tal, 60 city BRASILIA, 62 with txid *** and 63 CRC16 1D3D." width="1280" height="800" loading="lazy">
+<figcaption>The Central Bank manual’s static Pix example, broken down field by field.</figcaption>
+</figure>
+<p>Reading checks the structure and the CRC, not the account: only the bank knows whether the key exists and who owns it. Before using a Pix to receive money, scan the QR code in your bank’s app and check the name, key and amount on the confirmation screen, without completing the payment.</p>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="aparencia-en" aria-labelledby="h-aparencia-en">
+<h2 id="h-aparencia-en">Appearance and size</h2>
+<p>More error correction makes the code sturdier, but also larger. The table shows the version and the number of modules the app chose for five contents, measured with its own encoder.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Content</th><th scope="col">Characters</th><th scope="col">L</th><th scope="col">M</th><th scope="col">Q</th><th scope="col">H</th></tr></thead>
+<tbody>
+<tr><th scope="row">20 digits (numeric mode)</th><td>20</td><td>v1&nbsp;·&nbsp;21</td><td>v1&nbsp;·&nbsp;21</td><td>v1&nbsp;·&nbsp;21</td><td>v2&nbsp;·&nbsp;25</td></tr>
+<tr><th scope="row">Link https://giovanipm.github.io</th><td>27</td><td>v2&nbsp;·&nbsp;25</td><td>v3&nbsp;·&nbsp;29</td><td>v3&nbsp;·&nbsp;29</td><td>v4&nbsp;·&nbsp;33</td></tr>
+<tr><th scope="row">Wi-Fi with password</th><td>42</td><td>v3&nbsp;·&nbsp;29</td><td>v3&nbsp;·&nbsp;29</td><td>v4&nbsp;·&nbsp;33</td><td>v5&nbsp;·&nbsp;37</td></tr>
+<tr><th scope="row">Static Pix with amount and description</th><td>160</td><td>v8&nbsp;·&nbsp;49</td><td>v9&nbsp;·&nbsp;53</td><td>v11&nbsp;·&nbsp;61</td><td>v13&nbsp;·&nbsp;69</td></tr>
+<tr><th scope="row">Full contact (vCard)</th><td>238</td><td>v10&nbsp;·&nbsp;57</td><td>v11&nbsp;·&nbsp;61</td><td>v13&nbsp;·&nbsp;69</td><td>v16&nbsp;·&nbsp;81</td></tr>
+</tbody></table></div>
+<p>For the same printed size, more modules mean smaller modules that are harder to read from a distance. Level M, the app’s default, is a good balance.</p>
+<figure>
+<img src="rc_images/QRAparencia-en.png" alt="The Appearance panel with correction locked at H, image size 512 pixels, margin 4, style Dots, a purple module colour and a logo loaded. The notices say https:// was added and that, with a logo, error correction is set to H. On the right, the purple QR code with dot modules, square finder patterns and an orange and purple logo in the centre, version 4, 33 by 33 modules." width="1280" height="800" loading="lazy">
+<figcaption>Dot style, purple colour and a logo: the app switches correction to H.</figcaption>
+</figure>
+<ul>
+<li><strong>Logo:</strong> covers about 22% of the code’s width, and the app forces level H to make up for the hidden modules. The image stays in the browser.</li>
+<li><strong>Colours:</strong> dark modules on a light background. The app warns when the contrast is low or when the modules are lighter than the background, which many readers do not accept.</li>
+<li><strong>Styles:</strong> dots and rounded corners change only the drawing; the finder patterns stay square.</li>
+<li><strong>Margin:</strong> the default of 4 modules is the recommended one; the app warns when you reduce it.</li>
+</ul>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="testes-en" aria-labelledby="h-testes-en">
+<h2 id="h-testes-en">How the app was tested</h2>
+<ul>
+<li><strong>Encoder:</strong> compared with the Node <code>qrcode</code> package, an independent generator. <sup><a href="#ref-9-en">[9]</a></sup> For 14 texts, from digits only to emoji, at the 4 levels and with the 8 masks, the 440 matrices came out identical module by module, and the automatically chosen version and mask matched in all 55 cases.</li>
+<li><strong>Pix:</strong> both examples from the Central Bank manual come out identical character by character.</li>
+<li><strong>Images:</strong> the pixels of the PNG, the SVG and the three styles, read back at the centre of each module, match the matrix.</li>
+<li><strong>Interface:</strong> every tab was used with real clicks and keys in Chrome, in the four languages and at 390 pixels wide, with no errors and no external requests.</li>
+</ul>
+<p>What was not tested: reading the images with an independent QR reader, real phones and banking apps, and the Safari and Firefox browsers.</p>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="erros-en" aria-labelledby="h-erros-en">
+<h2 id="h-erros-en">Common mistakes</h2>
+<ul class="myths">
+<li><h3>Printing without testing</h3><p>Scan the code with your phone before sending it to the printer, especially with colours, a style or a logo.</p></li>
+<li><h3>Inverting the colours</h3><p>Light modules on a dark background look nice, but many readers cannot read them. The app warns you.</p></li>
+<li><h3>Cutting the margin</h3><p>Without the light band around it, the reader confuses the code with what surrounds it.</p></li>
+<li><h3>Using a static QR code for charges with a due date</h3><p>Amounts by due date, interest and automatic reconciliation belong to the dynamic Pix, created by the bank.</p></li>
+<li><h3>Thinking a correct CRC guarantees the payment</h3><p>The CRC only proves the text was not altered. Check the name and key in the bank’s app.</p></li>
+<li><h3>Putting accents in the Pix name</h3><p>The app removes accents and says so, so that each character counts as one byte in the field lengths.</p></li>
+</ul>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="revisao-en" aria-labelledby="h-revisao-en">
+<h2 id="h-revisao-en">Quick review</h2>
+<div class="recap"><h3>In short</h3><ul>
+<li>QR code: modules in a grid, from 21 × 21 to 177 × 177, with finder patterns, data and error correction.</li>
+<li>Correction M, a 4-module margin and dark colours on a light background are the safe defaults.</li>
+<li>A static Pix carries the key; a dynamic one carries the bank’s URL; a cash-out one carries the facilitator’s ISPB.</li>
+<li>Read Pix checks the structure and the CRC, not the account.</li>
+</ul></div>
+<div class="quiz">
+<details><summary>1. Why does the app switch correction to H when you add a logo?</summary><p>Because the logo hides modules, and level H is the one that recovers the most missing parts.</p></details>
+<details><summary>2. What is the largest content that fits in a QR code?</summary><p>At version 40 with level L, 7,089 digits, 4,296 alphanumeric characters or 2,953 bytes, measured with the app.</p></details>
+<details><summary>3. What does a txid of *** mean?</summary><p>That the receiver used no transaction identifier in that static Pix.</p></details>
+<details><summary>4. Where does the URL go in a dynamic Pix, and in what format?</summary><p>In field 26, subfield 25, without https:// and with up to 77 characters.</p></details>
+<details><summary>5. The CRC matched. Is the Pix right?</summary><p>The structure is; only the bank’s app confirms the account and the name.</p></details>
+</div>
+<p><a class="launch" href="gerador-qrcode.html#en">Open the generator <span aria-hidden="true">→</span></a></p>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="referencias-en" aria-labelledby="h-referencias-en">
+<h2 id="h-referencias-en">References</h2>
+<ol class="refs">
+<li id="ref-1-en"><a href="gerador-qrcode.html#en">QR Code Generator</a>, an app on this site, in a single file and with no network.</li>
+<li id="ref-2-en">DENSO WAVE. <a href="https://www.qrcode.com/en/" rel="noopener">QR Code.com</a>: <a href="https://www.qrcode.com/en/history/" rel="noopener">history</a>, <a href="https://www.qrcode.com/en/about/version.html" rel="noopener">versions</a>, <a href="https://www.qrcode.com/en/about/error_correction.html" rel="noopener">error correction</a> and <a href="https://www.qrcode.com/en/faq.html" rel="noopener">FAQ</a>. “QR Code” is a registered trademark of DENSO WAVE INCORPORATED.</li>
+<li id="ref-3-en">Banco Central do Brasil. <a href="https://www.bcb.gov.br/content/estabilidadefinanceira/pix/Regulamento_Pix/II_ManualdePadroesparaIniciacaodoPix.pdf" rel="noopener">Manual de Padrões para Iniciação do Pix</a> (in Portuguese), version 2.10.0, sections 2.4 to 2.7.</li>
+<li id="ref-4-en">ZXing. <a href="https://github.com/zxing/zxing/wiki/Barcode-Contents" rel="noopener">Barcode Contents</a>: Wi-Fi, SMS, e-mail, phone, location, contact and event formats.</li>
+<li id="ref-5-en">IETF. <a href="https://www.rfc-editor.org/rfc/rfc5724" rel="noopener">RFC 5724</a>: the <code>sms:</code> URI scheme.</li>
+<li id="ref-6-en">IETF. <a href="https://www.rfc-editor.org/rfc/rfc6068" rel="noopener">RFC 6068</a>: the <code>mailto:</code> URI scheme.</li>
+<li id="ref-7-en">IETF. <a href="https://www.rfc-editor.org/rfc/rfc5870" rel="noopener">RFC 5870</a>: the <code>geo:</code> URI scheme.</li>
+<li id="ref-8-en">WhatsApp. <a href="https://faq.whatsapp.com/5913398998672934" rel="noopener">How to use click to chat</a>.</li>
+<li id="ref-9-en">The <a href="https://www.npmjs.com/package/qrcode" rel="noopener">qrcode</a> package for Node.js, used as an independent reference in the tests.</li>
+</ol>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== IT ===================== -->
+<div id="it" role="tabpanel" aria-labelledby="tab-it" lang="it" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html#it" data-projects>← Progetti</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Generatore di codici QR: link, Wi-Fi, contatti e Pix</h1>
+      <p class="dek">Come funziona un codice QR, come generare i formati più usati, come creare e verificare un Pix statico, dinamico o di prelievo, e cosa cambia quando scegli la correzione degli errori, i colori e il logo.</p>
+      <div class="byline">
+        <span>Di <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Pubblicato il <time datetime="2026-11-15">15/11/2026</time></span>
+        <span class="credit">Rivisto e formattato usando Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-it">
+    <h2 id="toc-it">Indice</h2>
+    <ol>
+      <li><a href="#intro-it">L’app</a></li>
+      <li><a href="#qr-it">Come funziona un codice QR</a></li>
+      <li><a href="#passo-it">Passo dopo passo: il primo codice QR</a></li>
+      <li><a href="#tipi-it">I tipi di contenuto</a></li>
+      <li><a href="#pix-it">Pix: statico, dinamico e prelievo</a></li>
+      <li><a href="#lerpix-it">Leggere e verificare un Pix</a></li>
+      <li><a href="#aspetto-it">Aspetto e dimensioni</a></li>
+      <li><a href="#test-it">Come è stata testata l’app</a></li>
+      <li><a href="#errori-it">Errori comuni</a></li>
+      <li><a href="#ripasso-it">Ripasso rapido</a></li>
+      <li><a href="#riferimenti-it">Riferimenti</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-it" aria-labelledby="h-intro-it">
+<h2 id="h-intro-it">L’app</h2>
+<p>Il generatore è una pagina unica che trasforma un testo, un link, i dati di una rete Wi-Fi, un contatto o un addebito Pix in un codice QR, senza inviare nulla su internet. <sup><a href="#ref-1-it">[1]</a></sup> La pagina blocca le connessioni di rete con la propria politica di sicurezza, e la cronologia resta solo nel tuo browser.</p>
+<ul>
+<li><strong>12 schede:</strong> testo, link, Wi-Fi, contatto, e-mail, SMS, telefono, WhatsApp, posizione, evento, Pix e Leggi Pix.</li>
+<li><strong>Uscite:</strong> immagine PNG da 256 a 2048 pixel, vettore SVG, copia dell’immagine o del testo, e stampa.</li>
+<li><strong>Aspetto:</strong> livello di correzione degli errori, margine, colori, tre stili di modulo e un logo al centro.</li>
+</ul>
+<p><a class="launch" href="gerador-qrcode.html#it">Apri il generatore <span aria-hidden="true">→</span></a></p>
+<figure>
+<img src="rc_images/QRVisao-it.png" alt="Il generatore con la scheda Link selezionata. È stato digitato l’indirizzo giovanipm.github.io, e l’app avvisa di aver aggiunto https://. A destra, il codice QR, la riga Versione 3, 29 per 29 moduli, correzione M, maschera 4, 27 caratteri, il contenuto codificato https://giovanipm.github.io e i pulsanti Scarica PNG, Scarica SVG, Copia immagine, Copia testo, Stampa e Salva nella cronologia." width="1280" height="800" loading="lazy">
+<figcaption>La scheda Link: l’app completa l’indirizzo e mostra il codice QR e i suoi dati.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="qr-it" aria-labelledby="h-qr-it">
+<h2 id="h-qr-it">Come funziona un codice QR</h2>
+<p>Il codice QR è stato lanciato nel 1994 da DENSO WAVE. <sup><a href="#ref-2-it">[2]</a></sup> È una griglia di quadratini, i <strong>moduli</strong>, che va dalla versione 1, con 21 × 21 moduli, alla versione 40, con 177 × 177. <sup><a href="#ref-2-it">[2]</a></sup> Più contenuto, più alta la versione.</p>
+<figure>
+<img src="rc_images/QRAnatomia-it.svg" alt="Un codice QR versione 2 con correzione M, generato dall’app per il testo giovanipm.github.io, con ogni regione colorata. I tre pattern di posizione, con i separatori, stanno in tre angoli. Il pattern di allineamento sta vicino all’angolo in basso a destra. Le linee di temporizzazione uniscono i pattern di posizione. L’informazione di formato, che contiene il livello di correzione e la maschera, sta accanto ai pattern. Il resto sono 28 parole di dati e 16 di correzione degli errori; intorno c’è un margine di 4 moduli." width="1000" height="530" loading="lazy">
+<figcaption>Le regioni di un vero codice QR, generato dall’app: cosa è struttura e cosa è contenuto.</figcaption>
+</figure>
+<ul>
+<li><strong>Pattern di posizione:</strong> i tre quadrati grandi negli angoli. Indicano al lettore dove si trova il codice e con quale angolo.</li>
+<li><strong>Pattern di allineamento e linee di temporizzazione:</strong> aiutano a correggere la prospettiva e a contare i moduli.</li>
+<li><strong>Informazione di formato:</strong> dice quale livello di correzione e quale maschera sono stati usati.</li>
+<li><strong>Dati e correzione degli errori:</strong> il contenuto è diviso in parole di 8 bit, seguite da parole in più che permettono di recuperare parti sporche o strappate. Il metodo è quello di Reed-Solomon. <sup><a href="#ref-2-it">[2]</a></sup></li>
+<li><strong>Maschera:</strong> uno di 8 schemi che inverte i moduli per evitare macchie e strisce che confonderebbero il lettore. L’app prova tutte e 8 e tiene quella con la penalità minore.</li>
+<li><strong>Margine:</strong> una fascia chiara di 4 moduli intorno al codice, necessaria nell’uso reale. <sup><a href="#ref-2-it">[2]</a></sup></li>
+</ul>
+<p>Ci sono quattro livelli di correzione: L, M, Q e H. DENSO WAVE dice che M recupera il 15% delle parole ed è il più scelto, e cita Q come esempio di 25%. <sup><a href="#ref-2-it">[2]</a></sup> L’app indica 7% per L e 30% per H, i valori usuali; si trovano in una tabella in forma di immagine sul sito di DENSO WAVE, che non è stato possibile leggere.</p>
+<p>Il contenuto è registrato in uno di tre modi: <strong>numerico</strong> (solo cifre), <strong>alfanumerico</strong> (maiuscole, cifre e alcuni simboli) o <strong>byte</strong> (qualsiasi testo, in UTF-8). Misurato con l’app, il codice QR più grande, la versione 40 con livello L, accetta 7.089 cifre, 4.296 caratteri alfanumerici o 2.953 byte; un carattere in più viene rifiutato.</p>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="passo-it" aria-labelledby="h-passo-it">
+<h2 id="h-passo-it">Passo dopo passo: il primo codice QR</h2>
+<ol>
+<li><strong>Scegli la scheda</strong> del tipo di contenuto. Anche le frecce della tastiera cambiano scheda.</li>
+<li><strong>Compila i campi.</strong> Il codice QR appare a destra, o subito sotto il modulo sul telefono, a ogni tasto. Se manca qualcosa, un messaggio rosso dice cosa; gli avvisi gialli dicono cosa l’app ha corretto.</li>
+<li><strong>Controlla il contenuto codificato</strong> sotto il codice QR: è esattamente il testo che riceverà il lettore.</li>
+<li><strong>Provalo con il telefono</strong> prima di stamparlo o diffonderlo: punta la fotocamera sullo schermo.</li>
+<li><strong>Scarica o copia.</strong> Il PNG va bene per messaggi e documenti; l’SVG è vettoriale e non perde qualità sui manifesti. <strong>Salva nella cronologia</strong> conserva i campi per riprenderli dopo.</li>
+</ol>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="tipi-it" aria-labelledby="h-tipi-it">
+<h2 id="h-tipi-it">I tipi di contenuto</h2>
+<p>Ogni scheda costruisce il testo in un formato che le fotocamere dei telefoni riconoscono e trasformano in un’azione: aprire un link, entrare in una rete, salvare un contatto. Gli esempi qui sotto sono uscite dell’app, verificate nei test.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Scheda</th><th scope="col">Cosa fa il lettore</th><th scope="col">Esempio del contenuto generato</th></tr></thead>
+<tbody>
+<tr><th scope="row">Link</th><td>Apre l’indirizzo</td><td><code>https://giovanipm.github.io</code></td></tr>
+<tr><th scope="row">Wi-Fi</th><td>Propone di entrare nella rete</td><td><code>WIFI:T:WPA;S:Casa\;1;P:a\:b;;</code></td></tr>
+<tr><th scope="row">Contatto</th><td>Propone di salvare il contatto</td><td>vCard 3.0, con nome, cellulare, e-mail, azienda e indirizzo</td></tr>
+<tr><th scope="row">E-mail</th><td>Apre un’e-mail pronta</td><td><code>mailto:x@y.com?subject=Ol%C3%A1%20mundo&amp;body=a%0D%0Ab</code></td></tr>
+<tr><th scope="row">SMS</th><td>Apre un messaggio pronto</td><td><code>sms:+5551999990000?body=oi</code></td></tr>
+<tr><th scope="row">Telefono</th><td>Propone di chiamare</td><td><code>tel:+5551999990000</code></td></tr>
+<tr><th scope="row">WhatsApp</th><td>Apre la chat con il testo</td><td><code>https://wa.me/5551999990000?text=oi%20tudo</code></td></tr>
+<tr><th scope="row">Posizione</th><td>Apre la mappa</td><td><code>geo:-30.0346,-51.2177</code> o link di Google Maps</td></tr>
+<tr><th scope="row">Evento</th><td>Propone di salvarlo nel calendario</td><td><code>BEGIN:VEVENT</code> con titolo, inizio, fine, luogo e descrizione</td></tr>
+</tbody></table></div>
+<ul>
+<li><strong>Wi-Fi:</strong> barra rovesciata, punto e virgola, virgola, virgolette e due punti nel nome o nella password ricevono una barra rovesciata davanti, come richiede il formato. <sup><a href="#ref-4-it">[4]</a></sup> Per una rete aperta, scegli Senza password.</li>
+<li><strong>Telefono, SMS e WhatsApp:</strong> i numeri di 10 o 11 cifre ricevono +55, il prefisso del Brasile; per un altro paese, inizia con +. L’SMS segue il formato <code>sms:</code>, in cui il numero internazionale inizia con + <sup><a href="#ref-5-it">[5]</a></sup>; c’è anche l’opzione <code>SMSTO:</code>, più vecchia, che la documentazione di ZXing descrive solo come “osservata in uso”. <sup><a href="#ref-4-it">[4]</a></sup> WhatsApp chiede il numero completo, senza zeri, parentesi né trattini. <sup><a href="#ref-8-it">[8]</a></sup></li>
+<li><strong>E-mail:</strong> gli spazi diventano <code>%20</code> e gli a capo diventano <code>%0D%0A</code>. <sup><a href="#ref-6-it">[6]</a></sup></li>
+<li><strong>Posizione:</strong> il formato <code>geo:</code> usa latitudine e longitudine in gradi decimali. <sup><a href="#ref-7-it">[7]</a></sup> Alcuni telefoni aprono meglio il link di Google Maps, che l’app offre anch’esso.</li>
+</ul>
+<figure class="tall">
+<img src="rc_images/QRWifi-it.png" alt="L’app su un telefono, nel tema scuro, con la scheda Wi-Fi: nome della rete MinhaRede, password senha-forte-123, sicurezza WPA/WPA2/WPA3 e la casella Rete nascosta non spuntata. Sotto, il codice QR, la riga Versione 3, 29 per 29 moduli, correzione M e il contenuto WIFI:T:WPA;S:MinhaRede;P:senha-forte-123;;." width="390" height="844" loading="lazy">
+<figcaption>Wi-Fi sul telefono: chi legge il codice entra nella rete senza digitare la password.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="pix-it" aria-labelledby="h-pix-it">
+<h2 id="h-pix-it">Pix: statico, dinamico e prelievo</h2>
+<p>Il Pix è il sistema di pagamenti istantanei della Banca Centrale del Brasile. Il suo codice QR segue lo standard BR Code, che adotta lo standard EMV per i codici QR di pagamento. <sup><a href="#ref-3-it">[3]</a></sup> Il contenuto è una sequenza di campi con identificativo di 2 cifre, lunghezza di 2 cifre e valore, chiusa da un codice di controllo, il CRC16. L’intero testo è anche il <strong>Pix Copia e Incolla</strong> (<em>Pix Copia e Cola</em>).</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Tipo</th><th scope="col">Cosa va nel codice QR</th><th scope="col">Quando usarlo</th></tr></thead>
+<tbody>
+<tr><th scope="row">Statico</th><td>La chiave Pix e, se vuoi, importo, descrizione e identificativo (txid)</td><td>Cartello alla cassa, donazioni, addebiti semplici. Si può pagare più volte, a meno che tu non spunti l’uso unico.</td></tr>
+<tr><th scope="row">Pix Saque (prelievo)</th><td>I dati dello statico più l’ISPB del facilitatore di prelievo (campo 03)</td><td>Negozi che offrono il prelievo di contanti. Il Pix Troco non esiste nei QR statici. <sup><a href="#ref-3-it">[3]</a></sup></td></tr>
+<tr><th scope="row">Dinamico</th><td>Un URL della banca o del PSP del beneficiario, senza <code>https://</code>, fino a 77 caratteri</td><td>Addebiti con importo, scadenza e riconciliazione creati dalla tua banca. L’app costruisce solo il QR con l’URL creato dalla banca.</td></tr>
+</tbody></table></div>
+<figure>
+<img src="rc_images/QRPix-it.png" alt="La scheda Pix con tipo Statico e chiave casuale 123e4567-e12b-12d1-a456-426655440000, nome Fulano de Tal, città BRASILIA, importo 25,00, descrizione Cafe e txid PEDIDO123. Il messaggio verde dice Pix valido, il CRC corrisponde, 2D74. A destra, il codice QR versione 9 e il contenuto che inizia con 00020126660014br.gov.bcb.pix." width="1280" height="800" loading="lazy">
+<figcaption>Un Pix statico con importo, descrizione e txid; la chiave è quella dell’esempio del manuale della Banca Centrale.</figcaption>
+</figure>
+<p>Le regole applicate dall’app vengono dal manuale della Banca Centrale, versione 2.10.0: <sup><a href="#ref-3-it">[3]</a></sup></p>
+<ul>
+<li><strong>Chiave:</strong> CPF e CNPJ (codici fiscali brasiliani) solo con le cifre, cellulare nel formato +55 con prefisso, e-mail come digitata e chiave casuale con i trattini. L’app verifica le cifre di controllo di CPF e CNPJ numerico; per il CNPJ alfanumerico verifica solo il formato.</li>
+<li><strong>Chiave, descrizione e prelievo si dividono 99 caratteri</strong> nel campo 26: la chiave fino a 77 e la descrizione fino a 72. Se la descrizione non ci sta, l’app la taglia e avvisa.</li>
+<li><strong>txid:</strong> fino a 25 lettere senza accenti e cifre. Vuoto, diventa <code>***</code>, come richiede lo standard.</li>
+<li><strong>Uso unico:</strong> il campo 01 con valore 12 indica che il codice non va pagato più di una volta.</li>
+<li><strong>CRC16:</strong> polinomio 0x1021 e valore iniziale 0xFFFF, calcolato su tutto il testo, compreso il <code>6304</code> finale.</li>
+<li><strong>Nome e città:</strong> l’app li limita a 25 e 15 caratteri, come fanno i generatori di BR Code, e rimuove gli accenti. Questi limiti sono nel Manuale del BR Code, che non è stato possibile consultare.</li>
+</ul>
+<p>L’app riproduce esattamente i due esempi del manuale: quello statico finisce con <code>63041D3D</code>, quello dinamico con <code>630464E4</code>.</p>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="lerpix-it" aria-labelledby="h-lerpix-it">
+<h2 id="h-lerpix-it">Leggere e verificare un Pix</h2>
+<p>La scheda <strong>Leggi Pix</strong> riceve un Pix Copia e Incolla, ricalcola il CRC e mostra ogni campo in una tabella. Serve a verificare un codice prima di diffonderlo o a capire un codice ricevuto. Se un carattere è stato cambiato, il CRC non corrisponde più e l’app mostra i due valori, quello atteso e quello trovato.</p>
+<figure>
+<img src="rc_images/QRLerPix-it.png" alt="La scheda Leggi Pix con il codice di esempio del manuale incollato. Messaggi verdi: Pix statico e Pix valido, il CRC corrisponde, 1D3D. La tabella elenca i campi 00 formato del payload, 26 conto del beneficiario con GUI br.gov.bcb.pix e la chiave, 52 categoria 0000, 53 valuta 986, 58 paese BR, 59 nome Fulano de Tal, 60 città BRASILIA, 62 con txid *** e 63 CRC16 1D3D." width="1280" height="800" loading="lazy">
+<figcaption>L’esempio di Pix statico del manuale della Banca Centrale, scomposto campo per campo.</figcaption>
+</figure>
+<p>La lettura verifica la struttura e il CRC, non il conto: solo la banca sa se la chiave esiste e a chi appartiene. Prima di usare un Pix per ricevere denaro, leggi il codice QR nell’app della tua banca e controlla nome, chiave e importo nella schermata di conferma, senza completare il pagamento.</p>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="aspetto-it" aria-labelledby="h-aspetto-it">
+<h2 id="h-aspetto-it">Aspetto e dimensioni</h2>
+<p>Più correzione degli errori rende il codice più resistente, ma anche più grande. La tabella mostra la versione e il numero di moduli scelti dall’app per cinque contenuti, misurati con il suo stesso codificatore.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Contenuto</th><th scope="col">Caratteri</th><th scope="col">L</th><th scope="col">M</th><th scope="col">Q</th><th scope="col">H</th></tr></thead>
+<tbody>
+<tr><th scope="row">20 cifre (modo numerico)</th><td>20</td><td>v1&nbsp;·&nbsp;21</td><td>v1&nbsp;·&nbsp;21</td><td>v1&nbsp;·&nbsp;21</td><td>v2&nbsp;·&nbsp;25</td></tr>
+<tr><th scope="row">Link https://giovanipm.github.io</th><td>27</td><td>v2&nbsp;·&nbsp;25</td><td>v3&nbsp;·&nbsp;29</td><td>v3&nbsp;·&nbsp;29</td><td>v4&nbsp;·&nbsp;33</td></tr>
+<tr><th scope="row">Wi-Fi con password</th><td>42</td><td>v3&nbsp;·&nbsp;29</td><td>v3&nbsp;·&nbsp;29</td><td>v4&nbsp;·&nbsp;33</td><td>v5&nbsp;·&nbsp;37</td></tr>
+<tr><th scope="row">Pix statico con importo e descrizione</th><td>160</td><td>v8&nbsp;·&nbsp;49</td><td>v9&nbsp;·&nbsp;53</td><td>v11&nbsp;·&nbsp;61</td><td>v13&nbsp;·&nbsp;69</td></tr>
+<tr><th scope="row">Contatto completo (vCard)</th><td>238</td><td>v10&nbsp;·&nbsp;57</td><td>v11&nbsp;·&nbsp;61</td><td>v13&nbsp;·&nbsp;69</td><td>v16&nbsp;·&nbsp;81</td></tr>
+</tbody></table></div>
+<p>A parità di dimensione stampata, più moduli significano moduli più piccoli e più difficili da leggere da lontano. Il livello M, predefinito nell’app, è un buon equilibrio.</p>
+<figure>
+<img src="rc_images/QRAparencia-it.png" alt="Il pannello Aspetto con correzione bloccata su H, dimensione 512 pixel, margine 4, stile Punti, colore dei moduli viola e un logo caricato. Gli avvisi dicono che è stato aggiunto https:// e che, con un logo, la correzione degli errori è H. A destra, il codice QR viola con moduli a punti, i pattern di posizione quadrati e un logo arancione e viola al centro, versione 4, 33 per 33 moduli." width="1280" height="800" loading="lazy">
+<figcaption>Stile a punti, colore viola e logo: l’app porta la correzione a H.</figcaption>
+</figure>
+<ul>
+<li><strong>Logo:</strong> copre circa il 22% della larghezza del codice, e l’app forza il livello H per compensare i moduli nascosti. L’immagine resta nel browser.</li>
+<li><strong>Colori:</strong> moduli scuri su fondo chiaro. L’app avvisa quando il contrasto è basso o quando i moduli sono più chiari dello sfondo, cosa che molti lettori non accettano.</li>
+<li><strong>Stili:</strong> punti e angoli arrotondati cambiano solo il disegno; i pattern di posizione restano quadrati.</li>
+<li><strong>Margine:</strong> il valore predefinito di 4 moduli è quello raccomandato; l’app avvisa quando lo riduci.</li>
+</ul>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="test-it" aria-labelledby="h-test-it">
+<h2 id="h-test-it">Come è stata testata l’app</h2>
+<ul>
+<li><strong>Codificatore:</strong> confrontato con il pacchetto <code>qrcode</code> di Node, un generatore indipendente. <sup><a href="#ref-9-it">[9]</a></sup> Per 14 testi, da sole cifre alle emoji, nei 4 livelli e con le 8 maschere, le 440 matrici sono risultate identiche modulo per modulo, e la versione e la maschera scelte automaticamente hanno coinciso in tutti i 55 casi.</li>
+<li><strong>Pix:</strong> i due esempi del manuale della Banca Centrale escono identici carattere per carattere.</li>
+<li><strong>Immagini:</strong> i pixel del PNG, dell’SVG e dei tre stili, riletti al centro di ogni modulo, corrispondono alla matrice.</li>
+<li><strong>Interfaccia:</strong> tutte le schede sono state usate con clic e tasti reali in Chrome, nelle quattro lingue e a 390 pixel di larghezza, senza errori né richieste esterne.</li>
+</ul>
+<p>Cosa non è stato testato: la lettura delle immagini con un lettore QR indipendente, telefoni reali e app bancarie, e i browser Safari e Firefox.</p>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="errori-it" aria-labelledby="h-errori-it">
+<h2 id="h-errori-it">Errori comuni</h2>
+<ul class="myths">
+<li><h3>Stampare senza provare</h3><p>Leggi il codice con il telefono prima di mandarlo in tipografia, soprattutto con colori, stile o logo.</p></li>
+<li><h3>Invertire i colori</h3><p>Moduli chiari su fondo scuro sono belli, ma molti lettori non li leggono. L’app avvisa.</p></li>
+<li><h3>Tagliare il margine</h3><p>Senza la fascia chiara intorno, il lettore confonde il codice con ciò che lo circonda.</p></li>
+<li><h3>Usare un QR statico per addebiti con scadenza</h3><p>Importi per scadenza, interessi e riconciliazione automatica sono del Pix dinamico, creato dalla banca.</p></li>
+<li><h3>Credere che un CRC giusto garantisca il pagamento</h3><p>Il CRC prova solo che il testo non è stato alterato. Controlla nome e chiave nell’app della banca.</p></li>
+<li><h3>Mettere accenti nel nome del Pix</h3><p>L’app rimuove gli accenti e avvisa, perché ogni carattere conti un byte nella lunghezza dei campi.</p></li>
+</ul>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="ripasso-it" aria-labelledby="h-ripasso-it">
+<h2 id="h-ripasso-it">Ripasso rapido</h2>
+<div class="recap"><h3>In sintesi</h3><ul>
+<li>Codice QR: moduli in griglia, da 21 × 21 a 177 × 177, con pattern di posizione, dati e correzione degli errori.</li>
+<li>Correzione M, margine di 4 moduli e colori scuri su fondo chiaro sono le scelte sicure.</li>
+<li>Il Pix statico porta la chiave; quello dinamico l’URL della banca; quello di prelievo l’ISPB del facilitatore.</li>
+<li>Leggi Pix verifica la struttura e il CRC, non il conto.</li>
+</ul></div>
+<div class="quiz">
+<details><summary>1. Perché l’app porta la correzione a H quando aggiungi un logo?</summary><p>Perché il logo nasconde moduli, e il livello H è quello che recupera più parti mancanti.</p></details>
+<details><summary>2. Qual è il contenuto più grande che sta in un codice QR?</summary><p>Nella versione 40 con livello L, 7.089 cifre, 4.296 caratteri alfanumerici o 2.953 byte, misurati con l’app.</p></details>
+<details><summary>3. Cosa significa un txid uguale a ***?</summary><p>Che il beneficiario non ha usato un identificativo di transazione in quel Pix statico.</p></details>
+<details><summary>4. Dove va l’URL in un Pix dinamico, e in che formato?</summary><p>Nel campo 26, sottocampo 25, senza https:// e con fino a 77 caratteri.</p></details>
+<details><summary>5. Il CRC corrisponde. Il Pix è giusto?</summary><p>La struttura sì; il conto e il nome li conferma solo l’app della banca.</p></details>
+</div>
+<p><a class="launch" href="gerador-qrcode.html#it">Apri il generatore <span aria-hidden="true">→</span></a></p>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="riferimenti-it" aria-labelledby="h-riferimenti-it">
+<h2 id="h-riferimenti-it">Riferimenti</h2>
+<ol class="refs">
+<li id="ref-1-it"><a href="gerador-qrcode.html#it">Generatore di codici QR</a>, app di questo sito, in un unico file e senza rete.</li>
+<li id="ref-2-it">DENSO WAVE. <a href="https://www.qrcode.com/en/" rel="noopener">QR Code.com</a> (in inglese): <a href="https://www.qrcode.com/en/history/" rel="noopener">storia</a>, <a href="https://www.qrcode.com/en/about/version.html" rel="noopener">versioni</a>, <a href="https://www.qrcode.com/en/about/error_correction.html" rel="noopener">correzione degli errori</a> e <a href="https://www.qrcode.com/en/faq.html" rel="noopener">domande frequenti</a>. “QR Code” è un marchio registrato di DENSO WAVE INCORPORATED.</li>
+<li id="ref-3-it">Banco Central do Brasil. <a href="https://www.bcb.gov.br/content/estabilidadefinanceira/pix/Regulamento_Pix/II_ManualdePadroesparaIniciacaodoPix.pdf" rel="noopener">Manual de Padrões para Iniciação do Pix</a> (in portoghese), versione 2.10.0, sezioni da 2.4 a 2.7.</li>
+<li id="ref-4-it">ZXing. <a href="https://github.com/zxing/zxing/wiki/Barcode-Contents" rel="noopener">Barcode Contents</a> (in inglese): formati di Wi-Fi, SMS, e-mail, telefono, posizione, contatto ed evento.</li>
+<li id="ref-5-it">IETF. <a href="https://www.rfc-editor.org/rfc/rfc5724" rel="noopener">RFC 5724</a>: lo schema URI <code>sms:</code>.</li>
+<li id="ref-6-it">IETF. <a href="https://www.rfc-editor.org/rfc/rfc6068" rel="noopener">RFC 6068</a>: lo schema URI <code>mailto:</code>.</li>
+<li id="ref-7-it">IETF. <a href="https://www.rfc-editor.org/rfc/rfc5870" rel="noopener">RFC 5870</a>: lo schema URI <code>geo:</code>.</li>
+<li id="ref-8-it">WhatsApp. <a href="https://faq.whatsapp.com/5913398998672934" rel="noopener">Come usare la chat tramite clic</a>.</li>
+<li id="ref-9-it">Il pacchetto <a href="https://www.npmjs.com/package/qrcode" rel="noopener">qrcode</a> per Node.js, usato come riferimento indipendente nei test.</li>
+</ol>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== ES ===================== -->
+<div id="es" role="tabpanel" aria-labelledby="tab-es" lang="es" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html#es" data-projects>← Proyectos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Generador de códigos QR: enlaces, Wi-Fi, contactos y Pix</h1>
+      <p class="dek">Cómo funciona un código QR, cómo generar los formatos más usados, cómo armar y comprobar un Pix estático, dinámico o de retiro, y qué cambia cuando eliges la corrección de errores, los colores y el logo.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado el <time datetime="2026-11-15">15/11/2026</time></span>
+        <span class="credit">Revisado y formateado usando Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-es">
+    <h2 id="toc-es">Índice</h2>
+    <ol>
+      <li><a href="#intro-es">La app</a></li>
+      <li><a href="#qr-es">Cómo funciona un código QR</a></li>
+      <li><a href="#paso-es">Paso a paso: el primer código QR</a></li>
+      <li><a href="#tipos-es">Los tipos de contenido</a></li>
+      <li><a href="#pix-es">Pix: estático, dinámico y retiro</a></li>
+      <li><a href="#leerpix-es">Leer y comprobar un Pix</a></li>
+      <li><a href="#apariencia-es">Apariencia y tamaño</a></li>
+      <li><a href="#pruebas-es">Cómo se probó la app</a></li>
+      <li><a href="#errores-es">Errores comunes</a></li>
+      <li><a href="#repaso-es">Repaso rápido</a></li>
+      <li><a href="#referencias-es">Referencias</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-es" aria-labelledby="h-intro-es">
+<h2 id="h-intro-es">La app</h2>
+<p>El generador es una página única que convierte un texto, un enlace, los datos de una red Wi-Fi, un contacto o un cobro Pix en un código QR, sin enviar nada a internet. <sup><a href="#ref-1-es">[1]</a></sup> La página bloquea las conexiones de red con su propia política de seguridad, y el historial se queda solo en tu navegador.</p>
+<ul>
+<li><strong>12 pestañas:</strong> texto, enlace, Wi-Fi, contacto, correo, SMS, teléfono, WhatsApp, ubicación, evento, Pix y Leer Pix.</li>
+<li><strong>Salidas:</strong> imagen PNG de 256 a 2048 píxeles, vector SVG, copia de la imagen o del texto, e impresión.</li>
+<li><strong>Apariencia:</strong> nivel de corrección de errores, margen, colores, tres estilos de módulo y un logo en el centro.</li>
+</ul>
+<p><a class="launch" href="gerador-qrcode.html#es">Abrir el generador <span aria-hidden="true">→</span></a></p>
+<figure>
+<img src="rc_images/QRVisao-es.png" alt="El generador con la pestaña Enlace elegida. Se escribió la dirección giovanipm.github.io, y la app avisa que añadió https://. A la derecha, el código QR, la línea Versión 3, 29 por 29 módulos, corrección M, máscara 4, 27 caracteres, el contenido codificado https://giovanipm.github.io y los botones Descargar PNG, Descargar SVG, Copiar imagen, Copiar texto, Imprimir y Guardar en el historial." width="1280" height="800" loading="lazy">
+<figcaption>La pestaña Enlace: la app completa la dirección y muestra el código QR y sus datos.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="qr-es" aria-labelledby="h-qr-es">
+<h2 id="h-qr-es">Cómo funciona un código QR</h2>
+<p>DENSO WAVE lanzó el código QR en 1994. <sup><a href="#ref-2-es">[2]</a></sup> Es una cuadrícula de cuadraditos, los <strong>módulos</strong>, que va de la versión 1, con 21 × 21 módulos, a la versión 40, con 177 × 177. <sup><a href="#ref-2-es">[2]</a></sup> Cuanto más contenido, mayor la versión.</p>
+<figure>
+<img src="rc_images/QRAnatomia-es.svg" alt="Un código QR versión 2 con corrección M, generado por la app para el texto giovanipm.github.io, con cada región coloreada. Los tres patrones de posición, con sus separadores, están en tres esquinas. El patrón de alineación está cerca de la esquina inferior derecha. Las líneas de sincronización unen los patrones de posición. La información de formato, que guarda el nivel de corrección y la máscara, está junto a los patrones. El resto son 28 palabras de datos y 16 de corrección de errores; alrededor hay un margen de 4 módulos." width="1000" height="530" loading="lazy">
+<figcaption>Las regiones de un código QR real, generado por la app: qué es estructura y qué es contenido.</figcaption>
+</figure>
+<ul>
+<li><strong>Patrones de posición:</strong> los tres cuadrados grandes en las esquinas. Le indican al lector dónde está el código y en qué ángulo.</li>
+<li><strong>Patrón de alineación y líneas de sincronización:</strong> ayudan a corregir la perspectiva y a contar los módulos.</li>
+<li><strong>Información de formato:</strong> dice qué nivel de corrección y qué máscara se usaron.</li>
+<li><strong>Datos y corrección de errores:</strong> el contenido va en palabras de 8 bits, seguidas de palabras extra que permiten recuperar partes sucias o rotas. El método es el de Reed-Solomon. <sup><a href="#ref-2-es">[2]</a></sup></li>
+<li><strong>Máscara:</strong> uno de 8 patrones que invierte módulos para evitar manchas y rayas que confundirían al lector. La app prueba los 8 y se queda con el de menor penalización.</li>
+<li><strong>Margen:</strong> una franja clara de 4 módulos alrededor, necesaria en el uso real. <sup><a href="#ref-2-es">[2]</a></sup></li>
+</ul>
+<p>Hay cuatro niveles de corrección: L, M, Q y H. DENSO WAVE dice que el M recupera el 15% de las palabras y es el más elegido, y da el Q como ejemplo de 25%. <sup><a href="#ref-2-es">[2]</a></sup> La app muestra 7% para el L y 30% para el H, los valores habituales; están en una tabla en forma de imagen en el sitio de DENSO WAVE, que no se pudo leer.</p>
+<p>El contenido se guarda en uno de tres modos: <strong>numérico</strong> (solo dígitos), <strong>alfanumérico</strong> (mayúsculas, dígitos y algunos símbolos) o <strong>byte</strong> (cualquier texto, en UTF-8). Medido con la app, el código QR más grande, la versión 40 con nivel L, acepta 7.089 dígitos, 4.296 caracteres alfanuméricos o 2.953 bytes; un carácter más se rechaza.</p>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="paso-es" aria-labelledby="h-paso-es">
+<h2 id="h-paso-es">Paso a paso: el primer código QR</h2>
+<ol>
+<li><strong>Elige la pestaña</strong> del tipo de contenido. Las flechas del teclado también cambian de pestaña.</li>
+<li><strong>Rellena los campos.</strong> El código QR aparece a la derecha, o justo debajo del formulario en el móvil, con cada tecla. Si falta algo, un mensaje en rojo dice qué; los avisos en amarillo dicen qué ajustó la app.</li>
+<li><strong>Revisa el contenido codificado</strong> debajo del código QR: es exactamente el texto que recibirá el lector.</li>
+<li><strong>Pruébalo con el móvil</strong> antes de imprimirlo o difundirlo: apunta la cámara a la pantalla.</li>
+<li><strong>Descarga o copia.</strong> El PNG sirve para mensajes y documentos; el SVG es vectorial y no pierde calidad en carteles. <strong>Guardar en el historial</strong> conserva los campos para volver después.</li>
+</ol>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="tipos-es" aria-labelledby="h-tipos-es">
+<h2 id="h-tipos-es">Los tipos de contenido</h2>
+<p>Cada pestaña arma el texto en un formato que las cámaras de los móviles reconocen y convierten en una acción: abrir un enlace, entrar en una red, guardar un contacto. Los ejemplos de abajo son salidas de la app, comprobadas en las pruebas.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Pestaña</th><th scope="col">Qué hace el lector</th><th scope="col">Ejemplo del contenido generado</th></tr></thead>
+<tbody>
+<tr><th scope="row">Enlace</th><td>Abre la dirección</td><td><code>https://giovanipm.github.io</code></td></tr>
+<tr><th scope="row">Wi-Fi</th><td>Ofrece entrar en la red</td><td><code>WIFI:T:WPA;S:Casa\;1;P:a\:b;;</code></td></tr>
+<tr><th scope="row">Contacto</th><td>Ofrece guardar el contacto</td><td>vCard 3.0, con nombre, móvil, correo, empresa y dirección</td></tr>
+<tr><th scope="row">Correo</th><td>Abre un correo listo</td><td><code>mailto:x@y.com?subject=Ol%C3%A1%20mundo&amp;body=a%0D%0Ab</code></td></tr>
+<tr><th scope="row">SMS</th><td>Abre un mensaje listo</td><td><code>sms:+5551999990000?body=oi</code></td></tr>
+<tr><th scope="row">Teléfono</th><td>Ofrece llamar</td><td><code>tel:+5551999990000</code></td></tr>
+<tr><th scope="row">WhatsApp</th><td>Abre el chat con el texto</td><td><code>https://wa.me/5551999990000?text=oi%20tudo</code></td></tr>
+<tr><th scope="row">Ubicación</th><td>Abre el mapa</td><td><code>geo:-30.0346,-51.2177</code> o enlace de Google Maps</td></tr>
+<tr><th scope="row">Evento</th><td>Ofrece guardarlo en la agenda</td><td><code>BEGIN:VEVENT</code> con título, inicio, fin, lugar y descripción</td></tr>
+</tbody></table></div>
+<ul>
+<li><strong>Wi-Fi:</strong> la barra invertida, el punto y coma, la coma, las comillas y los dos puntos en el nombre o la contraseña reciben una barra invertida delante, como exige el formato. <sup><a href="#ref-4-es">[4]</a></sup> Para una red abierta, elige Sin contraseña.</li>
+<li><strong>Teléfono, SMS y WhatsApp:</strong> los números de 10 u 11 dígitos reciben +55, el prefijo de Brasil; para otro país, empieza con +. El SMS sigue el formato <code>sms:</code>, en el que el número internacional empieza con + <sup><a href="#ref-5-es">[5]</a></sup>; también está la opción <code>SMSTO:</code>, más antigua, que la documentación de ZXing describe solo como “observada en uso”. <sup><a href="#ref-4-es">[4]</a></sup> WhatsApp pide el número completo, sin ceros, paréntesis ni guiones. <sup><a href="#ref-8-es">[8]</a></sup></li>
+<li><strong>Correo:</strong> los espacios se vuelven <code>%20</code> y los saltos de línea, <code>%0D%0A</code>. <sup><a href="#ref-6-es">[6]</a></sup></li>
+<li><strong>Ubicación:</strong> el formato <code>geo:</code> usa latitud y longitud en grados decimales. <sup><a href="#ref-7-es">[7]</a></sup> Algunos móviles abren mejor el enlace de Google Maps, que la app también ofrece.</li>
+</ul>
+<figure class="tall">
+<img src="rc_images/QRWifi-es.png" alt="La app en un móvil, en el tema oscuro, con la pestaña Wi-Fi: nombre de la red MinhaRede, contraseña senha-forte-123, seguridad WPA/WPA2/WPA3 y la casilla Red oculta sin marcar. Debajo, el código QR, la línea Versión 3, 29 por 29 módulos, corrección M y el contenido WIFI:T:WPA;S:MinhaRede;P:senha-forte-123;;." width="390" height="844" loading="lazy">
+<figcaption>Wi-Fi en el móvil: quien lee el código entra en la red sin escribir la contraseña.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="pix-es" aria-labelledby="h-pix-es">
+<h2 id="h-pix-es">Pix: estático, dinámico y retiro</h2>
+<p>El Pix es el sistema de pagos instantáneos del Banco Central de Brasil. Su código QR sigue el estándar BR Code, que adopta el estándar EMV para códigos QR de pago. <sup><a href="#ref-3-es">[3]</a></sup> El contenido es una secuencia de campos con identificador de 2 dígitos, longitud de 2 dígitos y valor, cerrada por un código de comprobación, el CRC16. El texto entero es también el <strong>Pix Copia y Pega</strong> (<em>Pix Copia e Cola</em>).</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Tipo</th><th scope="col">Qué va en el código QR</th><th scope="col">Cuándo usarlo</th></tr></thead>
+<tbody>
+<tr><th scope="row">Estático</th><td>La clave Pix y, si quieres, importe, descripción e identificador (txid)</td><td>Cartel en el mostrador, donaciones, cobros simples. Se puede pagar varias veces, salvo que marques el uso único.</td></tr>
+<tr><th scope="row">Pix Saque (retiro)</th><td>Los datos del estático más el ISPB del facilitador de retiro (campo 03)</td><td>Comercios que ofrecen retiro de efectivo. El Pix Troco no existe en QR estáticos. <sup><a href="#ref-3-es">[3]</a></sup></td></tr>
+<tr><th scope="row">Dinámico</th><td>Una URL del banco o PSP del receptor, sin <code>https://</code>, de hasta 77 caracteres</td><td>Cobros con importe, vencimiento y conciliación creados por tu banco. La app solo arma el QR con la URL que creó el banco.</td></tr>
+</tbody></table></div>
+<figure>
+<img src="rc_images/QRPix-es.png" alt="La pestaña Pix con tipo Estático y clave aleatoria 123e4567-e12b-12d1-a456-426655440000, nombre Fulano de Tal, ciudad BRASILIA, importe 25,00, descripción Cafe y txid PEDIDO123. El mensaje verde dice Pix válido, el CRC coincide, 2D74. A la derecha, el código QR versión 9 y el contenido que empieza por 00020126660014br.gov.bcb.pix." width="1280" height="800" loading="lazy">
+<figcaption>Un Pix estático con importe, descripción y txid; la clave es la del ejemplo del manual del Banco Central.</figcaption>
+</figure>
+<p>Las reglas que aplica la app vienen del manual del Banco Central, versión 2.10.0: <sup><a href="#ref-3-es">[3]</a></sup></p>
+<ul>
+<li><strong>Clave:</strong> CPF y CNPJ (números fiscales brasileños) solo con los dígitos, móvil en el formato +55 con prefijo, correo tal como se escribió y clave aleatoria con los guiones. La app comprueba los dígitos de control del CPF y del CNPJ numérico; en el CNPJ alfanumérico, comprueba solo el formato.</li>
+<li><strong>Clave, descripción y retiro se reparten 99 caracteres</strong> en el campo 26: la clave hasta 77 y la descripción hasta 72. Si la descripción no cabe, la app la recorta y avisa.</li>
+<li><strong>txid:</strong> hasta 25 letras sin tilde y dígitos. Vacío, se vuelve <code>***</code>, como exige el estándar.</li>
+<li><strong>Uso único:</strong> el campo 01 con valor 12 indica que el código no debe pagarse más de una vez.</li>
+<li><strong>CRC16:</strong> polinomio 0x1021 y valor inicial 0xFFFF, calculado sobre todo el texto, incluido el <code>6304</code> final.</li>
+<li><strong>Nombre y ciudad:</strong> la app los limita a 25 y 15 caracteres, como hacen los generadores de BR Code, y quita las tildes. Esos límites están en el Manual del BR Code, que no se pudo consultar.</li>
+</ul>
+<p>La app reproduce exactamente los dos ejemplos del manual: el estático termina en <code>63041D3D</code>, y el dinámico, en <code>630464E4</code>.</p>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="leerpix-es" aria-labelledby="h-leerpix-es">
+<h2 id="h-leerpix-es">Leer y comprobar un Pix</h2>
+<p>La pestaña <strong>Leer Pix</strong> recibe un Pix Copia y Pega, recalcula el CRC y muestra cada campo en una tabla. Sirve para comprobar un código antes de difundirlo o para entender un código que recibiste. Si se cambió un carácter, el CRC deja de coincidir y la app muestra los dos valores, el esperado y el encontrado.</p>
+<figure>
+<img src="rc_images/QRLerPix-es.png" alt="La pestaña Leer Pix con el código de ejemplo del manual pegado. Mensajes verdes: Pix estático y Pix válido, el CRC coincide, 1D3D. La tabla lista los campos 00 formato del payload, 26 cuenta del receptor con GUI br.gov.bcb.pix y la clave, 52 categoría 0000, 53 moneda 986, 58 país BR, 59 nombre Fulano de Tal, 60 ciudad BRASILIA, 62 con txid *** y 63 CRC16 1D3D." width="1280" height="800" loading="lazy">
+<figcaption>El ejemplo de Pix estático del manual del Banco Central, desglosado campo por campo.</figcaption>
+</figure>
+<p>La lectura comprueba la estructura y el CRC, no la cuenta: solo el banco sabe si la clave existe y a quién pertenece. Antes de usar un Pix para recibir dinero, lee el código QR en la app de tu banco y revisa nombre, clave e importe en la pantalla de confirmación, sin completar el pago.</p>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="apariencia-es" aria-labelledby="h-apariencia-es">
+<h2 id="h-apariencia-es">Apariencia y tamaño</h2>
+<p>Más corrección de errores hace el código más resistente, pero también más grande. La tabla muestra la versión y el número de módulos que eligió la app para cinco contenidos, medidos con su propio codificador.</p>
+<div class="table-wrap"><table>
+<thead><tr><th scope="col">Contenido</th><th scope="col">Caracteres</th><th scope="col">L</th><th scope="col">M</th><th scope="col">Q</th><th scope="col">H</th></tr></thead>
+<tbody>
+<tr><th scope="row">20 dígitos (modo numérico)</th><td>20</td><td>v1&nbsp;·&nbsp;21</td><td>v1&nbsp;·&nbsp;21</td><td>v1&nbsp;·&nbsp;21</td><td>v2&nbsp;·&nbsp;25</td></tr>
+<tr><th scope="row">Enlace https://giovanipm.github.io</th><td>27</td><td>v2&nbsp;·&nbsp;25</td><td>v3&nbsp;·&nbsp;29</td><td>v3&nbsp;·&nbsp;29</td><td>v4&nbsp;·&nbsp;33</td></tr>
+<tr><th scope="row">Wi-Fi con contraseña</th><td>42</td><td>v3&nbsp;·&nbsp;29</td><td>v3&nbsp;·&nbsp;29</td><td>v4&nbsp;·&nbsp;33</td><td>v5&nbsp;·&nbsp;37</td></tr>
+<tr><th scope="row">Pix estático con importe y descripción</th><td>160</td><td>v8&nbsp;·&nbsp;49</td><td>v9&nbsp;·&nbsp;53</td><td>v11&nbsp;·&nbsp;61</td><td>v13&nbsp;·&nbsp;69</td></tr>
+<tr><th scope="row">Contacto completo (vCard)</th><td>238</td><td>v10&nbsp;·&nbsp;57</td><td>v11&nbsp;·&nbsp;61</td><td>v13&nbsp;·&nbsp;69</td><td>v16&nbsp;·&nbsp;81</td></tr>
+</tbody></table></div>
+<p>Para el mismo tamaño impreso, más módulos significan módulos más pequeños y más difíciles de leer de lejos. El nivel M, el predeterminado de la app, es un buen equilibrio.</p>
+<figure>
+<img src="rc_images/QRAparencia-es.png" alt="El panel Apariencia con corrección fija en H, tamaño 512 píxeles, margen 4, estilo Puntos, color de los módulos morado y un logo cargado. Los avisos dicen que se añadió https:// y que, con logo, la corrección de errores queda en H. A la derecha, el código QR morado con módulos en puntos, los patrones de posición cuadrados y un logo naranja y morado en el centro, versión 4, 33 por 33 módulos." width="1280" height="800" loading="lazy">
+<figcaption>Estilo en puntos, color morado y logo: la app pasa la corrección a H.</figcaption>
+</figure>
+<ul>
+<li><strong>Logo:</strong> cubre cerca del 22% del ancho del código, y la app fuerza el nivel H para compensar los módulos ocultos. La imagen se queda en el navegador.</li>
+<li><strong>Colores:</strong> módulos oscuros sobre fondo claro. La app avisa cuando el contraste es bajo o cuando los módulos son más claros que el fondo, algo que muchos lectores no aceptan.</li>
+<li><strong>Estilos:</strong> puntos y esquinas redondeadas cambian solo el dibujo; los patrones de posición siguen cuadrados.</li>
+<li><strong>Margen:</strong> el predeterminado de 4 módulos es el recomendado; la app avisa cuando lo reduces.</li>
+</ul>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="pruebas-es" aria-labelledby="h-pruebas-es">
+<h2 id="h-pruebas-es">Cómo se probó la app</h2>
+<ul>
+<li><strong>Codificador:</strong> comparado con el paquete <code>qrcode</code> de Node, un generador independiente. <sup><a href="#ref-9-es">[9]</a></sup> Para 14 textos, de solo dígitos a emoji, en los 4 niveles y con las 8 máscaras, las 440 matrices salieron idénticas módulo a módulo, y la versión y la máscara elegidas automáticamente coincidieron en los 55 casos.</li>
+<li><strong>Pix:</strong> los dos ejemplos del manual del Banco Central salen idénticos carácter por carácter.</li>
+<li><strong>Imágenes:</strong> los píxeles del PNG, del SVG y de los tres estilos, leídos de vuelta en el centro de cada módulo, coinciden con la matriz.</li>
+<li><strong>Interfaz:</strong> todas las pestañas se usaron con clics y teclas reales en Chrome, en los cuatro idiomas y a 390 píxeles de ancho, sin errores ni peticiones externas.</li>
+</ul>
+<p>Lo que no se probó: la lectura de las imágenes con un lector QR independiente, móviles reales y apps de bancos, y los navegadores Safari y Firefox.</p>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="errores-es" aria-labelledby="h-errores-es">
+<h2 id="h-errores-es">Errores comunes</h2>
+<ul class="myths">
+<li><h3>Imprimir sin probar</h3><p>Lee el código con el móvil antes de mandarlo a la imprenta, sobre todo con colores, estilo o logo.</p></li>
+<li><h3>Invertir los colores</h3><p>Módulos claros sobre fondo oscuro quedan bonitos, pero muchos lectores no los leen. La app avisa.</p></li>
+<li><h3>Recortar el margen</h3><p>Sin la franja clara alrededor, el lector confunde el código con lo que lo rodea.</p></li>
+<li><h3>Usar un QR estático para cobros con vencimiento</h3><p>Importes por vencimiento, intereses y conciliación automática son del Pix dinámico, creado por el banco.</p></li>
+<li><h3>Creer que un CRC correcto garantiza el pago</h3><p>El CRC solo prueba que el texto no se alteró. Revisa nombre y clave en la app del banco.</p></li>
+<li><h3>Poner tildes en el nombre del Pix</h3><p>La app quita las tildes y avisa, para que cada carácter cuente un byte en la longitud de los campos.</p></li>
+</ul>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="repaso-es" aria-labelledby="h-repaso-es">
+<h2 id="h-repaso-es">Repaso rápido</h2>
+<div class="recap"><h3>En resumen</h3><ul>
+<li>Código QR: módulos en cuadrícula, de 21 × 21 a 177 × 177, con patrones de posición, datos y corrección de errores.</li>
+<li>Corrección M, margen de 4 módulos y colores oscuros sobre fondo claro son las opciones seguras.</li>
+<li>El Pix estático lleva la clave; el dinámico, la URL del banco; el de retiro, el ISPB del facilitador.</li>
+<li>Leer Pix comprueba la estructura y el CRC, no la cuenta.</li>
+</ul></div>
+<div class="quiz">
+<details><summary>1. ¿Por qué la app pasa la corrección a H cuando pones un logo?</summary><p>Porque el logo oculta módulos, y el nivel H es el que más partes faltantes recupera.</p></details>
+<details><summary>2. ¿Cuál es el mayor contenido que cabe en un código QR?</summary><p>En la versión 40 con nivel L, 7.089 dígitos, 4.296 caracteres alfanuméricos o 2.953 bytes, medidos con la app.</p></details>
+<details><summary>3. ¿Qué significa un txid igual a ***?</summary><p>Que el receptor no usó identificador de transacción en ese Pix estático.</p></details>
+<details><summary>4. ¿Dónde va la URL en un Pix dinámico, y con qué formato?</summary><p>En el campo 26, subcampo 25, sin https:// y con hasta 77 caracteres.</p></details>
+<details><summary>5. El CRC coincidió. ¿El Pix está bien?</summary><p>La estructura sí; la cuenta y el nombre solo los confirma la app del banco.</p></details>
+</div>
+<p><a class="launch" href="gerador-qrcode.html#es">Abrir el generador <span aria-hidden="true">→</span></a></p>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="referencias-es" aria-labelledby="h-referencias-es">
+<h2 id="h-referencias-es">Referencias</h2>
+<ol class="refs">
+<li id="ref-1-es"><a href="gerador-qrcode.html#es">Generador de códigos QR</a>, app de este sitio, en un único archivo y sin red.</li>
+<li id="ref-2-es">DENSO WAVE. <a href="https://www.qrcode.com/en/" rel="noopener">QR Code.com</a> (en inglés): <a href="https://www.qrcode.com/en/history/" rel="noopener">historia</a>, <a href="https://www.qrcode.com/en/about/version.html" rel="noopener">versiones</a>, <a href="https://www.qrcode.com/en/about/error_correction.html" rel="noopener">corrección de errores</a> y <a href="https://www.qrcode.com/en/faq.html" rel="noopener">preguntas frecuentes</a>. “QR Code” es una marca registrada de DENSO WAVE INCORPORATED.</li>
+<li id="ref-3-es">Banco Central do Brasil. <a href="https://www.bcb.gov.br/content/estabilidadefinanceira/pix/Regulamento_Pix/II_ManualdePadroesparaIniciacaodoPix.pdf" rel="noopener">Manual de Padrões para Iniciação do Pix</a> (en portugués), versión 2.10.0, secciones 2.4 a 2.7.</li>
+<li id="ref-4-es">ZXing. <a href="https://github.com/zxing/zxing/wiki/Barcode-Contents" rel="noopener">Barcode Contents</a> (en inglés): formatos de Wi-Fi, SMS, correo, teléfono, ubicación, contacto y evento.</li>
+<li id="ref-5-es">IETF. <a href="https://www.rfc-editor.org/rfc/rfc5724" rel="noopener">RFC 5724</a>: el esquema URI <code>sms:</code>.</li>
+<li id="ref-6-es">IETF. <a href="https://www.rfc-editor.org/rfc/rfc6068" rel="noopener">RFC 6068</a>: el esquema URI <code>mailto:</code>.</li>
+<li id="ref-7-es">IETF. <a href="https://www.rfc-editor.org/rfc/rfc5870" rel="noopener">RFC 5870</a>: el esquema URI <code>geo:</code>.</li>
+<li id="ref-8-es">WhatsApp. <a href="https://faq.whatsapp.com/5913398998672934" rel="noopener">Cómo usar el chat por clic</a>.</li>
+<li id="ref-9-es">El paquete <a href="https://www.npmjs.com/package/qrcode" rel="noopener">qrcode</a> para Node.js, usado como referencia independiente en las pruebas.</li>
+</ol>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+  </article>
+</div>
+</div>
+
+
+
+<footer>
+  <div class="wrap">
+    <span>Giovani Perotto Mesquita · Porto Alegre, RS</span>
+    <span><a href="projects.html" data-projects data-foot="0">Projetos</a> · <a href="resume.html" data-resume data-foot="1">Currículo</a> · <a href="contact.html" data-contact data-foot="2">Contato</a></span>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('.lang [role="option"]'));
+    var titles = {"pt": "Gerador de QR Code: formatos, Pix e como funciona · Giovani Perotto Mesquita", "en": "QR Code Generator: formats, Pix and how it works · Giovani Perotto Mesquita", "it": "Generatore di codici QR: formati, Pix e come funziona · Giovani Perotto Mesquita", "es": "Generador de códigos QR: formatos, Pix y cómo funciona · Giovani Perotto Mesquita"};
+    var foots = {"pt": ["Projetos", "Currículo", "Contato"], "en": ["Projects", "Resume", "Contact"], "it": ["Progetti", "Curriculum", "Contatti"], "es": ["Proyectos", "Currículum", "Contacto"]};
+    var langs = { pt: 'pt-BR', en: 'en', it: 'it', es: 'es' };
+    var bar = document.querySelector('.progress');
+    var article = document.querySelector('[role="tabpanel"]:not([hidden]) article');
+
+    function show(id, focus) {
+      tabs.forEach(function (t) {
+        var on = t.getAttribute('aria-controls') === id;
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+        if (on && focus) t.focus();
+      });
+      document.documentElement.lang = langs[id];
+      document.title = titles[id];
+      var suffix = id === 'pt' ? '' : '#' + id;
+      [['data-home', 'index.html'], ['data-about', 'about.html'], ['data-resume', 'resume.html'], ['data-projects', 'projects.html'], ['data-contact', 'contact.html']].forEach(function (p) {
+        document.querySelectorAll('[' + p[0] + ']').forEach(function (a) { a.href = p[1] + suffix; });
+      });
+      document.querySelectorAll('[data-foot]').forEach(function (a) { a.textContent = foots[id][+a.getAttribute('data-foot')]; });
+      article = document.querySelector('#' + id + ' article');
+      if (history.replaceState) history.replaceState(null, '', id === 'pt' ? location.pathname : '#' + id);
+      progress();
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () { show(t.getAttribute('aria-controls')); });
+      t.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (d) { e.preventDefault(); show(tabs[(i + d + tabs.length) % tabs.length].getAttribute('aria-controls'), true); }
+      });
+    });
+
+    // barra de progresso de leitura
+    function progress() {
+      if (!article) return;
+      var r = article.getBoundingClientRect();
+      var total = r.height - window.innerHeight;
+      var p = total > 0 ? Math.min(Math.max(-r.top / total, 0), 1) : 1;
+      bar.style.width = (p * 100) + '%';
+    }
+    window.addEventListener('scroll', progress, { passive: true });
+    window.addEventListener('resize', progress);
+
+    // destaca a seção atual no índice
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          var panel = e.target.closest('[role="tabpanel"]');
+          panel.querySelectorAll('.toc a').forEach(function (a) {
+            if (a.getAttribute('href') === '#' + e.target.id) a.setAttribute('aria-current', 'true');
+            else a.removeAttribute('aria-current');
+          });
+        });
+      }, { rootMargin: '-20% 0px -70% 0px' });
+      document.querySelectorAll('article section[id]').forEach(function (s) { io.observe(s); });
+    }
+
+    var h = (location.hash || '').replace('#', '');
+    var m = h.match(/^(?:.*-)?(en|it|es)$/);
+    if (m) {
+      show(m[1]);
+      if (h !== m[1]) { var el = document.getElementById(h); if (el) el.scrollIntoView(); if (history.replaceState) history.replaceState(null, '', '#' + h); }
+    } else progress();
+  })();
+</script>
+<script>
+  // seletor de idioma em combobox: abre a lista, sincroniza o botão e fecha
+  (function () {
+    var box = document.querySelector('.lang'); if (!box) return;
+    var btn = box.querySelector('.lang-current'), list = box.querySelector('.lang-list'), now = btn.querySelector('.lang-now');
+    var opts = Array.prototype.slice.call(list.querySelectorAll('[role="option"]'));
+    var menu = {
+      pt: { index: 'Início', about: 'Sobre', resume: 'Currículo', projects: 'Projetos', contact: 'Contato' },
+      en: { index: 'Home', about: 'About', resume: 'Resume', projects: 'Projects', contact: 'Contact' },
+      it: { index: 'Home', about: 'Chi sono', resume: 'Curriculum', projects: 'Progetti', contact: 'Contatti' },
+      es: { index: 'Inicio', about: 'Sobre mí', resume: 'Currículum', projects: 'Proyectos', contact: 'Contacto' }
+    };
+    function translate(id) {
+      document.querySelectorAll('.nav ul a').forEach(function (l) {
+        var k = (l.getAttribute('href') || '').split('#')[0].replace('.html', '');
+        if (menu[id] && menu[id][k]) l.textContent = menu[id][k];
+      });
+      // links do menu para as páginas principais levam o idioma selecionado
+      var suf = id === 'pt' ? '' : '#' + id;
+      document.querySelectorAll('.nav a[href]').forEach(function (l) {
+        var m = l.getAttribute('href').match(/^(index|about|resume|projects|contact)\.html(#(pt|en|it|es))?$/);
+        if (m) l.setAttribute('href', m[1] + '.html' + suf);
+      });
+    }
+    function sync() {
+      var sel = opts.filter(function (o) { return o.getAttribute('aria-selected') === 'true'; })[0] || opts[0];
+      now.innerHTML = sel.querySelector('.flag').outerHTML + sel.getAttribute('data-code');
+      btn.setAttribute('aria-label', btn.getAttribute('data-label') + ': ' + sel.textContent.trim());
+      translate(sel.getAttribute('aria-controls'));
+      return sel;
+    }
+    function open() { list.hidden = false; btn.setAttribute('aria-expanded', 'true'); sync().focus(); }
+    function close(back) { list.hidden = true; btn.setAttribute('aria-expanded', 'false'); if (back) btn.focus(); }
+    btn.addEventListener('click', function () { if (list.hidden) open(); else close(); });
+    btn.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); open(); }
+      else if (e.key === 'Escape') close();
+    });
+    opts.forEach(function (o, i) {
+      o.addEventListener('click', function () { sync(); close(true); });
+      o.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0;
+        if (d) { e.preventDefault(); opts[(i + d + opts.length) % opts.length].focus(); }
+        else if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); opts[e.key === 'Home' ? 0 : opts.length - 1].focus(); }
+        else if (e.key === 'Escape') { e.preventDefault(); close(true); }
+        else if (e.key === 'Tab') close();
+      });
+    });
+    document.addEventListener('click', function (e) { if (!box.contains(e.target)) close(); });
+    new MutationObserver(sync).observe(list, { attributes: true, subtree: true, attributeFilter: ['aria-selected'] });
+    sync();
+  })();
+</script>
+<script>
+document.addEventListener('click', function (e) {
+  var b = e.target.closest && e.target.closest('[data-copy]');
+  if (!b) return;
+  var code = document.getElementById(b.getAttribute('data-copy')), old = b.textContent;
+  function done() { b.textContent = b.getAttribute('data-done'); setTimeout(function () { b.textContent = old; }, 1500); }
+  function fallback() { var r = document.createRange(); r.selectNodeContents(code); var s = getSelection(); s.removeAllRanges(); s.addRange(r); try { document.execCommand('copy'); done(); } catch (x) {} }
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code.textContent).then(done, fallback); else fallback();
+});
+</script>
+</body>
+</html>

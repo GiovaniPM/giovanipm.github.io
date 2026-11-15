@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; base-uri 'none'; form-action 'none'">
+<title>Gerador de QR Code · Giovani Perotto Mesquita</title>
+<meta name="description" content="Gerador de QR Code em um único arquivo, sem rede: texto, link, Wi-Fi, contato, e-mail, SMS, telefone, WhatsApp, localização, evento e Pix (estático, dinâmico e saque), com leitura e validação de Pix Copia e Cola. Em português, inglês, italiano e espanhol.">
+<meta name="author" content="Giovani Perotto Mesquita">
+<style>
+  :root {
+    --bg:#FFF7EC; --surface:#FFFFFF; --surface-2:#FFF1E0; --ink:#2B1B3D; --text:#3E3350; --muted:#756986; --line:#F1E2CF;
+    --accent:#0E8074; --accent-soft:#E2F6F2; --accent-strong:#5B2A86; --warn:#B35300; --warn-soft:#FFF1C9; --err:#B3261E; --err-soft:#FDE7E5; --ok:#1E7A3C;
+    --sans:"Segoe UI", "Helvetica Neue", Arial, sans-serif; --mono: ui-monospace, Consolas, "Courier New", monospace; --radius:14px;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg:#1A1328; --surface:#241A36; --surface-2:#2C2142; --ink:#F7F0FF; --text:#E2D8F0; --muted:#A898C0; --line:#3A2D52;
+    --accent:#5FD3C4; --accent-soft:#1D3A38; --accent-strong:#C9A7F5; --warn:#FFC94D; --warn-soft:#3A2E12; --err:#FF8A80; --err-soft:#3D1A1A; --ok:#7CD89A; color-scheme: dark; } }
+  :root[data-theme="dark"] {
+    --bg:#1A1328; --surface:#241A36; --surface-2:#2C2142; --ink:#F7F0FF; --text:#E2D8F0; --muted:#A898C0; --line:#3A2D52;
+    --accent:#5FD3C4; --accent-soft:#1D3A38; --accent-strong:#C9A7F5; --warn:#FFC94D; --warn-soft:#3A2E12; --err:#FF8A80; --err-soft:#3D1A1A; --ok:#7CD89A; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); }
+  body { overflow-x: hidden; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  button:disabled { cursor: default; opacity: .5; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+  header.top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--surface); }
+  header.top h1 { font-size: 1.15rem; margin: 0; color: var(--ink); flex: 1; min-width: 180px; }
+  header.top a { color: var(--accent-strong); font-weight: 600; text-decoration: none; font-size: .9rem; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 14px 16px 40px; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .tabs button { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: .4rem .8rem; font-weight: 600; font-size: .9rem; display: inline-flex; gap: .35rem; align-items: center; }
+  .tabs button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+  .tabs .ico { font-size: 1rem; line-height: 1; }
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 14px; align-items: start; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; }
+  .card h2 { font-size: 1rem; margin: 0 0 10px; color: var(--ink); }
+  .card h3 { font-size: .92rem; margin: 14px 0 6px; color: var(--ink); }
+  .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px 12px; }
+  .field { display: flex; flex-direction: column; gap: 4px; font-size: .85rem; font-weight: 600; color: var(--ink); min-width: 0; }
+  .field.wide { grid-column: 1 / -1; }
+  .field small { font-weight: 400; color: var(--muted); }
+  .field input, .field select, .field textarea { border: 1px solid var(--line); background: var(--surface-2); border-radius: 10px; padding: .5rem .6rem; min-height: 40px; font-weight: 400; width: 100%; }
+  .field textarea { min-height: 84px; resize: vertical; }
+  .check { flex-direction: row; align-items: center; gap: 8px; font-weight: 600; }
+  .check input { width: 20px; height: 20px; min-height: 0; }
+  .msgs { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: .86rem; }
+  .msgs li { border-radius: 8px; padding: 6px 10px; }
+  .msgs li.err { background: var(--err-soft); color: var(--err); }
+  .msgs li.warn { background: var(--warn-soft); color: var(--warn); }
+  .msgs li.ok { background: var(--accent-soft); color: var(--ok); }
+  .preview { display: flex; flex-direction: column; gap: 10px; position: sticky; top: 10px; }
+  .qrbox { background: var(--surface-2); border-radius: 12px; display: grid; place-items: center; padding: 12px; min-height: 260px; }
+  .qrbox canvas { width: 100%; max-width: 340px; height: auto; image-rendering: pixelated; border-radius: 6px; }
+  .qrbox .empty { color: var(--muted); font-size: .9rem; text-align: center; padding: 30px 10px; }
+  .meta { font-size: .8rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 12px; }
+  .payload { width: 100%; font-family: var(--mono); font-size: .78rem; min-height: 70px; border: 1px solid var(--line); background: var(--surface-2); border-radius: 10px; padding: .5rem; resize: vertical; word-break: break-all; }
+  .acts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .btn { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: .5rem .7rem; font-weight: 600; min-height: 40px; }
+  .btn:hover:not(:disabled) { border-color: var(--muted); }
+  .btn.pri { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+  .btn.sm { min-height: 32px; padding: .25rem .6rem; font-size: .82rem; }
+  .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; }
+  .opts .field input[type=color] { padding: 2px; height: 40px; }
+  .toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 10px; font-size: .9rem; z-index: 10; }
+  table.parse { width: 100%; border-collapse: collapse; font-size: .82rem; }
+  table.parse th, table.parse td { border-bottom: 1px solid var(--line); padding: 4px 6px; text-align: left; vertical-align: top; word-break: break-all; }
+  table.parse td.v { font-family: var(--mono); }
+  table.parse tr.sub td:first-child { padding-left: 18px; }
+  .hist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+  .hist button { width: 100%; text-align: left; border: 1px solid var(--line); background: var(--surface-2); border-radius: 8px; padding: 6px 8px; font-size: .82rem; display: flex; justify-content: space-between; gap: 8px; }
+  .hist .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hist .d { color: var(--muted); white-space: nowrap; }
+  details.help { margin-top: 14px; }
+  details.help summary { cursor: pointer; font-weight: 700; color: var(--ink); }
+  details.help p, details.help li { font-size: .88rem; line-height: 1.5; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  @media (max-width: 920px) {
+    .grid { grid-template-columns: 1fr; } .preview { position: static; }
+    .leftcol { display: contents; } .form-card { order: 1; } .preview { order: 2; } .opts-card { order: 3; } .hist-card { order: 4; } details.help { order: 5; }
+    .opts-card, .hist-card, details.help { margin-top: 0 !important; }
+  }
+  @media (max-width: 480px) { .tabs button .lbl { font-size: .82rem; } .opts { grid-template-columns: 1fr; } .acts { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  @media print {
+    header.top, .tabs, .form-card, .acts, .opts-card, .hist-card, details.help, .meta, .payload-wrap button { display: none !important; }
+    html, body, .card, .payload { background: #fff !important; color: #000 !important; border: 0 !important; }
+    .payload { resize: none; }
+    .grid { display: block; } .qrbox { background: #fff !important; } .qrbox canvas { max-width: 9cm; }
+    .payload { border: 0; background: #fff; }
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <h1 id="ttl" data-t="title"></h1>
+  <a id="back" href="projects.html" data-t="back"></a>
+  <label class="row" style="font-size:.85rem"><span data-t="lang"></span>
+    <select id="selLang"><option value="pt">Português</option><option value="en">English</option><option value="it">Italiano</option><option value="es">Español</option></select></label>
+  <button type="button" class="btn sm" id="bTheme"></button>
+</header>
+<main class="wrap">
+  <div class="tabs" role="tablist" id="tabs" aria-labelledby="ttl"></div>
+  <div class="grid">
+    <div class="leftcol">
+      <section class="card form-card" id="formCard" role="tabpanel" aria-labelledby="ttl">
+        <h2 id="formH"></h2>
+        <div class="fields" id="fields"></div>
+        <ul class="msgs" id="msgs" aria-live="polite"></ul>
+        <div id="parseOut"></div>
+      </section>
+      <section class="card opts-card" style="margin-top:14px">
+        <h2 data-t="optsH"></h2>
+        <div class="opts">
+          <label class="field"><span data-t="ecc"></span><select id="oEcc"><option value="0" data-t="eccL"></option><option value="1" data-t="eccM"></option><option value="2" data-t="eccQ"></option><option value="3" data-t="eccH"></option></select></label>
+          <label class="field"><span data-t="size"></span><select id="oSize"><option value="256">256 px</option><option value="512">512 px</option><option value="1024">1024 px</option><option value="2048">2048 px</option></select></label>
+          <label class="field"><span data-t="margin"></span><select id="oMargin"><option value="4" data-t="m4"></option><option value="2">2</option><option value="1">1</option><option value="0">0</option></select></label>
+          <label class="field"><span data-t="style"></span><select id="oStyle"><option value="square" data-t="stSquare"></option><option value="rounded" data-t="stRounded"></option><option value="dots" data-t="stDots"></option></select></label>
+          <label class="field"><span data-t="fg"></span><input type="color" id="oFg" value="#000000"></label>
+          <label class="field"><span data-t="bg"></span><input type="color" id="oBg" value="#ffffff"></label>
+          <label class="field" style="grid-column:1/-1"><span data-t="logo"></span><input type="file" id="oLogo" accept="image/png,image/jpeg,image/svg+xml,image/webp"><small data-t="logoNote"></small></label>
+          <div class="row" style="grid-column:1/-1"><button type="button" class="btn sm" id="bNoLogo" data-t="noLogo" disabled></button><button type="button" class="btn sm" id="bReset" data-t="resetOpts"></button></div>
+        </div>
+      </section>
+      <section class="card hist-card" style="margin-top:14px">
+        <h2 data-t="histH"></h2>
+        <ul class="hist" id="hist"></ul>
+        <div class="row" style="margin-top:8px"><button type="button" class="btn sm" id="bClearHist" data-t="clearHist"></button></div>
+      </section>
+      <details class="help card" id="help"></details>
+    </div>
+    <aside class="card preview" aria-labelledby="prevH">
+      <h2 id="prevH" data-t="prevH"></h2>
+      <div class="qrbox"><canvas id="cv" width="512" height="512" role="img"></canvas><p class="empty" id="empty" hidden></p></div>
+      <div class="meta" id="meta" aria-live="polite"></div>
+      <div class="payload-wrap"><label class="field"><span data-t="payloadL"></span><textarea class="payload" id="payload" readonly spellcheck="false"></textarea></label></div>
+      <div class="acts">
+        <button type="button" class="btn pri" id="bPng" data-t="dlPng"></button>
+        <button type="button" class="btn" id="bSvg" data-t="dlSvg"></button>
+        <button type="button" class="btn" id="bCopyImg" data-t="copyImg"></button>
+        <button type="button" class="btn" id="bCopyTxt" data-t="copyTxt"></button>
+        <button type="button" class="btn" id="bPrint" data-t="print"></button>
+        <button type="button" class="btn" id="bSave" data-t="saveHist"></button>
+      </div>
+    </aside>
+  </div>
+</main>
+<div class="toast" id="toast" role="status" hidden></div>
+<script>
+(() => {
+  'use strict';
+  // ================================================================ codificador QR (ISO/IEC 18004), modos numérico, alfanumérico e byte (UTF-8)
+  const QR = (() => {
+    // [nível][versão]: L, M, Q, H
+    const ECC_CW = [
+      [-1, 7, 10, 15, 20, 26, 18, 20, 24, 30, 18, 20, 24, 26, 30, 22, 24, 28, 30, 28, 28, 28, 28, 30, 30, 26, 28, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30],
+      [-1, 10, 16, 26, 18, 24, 16, 18, 22, 22, 26, 30, 22, 22, 24, 24, 28, 28, 26, 26, 26, 26, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28],
+      [-1, 13, 22, 18, 26, 18, 24, 18, 22, 20, 24, 28, 26, 24, 20, 30, 24, 28, 28, 26, 30, 28, 30, 30, 30, 30, 28, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30],
+      [-1, 17, 28, 22, 16, 22, 28, 26, 26, 24, 28, 24, 28, 22, 24, 24, 30, 28, 28, 26, 28, 30, 24, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30],
+    ];
+    const NBLK = [
+      [-1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 4, 4, 4, 4, 4, 6, 6, 6, 6, 7, 8, 8, 9, 9, 10, 12, 12, 12, 13, 14, 15, 16, 17, 18, 19, 19, 20, 21, 22, 24, 25],
+      [-1, 1, 1, 1, 2, 2, 4, 4, 4, 5, 5, 5, 8, 9, 9, 10, 10, 11, 13, 14, 16, 17, 17, 18, 20, 21, 23, 25, 26, 28, 29, 31, 33, 35, 37, 38, 40, 43, 45, 47, 49],
+      [-1, 1, 1, 2, 2, 4, 4, 6, 6, 8, 8, 8, 10, 12, 16, 12, 17, 16, 18, 21, 20, 23, 23, 25, 27, 29, 34, 34, 35, 38, 40, 43, 45, 48, 51, 53, 56, 59, 62, 65, 68],
+      [-1, 1, 1, 2, 4, 4, 4, 5, 6, 8, 8, 11, 11, 16, 16, 18, 16, 19, 21, 25, 25, 25, 34, 30, 32, 35, 37, 40, 42, 45, 48, 51, 54, 57, 60, 63, 66, 70, 74, 77, 81],
+    ];
+    const FMT = [1, 0, 3, 2];
+    const rawModules = (v) => { let r = (16 * v + 128) * v + 64; if (v >= 2) { const na = Math.floor(v / 7) + 2; r -= (25 * na - 10) * na - 55; if (v >= 7) r -= 36; } return r; };
+    const dataCW = (v, e) => Math.floor(rawModules(v) / 8) - ECC_CW[e][v] * NBLK[e][v];
+    const EXP = new Uint8Array(512), LOG = new Uint8Array(256);
+    { let x = 1; for (let i = 0; i < 255; i++) { EXP[i] = x; LOG[x] = i; x <<= 1; if (x & 256) x ^= 0x11D; } for (let i = 255; i < 512; i++) EXP[i] = EXP[i - 255]; }
+    const mul = (a, b) => (a && b ? EXP[LOG[a] + LOG[b]] : 0);
+    function rsDivisor(deg) { const r = new Array(deg).fill(0); r[deg - 1] = 1; let root = 1; for (let i = 0; i < deg; i++) { for (let j = 0; j < deg; j++) { r[j] = mul(r[j], root); if (j + 1 < deg) r[j] ^= r[j + 1]; } root = mul(root, 2); } return r; }
+    function rsRem(data, div) { const r = new Array(div.length).fill(0); for (const b of data) { const f = b ^ r.shift(); r.push(0); for (let i = 0; i < div.length; i++) r[i] ^= mul(div[i], f); } return r; }
+    const ALNUM = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:';
+    const utf8 = (s) => Array.from(new TextEncoder().encode(s));
+    function segment(text) {
+      const bits = []; const put = (v, n) => { for (let i = n - 1; i >= 0; i--) bits.push((v >>> i) & 1); };
+      if (/^[0-9]*$/.test(text)) {
+        for (let i = 0; i < text.length; i += 3) { const g = text.substr(i, 3); put(parseInt(g, 10), g.length * 3 + 1); }
+        return { mode: 1, cc: [10, 12, 14], count: text.length, bits, name: 'num' };
+      }
+      if ([...text].every((c) => ALNUM.includes(c))) {
+        for (let i = 0; i + 1 < text.length; i += 2) put(ALNUM.indexOf(text[i]) * 45 + ALNUM.indexOf(text[i + 1]), 11);
+        if (text.length % 2) put(ALNUM.indexOf(text[text.length - 1]), 6);
+        return { mode: 2, cc: [9, 11, 13], count: text.length, bits, name: 'alnum' };
+      }
+      const b = utf8(text); b.forEach((x) => put(x, 8));
+      return { mode: 4, cc: [8, 16, 16], count: b.length, bits, name: 'byte' };
+    }
+    const ccIdx = (v) => (v <= 9 ? 0 : v <= 26 ? 1 : 2);
+    function encode(text, ecl, opt) {
+      opt = opt || {};
+      const seg = segment(text);
+      let ver = opt.version || 1, cap = 0, need = 0;
+      for (; ver <= 40; ver++) { cap = dataCW(ver, ecl) * 8; need = 4 + seg.cc[ccIdx(ver)] + seg.bits.length; if (need <= cap) break; if (opt.version) break; }
+      if (ver > 40 || need > cap) return null;
+      const bits = []; const put = (v, n) => { for (let i = n - 1; i >= 0; i--) bits.push((v >>> i) & 1); };
+      put(seg.mode, 4); put(seg.count, seg.cc[ccIdx(ver)]); bits.push(...seg.bits);
+      put(0, Math.min(4, cap - bits.length)); put(0, (8 - (bits.length % 8)) % 8);
+      const data = []; for (let i = 0; i < bits.length; i += 8) { let b = 0; for (let j = 0; j < 8; j++) b = (b << 1) | bits[i + j]; data.push(b); }
+      for (let p = 0xEC; data.length < cap / 8; p ^= 0xEC ^ 0x11) data.push(p);
+      // blocos e correção de erros
+      const nb = NBLK[ecl][ver], eccLen = ECC_CW[ecl][ver], raw = Math.floor(rawModules(ver) / 8);
+      const nShort = nb - (raw % nb), shortLen = Math.floor(raw / nb), div = rsDivisor(eccLen), blocks = [];
+      for (let i = 0, k = 0; i < nb; i++) { const dat = data.slice(k, k + shortLen - eccLen + (i < nShort ? 0 : 1)); k += dat.length; const ecc = rsRem(dat, div); if (i < nShort) dat.push(0); blocks.push(dat.concat(ecc)); }
+      const cw = []; for (let i = 0; i < blocks[0].length; i++) for (let j = 0; j < blocks.length; j++) if (i !== shortLen - eccLen || j >= nShort) cw.push(blocks[j][i]);
+      // matriz
+      const size = ver * 4 + 17;
+      const M = Array.from({ length: size }, () => new Array(size).fill(false)), F = Array.from({ length: size }, () => new Array(size).fill(false));
+      const setF = (x, y, d) => { M[y][x] = d; F[y][x] = true; };
+      for (let i = 0; i < size; i++) { setF(6, i, i % 2 === 0); setF(i, 6, i % 2 === 0); }
+      for (const [cx, cy] of [[3, 3], [size - 4, 3], [3, size - 4]]) for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) { const x = cx + dx, y = cy + dy; if (x < 0 || y < 0 || x >= size || y >= size) continue; const d = Math.max(Math.abs(dx), Math.abs(dy)); setF(x, y, d !== 2 && d !== 4); }
+      const align = []; if (ver > 1) { const na = Math.floor(ver / 7) + 2, step = ver === 32 ? 26 : Math.ceil((ver * 4 + 4) / (na * 2 - 2)) * 2; align.push(6); for (let pos = size - 7; align.length < na; pos -= step) align.splice(1, 0, pos); }
+      for (let i = 0; i < align.length; i++) for (let j = 0; j < align.length; j++) {
+        if ((i === 0 && j === 0) || (i === 0 && j === align.length - 1) || (i === align.length - 1 && j === 0)) continue;
+        for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) setF(align[i] + dx, align[j] + dy, Math.max(Math.abs(dx), Math.abs(dy)) !== 1);
+      }
+      const drawFormat = (mask) => {
+        const d = (FMT[ecl] << 3) | mask; let r = d; for (let i = 0; i < 10; i++) r = (r << 1) ^ ((r >>> 9) * 0x537);
+        const b = ((d << 10) | r) ^ 0x5412, bit = (i) => ((b >>> i) & 1) !== 0;
+        for (let i = 0; i <= 5; i++) setF(8, i, bit(i));
+        setF(8, 7, bit(6)); setF(8, 8, bit(7)); setF(7, 8, bit(8));
+        for (let i = 9; i < 15; i++) setF(14 - i, 8, bit(i));
+        for (let i = 0; i < 8; i++) setF(size - 1 - i, 8, bit(i));
+        for (let i = 8; i < 15; i++) setF(8, size - 15 + i, bit(i));
+        setF(8, size - 8, true);
+      };
+      drawFormat(0);
+      if (ver >= 7) {
+        let r = ver; for (let i = 0; i < 12; i++) r = (r << 1) ^ ((r >>> 11) * 0x1F25);
+        const b = (ver << 12) | r;
+        for (let i = 0; i < 18; i++) { const bit = ((b >>> i) & 1) !== 0, a = size - 11 + (i % 3), c = Math.floor(i / 3); setF(a, c, bit); setF(c, a, bit); }
+      }
+      let i = 0;
+      for (let right = size - 1; right >= 1; right -= 2) {
+        if (right === 6) right = 5;
+        for (let vert = 0; vert < size; vert++) for (let j = 0; j < 2; j++) {
+          const x = right - j, up = ((right + 1) & 2) === 0, y = up ? size - 1 - vert : vert;
+          if (!F[y][x] && i < cw.length * 8) { M[y][x] = ((cw[i >>> 3] >>> (7 - (i & 7))) & 1) !== 0; i++; }
+        }
+      }
+      const maskFn = [(x, y) => (x + y) % 2 === 0, (x, y) => y % 2 === 0, (x) => x % 3 === 0, (x, y) => (x + y) % 3 === 0,
+        (x, y) => (Math.floor(x / 3) + Math.floor(y / 2)) % 2 === 0, (x, y) => ((x * y) % 2) + ((x * y) % 3) === 0,
+        (x, y) => (((x * y) % 2) + ((x * y) % 3)) % 2 === 0, (x, y) => (((x + y) % 2) + ((x * y) % 3)) % 2 === 0];
+      const applyMask = (m) => { for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) if (!F[y][x] && maskFn[m](x, y)) M[y][x] = !M[y][x]; };
+      const penalty = () => {
+        let p = 0, dark = 0;
+        const line = (get) => { for (let a = 0; a < size; a++) { let run = 1; for (let b = 1; b <= size; b++) { if (b < size && get(a, b) === get(a, b - 1)) run++; else { if (run >= 5) p += 3 + run - 5; run = 1; } } } };
+        line((a, b) => M[a][b]); line((a, b) => M[b][a]);
+        for (let y = 0; y < size - 1; y++) for (let x = 0; x < size - 1; x++) { const c = M[y][x]; if (c === M[y][x + 1] && c === M[y + 1][x] && c === M[y + 1][x + 1]) p += 3; }
+        const pat = [true, false, true, true, true, false, true];
+        const finder = (get) => { for (let a = 0; a < size; a++) for (let b = 0; b + 7 <= size; b++) {
+          let ok = true; for (let k = 0; k < 7; k++) if (get(a, b + k) !== pat[k]) { ok = false; break; }
+          if (!ok) continue;
+          const lightRun = (from, dir) => { for (let k = 1; k <= 4; k++) { const c = from + dir * k; if (c < 0 || c >= size || get(a, c)) return false; } return true; };
+          if (lightRun(b - 1 + 1, -1) || lightRun(b + 6, 1)) p += 40;
+        } };
+        finder((a, b) => M[a][b]); finder((a, b) => M[b][a]);
+        for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) if (M[y][x]) dark++;
+        p += Math.floor(Math.abs(dark * 100 / (size * size) - 50) / 5) * 10;
+        return p;
+      };
+      let best = opt.mask;
+      if (best == null) { let bp = Infinity; for (let m = 0; m < 8; m++) { applyMask(m); drawFormat(m); const pp = penalty(); if (pp < bp) { bp = pp; best = m; } applyMask(m); } }
+      applyMask(best); drawFormat(best);
+      return { version: ver, size, ecl, mask: best, modules: M, mode: seg.name, bytes: seg.mode === 4 ? seg.count : null };
+    }
+    return { encode, segment, dataCW };
+  })();
+
+  // ================================================================ Pix (BR Code, Manual de Padrões para Iniciação do Pix, v2.10.0)
+  const crc16 = (s) => { let c = 0xFFFF; for (const b of new TextEncoder().encode(s)) { c ^= b << 8; for (let i = 0; i < 8; i++) c = c & 0x8000 ? ((c << 1) ^ 0x1021) & 0xFFFF : (c << 1) & 0xFFFF; } return c.toString(16).toUpperCase().padStart(4, '0'); };
+  const tlv = (id, v) => id + String(v.length).padStart(2, '0') + v;
+  const ascii = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\x20-\x7E]/g, '');
+  function pixPayload(p) {
+    let mai = tlv('00', 'br.gov.bcb.pix');
+    if (p.dynamic) mai += tlv('25', p.url);
+    else { mai += tlv('01', p.key); if (p.info) mai += tlv('02', p.info); if (p.fss) mai += tlv('03', p.fss); }
+    let s = tlv('00', '01');
+    if (p.once) s += tlv('01', '12');
+    s += tlv('26', mai) + tlv('52', '0000') + tlv('53', '986');
+    if (p.amount) s += tlv('54', p.amount);
+    s += tlv('58', 'BR') + tlv('59', p.name) + tlv('60', p.city);
+    if (p.cep) s += tlv('61', p.cep);
+    s += tlv('62', tlv('05', p.txid || '***')) + '6304';
+    return s + crc16(s);
+  }
+  function parseTLV(s) {
+    const out = []; let i = 0;
+    while (i < s.length) {
+      if (i + 4 > s.length) throw new Error('trunc');
+      const id = s.substr(i, 2), n = parseInt(s.substr(i + 2, 2), 10);
+      if (!/^\d\d$/.test(s.substr(i, 2)) || !/^\d\d$/.test(s.substr(i + 2, 2)) || i + 4 + n > s.length) throw new Error('bad');
+      out.push({ id, v: s.substr(i + 4, n) }); i += 4 + n;
+    }
+    return out;
+  }
+  const cpfOk = (d) => { if (!/^\d{11}$/.test(d) || /^(\d)\1{10}$/.test(d)) return false; for (const n of [9, 10]) { let s = 0; for (let i = 0; i < n; i++) s += +d[i] * (n + 1 - i); const r = (s * 10) % 11 % 10; if (r !== +d[n]) return false; } return true; };
+  const cnpjOk = (d) => { if (!/^\d{14}$/.test(d) || /^(\d)\1{13}$/.test(d)) return false; const w = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]; for (const n of [12, 13]) { let s = 0; for (let i = 0; i < n; i++) s += +d[i] * w[i + 13 - n]; const r = s % 11 < 2 ? 0 : 11 - (s % 11); if (r !== +d[n]) return false; } return true; };
+
+  // ================================================================ textos
+  const LANGS = ['pt', 'en', 'it', 'es'];
+  const TAG = { pt: 'pt-BR', en: 'en', it: 'it', es: 'es' };
+  const I18N = {
+    title: ['Gerador de QR Code', 'QR Code Generator', 'Generatore di codici QR', 'Generador de códigos QR'],
+    back: ['← Projetos', '← Projects', '← Progetti', '← Proyectos'],
+    lang: ['Idioma', 'Language', 'Lingua', 'Idioma'],
+    themeAuto: ['Tema: automático', 'Theme: auto', 'Tema: automatico', 'Tema: automático'], themeLight: ['Tema: claro', 'Theme: light', 'Tema: chiaro', 'Tema: claro'], themeDark: ['Tema: escuro', 'Theme: dark', 'Tema: scuro', 'Tema: oscuro'],
+    ty_text: ['Texto', 'Text', 'Testo', 'Texto'], ty_url: ['Link', 'Link', 'Link', 'Enlace'], ty_wifi: ['Wi-Fi', 'Wi-Fi', 'Wi-Fi', 'Wi-Fi'], ty_vcard: ['Contato', 'Contact', 'Contatto', 'Contacto'],
+    ty_email: ['E-mail', 'E-mail', 'E-mail', 'Correo'], ty_sms: ['SMS', 'SMS', 'SMS', 'SMS'], ty_tel: ['Telefone', 'Phone', 'Telefono', 'Teléfono'], ty_whats: ['WhatsApp', 'WhatsApp', 'WhatsApp', 'WhatsApp'],
+    ty_geo: ['Localização', 'Location', 'Posizione', 'Ubicación'], ty_event: ['Evento', 'Event', 'Evento', 'Evento'], ty_pix: ['Pix', 'Pix', 'Pix', 'Pix'], ty_pixread: ['Ler Pix', 'Read Pix', 'Leggi Pix', 'Leer Pix'],
+    f_text: ['Texto', 'Text', 'Testo', 'Texto'], f_url: ['Endereço (URL)', 'Address (URL)', 'Indirizzo (URL)', 'Dirección (URL)'],
+    f_ssid: ['Nome da rede (SSID)', 'Network name (SSID)', 'Nome della rete (SSID)', 'Nombre de la red (SSID)'], f_wpass: ['Senha', 'Password', 'Password', 'Contraseña'],
+    f_sec: ['Segurança', 'Security', 'Sicurezza', 'Seguridad'], sec_WPA: ['WPA/WPA2/WPA3', 'WPA/WPA2/WPA3', 'WPA/WPA2/WPA3', 'WPA/WPA2/WPA3'], sec_WEP: ['WEP', 'WEP', 'WEP', 'WEP'], sec_nopass: ['Sem senha', 'No password', 'Senza password', 'Sin contraseña'],
+    f_hidden: ['Rede oculta', 'Hidden network', 'Rete nascosta', 'Red oculta'],
+    f_first: ['Nome', 'First name', 'Nome', 'Nombre'], f_last: ['Sobrenome', 'Last name', 'Cognome', 'Apellidos'], f_org: ['Empresa', 'Company', 'Azienda', 'Empresa'], f_jobtitle: ['Cargo', 'Job title', 'Ruolo', 'Cargo'],
+    f_mobile: ['Celular', 'Mobile', 'Cellulare', 'Móvil'], f_phone: ['Telefone', 'Phone', 'Telefono', 'Teléfono'], f_email: ['E-mail', 'E-mail', 'E-mail', 'Correo'], f_web: ['Site', 'Website', 'Sito', 'Sitio web'],
+    f_street: ['Endereço', 'Street', 'Indirizzo', 'Dirección'], f_city: ['Cidade', 'City', 'Città', 'Ciudad'], f_state: ['Estado', 'State', 'Provincia', 'Provincia'], f_zip: ['CEP', 'Postal code', 'CAP', 'Código postal'], f_country: ['País', 'Country', 'Paese', 'País'], f_note: ['Observação', 'Note', 'Nota', 'Nota'],
+    f_to: ['Para', 'To', 'A', 'Para'], f_subject: ['Assunto', 'Subject', 'Oggetto', 'Asunto'], f_body: ['Mensagem', 'Message', 'Messaggio', 'Mensaje'],
+    f_number: ['Número', 'Number', 'Numero', 'Número'], numHint: ['Com DDD. Números com 10 ou 11 dígitos recebem +55.', 'With area code. Numbers with 10 or 11 digits get +55 (Brazil); start with + for other countries.', 'Con prefisso. I numeri di 10 o 11 cifre ricevono +55 (Brasile); per altri paesi inizia con +.', 'Con prefijo. Los números de 10 u 11 dígitos reciben +55 (Brasil); para otros países empieza con +.'],
+    f_smsfmt: ['Formato', 'Format', 'Formato', 'Formato'], smsRfc: ['sms: (RFC 5724)', 'sms: (RFC 5724)', 'sms: (RFC 5724)', 'sms: (RFC 5724)'], smsTo: ['SMSTO: (antigo)', 'SMSTO: (legacy)', 'SMSTO: (vecchio)', 'SMSTO: (antiguo)'],
+    f_lat: ['Latitude', 'Latitude', 'Latitudine', 'Latitud'], f_lon: ['Longitude', 'Longitude', 'Longitudine', 'Longitud'], f_geofmt: ['Formato', 'Format', 'Formato', 'Formato'], geoUri: ['geo: (RFC 5870)', 'geo: (RFC 5870)', 'geo: (RFC 5870)', 'geo: (RFC 5870)'], geoMaps: ['Link do Google Maps', 'Google Maps link', 'Link di Google Maps', 'Enlace de Google Maps'],
+    f_summary: ['Título', 'Title', 'Titolo', 'Título'], f_start: ['Início', 'Start', 'Inizio', 'Inicio'], f_end: ['Fim', 'End', 'Fine', 'Fin'], f_location: ['Local', 'Location', 'Luogo', 'Lugar'], f_desc: ['Descrição', 'Description', 'Descrizione', 'Descripción'],
+    f_pixmode: ['Tipo de Pix', 'Pix type', 'Tipo di Pix', 'Tipo de Pix'], pm_static: ['Estático (chave)', 'Static (key)', 'Statico (chiave)', 'Estático (clave)'], pm_saque: ['Pix Saque (estático)', 'Pix Saque (static)', 'Pix Saque (statico)', 'Pix Saque (estático)'], pm_dynamic: ['Dinâmico (URL do PSP)', 'Dynamic (PSP URL)', 'Dinamico (URL del PSP)', 'Dinámico (URL del PSP)'],
+    f_keytype: ['Tipo de chave', 'Key type', 'Tipo di chiave', 'Tipo de clave'], kt_cpf: ['CPF', 'CPF', 'CPF', 'CPF'], kt_cnpj: ['CNPJ', 'CNPJ', 'CNPJ', 'CNPJ'], kt_phone: ['Celular', 'Mobile phone', 'Cellulare', 'Móvil'], kt_email: ['E-mail', 'E-mail', 'E-mail', 'Correo'], kt_evp: ['Chave aleatória', 'Random key', 'Chiave casuale', 'Clave aleatoria'],
+    f_key: ['Chave Pix', 'Pix key', 'Chiave Pix', 'Clave Pix'], f_name: ['Nome do recebedor', 'Receiver name', 'Nome del beneficiario', 'Nombre del receptor'], f_pcity: ['Cidade do recebedor', 'Receiver city', 'Città del beneficiario', 'Ciudad del receptor'],
+    f_amount: ['Valor (R$, opcional)', 'Amount (BRL, optional)', 'Importo (BRL, facoltativo)', 'Importe (BRL, opcional)'], f_info: ['Descrição (opcional)', 'Description (optional)', 'Descrizione (facoltativa)', 'Descripción (opcional)'],
+    f_txid: ['Identificador (txid, opcional)', 'Identifier (txid, optional)', 'Identificativo (txid, facoltativo)', 'Identificador (txid, opcional)'], f_cep: ['CEP do recebedor (opcional)', 'Receiver postal code (optional)', 'CEP del beneficiario (facoltativo)', 'CEP del receptor (opcional)'],
+    f_once: ['Pagar só uma vez (campo 01 = 12)', 'Pay only once (field 01 = 12)', 'Pagabile una sola volta (campo 01 = 12)', 'Pagar solo una vez (campo 01 = 12)'],
+    f_fss: ['ISPB do facilitador de saque (8 dígitos)', 'ISPB of the cash-out facilitator (8 digits)', 'ISPB del facilitatore di prelievo (8 cifre)', 'ISPB del facilitador de retiro (8 dígitos)'],
+    f_purl: ['URL do PSP (location)', 'PSP URL (location)', 'URL del PSP (location)', 'URL del PSP (location)'],
+    f_paste: ['Cole aqui o Pix Copia e Cola', 'Paste the Pix Copy and Paste code here', 'Incolla qui il Pix Copia e Incolla', 'Pega aquí el Pix Copia y Pega'],
+    hintName: ['Até 25 caracteres, sem acentos.', 'Up to 25 characters, no accents.', 'Fino a 25 caratteri, senza accenti.', 'Hasta 25 caracteres, sin acentos.'],
+    hintCity: ['Até 15 caracteres, sem acentos.', 'Up to 15 characters, no accents.', 'Fino a 15 caratteri, senza accenti.', 'Hasta 15 caracteres, sin acentos.'],
+    hintTxid: ['Até 25 letras e dígitos. Vazio vira ***.', 'Up to 25 letters and digits. Empty becomes ***.', 'Fino a 25 lettere e cifre. Vuoto diventa ***.', 'Hasta 25 letras y dígitos. Vacío se vuelve ***.'],
+    hintUrl: ['Sem https://, até 77 caracteres. É gerada pelo seu banco ou PSP.', 'Without https://, up to 77 characters. Your bank or PSP generates it.', 'Senza https://, fino a 77 caratteri. La genera la tua banca o il PSP.', 'Sin https://, hasta 77 caracteres. La genera tu banco o PSP.'],
+    hintFss: ['A presença deste campo indica Pix Saque. O Pix Troco não existe em QR estático.', 'This field marks a Pix Saque (cash-out). Pix Troco does not exist in static QR codes.', 'Questo campo indica un Pix Saque (prelievo). Il Pix Troco non esiste nei QR statici.', 'Este campo indica un Pix Saque (retiro). El Pix Troco no existe en QR estáticos.'],
+    // mensagens
+    e_empty: ['Preencha o conteúdo.', 'Fill in the content.', 'Compila il contenuto.', 'Rellena el contenido.'],
+    e_long: ['Conteúdo longo demais para um QR Code com esse nível de correção.', 'Content too long for a QR code at this correction level.', 'Contenuto troppo lungo per un QR con questo livello di correzione.', 'Contenido demasiado largo para un QR con este nivel de corrección.'],
+    e_req: ['Campo obrigatório: {f}.', 'Required field: {f}.', 'Campo obbligatorio: {f}.', 'Campo obligatorio: {f}.'],
+    e_cpf: ['CPF inválido (dígitos verificadores não conferem).', 'Invalid CPF (check digits do not match).', 'CPF non valido (cifre di controllo errate).', 'CPF no válido (dígitos de control incorrectos).'],
+    e_cnpj: ['CNPJ inválido (dígitos verificadores não conferem).', 'Invalid CNPJ (check digits do not match).', 'CNPJ non valido (cifre di controllo errate).', 'CNPJ no válido (dígitos de control incorrectos).'],
+    w_cnpjAlnum: ['CNPJ alfanumérico: o formato foi conferido, os dígitos verificadores não.', 'Alphanumeric CNPJ: the format was checked, the check digits were not.', 'CNPJ alfanumerico: il formato è stato verificato, le cifre di controllo no.', 'CNPJ alfanumérico: se comprobó el formato, no los dígitos de control.'],
+    e_phone: ['Celular inválido: use DDD e número (ex.: 51 99999-0000).', 'Invalid mobile: use area code and number (e.g. 51 99999-0000).', 'Cellulare non valido: usa prefisso e numero (es. 51 99999-0000).', 'Móvil no válido: usa prefijo y número (ej.: 51 99999-0000).'],
+    e_email: ['E-mail inválido.', 'Invalid e-mail.', 'E-mail non valida.', 'Correo no válido.'],
+    e_evp: ['Chave aleatória inválida: use o formato 123e4567-e12b-12d1-a456-426655440000.', 'Invalid random key: use the format 123e4567-e12b-12d1-a456-426655440000.', 'Chiave casuale non valida: usa il formato 123e4567-e12b-12d1-a456-426655440000.', 'Clave aleatoria no válida: usa el formato 123e4567-e12b-12d1-a456-426655440000.'],
+    e_amount: ['Valor inválido: use até 2 casas decimais, maior que zero.', 'Invalid amount: up to 2 decimals, greater than zero.', 'Importo non valido: fino a 2 decimali, maggiore di zero.', 'Importe no válido: hasta 2 decimales, mayor que cero.'],
+    e_txid: ['txid: só letras sem acento e dígitos, até 25.', 'txid: only unaccented letters and digits, up to 25.', 'txid: solo lettere senza accenti e cifre, fino a 25.', 'txid: solo letras sin tilde y dígitos, hasta 25.'],
+    e_cep: ['CEP deve ter 8 dígitos.', 'CEP must have 8 digits.', 'Il CEP deve avere 8 cifre.', 'El CEP debe tener 8 dígitos.'],
+    e_fss: ['ISPB deve ter 8 dígitos.', 'ISPB must have 8 digits.', 'L’ISPB deve avere 8 cifre.', 'El ISPB debe tener 8 dígitos.'],
+    e_purl: ['A URL do PSP deve ter até 77 caracteres, sem espaços.', 'The PSP URL must be up to 77 characters, with no spaces.', 'L’URL del PSP deve avere fino a 77 caratteri, senza spazi.', 'La URL del PSP debe tener hasta 77 caracteres, sin espacios.'],
+    e_mai: ['Chave, descrição e saque não cabem nos 99 caracteres do campo 26: encurte a descrição.', 'Key, description and cash-out do not fit the 99 characters of field 26: shorten the description.', 'Chiave, descrizione e prelievo non stanno nei 99 caratteri del campo 26: accorcia la descrizione.', 'Clave, descripción y retiro no caben en los 99 caracteres del campo 26: acorta la descripción.'],
+    e_lat: ['Latitude deve estar entre −90 e 90 e longitude entre −180 e 180.', 'Latitude must be between −90 and 90 and longitude between −180 and 180.', 'La latitudine deve stare tra −90 e 90 e la longitudine tra −180 e 180.', 'La latitud debe estar entre −90 y 90 y la longitud entre −180 y 180.'],
+    e_dates: ['O fim do evento vem antes do início.', 'The event ends before it starts.', 'L’evento finisce prima di iniziare.', 'El evento termina antes de empezar.'],
+    w_trunc: ['{f} foi cortado para {n} caracteres.', '{f} was cut to {n} characters.', '{f} è stato tagliato a {n} caratteri.', '{f} se recortó a {n} caracteres.'],
+    w_accent: ['Acentos e caracteres especiais foram removidos dos campos do Pix.', 'Accents and special characters were removed from the Pix fields.', 'Accenti e caratteri speciali sono stati rimossi dai campi Pix.', 'Se quitaron tildes y caracteres especiales de los campos del Pix.'],
+    w_scheme: ['Foi acrescentado https:// ao endereço.', 'https:// was added to the address.', 'È stato aggiunto https:// all’indirizzo.', 'Se añadió https:// a la dirección.'],
+    w_contrast: ['Contraste baixo entre as cores: o QR Code pode não ser lido.', 'Low contrast between the colours: the QR code may not scan.', 'Contrasto basso tra i colori: il QR potrebbe non essere letto.', 'Contraste bajo entre los colores: el QR puede no leerse.'],
+    w_inverted: ['Módulos mais claros que o fundo: muitos leitores não leem QR invertido.', 'Modules lighter than the background: many readers cannot read inverted codes.', 'Moduli più chiari dello sfondo: molti lettori non leggono i QR invertiti.', 'Módulos más claros que el fondo: muchos lectores no leen QR invertidos.'],
+    w_margin: ['Margem menor que 4 módulos: alguns leitores precisam da margem padrão.', 'Margin under 4 modules: some readers need the standard quiet zone.', 'Margine sotto i 4 moduli: alcuni lettori hanno bisogno del margine standard.', 'Margen menor de 4 módulos: algunos lectores necesitan el margen estándar.'],
+    w_logoH: ['Com logo, a correção de erros fica em H (30%).', 'With a logo, error correction is set to H (30%).', 'Con un logo, la correzione degli errori è H (30%).', 'Con logo, la corrección de errores queda en H (30%).'],
+    ok_pix: ['Pix válido: CRC confere ({c}).', 'Valid Pix: CRC matches ({c}).', 'Pix valido: il CRC corrisponde ({c}).', 'Pix válido: el CRC coincide ({c}).'],
+    e_pixcrc: ['CRC não confere: esperado {c}, encontrado {f}.', 'CRC mismatch: expected {c}, found {f}.', 'CRC non corrisponde: atteso {c}, trovato {f}.', 'El CRC no coincide: esperado {c}, encontrado {f}.'],
+    e_pixparse: ['Não é um BR Code válido: a estrutura ID-tamanho-valor está quebrada.', 'Not a valid BR Code: the ID-length-value structure is broken.', 'Non è un BR Code valido: la struttura ID-lunghezza-valore è rotta.', 'No es un BR Code válido: la estructura ID-longitud-valor está rota.'],
+    e_pixgui: ['Não há campo de Pix (GUI br.gov.bcb.pix).', 'There is no Pix field (GUI br.gov.bcb.pix).', 'Non c’è un campo Pix (GUI br.gov.bcb.pix).', 'No hay campo Pix (GUI br.gov.bcb.pix).'],
+    pixStatic: ['Pix estático', 'Static Pix', 'Pix statico', 'Pix estático'], pixDynamic: ['Pix dinâmico', 'Dynamic Pix', 'Pix dinamico', 'Pix dinámico'], pixSaque: ['Pix Saque', 'Pix Saque', 'Pix Saque', 'Pix Saque'],
+    th_id: ['ID', 'ID', 'ID', 'ID'], th_field: ['Campo', 'Field', 'Campo', 'Campo'], th_val: ['Valor', 'Value', 'Valore', 'Valor'],
+    fn_00: ['Formato do payload', 'Payload format', 'Formato del payload', 'Formato del payload'], fn_01: ['Método de iniciação', 'Initiation method', 'Metodo di avvio', 'Método de inicio'], fn_26: ['Conta do recebedor (Pix)', 'Receiver account (Pix)', 'Conto del beneficiario (Pix)', 'Cuenta del receptor (Pix)'],
+    fn_26_00: ['GUI', 'GUI', 'GUI', 'GUI'], fn_26_01: ['Chave', 'Key', 'Chiave', 'Clave'], fn_26_02: ['Descrição', 'Description', 'Descrizione', 'Descripción'], fn_26_03: ['Facilitador de saque (ISPB)', 'Cash-out facilitator (ISPB)', 'Facilitatore di prelievo (ISPB)', 'Facilitador de retiro (ISPB)'], fn_26_25: ['URL do PSP', 'PSP URL', 'URL del PSP', 'URL del PSP'],
+    fn_52: ['Categoria (MCC)', 'Category (MCC)', 'Categoria (MCC)', 'Categoría (MCC)'], fn_53: ['Moeda', 'Currency', 'Valuta', 'Moneda'], fn_54: ['Valor', 'Amount', 'Importo', 'Importe'], fn_58: ['País', 'Country', 'Paese', 'País'], fn_59: ['Nome', 'Name', 'Nome', 'Nombre'], fn_60: ['Cidade', 'City', 'Città', 'Ciudad'], fn_61: ['CEP', 'Postal code', 'CEP', 'CEP'],
+    fn_62: ['Dados adicionais', 'Additional data', 'Dati aggiuntivi', 'Datos adicionales'], fn_62_05: ['txid', 'txid', 'txid', 'txid'], fn_63: ['CRC16', 'CRC16', 'CRC16', 'CRC16'],
+    // prévia e opções
+    prevH: ['QR Code', 'QR code', 'Codice QR', 'Código QR'], payloadL: ['Conteúdo codificado', 'Encoded content', 'Contenuto codificato', 'Contenido codificado'],
+    emptyQr: ['Preencha o formulário para ver o QR Code.', 'Fill in the form to see the QR code.', 'Compila il modulo per vedere il codice QR.', 'Rellena el formulario para ver el código QR.'],
+    meta: ['Versão {v} · {s}×{s} módulos · correção {e} · máscara {m} · {n} caracteres', 'Version {v} · {s}×{s} modules · correction {e} · mask {m} · {n} characters', 'Versione {v} · {s}×{s} moduli · correzione {e} · maschera {m} · {n} caratteri', 'Versión {v} · {s}×{s} módulos · corrección {e} · máscara {m} · {n} caracteres'],
+    cvLabel: ['QR Code com o conteúdo: {t}', 'QR code with the content: {t}', 'Codice QR con il contenuto: {t}', 'Código QR con el contenido: {t}'],
+    dlPng: ['Baixar PNG', 'Download PNG', 'Scarica PNG', 'Descargar PNG'], dlSvg: ['Baixar SVG', 'Download SVG', 'Scarica SVG', 'Descargar SVG'], copyImg: ['Copiar imagem', 'Copy image', 'Copia immagine', 'Copiar imagen'], copyTxt: ['Copiar texto', 'Copy text', 'Copia testo', 'Copiar texto'],
+    copyPix: ['Copiar Pix Copia e Cola', 'Copy Pix Copy and Paste', 'Copia Pix Copia e Incolla', 'Copiar Pix Copia y Pega'], print: ['Imprimir', 'Print', 'Stampa', 'Imprimir'], saveHist: ['Salvar no histórico', 'Save to history', 'Salva nella cronologia', 'Guardar en el historial'],
+    optsH: ['Aparência', 'Appearance', 'Aspetto', 'Apariencia'], ecc: ['Correção de erros', 'Error correction', 'Correzione degli errori', 'Corrección de errores'],
+    eccL: ['L (7%)', 'L (7%)', 'L (7%)', 'L (7%)'], eccM: ['M (15%)', 'M (15%)', 'M (15%)', 'M (15%)'], eccQ: ['Q (25%)', 'Q (25%)', 'Q (25%)', 'Q (25%)'], eccH: ['H (30%)', 'H (30%)', 'H (30%)', 'H (30%)'],
+    size: ['Tamanho da imagem', 'Image size', 'Dimensione dell’immagine', 'Tamaño de la imagen'], margin: ['Margem (módulos)', 'Margin (modules)', 'Margine (moduli)', 'Margen (módulos)'], m4: ['4 (padrão)', '4 (standard)', '4 (standard)', '4 (estándar)'],
+    style: ['Estilo', 'Style', 'Stile', 'Estilo'], stSquare: ['Quadrados', 'Squares', 'Quadrati', 'Cuadrados'], stRounded: ['Arredondado', 'Rounded', 'Arrotondato', 'Redondeado'], stDots: ['Pontos', 'Dots', 'Punti', 'Puntos'],
+    fg: ['Cor dos módulos', 'Module colour', 'Colore dei moduli', 'Color de los módulos'], bg: ['Cor do fundo', 'Background colour', 'Colore di sfondo', 'Color de fondo'],
+    logo: ['Logo no centro (opcional)', 'Centre logo (optional)', 'Logo al centro (facoltativo)', 'Logo en el centro (opcional)'], logoNote: ['A imagem fica só no seu navegador.', 'The image stays in your browser.', 'L’immagine resta nel tuo browser.', 'La imagen se queda en tu navegador.'],
+    noLogo: ['Remover logo', 'Remove logo', 'Rimuovi logo', 'Quitar logo'], resetOpts: ['Restaurar aparência', 'Reset appearance', 'Ripristina aspetto', 'Restaurar apariencia'],
+    histH: ['Histórico (neste navegador)', 'History (in this browser)', 'Cronologia (in questo browser)', 'Historial (en este navegador)'], histEmpty: ['Nada salvo ainda.', 'Nothing saved yet.', 'Ancora niente di salvato.', 'Nada guardado todavía.'], clearHist: ['Limpar histórico', 'Clear history', 'Cancella cronologia', 'Borrar historial'],
+    t_copied: ['Copiado.', 'Copied.', 'Copiato.', 'Copiado.'], t_noclip: ['O navegador não permitiu copiar.', 'The browser did not allow copying.', 'Il browser non ha permesso di copiare.', 'El navegador no permitió copiar.'], t_saved: ['Salvo no histórico.', 'Saved to history.', 'Salvato nella cronologia.', 'Guardado en el historial.'],
+    helpH: ['Como funciona e fontes', 'How it works and sources', 'Come funziona e fonti', 'Cómo funciona y fuentes'],
+  };
+  const HELP = {
+    pt: `<p>Tudo roda no seu navegador: nada é enviado pela rede, e o histórico fica só neste navegador. O QR Code segue a norma ISO/IEC 18004, com os modos numérico, alfanumérico e byte (UTF-8), as versões 1 a 40, os quatro níveis de correção de erros e a escolha automática da máscara.</p>
+<ul><li><b>Pix:</b> segue o <i>Manual de Padrões para Iniciação do Pix</i>, versão 2.10.0, do Banco Central: GUI <code>br.gov.bcb.pix</code>; chave até 77 caracteres e descrição até 72, que juntas cabem nos 99 caracteres do campo 26; txid até 25 letras e dígitos ou <code>***</code>; campo 01 = 12 para uso único; campo 25 com a URL do PSP, sem <code>https://</code> e até 77 caracteres, no Pix dinâmico; campo 03 (ISPB) para Pix Saque; CRC16 com polinômio 0x1021 e valor inicial 0xFFFF. O Pix Troco só existe em QR dinâmico, gerado pelo PSP. O app reproduz exatamente os dois exemplos do manual (CRC 1D3D e 64E4).</li>
+<li><b>Limites que não vêm do manual do Pix:</b> nome com até 25 caracteres e cidade com até 15 são os limites usados pelos geradores de BR Code; o Manual do BR Code, que os define, não pôde ser consultado. Acentos são removidos para que cada caractere conte um byte.</li>
+<li><b>Pix dinâmico:</b> a URL é criada pelo banco ou PSP do recebedor; este app só monta o QR com ela. QR composto e Pix Automático não são gerados.</li>
+<li><b>Wi-Fi, SMS, e-mail, telefone, localização, evento e contato:</b> formatos da wiki do ZXing (<i>Barcode Contents</i>), das RFC 5724 (sms:), 6068 (mailto:), 3966 (tel:) e 5870 (geo:) e vCard 3.0. WhatsApp: link <code>https://wa.me/número</code>, como na ajuda do WhatsApp.</li>
+<li><b>O que não está coberto:</b> modo Kanji, ECI, Micro QR e QR estruturado em partes. A leitura do QR Code por câmera não faz parte do app; para conferir um Pix, cole o código na aba Ler Pix.</li></ul>`,
+    en: `<p>Everything runs in your browser: nothing is sent over the network, and the history stays in this browser only. The QR code follows ISO/IEC 18004, with numeric, alphanumeric and byte (UTF-8) modes, versions 1 to 40, the four error-correction levels and automatic mask selection.</p>
+<ul><li><b>Pix:</b> follows the Banco Central do Brasil <i>Manual de Padrões para Iniciação do Pix</i>, version 2.10.0: GUI <code>br.gov.bcb.pix</code>; key up to 77 characters and description up to 72, which together must fit the 99 characters of field 26; txid up to 25 letters and digits or <code>***</code>; field 01 = 12 for single use; field 25 with the PSP URL, without <code>https://</code> and up to 77 characters, for dynamic Pix; field 03 (ISPB) for Pix Saque; CRC16 with polynomial 0x1021 and initial value 0xFFFF. Pix Troco only exists in dynamic QR codes generated by the PSP. The app reproduces both examples in the manual exactly (CRC 1D3D and 64E4).</li>
+<li><b>Limits not taken from the Pix manual:</b> name up to 25 characters and city up to 15 are the limits used by BR Code generators; the BR Code manual that defines them could not be consulted. Accents are removed so that each character counts as one byte.</li>
+<li><b>Dynamic Pix:</b> the URL is created by the receiver’s bank or PSP; this app only builds the QR code with it. Composite QR codes and Pix Automático are not generated.</li>
+<li><b>Wi-Fi, SMS, e-mail, phone, location, event and contact:</b> formats from the ZXing wiki (<i>Barcode Contents</i>), RFC 5724 (sms:), 6068 (mailto:), 3966 (tel:) and 5870 (geo:) and vCard 3.0. WhatsApp: the <code>https://wa.me/number</code> link, as in WhatsApp’s help.</li>
+<li><b>Not covered:</b> Kanji mode, ECI, Micro QR and structured append. Reading QR codes with a camera is not part of the app; to check a Pix, paste the code in the Read Pix tab.</li></ul>`,
+    it: `<p>Tutto gira nel tuo browser: nulla viene inviato in rete, e la cronologia resta solo in questo browser. Il codice QR segue la norma ISO/IEC 18004, con le modalità numerica, alfanumerica e byte (UTF-8), le versioni da 1 a 40, i quattro livelli di correzione degli errori e la scelta automatica della maschera.</p>
+<ul><li><b>Pix:</b> segue il <i>Manual de Padrões para Iniciação do Pix</i>, versione 2.10.0, del Banco Central do Brasil: GUI <code>br.gov.bcb.pix</code>; chiave fino a 77 caratteri e descrizione fino a 72, che insieme devono stare nei 99 caratteri del campo 26; txid fino a 25 lettere e cifre o <code>***</code>; campo 01 = 12 per uso singolo; campo 25 con l’URL del PSP, senza <code>https://</code> e fino a 77 caratteri, nel Pix dinamico; campo 03 (ISPB) per il Pix Saque; CRC16 con polinomio 0x1021 e valore iniziale 0xFFFF. Il Pix Troco esiste solo nei QR dinamici generati dal PSP. L’app riproduce esattamente i due esempi del manuale (CRC 1D3D e 64E4).</li>
+<li><b>Limiti che non vengono dal manuale del Pix:</b> nome fino a 25 caratteri e città fino a 15 sono i limiti usati dai generatori di BR Code; il manuale del BR Code che li definisce non è stato consultato. Gli accenti vengono rimossi perché ogni carattere conti un byte.</li>
+<li><b>Pix dinamico:</b> l’URL è creata dalla banca o dal PSP del beneficiario; questa app costruisce solo il QR con essa. QR composti e Pix Automático non vengono generati.</li>
+<li><b>Wi-Fi, SMS, e-mail, telefono, posizione, evento e contatto:</b> formati della wiki di ZXing (<i>Barcode Contents</i>), delle RFC 5724 (sms:), 6068 (mailto:), 3966 (tel:) e 5870 (geo:) e vCard 3.0. WhatsApp: il link <code>https://wa.me/numero</code>, come nella guida di WhatsApp.</li>
+<li><b>Non coperto:</b> modalità Kanji, ECI, Micro QR e QR strutturato in parti. La lettura del QR con la fotocamera non fa parte dell’app; per verificare un Pix, incolla il codice nella scheda Leggi Pix.</li></ul>`,
+    es: `<p>Todo funciona en tu navegador: nada se envía por la red, y el historial se queda solo en este navegador. El código QR sigue la norma ISO/IEC 18004, con los modos numérico, alfanumérico y byte (UTF-8), las versiones 1 a 40, los cuatro niveles de corrección de errores y la elección automática de la máscara.</p>
+<ul><li><b>Pix:</b> sigue el <i>Manual de Padrões para Iniciação do Pix</i>, versión 2.10.0, del Banco Central do Brasil: GUI <code>br.gov.bcb.pix</code>; clave de hasta 77 caracteres y descripción de hasta 72, que juntas deben caber en los 99 caracteres del campo 26; txid de hasta 25 letras y dígitos o <code>***</code>; campo 01 = 12 para uso único; campo 25 con la URL del PSP, sin <code>https://</code> y hasta 77 caracteres, en el Pix dinámico; campo 03 (ISPB) para el Pix Saque; CRC16 con polinomio 0x1021 y valor inicial 0xFFFF. El Pix Troco solo existe en QR dinámicos generados por el PSP. La app reproduce exactamente los dos ejemplos del manual (CRC 1D3D y 64E4).</li>
+<li><b>Límites que no vienen del manual del Pix:</b> nombre de hasta 25 caracteres y ciudad de hasta 15 son los límites que usan los generadores de BR Code; no se pudo consultar el manual del BR Code que los define. Se quitan las tildes para que cada carácter cuente un byte.</li>
+<li><b>Pix dinámico:</b> la URL la crea el banco o PSP del receptor; esta app solo arma el QR con ella. No se generan QR compuestos ni Pix Automático.</li>
+<li><b>Wi-Fi, SMS, correo, teléfono, ubicación, evento y contacto:</b> formatos de la wiki de ZXing (<i>Barcode Contents</i>), de las RFC 5724 (sms:), 6068 (mailto:), 3966 (tel:) y 5870 (geo:) y vCard 3.0. WhatsApp: el enlace <code>https://wa.me/número</code>, como en la ayuda de WhatsApp.</li>
+<li><b>No cubierto:</b> modo Kanji, ECI, Micro QR y QR estructurado en partes. La lectura del QR con cámara no forma parte de la app; para comprobar un Pix, pega el código en la pestaña Leer Pix.</li></ul>`,
+  };
+  let lang = 'pt';
+  const li = () => LANGS.indexOf(lang);
+  const t = (k, v) => { const a = I18N[k]; let s = a ? a[li()] : k; if (v) s = s.replace(/\{(\w+)\}/g, (m, x) => (v[x] != null ? v[x] : m)); return s; };
+
+  // ================================================================ tipos e formulários
+  const TYPES = {
+    text: { ico: '✎', fields: [{ k: 'text', l: 'f_text', type: 'area', wide: 1 }] },
+    url: { ico: '🔗', fields: [{ k: 'url', l: 'f_url', type: 'url', wide: 1, ph: 'https://' }] },
+    wifi: { ico: '📶', fields: [{ k: 'ssid', l: 'f_ssid' }, { k: 'wpass', l: 'f_wpass' }, { k: 'sec', l: 'f_sec', type: 'select', opts: ['WPA', 'WEP', 'nopass'], ol: 'sec_' }, { k: 'hidden', l: 'f_hidden', type: 'check' }] },
+    vcard: { ico: '👤', fields: [{ k: 'first', l: 'f_first' }, { k: 'last', l: 'f_last' }, { k: 'mobile', l: 'f_mobile', type: 'tel' }, { k: 'phone', l: 'f_phone', type: 'tel' }, { k: 'email', l: 'f_email', type: 'email' }, { k: 'web', l: 'f_web', type: 'url' }, { k: 'org', l: 'f_org' }, { k: 'jobtitle', l: 'f_jobtitle' }, { k: 'street', l: 'f_street', wide: 1 }, { k: 'city', l: 'f_city' }, { k: 'state', l: 'f_state' }, { k: 'zip', l: 'f_zip' }, { k: 'country', l: 'f_country' }, { k: 'note', l: 'f_note', type: 'area', wide: 1 }] },
+    email: { ico: '✉', fields: [{ k: 'to', l: 'f_to', type: 'email' }, { k: 'subject', l: 'f_subject' }, { k: 'body', l: 'f_body', type: 'area', wide: 1 }] },
+    sms: { ico: '💬', fields: [{ k: 'number', l: 'f_number', type: 'tel', hint: 'numHint' }, { k: 'smsfmt', l: 'f_smsfmt', type: 'select', opts: ['rfc', 'to'], ol: { rfc: 'smsRfc', to: 'smsTo' } }, { k: 'body', l: 'f_body', type: 'area', wide: 1 }] },
+    tel: { ico: '☎', fields: [{ k: 'number', l: 'f_number', type: 'tel', hint: 'numHint' }] },
+    whats: { ico: '🟢', fields: [{ k: 'number', l: 'f_number', type: 'tel', hint: 'numHint' }, { k: 'body', l: 'f_body', type: 'area', wide: 1 }] },
+    geo: { ico: '📍', fields: [{ k: 'lat', l: 'f_lat', ph: '-30.0346' }, { k: 'lon', l: 'f_lon', ph: '-51.2177' }, { k: 'geofmt', l: 'f_geofmt', type: 'select', opts: ['geo', 'maps'], ol: { geo: 'geoUri', maps: 'geoMaps' } }] },
+    event: { ico: '📅', fields: [{ k: 'summary', l: 'f_summary', wide: 1 }, { k: 'start', l: 'f_start', type: 'datetime-local' }, { k: 'end', l: 'f_end', type: 'datetime-local' }, { k: 'location', l: 'f_location', wide: 1 }, { k: 'desc', l: 'f_desc', type: 'area', wide: 1 }] },
+    pix: { ico: '◆', fields: [
+      { k: 'pixmode', l: 'f_pixmode', type: 'select', opts: ['static', 'saque', 'dynamic'], ol: { static: 'pm_static', saque: 'pm_saque', dynamic: 'pm_dynamic' } },
+      { k: 'keytype', l: 'f_keytype', type: 'select', opts: ['cpf', 'cnpj', 'phone', 'email', 'evp'], ol: 'kt_', show: (v) => v.pixmode !== 'dynamic' },
+      { k: 'key', l: 'f_key', show: (v) => v.pixmode !== 'dynamic' },
+      { k: 'purl', l: 'f_purl', hint: 'hintUrl', wide: 1, ph: 'pix.example.com/8b3da2f39a4140d1a91abd93113bd441', show: (v) => v.pixmode === 'dynamic' },
+      { k: 'fss', l: 'f_fss', hint: 'hintFss', show: (v) => v.pixmode === 'saque' },
+      { k: 'name', l: 'f_name', hint: 'hintName' }, { k: 'pcity', l: 'f_pcity', hint: 'hintCity' },
+      { k: 'amount', l: 'f_amount', ph: '0,00', show: (v) => v.pixmode !== 'dynamic' },
+      { k: 'info', l: 'f_info', show: (v) => v.pixmode !== 'dynamic' },
+      { k: 'txid', l: 'f_txid', hint: 'hintTxid', show: (v) => v.pixmode !== 'dynamic' },
+      { k: 'cep', l: 'f_cep' },
+      { k: 'once', l: 'f_once', type: 'check' },
+    ] },
+    pixread: { ico: '🔍', fields: [{ k: 'paste', l: 'f_paste', type: 'area', wide: 1 }] },
+  };
+  const ORDER = Object.keys(TYPES);
+  const $ = (id) => document.getElementById(id);
+  const Store = {
+    get(k) { try { return JSON.parse(localStorage.getItem('qrgen.' + k)); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem('qrgen.' + k, JSON.stringify(v)); } catch (e) { /* sem armazenamento */ } },
+  };
+  let state = Store.get('state') || {};
+  state.type = TYPES[state.type] ? state.type : 'url';
+  state.values = state.values || {};
+  state.opts = Object.assign({ ecc: 1, size: 512, margin: 4, style: 'square', fg: '#000000', bg: '#ffffff' }, state.opts || {});
+  if (!state.values.pix) state.values.pix = { pixmode: 'static', keytype: 'cpf', once: false };
+  let logo = null; // imagem do logo (só na sessão)
+  let current = null; // { payload, qr }
+  const vals = () => (state.values[state.type] = state.values[state.type] || {});
+
+  function buildTabs() {
+    const box = $('tabs'); box.textContent = '';
+    ORDER.forEach((k) => {
+      const b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'tab'); b.id = 'tab-' + k; b.setAttribute('aria-controls', 'formCard');
+      b.setAttribute('aria-selected', String(k === state.type)); b.tabIndex = k === state.type ? 0 : -1;
+      const i = document.createElement('span'); i.className = 'ico'; i.setAttribute('aria-hidden', 'true'); i.textContent = TYPES[k].ico;
+      const l = document.createElement('span'); l.className = 'lbl'; l.textContent = t('ty_' + k);
+      b.append(i, l);
+      b.addEventListener('click', () => selectType(k));
+      b.addEventListener('keydown', (ev) => {
+        const idx = ORDER.indexOf(k); let n = null;
+        if (ev.key === 'ArrowRight') n = ORDER[(idx + 1) % ORDER.length]; else if (ev.key === 'ArrowLeft') n = ORDER[(idx - 1 + ORDER.length) % ORDER.length]; else if (ev.key === 'Home') n = ORDER[0]; else if (ev.key === 'End') n = ORDER[ORDER.length - 1];
+        if (n) { ev.preventDefault(); selectType(n); $('tab-' + n).focus(); }
+      });
+      box.appendChild(b);
+    });
+    $('formCard').setAttribute('aria-labelledby', 'tab-' + state.type);
+  }
+  function selectType(k) { state.type = k; save(); buildTabs(); buildForm(); update(); }
+  function buildForm() {
+    const v = vals(), box = $('fields'); box.textContent = '';
+    $('formH').textContent = t('ty_' + state.type);
+    TYPES[state.type].fields.forEach((f) => {
+      if (f.show && !f.show(v)) return;
+      const lab = document.createElement('label'); lab.className = 'field' + (f.wide || f.type === 'area' ? ' wide' : '') + (f.type === 'check' ? ' check' : '');
+      const span = document.createElement('span'); span.textContent = t(f.l);
+      let inp;
+      if (f.type === 'area') { inp = document.createElement('textarea'); }
+      else if (f.type === 'select') { inp = document.createElement('select'); f.opts.forEach((o) => { const op = document.createElement('option'); op.value = o; op.textContent = typeof f.ol === 'string' ? t(f.ol + o) : t(f.ol[o]); inp.appendChild(op); }); }
+      else { inp = document.createElement('input'); inp.type = f.type === 'check' ? 'checkbox' : (f.type || 'text'); if (f.type === 'tel') inp.inputMode = 'tel'; if (['amount', 'lat', 'lon', 'fss', 'cep'].includes(f.k)) inp.inputMode = 'decimal'; }
+      inp.id = 'f-' + f.k; inp.name = f.k; if (f.ph) inp.placeholder = f.ph;
+      if (f.type === 'check') inp.checked = !!v[f.k]; else { if (v[f.k] == null && f.type === 'select') v[f.k] = f.opts[0]; inp.value = v[f.k] || ''; }
+      inp.autocomplete = 'off'; if (f.k === 'wpass') inp.spellcheck = false;
+      inp.addEventListener('input', () => { v[f.k] = f.type === 'check' ? inp.checked : inp.value; if (f.type === 'select' || f.type === 'check') { buildForm(); $('f-' + f.k).focus(); } update(); });
+      if (f.type === 'check') lab.append(inp, span); else lab.append(span, inp);
+      if (f.hint) { const s = document.createElement('small'); s.textContent = t(f.hint); lab.appendChild(s); }
+      box.appendChild(lab);
+    });
+  }
+
+  // ================================================================ montagem do conteúdo
+  const intlPhone = (s) => { const raw = (s || '').trim(), d = raw.replace(/\D/g, ''); if (!d) return ''; if (raw.startsWith('+')) return '+' + d; if (d.length === 10 || d.length === 11) return '+55' + d; return '+' + d; };
+  const wifiEsc = (s) => s.replace(/([\\;,":])/g, '\\$1');
+  const vEsc = (s) => (s || '').replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/([,;])/g, '\\$1');
+  const enc = (s) => encodeURIComponent(s).replace(/%0A/g, '%0D%0A').replace(/%0D%0D%0A/g, '%0D%0A');
+  const icsDate = (s) => (s ? s.replace(/[-:]/g, '').replace(/^(\d{8}T\d{4})$/, '$100') : '');
+  function build(type, v, msgs) {
+    const req = (k, l) => { if (!(v[k] || '').trim()) { msgs.push(['err', t('e_req', { f: t(l) })]); return false; } return true; };
+    switch (type) {
+      case 'text': return v.text || '';
+      case 'url': { let u = (v.url || '').trim(); if (!u) return ''; if (!/^[a-z][a-z0-9+.-]*:/i.test(u)) { u = 'https://' + u; msgs.push(['warn', t('w_scheme')]); } return u; }
+      case 'wifi': { if (!req('ssid', 'f_ssid')) return ''; const sec = v.sec || 'WPA'; let s = 'WIFI:T:' + sec + ';S:' + wifiEsc(v.ssid) + ';'; if (sec !== 'nopass') { if (!req('wpass', 'f_wpass')) return ''; s += 'P:' + wifiEsc(v.wpass) + ';'; } if (v.hidden) s += 'H:true;'; return s + ';'; }
+      case 'vcard': {
+        if (!(v.first || v.last || v.org)) { msgs.push(['err', t('e_req', { f: t('f_first') })]); return ''; }
+        const L = ['BEGIN:VCARD', 'VERSION:3.0', 'N:' + vEsc(v.last) + ';' + vEsc(v.first) + ';;;', 'FN:' + vEsc([v.first, v.last].filter(Boolean).join(' ') || v.org)];
+        if (v.org) L.push('ORG:' + vEsc(v.org)); if (v.jobtitle) L.push('TITLE:' + vEsc(v.jobtitle));
+        if (v.mobile) L.push('TEL;TYPE=CELL:' + intlPhone(v.mobile)); if (v.phone) L.push('TEL;TYPE=WORK,VOICE:' + intlPhone(v.phone));
+        if (v.email) L.push('EMAIL:' + v.email.trim()); if (v.web) L.push('URL:' + v.web.trim());
+        if (v.street || v.city || v.state || v.zip || v.country) L.push('ADR;TYPE=WORK:;;' + [v.street, v.city, v.state, v.zip, v.country].map(vEsc).join(';'));
+        if (v.note) L.push('NOTE:' + vEsc(v.note));
+        L.push('END:VCARD'); return L.join('\r\n');
+      }
+      case 'email': { if (!req('to', 'f_to')) return ''; if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.to.trim())) msgs.push(['err', t('e_email')]); const q = []; if (v.subject) q.push('subject=' + enc(v.subject)); if (v.body) q.push('body=' + enc(v.body)); return 'mailto:' + v.to.trim() + (q.length ? '?' + q.join('&') : ''); }
+      case 'sms': { if (!req('number', 'f_number')) return ''; const n = intlPhone(v.number); return v.smsfmt === 'to' ? 'SMSTO:' + n + ':' + (v.body || '') : 'sms:' + n + (v.body ? '?body=' + enc(v.body) : ''); }
+      case 'tel': { if (!req('number', 'f_number')) return ''; return 'tel:' + intlPhone(v.number); }
+      case 'whats': { if (!req('number', 'f_number')) return ''; return 'https://wa.me/' + intlPhone(v.number).replace(/\D/g, '') + (v.body ? '?text=' + encodeURIComponent(v.body) : ''); }
+      case 'geo': {
+        if (!req('lat', 'f_lat') || !req('lon', 'f_lon')) return '';
+        const la = parseFloat(String(v.lat).replace(',', '.')), lo = parseFloat(String(v.lon).replace(',', '.'));
+        if (!(la >= -90 && la <= 90 && lo >= -180 && lo <= 180)) { msgs.push(['err', t('e_lat')]); return ''; }
+        return v.geofmt === 'maps' ? 'https://www.google.com/maps?q=' + la + ',' + lo : 'geo:' + la + ',' + lo;
+      }
+      case 'event': {
+        if (!req('summary', 'f_summary') || !req('start', 'f_start')) return '';
+        if (v.end && v.end < v.start) msgs.push(['err', t('e_dates')]);
+        const L = ['BEGIN:VEVENT', 'SUMMARY:' + vEsc(v.summary), 'DTSTART:' + icsDate(v.start)];
+        if (v.end) L.push('DTEND:' + icsDate(v.end)); if (v.location) L.push('LOCATION:' + vEsc(v.location)); if (v.desc) L.push('DESCRIPTION:' + vEsc(v.desc));
+        L.push('END:VEVENT'); return L.join('\r\n');
+      }
+      case 'pix': return buildPix(v, msgs);
+      case 'pixread': return readPix(v, msgs);
+    }
+    return '';
+  }
+  function cut(s, n, label, msgs) { if (s.length > n) { msgs.push(['warn', t('w_trunc', { f: t(label), n })]); return s.slice(0, n); } return s; }
+  function buildPix(v, msgs) {
+    const mode = v.pixmode || 'static', dynamic = mode === 'dynamic';
+    let accent = false; const A = (s) => { const r = ascii(s || ''); if (r !== (s || '')) accent = true; return r.trim(); };
+    const p = { dynamic, once: !!v.once };
+    let ok = true;
+    if (dynamic) {
+      let u = (v.purl || '').trim().replace(/^https?:\/\//i, '');
+      if (!u) { msgs.push(['err', t('e_req', { f: t('f_purl') })]); ok = false; } else if (u.length > 77 || /\s/.test(u)) { msgs.push(['err', t('e_purl')]); ok = false; }
+      p.url = u;
+    } else {
+      const kt = v.keytype || 'cpf', raw = (v.key || '').trim();
+      if (!raw) { msgs.push(['err', t('e_req', { f: t('f_key') })]); ok = false; }
+      else if (kt === 'cpf') { const d = raw.replace(/\D/g, ''); if (!cpfOk(d)) { msgs.push(['err', t('e_cpf')]); ok = false; } p.key = d; }
+      else if (kt === 'cnpj') { const d = raw.toUpperCase().replace(/[^0-9A-Z]/g, ''); if (/^\d{14}$/.test(d)) { if (!cnpjOk(d)) { msgs.push(['err', t('e_cnpj')]); ok = false; } } else if (/^[0-9A-Z]{12}\d{2}$/.test(d)) msgs.push(['warn', t('w_cnpjAlnum')]); else { msgs.push(['err', t('e_cnpj')]); ok = false; } p.key = d; }
+      else if (kt === 'phone') { const d = raw.replace(/\D/g, ''); let n = raw.startsWith('+') ? '+' + d : (d.length === 10 || d.length === 11 ? '+55' + d : d.length >= 12 && d.startsWith('55') ? '+' + d : ''); if (!/^\+55\d{10,11}$/.test(n)) { msgs.push(['err', t('e_phone')]); ok = false; } p.key = n; }
+      else if (kt === 'email') { if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw) || raw.length > 77) { msgs.push(['err', t('e_email')]); ok = false; } p.key = raw; }
+      else { const d = raw.toLowerCase(); if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(d)) { msgs.push(['err', t('e_evp')]); ok = false; } p.key = d; }
+      if (mode === 'saque') { const f = (v.fss || '').replace(/\D/g, ''); if (!/^\d{8}$/.test(f)) { msgs.push(['err', t('e_fss')]); ok = false; } p.fss = f; }
+      if ((v.amount || '').trim()) { const a = v.amount.trim().replace(/\s/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.'); const n = Number(a); if (!/^\d+(\.\d{1,2})?$/.test(a) || !(n > 0) || n.toFixed(2).length > 13) { msgs.push(['err', t('e_amount')]); ok = false; } else p.amount = n.toFixed(2); }
+      const tx = (v.txid || '').trim(); if (tx && !/^[A-Za-z0-9]{1,25}$/.test(tx)) { msgs.push(['err', t('e_txid')]); ok = false; } p.txid = tx || '***';
+      let info = A(v.info);
+      const room = 99 - 18 - (4 + (p.key || '').length) - (p.fss ? 12 : 0) - 4;
+      if (info) { if (room < 1) { msgs.push(['err', t('e_mai')]); ok = false; } else info = cut(info, Math.min(72, room), 'f_info', msgs); }
+      p.info = info;
+    }
+    if (!dynamic && !p.txid) p.txid = '***';
+    if (dynamic) p.txid = '***';
+    p.name = cut(A(v.name), 25, 'f_name', msgs); p.city = cut(A(v.pcity), 15, 'f_pcity', msgs);
+    if (!p.name) { msgs.push(['err', t('e_req', { f: t('f_name') })]); ok = false; }
+    if (!p.city) { msgs.push(['err', t('e_req', { f: t('f_pcity') })]); ok = false; }
+    if ((v.cep || '').trim()) { const c = v.cep.replace(/\D/g, ''); if (c.length !== 8) { msgs.push(['err', t('e_cep')]); ok = false; } p.cep = c; }
+    if (accent) msgs.push(['warn', t('w_accent')]);
+    if (!ok) return '';
+    const s = pixPayload(p);
+    msgs.push(['ok', t('ok_pix', { c: s.slice(-4) })]);
+    return s;
+  }
+  function readPix(v, msgs) {
+    const s = (v.paste || '').trim().replace(/[\r\n]/g, '');
+    const out = $('parseOut'); out.textContent = '';
+    if (!s) return '';
+    let top;
+    try { top = parseTLV(s); } catch (e) { msgs.push(['err', t('e_pixparse')]); return s; }
+    const crcF = top.find((x) => x.id === '63');
+    const exp = crc16(s.slice(0, s.length - 4));
+    if (!crcF || s.slice(-8, -4) !== '6304') msgs.push(['err', t('e_pixparse')]);
+    else if (crcF.v.toUpperCase() !== exp) msgs.push(['err', t('e_pixcrc', { c: exp, f: crcF.v })]);
+    else msgs.push(['ok', t('ok_pix', { c: exp })]);
+    const tbl = document.createElement('table'); tbl.className = 'parse';
+    const head = tbl.createTHead().insertRow(); ['th_id', 'th_field', 'th_val'].forEach((k) => { const th = document.createElement('th'); th.textContent = t(k); head.appendChild(th); });
+    const body = tbl.createTBody(); let pixFound = false, kind = 'pixStatic';
+    const row = (id, name, val, sub) => { const r = body.insertRow(); if (sub) r.className = 'sub'; [id, name, val].forEach((x, i) => { const c = r.insertCell(); c.textContent = x; if (i === 2) c.className = 'v'; }); };
+    top.forEach((f) => {
+      const nm = I18N['fn_' + f.id] ? t('fn_' + f.id) : (+f.id >= 26 && +f.id <= 51 ? t('fn_26') : '');
+      const nested = ['26', '62', '80'].includes(f.id) || (+f.id >= 26 && +f.id <= 51);
+      if (nested) {
+        row(f.id, nm, '');
+        let subs = []; try { subs = parseTLV(f.v); } catch (e) { row('', '', f.v, true); return; }
+        const isPix = subs.some((x) => x.id === '00' && x.v.toLowerCase() === 'br.gov.bcb.pix');
+        if (isPix) { pixFound = true; if (subs.some((x) => x.id === '25')) kind = 'pixDynamic'; else if (subs.some((x) => x.id === '03')) kind = 'pixSaque'; }
+        subs.forEach((x) => row(f.id + '.' + x.id, I18N['fn_' + f.id + '_' + x.id] ? t('fn_' + f.id + '_' + x.id) : (f.id >= '26' && f.id <= '51' && I18N['fn_26_' + x.id] ? t('fn_26_' + x.id) : ''), x.v, true));
+      } else row(f.id, nm, f.v);
+    });
+    if (!pixFound) msgs.push(['err', t('e_pixgui')]); else msgs.unshift(['ok', t(kind)]);
+    out.appendChild(tbl);
+    return s;
+  }
+
+  // ================================================================ desenho
+  const lum = (hex) => { const c = [1, 3, 5].map((i) => parseInt(hex.substr(i, 2), 16) / 255).map((x) => (x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4))); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+  const inFinder = (qr, x, y) => { const s = qr.size; return (x < 7 && y < 7) || (x >= s - 7 && y < 7) || (x < 7 && y >= s - 7); };
+  function logoBox(qr) { const n = qr.size, w = Math.max(3, Math.floor(n * 0.22)) | 1; const o = Math.floor((n - w) / 2); return { o, w }; }
+  function paint(ctx, qr, px, o) {
+    const m = o.margin, n = qr.size, cell = px / (n + 2 * m);
+    ctx.fillStyle = o.bg; ctx.fillRect(0, 0, px, px);
+    ctx.fillStyle = o.fg;
+    const lb = logo ? logoBox(qr) : null;
+    const hidden = (x, y) => lb && x >= lb.o && x < lb.o + lb.w && y >= lb.o && y < lb.o + lb.w;
+    const rr = (x, y, w, h, r) => { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); };
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+      if (!qr.modules[y][x] || hidden(x, y)) continue;
+      const X = (x + m) * cell, Y = (y + m) * cell;
+      if (o.style === 'square' || inFinder(qr, x, y)) ctx.fillRect(Math.floor(X), Math.floor(Y), Math.ceil(cell + (X - Math.floor(X))), Math.ceil(cell + (Y - Math.floor(Y))));
+      else if (o.style === 'dots') { ctx.beginPath(); ctx.arc(X + cell / 2, Y + cell / 2, cell * 0.45, 0, Math.PI * 2); ctx.fill(); }
+      else { rr(X + cell * 0.05, Y + cell * 0.05, cell * 0.9, cell * 0.9, cell * 0.3); ctx.fill(); }
+    }
+    if (lb) {
+      const X = (lb.o + m) * cell, W = lb.w * cell, pad = cell * 0.4;
+      ctx.fillStyle = o.bg; ctx.fillRect(X, X, W, W);
+      const r = Math.min((W - 2 * pad) / logo.width, (W - 2 * pad) / logo.height), w = logo.width * r, h = logo.height * r;
+      ctx.drawImage(logo, X + (W - w) / 2, X + (W - h) / 2, w, h);
+    }
+  }
+  function svgOf(qr, o) {
+    const m = o.margin, n = qr.size, S = n + 2 * m; const lb = logo ? logoBox(qr) : null;
+    const hidden = (x, y) => lb && x >= lb.o && x < lb.o + lb.w && y >= lb.o && y < lb.o + lb.w;
+    let d = '', dots = '';
+    for (let y = 0; y < n; y++) {
+      let x = 0;
+      while (x < n) {
+        if (!qr.modules[y][x] || hidden(x, y)) { x++; continue; }
+        if (o.style === 'square' || inFinder(qr, x, y)) { let e = x; while (e < n && qr.modules[y][e] && !hidden(e, y) && (o.style === 'square' || inFinder(qr, e, y))) e++; d += `M${x + m} ${y + m}h${e - x}v1h${x - e}z`; x = e; }
+        else { dots += o.style === 'dots' ? `<circle cx="${x + m + 0.5}" cy="${y + m + 0.5}" r="0.45"/>` : `<rect x="${x + m + 0.05}" y="${y + m + 0.05}" width="0.9" height="0.9" rx="0.3"/>`; x++; }
+      }
+    }
+    let img = '';
+    if (lb && o.logoUrl) { const pad = 0.4; img = `<rect x="${lb.o + m}" y="${lb.o + m}" width="${lb.w}" height="${lb.w}" fill="${o.bg}"/><image href="${o.logoUrl}" x="${lb.o + m + pad}" y="${lb.o + m + pad}" width="${lb.w - 2 * pad}" height="${lb.w - 2 * pad}" preserveAspectRatio="xMidYMid meet"/>`; }
+    return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${S} ${S}" width="${o.size}" height="${o.size}" shape-rendering="${o.style === 'square' ? 'crispEdges' : 'geometricPrecision'}"><rect width="${S}" height="${S}" fill="${o.bg}"/><path fill="${o.fg}" d="${d}"/><g fill="${o.fg}">${dots}</g>${img}</svg>\n`;
+  }
+
+  // ================================================================ atualização
+  function update() {
+    let msgs = [];
+    if (state.type !== 'pixread') $('parseOut').textContent = '';
+    let payload = build(state.type, vals(), msgs);
+    // formulário ainda vazio: só a orientação, sem erros
+    const v0 = vals(), typed = TYPES[state.type].fields.some((f) => f.type !== 'select' && f.type !== 'check' && String(v0[f.k] || '').trim());
+    if (!typed) { msgs = []; payload = ''; }
+    const o = state.opts, ecc = logo ? 3 : +o.ecc;
+    let qr = null;
+    if (payload && !msgs.some((m) => m[0] === 'err' && state.type !== 'pixread')) { qr = QR.encode(payload, ecc); if (!qr) msgs.push(['err', t('e_long')]); }
+    else if (payload && state.type === 'pixread') qr = QR.encode(payload, ecc);
+    else if (!payload && !msgs.length && state.type !== 'pixread') msgs.push(['warn', t('e_empty')]);
+    const cr = (Math.max(lum(o.fg), lum(o.bg)) + 0.05) / (Math.min(lum(o.fg), lum(o.bg)) + 0.05);
+    if (cr < 4) msgs.push(['warn', t('w_contrast')]); else if (lum(o.fg) > lum(o.bg)) msgs.push(['warn', t('w_inverted')]);
+    if (+o.margin < 4) msgs.push(['warn', t('w_margin')]);
+    if (logo) msgs.push(['warn', t('w_logoH')]);
+    const ul = $('msgs'); ul.textContent = '';
+    msgs.forEach(([c, s]) => { const li2 = document.createElement('li'); li2.className = c; li2.textContent = s; ul.appendChild(li2); });
+    $('payload').value = qr ? payload : '';
+    current = qr ? { payload, qr } : null;
+    const cv = $('cv'), empty = $('empty');
+    if (qr) {
+      cv.hidden = false; empty.hidden = true;
+      cv.width = cv.height = 512; paint(cv.getContext('2d'), qr, 512, o);
+      cv.setAttribute('aria-label', t('cvLabel', { t: payload.length > 160 ? payload.slice(0, 160) + '…' : payload }));
+      $('meta').textContent = t('meta', { v: qr.version, s: qr.size, e: 'LMQH'[qr.ecl], m: qr.mask, n: [...payload].length });
+    } else { cv.hidden = true; empty.hidden = false; empty.textContent = t('emptyQr'); $('meta').textContent = ''; }
+    ['bPng', 'bSvg', 'bCopyImg', 'bCopyTxt', 'bPrint', 'bSave'].forEach((id) => { $(id).disabled = !qr; });
+    $('bCopyTxt').textContent = state.type === 'pix' || state.type === 'pixread' ? t('copyPix') : t('copyTxt');
+    $('oEcc').disabled = !!logo; $('oEcc').value = String(ecc);
+    save();
+  }
+  let saveT = 0;
+  function save() { clearTimeout(saveT); saveT = setTimeout(() => Store.set('state', state), 200); }
+  window.addEventListener('pagehide', () => { clearTimeout(saveT); Store.set('state', state); });
+
+  // ================================================================ ações
+  const toast = (s) => { const e = $('toast'); e.textContent = s; e.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => { e.hidden = true; }, 1800); };
+  const baseName = () => 'qrcode-' + state.type;
+  function pngBlob() { return new Promise((res) => { const c = document.createElement('canvas'); c.width = c.height = +state.opts.size; paint(c.getContext('2d'), current.qr, +state.opts.size, state.opts); c.toBlob(res, 'image/png'); }); }
+  function download(blob, name) { const u = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 1000); }
+  $('bPng').addEventListener('click', async () => { if (current) download(await pngBlob(), baseName() + '.png'); });
+  $('bSvg').addEventListener('click', () => { if (!current) return; const o = Object.assign({}, state.opts, { logoUrl: logo ? logo.dataUrl : null }); download(new Blob([svgOf(current.qr, o)], { type: 'image/svg+xml' }), baseName() + '.svg'); });
+  $('bCopyImg').addEventListener('click', async () => { if (!current) return; try { await navigator.clipboard.write([new ClipboardItem({ 'image/png': await pngBlob() })]); toast(t('t_copied')); } catch (e) { toast(t('t_noclip')); } });
+  $('bCopyTxt').addEventListener('click', async () => { if (!current) return; try { await navigator.clipboard.writeText(current.payload); toast(t('t_copied')); } catch (e) { $('payload').select(); toast(t('t_noclip')); } });
+  $('bPrint').addEventListener('click', () => window.print());
+  $('bSave').addEventListener('click', () => {
+    if (!current) return;
+    const h = Store.get('hist') || [];
+    const item = { type: state.type, values: JSON.parse(JSON.stringify(vals())), text: current.payload.slice(0, 80), at: Date.now() };
+    const k = h.findIndex((x) => x.type === item.type && x.text === item.text); if (k >= 0) h.splice(k, 1);
+    h.unshift(item); Store.set('hist', h.slice(0, 15)); renderHist(); toast(t('t_saved'));
+  });
+  $('bClearHist').addEventListener('click', () => { Store.set('hist', []); renderHist(); });
+  function renderHist() {
+    const ul = $('hist'), h = Store.get('hist') || []; ul.textContent = '';
+    if (!h.length) { const li2 = document.createElement('li'); li2.className = 'muted'; li2.textContent = t('histEmpty'); li2.style.fontSize = '.85rem'; ul.appendChild(li2); return; }
+    h.forEach((it) => {
+      const li2 = document.createElement('li'), b = document.createElement('button'); b.type = 'button';
+      const a = document.createElement('span'); a.className = 't'; a.textContent = (TYPES[it.type] ? t('ty_' + it.type) : '') + ' · ' + it.text;
+      const d = document.createElement('span'); d.className = 'd'; d.textContent = new Date(it.at).toLocaleDateString(TAG[lang]);
+      b.append(a, d); b.addEventListener('click', () => { if (!TYPES[it.type]) return; state.values[it.type] = it.values; selectType(it.type); });
+      li2.appendChild(b); ul.appendChild(li2);
+    });
+  }
+  // aparência
+  const optMap = { oEcc: 'ecc', oSize: 'size', oMargin: 'margin', oStyle: 'style', oFg: 'fg', oBg: 'bg' };
+  Object.entries(optMap).forEach(([id, k]) => $(id).addEventListener('input', () => { state.opts[k] = $(id).value; update(); }));
+  function syncOpts() { Object.entries(optMap).forEach(([id, k]) => { $(id).value = String(state.opts[k]); }); }
+  $('bReset').addEventListener('click', () => { state.opts = { ecc: 1, size: 512, margin: 4, style: 'square', fg: '#000000', bg: '#ffffff' }; syncOpts(); update(); });
+  $('oLogo').addEventListener('change', () => {
+    const f = $('oLogo').files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = () => { const img = new Image(); img.onload = () => { logo = img; logo.dataUrl = r.result; $('bNoLogo').disabled = false; update(); }; img.src = r.result; };
+    r.readAsDataURL(f);
+  });
+  $('bNoLogo').addEventListener('click', () => { logo = null; $('oLogo').value = ''; $('bNoLogo').disabled = true; update(); });
+
+  // ================================================================ idioma e tema
+  let theme = ['auto', 'light', 'dark'].includes(Store.get('theme')) ? Store.get('theme') : 'auto';
+  function applyTheme() { if (theme === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', theme); $('bTheme').textContent = t({ auto: 'themeAuto', light: 'themeLight', dark: 'themeDark' }[theme]); }
+  $('bTheme').addEventListener('click', () => { theme = { auto: 'light', light: 'dark', dark: 'auto' }[theme]; Store.set('theme', theme); applyTheme(); });
+  function applyLang() {
+    document.documentElement.lang = TAG[lang];
+    document.title = t('title') + ' · Giovani Perotto Mesquita';
+    document.querySelectorAll('[data-t]').forEach((n) => { n.textContent = t(n.dataset.t); });
+    $('back').href = 'projects.html' + (lang === 'pt' ? '' : '#' + lang);
+    $('selLang').value = lang;
+    const help = $('help'); help.textContent = ''; const sm = document.createElement('summary'); sm.textContent = t('helpH'); help.appendChild(sm); help.insertAdjacentHTML('beforeend', HELP[lang]);
+    if (history.replaceState) history.replaceState(null, '', lang === 'pt' ? location.pathname + location.search : '#' + lang);
+    applyTheme(); buildTabs(); buildForm(); renderHist(); update();
+  }
+  $('selLang').addEventListener('change', () => { lang = $('selLang').value; Store.set('lang', lang); applyLang(); });
+  window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (LANGS.includes(h) && h !== lang) { lang = h; applyLang(); } });
+  const hl = location.hash.slice(1), nl = (navigator.language || 'pt').slice(0, 2).toLowerCase();
+  lang = LANGS.includes(hl) ? hl : LANGS.includes(Store.get('lang')) ? Store.get('lang') : LANGS.includes(nl) ? nl : 'pt';
+  syncOpts();
+  applyLang();
+  // ganchos para testes automatizados
+  window.__qr = { QR, pixPayload, crc16, parseTLV, I18N, state: () => state, current: () => current };
+})();
+</script>
+</body>
+</html>
