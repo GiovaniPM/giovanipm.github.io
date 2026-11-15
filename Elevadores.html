@@ -495,7 +495,7 @@ function Sim(scn, D, seed) {
   const R = mulberry((seed ^ 0x5bd1e995) >>> 0);
   const route = buildRoutes(scn, D);
   const lv = scn.levels;
-  const sim = { t: 0, scn, D, agents: 0, done: [], groups: [], escs: [], energy: 0, noRoute: {}, delivered: [], deps: [], doneN: 0, waitSum: 0, waitN: 0, maxQ: 0, kindWait: {}, kindN: {}, journeySum: 0, journeyN: 0, maxWait: 0, platClear: [], thrDone: 0, thrDem: 0, movedMech: 0, finished: false };
+  const sim = { t: 0, scn, D, agents: 0, done: [], groups: [], escs: [], energy: 0, noRoute: {}, delivered: [], deps: [], doneN: 0, waitSum: 0, waitN: 0, maxQ: 0, kindWait: {}, kindN: {}, journeySum: 0, journeyN: 0, maxWait: 0, platClear: [], thrDone: 0, thrDem: 0, movedMech: 0, finished: false, walkers: [], exits: [] };
   const crowdN = scn.kind === 'stadium' || scn.kind === 'metro' ? 5 : 1;
   sim.crowdN = crowdN;
   D.lifts.forEach((g, gi) => {
@@ -510,7 +510,7 @@ function Sim(scn, D, seed) {
   D.escs.forEach((e, ei) => {
     const rise = Math.abs(lv[e.to].z - lv[e.from].z);
     const cap = (e.inc ? INC_CAP[e.width] || 5000 : ESC_CAP[e.width]) * ESC_PRACTICAL / 3600 * e.qty;
-    const mk = (a, b) => ({ ei, a, b, cap, tt: rise / Math.sin(Math.PI / 6) / 0.5, q: [], budget: 0, ride: [], moved: 0 });
+    const mk = (a, b) => ({ ei, a, b, cap, serves: e.inc ? 'pk' : 'p', tt: rise / Math.sin(Math.PI / 6) / 0.5, q: [], budget: 0, ride: [], moved: 0 });
     const lo = Math.min(e.from, e.to), hi = Math.max(e.from, e.to);
     const pair = [];
     if (e.dir === 'up' || e.dir === 'both') pair.push(mk(lo, hi));
@@ -534,8 +534,20 @@ function Sim(scn, D, seed) {
       grp.wait[e.a].push(a); grp.waitN += a.n;
       if (D.lifts[e.gi].ctl === 'dd') assignDD(grp, a); else hallCall(grp, e.a, a.dir);
     } else {
-      const pr = sim.escs[e.ei].find((x) => x.a === e.a && x.b === e.b); pr.q.push(a);
+      /* com mais de uma escada no mesmo lance, a pessoa escolhe a de menor fila */
+      let pr = null, best = Infinity;
+      sim.escs.forEach((pair) => pair.forEach((x) => { if (x.a !== e.a || x.b !== e.b || !x.serves.includes(a.k)) return; const load = (x.q.reduce((s2, y) => s2 + y.n, 0) + 1) / x.cap; if (load < best) { best = load; pr = x; } }));
+      if (!pr) pr = sim.escs[e.ei].find((x) => x.a === e.a && x.b === e.b);
+      pr.q.push(a);
     }
+  };
+  /* fim de um trecho: chega ao destino ou caminha pelo patamar até o próximo equipamento */
+  const WALK_T = { 'esc>esc': 5, 'esc>lift': 12, 'lift>esc': 12, 'lift>lift': 20 };
+  const legDone = (a, prev) => {
+    a.li++;
+    if (a.li >= a.legs.length) { finishAgent(a); sim.exits.push({ prev, t: sim.t, k: a.k }); if (sim.exits.length > 400) sim.exits.splice(0, sim.exits.length - 400); return; }
+    const next = a.legs[a.li];
+    sim.walkers.push({ a, prev, next, t0: sim.t, t1: sim.t + WALK_T[prev.mode + '>' + next.mode] });
   };
   const newAgent = (o, d, k, n, extra) => {
     const legs = route(o, d, k);
@@ -598,7 +610,7 @@ function Sim(scn, D, seed) {
     const d = Math.abs(lv[f].z - c.y);
     c.dir = lv[f].z > c.y ? 1 : -1;
     if (grp.key(grp.g.lobby) === c.f && !c.homing) sim.deps.push([grp.gi, sim.t]);
-    c.st = 'moving'; c.t0 = sim.t; c.t1 = sim.t + travelTime(d, grp.g.speed); c.y0 = c.y; c.y1 = lv[f].z; c.target = f;
+    c.st = 'moving'; c.seg = null; c.t0 = sim.t; c.t1 = sim.t + travelTime(d, grp.g.speed); c.y0 = c.y; c.y1 = lv[f].z; c.target = f;
     sim.energy += d * grp.T.energy * (1 + c.units / grp.cap) * 0.01;
   };
   const arrive = (grp, c) => {
@@ -636,10 +648,23 @@ function Sim(scn, D, seed) {
       if (grp.g.ctl === 'dd') keep.filter((a) => a.car === c.i && a.dir === c.dir).forEach((a) => assignDD(grp, a));
     });
     c.t1 = sim.t + grp.T.door + tr;
-    out.forEach((a) => { a.li++; startLeg(a); });
+    out.forEach((a) => legDone(a, { mode: 'lift', gi: grp.gi, f: c.f }));
+  };
+  /* cabine em velocidade de cruzeiro para num andar à frente se surgir chamada no mesmo sentido e ainda der para frear */
+  const intercept = (grp, c) => {
+    const v = grp.g.speed, ta = v / ACC, el = sim.t - c.t0, rem = c.t1 - sim.t;
+    if (el < ta || rem <= ta) return;
+    const dir = c.y1 > c.y0 ? 1 : -1, y = c.y0 + dir * (v * ta / 2 + v * (el - ta)), brake = v * v / (2 * ACC);
+    let best = null, bd = Infinity;
+    const consider = (f) => { const z = lv[grp.key(f)].z, d = (z - y) * dir; if (d > brake + 0.2 && (c.y1 - z) * dir > 0.2 && d < bd) { bd = d; best = grp.key(f); } };
+    Object.keys(grp.hall).forEach((h) => { const [f, d] = h.split(':').map(Number); if (grp.hall[h] === c.i && d === dir) consider(f); });
+    if (grp.g.ctl === 'dd') grp.fl.forEach((f) => { if (grp.wait[f].some((a) => a.car === c.i && a.dir === dir)) consider(f); });
+    if (best == null) return;
+    c.y0 = y; c.t0 = sim.t; c.y1 = lv[best].z; c.target = best; c.t1 = sim.t + (bd - brake) / v + v / ACC; c.seg = 'out';
   };
   const stepLifts = () => {
     sim.groups.forEach((grp) => grp.cars.forEach((c) => {
+      if (c.st === 'moving' && sim.t < c.t1 && !c.seg) intercept(grp, c);
       if (c.st === 'moving') { if (sim.t >= c.t1) arrive(grp, c); }
       else if (c.st === 'doors') { if (sim.t >= c.t1) depart(grp, c); }
       if (c.st === 'idle') {
@@ -659,7 +684,7 @@ function Sim(scn, D, seed) {
         else { const m = Math.floor(e.budget); const part = Object.assign({}, a, { n: m }); a.n -= m; e.budget -= m; part.w += sim.t - part.ws; e.ride.push([sim.t + e.tt, part]); e.moved += m; break; }
       }
       const qn = e.q.reduce((s, a) => s + a.n, 0); if (sim.t > scn.warm) sim.maxQ = Math.max(sim.maxQ, qn); e.qn = qn;
-      while (e.ride.length && e.ride[0][0] <= sim.t) { const a = e.ride.shift()[1]; a.li++; startLeg(a); }
+      while (e.ride.length && e.ride[0][0] <= sim.t) { const a = e.ride.shift()[1]; legDone(a, { mode: 'esc', ei: e.ei, a: e.a, b: e.b }); }
       if (e.q.length || e.ride.length) sim.energy += 0.02 * dt;
     }));
   };
@@ -684,6 +709,7 @@ function Sim(scn, D, seed) {
     stepArrivals(dt);
     stepLifts();
     stepEsc(dt);
+    if (sim.walkers.length) { const go = sim.walkers.filter((w) => w.t1 <= sim.t); if (go.length) { sim.walkers = sim.walkers.filter((w) => w.t1 > sim.t); go.forEach((w) => startLeg(w.a)); } }
     if (sim.platWatch) sim.platWatch.forEach((w) => { if (!w.done && sim.t > w.t + 5 && platQueue(w.lvl) < Math.max(10, scn.train.load * 0.03)) { w.done = true; sim.platClear.push(sim.t - w.t); } });
     sim.t += dt;
     if (Math.floor(sim.t / 30) !== Math.floor((sim.t - dt) / 30)) route.refresh((gi) => { const g = sim.groups[gi]; return g.cars.length ? g.waitN / (g.cars.length * g.cap * 0.8) * 90 : 0; });
@@ -1074,7 +1100,7 @@ const I18N = {
 'help.starsT':['1 estrela: todas as metas e exigências cumpridas. 2: e dentro do orçamento. 3: e gastando até 90% do orçamento, com as recomendações atendidas. Usar o projeto de referência limita a 1 estrela.','1 star: every target and requirement met. 2: and within budget. 3: and spending at most 90% of the budget, with the recommendations met. Using the reference design caps the score at 1 star.','1 stella: tutti gli obiettivi e requisiti rispettati. 2: e nel budget. 3: e spendendo al massimo il 90% del budget, con le raccomandazioni rispettate. Usare il progetto di riferimento limita a 1 stella.','1 estrella: todas las metas y requisitos cumplidos. 2: y dentro del presupuesto. 3: y gastando como máximo el 90% del presupuesto, con las recomendaciones cumplidas. Usar el proyecto de referencia limita a 1 estrella.'],
 'help.model':['Sobre o modelo','About the model','Sul modello','Sobre el modelo'],
 'help.m1':['Cada passageiro escolhe a rota de menor tempo estimado, revista a cada 30 s de simulação conforme as filas.','Each passenger picks the route with the shortest estimated time, revised every 30 simulated seconds according to the queues.','Ogni passeggero sceglie il percorso col tempo stimato più breve, rivisto ogni 30 s di simulazione secondo le code.','Cada pasajero elige la ruta de menor tiempo estimado, revisada cada 30 s de simulación según las filas.'],
-'help.m2':['As cabines aceleram a 1 m/s², param só onde há chamada e escolhem a próxima parada ao partir.','Cars accelerate at 1 m/s², stop only where there is a call and choose the next stop when they leave.','Le cabine accelerano a 1 m/s², si fermano solo dove c’è una chiamata e scelgono la fermata successiva alla partenza.','Las cabinas aceleran a 1 m/s², paran solo donde hay llamada y eligen la siguiente parada al salir.'],
+'help.m2':['As cabines aceleram a 1 m/s² e param onde há chamada; em velocidade de cruzeiro, também param no caminho para chamadas novas no mesmo sentido, se ainda der para frear. Entre um equipamento e outro, as pessoas caminham de 5 a 20 s pelo patamar.','Cars accelerate at 1 m/s² and stop where there is a call; at cruising speed they also stop on the way for new calls in the same direction, if there is still room to brake. Between one piece of equipment and the next, people walk 5 to 20 s across the landing.','Le cabine accelerano a 1 m/s² e si fermano dove c’è una chiamata; a velocità di crociera si fermano anche lungo il percorso per nuove chiamate nello stesso senso, se c’è ancora spazio per frenare. Tra un impianto e l’altro, le persone camminano da 5 a 20 s sul pianerottolo.','Las cabinas aceleran a 1 m/s² y paran donde hay llamada; a velocidad de crucero también paran en el camino por llamadas nuevas en el mismo sentido, si todavía pueden frenar. Entre un equipo y otro, las personas caminan de 5 a 20 s por el descanso.'],
 'help.m3':['O controle por destino agrupa passageiros do mesmo destino na mesma cabine; o convencional manda a cabine mais próxima a cada chamada de andar.','Destination dispatch groups passengers with the same destination in the same car; conventional control sends the nearest car to each landing call.','Il comando a destinazione raggruppa i passeggeri con la stessa destinazione nella stessa cabina; quello convenzionale manda la cabina più vicina a ogni chiamata.','El control por destino agrupa pasajeros con el mismo destino en la misma cabina; el convencional manda la cabina más cercana a cada llamada.'],
 'help.m4':['Escadas rolantes usam 60% da capacidade teórica como capacidade prática. Embarque por ponte: 12 passageiros por minuto por porta; por ônibus: 8 por minuto mais 6 minutos. Esses valores são regras do jogo.','Escalators use 60% of the theoretical capacity as practical capacity. Boarding by bridge: 12 passengers per minute per door; by bus: 8 per minute plus 6 minutes. These values are game rules.','Le scale mobili usano il 60% della capacità teorica come capacità pratica. Imbarco con ponte: 12 passeggeri al minuto per porta; con autobus: 8 al minuto più 6 minuti. Questi valori sono regole del gioco.','Las escaleras mecánicas usan el 60% de la capacidad teórica como capacidad práctica. Embarque por pasarela: 12 pasajeros por minuto por puerta; por autobús: 8 por minuto más 6 minutos. Estos valores son reglas del juego.'],
 'help.m5':['Os números são resultado deste modelo, não medição de prédios reais. Custos e energia estão em unidades do jogo.','The numbers come from this model, not from measuring real buildings. Costs and energy are in game units.','I numeri vengono da questo modello, non da misure di edifici reali. Costi ed energia sono in unità del gioco.','Los números salen de este modelo, no de medir edificios reales. Costos y energía están en unidades del juego.'],
@@ -1422,10 +1448,12 @@ function layout() {
   const y1 = bodyH - 30, y0 = skyH + roofH + per;
   const yOf = (z) => y1 - (z - zmin) / Math.max(1, zmax - zmin) * (y1 - y0);
   const labW = W < 420 ? 30 : 44;
-  const slot = G.D.escs.map(() => 0), per0 = {};
-  G.D.escs.forEach((e, i) => { const lo = Math.min(e.from, e.to); slot[i] = per0[lo] || 0; per0[lo] = slot[i] + (e.dir === 'both' ? 2 : 1); });
-  const cols = Math.max(0, ...Object.values(per0));
-  const escW = G.D.escs.length ? Math.min(W * 0.42, 70 + cols * 26) : 0;
+  /* escadas: colunas fixas por sentido (subidas primeiro, descidas depois), iguais em todos os lances */
+  const cu = {}, cd = {}, upCol = [], downCol = [];
+  G.D.escs.forEach((e, i) => { const lo = Math.min(e.from, e.to); if (e.dir !== 'down') { upCol[i] = cu[lo] || 0; cu[lo] = upCol[i] + 1; } if (e.dir !== 'up') { downCol[i] = cd[lo] || 0; cd[lo] = downCol[i] + 1; } });
+  const maxUp = Math.max(0, ...Object.values(cu)), maxDown = Math.max(0, ...Object.values(cd));
+  const slot = G.D.escs.map(() => 0);
+  const escW = G.D.escs.length ? Math.min(W * 0.42, 74 + (maxUp + maxDown) * 26) : 0;
   const bx0 = labW + 6, bx1 = W - 8;
   const groups = G.D.lifts.map((g, gi) => ({ g, gi, n: liftIssues(S, g).length ? 0 : g.qty }));
   const totalCars = groups.reduce((a, x) => a + x.n, 0);
@@ -1433,7 +1461,25 @@ function layout() {
   const carW = Math.max(4, Math.min(28, avail / Math.max(1, totalCars) - 5));
   let x = bx0 + 14;
   groups.forEach((gr) => { gr.qx = x; x += 26; gr.x = x; x += gr.n * (carW + 5) + 8; });
-  return { W, H, bodyH, gateH, yOf, labW, escX: bx1 - escW, escW, groups, carW, per, slot, bx0, bx1, zmin, zmax, roofH, skyH, ch: Math.max(5, Math.min(per * 0.82, carW * 1.45, 30)), gate: { rows, perRow, gw, pmax } };
+  const flightH = G.D.escs.map((e) => Math.abs(yOf(S.levels[e.from].z) - yOf(S.levels[e.to].z)));
+  const escSpan = Math.max(28, Math.min(56, (flightH.length ? Math.min(...flightH) : 40) * 1.1));
+  return { W, H, bodyH, gateH, yOf, labW, escX: bx1 - escW, escW, groups, carW, per, slot, bx0, bx1, zmin, zmax, roofH, skyH, ch: Math.max(5, Math.min(per * 0.82, carW * 1.45, 30)), gate: { rows, perRow, gw, pmax }, upCol, downCol, maxUp, escSpan };
+}
+/* geometria de uma linha de escada: a = pé (nível de baixo), z = topo; sentido d */
+function escGeo(L, i, d) {
+  const e = G.D.escs[i], S = G.scn, lo = Math.min(e.from, e.to), hi = Math.max(e.from, e.to);
+  const col = d === 'up' ? L.upCol[i] : L.maxUp + L.downCol[i];
+  const cx = L.escX + 10 + col * 26, span = L.escSpan;
+  return { lo, hi, a: lo % 2 ? cx + span : cx, z: lo % 2 ? cx : cx + span, yl: L.yOf(S.levels[lo].z) - 3, yh: L.yOf(S.levels[hi].z) - 3 };
+}
+/* ponto onde a pessoa sai de um trecho e onde entra no próximo */
+function legExit(L, p) {
+  if (p.mode === 'esc') { const d = p.b > p.a ? 'up' : 'down', g = escGeo(L, p.ei, d); return d === 'up' ? [g.z, g.yh] : [g.a, g.yl]; }
+  const gr = L.groups.find((x) => x.gi === p.gi); if (!gr) return null; return [gr.x + gr.n * (L.carW + 5) / 2, L.yOf(G.scn.levels[p.f].z) - 1];
+}
+function legEntry(L, n) {
+  if (n.mode === 'esc') { const d = n.b > n.a ? 'up' : 'down', g = escGeo(L, n.ei, d); return d === 'up' ? [g.a, g.yl] : [g.z, g.yh]; }
+  const gr = L.groups.find((x) => x.gi === n.gi); if (!gr) return null; return [gr.qx + 20, L.yOf(G.scn.levels[n.a].z) - 1];
 }
 /* ---------- camada fixa ---------- */
 function bgKey(L) { return [G.scn.kind, G.scn.seed, G.scn.diff, L.W, L.H, themeDark(), LANG, JSON.stringify(G.D.lifts.map((g) => [g.type, g.qty, g.from, g.to, g.lobby])), JSON.stringify(G.D.escs), JSON.stringify(G.D.pbb), devicePixelRatio || 1].join('|'); }
@@ -1516,18 +1562,17 @@ function drawBackground(L, dpr) {
     if (MACHINE_ROOM[g.type]) { x.fillStyle = dark ? '#6F665C' : '#8C8174'; x.fillRect(gr.x - 4, sTop - 14, w + 5, 11); x.fillStyle = dark ? '#3B342D' : '#5E554B'; for (let c = 0; c < gr.n; c++) { x.beginPath(); x.arc(gr.x + c * (L.carW + 5) + L.carW / 2, sTop - 8, Math.min(4, L.carW / 3), 0, 7); x.fill(); } }
     if (HYDRAULIC[g.type]) { x.fillStyle = dark ? '#3A3530' : '#7A7064'; x.fillRect(gr.x - 2, sBot, w + 1, 10); }
   });
-  /* escadas rolantes: treliça e corrimão */
+  /* escadas rolantes: treliça, corrimão e patamares */
   G.D.escs.forEach((e, i) => {
-    const lo = Math.min(e.from, e.to), hi = Math.max(e.from, e.to);
-    const yl = L.yOf(S.levels[lo].z), yh = L.yOf(S.levels[hi].z), span = Math.max(30, Math.min(56, (yl - yh) * 1.1));
-    (e.dir === 'both' ? ['up', 'down'] : [e.dir]).forEach((d, k) => {
-      const cx = L.escX + 10 + (L.slot[i] + k) * 26, a = lo % 2 ? cx + span : cx, z = lo % 2 ? cx : cx + span;
-      x.strokeStyle = dark ? '#8A8178' : '#6F665C'; x.lineWidth = 7; x.lineCap = 'round'; x.beginPath(); x.moveTo(a, yl - 2); x.lineTo(z, yh - 2); x.stroke();
-      x.strokeStyle = e.inc ? '#3BB9A9' : (dark ? '#D9D4CC' : '#E6E0D6'); x.lineWidth = 3; x.beginPath(); x.moveTo(a, yl - 3); x.lineTo(z, yh - 3); x.stroke();
-      x.strokeStyle = dark ? '#111' : '#2B1B3D'; x.lineWidth = 1.2; x.beginPath(); x.moveTo(a, yl - 9); x.lineTo(z, yh - 9); x.stroke();
+    (e.dir === 'both' ? ['up', 'down'] : [e.dir]).forEach((d) => {
+      const g = escGeo(L, i, d);
+      x.strokeStyle = dark ? '#8A8178' : '#6F665C'; x.lineWidth = 7; x.lineCap = 'round'; x.beginPath(); x.moveTo(g.a, g.yl + 1); x.lineTo(g.z, g.yh + 1); x.stroke();
+      x.strokeStyle = e.inc ? '#3BB9A9' : (dark ? '#D9D4CC' : '#E6E0D6'); x.lineWidth = 3; x.beginPath(); x.moveTo(g.a, g.yl); x.lineTo(g.z, g.yh); x.stroke();
+      x.strokeStyle = dark ? '#111' : '#2B1B3D'; x.lineWidth = 1.2; x.beginPath(); x.moveTo(g.a, g.yl - 6); x.lineTo(g.z, g.yh - 6); x.stroke();
       x.lineCap = 'butt';
+      x.fillStyle = dark ? '#3B3631' : '#8E8579'; x.fillRect(g.a - 4, g.yl + 1, 8, 2); x.fillRect(g.z - 4, g.yh + 1, 8, 2);
       x.fillStyle = dark ? '#E2D8F0' : '#2B1B3D'; x.font = 'bold 9px Segoe UI, Arial'; x.textAlign = 'center';
-      if (yl - yh > 22) x.fillText((d === 'up' ? '↑' : '↓') + (e.qty > 1 ? e.qty : ''), (a + z) / 2 + (lo % 2 ? -9 : 9), (yl + yh) / 2 + 4);
+      if (g.yl - g.yh > 22) x.fillText((d === 'up' ? '↑' : '↓') + (e.qty > 1 ? e.qty : ''), (g.a + g.z) / 2 + (g.lo % 2 ? -9 : 9), (g.yl + g.yh) / 2 + 6);
     });
   });
   /* pátio do aeroporto */
@@ -1595,7 +1640,7 @@ function draw() {
       let yy = S.levels[g.lobby].z, st = 'idle', open = 0, inside = 0;
       if (sg && sg.cars[c]) {
         const car = sg.cars[c];
-        yy = car.st === 'moving' ? car.y0 + (car.y1 - car.y0) * easePos(Math.min(1, (now - car.t0) / Math.max(0.01, car.t1 - car.t0))) : car.y;
+        { const f = Math.min(1, (now - car.t0) / Math.max(0.01, car.t1 - car.t0)); yy = car.st === 'moving' ? car.y0 + (car.y1 - car.y0) * (car.seg === 'out' ? 1 - (1 - f) * (1 - f) : easePos(f)) : car.y; }
         st = car.st; inside = car.load.reduce((s, a) => s + a.n, 0);
         if (st === 'doors') { const e = now - (car.td0 || car.t1 - 5), r = car.t1 - now; open = Math.max(0, Math.min(1, e / 1.4, r / 1.4)); }
       }
@@ -1631,23 +1676,30 @@ function draw() {
       if (n > maxShow) { x.font = 'bold 9px Segoe UI, Arial'; x.textAlign = 'right'; const txt = '+' + (n > 999 ? '999' : n - maxShow); x.fillStyle = dark ? '#000' : '#FFF'; x.fillText(txt, gr.qx + 21, y - ps * 4 - 4); x.fillStyle = KIND_COLOR[q[0].k]; x.fillText(txt, gr.qx + 20, y - ps * 4 - 5); }
     });
   });
-  /* escadas rolantes: degraus em movimento, passageiros e filas */
+  /* escadas rolantes: degraus em movimento, passageiros espaçados e filas */
   G.D.escs.forEach((e, i) => {
-    const lo = Math.min(e.from, e.to), hi = Math.max(e.from, e.to);
-    const yl = L.yOf(S.levels[lo].z) - 3, yh = L.yOf(S.levels[hi].z) - 3, span = Math.max(30, Math.min(56, (yl - yh + 3) * 1.1));
-    (e.dir === 'both' ? ['up', 'down'] : [e.dir]).forEach((d, k) => {
-      const cx = L.escX + 10 + (L.slot[i] + k) * 26, a = lo % 2 ? cx + span : cx, z = lo % 2 ? cx : cx + span;
+    (e.dir === 'both' ? ['up', 'down'] : [e.dir]).forEach((d) => {
+      const g = escGeo(L, i, d), a = g.a, z = g.z, yl = g.yl, yh = g.yh, lo = g.lo, hi = g.hi;
       const run = !reduced() && G.running, ph = run ? (now * 0.5) % 1 : 0;
       x.fillStyle = dark ? '#6F665C' : '#9C9387';
       for (let s2 = 0; s2 < 6; s2++) { const f = (s2 / 6 + (d === 'down' ? 1 - ph : ph)) % 1; x.fillRect(a + (z - a) * f - 1, yl + (yh - yl) * f - 1, 2, 2); }
       const pe = sim && sim.escs[i] ? sim.escs[i].find((q) => (d === 'up' ? q.a === lo : q.a === hi)) : null;
       if (pe) {
-        pe.ride.slice(0, 18).forEach(([tEnd, ag]) => { let f = 1 - (tEnd - now) / pe.tt; f = Math.max(0, Math.min(1, f)); if (d === 'down') f = 1 - f; person(x, a + (z - a) * f, yl + (yh - yl) * f - 1, ps * 0.9, KIND_COLOR[ag.k], ag.k); });
+        /* quem embarcou no mesmo instante fica em degraus seguidos, não amontoado */
+        let lastT = null, k = 0;
+        const stp = Math.max(1, Math.ceil(pe.ride.length / 40));
+        pe.ride.filter((r, j) => j % stp === 0).forEach(([tEnd, ag]) => { k = tEnd === lastT ? k + 1 : 0; lastT = tEnd; let f = 1 - (tEnd - now) / pe.tt - k * 0.045; f = Math.max(0, Math.min(1, f)); if (d === 'down') f = 1 - f; person(x, a + (z - a) * f, yl + (yh - yl) * f - 1, ps * 0.9, KIND_COLOR[ag.k], ag.k); });
         const n = pe.qn || 0;
         if (n > 0) { const ex = d === 'up' ? a : z, ey = d === 'up' ? yl : yh, dirx = (d === 'up' ? (lo % 2 ? 1 : -1) : (lo % 2 ? -1 : 1)); const m = Math.min(5, n); for (let j = 0; j < m; j++) person(x, ex + dirx * (6 + j * ps * 2), ey + 2, ps, KIND_COLOR.p, 'p'); x.font = 'bold 9px Segoe UI, Arial'; x.textAlign = 'center'; x.fillStyle = dark ? '#FFF' : '#2B1B3D'; x.fillText(n > 999 ? '999+' : String(n), ex + dirx * (8 + m * ps * 2), ey - ps * 4); }
       }
     });
   });
+  /* pessoas caminhando no patamar entre um equipamento e o próximo */
+  if (sim) {
+    sim.walkers.slice(0, 120).forEach((w) => { const p0 = legExit(L, w.prev), p1 = legEntry(L, w.next); if (!p0 || !p1) return; const f = Math.max(0, Math.min(1, (now - w.t0) / Math.max(0.1, w.t1 - w.t0))); person(x, p0[0] + (p1[0] - p0[0]) * f, p0[1] + (p1[1] - p0[1]) * f, ps * 0.9, KIND_COLOR[w.a.k], w.a.k); });
+    /* quem chegou ao destino sai andando e some */
+    sim.exits.forEach((ex) => { const f = (now - ex.t) / 3; if (f < 0 || f > 1) return; const p0 = legExit(L, ex.prev); if (!p0) return; const dirx = ex.prev.mode === 'lift' ? -1 : (p0[0] > L.escX + L.escW / 2 ? 1 : -1); x.globalAlpha = 1 - f; person(x, p0[0] + dirx * 26 * f, p0[1], ps * 0.9, KIND_COLOR[ex.k], ex.k); x.globalAlpha = 1; });
+  }
   /* metrô: trem chegando e partindo */
   if (S.train && sim) {
     const last = S.bursts.filter((b) => b.t <= now + 8).pop();

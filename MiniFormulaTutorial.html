@@ -1,0 +1,1481 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mini Fórmula 1990: tutorial do jogo · Giovani Perotto Mesquita</title>
+<meta name="description" content="Tutorial do Mini Fórmula 1990: o calendário de 1990, como as 16 pistas foram desenhadas, controles pelo mouse, passo a passo com telas, a física de curvas e freadas, traçado ideal e pedais automáticos, e tempos de volta medidos com o código do jogo.">
+<meta name="author" content="Giovani Perotto Mesquita">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Paleta alegre: roxo e magenta vibrantes, amarelo-girassol, verde-água e coral */
+    --bg: #FFF7EC;
+    --surface: #FFFFFF;
+    --ink: #2B1B3D;
+    --text: #3E3350;
+    --muted: #756986;
+    --line: #F1E2CF;
+    --accent: #0E8074;
+    --accent-soft: #E2F6F2;
+    --accent-strong: #5B2A86;
+    --navy: #5B2A86;
+    --navy-deep: #C2185B;
+    --on-navy: #FFFFFF;
+    --on-navy-muted: #FCE4F0;
+    --gold: #FFB703;
+    --gold-ink: #B35300;
+    --gold-soft: #FFF1C9;
+    --coral: #FF6B6B;
+    --sky: #3A86FF;
+    --mint: #2A9D8F;
+    --pink: #EF476F;
+    --sans: "Hanken Grotesk", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1A1328; --surface: #241A36; --ink: #F7F0FF; --text: #E2D8F0; --muted: #A898C0;
+      --line: #3A2D52; --accent: #5FD3C4; --accent-soft: #1D3A38; --accent-strong: #C9A7F5;
+      --navy: #3D1A5C; --navy-deep: #7A1240; --gold: #FFC94D; --gold-ink: #FFC94D; --gold-soft: #3A2E12;
+      --coral: #FF8A8A; --sky: #6FA8FF; --mint: #4CC3B3; --pink: #FF6F91;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 4px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 1.5rem; }
+
+  /* navegação */
+  .nav {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: saturate(160%) blur(10px); -webkit-backdrop-filter: saturate(160%) blur(10px);
+    border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px);
+  }
+  .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 58px; gap: 1rem; }
+  .brand { font-family: var(--serif); font-weight: 600; color: var(--accent-strong); text-decoration: none; font-size: 1.05rem; }
+  .nav ul { list-style: none; display: flex; gap: 1.4rem; margin: 0; padding: 0; }
+  .nav ul a { color: var(--muted); text-decoration: none; font-size: 0.93rem; font-weight: 500; }
+  .nav ul a:hover, .nav ul a[aria-current="page"] { color: var(--ink); }
+  .nav-right { display: flex; align-items: center; gap: 1rem; }
+  .lang { position: relative; }
+  .lang button { font: inherit; cursor: pointer; }
+  .lang .flag { width: 18px; height: 12px; border-radius: 2px; flex: none; box-shadow: 0 0 0 1px rgba(0,0,0,.12); }
+  .lang-current { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.8rem; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 0.3rem 0.5rem 0.3rem 0.55rem; }
+  .lang-current:hover { border-color: var(--muted); }
+  .lang-now { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .lang .chev { width: 12px; height: 12px; color: var(--muted); transition: transform .15s ease; }
+  .lang-current[aria-expanded="true"] .chev { transform: rotate(180deg); }
+  .lang-list { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; min-width: 10.5rem; padding: 0.3rem; display: grid; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 12px 30px rgba(0,0,0,.18); }
+  .lang-list[hidden] { display: none; }
+  .lang-list [role="option"] { display: flex; align-items: center; gap: 0.6rem; width: 100%; text-align: left; font-size: 0.9rem; font-weight: 500; color: var(--ink); background: none; border: 0; border-radius: 6px; padding: 0.45rem 0.6rem; }
+  .lang-list [role="option"]:hover, .lang-list [role="option"]:focus-visible { background: color-mix(in srgb, var(--muted) 14%, transparent); }
+  .lang-list [role="option"][aria-selected="true"] { color: var(--accent-strong); font-weight: 600; }
+  .lang-list [role="option"][aria-selected="true"]::after { content: "✓"; margin-left: auto; }
+  @media (max-width: 480px) { .lang-now { font-size: 0; gap: 0; } }
+  [hidden] { display: none !important; }
+  .progress { position: absolute; left: 0; bottom: -1px; height: 3px; width: 0; background: linear-gradient(90deg, var(--coral), var(--gold), var(--mint)); }
+
+  /* abertura */
+  .hero-band {
+    background:
+      radial-gradient(900px 420px at 85% -10%, rgba(255,255,255,.07), transparent 60%),
+      linear-gradient(160deg, var(--navy) 0%, var(--navy-deep) 100%);
+    border-top: 4px solid var(--gold); color: var(--on-navy);
+  }
+  .hero { padding: 3.5rem 0 3.5rem; max-width: 820px; }
+  .crumb { margin: 0 0 1.4rem; font-size: 0.92rem; }
+  .crumb a { color: var(--on-navy-muted); text-decoration: none; }
+  .crumb a:hover { color: var(--gold); }
+  .eyebrow { color: var(--gold); font-weight: 600; font-size: 1rem; margin: 0 0 0.7rem; }
+  h1 { font-family: var(--serif); font-weight: 600; color: var(--on-navy); font-size: clamp(2.3rem, 5.5vw, 3.8rem); line-height: 1.05; letter-spacing: -0.025em; margin: 0; }
+  .dek { font-family: var(--serif); font-style: italic; font-size: clamp(1.1rem, 2.2vw, 1.35rem); color: var(--on-navy-muted); margin: 1.1rem 0 1.6rem; max-width: 58ch; }
+  .byline { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; font-size: 0.92rem; color: var(--on-navy-muted); }
+  .byline strong { color: var(--on-navy); font-weight: 600; }
+  .byline .credit { margin-left: auto; font-style: italic; }
+
+  /* layout do artigo */
+  .layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 3rem; padding: 3rem 0 4rem; align-items: start; }
+  .toc { position: sticky; top: 82px; font-size: 0.92rem; max-height: calc(100vh - 100px); overflow-y: auto; }
+  .toc h2 { font-family: var(--sans); font-size: 0.85rem; font-weight: 600; color: var(--muted); margin: 0 0 0.7rem; border: 0; padding: 0; }
+  .toc ol { list-style: none; margin: 0; padding: 0; counter-reset: toc; border-left: 2px solid var(--line); }
+  .toc li { counter-increment: toc; }
+  .toc a { display: block; padding: 0.3rem 0 0.3rem 1rem; margin-left: -2px; border-left: 2px solid transparent; color: var(--muted); text-decoration: none; line-height: 1.35; }
+  .toc a::before { content: counter(toc) ". "; color: var(--gold-ink); font-weight: 600; }
+  .toc a:hover { color: var(--ink); }
+  .toc a[aria-current="true"] { color: var(--accent-strong); border-left-color: var(--gold); font-weight: 600; }
+
+  article { background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: var(--radius); padding: 3rem clamp(1.25rem, 4vw, 3.5rem); min-width: 0; }
+  article section + section { margin-top: 3.2rem; }
+  article h2 { font-family: var(--serif); font-weight: 600; color: var(--ink); font-size: clamp(1.5rem, 2.8vw, 1.9rem); letter-spacing: -0.015em; line-height: 1.2; margin: 0 0 1.1rem; padding-left: 0.9rem; border-left: 3px solid var(--gold); }
+  article h3 { font-family: var(--sans); font-size: 1.1rem; font-weight: 600; color: var(--ink); margin: 2rem 0 0.8rem; }
+  article p, article li { font-family: var(--serif); font-size: 1.12rem; line-height: 1.7; color: var(--text); }
+  article p { margin: 0 0 1.1rem; max-width: 68ch; }
+  article ul, article ol { margin: 0 0 1.1rem; padding-left: 1.4rem; max-width: 68ch; }
+  article li { margin-bottom: 0.3rem; }
+  article strong { color: var(--ink); }
+  sup a { font-family: var(--sans); font-size: 0.72rem; font-weight: 700; text-decoration: none; padding: 0 0.15em; }
+
+  figure { margin: 2rem 0; }
+  figure img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: #FFF7EC; }
+  figcaption { margin-top: 0.6rem; font-size: 0.9rem; color: var(--muted); text-align: center; font-family: var(--sans); line-height: 1.5; }
+
+  blockquote { margin: 1.5rem 0; padding: 1.2rem 1.5rem; background: var(--accent-soft); border-left: 3px solid var(--gold); border-radius: 0 10px 10px 0; }
+  blockquote p { font-size: 1.05rem; margin: 0 0 0.8rem; }
+  blockquote p:last-child { margin-bottom: 0; }
+  blockquote.pull p { font-size: clamp(1.15rem, 2.3vw, 1.35rem); font-style: italic; line-height: 1.45; color: var(--ink); }
+  blockquote cite { font-family: var(--sans); font-size: 0.88rem; font-style: normal; color: var(--muted); }
+
+  /* tabelas */
+  .table-wrap { overflow-x: auto; margin: 1.5rem 0; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-family: var(--sans); font-size: 0.95rem; }
+  th, td { text-align: left; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.5; }
+  thead th { background: var(--gold-soft); color: var(--ink); font-weight: 600; }
+  tbody th { color: var(--ink); font-weight: 600; }
+  tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
+  td code, th code { font-size: 0.9em; }
+
+  /* mitos */
+  .myths { list-style: none; padding: 0; margin: 1.5rem 0; max-width: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
+  .myths li { margin: 0; padding: 1rem 1.2rem; border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: 10px; }
+  .myths li:nth-child(4n+2) { border-top-color: var(--sky); }
+  .myths li:nth-child(4n+3) { border-top-color: var(--mint); }
+  .myths li:nth-child(4n+4) { border-top-color: var(--gold); }
+  .myths h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+  .myths p { margin: 0; font-size: 1rem; line-height: 1.6; }
+
+  /* para fixar */
+  .recap { margin: 1.8rem 0 0; padding: 1.1rem 1.4rem; background: var(--gold-soft); border-left: 4px solid var(--mint); border-radius: 0 10px 10px 0; }
+  .recap h3 { margin: 0 0 0.5rem; font-size: 0.85rem; letter-spacing: .05em; text-transform: uppercase; color: var(--gold-ink); }
+  .recap ul { margin: 0; padding-left: 1.2rem; }
+  .recap li { font-family: var(--sans); font-size: 0.98rem; line-height: 1.55; margin-bottom: 0.25rem; }
+
+  /* revisão rápida */
+  .quiz { display: grid; gap: 0.7rem; margin: 1.5rem 0; }
+  .quiz details { border: 1px solid var(--line); border-left: 4px solid var(--sky); border-radius: 0 10px 10px 0; padding: 0.8rem 1.1rem; }
+  .quiz details:nth-child(3n+2) { border-left-color: var(--pink); }
+  .quiz details:nth-child(3n+3) { border-left-color: var(--mint); }
+  .quiz summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); line-height: 1.45; }
+  .quiz details[open] summary { margin-bottom: 0.5rem; }
+  .quiz p { margin: 0; font-size: 1.02rem; }
+
+  .refs { font-family: var(--sans); padding-left: 1.4rem; margin: 0; }
+  .refs li { font-family: var(--sans); font-size: 0.92rem; line-height: 1.55; margin-bottom: 0.7rem; word-break: break-word; }
+  .refs li:target { background: var(--gold-soft); border-radius: 6px; }
+
+  .back { display: inline-block; margin-top: 1rem; font-family: var(--sans); font-size: 0.85rem; text-decoration: none; }
+
+  footer { background: var(--navy-deep); color: var(--on-navy-muted); border-top: 3px solid var(--gold); padding: 1.5rem 0 calc(1.5rem + env(safe-area-inset-bottom, 0px)); font-size: 0.88rem; }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1.5rem; }
+  footer a { color: var(--on-navy); text-decoration: none; }
+  footer a:hover { color: var(--gold); }
+
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+    .toc { position: static; max-height: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.2rem 1.4rem; }
+  }
+  @media (max-width: 760px) {
+    .myths { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .nav ul { display: none; }
+    .hero { padding: 2.5rem 0; }
+    .wrap { padding: 0 1rem; }
+    article p, article li { font-size: 1.05rem; }
+    th, td { padding: 0.6rem 0.7rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  @media print {
+    .nav, .toc, footer, .back, .crumb { display: none !important; }
+    body { background: #fff; }
+    .hero-band { background: none; color: #111; border: 0; }
+    .hero-band h1 { color: #5B2A86; }
+    .dek, .byline, .byline strong { color: #333; }
+    .layout { display: block; padding: 0; }
+    article { border: 0; padding: 0; }
+    .table-wrap { overflow: visible; }
+    figure, blockquote, .myths li, .recap, .quiz details, tr { break-inside: avoid; }
+  }
+
+  /* blocos de código (Gherkin) */
+  pre.code { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: #2B1B3D; color: #F7F0FF; border-radius: 10px; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.92rem; line-height: 1.6; tab-size: 2; }
+  pre.code code { font-family: inherit; white-space: pre; }
+  pre.code .k { color: #FFB703; font-weight: 700; }
+  pre.code .s { color: #5FD3C4; font-weight: 700; }
+  pre.code .c { color: #A898C0; }
+  pre.code .p { color: #C9A7F5; }
+  article code { font-family: Consolas, "Courier New", monospace; font-size: 0.92em; }
+  article :not(pre) > code { background: var(--accent-soft); color: var(--ink); padding: 0.05em 0.35em; border-radius: 4px; }
+
+  /* fórmulas */
+  pre.formula { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.95rem; line-height: 1.5; }
+
+  /* glossário */
+  dl.glossary { margin: 1.2rem 0; display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  dl.glossary dt, dl.glossary dd { margin: 0; padding: 0.65rem 0.9rem; border-bottom: 1px solid var(--line); font-family: var(--sans); font-size: 0.95rem; line-height: 1.5; }
+  dl.glossary dt { font-weight: 600; color: var(--ink); background: color-mix(in srgb, var(--gold-soft) 60%, var(--surface)); }
+  dl.glossary dd { color: var(--text); }
+  dl.glossary dt:nth-last-of-type(1), dl.glossary dd:last-of-type { border-bottom: 0; }
+  @media (max-width: 720px) { dl.glossary { grid-template-columns: 1fr; } dl.glossary dt { border-bottom: 0; padding-bottom: 0.2rem; } }
+
+  /* figuras geradas pelo PlantUML e código recolhível */
+  figure.puml img { width: auto; max-width: 100%; margin: 0 auto; background: #FFFFFF; padding: 12px; }
+  details.codebox { margin: 1rem 0 1.5rem; border: 1px solid var(--line); border-radius: 10px; padding: 0.6rem 1rem; }
+  details.codebox summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); }
+  details.codebox pre.code { max-height: 480px; overflow: auto; }
+
+  /* nota de atenção */
+  aside.note { margin: 1.2rem 0 1.5rem; padding: 0.8rem 1.1rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; }
+  aside.note p { margin: 0; }
+
+  /* link para o simulador e teclas */
+  .launch { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--sans); font-weight: 600; font-size: 1rem; background: var(--accent-strong); color: var(--surface); text-decoration: none; padding: 0.65rem 1.2rem; border-radius: 10px; }
+  .launch:hover { background: var(--navy-deep); color: #FFFFFF; }
+  kbd { font-family: var(--sans); font-size: 0.85em; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 0.05em 0.4em; white-space: nowrap; }
+  .promptbox { position: relative; margin: 1rem 0 1.6rem; }
+  .promptbox pre.code { margin: 0; padding-top: 2.6rem; max-height: 420px; overflow: auto; }
+  .promptbox pre.code code { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .promptbox .copy { position: absolute; top: 8px; right: 14px; z-index: 1; font: 600 0.8rem var(--sans); color: #2B1B3D; background: #FFB703; border: 0; border-radius: 6px; padding: 0.3rem 0.65rem; cursor: pointer; }
+  @media (max-width: 720px) { figure { overflow-x: auto; } figure img { width: 680px; max-width: none; } }
+</style>
+</head>
+<body id="top">
+
+<nav class="nav" aria-label="Navegação do site">
+  <div class="wrap">
+    <a class="brand" href="index.html" data-home>Giovani Perotto Mesquita</a>
+    <div class="nav-right">
+      <ul>
+        <li><a href="index.html" data-home>Início</a></li>
+        <li><a href="about.html" data-about>Sobre</a></li>
+        <li><a href="resume.html" data-resume>Currículo</a></li>
+        <li><a href="projects.html" data-projects aria-current="page">Projetos</a></li>
+        <li><a href="contact.html" data-contact>Contato</a></li>
+      </ul>
+      <div class="lang">
+        <button type="button" class="lang-current" aria-haspopup="listbox" aria-expanded="false" aria-controls="lang-list" data-label="Idioma / Language / Lingua" aria-label="Idioma / Language / Lingua: Português"><span class="lang-now"><svg class="flag" viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009C3B"/><path d="M10 1.6 18.4 7 10 12.4 1.6 7z" fill="#FEDF00"/><circle cx="10" cy="7" r="3.3" fill="#002776"/><path d="M6.8 6.3c2.1-.6 4.5-.2 6.4 1" stroke="#fff" stroke-width=".7" fill="none"/></svg>PT</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="lang-list" id="lang-list" role="listbox" aria-label="Idioma / Language / Lingua" hidden>
+          <button type="button" role="option" id="tab-pt" aria-controls="pt" aria-selected="true" lang="pt-BR" data-code="PT"><svg class="flag" viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009C3B"/><path d="M10 1.6 18.4 7 10 12.4 1.6 7z" fill="#FEDF00"/><circle cx="10" cy="7" r="3.3" fill="#002776"/><path d="M6.8 6.3c2.1-.6 4.5-.2 6.4 1" stroke="#fff" stroke-width=".7" fill="none"/></svg><span>Português</span></button>
+          <button type="button" role="option" id="tab-en" aria-controls="en" aria-selected="false" lang="en" tabindex="-1" data-code="EN"><svg class="flag" viewBox="0 0 19 10" aria-hidden="true"><rect width="19" height="10" fill="#B22234"/><rect y="0.769" width="19" height="0.769" fill="#fff"/><rect y="2.308" width="19" height="0.769" fill="#fff"/><rect y="3.846" width="19" height="0.769" fill="#fff"/><rect y="5.385" width="19" height="0.769" fill="#fff"/><rect y="6.923" width="19" height="0.769" fill="#fff"/><rect y="8.462" width="19" height="0.769" fill="#fff"/><rect width="7.6" height="5.385" fill="#3C3B6E"/></svg><span>English</span></button>
+          <button type="button" role="option" id="tab-it" aria-controls="it" aria-selected="false" lang="it" tabindex="-1" data-code="IT"><svg class="flag" viewBox="0 0 3 2" aria-hidden="true"><rect width="1" height="2" fill="#009246"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#CE2B37"/></svg><span>Italiano</span></button>
+          <button type="button" role="option" id="tab-es" aria-controls="es" aria-selected="false" lang="es" tabindex="-1" data-code="ES"><svg class="flag" viewBox="0 0 750 500" aria-hidden="true"><rect width="750" height="500" fill="#AA151B"/><rect y="125" width="750" height="250" fill="#F1BF00"/></svg><span>Español</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="progress" aria-hidden="true"></div>
+</nav>
+
+<!-- ===================== PT ===================== -->
+<div id="pt" role="tabpanel" aria-labelledby="tab-pt" lang="pt-BR">
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projetos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Mini Fórmula 1990: tutorial do jogo</h1>
+      <p class="dek">O calendário de 1990 que dá nome às pistas, como os traçados foram feitos, os controles pelo mouse, um roteiro passo a passo com telas, a física por trás das curvas e freadas, as ajudas de pilotagem e o que uma simulação diz sobre os tempos de volta.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado em <time datetime="2026-11-15">15/11/2026</time></span>
+        <span class="credit">Revisado e formatado usando Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-pt">
+    <h2 id="toc-pt">Índice</h2>
+    <ol>
+      <li><a href="#intro-pt">O jogo</a></li>
+      <li><a href="#campeonato-pt">O campeonato de 1990</a></li>
+      <li><a href="#pistas-pt">As pistas no jogo</a></li>
+      <li><a href="#controles-pt">Controles</a></li>
+      <li><a href="#app-pt">Passo a passo no app</a></li>
+      <li><a href="#fisica-pt">A física do jogo</a></li>
+      <li><a href="#numeros-pt">O que os números dizem</a></li>
+      <li><a href="#dicas-pt">Dicas de pilotagem</a></li>
+      <li><a href="#erros-pt">Erros comuns</a></li>
+      <li><a href="#revisao-pt">Revisão rápida</a></li>
+      <li><a href="#referencias-pt">Referências</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-pt" aria-labelledby="h-intro-pt">
+<h2 id="h-intro-pt">O jogo</h2>
+<p>O Mini Fórmula 1990 é uma corrida de carrinhos de fórmula vistos de cima. Você dirige com o mouse, acelera com a tecla <kbd>A</kbd> e freia com a <kbd>Z</kbd>, contra até nove carros do computador ou sozinho, no treino livre. As pistas são as 16 do campeonato mundial de 1990, de Phoenix a Adelaide. <sup><a href="#ref-1-pt">[1]</a></sup></p>
+<p>É um único arquivo HTML, que funciona sem internet, em quatro idiomas, no computador e no celular. Duas ajudas opcionais facilitam o começo: o <strong>traçado ideal</strong>, uma linha colorida que mostra por onde ir e onde frear, e os <strong>pedais automáticos</strong>, em que você só dirige.</p>
+<p><a class="launch" href="MiniFormula.html">Abrir o jogo <span aria-hidden="true">→</span></a></p>
+<figure>
+<img src="rc_images/MiniCorrida.png" alt="Tela do jogo no começo da corrida em Interlagos: oito carros de cores diferentes numa curva com zebras vermelhas e brancas, caixa de brita por fora e fumaça de pneu, e uma linha colorida mostrando o traçado ideal. Em volta, a torre de posições à esquerda, o minimapa à direita, a volta e os tempos embaixo à esquerda e o velocímetro com a marcha embaixo à direita" width="1280" height="800" loading="lazy">
+<figcaption>Primeiros segundos em Interlagos: o pelotão ainda junto, com o traçado ideal ligado.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="campeonato-pt" aria-labelledby="h-campeonato-pt">
+<h2 id="h-campeonato-pt">O campeonato de 1990</h2>
+<p>O campeonato mundial de 1990 teve 16 corridas, de março a novembro. <sup><a href="#ref-2-pt">[2]</a></sup> O jogo usa a mesma lista, na mesma ordem, com o comprimento da volta e o número de voltas de cada corrida naquele ano. <sup><a href="#ref-3-pt">[3]</a></sup></p>
+<div class="table-wrap"><table>
+<thead><tr><th>Etapa</th><th>Grande Prêmio</th><th>Circuito</th><th>Data</th><th>Volta</th><th>Voltas</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Estados Unidos</td><td>Phoenix</td><td>11/03</td><td>3,800 km</td><td>72</td></tr>
+<tr><td>2</td><td>Brasil</td><td>Interlagos</td><td>25/03</td><td>4,325 km</td><td>71</td></tr>
+<tr><td>3</td><td>San Marino</td><td>Imola</td><td>13/05</td><td>5,040 km</td><td>61</td></tr>
+<tr><td>4</td><td>Mônaco</td><td>Monaco</td><td>27/05</td><td>3,328 km</td><td>78</td></tr>
+<tr><td>5</td><td>Canadá</td><td>Gilles Villeneuve (Montreal)</td><td>10/06</td><td>4,390 km</td><td>70</td></tr>
+<tr><td>6</td><td>México</td><td>Hermanos Rodríguez</td><td>24/06</td><td>4,421 km</td><td>69</td></tr>
+<tr><td>7</td><td>França</td><td>Paul Ricard</td><td>08/07</td><td>3,813 km</td><td>80</td></tr>
+<tr><td>8</td><td>Grã-Bretanha</td><td>Silverstone</td><td>15/07</td><td>4,778 km</td><td>64</td></tr>
+<tr><td>9</td><td>Alemanha</td><td>Hockenheim</td><td>29/07</td><td>6,802 km</td><td>45</td></tr>
+<tr><td>10</td><td>Hungria</td><td>Hungaroring</td><td>12/08</td><td>3,968 km</td><td>77</td></tr>
+<tr><td>11</td><td>Bélgica</td><td>Spa-Francorchamps</td><td>26/08</td><td>6,940 km</td><td>44</td></tr>
+<tr><td>12</td><td>Itália</td><td>Monza</td><td>09/09</td><td>5,800 km</td><td>53</td></tr>
+<tr><td>13</td><td>Portugal</td><td>Estoril</td><td>23/09</td><td>4,350 km</td><td>71 previstas, 61 corridas</td></tr>
+<tr><td>14</td><td>Espanha</td><td>Jerez</td><td>30/09</td><td>4,218 km</td><td>73</td></tr>
+<tr><td>15</td><td>Japão</td><td>Suzuka</td><td>21/10</td><td>5,860 km</td><td>53</td></tr>
+<tr><td>16</td><td>Austrália</td><td>Adelaide</td><td>04/11</td><td>3,780 km</td><td>81</td></tr>
+</tbody></table></div>
+<p>Duas curiosidades daquele ano estão nas fontes. Interlagos tinha acabado de ser reformado: a pista perdeu 3,5 km, curvas rápidas e a longa reta do “Retão”. <sup><a href="#ref-4-pt">[4]</a></sup> Em Portugal, a corrida foi interrompida depois de um acidente e terminou na volta 61, das 71 previstas. <sup><a href="#ref-5-pt">[5]</a></sup></p>
+<blockquote><p><strong>Divergências nas fontes.</strong> Em duas corridas, a distância total da ficha não bate com voltas vezes comprimento. Na Grã-Bretanha, 64 × 4,778 km dá 305,792 km, e a ficha diz 305,904 km. Na Bélgica, 44 × 6,940 km dá 305,36 km, e a ficha diz 301,172 km; o próprio texto do artigo fala em 301 km. O jogo usa o comprimento da volta, que é o mesmo nos dois valores. <sup><a href="#ref-3-pt">[3]</a></sup></p></blockquote>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="pistas-pt" aria-labelledby="h-pistas-pt">
+<h2 id="h-pistas-pt">As pistas no jogo</h2>
+<p>Os traçados do jogo são <strong>simplificados</strong>. Cada pista foi descrita à mão como uma sequência de retas e curvas, ou como um polígono com as quinas arredondadas, para lembrar o desenho do circuito. O programa fecha a volta, confere que os trechos não se cruzam e escala o resultado para o comprimento oficial de 1990. <sup><a href="#ref-1-pt">[1]</a></sup> Não são cópias de mapas: Monza, Hockenheim e o oito de Suzuka lembram bem o original; Mônaco, Phoenix e Adelaide, só no geral.</p>
+<figure>
+<img src="rc_images/MiniPistas.svg" alt="Grade com as 16 pistas do jogo, na ordem do calendário de 1990, cada uma com o comprimento da volta: 1. Phoenix (3,800 km), 2. Interlagos (4,325 km), 3. Imola (5,040 km), 4. Monaco (3,328 km), 5. Gilles Villeneuve (4,390 km), 6. Hermanos Rodríguez (4,421 km), 7. Paul Ricard (3,813 km), 8. Silverstone (4,778 km), 9. Hockenheim (6,802 km), 10. Hungaroring (3,968 km), 11. Spa-Francorchamps (6,940 km), 12. Monza (5,800 km), 13. Estoril (4,350 km), 14. Jerez (4,218 km), 15. Suzuka (5,860 km), 16. Adelaide (3,780 km). Em cada desenho, uma marca vermelha mostra a largada e o sentido da corrida. Suzuka aparece como um oito, com um cruzamento. Os traçados são simplificados e cada um está numa escala diferente." width="1000" height="1100" loading="lazy">
+<figcaption>As 16 pistas, na ordem do calendário, desenhadas a partir do código do jogo.</figcaption>
+</figure>
+<p>Em volta do asfalto, o jogo calcula sozinho o que existe em cada trecho:</p>
+<ul>
+<li><strong>Zebras</strong> vermelhas e brancas onde a curva aperta.</li>
+<li><strong>Caixas de brita</strong> por fora das curvas fechadas, nas pistas permanentes.</li>
+<li><strong>Grama</strong> e, no fim dela, um <strong>muro</strong>. Nos circuitos de rua (Phoenix, Mônaco, Montreal e Adelaide), o muro fica a poucos metros do asfalto.</li>
+<li>Quando dois trechos passam perto, o muro fica entre eles, na metade do caminho.</li>
+</ul>
+<p>Em Suzuka, o trecho de volta passa por cima da ponte, e os carros que estão embaixo são desenhados sob ela.</p>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="controles-pt" aria-labelledby="h-controles-pt">
+<h2 id="h-controles-pt">Controles</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Comando</th><th>O que faz</th></tr></thead>
+<tbody>
+<tr><td>Mouse</td><td>dirige o carro, no modo Mira ou no modo Volante (veja a figura)</td></tr>
+<tr><td><kbd>A</kbd></td><td>acelerador</td></tr>
+<tr><td><kbd>Z</kbd></td><td>freio; com o carro parado, segure para dar ré</td></tr>
+<tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>viram, como alternativa ao mouse</td></tr>
+<tr><td><kbd>R</kbd></td><td>devolve o carro ao meio da pista, parado</td></tr>
+<tr><td><kbd>P</kbd> ou <kbd>Esc</kbd></td><td>pausa; no treino livre, <kbd>Esc</kbd> encerra e mostra as voltas</td></tr>
+<tr><td>Toque</td><td>um dedo toca na pista para mirar; o outro segura os botões A e Z no canto</td></tr>
+</tbody></table></div>
+<figure>
+<img src="rc_images/MiniMira.svg" alt="Dois painéis. À esquerda, o modo Mira: um carro numa reta, o cursor à frente e acima, uma linha amarela do carro ao cursor e um arco marcando o erro de direção entre o nariz do carro e o cursor; o carro vira para fechar esse ângulo. À direita, o modo Volante: uma linha tracejada no centro da tela, o cursor à direita dela, uma seta amarela indicando a distância do centro e um volante girado para a direita. Abaixo, a nota de que o ângulo máximo das rodas cai de 26 graus parado para cerca de 4 graus a 300 km/h." width="1000" height="560" loading="lazy">
+<figcaption>Na Mira, o carro persegue o cursor; no Volante, o mouse funciona como a posição do volante.</figcaption>
+</figure>
+<p>Na Mira, deixe o cursor um pouco à frente do carro, na saída da curva, e vá movendo junto. Se o cursor ficar em cima do carro, ele não vira. O Volante combina com a câmera que gira com o carro, escolhida na opção <strong>Câmera</strong>.</p>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="app-pt" aria-labelledby="h-app-pt">
+<h2 id="h-app-pt">Passo a passo no app</h2>
+<h3>1. Escolha a pista e as opções</h3>
+<p>Ao abrir o jogo, aparece a janela <strong>Nova corrida</strong>. À direita, o desenho da pista escolhida, com a largada em vermelho, a data da corrida de 1990, o comprimento da volta, as voltas da corrida real e o seu recorde. Para começar, use 3 voltas, 7 adversários, nível Normal e o traçado ideal ligado. Escolha a cor do carro e clique em <strong>Correr</strong>.</p>
+<figure>
+<img src="rc_images/MiniOpcoes.png" alt="Janela Nova corrida com a pista 2, GP do Brasil, Interlagos, modo Corrida, 3 voltas, 7 adversários, dificuldade Normal, largada em último, direção Mira no cursor, câmera fixa com o norte para cima, traçado ideal Ligado, acelerador e freio Manuais, semente 1990 e oito cores de carro. À direita, o desenho de Interlagos e os dados: 25 de março de 1990, volta de 4,325 km, 71 voltas na corrida real e nenhum recorde ainda" width="1560" height="1240" loading="lazy">
+<figcaption>As opções da corrida, com Interlagos escolhida.</figcaption>
+</figure>
+<div class="table-wrap"><table>
+<thead><tr><th>Opção</th><th>Escolhas</th></tr></thead>
+<tbody>
+<tr><td>Modo</td><td>corrida, ou treino livre sozinho e sem limite de voltas</td></tr>
+<tr><td>Voltas</td><td>1, 3, 5, 10 ou 20</td></tr>
+<tr><td>Adversários</td><td>1, 3, 5, 7 ou 9, com nomes fictícios</td></tr>
+<tr><td>Dificuldade</td><td>fácil, normal ou difícil (veja <a href="#numeros-pt">os números</a>)</td></tr>
+<tr><td>Posição de largada</td><td>último, meio do grid ou pole position</td></tr>
+<tr><td>Direção pelo mouse</td><td>Mira no cursor ou Volante</td></tr>
+<tr><td>Câmera</td><td>fixa com o norte para cima, ou girando com o carro</td></tr>
+<tr><td>Traçado ideal</td><td>desligado ou ligado</td></tr>
+<tr><td>Acelerador e freio</td><td>manuais (A e Z) ou automáticos</td></tr>
+<tr><td>Semente</td><td>com a mesma semente e os mesmos comandos, a corrida se repete</td></tr>
+</tbody></table></div>
+<h3>2. Espere as luzes apagarem</h3>
+<p>Os carros ficam no grid, em duas filas. Cinco luzes vermelhas acendem uma por segundo. Depois de um intervalo sorteado, todas apagam: é a hora de acelerar. Se o seu carro andar antes, você leva 5 segundos de punição no tempo final.</p>
+<figure>
+<img src="rc_images/MiniLargada.png" alt="Grid de largada visto de cima: carros parados em duas filas escalonadas, cada um dentro da sua marca branca, e no alto o semáforo com as luzes vermelhas acendendo. Embaixo, a dica para mirar com o mouse, acelerar com A e frear com Z" width="1280" height="800" loading="lazy">
+<figcaption>As luzes acendem uma por segundo; quando todas apagam, acelere.</figcaption>
+</figure>
+<h3>3. Siga o traçado ideal</h3>
+<p>Com o traçado ideal ligado, uma linha mostra os próximos 380 m do caminho mais rápido. Verde é para acelerar, amarelo é curva no limite e vermelho é zona de frenagem. Se você chega rápido demais, a linha fica vermelha desde o carro até a curva, e o aviso <strong>FREIE</strong> aparece acima do velocímetro.</p>
+<figure>
+<img src="rc_images/MiniTracado.png" alt="Curva em Interlagos com o traçado ideal: a linha vem vermelha pela reta até o carro do jogador e fica amarela na curva. Acima do velocímetro aparece o aviso FREIE em vermelho. Há caixas de brita por fora das curvas e fumaça de pneu atrás dos carros" width="1280" height="800" loading="lazy">
+<figcaption>Rápido demais para a curva: a linha fica vermelha e o jogo avisa FREIE.</figcaption>
+</figure>
+<h3>4. Ou deixe os pedais com o carro</h3>
+<p>Com <strong>acelerador e freio automáticos</strong>, o carro acelera nas retas e freia antes das curvas, e você só dirige. O velocímetro mostra <strong>PEDAIS AUTO</strong>. A tecla <kbd>Z</kbd> continua freando, se você quiser frear mais cedo. As voltas feitas assim não contam como recorde pessoal.</p>
+<figure>
+<img src="rc_images/MiniAuto.png" alt="Reta de Mônaco com os pedais automáticos: o carro do jogador em alta velocidade, a linha ideal verde logo à frente e vermelha mais adiante, onde começa a zona de frenagem, e adversários à frente. No velocímetro, a etiqueta PEDAIS AUTO" width="1280" height="800" loading="lazy">
+<figcaption>Pedais automáticos: o vermelho à frente é onde o carro vai frear sozinho.</figcaption>
+</figure>
+<h3>5. Passe pela ponte de Suzuka</h3>
+<p>Suzuka é um oito. Na metade da volta, a pista passa por baixo da reta oposta, e na volta você passa por cima. Os carros de um nível não batem nos do outro.</p>
+<figure>
+<img src="rc_images/MiniPonte.png" alt="Cruzamento de Suzuka visto de cima: uma pista passa em diagonal por cima da outra numa ponte com guarda-corpos e sombra. O carro do jogador está na pista de baixo, logo depois de passar sob a ponte" width="1280" height="800" loading="lazy">
+<figcaption>O cruzamento de Suzuka: a ponte é desenhada por cima dos carros que passam embaixo.</figcaption>
+</figure>
+<h3>6. Veja o resultado</h3>
+<p>Quando você cruza a linha na última volta, aparece a bandeira quadriculada. O tempo acelera até os outros carros terminarem, e a janela de resultado mostra a posição, as voltas, o tempo ou a diferença para o vencedor e a melhor volta de cada piloto, além da volta mais rápida da corrida e da sua punição, se houver.</p>
+<figure>
+<img src="rc_images/MiniResultado.png" alt="Janela de resultado da corrida de uma volta em Paul Ricard, nível fácil: a frase com a posição do jogador e uma tabela com seis pilotos, as voltas, o tempo do vencedor e a diferença dos outros e a melhor volta de cada um, com a linha do jogador destacada em amarelo. Embaixo, a semente, o nível, a volta mais rápida da corrida e a penalidade, com os botões Ver a pista, Opções e Correr de novo" width="1560" height="920" loading="lazy">
+<figcaption>O resultado de uma corrida de uma volta em Paul Ricard.</figcaption>
+</figure>
+<h3>7. No celular</h3>
+<p>No celular, os botões <strong>A</strong> e <strong>Z</strong> aparecem no canto da tela. Segure o A com um dedo e toque na pista à frente com o outro para mirar. Os pedais automáticos ajudam muito na tela pequena.</p>
+<figure>
+<img src="rc_images/MiniCelular.png" alt="Tela de celular no tema escuro, em Adelaide: o carro do jogador e adversários numa curva, com a linha ideal à frente. Em cima, os botões do jogo, a torre de posições e o minimapa; embaixo, os tempos, o velocímetro com a etiqueta PEDAIS AUTO e os botões redondos Z freia e A acelera" width="390" height="844" loading="lazy">
+<figcaption>Numa tela de 390 pixels, com os botões de toque e os pedais automáticos.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="fisica-pt" aria-labelledby="h-fisica-pt">
+<h2 id="h-fisica-pt">A física do jogo</h2>
+<p>O carro do jogo segue um modelo simples, pensado para ser jogável, não para imitar um carro de 1990 em detalhe. <sup><a href="#ref-1-pt">[1]</a></sup> Três ideias explicam quase tudo:</p>
+<ol>
+<li><strong>Aderência que cresce com a velocidade.</strong> Os pneus seguram 1,45 g de força lateral numa curva lenta. A asa soma aderência com o quadrado da velocidade, e a 290 km/h o carro segura 4,1 g. Por isso as curvas rápidas parecem mais fáceis do que as lentas.</li>
+<li><strong>Frenagem forte em alta velocidade.</strong> O freio segura 1,6 g devagar e 3,8 g a 290 km/h, pelo mesmo motivo.</li>
+<li><strong>Pneus com limite.</strong> Se a curva pede mais aderência do que existe, o carro escorrega para fora, deixa marcas e solta fumaça. Frear forte virando também gasta a aderência.</li>
+</ol>
+<figure>
+<img src="rc_images/MiniCurva.svg" alt="Dois gráficos com valores do modelo do jogo. À esquerda, a velocidade máxima numa curva conforme o raio: 63 km/h num raio de 20 m, 108 km/h em 50 m e 177 km/h em 100 m; acima de 165 m de raio, a curva é feita de pé no fundo. À direita, barras com a distância de frenagem no asfalto: de 300 para 100 km/h, 112 m; de 300 para 200 km/h, 59 m; de 200 para 100 km/h, 52 m; de 150 para 60 km/h, 38 m." width="1000" height="510" loading="lazy">
+<figcaption>Quanto maior o raio, mais rápida a curva; e frear de 300 para 100 km/h leva cerca de 112 m.</figcaption>
+</figure>
+<p>Outros detalhes do modelo: potência de 800 W por quilo, 6 marchas, velocidade máxima de uns 309 km/h, limitada pela resistência do ar. Na grama, os pneus seguram 38% do normal, e na brita, 30%, com muito mais resistência ao avanço. Os muros param o carro, sem dano. O quanto as rodas viram cai com a velocidade: 26° parado, cerca de 4° a 300 km/h.</p>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="numeros-pt" aria-labelledby="h-numeros-pt">
+<h2 id="h-numeros-pt">O que os números dizem</h2>
+<p>Para saber quanto cada nível anda, medi com o código do próprio jogo a volta lançada de um carro sozinho em cada pista: a segunda volta de um treino de duas voltas, sem adversários. O computador dirigiu nos três níveis, e houve uma quarta medida com os pedais automáticos, usando a direção do computador. <sup><a href="#ref-1-pt">[1]</a></sup></p>
+<figure>
+<img src="rc_images/MiniTempos.svg" alt="Gráfico com uma linha por pista mostrando a volta lançada de um carro sozinho, medida com o código do jogo. Um círculo marca o tempo do computador no nível difícil, e uma faixa vai até o tempo do nível fácil; um losango marca o tempo com pedais automáticos, sempre entre o difícil e o fácil. Tempos do nível difícil: Phoenix 79,5 s; Interlagos 81,8 s; Imola 84,5 s; Monaco 81,8 s; Gilles Villeneuve 81,7 s; Hermanos Rodríguez 72,9 s; Paul Ricard 69,6 s; Silverstone 73,5 s; Hockenheim 109,2 s; Hungaroring 76,4 s; Spa-Francorchamps 113,8 s; Monza 88,2 s; Estoril 81,8 s; Jerez 83,2 s; Suzuka 94,3 s; Adelaide 89,2 s." width="1000" height="754" loading="lazy">
+<figcaption>Volta lançada por pista: nível difícil, faixa até o fácil e pedais automáticos.</figcaption>
+</figure>
+<ul>
+<li><strong>A dificuldade é a velocidade do computador nas curvas.</strong> Os pilotos andam a 82–88% da velocidade ideal no fácil, a 90–95,5% no normal e a 96,5–100% no difícil. Na medição, o nível fácil foi de 8,9% a 11,4% mais lento que o difícil, e o normal, de 3,2% a 4,2%.</li>
+<li><strong>Os pedais automáticos custam pouco tempo.</strong> Com a direção perfeita do computador, ficaram de 2,3% a 3,8% mais lentos que o nível difícil, mais ou menos como o nível normal. Com uma pessoa dirigindo, a diferença cresce, porque o automático reduz a velocidade quando o carro sai da linha ideal.</li>
+<li><strong>Mônaco é a mais lenta, Monza a mais rápida.</strong> No nível difícil, a média foi de 147 km/h em Mônaco e 237 km/h em Monza.</li>
+</ul>
+<blockquote><p><strong>O que estes números não medem.</strong> São tempos de um modelo, com pistas e física simplificadas, e não tempos reais de 1990. Também não medem uma pessoa jogando: a direção do computador é sempre a mesma, e uma pessoa erra e acerta de jeitos diferentes.</p></blockquote>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="dicas-pt" aria-labelledby="h-dicas-pt">
+<h2 id="h-dicas-pt">Dicas de pilotagem</h2>
+<ol>
+<li><strong>Freie em linha reta.</strong> Termine de frear antes de virar. Freio e curva juntos gastam a mesma aderência.</li>
+<li><strong>Abra, feche, abra.</strong> Entre na curva pelo lado de fora, toque a parte de dentro no meio dela e saia aberto. É o que o traçado ideal desenha.</li>
+<li><strong>Acelere na saída, não na entrada.</strong> A saída de uma curva lenta decide a velocidade da reta inteira que vem depois.</li>
+<li><strong>Olhe longe.</strong> A câmera se afasta com a velocidade para mostrar mais pista. Use o minimapa para saber o que vem.</li>
+<li><strong>Use as zebras com cuidado.</strong> Elas seguram quase como o asfalto, mas a grama logo depois segura menos da metade.</li>
+<li><strong>Ultrapasse nas freadas.</strong> O computador desvia de um carro mais lento à frente, mas segue o perfil de velocidade dele. Freando um pouco mais tarde por dentro, você ganha a posição.</li>
+<li><strong>Comece com ajudas e tire uma de cada vez.</strong> Primeiro os pedais automáticos, depois só o traçado ideal, por fim nenhuma.</li>
+</ol>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="erros-pt" aria-labelledby="h-erros-pt">
+<h2 id="h-erros-pt">Erros comuns</h2>
+<ul class="myths">
+<li><h3>“Cursor em cima do carro vira mais.”</h3><p>É o contrário. Com o cursor colado no carro, ele não vira nada. Deixe o cursor à frente, na direção da saída da curva.</p></li>
+<li><h3>“Segurar A o tempo todo é mais rápido.”</h3><p>Só nas retas. Chegar rápido demais faz o carro escorregar para a grama, que freia muito mais que o freio.</p></li>
+<li><h3>“Na grama dá para cortar caminho.”</h3><p>A grama segura 38% do normal e a brita 30%, e as duas freiam o carro. Além disso, a volta só conta se o carro passar pela metade da pista.</p></li>
+<li><h3>“Ré serve para frear.”</h3><p>A tecla Z só engata a ré com o carro quase parado. Em movimento, ela é o freio.</p></li>
+<li><h3>“Os traçados são cópias dos mapas.”</h3><p>Não. São desenhos simplificados com o comprimento certo. Servem para lembrar o circuito, não para treinar para o real.</p></li>
+</ul>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="revisao-pt" aria-labelledby="h-revisao-pt">
+<h2 id="h-revisao-pt">Revisão rápida</h2>
+<div class="quiz">
+<details><summary>1. Quais teclas aceleram e freiam?</summary><p>A acelera e Z freia. Com o carro parado, Z dá ré.</p></details>
+<details><summary>2. No modo Mira, onde deixar o cursor?</summary><p>Um pouco à frente do carro, na direção da saída da curva. Em cima do carro, ele não vira.</p></details>
+<details><summary>3. O que significa a linha vermelha do traçado ideal?</summary><p>Zona de frenagem. Se ela fica vermelha desde o carro e aparece FREIE, você precisa frear já.</p></details>
+<details><summary>4. Quantas corridas teve o campeonato de 1990, e qual foi a primeira?</summary><p>16 corridas. A primeira foi em Phoenix, nos Estados Unidos, em 11 de março.</p></details>
+<details><summary>5. O que aconteceu com Interlagos em 1990?</summary><p>A pista foi reformada e encurtada em 3,5 km, perdendo curvas rápidas e a longa reta do Retão.</p></details>
+<details><summary>6. Por que as curvas rápidas parecem mais fáceis que as lentas?</summary><p>Porque a asa soma aderência com a velocidade: 1,45 g numa curva lenta, 4,1 g a 290 km/h.</p></details>
+<details><summary>7. Quanto os pedais automáticos custam de tempo, na simulação?</summary><p>De 2,3% a 3,8% em relação ao nível difícil, com a direção do computador.</p></details>
+<details><summary>8. Voltas com pedais automáticos contam como recorde?</summary><p>Não. Só voltas com acelerador e freio manuais entram no recorde pessoal.</p></details>
+</div>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="referencias-pt" aria-labelledby="h-referencias-pt">
+<h2 id="h-referencias-pt">Referências</h2>
+<ol class="refs">
+<li id="ref-1-pt"><strong>Giovani Perotto Mesquita</strong>, “Mini Fórmula 1990”, jogo deste site, <a href="MiniFormula.html">giovanipm.github.io/MiniFormula.html</a>. Os traçados, as constantes da física, os níveis e as ajudas estão no código do jogo. As figuras e as medições deste tutorial usam esse mesmo código; cada medição é uma volta lançada por pista e por piloto.</li>
+<li id="ref-2-pt"><strong>Wikipedia</strong>, “1990 Formula One World Championship”, acesso em 15/11/2026, <a href="https://en.wikipedia.org/wiki/1990_Formula_One_World_Championship" rel="noopener">en.wikipedia.org/wiki/1990_Formula_One_World_Championship</a>. Fonte do calendário: etapas, circuitos e datas.</li>
+<li id="ref-3-pt"><strong>Wikipedia</strong>, artigos de cada Grande Prêmio de 1990, ficha técnica (comprimento da volta, número de voltas e distância), acesso em 15/11/2026: <a href="https://en.wikipedia.org/wiki/1990_United_States_Grand_Prix" rel="noopener">Estados Unidos</a>, <a href="https://en.wikipedia.org/wiki/1990_Brazilian_Grand_Prix" rel="noopener">Brasil</a>, <a href="https://en.wikipedia.org/wiki/1990_San_Marino_Grand_Prix" rel="noopener">San Marino</a>, <a href="https://en.wikipedia.org/wiki/1990_Monaco_Grand_Prix" rel="noopener">Mônaco</a>, <a href="https://en.wikipedia.org/wiki/1990_Canadian_Grand_Prix" rel="noopener">Canadá</a>, <a href="https://en.wikipedia.org/wiki/1990_Mexican_Grand_Prix" rel="noopener">México</a>, <a href="https://en.wikipedia.org/wiki/1990_French_Grand_Prix" rel="noopener">França</a>, <a href="https://en.wikipedia.org/wiki/1990_British_Grand_Prix" rel="noopener">Grã-Bretanha</a>, <a href="https://en.wikipedia.org/wiki/1990_German_Grand_Prix" rel="noopener">Alemanha</a>, <a href="https://en.wikipedia.org/wiki/1990_Hungarian_Grand_Prix" rel="noopener">Hungria</a>, <a href="https://en.wikipedia.org/wiki/1990_Belgian_Grand_Prix" rel="noopener">Bélgica</a>, <a href="https://en.wikipedia.org/wiki/1990_Italian_Grand_Prix" rel="noopener">Itália</a>, <a href="https://en.wikipedia.org/wiki/1990_Portuguese_Grand_Prix" rel="noopener">Portugal</a>, <a href="https://en.wikipedia.org/wiki/1990_Spanish_Grand_Prix" rel="noopener">Espanha</a>, <a href="https://en.wikipedia.org/wiki/1990_Japanese_Grand_Prix" rel="noopener">Japão</a>, <a href="https://en.wikipedia.org/wiki/1990_Australian_Grand_Prix" rel="noopener">Austrália</a>.</li>
+<li id="ref-4-pt"><strong>Wikipedia</strong>, “1990 Brazilian Grand Prix”, acesso em 15/11/2026, <a href="https://en.wikipedia.org/wiki/1990_Brazilian_Grand_Prix" rel="noopener">en.wikipedia.org/wiki/1990_Brazilian_Grand_Prix</a>. Trecho sobre o encurtamento da pista.</li>
+<li id="ref-5-pt"><strong>Wikipedia</strong>, “1990 Portuguese Grand Prix”, acesso em 15/11/2026, <a href="https://en.wikipedia.org/wiki/1990_Portuguese_Grand_Prix" rel="noopener">en.wikipedia.org/wiki/1990_Portuguese_Grand_Prix</a>. Corrida interrompida na volta 61 de 71.</li>
+</ol>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+  </article>
+</div>
+</div>
+
+
+<!-- ===================== EN ===================== -->
+<div id="en" role="tabpanel" aria-labelledby="tab-en" lang="en" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html#en" data-projects>← Projects</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Mini Formula 1990: game tutorial</h1>
+      <p class="dek">The 1990 calendar behind the tracks, how the layouts were made, mouse controls, a step-by-step walkthrough with screens, the physics behind corners and braking, the driving assists, and what a simulation says about lap times.</p>
+      <div class="byline">
+        <span>By <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Published on <time datetime="2026-11-15">15 November 2026</time></span>
+        <span class="credit">Reviewed and formatted using Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-en">
+    <h2 id="toc-en">Contents</h2>
+    <ol>
+      <li><a href="#intro-en">The game</a></li>
+      <li><a href="#campeonato-en">The 1990 championship</a></li>
+      <li><a href="#pistas-en">The tracks in the game</a></li>
+      <li><a href="#controles-en">Controls</a></li>
+      <li><a href="#app-en">Step by step in the app</a></li>
+      <li><a href="#fisica-en">The game’s physics</a></li>
+      <li><a href="#numeros-en">What the numbers say</a></li>
+      <li><a href="#dicas-en">Driving tips</a></li>
+      <li><a href="#erros-en">Common mistakes</a></li>
+      <li><a href="#revisao-en">Quick review</a></li>
+      <li><a href="#referencias-en">References</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-en" aria-labelledby="h-intro-en">
+<h2 id="h-intro-en">The game</h2>
+<p>Mini Formula 1990 is a race of small formula cars seen from above. You steer with the mouse, accelerate with the <kbd>A</kbd> key and brake with <kbd>Z</kbd>, against up to nine computer cars or alone in free practice. The tracks are the 16 of the 1990 world championship, from Phoenix to Adelaide. <sup><a href="#ref-1-en">[1]</a></sup></p>
+<p>It is a single HTML file that works offline, in four languages, on computers and phones. Two optional assists make the start easier: the <strong>racing line</strong>, a coloured line showing where to go and where to brake, and <strong>automatic pedals</strong>, where you only steer.</p>
+<p><a class="launch" href="MiniFormula.html#en">Open the game <span aria-hidden="true">→</span></a></p>
+<figure>
+<img src="rc_images/MiniCorrida-en.png" alt="Game screen at the start of the race at Interlagos: eight cars of different colours in a corner with red and white kerbs, a gravel trap on the outside and tyre smoke, and a coloured line showing the racing line. Around it, the position tower on the left, the minimap on the right, the lap and times at bottom left and the speedometer with the gear at bottom right" width="1280" height="800" loading="lazy">
+<figcaption>The first seconds at Interlagos: the pack still together, with the racing line on.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="campeonato-en" aria-labelledby="h-campeonato-en">
+<h2 id="h-campeonato-en">The 1990 championship</h2>
+<p>The 1990 world championship had 16 races, from March to November. <sup><a href="#ref-2-en">[2]</a></sup> The game uses the same list, in the same order, with each race’s lap length and number of laps that year. <sup><a href="#ref-3-en">[3]</a></sup></p>
+<div class="table-wrap"><table>
+<thead><tr><th>Round</th><th>Grand Prix</th><th>Circuit</th><th>Date</th><th>Lap</th><th>Laps</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>United States</td><td>Phoenix</td><td>11 Mar</td><td>3.800 km</td><td>72</td></tr>
+<tr><td>2</td><td>Brazil</td><td>Interlagos</td><td>25 Mar</td><td>4.325 km</td><td>71</td></tr>
+<tr><td>3</td><td>San Marino</td><td>Imola</td><td>13 May</td><td>5.040 km</td><td>61</td></tr>
+<tr><td>4</td><td>Monaco</td><td>Monaco</td><td>27 May</td><td>3.328 km</td><td>78</td></tr>
+<tr><td>5</td><td>Canada</td><td>Gilles Villeneuve (Montreal)</td><td>10 Jun</td><td>4.390 km</td><td>70</td></tr>
+<tr><td>6</td><td>Mexico</td><td>Hermanos Rodríguez</td><td>24 Jun</td><td>4.421 km</td><td>69</td></tr>
+<tr><td>7</td><td>France</td><td>Paul Ricard</td><td>8 Jul</td><td>3.813 km</td><td>80</td></tr>
+<tr><td>8</td><td>Great Britain</td><td>Silverstone</td><td>15 Jul</td><td>4.778 km</td><td>64</td></tr>
+<tr><td>9</td><td>Germany</td><td>Hockenheim</td><td>29 Jul</td><td>6.802 km</td><td>45</td></tr>
+<tr><td>10</td><td>Hungary</td><td>Hungaroring</td><td>12 Aug</td><td>3.968 km</td><td>77</td></tr>
+<tr><td>11</td><td>Belgium</td><td>Spa-Francorchamps</td><td>26 Aug</td><td>6.940 km</td><td>44</td></tr>
+<tr><td>12</td><td>Italy</td><td>Monza</td><td>9 Sep</td><td>5.800 km</td><td>53</td></tr>
+<tr><td>13</td><td>Portugal</td><td>Estoril</td><td>23 Sep</td><td>4.350 km</td><td>71 scheduled, 61 run</td></tr>
+<tr><td>14</td><td>Spain</td><td>Jerez</td><td>30 Sep</td><td>4.218 km</td><td>73</td></tr>
+<tr><td>15</td><td>Japan</td><td>Suzuka</td><td>21 Oct</td><td>5.860 km</td><td>53</td></tr>
+<tr><td>16</td><td>Australia</td><td>Adelaide</td><td>4 Nov</td><td>3.780 km</td><td>81</td></tr>
+</tbody></table></div>
+<p>Two facts from that year are in the sources. Interlagos had just been rebuilt: the track lost 3.5 km, fast sweepers and the long “Retão” straight. <sup><a href="#ref-4-en">[4]</a></sup> In Portugal, the race was stopped after an accident and ended on lap 61 of the 71 scheduled. <sup><a href="#ref-5-en">[5]</a></sup></p>
+<blockquote><p><strong>Disagreements between sources.</strong> In two races, the total distance in the infobox does not match laps times length. In Britain, 64 × 4.778 km gives 305.792 km, and the infobox says 305.904 km. In Belgium, 44 × 6.940 km gives 305.36 km, and the infobox says 301.172 km; the article text itself says 301 km. The game uses the lap length, which is the same in both cases. <sup><a href="#ref-3-en">[3]</a></sup></p></blockquote>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="pistas-en" aria-labelledby="h-pistas-en">
+<h2 id="h-pistas-en">The tracks in the game</h2>
+<p>The game’s layouts are <strong>simplified</strong>. Each track was described by hand as a sequence of straights and corners, or as a polygon with rounded corners, to resemble the circuit. The program closes the lap, checks that sections do not cross, and scales the result to the official 1990 length. <sup><a href="#ref-1-en">[1]</a></sup> They are not copies of maps: Monza, Hockenheim and the Suzuka figure eight resemble the original well; Monaco, Phoenix and Adelaide only roughly.</p>
+<figure>
+<img src="rc_images/MiniPistas-en.svg" alt="Grid with the game's 16 tracks, in 1990 calendar order, each with its lap length: 1. Phoenix (3.800 km), 2. Interlagos (4.325 km), 3. Imola (5.040 km), 4. Monaco (3.328 km), 5. Gilles Villeneuve (4.390 km), 6. Hermanos Rodríguez (4.421 km), 7. Paul Ricard (3.813 km), 8. Silverstone (4.778 km), 9. Hockenheim (6.802 km), 10. Hungaroring (3.968 km), 11. Spa-Francorchamps (6.940 km), 12. Monza (5.800 km), 13. Estoril (4.350 km), 14. Jerez (4.218 km), 15. Suzuka (5.860 km), 16. Adelaide (3.780 km). In each drawing, a red mark shows the start and the direction of the race. Suzuka appears as a figure eight with one crossing. The layouts are simplified and each is at a different scale." width="1000" height="1100" loading="lazy">
+<figcaption>The 16 tracks, in calendar order, drawn from the game’s code.</figcaption>
+</figure>
+<p>Around the tarmac, the game works out by itself what is in each section:</p>
+<ul>
+<li>Red and white <strong>kerbs</strong> where the corner tightens.</li>
+<li><strong>Gravel traps</strong> on the outside of tight corners, on permanent tracks.</li>
+<li><strong>Grass</strong> and, at its end, a <strong>wall</strong>. On street circuits (Phoenix, Monaco, Montreal and Adelaide), the wall is a few metres from the tarmac.</li>
+<li>When two sections pass close to each other, the wall sits between them, halfway.</li>
+</ul>
+<p>At Suzuka, the return section crosses over the bridge, and cars underneath are drawn below it.</p>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="controles-en" aria-labelledby="h-controles-en">
+<h2 id="h-controles-en">Controls</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Control</th><th>What it does</th></tr></thead>
+<tbody>
+<tr><td>Mouse</td><td>steers the car, in Aim or Wheel mode (see the figure)</td></tr>
+<tr><td><kbd>A</kbd></td><td>throttle</td></tr>
+<tr><td><kbd>Z</kbd></td><td>brake; when stopped, hold it to reverse</td></tr>
+<tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>steer, as an alternative to the mouse</td></tr>
+<tr><td><kbd>R</kbd></td><td>puts the car back in the middle of the track, stopped</td></tr>
+<tr><td><kbd>P</kbd> or <kbd>Esc</kbd></td><td>pause; in free practice, <kbd>Esc</kbd> ends the session and shows your laps</td></tr>
+<tr><td>Touch</td><td>one finger taps the track to aim; the other holds the A and Z buttons in the corner</td></tr>
+</tbody></table></div>
+<figure>
+<img src="rc_images/MiniMira-en.svg" alt="Two panels. On the left, Aim mode: a car on a straight, the cursor ahead and above, a yellow line from the car to the cursor and an arc marking the heading error between the car's nose and the cursor; the car turns to close that angle. On the right, Wheel mode: a dashed line at the screen centre, the cursor to its right, a yellow arrow showing the distance from the centre and a steering wheel turned to the right. Below, a note that the maximum wheel angle falls from 26 degrees when stopped to about 4 degrees at 300 km/h." width="1000" height="560" loading="lazy">
+<figcaption>In Aim mode, the car chases the cursor; in Wheel mode, the mouse acts as the wheel position.</figcaption>
+</figure>
+<p>In Aim mode, keep the cursor a little ahead of the car, at the corner exit, and move it along. If the cursor sits on the car, it does not turn. Wheel mode suits the camera that rotates with the car, chosen in the <strong>Camera</strong> option.</p>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="app-en" aria-labelledby="h-app-en">
+<h2 id="h-app-en">Step by step in the app</h2>
+<h3>1. Choose the track and options</h3>
+<p>When the game opens, the <strong>New race</strong> window appears. On the right, the chosen track’s layout, with the start in red, the date of the 1990 race, the lap length, the laps in the real race and your record. To start, use 3 laps, 7 opponents, Normal level and the racing line on. Pick your car colour and click <strong>Race</strong>.</p>
+<figure>
+<img src="rc_images/MiniOpcoes-en.png" alt="New race window with track 2, Brazilian GP, Interlagos, Race mode, 3 laps, 7 opponents, Normal difficulty, starting last, Aim at the cursor steering, fixed north-up camera, racing line On, Manual throttle and brake, seed 1990 and eight car colours. On the right, the Interlagos layout and its data: March 25, 1990, a 4.325 km lap, 71 laps in the real race and no record yet" width="1560" height="1240" loading="lazy">
+<figcaption>The race options, with Interlagos selected.</figcaption>
+</figure>
+<div class="table-wrap"><table>
+<thead><tr><th>Option</th><th>Choices</th></tr></thead>
+<tbody>
+<tr><td>Mode</td><td>race, or free practice alone with no lap limit</td></tr>
+<tr><td>Laps</td><td>1, 3, 5, 10 or 20</td></tr>
+<tr><td>Opponents</td><td>1, 3, 5, 7 or 9, with fictional names</td></tr>
+<tr><td>Difficulty</td><td>easy, normal or hard (see <a href="#numeros-en">the numbers</a>)</td></tr>
+<tr><td>Grid position</td><td>last, mid grid or pole position</td></tr>
+<tr><td>Mouse steering</td><td>Aim at the cursor or Wheel</td></tr>
+<tr><td>Camera</td><td>fixed with north up, or rotating with the car</td></tr>
+<tr><td>Racing line</td><td>off or on</td></tr>
+<tr><td>Throttle and brake</td><td>manual (A and Z) or automatic</td></tr>
+<tr><td>Seed</td><td>with the same seed and the same inputs, the race repeats</td></tr>
+</tbody></table></div>
+<h3>2. Wait for the lights to go out</h3>
+<p>The cars wait on the grid, in two rows. Five red lights come on, one per second. After a random pause, they all go out: that is when you accelerate. If your car moves earlier, you get a 5-second penalty on your final time.</p>
+<figure>
+<img src="rc_images/MiniLargada-en.png" alt="Starting grid seen from above: cars waiting in two staggered rows, each inside its white box, and at the top the start lights with the red lights coming on. At the bottom, the hint to aim with the mouse, accelerate with A and brake with Z" width="1280" height="800" loading="lazy">
+<figcaption>The lights come on one per second; when they all go out, accelerate.</figcaption>
+</figure>
+<h3>3. Follow the racing line</h3>
+<p>With the racing line on, a line shows the next 380 m of the fastest path. Green means accelerate, yellow is a corner at the limit and red is a braking zone. If you arrive too fast, the line turns red from the car to the corner, and the <strong>BRAKE</strong> warning appears above the speedometer.</p>
+<figure>
+<img src="rc_images/MiniTracado-en.png" alt="A corner at Interlagos with the racing line: the line runs red along the straight up to the player's car and turns yellow in the corner. Above the speedometer, the red BRAKE warning appears. There are gravel traps on the outside of the corners and tyre smoke behind the cars" width="1280" height="800" loading="lazy">
+<figcaption>Too fast for the corner: the line turns red and the game warns BRAKE.</figcaption>
+</figure>
+<h3>4. Or leave the pedals to the car</h3>
+<p>With <strong>automatic throttle and brake</strong>, the car accelerates on the straights and brakes before the corners, and you only steer. The speedometer shows <strong>AUTO PEDALS</strong>. The <kbd>Z</kbd> key still brakes, if you want to brake earlier. Laps driven this way do not count as personal records.</p>
+<figure>
+<img src="rc_images/MiniAuto-en.png" alt="A straight at Monaco with automatic pedals: the player's car at high speed, the green racing line just ahead and red further on, where the braking zone starts, and opponents ahead. On the speedometer, the AUTO PEDALS label" width="1280" height="800" loading="lazy">
+<figcaption>Automatic pedals: the red ahead is where the car will brake by itself.</figcaption>
+</figure>
+<h3>5. Cross the Suzuka bridge</h3>
+<p>Suzuka is a figure eight. Halfway round, the track passes under the back straight, and on the way back you go over it. Cars on one level do not collide with cars on the other.</p>
+<figure>
+<img src="rc_images/MiniPonte-en.png" alt="The Suzuka crossing seen from above: one track passes diagonally over the other on a bridge with railings and a shadow. The player's car is on the lower track, just after passing under the bridge" width="1280" height="800" loading="lazy">
+<figcaption>The Suzuka crossing: the bridge is drawn over the cars passing underneath.</figcaption>
+</figure>
+<h3>6. See the result</h3>
+<p>When you cross the line on the last lap, the chequered flag appears. Time speeds up until the other cars finish, and the result window shows each driver’s position, laps, time or gap to the winner and best lap, plus the fastest lap of the race and your penalty, if any.</p>
+<figure>
+<img src="rc_images/MiniResultado-en.png" alt="Result window of a one-lap race at Paul Ricard, easy level: the sentence with the player's position and a table with six drivers, their laps, the winner's time and the others' gaps and each one's best lap, with the player's row highlighted in yellow. Below, the seed, the level, the fastest lap of the race and the penalty, with the buttons View track, Options and Race again" width="1560" height="880" loading="lazy">
+<figcaption>The result of a one-lap race at Paul Ricard.</figcaption>
+</figure>
+<h3>7. On a phone</h3>
+<p>On a phone, the <strong>A</strong> and <strong>Z</strong> buttons appear in the corner of the screen. Hold A with one finger and tap the track ahead with the other to aim. Automatic pedals help a lot on a small screen.</p>
+<figure>
+<img src="rc_images/MiniCelular-en.png" alt="Phone screen in dark theme, at Adelaide: the player's car and opponents in a corner, with the racing line ahead. At the top, the game buttons, the position tower and the minimap; at the bottom, the times, the speedometer with the AUTO PEDALS label and the round Z brake and A throttle buttons" width="390" height="844" loading="lazy">
+<figcaption>On a 390-pixel screen, with the touch buttons and automatic pedals.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="fisica-en" aria-labelledby="h-fisica-en">
+<h2 id="h-fisica-en">The game’s physics</h2>
+<p>The game’s car follows a simple model, designed to be playable, not to imitate a 1990 car in detail. <sup><a href="#ref-1-en">[1]</a></sup> Three ideas explain almost everything:</p>
+<ol>
+<li><strong>Grip that grows with speed.</strong> The tyres hold 1.45 g of lateral force in a slow corner. The wing adds grip with the square of speed, and at 290 km/h the car holds 4.1 g. That is why fast corners feel easier than slow ones.</li>
+<li><strong>Strong braking at high speed.</strong> The brakes hold 1.6 g when slow and 3.8 g at 290 km/h, for the same reason.</li>
+<li><strong>Tyres with a limit.</strong> If the corner asks for more grip than there is, the car slides wide, leaves marks and smokes. Braking hard while turning also uses up grip.</li>
+</ol>
+<figure>
+<img src="rc_images/MiniCurva-en.svg" alt="Two charts with values from the game's model. On the left, top speed in a corner by radius: 63 km/h at a 20 m radius, 108 km/h at 50 m and 177 km/h at 100 m; above a 165 m radius, the corner is taken flat out. On the right, bars with braking distance on tarmac: from 300 to 100 km/h, 112 m; from 300 to 200 km/h, 59 m; from 200 to 100 km/h, 52 m; from 150 to 60 km/h, 38 m." width="1000" height="510" loading="lazy">
+<figcaption>The bigger the radius, the faster the corner; and braking from 300 to 100 km/h takes about 112 m.</figcaption>
+</figure>
+<p>Other details of the model: 800 W of power per kilogram, 6 gears, a top speed of about 309 km/h, limited by air drag. On grass, the tyres hold 38% of normal, and on gravel, 30%, with much more resistance. Walls stop the car, without damage. How far the wheels turn shrinks with speed: 26° when stopped, about 4° at 300 km/h.</p>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="numeros-en" aria-labelledby="h-numeros-en">
+<h2 id="h-numeros-en">What the numbers say</h2>
+<p>To find out how fast each level goes, I measured with the game’s own code the flying lap of a car alone on each track: the second lap of a two-lap practice, with no opponents. The computer drove at all three levels, and a fourth measurement used automatic pedals with the computer’s steering. <sup><a href="#ref-1-en">[1]</a></sup></p>
+<figure>
+<img src="rc_images/MiniTempos-en.svg" alt="Chart with one row per track showing the flying lap of a car alone, measured with the game's code. A circle marks the computer's time at hard level, and a band runs to the easy-level time; a diamond marks the time with automatic pedals, always between hard and easy. Hard-level times: Phoenix 79.5 s; Interlagos 81.8 s; Imola 84.5 s; Monaco 81.8 s; Gilles Villeneuve 81.7 s; Hermanos Rodríguez 72.9 s; Paul Ricard 69.6 s; Silverstone 73.5 s; Hockenheim 109.2 s; Hungaroring 76.4 s; Spa-Francorchamps 113.8 s; Monza 88.2 s; Estoril 81.8 s; Jerez 83.2 s; Suzuka 94.3 s; Adelaide 89.2 s." width="1000" height="754" loading="lazy">
+<figcaption>Flying lap per track: hard level, band up to easy, and automatic pedals.</figcaption>
+</figure>
+<ul>
+<li><strong>Difficulty is the computer’s speed in corners.</strong> Drivers run at 82–88% of the ideal speed on easy, 90–95.5% on normal and 96.5–100% on hard. In the measurement, easy was 8.9% to 11.4% slower than hard, and normal 3.2% to 4.2%.</li>
+<li><strong>Automatic pedals cost little time.</strong> With the computer’s perfect steering, they were 2.3% to 3.8% slower than the hard level, roughly like the normal level. With a person steering, the gap grows, because the automatic mode slows down when the car leaves the racing line.</li>
+<li><strong>Monaco is the slowest, Monza the fastest.</strong> At the hard level, the average was 147 km/h at Monaco and 237 km/h at Monza.</li>
+</ul>
+<blockquote><p><strong>What these numbers do not measure.</strong> They are times from a model, with simplified tracks and physics, not real 1990 times. Nor do they measure a person playing: the computer’s steering is always the same, and a person gets things right and wrong in different ways.</p></blockquote>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="dicas-en" aria-labelledby="h-dicas-en">
+<h2 id="h-dicas-en">Driving tips</h2>
+<ol>
+<li><strong>Brake in a straight line.</strong> Finish braking before you turn. Braking and cornering together use the same grip.</li>
+<li><strong>Out, in, out.</strong> Enter the corner from the outside, touch the inside in the middle and exit wide. That is what the racing line draws.</li>
+<li><strong>Accelerate on the exit, not the entry.</strong> The exit of a slow corner decides the speed of the whole straight after it.</li>
+<li><strong>Look far ahead.</strong> The camera zooms out with speed to show more track. Use the minimap to know what is coming.</li>
+<li><strong>Use kerbs with care.</strong> They hold almost like tarmac, but the grass right after holds less than half.</li>
+<li><strong>Overtake under braking.</strong> The computer goes around a slower car ahead, but follows its own speed profile. Braking a little later on the inside, you take the position.</li>
+<li><strong>Start with assists and remove one at a time.</strong> First automatic pedals, then just the racing line, finally none.</li>
+</ol>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="erros-en" aria-labelledby="h-erros-en">
+<h2 id="h-erros-en">Common mistakes</h2>
+<ul class="myths">
+<li><h3>“Cursor on top of the car turns more.”</h3><p>The opposite. With the cursor on the car, it does not turn at all. Keep the cursor ahead, toward the corner exit.</p></li>
+<li><h3>“Holding A all the time is faster.”</h3><p>Only on the straights. Arriving too fast makes the car slide onto the grass, which slows it far more than the brakes.</p></li>
+<li><h3>“You can cut across the grass.”</h3><p>Grass holds 38% of normal and gravel 30%, and both slow the car. Also, a lap only counts if the car passes the middle of the track.</p></li>
+<li><h3>“Reverse is for braking.”</h3><p>The Z key only engages reverse when the car is almost stopped. When moving, it is the brake.</p></li>
+<li><h3>“The layouts are copies of the maps.”</h3><p>No. They are simplified drawings with the right length. They are meant to resemble the circuit, not to train for the real one.</p></li>
+</ul>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="revisao-en" aria-labelledby="h-revisao-en">
+<h2 id="h-revisao-en">Quick review</h2>
+<div class="quiz">
+<details><summary>1. Which keys accelerate and brake?</summary><p>A accelerates and Z brakes. When stopped, Z reverses.</p></details>
+<details><summary>2. In Aim mode, where should the cursor be?</summary><p>A little ahead of the car, toward the corner exit. On top of the car, it does not turn.</p></details>
+<details><summary>3. What does the red part of the racing line mean?</summary><p>A braking zone. If it turns red from the car and BRAKE appears, you need to brake now.</p></details>
+<details><summary>4. How many races did the 1990 championship have, and which was first?</summary><p>16 races. The first was at Phoenix, in the United States, on 11 March.</p></details>
+<details><summary>5. What happened to Interlagos in 1990?</summary><p>The track was rebuilt and shortened by 3.5 km, losing fast sweepers and the long Retão straight.</p></details>
+<details><summary>6. Why do fast corners feel easier than slow ones?</summary><p>Because the wing adds grip with speed: 1.45 g in a slow corner, 4.1 g at 290 km/h.</p></details>
+<details><summary>7. How much time do automatic pedals cost in the simulation?</summary><p>2.3% to 3.8% compared with the hard level, with the computer’s steering.</p></details>
+<details><summary>8. Do laps with automatic pedals count as records?</summary><p>No. Only laps with manual throttle and brake count as personal records.</p></details>
+</div>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="referencias-en" aria-labelledby="h-referencias-en">
+<h2 id="h-referencias-en">References</h2>
+<ol class="refs">
+<li id="ref-1-en"><strong>Giovani Perotto Mesquita</strong>, “Mini Formula 1990”, game on this site, <a href="MiniFormula.html#en">giovanipm.github.io/MiniFormula.html</a>. The layouts, physics constants, levels and assists are in the game code. The figures and measurements in this tutorial use that same code; each measurement is one flying lap per track and per driver.</li>
+<li id="ref-2-en"><strong>Wikipedia</strong>, “1990 Formula One World Championship”, accessed 15 November 2026, <a href="https://en.wikipedia.org/wiki/1990_Formula_One_World_Championship" rel="noopener">en.wikipedia.org/wiki/1990_Formula_One_World_Championship</a>. Source of the calendar: rounds, circuits and dates.</li>
+<li id="ref-3-en"><strong>Wikipedia</strong>, articles on each 1990 Grand Prix, infobox (lap length, number of laps and distance), accessed 15 November 2026: <a href="https://en.wikipedia.org/wiki/1990_United_States_Grand_Prix" rel="noopener">United States</a>, <a href="https://en.wikipedia.org/wiki/1990_Brazilian_Grand_Prix" rel="noopener">Brazil</a>, <a href="https://en.wikipedia.org/wiki/1990_San_Marino_Grand_Prix" rel="noopener">San Marino</a>, <a href="https://en.wikipedia.org/wiki/1990_Monaco_Grand_Prix" rel="noopener">Monaco</a>, <a href="https://en.wikipedia.org/wiki/1990_Canadian_Grand_Prix" rel="noopener">Canada</a>, <a href="https://en.wikipedia.org/wiki/1990_Mexican_Grand_Prix" rel="noopener">Mexico</a>, <a href="https://en.wikipedia.org/wiki/1990_French_Grand_Prix" rel="noopener">France</a>, <a href="https://en.wikipedia.org/wiki/1990_British_Grand_Prix" rel="noopener">Great Britain</a>, <a href="https://en.wikipedia.org/wiki/1990_German_Grand_Prix" rel="noopener">Germany</a>, <a href="https://en.wikipedia.org/wiki/1990_Hungarian_Grand_Prix" rel="noopener">Hungary</a>, <a href="https://en.wikipedia.org/wiki/1990_Belgian_Grand_Prix" rel="noopener">Belgium</a>, <a href="https://en.wikipedia.org/wiki/1990_Italian_Grand_Prix" rel="noopener">Italy</a>, <a href="https://en.wikipedia.org/wiki/1990_Portuguese_Grand_Prix" rel="noopener">Portugal</a>, <a href="https://en.wikipedia.org/wiki/1990_Spanish_Grand_Prix" rel="noopener">Spain</a>, <a href="https://en.wikipedia.org/wiki/1990_Japanese_Grand_Prix" rel="noopener">Japan</a>, <a href="https://en.wikipedia.org/wiki/1990_Australian_Grand_Prix" rel="noopener">Australia</a>.</li>
+<li id="ref-4-en"><strong>Wikipedia</strong>, “1990 Brazilian Grand Prix”, accessed 15 November 2026, <a href="https://en.wikipedia.org/wiki/1990_Brazilian_Grand_Prix" rel="noopener">en.wikipedia.org/wiki/1990_Brazilian_Grand_Prix</a>. Passage on the shortening of the track.</li>
+<li id="ref-5-en"><strong>Wikipedia</strong>, “1990 Portuguese Grand Prix”, accessed 15 November 2026, <a href="https://en.wikipedia.org/wiki/1990_Portuguese_Grand_Prix" rel="noopener">en.wikipedia.org/wiki/1990_Portuguese_Grand_Prix</a>. Race stopped on lap 61 of 71.</li>
+</ol>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+  </article>
+</div>
+</div>
+
+
+<!-- ===================== IT ===================== -->
+<div id="it" role="tabpanel" aria-labelledby="tab-it" lang="it" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html#it" data-projects>← Progetti</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Mini Formula 1990: tutorial del gioco</h1>
+      <p class="dek">Il calendario del 1990 che dà il nome alle piste, come sono stati fatti i tracciati, i comandi col mouse, una guida passo passo con le schermate, la fisica dietro curve e frenate, gli aiuti alla guida e cosa dice una simulazione sui tempi sul giro.</p>
+      <div class="byline">
+        <span>Di <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Pubblicato il <time datetime="2026-11-15">15/11/2026</time></span>
+        <span class="credit">Rivisto e formattato usando Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-it">
+    <h2 id="toc-it">Indice</h2>
+    <ol>
+      <li><a href="#intro-it">Il gioco</a></li>
+      <li><a href="#campeonato-it">Il campionato 1990</a></li>
+      <li><a href="#pistas-it">Le piste nel gioco</a></li>
+      <li><a href="#controles-it">Comandi</a></li>
+      <li><a href="#app-it">Passo passo nell’app</a></li>
+      <li><a href="#fisica-it">La fisica del gioco</a></li>
+      <li><a href="#numeros-it">Cosa dicono i numeri</a></li>
+      <li><a href="#dicas-it">Consigli di guida</a></li>
+      <li><a href="#erros-it">Errori comuni</a></li>
+      <li><a href="#revisao-it">Ripasso veloce</a></li>
+      <li><a href="#referencias-it">Riferimenti</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-it" aria-labelledby="h-intro-it">
+<h2 id="h-intro-it">Il gioco</h2>
+<p>Mini Formula 1990 è una gara di piccole monoposto viste dall’alto. Sterzi col mouse, acceleri col tasto <kbd>A</kbd> e freni con la <kbd>Z</kbd>, contro un massimo di nove auto del computer o da solo, nelle prove libere. Le piste sono le 16 del campionato mondiale del 1990, da Phoenix ad Adelaide. <sup><a href="#ref-1-it">[1]</a></sup></p>
+<p>È un unico file HTML, che funziona senza internet, in quattro lingue, al computer e sul telefono. Due aiuti facoltativi rendono più facile l’inizio: la <strong>traiettoria ideale</strong>, una linea colorata che mostra dove andare e dove frenare, e i <strong>pedali automatici</strong>, con cui tu sterzi soltanto.</p>
+<p><a class="launch" href="MiniFormula.html#it">Apri il gioco <span aria-hidden="true">→</span></a></p>
+<figure>
+<img src="rc_images/MiniCorrida-it.png" alt="Schermata del gioco all'inizio della gara a Interlagos: otto auto di colori diversi in una curva con cordoli rossi e bianchi, una via di fuga in ghiaia all'esterno e fumo delle gomme, e una linea colorata che mostra la traiettoria ideale. Intorno, la torre delle posizioni a sinistra, la minimappa a destra, il giro e i tempi in basso a sinistra e il tachimetro con la marcia in basso a destra" width="1280" height="800" loading="lazy">
+<figcaption>I primi secondi a Interlagos: il gruppo ancora compatto, con la traiettoria ideale attivata.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="campeonato-it" aria-labelledby="h-campeonato-it">
+<h2 id="h-campeonato-it">Il campionato 1990</h2>
+<p>Il campionato mondiale del 1990 ebbe 16 gare, da marzo a novembre. <sup><a href="#ref-2-it">[2]</a></sup> Il gioco usa lo stesso elenco, nello stesso ordine, con la lunghezza del giro e il numero di giri di ogni gara di quell’anno. <sup><a href="#ref-3-it">[3]</a></sup></p>
+<div class="table-wrap"><table>
+<thead><tr><th>Gara</th><th>Gran Premio</th><th>Circuito</th><th>Data</th><th>Giro</th><th>Giri</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Stati Uniti</td><td>Phoenix</td><td>11/03</td><td>3,800 km</td><td>72</td></tr>
+<tr><td>2</td><td>Brasile</td><td>Interlagos</td><td>25/03</td><td>4,325 km</td><td>71</td></tr>
+<tr><td>3</td><td>San Marino</td><td>Imola</td><td>13/05</td><td>5,040 km</td><td>61</td></tr>
+<tr><td>4</td><td>Monaco</td><td>Monaco</td><td>27/05</td><td>3,328 km</td><td>78</td></tr>
+<tr><td>5</td><td>Canada</td><td>Gilles Villeneuve (Montréal)</td><td>10/06</td><td>4,390 km</td><td>70</td></tr>
+<tr><td>6</td><td>Messico</td><td>Hermanos Rodríguez</td><td>24/06</td><td>4,421 km</td><td>69</td></tr>
+<tr><td>7</td><td>Francia</td><td>Paul Ricard</td><td>08/07</td><td>3,813 km</td><td>80</td></tr>
+<tr><td>8</td><td>Gran Bretagna</td><td>Silverstone</td><td>15/07</td><td>4,778 km</td><td>64</td></tr>
+<tr><td>9</td><td>Germania</td><td>Hockenheim</td><td>29/07</td><td>6,802 km</td><td>45</td></tr>
+<tr><td>10</td><td>Ungheria</td><td>Hungaroring</td><td>12/08</td><td>3,968 km</td><td>77</td></tr>
+<tr><td>11</td><td>Belgio</td><td>Spa-Francorchamps</td><td>26/08</td><td>6,940 km</td><td>44</td></tr>
+<tr><td>12</td><td>Italia</td><td>Monza</td><td>09/09</td><td>5,800 km</td><td>53</td></tr>
+<tr><td>13</td><td>Portogallo</td><td>Estoril</td><td>23/09</td><td>4,350 km</td><td>71 previsti, 61 percorsi</td></tr>
+<tr><td>14</td><td>Spagna</td><td>Jerez</td><td>30/09</td><td>4,218 km</td><td>73</td></tr>
+<tr><td>15</td><td>Giappone</td><td>Suzuka</td><td>21/10</td><td>5,860 km</td><td>53</td></tr>
+<tr><td>16</td><td>Australia</td><td>Adelaide</td><td>04/11</td><td>3,780 km</td><td>81</td></tr>
+</tbody></table></div>
+<p>Due curiosità di quell’anno sono nelle fonti. Interlagos era appena stato rifatto: la pista perse 3,5 km, curve veloci e il lungo rettilineo del “Retão”. <sup><a href="#ref-4-it">[4]</a></sup> In Portogallo la gara fu interrotta dopo un incidente e finì al giro 61 dei 71 previsti. <sup><a href="#ref-5-it">[5]</a></sup></p>
+<blockquote><p><strong>Divergenze tra le fonti.</strong> In due gare la distanza totale della scheda non corrisponde a giri per lunghezza. In Gran Bretagna, 64 × 4,778 km fa 305,792 km, e la scheda dice 305,904 km. In Belgio, 44 × 6,940 km fa 305,36 km, e la scheda dice 301,172 km; il testo stesso dell’articolo parla di 301 km. Il gioco usa la lunghezza del giro, che è la stessa nei due casi. <sup><a href="#ref-3-it">[3]</a></sup></p></blockquote>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="pistas-it" aria-labelledby="h-pistas-it">
+<h2 id="h-pistas-it">Le piste nel gioco</h2>
+<p>I tracciati del gioco sono <strong>semplificati</strong>. Ogni pista è stata descritta a mano come una sequenza di rettilinei e curve, o come un poligono con gli angoli arrotondati, per ricordare il disegno del circuito. Il programma chiude il giro, controlla che i tratti non si incrocino e scala il risultato alla lunghezza ufficiale del 1990. <sup><a href="#ref-1-it">[1]</a></sup> Non sono copie di mappe: Monza, Hockenheim e l’otto di Suzuka ricordano bene l’originale; Monaco, Phoenix e Adelaide solo a grandi linee.</p>
+<figure>
+<img src="rc_images/MiniPistas-it.svg" alt="Griglia con le 16 piste del gioco, nell'ordine del calendario 1990, ognuna con la lunghezza del giro: 1. Phoenix (3,800 km), 2. Interlagos (4,325 km), 3. Imola (5,040 km), 4. Monaco (3,328 km), 5. Gilles Villeneuve (4,390 km), 6. Hermanos Rodríguez (4,421 km), 7. Paul Ricard (3,813 km), 8. Silverstone (4,778 km), 9. Hockenheim (6,802 km), 10. Hungaroring (3,968 km), 11. Spa-Francorchamps (6,940 km), 12. Monza (5,800 km), 13. Estoril (4,350 km), 14. Jerez (4,218 km), 15. Suzuka (5,860 km), 16. Adelaide (3,780 km). In ogni disegno, un segno rosso indica la partenza e il senso di marcia. Suzuka appare come un otto, con un incrocio. I tracciati sono semplificati e ognuno è in una scala diversa." width="1000" height="1100" loading="lazy">
+<figcaption>Le 16 piste, nell’ordine del calendario, disegnate dal codice del gioco.</figcaption>
+</figure>
+<p>Intorno all’asfalto, il gioco calcola da solo cosa c’è in ogni tratto:</p>
+<ul>
+<li><strong>Cordoli</strong> rossi e bianchi dove la curva stringe.</li>
+<li><strong>Vie di fuga in ghiaia</strong> all’esterno delle curve strette, sulle piste permanenti.</li>
+<li><strong>Erba</strong> e, alla sua fine, un <strong>muro</strong>. Nei circuiti cittadini (Phoenix, Monaco, Montréal e Adelaide), il muro è a pochi metri dall’asfalto.</li>
+<li>Quando due tratti passano vicini, il muro sta fra loro, a metà strada.</li>
+</ul>
+<p>A Suzuka il tratto di ritorno passa sopra il ponte, e le auto che stanno sotto sono disegnate al di sotto.</p>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="controles-it" aria-labelledby="h-controles-it">
+<h2 id="h-controles-it">Comandi</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Comando</th><th>Cosa fa</th></tr></thead>
+<tbody>
+<tr><td>Mouse</td><td>sterza l’auto, in modalità Mira o Volante (vedi la figura)</td></tr>
+<tr><td><kbd>A</kbd></td><td>acceleratore</td></tr>
+<tr><td><kbd>Z</kbd></td><td>freno; ad auto ferma, tienilo premuto per la retromarcia</td></tr>
+<tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>sterzano, in alternativa al mouse</td></tr>
+<tr><td><kbd>R</kbd></td><td>riporta l’auto al centro della pista, ferma</td></tr>
+<tr><td><kbd>P</kbd> o <kbd>Esc</kbd></td><td>pausa; nelle prove libere, <kbd>Esc</kbd> termina e mostra i giri</td></tr>
+<tr><td>Tocco</td><td>un dito tocca la pista per mirare; l’altro tiene premuti i pulsanti A e Z nell’angolo</td></tr>
+</tbody></table></div>
+<figure>
+<img src="rc_images/MiniMira-it.svg" alt="Due pannelli. A sinistra, la modalità Mira: un'auto su un rettilineo, il cursore davanti e in alto, una linea gialla dall'auto al cursore e un arco che segna l'errore di direzione tra il muso dell'auto e il cursore; l'auto gira per chiudere quell'angolo. A destra, la modalità Volante: una linea tratteggiata al centro dello schermo, il cursore a destra, una freccia gialla che indica la distanza dal centro e un volante girato a destra. Sotto, la nota che l'angolo massimo delle ruote scende da 26 gradi da fermo a circa 4 gradi a 300 km/h." width="1000" height="560" loading="lazy">
+<figcaption>Con la Mira l’auto insegue il cursore; con il Volante il mouse fa da posizione del volante.</figcaption>
+</figure>
+<p>Con la Mira, tieni il cursore un po’ davanti all’auto, all’uscita della curva, e spostalo insieme. Se il cursore sta sopra l’auto, non gira. Il Volante si abbina alla telecamera che ruota con l’auto, scelta nell’opzione <strong>Telecamera</strong>.</p>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="app-it" aria-labelledby="h-app-it">
+<h2 id="h-app-it">Passo passo nell’app</h2>
+<h3>1. Scegli la pista e le opzioni</h3>
+<p>All’apertura del gioco compare la finestra <strong>Nuova gara</strong>. A destra, il disegno della pista scelta, con la partenza in rosso, la data della gara del 1990, la lunghezza del giro, i giri della gara reale e il tuo record. Per cominciare, usa 3 giri, 7 avversari, livello Normale e la traiettoria ideale attivata. Scegli il colore dell’auto e fai clic su <strong>Corri</strong>.</p>
+<figure>
+<img src="rc_images/MiniOpcoes-it.png" alt="Finestra Nuova gara con la pista 2, GP del Brasile, Interlagos, modalità Gara, 3 giri, 7 avversari, difficoltà Normale, partenza ultimo, sterzo Mira sul cursore, telecamera fissa con il nord in alto, traiettoria ideale Attivata, acceleratore e freno Manuali, seme 1990 e otto colori di auto. A destra, il disegno di Interlagos e i dati: 25 marzo 1990, giro di 4,325 km, 71 giri nella gara reale e ancora nessun record" width="1560" height="1240" loading="lazy">
+<figcaption>Le opzioni della gara, con Interlagos scelta.</figcaption>
+</figure>
+<div class="table-wrap"><table>
+<thead><tr><th>Opzione</th><th>Scelte</th></tr></thead>
+<tbody>
+<tr><td>Modalità</td><td>gara, o prove libere da solo e senza limite di giri</td></tr>
+<tr><td>Giri</td><td>1, 3, 5, 10 o 20</td></tr>
+<tr><td>Avversari</td><td>1, 3, 5, 7 o 9, con nomi inventati</td></tr>
+<tr><td>Difficoltà</td><td>facile, normale o difficile (vedi <a href="#numeros-it">i numeri</a>)</td></tr>
+<tr><td>Posizione in griglia</td><td>ultimo, metà griglia o pole position</td></tr>
+<tr><td>Sterzo col mouse</td><td>Mira sul cursore o Volante</td></tr>
+<tr><td>Telecamera</td><td>fissa con il nord in alto, o che ruota con l’auto</td></tr>
+<tr><td>Traiettoria ideale</td><td>disattivata o attivata</td></tr>
+<tr><td>Acceleratore e freno</td><td>manuali (A e Z) o automatici</td></tr>
+<tr><td>Seme</td><td>con lo stesso seme e gli stessi comandi, la gara si ripete</td></tr>
+</tbody></table></div>
+<h3>2. Aspetta che si spengano le luci</h3>
+<p>Le auto aspettano in griglia, su due file. Cinque luci rosse si accendono, una al secondo. Dopo una pausa casuale si spengono tutte: è il momento di accelerare. Se la tua auto si muove prima, prendi 5 secondi di penalità sul tempo finale.</p>
+<figure>
+<img src="rc_images/MiniLargada-it.png" alt="Griglia di partenza vista dall'alto: auto ferme su due file sfalsate, ognuna nel suo riquadro bianco, e in alto il semaforo con le luci rosse che si accendono. In basso, il suggerimento di mirare col mouse, accelerare con A e frenare con Z" width="1280" height="800" loading="lazy">
+<figcaption>Le luci si accendono una al secondo; quando si spengono tutte, accelera.</figcaption>
+</figure>
+<h3>3. Segui la traiettoria ideale</h3>
+<p>Con la traiettoria ideale attivata, una linea mostra i prossimi 380 m del percorso più veloce. Verde significa accelerare, giallo è curva al limite e rosso è zona di frenata. Se arrivi troppo veloce, la linea diventa rossa dall’auto fino alla curva, e sopra il tachimetro compare l’avviso <strong>FRENA</strong>.</p>
+<figure>
+<img src="rc_images/MiniTracado-it.png" alt="Una curva a Interlagos con la traiettoria ideale: la linea arriva rossa lungo il rettilineo fino all'auto del giocatore e diventa gialla in curva. Sopra il tachimetro compare l'avviso rosso FRENA. Ci sono vie di fuga in ghiaia all'esterno delle curve e fumo delle gomme dietro le auto" width="1280" height="800" loading="lazy">
+<figcaption>Troppo veloce per la curva: la linea diventa rossa e il gioco avvisa FRENA.</figcaption>
+</figure>
+<h3>4. Oppure lascia i pedali all’auto</h3>
+<p>Con <strong>acceleratore e freno automatici</strong>, l’auto accelera sui rettilinei e frena prima delle curve, e tu sterzi soltanto. Il tachimetro mostra <strong>PEDALI AUTO</strong>. Il tasto <kbd>Z</kbd> frena comunque, se vuoi frenare prima. I giri fatti così non valgono come record personale.</p>
+<figure>
+<img src="rc_images/MiniAuto-it.png" alt="Un rettilineo di Monaco con i pedali automatici: l'auto del giocatore ad alta velocità, la traiettoria ideale verde subito davanti e rossa più avanti, dove inizia la zona di frenata, e avversari davanti. Sul tachimetro, l'etichetta PEDALI AUTO" width="1280" height="800" loading="lazy">
+<figcaption>Pedali automatici: il rosso davanti è dove l’auto frenerà da sola.</figcaption>
+</figure>
+<h3>5. Passa sul ponte di Suzuka</h3>
+<p>Suzuka è un otto. A metà giro la pista passa sotto il rettilineo opposto, e al ritorno ci passi sopra. Le auto di un livello non urtano quelle dell’altro.</p>
+<figure>
+<img src="rc_images/MiniPonte-it.png" alt="L'incrocio di Suzuka visto dall'alto: una pista passa in diagonale sopra l'altra su un ponte con parapetti e ombra. L'auto del giocatore è sulla pista sotto, appena passata sotto il ponte" width="1280" height="800" loading="lazy">
+<figcaption>L’incrocio di Suzuka: il ponte è disegnato sopra le auto che passano sotto.</figcaption>
+</figure>
+<h3>6. Guarda il risultato</h3>
+<p>Quando tagli il traguardo all’ultimo giro, compare la bandiera a scacchi. Il tempo accelera finché le altre auto arrivano, e la finestra del risultato mostra posizione, giri, tempo o distacco dal vincitore e giro migliore di ogni pilota, oltre al giro più veloce della gara e alla tua penalità, se c’è.</p>
+<figure>
+<img src="rc_images/MiniResultado-it.png" alt="Finestra del risultato di una gara di un giro al Paul Ricard, livello facile: la frase con la posizione del giocatore e una tabella con sei piloti, i giri, il tempo del vincitore e il distacco degli altri e il giro migliore di ciascuno, con la riga del giocatore evidenziata in giallo. Sotto, il seme, il livello, il giro più veloce della gara e la penalità, con i pulsanti Guarda la pista, Opzioni e Corri di nuovo" width="1560" height="920" loading="lazy">
+<figcaption>Il risultato di una gara di un giro al Paul Ricard.</figcaption>
+</figure>
+<h3>7. Sul telefono</h3>
+<p>Sul telefono, i pulsanti <strong>A</strong> e <strong>Z</strong> compaiono nell’angolo dello schermo. Tieni premuto A con un dito e tocca la pista davanti con l’altro per mirare. I pedali automatici aiutano molto sullo schermo piccolo.</p>
+<figure>
+<img src="rc_images/MiniCelular-it.png" alt="Schermata di telefono in tema scuro, ad Adelaide: l'auto del giocatore e gli avversari in una curva, con la traiettoria ideale davanti. In alto, i pulsanti del gioco, la torre delle posizioni e la minimappa; in basso, i tempi, il tachimetro con l'etichetta PEDALI AUTO e i pulsanti rotondi Z freno e A gas" width="390" height="844" loading="lazy">
+<figcaption>Su uno schermo di 390 pixel, con i pulsanti touch e i pedali automatici.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="fisica-it" aria-labelledby="h-fisica-it">
+<h2 id="h-fisica-it">La fisica del gioco</h2>
+<p>L’auto del gioco segue un modello semplice, pensato per essere giocabile, non per imitare nei dettagli un’auto del 1990. <sup><a href="#ref-1-it">[1]</a></sup> Tre idee spiegano quasi tutto:</p>
+<ol>
+<li><strong>Aderenza che cresce con la velocità.</strong> Le gomme tengono 1,45 g di forza laterale in una curva lenta. L’ala aggiunge aderenza col quadrato della velocità, e a 290 km/h l’auto tiene 4,1 g. Per questo le curve veloci sembrano più facili di quelle lente.</li>
+<li><strong>Frenata forte ad alta velocità.</strong> I freni tengono 1,6 g piano e 3,8 g a 290 km/h, per lo stesso motivo.</li>
+<li><strong>Gomme con un limite.</strong> Se la curva chiede più aderenza di quella che c’è, l’auto scivola verso l’esterno, lascia segni e fa fumo. Frenare forte sterzando consuma anche l’aderenza.</li>
+</ol>
+<figure>
+<img src="rc_images/MiniCurva-it.svg" alt="Due grafici con valori del modello del gioco. A sinistra, la velocità massima in curva secondo il raggio: 63 km/h con raggio di 20 m, 108 km/h a 50 m e 177 km/h a 100 m; oltre 165 m di raggio, la curva si fa a tavoletta. A destra, barre con lo spazio di frenata sull'asfalto: da 300 a 100 km/h, 112 m; da 300 a 200 km/h, 59 m; da 200 a 100 km/h, 52 m; da 150 a 60 km/h, 38 m." width="1000" height="510" loading="lazy">
+<figcaption>Più grande è il raggio, più veloce è la curva; e frenare da 300 a 100 km/h richiede circa 112 m.</figcaption>
+</figure>
+<p>Altri dettagli del modello: potenza di 800 W per chilo, 6 marce, velocità massima di circa 309 km/h, limitata dalla resistenza dell’aria. Sull’erba le gomme tengono il 38% del normale, sulla ghiaia il 30%, con molta più resistenza all’avanzamento. I muri fermano l’auto, senza danni. Quanto girano le ruote diminuisce con la velocità: 26° da fermo, circa 4° a 300 km/h.</p>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="numeros-it" aria-labelledby="h-numeros-it">
+<h2 id="h-numeros-it">Cosa dicono i numeri</h2>
+<p>Per sapere quanto va ogni livello, ho misurato con il codice del gioco il giro lanciato di un’auto da sola su ogni pista: il secondo giro di prove di due giri, senza avversari. Il computer ha guidato ai tre livelli, e una quarta misura ha usato i pedali automatici con lo sterzo del computer. <sup><a href="#ref-1-it">[1]</a></sup></p>
+<figure>
+<img src="rc_images/MiniTempos-it.svg" alt="Grafico con una riga per pista che mostra il giro lanciato di un'auto da sola, misurato col codice del gioco. Un cerchio segna il tempo del computer a livello difficile, e una fascia arriva al tempo del livello facile; un rombo segna il tempo con i pedali automatici, sempre tra difficile e facile. Tempi del livello difficile: Phoenix 79,5 s; Interlagos 81,8 s; Imola 84,5 s; Monaco 81,8 s; Gilles Villeneuve 81,7 s; Hermanos Rodríguez 72,9 s; Paul Ricard 69,6 s; Silverstone 73,5 s; Hockenheim 109,2 s; Hungaroring 76,4 s; Spa-Francorchamps 113,8 s; Monza 88,2 s; Estoril 81,8 s; Jerez 83,2 s; Suzuka 94,3 s; Adelaide 89,2 s." width="1000" height="754" loading="lazy">
+<figcaption>Giro lanciato per pista: livello difficile, fascia fino al facile e pedali automatici.</figcaption>
+</figure>
+<ul>
+<li><strong>La difficoltà è la velocità del computer in curva.</strong> I piloti vanno all’82–88% della velocità ideale nel facile, al 90–95,5% nel normale e al 96,5–100% nel difficile. Nella misura, il facile è stato dall’8,9% all’11,4% più lento del difficile, e il normale dal 3,2% al 4,2%.</li>
+<li><strong>I pedali automatici costano poco tempo.</strong> Con lo sterzo perfetto del computer, sono stati dal 2,3% al 3,8% più lenti del livello difficile, più o meno come il livello normale. Con una persona alla guida la differenza cresce, perché l’automatico rallenta quando l’auto esce dalla traiettoria ideale.</li>
+<li><strong>Monaco è la più lenta, Monza la più veloce.</strong> Al livello difficile, la media è stata di 147 km/h a Monaco e 237 km/h a Monza.</li>
+</ul>
+<blockquote><p><strong>Cosa questi numeri non misurano.</strong> Sono tempi di un modello, con piste e fisica semplificate, non tempi reali del 1990. Non misurano nemmeno una persona che gioca: lo sterzo del computer è sempre lo stesso, e una persona sbaglia e azzecca in modi diversi.</p></blockquote>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="dicas-it" aria-labelledby="h-dicas-it">
+<h2 id="h-dicas-it">Consigli di guida</h2>
+<ol>
+<li><strong>Frena in rettilineo.</strong> Finisci di frenare prima di sterzare. Freno e curva insieme consumano la stessa aderenza.</li>
+<li><strong>Esterno, interno, esterno.</strong> Entra in curva dall’esterno, tocca l’interno a metà e esci largo. È ciò che disegna la traiettoria ideale.</li>
+<li><strong>Accelera in uscita, non in entrata.</strong> L’uscita di una curva lenta decide la velocità di tutto il rettilineo che segue.</li>
+<li><strong>Guarda lontano.</strong> La telecamera si allontana con la velocità per mostrare più pista. Usa la minimappa per sapere cosa arriva.</li>
+<li><strong>Usa i cordoli con attenzione.</strong> Tengono quasi come l’asfalto, ma l’erba subito dopo tiene meno della metà.</li>
+<li><strong>Sorpassa in frenata.</strong> Il computer scarta un’auto più lenta davanti, ma segue il proprio profilo di velocità. Frenando un po’ più tardi all’interno, prendi la posizione.</li>
+<li><strong>Comincia con gli aiuti e toglili uno alla volta.</strong> Prima i pedali automatici, poi solo la traiettoria ideale, infine nessuno.</li>
+</ol>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="erros-it" aria-labelledby="h-erros-it">
+<h2 id="h-erros-it">Errori comuni</h2>
+<ul class="myths">
+<li><h3>“Il cursore sopra l’auto la fa girare di più.”</h3><p>È il contrario. Con il cursore sull’auto, non gira per niente. Tieni il cursore davanti, verso l’uscita della curva.</p></li>
+<li><h3>“Tenere A sempre premuto è più veloce.”</h3><p>Solo sui rettilinei. Arrivare troppo veloci fa scivolare l’auto sull’erba, che rallenta molto più dei freni.</p></li>
+<li><h3>“Sull’erba si può tagliare.”</h3><p>L’erba tiene il 38% del normale e la ghiaia il 30%, ed entrambe rallentano l’auto. Inoltre il giro conta solo se l’auto passa per la metà della pista.</p></li>
+<li><h3>“La retromarcia serve a frenare.”</h3><p>Il tasto Z inserisce la retromarcia solo ad auto quasi ferma. In movimento è il freno.</p></li>
+<li><h3>“I tracciati sono copie delle mappe.”</h3><p>No. Sono disegni semplificati con la lunghezza giusta. Servono a ricordare il circuito, non ad allenarsi per quello vero.</p></li>
+</ul>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="revisao-it" aria-labelledby="h-revisao-it">
+<h2 id="h-revisao-it">Ripasso veloce</h2>
+<div class="quiz">
+<details><summary>1. Quali tasti accelerano e frenano?</summary><p>A accelera e Z frena. Ad auto ferma, Z fa la retromarcia.</p></details>
+<details><summary>2. In modalità Mira, dove tenere il cursore?</summary><p>Un po’ davanti all’auto, verso l’uscita della curva. Sopra l’auto, non gira.</p></details>
+<details><summary>3. Cosa significa la parte rossa della traiettoria ideale?</summary><p>Zona di frenata. Se diventa rossa dall’auto e compare FRENA, devi frenare subito.</p></details>
+<details><summary>4. Quante gare ebbe il campionato 1990, e quale fu la prima?</summary><p>16 gare. La prima fu a Phoenix, negli Stati Uniti, l’11 marzo.</p></details>
+<details><summary>5. Cosa successe a Interlagos nel 1990?</summary><p>La pista fu rifatta e accorciata di 3,5 km, perdendo curve veloci e il lungo rettilineo del Retão.</p></details>
+<details><summary>6. Perché le curve veloci sembrano più facili di quelle lente?</summary><p>Perché l’ala aggiunge aderenza con la velocità: 1,45 g in una curva lenta, 4,1 g a 290 km/h.</p></details>
+<details><summary>7. Quanto tempo costano i pedali automatici nella simulazione?</summary><p>Dal 2,3% al 3,8% rispetto al livello difficile, con lo sterzo del computer.</p></details>
+<details><summary>8. I giri con i pedali automatici valgono come record?</summary><p>No. Solo i giri con acceleratore e freno manuali entrano nel record personale.</p></details>
+</div>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="referencias-it" aria-labelledby="h-referencias-it">
+<h2 id="h-referencias-it">Riferimenti</h2>
+<ol class="refs">
+<li id="ref-1-it"><strong>Giovani Perotto Mesquita</strong>, “Mini Fórmula 1990” (Mini Formula 1990), gioco di questo sito, <a href="MiniFormula.html#it">giovanipm.github.io/MiniFormula.html</a>. Tracciati, costanti della fisica, livelli e aiuti sono nel codice del gioco. Le figure e le misure di questo tutorial usano lo stesso codice; ogni misura è un giro lanciato per pista e per pilota.</li>
+<li id="ref-2-it"><strong>Wikipedia</strong>, “1990 Formula One World Championship” (in inglese), consultato il 15/11/2026, <a href="https://en.wikipedia.org/wiki/1990_Formula_One_World_Championship" rel="noopener">en.wikipedia.org/wiki/1990_Formula_One_World_Championship</a>. Fonte del calendario: gare, circuiti e date.</li>
+<li id="ref-3-it"><strong>Wikipedia</strong>, articoli su ogni Gran Premio del 1990 (in inglese), scheda tecnica (lunghezza del giro, numero di giri e distanza), consultati il 15/11/2026: <a href="https://en.wikipedia.org/wiki/1990_United_States_Grand_Prix" rel="noopener">Stati Uniti</a>, <a href="https://en.wikipedia.org/wiki/1990_Brazilian_Grand_Prix" rel="noopener">Brasile</a>, <a href="https://en.wikipedia.org/wiki/1990_San_Marino_Grand_Prix" rel="noopener">San Marino</a>, <a href="https://en.wikipedia.org/wiki/1990_Monaco_Grand_Prix" rel="noopener">Monaco</a>, <a href="https://en.wikipedia.org/wiki/1990_Canadian_Grand_Prix" rel="noopener">Canada</a>, <a href="https://en.wikipedia.org/wiki/1990_Mexican_Grand_Prix" rel="noopener">Messico</a>, <a href="https://en.wikipedia.org/wiki/1990_French_Grand_Prix" rel="noopener">Francia</a>, <a href="https://en.wikipedia.org/wiki/1990_British_Grand_Prix" rel="noopener">Gran Bretagna</a>, <a href="https://en.wikipedia.org/wiki/1990_German_Grand_Prix" rel="noopener">Germania</a>, <a href="https://en.wikipedia.org/wiki/1990_Hungarian_Grand_Prix" rel="noopener">Ungheria</a>, <a href="https://en.wikipedia.org/wiki/1990_Belgian_Grand_Prix" rel="noopener">Belgio</a>, <a href="https://en.wikipedia.org/wiki/1990_Italian_Grand_Prix" rel="noopener">Italia</a>, <a href="https://en.wikipedia.org/wiki/1990_Portuguese_Grand_Prix" rel="noopener">Portogallo</a>, <a href="https://en.wikipedia.org/wiki/1990_Spanish_Grand_Prix" rel="noopener">Spagna</a>, <a href="https://en.wikipedia.org/wiki/1990_Japanese_Grand_Prix" rel="noopener">Giappone</a>, <a href="https://en.wikipedia.org/wiki/1990_Australian_Grand_Prix" rel="noopener">Australia</a>.</li>
+<li id="ref-4-it"><strong>Wikipedia</strong>, “1990 Brazilian Grand Prix” (in inglese), consultato il 15/11/2026, <a href="https://en.wikipedia.org/wiki/1990_Brazilian_Grand_Prix" rel="noopener">en.wikipedia.org/wiki/1990_Brazilian_Grand_Prix</a>. Passo sull’accorciamento della pista.</li>
+<li id="ref-5-it"><strong>Wikipedia</strong>, “1990 Portuguese Grand Prix” (in inglese), consultato il 15/11/2026, <a href="https://en.wikipedia.org/wiki/1990_Portuguese_Grand_Prix" rel="noopener">en.wikipedia.org/wiki/1990_Portuguese_Grand_Prix</a>. Gara interrotta al giro 61 di 71.</li>
+</ol>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+  </article>
+</div>
+</div>
+
+
+<!-- ===================== ES ===================== -->
+<div id="es" role="tabpanel" aria-labelledby="tab-es" lang="es" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html#es" data-projects>← Proyectos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Mini Fórmula 1990: tutorial del juego</h1>
+      <p class="dek">El calendario de 1990 que da nombre a las pistas, cómo se hicieron los trazados, los controles con el ratón, una guía paso a paso con pantallas, la física detrás de curvas y frenadas, las ayudas de conducción y lo que dice una simulación sobre los tiempos por vuelta.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado el <time datetime="2026-11-15">15/11/2026</time></span>
+        <span class="credit">Revisado y formateado usando Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-es">
+    <h2 id="toc-es">Índice</h2>
+    <ol>
+      <li><a href="#intro-es">El juego</a></li>
+      <li><a href="#campeonato-es">El campeonato de 1990</a></li>
+      <li><a href="#pistas-es">Las pistas en el juego</a></li>
+      <li><a href="#controles-es">Controles</a></li>
+      <li><a href="#app-es">Paso a paso en la app</a></li>
+      <li><a href="#fisica-es">La física del juego</a></li>
+      <li><a href="#numeros-es">Lo que dicen los números</a></li>
+      <li><a href="#dicas-es">Consejos de conducción</a></li>
+      <li><a href="#erros-es">Errores comunes</a></li>
+      <li><a href="#revisao-es">Repaso rápido</a></li>
+      <li><a href="#referencias-es">Referencias</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-es" aria-labelledby="h-intro-es">
+<h2 id="h-intro-es">El juego</h2>
+<p>Mini Fórmula 1990 es una carrera de cochecitos de fórmula vistos desde arriba. Diriges con el ratón, aceleras con la tecla <kbd>A</kbd> y frenas con la <kbd>Z</kbd>, contra hasta nueve coches del ordenador o solo, en el entrenamiento libre. Las pistas son las 16 del campeonato mundial de 1990, de Phoenix a Adelaida. <sup><a href="#ref-1-es">[1]</a></sup></p>
+<p>Es un único archivo HTML, que funciona sin internet, en cuatro idiomas, en el ordenador y en el móvil. Dos ayudas opcionales facilitan el comienzo: la <strong>trazada ideal</strong>, una línea de colores que muestra por dónde ir y dónde frenar, y los <strong>pedales automáticos</strong>, en los que tú solo diriges.</p>
+<p><a class="launch" href="MiniFormula.html#es">Abrir el juego <span aria-hidden="true">→</span></a></p>
+<figure>
+<img src="rc_images/MiniCorrida-es.png" alt="Pantalla del juego al comienzo de la carrera en Interlagos: ocho coches de colores distintos en una curva con pianos rojos y blancos, una escapatoria de grava por fuera y humo de neumáticos, y una línea de colores que muestra la trazada ideal. Alrededor, la torre de posiciones a la izquierda, el minimapa a la derecha, la vuelta y los tiempos abajo a la izquierda y el velocímetro con la marcha abajo a la derecha" width="1280" height="800" loading="lazy">
+<figcaption>Los primeros segundos en Interlagos: el pelotón todavía junto, con la trazada ideal activada.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="campeonato-es" aria-labelledby="h-campeonato-es">
+<h2 id="h-campeonato-es">El campeonato de 1990</h2>
+<p>El campeonato mundial de 1990 tuvo 16 carreras, de marzo a noviembre. <sup><a href="#ref-2-es">[2]</a></sup> El juego usa la misma lista, en el mismo orden, con la longitud de la vuelta y el número de vueltas de cada carrera de aquel año. <sup><a href="#ref-3-es">[3]</a></sup></p>
+<div class="table-wrap"><table>
+<thead><tr><th>Ronda</th><th>Gran Premio</th><th>Circuito</th><th>Fecha</th><th>Vuelta</th><th>Vueltas</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Estados Unidos</td><td>Phoenix</td><td>11/03</td><td>3,800 km</td><td>72</td></tr>
+<tr><td>2</td><td>Brasil</td><td>Interlagos</td><td>25/03</td><td>4,325 km</td><td>71</td></tr>
+<tr><td>3</td><td>San Marino</td><td>Imola</td><td>13/05</td><td>5,040 km</td><td>61</td></tr>
+<tr><td>4</td><td>Mónaco</td><td>Mónaco</td><td>27/05</td><td>3,328 km</td><td>78</td></tr>
+<tr><td>5</td><td>Canadá</td><td>Gilles Villeneuve (Montreal)</td><td>10/06</td><td>4,390 km</td><td>70</td></tr>
+<tr><td>6</td><td>México</td><td>Hermanos Rodríguez</td><td>24/06</td><td>4,421 km</td><td>69</td></tr>
+<tr><td>7</td><td>Francia</td><td>Paul Ricard</td><td>08/07</td><td>3,813 km</td><td>80</td></tr>
+<tr><td>8</td><td>Gran Bretaña</td><td>Silverstone</td><td>15/07</td><td>4,778 km</td><td>64</td></tr>
+<tr><td>9</td><td>Alemania</td><td>Hockenheim</td><td>29/07</td><td>6,802 km</td><td>45</td></tr>
+<tr><td>10</td><td>Hungría</td><td>Hungaroring</td><td>12/08</td><td>3,968 km</td><td>77</td></tr>
+<tr><td>11</td><td>Bélgica</td><td>Spa-Francorchamps</td><td>26/08</td><td>6,940 km</td><td>44</td></tr>
+<tr><td>12</td><td>Italia</td><td>Monza</td><td>09/09</td><td>5,800 km</td><td>53</td></tr>
+<tr><td>13</td><td>Portugal</td><td>Estoril</td><td>23/09</td><td>4,350 km</td><td>71 previstas, 61 disputadas</td></tr>
+<tr><td>14</td><td>España</td><td>Jerez</td><td>30/09</td><td>4,218 km</td><td>73</td></tr>
+<tr><td>15</td><td>Japón</td><td>Suzuka</td><td>21/10</td><td>5,860 km</td><td>53</td></tr>
+<tr><td>16</td><td>Australia</td><td>Adelaida</td><td>04/11</td><td>3,780 km</td><td>81</td></tr>
+</tbody></table></div>
+<p>Dos curiosidades de aquel año están en las fuentes. Interlagos acababa de ser reformado: la pista perdió 3,5 km, curvas rápidas y la larga recta del “Retão”. <sup><a href="#ref-4-es">[4]</a></sup> En Portugal, la carrera se detuvo tras un accidente y terminó en la vuelta 61 de las 71 previstas. <sup><a href="#ref-5-es">[5]</a></sup></p>
+<blockquote><p><strong>Divergencias entre las fuentes.</strong> En dos carreras, la distancia total de la ficha no coincide con vueltas por longitud. En Gran Bretaña, 64 × 4,778 km da 305,792 km, y la ficha dice 305,904 km. En Bélgica, 44 × 6,940 km da 305,36 km, y la ficha dice 301,172 km; el propio texto del artículo habla de 301 km. El juego usa la longitud de la vuelta, que es la misma en los dos casos. <sup><a href="#ref-3-es">[3]</a></sup></p></blockquote>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="pistas-es" aria-labelledby="h-pistas-es">
+<h2 id="h-pistas-es">Las pistas en el juego</h2>
+<p>Los trazados del juego están <strong>simplificados</strong>. Cada pista se describió a mano como una secuencia de rectas y curvas, o como un polígono con las esquinas redondeadas, para recordar el dibujo del circuito. El programa cierra la vuelta, comprueba que los tramos no se crucen y escala el resultado a la longitud oficial de 1990. <sup><a href="#ref-1-es">[1]</a></sup> No son copias de mapas: Monza, Hockenheim y el ocho de Suzuka recuerdan bien el original; Mónaco, Phoenix y Adelaida, solo a grandes rasgos.</p>
+<figure>
+<img src="rc_images/MiniPistas-es.svg" alt="Cuadrícula con las 16 pistas del juego, en el orden del calendario de 1990, cada una con la longitud de la vuelta: 1. Phoenix (3,800 km), 2. Interlagos (4,325 km), 3. Imola (5,040 km), 4. Monaco (3,328 km), 5. Gilles Villeneuve (4,390 km), 6. Hermanos Rodríguez (4,421 km), 7. Paul Ricard (3,813 km), 8. Silverstone (4,778 km), 9. Hockenheim (6,802 km), 10. Hungaroring (3,968 km), 11. Spa-Francorchamps (6,940 km), 12. Monza (5,800 km), 13. Estoril (4,350 km), 14. Jerez (4,218 km), 15. Suzuka (5,860 km), 16. Adelaide (3,780 km). En cada dibujo, una marca roja indica la salida y el sentido de la carrera. Suzuka aparece como un ocho, con un cruce. Los trazados están simplificados y cada uno está en una escala distinta." width="1000" height="1100" loading="lazy">
+<figcaption>Las 16 pistas, en el orden del calendario, dibujadas a partir del código del juego.</figcaption>
+</figure>
+<p>Alrededor del asfalto, el juego calcula solo lo que hay en cada tramo:</p>
+<ul>
+<li><strong>Pianos</strong> rojos y blancos donde la curva se cierra.</li>
+<li><strong>Escapatorias de grava</strong> por fuera de las curvas cerradas, en las pistas permanentes.</li>
+<li><strong>Hierba</strong> y, al final, un <strong>muro</strong>. En los circuitos urbanos (Phoenix, Mónaco, Montreal y Adelaida), el muro está a pocos metros del asfalto.</li>
+<li>Cuando dos tramos pasan cerca, el muro queda entre ellos, a mitad de camino.</li>
+</ul>
+<p>En Suzuka, el tramo de vuelta pasa por encima del puente, y los coches que están debajo se dibujan bajo él.</p>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="controles-es" aria-labelledby="h-controles-es">
+<h2 id="h-controles-es">Controles</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Control</th><th>Qué hace</th></tr></thead>
+<tbody>
+<tr><td>Ratón</td><td>dirige el coche, en el modo Mira o en el modo Volante (ver la figura)</td></tr>
+<tr><td><kbd>A</kbd></td><td>acelerador</td></tr>
+<tr><td><kbd>Z</kbd></td><td>freno; con el coche parado, mantenlo para dar marcha atrás</td></tr>
+<tr><td><kbd>←</kbd> <kbd>→</kbd></td><td>giran, como alternativa al ratón</td></tr>
+<tr><td><kbd>R</kbd></td><td>devuelve el coche al centro de la pista, parado</td></tr>
+<tr><td><kbd>P</kbd> o <kbd>Esc</kbd></td><td>pausa; en el entrenamiento libre, <kbd>Esc</kbd> termina y muestra las vueltas</td></tr>
+<tr><td>Toque</td><td>un dedo toca la pista para apuntar; el otro mantiene los botones A y Z en la esquina</td></tr>
+</tbody></table></div>
+<figure>
+<img src="rc_images/MiniMira-es.svg" alt="Dos paneles. A la izquierda, el modo Mira: un coche en una recta, el cursor delante y arriba, una línea amarilla del coche al cursor y un arco que marca el error de dirección entre el morro del coche y el cursor; el coche gira para cerrar ese ángulo. A la derecha, el modo Volante: una línea discontinua en el centro de la pantalla, el cursor a su derecha, una flecha amarilla que indica la distancia al centro y un volante girado a la derecha. Abajo, la nota de que el ángulo máximo de las ruedas baja de 26 grados parado a unos 4 grados a 300 km/h." width="1000" height="560" loading="lazy">
+<figcaption>En la Mira, el coche persigue el cursor; en el Volante, el ratón funciona como la posición del volante.</figcaption>
+</figure>
+<p>En la Mira, deja el cursor un poco por delante del coche, en la salida de la curva, y ve moviéndolo. Si el cursor queda encima del coche, no gira. El Volante combina con la cámara que gira con el coche, elegida en la opción <strong>Cámara</strong>.</p>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="app-es" aria-labelledby="h-app-es">
+<h2 id="h-app-es">Paso a paso en la app</h2>
+<h3>1. Elige la pista y las opciones</h3>
+<p>Al abrir el juego aparece la ventana <strong>Nueva carrera</strong>. A la derecha, el dibujo de la pista elegida, con la salida en rojo, la fecha de la carrera de 1990, la longitud de la vuelta, las vueltas de la carrera real y tu récord. Para empezar, usa 3 vueltas, 7 rivales, nivel Normal y la trazada ideal activada. Elige el color del coche y haz clic en <strong>Correr</strong>.</p>
+<figure>
+<img src="rc_images/MiniOpcoes-es.png" alt="Ventana Nueva carrera con la pista 2, GP de Brasil, Interlagos, modo Carrera, 3 vueltas, 7 rivales, dificultad Normal, salida en último lugar, dirección Mira al cursor, cámara fija con el norte arriba, trazada ideal Activada, acelerador y freno Manuales, semilla 1990 y ocho colores de coche. A la derecha, el dibujo de Interlagos y sus datos: 25 de marzo de 1990, vuelta de 4,325 km, 71 vueltas en la carrera real y todavía sin récord" width="1560" height="1240" loading="lazy">
+<figcaption>Las opciones de la carrera, con Interlagos elegida.</figcaption>
+</figure>
+<div class="table-wrap"><table>
+<thead><tr><th>Opción</th><th>Elecciones</th></tr></thead>
+<tbody>
+<tr><td>Modo</td><td>carrera, o entrenamiento libre solo y sin límite de vueltas</td></tr>
+<tr><td>Vueltas</td><td>1, 3, 5, 10 o 20</td></tr>
+<tr><td>Rivales</td><td>1, 3, 5, 7 o 9, con nombres ficticios</td></tr>
+<tr><td>Dificultad</td><td>fácil, normal o difícil (ver <a href="#numeros-es">los números</a>)</td></tr>
+<tr><td>Posición de salida</td><td>último, mitad de la parrilla o pole position</td></tr>
+<tr><td>Dirección con el ratón</td><td>Mira al cursor o Volante</td></tr>
+<tr><td>Cámara</td><td>fija con el norte arriba, o girando con el coche</td></tr>
+<tr><td>Trazada ideal</td><td>desactivada o activada</td></tr>
+<tr><td>Acelerador y freno</td><td>manuales (A y Z) o automáticos</td></tr>
+<tr><td>Semilla</td><td>con la misma semilla y los mismos controles, la carrera se repite</td></tr>
+</tbody></table></div>
+<h3>2. Espera a que se apaguen las luces</h3>
+<p>Los coches esperan en la parrilla, en dos filas. Cinco luces rojas se encienden, una por segundo. Tras una pausa al azar, se apagan todas: es el momento de acelerar. Si tu coche se mueve antes, recibes 5 segundos de penalización en el tiempo final.</p>
+<figure>
+<img src="rc_images/MiniLargada-es.png" alt="Parrilla de salida vista desde arriba: coches parados en dos filas escalonadas, cada uno dentro de su marca blanca, y arriba el semáforo con las luces rojas encendiéndose. Abajo, la sugerencia de apuntar con el ratón, acelerar con A y frenar con Z" width="1280" height="800" loading="lazy">
+<figcaption>Las luces se encienden una por segundo; cuando se apagan todas, acelera.</figcaption>
+</figure>
+<h3>3. Sigue la trazada ideal</h3>
+<p>Con la trazada ideal activada, una línea muestra los próximos 380 m del camino más rápido. Verde es acelerar, amarillo es curva al límite y rojo es zona de frenada. Si llegas demasiado rápido, la línea se vuelve roja desde el coche hasta la curva, y aparece el aviso <strong>FRENA</strong> sobre el velocímetro.</p>
+<figure>
+<img src="rc_images/MiniTracado-es.png" alt="Una curva en Interlagos con la trazada ideal: la línea llega roja por la recta hasta el coche del jugador y se vuelve amarilla en la curva. Sobre el velocímetro aparece el aviso rojo FRENA. Hay escapatorias de grava por fuera de las curvas y humo de neumáticos detrás de los coches" width="1280" height="800" loading="lazy">
+<figcaption>Demasiado rápido para la curva: la línea se vuelve roja y el juego avisa FRENA.</figcaption>
+</figure>
+<h3>4. O deja los pedales al coche</h3>
+<p>Con <strong>acelerador y freno automáticos</strong>, el coche acelera en las rectas y frena antes de las curvas, y tú solo diriges. El velocímetro muestra <strong>PEDALES AUTO</strong>. La tecla <kbd>Z</kbd> sigue frenando, si quieres frenar antes. Las vueltas hechas así no cuentan como récord personal.</p>
+<figure>
+<img src="rc_images/MiniAuto-es.png" alt="Una recta de Mónaco con los pedales automáticos: el coche del jugador a gran velocidad, la trazada ideal verde justo delante y roja más adelante, donde empieza la zona de frenada, y rivales por delante. En el velocímetro, la etiqueta PEDALES AUTO" width="1280" height="800" loading="lazy">
+<figcaption>Pedales automáticos: el rojo de delante es donde el coche frenará solo.</figcaption>
+</figure>
+<h3>5. Pasa por el puente de Suzuka</h3>
+<p>Suzuka es un ocho. A mitad de vuelta, la pista pasa por debajo de la recta opuesta, y a la vuelta pasas por encima. Los coches de un nivel no chocan con los del otro.</p>
+<figure>
+<img src="rc_images/MiniPonte-es.png" alt="El cruce de Suzuka visto desde arriba: una pista pasa en diagonal por encima de la otra en un puente con barandillas y sombra. El coche del jugador está en la pista de abajo, justo después de pasar bajo el puente" width="1280" height="800" loading="lazy">
+<figcaption>El cruce de Suzuka: el puente se dibuja por encima de los coches que pasan por debajo.</figcaption>
+</figure>
+<h3>6. Mira el resultado</h3>
+<p>Cuando cruzas la línea en la última vuelta, aparece la bandera a cuadros. El tiempo se acelera hasta que terminan los demás coches, y la ventana de resultado muestra la posición, las vueltas, el tiempo o la diferencia con el ganador y la mejor vuelta de cada piloto, además de la vuelta más rápida de la carrera y tu penalización, si la hay.</p>
+<figure>
+<img src="rc_images/MiniResultado-es.png" alt="Ventana de resultado de una carrera de una vuelta en Paul Ricard, nivel fácil: la frase con la posición del jugador y una tabla con seis pilotos, las vueltas, el tiempo del ganador y la diferencia de los demás y la mejor vuelta de cada uno, con la fila del jugador resaltada en amarillo. Debajo, la semilla, el nivel, la vuelta más rápida de la carrera y la penalización, con los botones Ver la pista, Opciones y Correr otra vez" width="1560" height="920" loading="lazy">
+<figcaption>El resultado de una carrera de una vuelta en Paul Ricard.</figcaption>
+</figure>
+<h3>7. En el móvil</h3>
+<p>En el móvil, los botones <strong>A</strong> y <strong>Z</strong> aparecen en la esquina de la pantalla. Mantén A con un dedo y toca la pista por delante con el otro para apuntar. Los pedales automáticos ayudan mucho en la pantalla pequeña.</p>
+<figure>
+<img src="rc_images/MiniCelular-es.png" alt="Pantalla de móvil en tema oscuro, en Adelaida: el coche del jugador y los rivales en una curva, con la trazada ideal por delante. Arriba, los botones del juego, la torre de posiciones y el minimapa; abajo, los tiempos, el velocímetro con la etiqueta PEDALES AUTO y los botones redondos Z freno y A acelera" width="390" height="844" loading="lazy">
+<figcaption>En una pantalla de 390 píxeles, con los botones táctiles y los pedales automáticos.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="fisica-es" aria-labelledby="h-fisica-es">
+<h2 id="h-fisica-es">La física del juego</h2>
+<p>El coche del juego sigue un modelo sencillo, pensado para ser jugable, no para imitar en detalle un coche de 1990. <sup><a href="#ref-1-es">[1]</a></sup> Tres ideas lo explican casi todo:</p>
+<ol>
+<li><strong>Agarre que crece con la velocidad.</strong> Los neumáticos aguantan 1,45 g de fuerza lateral en una curva lenta. El alerón suma agarre con el cuadrado de la velocidad, y a 290 km/h el coche aguanta 4,1 g. Por eso las curvas rápidas parecen más fáciles que las lentas.</li>
+<li><strong>Frenada fuerte a alta velocidad.</strong> El freno aguanta 1,6 g despacio y 3,8 g a 290 km/h, por el mismo motivo.</li>
+<li><strong>Neumáticos con límite.</strong> Si la curva pide más agarre del que hay, el coche se va hacia fuera, deja marcas y echa humo. Frenar fuerte girando también gasta agarre.</li>
+</ol>
+<figure>
+<img src="rc_images/MiniCurva-es.svg" alt="Dos gráficos con valores del modelo del juego. A la izquierda, la velocidad máxima en una curva según el radio: 63 km/h con un radio de 20 m, 108 km/h a 50 m y 177 km/h a 100 m; por encima de 165 m de radio, la curva se toma a fondo. A la derecha, barras con la distancia de frenada en asfalto: de 300 a 100 km/h, 112 m; de 300 a 200 km/h, 59 m; de 200 a 100 km/h, 52 m; de 150 a 60 km/h, 38 m." width="1000" height="510" loading="lazy">
+<figcaption>Cuanto mayor es el radio, más rápida es la curva; y frenar de 300 a 100 km/h lleva unos 112 m.</figcaption>
+</figure>
+<p>Otros detalles del modelo: potencia de 800 W por kilo, 6 marchas, velocidad máxima de unos 309 km/h, limitada por la resistencia del aire. En la hierba, los neumáticos agarran el 38% de lo normal, y en la grava, el 30%, con mucha más resistencia al avance. Los muros detienen el coche, sin daños. Cuánto giran las ruedas baja con la velocidad: 26° parado, unos 4° a 300 km/h.</p>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="numeros-es" aria-labelledby="h-numeros-es">
+<h2 id="h-numeros-es">Lo que dicen los números</h2>
+<p>Para saber cuánto anda cada nivel, medí con el código del propio juego la vuelta lanzada de un coche solo en cada pista: la segunda vuelta de un entrenamiento de dos vueltas, sin rivales. El ordenador condujo en los tres niveles, y hubo una cuarta medida con los pedales automáticos, usando la dirección del ordenador. <sup><a href="#ref-1-es">[1]</a></sup></p>
+<figure>
+<img src="rc_images/MiniTempos-es.svg" alt="Gráfico con una fila por pista que muestra la vuelta lanzada de un coche solo, medida con el código del juego. Un círculo marca el tiempo del ordenador en nivel difícil, y una franja llega al tiempo del nivel fácil; un rombo marca el tiempo con pedales automáticos, siempre entre el difícil y el fácil. Tiempos del nivel difícil: Phoenix 79,5 s; Interlagos 81,8 s; Imola 84,5 s; Monaco 81,8 s; Gilles Villeneuve 81,7 s; Hermanos Rodríguez 72,9 s; Paul Ricard 69,6 s; Silverstone 73,5 s; Hockenheim 109,2 s; Hungaroring 76,4 s; Spa-Francorchamps 113,8 s; Monza 88,2 s; Estoril 81,8 s; Jerez 83,2 s; Suzuka 94,3 s; Adelaide 89,2 s." width="1000" height="754" loading="lazy">
+<figcaption>Vuelta lanzada por pista: nivel difícil, franja hasta el fácil y pedales automáticos.</figcaption>
+</figure>
+<ul>
+<li><strong>La dificultad es la velocidad del ordenador en las curvas.</strong> Los pilotos van al 82–88% de la velocidad ideal en fácil, al 90–95,5% en normal y al 96,5–100% en difícil. En la medida, el fácil fue entre un 8,9% y un 11,4% más lento que el difícil, y el normal, entre un 3,2% y un 4,2%.</li>
+<li><strong>Los pedales automáticos cuestan poco tiempo.</strong> Con la dirección perfecta del ordenador, fueron entre un 2,3% y un 3,8% más lentos que el nivel difícil, más o menos como el nivel normal. Con una persona dirigiendo, la diferencia crece, porque el automático reduce la velocidad cuando el coche se sale de la trazada ideal.</li>
+<li><strong>Mónaco es la más lenta, Monza la más rápida.</strong> En el nivel difícil, la media fue de 147 km/h en Mónaco y 237 km/h en Monza.</li>
+</ul>
+<blockquote><p><strong>Lo que estos números no miden.</strong> Son tiempos de un modelo, con pistas y física simplificadas, no tiempos reales de 1990. Tampoco miden a una persona jugando: la dirección del ordenador es siempre la misma, y una persona acierta y se equivoca de maneras distintas.</p></blockquote>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="dicas-es" aria-labelledby="h-dicas-es">
+<h2 id="h-dicas-es">Consejos de conducción</h2>
+<ol>
+<li><strong>Frena en línea recta.</strong> Termina de frenar antes de girar. Freno y curva a la vez gastan el mismo agarre.</li>
+<li><strong>Fuera, dentro, fuera.</strong> Entra en la curva por el lado de fuera, toca el interior a mitad y sal abierto. Es lo que dibuja la trazada ideal.</li>
+<li><strong>Acelera a la salida, no a la entrada.</strong> La salida de una curva lenta decide la velocidad de toda la recta que viene después.</li>
+<li><strong>Mira lejos.</strong> La cámara se aleja con la velocidad para mostrar más pista. Usa el minimapa para saber lo que viene.</li>
+<li><strong>Usa los pianos con cuidado.</strong> Agarran casi como el asfalto, pero la hierba justo después agarra menos de la mitad.</li>
+<li><strong>Adelanta en las frenadas.</strong> El ordenador esquiva un coche más lento delante, pero sigue su propio perfil de velocidad. Frenando un poco más tarde por dentro, ganas la posición.</li>
+<li><strong>Empieza con ayudas y quítalas de una en una.</strong> Primero los pedales automáticos, luego solo la trazada ideal y al final ninguna.</li>
+</ol>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="erros-es" aria-labelledby="h-erros-es">
+<h2 id="h-erros-es">Errores comunes</h2>
+<ul class="myths">
+<li><h3>“El cursor encima del coche gira más.”</h3><p>Es al revés. Con el cursor pegado al coche, no gira nada. Deja el cursor por delante, hacia la salida de la curva.</p></li>
+<li><h3>“Mantener A todo el tiempo es más rápido.”</h3><p>Solo en las rectas. Llegar demasiado rápido hace que el coche resbale hacia la hierba, que frena mucho más que el freno.</p></li>
+<li><h3>“Por la hierba se puede atajar.”</h3><p>La hierba agarra el 38% de lo normal y la grava el 30%, y las dos frenan el coche. Además, la vuelta solo cuenta si el coche pasa por la mitad de la pista.</p></li>
+<li><h3>“La marcha atrás sirve para frenar.”</h3><p>La tecla Z solo engrana la marcha atrás con el coche casi parado. En movimiento, es el freno.</p></li>
+<li><h3>“Los trazados son copias de los mapas.”</h3><p>No. Son dibujos simplificados con la longitud correcta. Sirven para recordar el circuito, no para entrenar para el real.</p></li>
+</ul>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="revisao-es" aria-labelledby="h-revisao-es">
+<h2 id="h-revisao-es">Repaso rápido</h2>
+<div class="quiz">
+<details><summary>1. ¿Qué teclas aceleran y frenan?</summary><p>A acelera y Z frena. Con el coche parado, Z da marcha atrás.</p></details>
+<details><summary>2. En el modo Mira, ¿dónde dejar el cursor?</summary><p>Un poco por delante del coche, hacia la salida de la curva. Encima del coche, no gira.</p></details>
+<details><summary>3. ¿Qué significa la parte roja de la trazada ideal?</summary><p>Zona de frenada. Si se vuelve roja desde el coche y aparece FRENA, tienes que frenar ya.</p></details>
+<details><summary>4. ¿Cuántas carreras tuvo el campeonato de 1990, y cuál fue la primera?</summary><p>16 carreras. La primera fue en Phoenix, en Estados Unidos, el 11 de marzo.</p></details>
+<details><summary>5. ¿Qué le pasó a Interlagos en 1990?</summary><p>La pista se reformó y se acortó 3,5 km, perdiendo curvas rápidas y la larga recta del Retão.</p></details>
+<details><summary>6. ¿Por qué las curvas rápidas parecen más fáciles que las lentas?</summary><p>Porque el alerón suma agarre con la velocidad: 1,45 g en una curva lenta, 4,1 g a 290 km/h.</p></details>
+<details><summary>7. ¿Cuánto tiempo cuestan los pedales automáticos en la simulación?</summary><p>Entre un 2,3% y un 3,8% respecto al nivel difícil, con la dirección del ordenador.</p></details>
+<details><summary>8. ¿Las vueltas con pedales automáticos cuentan como récord?</summary><p>No. Solo las vueltas con acelerador y freno manuales entran en el récord personal.</p></details>
+</div>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="referencias-es" aria-labelledby="h-referencias-es">
+<h2 id="h-referencias-es">Referencias</h2>
+<ol class="refs">
+<li id="ref-1-es"><strong>Giovani Perotto Mesquita</strong>, “Mini Fórmula 1990”, juego de este sitio, <a href="MiniFormula.html#es">giovanipm.github.io/MiniFormula.html</a>. Los trazados, las constantes de la física, los niveles y las ayudas están en el código del juego. Las figuras y las medidas de este tutorial usan ese mismo código; cada medida es una vuelta lanzada por pista y por piloto.</li>
+<li id="ref-2-es"><strong>Wikipedia</strong>, “1990 Formula One World Championship” (en inglés), consultado el 15/11/2026, <a href="https://en.wikipedia.org/wiki/1990_Formula_One_World_Championship" rel="noopener">en.wikipedia.org/wiki/1990_Formula_One_World_Championship</a>. Fuente del calendario: rondas, circuitos y fechas.</li>
+<li id="ref-3-es"><strong>Wikipedia</strong>, artículos de cada Gran Premio de 1990 (en inglés), ficha técnica (longitud de la vuelta, número de vueltas y distancia), consultados el 15/11/2026: <a href="https://en.wikipedia.org/wiki/1990_United_States_Grand_Prix" rel="noopener">Estados Unidos</a>, <a href="https://en.wikipedia.org/wiki/1990_Brazilian_Grand_Prix" rel="noopener">Brasil</a>, <a href="https://en.wikipedia.org/wiki/1990_San_Marino_Grand_Prix" rel="noopener">San Marino</a>, <a href="https://en.wikipedia.org/wiki/1990_Monaco_Grand_Prix" rel="noopener">Mónaco</a>, <a href="https://en.wikipedia.org/wiki/1990_Canadian_Grand_Prix" rel="noopener">Canadá</a>, <a href="https://en.wikipedia.org/wiki/1990_Mexican_Grand_Prix" rel="noopener">México</a>, <a href="https://en.wikipedia.org/wiki/1990_French_Grand_Prix" rel="noopener">Francia</a>, <a href="https://en.wikipedia.org/wiki/1990_British_Grand_Prix" rel="noopener">Gran Bretaña</a>, <a href="https://en.wikipedia.org/wiki/1990_German_Grand_Prix" rel="noopener">Alemania</a>, <a href="https://en.wikipedia.org/wiki/1990_Hungarian_Grand_Prix" rel="noopener">Hungría</a>, <a href="https://en.wikipedia.org/wiki/1990_Belgian_Grand_Prix" rel="noopener">Bélgica</a>, <a href="https://en.wikipedia.org/wiki/1990_Italian_Grand_Prix" rel="noopener">Italia</a>, <a href="https://en.wikipedia.org/wiki/1990_Portuguese_Grand_Prix" rel="noopener">Portugal</a>, <a href="https://en.wikipedia.org/wiki/1990_Spanish_Grand_Prix" rel="noopener">España</a>, <a href="https://en.wikipedia.org/wiki/1990_Japanese_Grand_Prix" rel="noopener">Japón</a>, <a href="https://en.wikipedia.org/wiki/1990_Australian_Grand_Prix" rel="noopener">Australia</a>.</li>
+<li id="ref-4-es"><strong>Wikipedia</strong>, “1990 Brazilian Grand Prix” (en inglés), consultado el 15/11/2026, <a href="https://en.wikipedia.org/wiki/1990_Brazilian_Grand_Prix" rel="noopener">en.wikipedia.org/wiki/1990_Brazilian_Grand_Prix</a>. Pasaje sobre el acortamiento de la pista.</li>
+<li id="ref-5-es"><strong>Wikipedia</strong>, “1990 Portuguese Grand Prix” (en inglés), consultado el 15/11/2026, <a href="https://en.wikipedia.org/wiki/1990_Portuguese_Grand_Prix" rel="noopener">en.wikipedia.org/wiki/1990_Portuguese_Grand_Prix</a>. Carrera detenida en la vuelta 61 de 71.</li>
+</ol>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+  </article>
+</div>
+</div>
+
+
+
+<footer>
+  <div class="wrap">
+    <span>Giovani Perotto Mesquita · Porto Alegre, RS</span>
+    <span><a href="projects.html" data-projects data-foot="0">Projetos</a> · <a href="resume.html" data-resume data-foot="1">Currículo</a> · <a href="contact.html" data-contact data-foot="2">Contato</a></span>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('.lang [role="option"]'));
+    var titles = {"pt": "Mini Fórmula 1990: tutorial do jogo · Giovani Perotto Mesquita", "en": "Mini Formula 1990: game tutorial · Giovani Perotto Mesquita", "it": "Mini Formula 1990: tutorial del gioco · Giovani Perotto Mesquita", "es": "Mini Fórmula 1990: tutorial del juego · Giovani Perotto Mesquita"};
+    var foots = {"pt": ["Projetos", "Currículo", "Contato"], "en": ["Projects", "Resume", "Contact"], "it": ["Progetti", "Curriculum", "Contatti"], "es": ["Proyectos", "Currículum", "Contacto"]};
+    var langs = { pt: 'pt-BR', en: 'en', it: 'it', es: 'es' };
+    var bar = document.querySelector('.progress');
+    var article = document.querySelector('[role="tabpanel"]:not([hidden]) article');
+
+    function show(id, focus) {
+      tabs.forEach(function (t) {
+        var on = t.getAttribute('aria-controls') === id;
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+        if (on && focus) t.focus();
+      });
+      document.documentElement.lang = langs[id];
+      document.title = titles[id];
+      var suffix = id === 'pt' ? '' : '#' + id;
+      [['data-home', 'index.html'], ['data-about', 'about.html'], ['data-resume', 'resume.html'], ['data-projects', 'projects.html'], ['data-contact', 'contact.html']].forEach(function (p) {
+        document.querySelectorAll('[' + p[0] + ']').forEach(function (a) { a.href = p[1] + suffix; });
+      });
+      document.querySelectorAll('[data-foot]').forEach(function (a) { a.textContent = foots[id][+a.getAttribute('data-foot')]; });
+      article = document.querySelector('#' + id + ' article');
+      if (history.replaceState) history.replaceState(null, '', id === 'pt' ? location.pathname : '#' + id);
+      progress();
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () { show(t.getAttribute('aria-controls')); });
+      t.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (d) { e.preventDefault(); show(tabs[(i + d + tabs.length) % tabs.length].getAttribute('aria-controls'), true); }
+      });
+    });
+
+    // barra de progresso de leitura
+    function progress() {
+      if (!article) return;
+      var r = article.getBoundingClientRect();
+      var total = r.height - window.innerHeight;
+      var p = total > 0 ? Math.min(Math.max(-r.top / total, 0), 1) : 1;
+      bar.style.width = (p * 100) + '%';
+    }
+    window.addEventListener('scroll', progress, { passive: true });
+    window.addEventListener('resize', progress);
+
+    // destaca a seção atual no índice
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          var panel = e.target.closest('[role="tabpanel"]');
+          panel.querySelectorAll('.toc a').forEach(function (a) {
+            if (a.getAttribute('href') === '#' + e.target.id) a.setAttribute('aria-current', 'true');
+            else a.removeAttribute('aria-current');
+          });
+        });
+      }, { rootMargin: '-20% 0px -70% 0px' });
+      document.querySelectorAll('article section[id]').forEach(function (s) { io.observe(s); });
+    }
+
+    var h = (location.hash || '').replace('#', '');
+    var m = h.match(/^(?:.*-)?(en|it|es)$/);
+    if (m) {
+      show(m[1]);
+      if (h !== m[1]) { var el = document.getElementById(h); if (el) el.scrollIntoView(); if (history.replaceState) history.replaceState(null, '', '#' + h); }
+    } else progress();
+  })();
+</script>
+<script>
+  // seletor de idioma em combobox: abre a lista, sincroniza o botão e fecha
+  (function () {
+    var box = document.querySelector('.lang'); if (!box) return;
+    var btn = box.querySelector('.lang-current'), list = box.querySelector('.lang-list'), now = btn.querySelector('.lang-now');
+    var opts = Array.prototype.slice.call(list.querySelectorAll('[role="option"]'));
+    var menu = {
+      pt: { index: 'Início', about: 'Sobre', resume: 'Currículo', projects: 'Projetos', contact: 'Contato' },
+      en: { index: 'Home', about: 'About', resume: 'Resume', projects: 'Projects', contact: 'Contact' },
+      it: { index: 'Home', about: 'Chi sono', resume: 'Curriculum', projects: 'Progetti', contact: 'Contatti' },
+      es: { index: 'Inicio', about: 'Sobre mí', resume: 'Currículum', projects: 'Proyectos', contact: 'Contacto' }
+    };
+    function translate(id) {
+      document.querySelectorAll('.nav ul a').forEach(function (l) {
+        var k = (l.getAttribute('href') || '').split('#')[0].replace('.html', '');
+        if (menu[id] && menu[id][k]) l.textContent = menu[id][k];
+      });
+      // links do menu para as páginas principais levam o idioma selecionado
+      var suf = id === 'pt' ? '' : '#' + id;
+      document.querySelectorAll('.nav a[href]').forEach(function (l) {
+        var m = l.getAttribute('href').match(/^(index|about|resume|projects|contact)\.html(#(pt|en|it|es))?$/);
+        if (m) l.setAttribute('href', m[1] + '.html' + suf);
+      });
+    }
+    function sync() {
+      var sel = opts.filter(function (o) { return o.getAttribute('aria-selected') === 'true'; })[0] || opts[0];
+      now.innerHTML = sel.querySelector('.flag').outerHTML + sel.getAttribute('data-code');
+      btn.setAttribute('aria-label', btn.getAttribute('data-label') + ': ' + sel.textContent.trim());
+      translate(sel.getAttribute('aria-controls'));
+      return sel;
+    }
+    function open() { list.hidden = false; btn.setAttribute('aria-expanded', 'true'); sync().focus(); }
+    function close(back) { list.hidden = true; btn.setAttribute('aria-expanded', 'false'); if (back) btn.focus(); }
+    btn.addEventListener('click', function () { if (list.hidden) open(); else close(); });
+    btn.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); open(); }
+      else if (e.key === 'Escape') close();
+    });
+    opts.forEach(function (o, i) {
+      o.addEventListener('click', function () { sync(); close(true); });
+      o.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0;
+        if (d) { e.preventDefault(); opts[(i + d + opts.length) % opts.length].focus(); }
+        else if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); opts[e.key === 'Home' ? 0 : opts.length - 1].focus(); }
+        else if (e.key === 'Escape') { e.preventDefault(); close(true); }
+        else if (e.key === 'Tab') close();
+      });
+    });
+    document.addEventListener('click', function (e) { if (!box.contains(e.target)) close(); });
+    new MutationObserver(sync).observe(list, { attributes: true, subtree: true, attributeFilter: ['aria-selected'] });
+    sync();
+  })();
+</script>
+<script>
+document.addEventListener('click', function (e) {
+  var b = e.target.closest && e.target.closest('[data-copy]');
+  if (!b) return;
+  var code = document.getElementById(b.getAttribute('data-copy')), old = b.textContent;
+  function done() { b.textContent = b.getAttribute('data-done'); setTimeout(function () { b.textContent = old; }, 1500); }
+  function fallback() { var r = document.createRange(); r.selectNodeContents(code); var s = getSelection(); s.removeAllRanges(); s.addRange(r); try { document.execCommand('copy'); done(); } catch (x) {} }
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code.textContent).then(done, fallback); else fallback();
+});
+</script>
+</body>
+</html>

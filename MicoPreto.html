@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; base-uri 'none'; form-action 'none'">
+<title>Mico Preto · Giovani Perotto Mesquita</title>
+<meta name="description" content="Mico Preto: jogo de cartas de pares em que ninguém quer ficar com o mico. De 2 a 6 jogadores contra o computador, com baralho de bichos ou baralho comum. Em português, inglês, italiano e espanhol.">
+<meta name="author" content="Giovani Perotto Mesquita">
+<style>
+:root{
+  --bg:#FFF7EC; --surface:#FFFFFF; --surface-2:#FBF1E3; --ink:#2B1B3D; --text:#3E3350; --muted:#756986; --line:#F1E2CF;
+  --accent:#0E8074; --accent-ink:#FFFFFF; --accent-soft:#E2F6F2; --navy:#5B2A86; --gold:#FFB703; --gold-ink:#B35300; --gold-soft:#FFF1C9;
+  --coral:#C2185B; --felt:#0E6B60; --felt-2:#0A4F47; --paper:#FFFDF8; --card-ink:#2B1B3D; --red:#C62828; --male:#1E5FB4; --female:#C2185B;
+  --sans:"Segoe UI","Helvetica Neue",Arial,sans-serif; --serif:Georgia,"Times New Roman",serif; --radius:14px;
+  --cw:clamp(50px,12.5vw,74px); --pw:clamp(44px,10vw,60px);
+}
+:root[data-theme="dark"]{
+  --bg:#1A1328; --surface:#241A36; --surface-2:#2D2244; --ink:#F7F0FF; --text:#E2D8F0; --muted:#A898C0; --line:#3A2D52;
+  --accent:#5FD3C4; --accent-ink:#10231F; --accent-soft:#1D3A38; --navy:#C9A7F5; --gold:#FFC94D; --gold-ink:#FFC94D; --gold-soft:#3A2E12;
+  --coral:#FF6F91; --felt:#0D4A43; --felt-2:#08302C; --paper:#F4EFE6;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-tap-highlight-color:transparent}
+body{min-height:100vh;display:flex;flex-direction:column}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+button:disabled{cursor:default}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.top{display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap;padding:.6rem 1rem;background:var(--surface);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:.6rem;min-width:0}
+.brand svg{width:38px;height:38px;flex:none}
+.brand h1{font-family:var(--serif);font-size:1.35rem;margin:0;color:var(--ink);line-height:1.1}
+.brand p{margin:0;font-size:.82rem;color:var(--muted)}
+.tools{display:flex;gap:.4rem;flex-wrap:wrap;align-items:center}
+.btn{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:.45rem .8rem;min-height:40px;color:var(--ink)}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn:disabled{opacity:.45}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.btn.big{font-size:1.05rem;padding:.6rem 1.3rem;min-height:48px}
+select,input[type=text]{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:.4rem .5rem;min-height:40px;color:var(--ink)}
+.wrap{width:100%;max-width:1120px;margin:0 auto;padding:1rem;display:flex;flex-direction:column;gap:.8rem;flex:1}
+
+/* mesa */
+.table{padding:14px;border-radius:26px;
+  background:repeating-linear-gradient(97deg,rgba(255,255,255,.05) 0 2px,transparent 2px 9px),repeating-linear-gradient(90deg,rgba(0,0,0,.08) 0 1px,transparent 1px 23px),linear-gradient(180deg,#8A5530,#5E3518 55%,#4A2911);
+  box-shadow:0 10px 24px rgba(0,0,0,.35),inset 0 2px 0 rgba(255,255,255,.18),inset 0 -3px 0 rgba(0,0,0,.35)}
+.felt{position:relative;height:clamp(380px,44vw,420px);border-radius:16px;overflow:hidden;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .28 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"),radial-gradient(ellipse at 50% 45%,var(--felt) 0%,var(--felt-2) 90%);
+  box-shadow:inset 0 0 0 2px rgba(0,0,0,.35),inset 0 8px 22px rgba(0,0,0,.45)}
+.seat{position:absolute;transform:translate(-50%,-50%);width:104px;text-align:center;color:#FFF7EC;padding:.35rem .25rem .3rem;border-radius:14px;background:rgba(0,0,0,.22);border:2px solid transparent;transition:border-color .2s,background .2s}
+.seat.turn{border-color:var(--gold);background:rgba(0,0,0,.38)}
+.seat.src{border-color:#FFF1C9;border-style:dashed}
+.seat.out{opacity:.62}
+.seat .face{font-size:1.7rem;line-height:1;display:block}
+.seat .nm{font-weight:700;font-size:.85rem;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seat .ct{font-size:.74rem;display:block;color:#FCE4F0}
+.seat .tag{font-size:.68rem;font-weight:700;display:block;color:var(--gold);min-height:1.1em;text-transform:uppercase;letter-spacing:.04em}
+.seat .mini{display:block;position:relative;height:30px;margin:.2rem auto 0;width:80px}
+.seat .mini i{position:absolute;top:0;width:21px;height:30px;border-radius:3px;border:1.5px solid #fff;background:repeating-linear-gradient(45deg,#5B2A86 0 3px,#7A3FAF 3px 6px);box-shadow:0 1px 2px rgba(0,0,0,.4)}
+.seat .badge{display:inline-block;margin-top:.15rem;font-size:.7rem;background:rgba(0,0,0,.35);border-radius:999px;padding:.05rem .45rem}
+.center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;color:#FFF7EC;pointer-events:none}
+.pile{position:relative;width:calc(var(--pw)*1.6);height:calc(var(--pw)*1.6);margin:0 auto}
+.pile .card{position:absolute;left:50%;top:50%;margin:calc(var(--pw)*-.7) 0 0 calc(var(--pw)*-.5)}
+.pileN{font-size:.75rem;margin-top:.2rem;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+
+/* cartas */
+.card{--w:var(--cw);position:relative;width:var(--w);height:calc(var(--w)*1.4);border-radius:calc(var(--w)*.11);background:var(--paper);color:var(--card-ink);
+  border:1px solid rgba(0,0,0,.25);box-shadow:0 2px 4px rgba(0,0,0,.28);flex:none;padding:0;overflow:hidden;font-family:var(--sans);user-select:none}
+.card.sm{--w:var(--pw)}
+.card .cn{position:absolute;left:6%;top:3%;font-size:calc(var(--w)*.2);font-weight:800;line-height:1;text-align:center}
+.card .cn.b{left:auto;top:auto;right:6%;bottom:3%;transform:rotate(180deg)}
+.card .big{position:absolute;left:0;right:0;top:50%;transform:translateY(-58%);text-align:center;font-size:calc(var(--w)*.5);line-height:1}
+.card .lbl{position:absolute;left:0;right:0;bottom:5%;text-align:center;font-size:calc(var(--w)*.14);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 4%}
+.card.m{box-shadow:inset 0 0 0 calc(var(--w)*.045) var(--male),0 2px 4px rgba(0,0,0,.28)}
+.card.f{box-shadow:inset 0 0 0 calc(var(--w)*.045) var(--female),0 2px 4px rgba(0,0,0,.28)}
+.card.m .cn{color:var(--male)} .card.f .cn{color:var(--female)}
+.card.m .cn.b,.card.f .cn.b{transform:none}
+.card.f .big::after{content:"🎀";position:absolute;font-size:.36em;margin:-.15em 0 0 -.35em}
+.card.mico{background:radial-gradient(circle at 50% 40%,#3A2A1A,#0B0806 75%);color:#FFC94D;border-color:#FFC94D;box-shadow:inset 0 0 0 calc(var(--w)*.05) #FFC94D,0 2px 4px rgba(0,0,0,.4)}
+.card.mico .lbl{letter-spacing:.12em}
+.card.std .cn{font-family:var(--serif)}
+.card.red{color:var(--red)}
+.card.std .big{font-size:calc(var(--w)*.55)}
+.card.std.face .big{font-family:var(--serif);font-weight:700;font-size:calc(var(--w)*.42)}
+.card.back{background:var(--paper);box-shadow:0 2px 4px rgba(0,0,0,.3)}
+.card.back::before{content:"";position:absolute;inset:6%;border-radius:calc(var(--w)*.07);
+  background:radial-gradient(circle,rgba(255,255,255,.18) 0 18%,transparent 19%) 0 0/calc(var(--w)*.3) calc(var(--w)*.3),repeating-linear-gradient(45deg,#5B2A86 0 4px,#7A3FAF 4px 8px)}
+.card.back::after{content:"🐒";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:calc(var(--w)*.34);filter:grayscale(1) brightness(1.8);opacity:.5}
+.fly{position:fixed;z-index:50;margin:0;pointer-events:none;transition:transform var(--fd,500ms) cubic-bezier(.3,.7,.3,1);will-change:transform}
+
+/* zonas */
+.status{margin:0;min-height:2.6em;color:var(--ink);font-weight:600;line-height:1.35;text-align:center}
+.zone{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:.7rem .8rem .9rem}
+.zone h2{margin:0 0 .5rem;font-size:.95rem;color:var(--ink);display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
+.zone h2 .face{font-size:1.3rem}
+.zone .hint{margin:.5rem 0 0;font-size:.82rem;color:var(--muted)}
+.fan{display:flex;flex-wrap:wrap;justify-content:center;row-gap:.6rem;padding:.4rem 0 .2rem calc(var(--cw)*.42);min-height:calc(var(--cw)*1.4 + .6rem)}
+.fan .card{margin-left:calc(var(--cw)*-.42);transition:transform .18s}
+.fan .card:nth-child(odd){transform:rotate(-2deg)} .fan .card:nth-child(even){transform:rotate(2deg)}
+.fan button.card:not(:disabled):hover,.fan button.card:focus-visible{transform:translateY(-12px) rotate(0);z-index:2}
+.fan button.card:not(:disabled){cursor:pointer}
+.fan .card.lift{transform:translateY(-16px) rotate(0);z-index:2;outline:3px solid var(--gold);outline-offset:1px}
+.fan .card.new{animation:pop .6s ease-out}
+@keyframes pop{0%{outline:3px solid var(--gold)}100%{outline:3px solid transparent}}
+.empty{color:var(--muted);font-style:italic;align-self:center;margin-left:calc(var(--cw)*-.42)}
+.mine{border-color:var(--accent)}
+.row{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center}
+details.log{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:.5rem .8rem}
+details.log summary{cursor:pointer;font-weight:600;color:var(--ink)}
+details.log ol{margin:.5rem 0 0;padding-left:1.4rem;max-height:220px;overflow:auto;font-size:.88rem}
+
+/* diálogos */
+dialog{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);color:var(--text);padding:0;width:min(560px,calc(100vw - 24px));max-height:calc(100vh - 24px)}
+dialog::backdrop{background:rgba(20,10,30,.55)}
+.dlg{padding:1rem 1.1rem 1.1rem;overflow:auto}
+.dlg h2{font-family:var(--serif);color:var(--ink);margin:0 0 .7rem;font-size:1.35rem}
+.dlg h3{color:var(--ink);margin:1rem 0 .3rem;font-size:1rem}
+.dlg p,.dlg li{line-height:1.5;max-width:68ch}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:.7rem .9rem}
+.form label{display:flex;flex-direction:column;gap:.25rem;font-size:.86rem;font-weight:600;color:var(--ink);min-width:0}
+.form select,.form input{width:100%;min-width:0;max-width:100%}
+.form label small{font-weight:400;color:var(--muted)}
+.form .full{grid-column:1/-1}
+.acts{display:flex;gap:.5rem;justify-content:flex-end;flex-wrap:wrap;margin-top:1rem}
+.endbig{font-size:3rem;text-align:center;margin:.2rem 0}
+table.sc{width:100%;border-collapse:collapse;margin-top:.6rem;font-size:.92rem}
+table.sc th,table.sc td{border-bottom:1px solid var(--line);padding:.35rem .4rem;text-align:left}
+table.sc td.n{text-align:right;font-variant-numeric:tabular-nums}
+.foot{text-align:center;font-size:.8rem;color:var(--muted);padding:1rem}
+.foot a{color:var(--accent)}
+
+@media (max-width:760px){.seat .mini{display:none}}
+@media (max-width:720px){
+  .seat{width:84px;padding:.25rem .15rem}
+  .seat .mini{width:62px;height:24px}
+  .seat .mini i{width:17px;height:24px}
+  .seat .face{font-size:1.35rem}
+  .seat .nm{font-size:.78rem}
+}
+@media (max-width:480px){
+  .top{padding:.5rem .7rem}
+  .brand p{display:none}
+  .wrap{padding:.6rem}
+  .table{padding:9px;border-radius:20px}
+  .felt{height:360px}
+  .seat{width:68px}
+  .seat .ct{font-size:.68rem}
+  .seat .mini{display:none}
+  .form{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media print{.tools,.zone,details.log{display:none}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <svg viewBox="0 0 40 40" aria-hidden="true"><rect x="5" y="6" width="20" height="28" rx="3" fill="#7A3FAF" transform="rotate(-12 15 20)"/><rect x="14" y="5" width="21" height="29" rx="3" fill="#1A120A" stroke="#FFC94D" stroke-width="2"/><text x="24.5" y="25" font-size="14" text-anchor="middle">🐒</text></svg>
+    <div><h1 data-i="title">Mico Preto</h1><p data-i="subtitle"></p></div>
+  </div>
+  <div class="tools">
+    <button type="button" class="btn primary" id="bNew" data-i="newGame"></button>
+    <button type="button" class="btn" id="bRules" data-i="rules"></button>
+    <button type="button" class="btn" id="bTheme" data-ta="theme">◐</button>
+    <select id="sLang" data-ta="lang">
+      <option value="pt">🇧🇷 PT</option><option value="en">🇬🇧 EN</option><option value="it">🇮🇹 IT</option><option value="es">🇪🇸 ES</option>
+    </select>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="table"><div class="felt" id="felt" role="region" data-ta="tableLabel">
+    <div class="center"><div class="pile" id="pile" aria-hidden="true"></div><div class="pileN" id="pileN"></div></div>
+  </div></div>
+  <p class="status" id="status" aria-live="polite"></p>
+  <section class="zone" id="pickZone" aria-labelledby="pickTitle">
+    <h2 id="pickTitle"></h2>
+    <div class="fan" id="pick" role="group" aria-labelledby="pickTitle"></div>
+    <p class="hint" id="pickHint"></p>
+    <div class="row" id="watchRow" hidden><button type="button" class="btn" id="bFast"></button><button type="button" class="btn" id="bSkip" data-i="skip"></button></div>
+  </section>
+  <section class="zone mine" aria-labelledby="handTitle">
+    <h2 id="handTitle"></h2>
+    <div class="fan" id="hand" role="list"></div>
+  </section>
+  <details class="log"><summary data-i="log"></summary><ol id="log"></ol></details>
+</main>
+<footer class="foot"><span data-i="foot"></span> · <a id="lnkTut" href="projects.html" data-i="more"></a></footer>
+
+<dialog id="dSetup" aria-labelledby="hSetup"><div class="dlg">
+  <h2 id="hSetup" data-i="setupTitle"></h2>
+  <div class="form">
+    <label><span data-i="opponents"></span><select id="fOpp"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></label>
+    <label><span data-i="deck"></span><select id="fDeck"><option value="animals" data-i="deckAnimals"></option><option value="std" data-i="deckStd"></option></select></label>
+    <label id="lPairs"><span data-i="pairs"></span><select id="fPairs"><option value="10">10</option><option value="15" selected>15</option><option value="20">20</option></select></label>
+    <label><span data-i="direction"></span><select id="fDir"><option value="left" data-i="dirLeft"></option><option value="right" data-i="dirRight"></option></select></label>
+    <label><span data-i="tells"></span><select id="fTells"><option value="easy" data-i="tellsEasy"></option><option value="normal" data-i="tellsNormal"></option><option value="off" data-i="tellsOff"></option></select></label>
+    <label><span data-i="speed"></span><select id="fSpeed"><option value="slow" data-i="speedSlow"></option><option value="normal" data-i="speedNormal"></option><option value="fast" data-i="speedFast"></option></select></label>
+    <label class="full"><span data-i="seed"></span><input type="text" id="fSeed" inputmode="numeric" maxlength="10" autocomplete="off"><small data-i="seedHint"></small></label>
+  </div>
+  <div class="acts"><button type="button" class="btn" id="bSetupCancel" data-i="cancel"></button><button type="button" class="btn primary big" id="bStart" data-i="start"></button></div>
+</div></dialog>
+
+<dialog id="dRules" aria-labelledby="hRules"><div class="dlg">
+  <h2 id="hRules" tabindex="-1" data-i="rulesTitle"></h2>
+  <div id="rulesBody"></div>
+  <div class="acts"><button type="button" class="btn primary" id="bRulesClose" data-i="close"></button></div>
+</div></dialog>
+
+<dialog id="dEnd" aria-labelledby="hEnd"><div class="dlg">
+  <div class="endbig" id="endFace" aria-hidden="true"></div>
+  <h2 id="hEnd"></h2>
+  <p id="endText"></p>
+  <table class="sc"><thead><tr><th data-i="player"></th><th data-i="place"></th><th class="n" data-i="micos"></th></tr></thead><tbody id="endRows"></tbody></table>
+  <p class="hint" id="endSeed" style="color:var(--muted);font-size:.82rem"></p>
+  <div class="acts"><button type="button" class="btn" id="bResetScore" data-i="resetScore"></button><button type="button" class="btn" id="bEndSetup" data-i="options"></button><button type="button" class="btn primary big" id="bAgain" data-i="nextRound"></button></div>
+</div></dialog>
+
+<script>
+'use strict';
+/* ===================== Textos ===================== */
+const I18N = {
+  title:['Mico Preto','Mico Preto (Old Maid)','Mico Preto (Old Maid)','Mico Preto (La Solterona)'],
+  subtitle:['Forme pares e não fique com o mico','Make pairs and don’t get stuck with the monkey','Fai coppie e non tenerti la scimmia','Forma parejas y no te quedes con el mono'],
+  newGame:['Nova partida','New game','Nuova partita','Nueva partida'],
+  rules:['Regras','Rules','Regole','Reglas'],
+  rulesTitle:['Como se joga o Mico Preto','How to play Mico Preto','Come si gioca a Mico Preto','Cómo se juega al Mico Preto'],
+  theme:['Alternar tema claro ou escuro','Toggle light or dark theme','Cambia tema chiaro o scuro','Cambiar tema claro u oscuro'],
+  lang:['Idioma','Language','Lingua','Idioma'],
+  tableLabel:['Mesa de jogo','Game table','Tavolo da gioco','Mesa de juego'],
+  setupTitle:['Nova partida','New game','Nuova partita','Nueva partida'],
+  opponents:['Adversários (computador)','Opponents (computer)','Avversari (computer)','Rivales (computadora)'],
+  deck:['Baralho','Deck','Mazzo','Baraja'],
+  deckAnimals:['Bichos em casais + Mico','Animal couples + Monkey','Animali in coppia + Scimmia','Animales en parejas + Mono'],
+  deckStd:['Baralho comum sem 3 damas','Standard deck minus 3 queens','Mazzo comune senza 3 donne','Baraja común sin 3 reinas'],
+  pairs:['Casais de bichos','Animal couples','Coppie di animali','Parejas de animales'],
+  direction:['Pegar carta de quem','Draw a card from','Pescare la carta da','Robar carta de'],
+  dirLeft:['Vizinho da esquerda (horário)','Left neighbour (clockwise)','Vicino a sinistra (orario)','Vecino de la izquierda (horario)'],
+  dirRight:['Vizinho da direita (anti-horário)','Right neighbour (counter-clockwise)','Vicino a destra (antiorario)','Vecino de la derecha (antihorario)'],
+  tells:['Caretas dos adversários','Opponents’ faces','Smorfie degli avversari','Muecas de los rivales'],
+  tellsEasy:['Fácil: quase sempre entregam o mico','Easy: they nearly always give the monkey away','Facile: tradiscono quasi sempre la scimmia','Fácil: casi siempre delatan al mono'],
+  tellsNormal:['Normal: às vezes entregam, às vezes blefam','Normal: sometimes they give it away, sometimes they bluff','Normale: a volte tradiscono, a volte bluffano','Normal: a veces delatan, a veces blufean'],
+  tellsOff:['Difícil: cara de paisagem','Hard: poker face','Difficile: faccia impassibile','Difícil: cara de póker'],
+  speed:['Velocidade','Speed','Velocità','Velocidad'],
+  speedSlow:['Devagar','Slow','Lenta','Lenta'], speedNormal:['Normal','Normal','Normale','Normal'], speedFast:['Rápida','Fast','Veloce','Rápida'],
+  seed:['Semente (opcional)','Seed (optional)','Seme (facoltativo)','Semilla (opcional)'],
+  seedHint:['Mesma semente e mesmas escolhas, mesma partida. Vazio sorteia uma.','Same seed and same choices, same game. Leave empty for a random one.','Stesso seme e stesse scelte, stessa partita. Vuoto ne sorteggia uno.','Misma semilla y mismas elecciones, misma partida. Vacío sortea una.'],
+  start:['Distribuir cartas','Deal the cards','Distribuisci le carte','Repartir cartas'],
+  cancel:['Cancelar','Cancel','Annulla','Cancelar'],
+  close:['Fechar','Close','Chiudi','Cerrar'],
+  you:['Você','You','Tu','Tú'],
+  cards:['{0} cartas','{0} cards','{0} carte','{0} cartas'],
+  card1:['1 carta','1 card','1 carta','1 carta'],
+  yourHand:['Sua mão · {0}','Your hand · {0}','La tua mano · {0}','Tu mano · {0}'],
+  handEmpty:['Sem cartas','No cards','Nessuna carta','Sin cartas'],
+  pickFrom:['Escolha uma carta de {0}','Pick a card from {0}','Scegli una carta di {0}','Elige una carta de {0}'],
+  pickHint:['Clique ou toque numa carta. Com o teclado, use as setas e Enter. Repare na cara de quem segura as cartas.','Click or tap a card. With the keyboard, use the arrows and Enter. Watch the face of whoever holds the cards.','Clicca o tocca una carta. Con la tastiera usa le frecce e Invio. Osserva la faccia di chi tiene le carte.','Haz clic o toca una carta. Con el teclado, usa las flechas y Enter. Fíjate en la cara de quien sostiene las cartas.'],
+  pickHintOff:['Clique ou toque numa carta. Com o teclado, use as setas e Enter.','Click or tap a card. With the keyboard, use the arrows and Enter.','Clicca o tocca una carta. Con la tastiera usa le frecce e Invio.','Haz clic o toca una carta. Con el teclado, usa las flechas y Enter.'],
+  othersDraw:['{0} pega uma carta de {1}','{0} draws a card from {1}','{0} pesca una carta da {1}','{0} roba una carta de {1}'],
+  drawsYou:['{0} vai pegar uma carta sua','{0} is going to take one of your cards','{0} sta per prendere una tua carta','{0} va a tomar una de tus cartas'],
+  yourTurn:['Sua vez: pegue uma carta de {0}.','Your turn: take a card from {0}.','Tocca a te: prendi una carta di {0}.','Tu turno: toma una carta de {0}.'],
+  turnOf:['Vez de {0}.','{0}’s turn.','Turno di {0}.','Turno de {0}.'],
+  dealing:['Distribuindo as cartas…','Dealing the cards…','Distribuzione delle carte…','Repartiendo las cartas…'],
+  discarding:['Todos baixam os pares que receberam…','Everyone lays down the pairs they were dealt…','Tutti scartano le coppie ricevute…','Todos bajan las parejas que recibieron…'],
+  firstPairs:['{0} baixou {1} par(es).','{0} laid down {1} pair(s).','{0} ha scartato {1} coppia/e.','{0} bajó {1} pareja(s).'],
+  youGot:['Você pegou: {0}.','You took: {0}.','Hai preso: {0}.','Tomaste: {0}.'],
+  tookFromYou:['{0} pegou de você: {1}.','{0} took from you: {1}.','{0} ti ha preso: {1}.','{0} te quitó: {1}.'],
+  drew:['{0} pegou uma carta de {1}.','{0} took a card from {1}.','{0} ha preso una carta da {1}.','{0} tomó una carta de {1}.'],
+  pairDown:['{0} formou par: {1}.','{0} made a pair: {1}.','{0} ha fatto coppia: {1}.','{0} formó pareja: {1}.'],
+  pairDownYou:['Você formou par: {0}.','You made a pair: {0}.','Hai fatto coppia: {0}.','Formaste pareja: {0}.'],
+  firstPairsYou:['Você baixou {0} par(es).','You laid down {0} pair(s).','Hai scartato {0} coppia/e.','Bajaste {0} pareja(s).'],
+  noPair:['{0} não formou par.','{0} made no pair.','{0} non ha fatto coppia.','{0} no formó pareja.'],
+  isOut:['{0} ficou sem cartas e saiu ({1}º).','{0} ran out of cards and is out (#{1}).','{0} non ha più carte ed esce ({1}º).','{0} se quedó sin cartas y sale ({1}º).'],
+  youOut:['Você ficou sem cartas: está salvo! ({0}º)','You ran out of cards: you are safe! (#{0})','Non hai più carte: sei in salvo! ({0}º)','Te quedaste sin cartas: ¡estás a salvo! ({0}º)'],
+  watching:['Você já saiu. Veja quem fica com o mico.','You are out. See who gets stuck with the monkey.','Sei fuori. Guarda chi resta con la scimmia.','Ya saliste. Mira quién se queda con el mono.'],
+  fast:['Acelerar','Speed up','Accelera','Acelerar'], slowDown:['Velocidade normal','Normal speed','Velocità normale','Velocidad normal'],
+  skip:['Pular para o fim','Skip to the end','Salta alla fine','Saltar al final'],
+  loserYou:['Você ficou com o mico!','You got stuck with the monkey!','La scimmia è rimasta a te!','¡Te quedaste con el mono!'],
+  loserYouStd:['Você ficou com a dama sozinha!','You got stuck with the lone queen!','La donna spaiata è rimasta a te!','¡Te quedaste con la reina sola!'],
+  loserOther:['{0} ficou com o mico!','{0} got stuck with the monkey!','La scimmia è rimasta a {0}!','¡{0} se quedó con el mono!'],
+  loserOtherStd:['{0} ficou com a dama sozinha!','{0} got stuck with the lone queen!','La donna spaiata è rimasta a {0}!','¡{0} se quedó con la reina sola!'],
+  endWin:['Você escapou, saindo em {0}º lugar.','You escaped, going out in place #{0}.','Sei in salvo: esci al {0}º posto.','Te salvaste, saliendo en el puesto {0}.'],
+  endLose:['Todos os outros formaram seus pares. Na próxima, repare nas caretas.','Everyone else matched their pairs. Next time, watch the faces.','Tutti gli altri hanno fatto coppia. La prossima volta guarda le smorfie.','Todos los demás formaron sus parejas. La próxima vez, fíjate en las muecas.'],
+  player:['Jogador','Player','Giocatore','Jugador'], place:['Saída','Went out','Uscita','Salida'], micos:['Micos no placar','Monkeys so far','Scimmie finora','Monos hasta ahora'],
+  stuck:['ficou com o mico','stuck','con la scimmia','con el mono'],
+  placeN:['{0}º','#{0}','{0}º','{0}º'],
+  nextRound:['Nova rodada','Next round','Nuovo giro','Nueva ronda'],
+  options:['Mudar opções','Change options','Cambia opzioni','Cambiar opciones'],
+  resetScore:['Zerar placar','Reset score','Azzera punteggio','Reiniciar marcador'],
+  seedWas:['Semente desta rodada: {0} · rodadas jogadas: {1}','Seed of this round: {0} · rounds played: {1}','Seme di questo giro: {0} · giri giocati: {1}','Semilla de esta ronda: {0} · rondas jugadas: {1}'],
+  pile:['Monte de pares: {0}','Pairs pile: {0}','Mucchio delle coppie: {0}','Montón de parejas: {0}'],
+  log:['Histórico da rodada','Round history','Cronologia del giro','Historial de la ronda'],
+  turnTag:['▶ vez','▶ turn','▶ turno','▶ turno'], srcTag:['◆ dá carta','◆ gives','◆ dà carta','◆ da carta'],
+  outTag:['✓ saiu {0}º','✓ out #{0}','✓ uscito {0}º','✓ salió {0}º'], loserTag:['🐒 mico','🐒 monkey','🐒 scimmia','🐒 mono'],
+  scoreBadge:['🐒 × {0}','🐒 × {0}','🐒 × {0}','🐒 × {0}'],
+  scoreTitle:['Micos no placar','Monkeys on the scoreboard','Scimmie nel punteggio','Monos en el marcador'],
+  backLabel:['Carta virada {0} de {1}','Face-down card {0} of {1}','Carta coperta {0} di {1}','Carta boca abajo {0} de {1}'],
+  male:['macho','male','maschio','macho'], female:['fêmea','female','femmina','hembra'],
+  mico:['Mico','Monkey','Scimmia','Mono'], micoLabel:['MICO','MICO','MICO','MICO'],
+  cardStd:['{0} de {1}','{0} of {1}','{0} di {1}','{0} de {1}'],
+  r1:['Ás','Ace','Asso','As'], r11:['Valete','Jack','Fante','Jota'], r12:['Dama','Queen','Donna','Reina'], r13:['Rei','King','Re','Rey'],
+  sS:['espadas','spades','picche','picas'], sH:['copas','hearts','cuori','corazones'], sD:['ouros','diamonds','quadri','diamantes'], sC:['paus','clubs','fiori','tréboles'],
+  foot:['Giovani Perotto Mesquita · Porto Alegre, RS','Giovani Perotto Mesquita · Porto Alegre, RS','Giovani Perotto Mesquita · Porto Alegre, RS','Giovani Perotto Mesquita · Porto Alegre, RS'],
+  more:['Outros projetos','More projects','Altri progetti','Otros proyectos'],
+  confirmNew:['Abandonar a rodada em andamento?','Abandon the round in progress?','Abbandonare il giro in corso?','¿Abandonar la ronda en curso?'],
+  a_dog:['Cachorro','Dog','Cane','Perro'], a_cat:['Gato','Cat','Gatto','Gato'], a_mouse:['Rato','Mouse','Topo','Ratón'], a_rabbit:['Coelho','Rabbit','Coniglio','Conejo'],
+  a_fox:['Raposa','Fox','Volpe','Zorro'], a_bear:['Urso','Bear','Orso','Oso'], a_panda:['Panda','Panda','Panda','Panda'], a_koala:['Coala','Koala','Koala','Koala'],
+  a_tiger:['Tigre','Tiger','Tigre','Tigre'], a_lion:['Leão','Lion','Leone','León'], a_horse:['Cavalo','Horse','Cavallo','Caballo'], a_pig:['Porco','Pig','Maiale','Cerdo'],
+  a_frog:['Sapo','Frog','Rana','Rana'], a_penguin:['Pinguim','Penguin','Pinguino','Pingüino'], a_owl:['Coruja','Owl','Gufo','Búho'], a_duck:['Pato','Duck','Anatra','Pato'],
+  a_elephant:['Elefante','Elephant','Elefante','Elefante'], a_giraffe:['Girafa','Giraffe','Giraffa','Jirafa'], a_turtle:['Tartaruga','Turtle','Tartaruga','Tortuga'],
+  a_octopus:['Polvo','Octopus','Polpo','Pulpo'], a_zebra:['Zebra','Zebra','Zebra','Cebra'], a_wolf:['Lobo','Wolf','Lupo','Lobo'], a_hedgehog:['Ouriço','Hedgehog','Riccio','Erizo'], a_whale:['Baleia','Whale','Balena','Ballena'],
+  rulesHtml:[
+`<h3>Objetivo</h3><p>Formar pares e ficar sem cartas. Quem terminar segurando a única carta sem par, o <strong>mico</strong>, perde a rodada.</p>
+<h3>Preparação</h3><ul><li><strong>Baralho de bichos:</strong> cada bicho aparece em casal, um macho (♂, borda azul) e uma fêmea (♀, borda rosa, com laço). O mico (carta preta com 🐒) não tem par.</li><li><strong>Baralho comum:</strong> tiram-se três damas e fica só a dama de espadas, que faz o papel do mico. Formam par duas cartas do mesmo valor, de qualquer naipe.</li><li>Todas as cartas são distribuídas, uma a uma. Uns podem ficar com uma carta a mais, e isso é normal.</li><li>Antes de começar, cada um baixa no monte os pares que recebeu. Neste app isso é automático.</li></ul>
+<h3>A jogada</h3><ul><li>Na sua vez, você pega uma carta, sem ver, da mão do vizinho (o da esquerda, ou o da direita se você escolher assim).</li><li>Se ela formar par com uma carta sua, o par vai para o monte. Se não, fica na sua mão.</li><li>Depois, a vez passa para o vizinho de quem você pegou a carta.</li><li>Quem fica sem cartas sai da rodada e está salvo.</li></ul>
+<h3>Fim</h3><p>Como há um número ímpar de cartas e os pares saem de dois em dois, no fim sobra só o mico, na mão de alguém. Essa pessoa “paga o mico” e ganha um ponto no placar de micos. Menos micos é melhor.</p>
+<h3>Caretas</h3><p>Em mesa de verdade, muita gente se denuncia pela cara quando o outro encosta no mico. Aqui, ao passar o mouse ou o foco numa carta do adversário, a cara dele pode mudar para 😬. No nível fácil a careta quase sempre é verdadeira; no normal, às vezes ele blefa; no difícil, ninguém muda de cara. As caretas são uma invenção deste app.</p>
+<h3>O que o computador faz</h3><p>Os adversários pegam cartas ao acaso e embaralham a mão depois de cada jogada, como fazem as pessoas. Tudo o que é sorteado vem de um gerador com semente.</p>
+<h3>Origem e fontes</h3><p>No Brasil, o Jogo do Mico da Copag é um baralho infantil de bichos em casais, macho e fêmea, fabricado no país desde a década de 1950; a origem do jogo é desconhecida. Daí vem a expressão “pagar mico”. A versão com baralho comum é a <em>Old Maid</em> inglesa, que tira três damas; a variante <em>Old Bachelor</em> tira três valetes. Na Alemanha, o <em>Schwarzer Peter</em> (Pedro Preto) já tinha regras impressas em 1821, e a Wikipédia diz que a <em>Old Maid</em> pode ter vindo dele.</p>
+<p><strong>Divergências:</strong> a página da Wikipédia sobre a <em>Old Maid</em> data de 1831 as regras de Eliza Leslie; a página sobre o <em>Black Peter</em> diz que as regras inglesas apareceram em 1835. Sobre o lado, as fontes concordam: pega-se a carta de quem está à esquerda. A opção pela direita fica para quem joga assim em casa.</p>
+<ol style="font-size:.88rem"><li>Auditório Ibirapuera. “O que é jogo do mico?”, atualizado em 20/02/2023.</li><li>Wikipedia. “Old maid (card game)”, consultado em 14/11/2026.</li><li>Wikipedia. “Black Peter (card game)”, consultado em 14/11/2026.</li><li>Dicio. “Mico”, consultado em 14/11/2026.</li></ol>`,
+`<h3>Goal</h3><p>Make pairs and run out of cards. Whoever ends up holding the only unmatched card, the <strong>monkey</strong> (mico), loses the round.</p>
+<h3>Setup</h3><ul><li><strong>Animal deck:</strong> each animal comes as a couple, a male (♂, blue border) and a female (♀, pink border, with a bow). The monkey (black card with 🐒) has no partner.</li><li><strong>Standard deck:</strong> three queens are removed and only the queen of spades remains, playing the monkey’s role. Any two cards of the same rank make a pair, whatever the suit.</li><li>All cards are dealt one by one. Some players may get one card more, which is normal.</li><li>Before play starts, everyone lays down the pairs they were dealt. This app does it automatically.</li></ul>
+<h3>Play</h3><ul><li>On your turn you take a card, unseen, from your neighbour’s hand (the left one, or the right one if you choose so).</li><li>If it matches one of your cards, the pair goes to the pile. If not, it stays in your hand.</li><li>Then the turn passes to the neighbour you took the card from.</li><li>Whoever runs out of cards leaves the round and is safe.</li></ul>
+<h3>End</h3><p>Since there is an odd number of cards and pairs leave two at a time, at the end only the monkey is left, in someone’s hand. That player loses and gets one point on the monkey scoreboard. Fewer monkeys is better.</p>
+<h3>Faces</h3><p>At a real table, many people give themselves away when someone touches the monkey. Here, when you hover or focus an opponent’s card, their face may change to 😬. On easy the face is almost always honest; on normal they sometimes bluff; on hard nobody changes face. The faces are an invention of this app.</p>
+<h3>What the computer does</h3><p>Opponents pick cards at random and shuffle their hand after each move, as people do. Everything random comes from a seeded generator.</p>
+<h3>Origin and sources</h3><p>In Brazil, Copag’s <em>Jogo do Mico</em> is a children’s deck of animal couples, male and female, made in the country since the 1950s; the game’s origin is unknown. It gave Portuguese the expression <em>pagar mico</em> (“to pay the monkey”, to be embarrassed). The standard-deck version is the English <em>Old Maid</em>, which removes three queens; the <em>Old Bachelor</em> variant removes three jacks. In Germany, <em>Schwarzer Peter</em> (Black Peter) already had printed rules in 1821, and Wikipedia says Old Maid may derive from it.</p>
+<p><strong>Divergences:</strong> Wikipedia’s Old Maid page dates Eliza Leslie’s rules to 1831; its Black Peter page says the English rules appeared in 1835. On the side, the sources agree: you draw from the player on your left. The right-hand option is for those who play that way at home.</p>
+<ol style="font-size:.88rem"><li>Auditório Ibirapuera. “O que é jogo do mico?” (Portuguese), updated 20 Feb 2023.</li><li>Wikipedia. “Old maid (card game)”, accessed 14 Nov 2026.</li><li>Wikipedia. “Black Peter (card game)”, accessed 14 Nov 2026.</li><li>Dicio. “Mico” (Portuguese dictionary), accessed 14 Nov 2026.</li></ol>`,
+`<h3>Obiettivo</h3><p>Fare coppie e restare senza carte. Chi finisce con l’unica carta spaiata, la <strong>scimmia</strong> (mico), perde il giro.</p>
+<h3>Preparazione</h3><ul><li><strong>Mazzo di animali:</strong> ogni animale è in coppia, un maschio (♂, bordo blu) e una femmina (♀, bordo rosa, con fiocco). La scimmia (carta nera con 🐒) non ha compagna.</li><li><strong>Mazzo comune:</strong> si tolgono tre donne e resta solo la donna di picche, che fa da scimmia. Fanno coppia due carte dello stesso valore, di qualsiasi seme.</li><li>Tutte le carte si distribuiscono una per una. Qualcuno può averne una in più: è normale.</li><li>Prima di iniziare, ognuno scarta nel mucchio le coppie ricevute. In questa app avviene da solo.</li></ul>
+<h3>Il turno</h3><ul><li>Al tuo turno prendi una carta, senza guardare, dalla mano del vicino (quello a sinistra, o a destra se scegli così).</li><li>Se fa coppia con una tua carta, la coppia va nel mucchio. Altrimenti resta in mano.</li><li>Poi il turno passa al vicino da cui hai preso la carta.</li><li>Chi resta senza carte esce dal giro ed è salvo.</li></ul>
+<h3>Fine</h3><p>Le carte sono dispari e le coppie escono a due a due, quindi alla fine resta solo la scimmia, in mano a qualcuno. Quel giocatore perde e prende un punto nel conto delle scimmie. Meno scimmie è meglio.</p>
+<h3>Smorfie</h3><p>A un tavolo vero molti si tradiscono quando l’altro tocca la scimmia. Qui, passando il mouse o il focus su una carta dell’avversario, la sua faccia può diventare 😬. In modalità facile la smorfia è quasi sempre sincera; in normale a volte bluffa; in difficile nessuno cambia faccia. Le smorfie sono un’invenzione di questa app.</p>
+<h3>Cosa fa il computer</h3><p>Gli avversari pescano a caso e mescolano la mano dopo ogni mossa, come fanno le persone. Tutto ciò che è casuale viene da un generatore con seme.</p>
+<h3>Origine e fonti</h3><p>In Brasile il <em>Jogo do Mico</em> della Copag è un mazzo per bambini con coppie di animali, maschio e femmina, prodotto nel paese dagli anni Cinquanta; l’origine del gioco è sconosciuta. Da qui l’espressione portoghese <em>pagar mico</em> (“pagare la scimmia”, fare una figuraccia). La versione con mazzo comune è l’inglese <em>Old Maid</em>, che toglie tre donne; la variante <em>Old Bachelor</em> toglie tre fanti. In Germania lo <em>Schwarzer Peter</em> (Pietro nero) aveva già regole stampate nel 1821, e Wikipedia dice che l’Old Maid potrebbe derivarne.</p>
+<p><strong>Divergenze:</strong> la pagina di Wikipedia sull’Old Maid data al 1831 le regole di Eliza Leslie; quella sul Black Peter dice che le regole inglesi apparvero nel 1835. Sul lato le fonti concordano: si pesca da chi sta a sinistra. L’opzione a destra è per chi gioca così a casa.</p>
+<ol style="font-size:.88rem"><li>Auditório Ibirapuera. “O que é jogo do mico?” (in portoghese), aggiornato il 20/02/2023.</li><li>Wikipedia. “Old maid (card game)”, consultato il 14/11/2026.</li><li>Wikipedia. “Black Peter (card game)”, consultato il 14/11/2026.</li><li>Dicio. “Mico” (dizionario portoghese), consultato il 14/11/2026.</li></ol>`,
+`<h3>Objetivo</h3><p>Formar parejas y quedarse sin cartas. Quien termine con la única carta sin pareja, el <strong>mono</strong> (mico), pierde la ronda.</p>
+<h3>Preparación</h3><ul><li><strong>Baraja de animales:</strong> cada animal viene en pareja, un macho (♂, borde azul) y una hembra (♀, borde rosa, con lazo). El mono (carta negra con 🐒) no tiene pareja.</li><li><strong>Baraja común:</strong> se quitan tres reinas y queda solo la reina de picas, que hace de mono. Forman pareja dos cartas del mismo valor, de cualquier palo.</li><li>Se reparten todas las cartas, una por una. Algunos pueden tener una carta más, y es normal.</li><li>Antes de empezar, cada uno baja al montón las parejas que recibió. En este app es automático.</li></ul>
+<h3>El turno</h3><ul><li>En tu turno tomas una carta, sin mirar, de la mano del vecino (el de la izquierda, o el de la derecha si lo eliges).</li><li>Si forma pareja con una carta tuya, la pareja va al montón. Si no, queda en tu mano.</li><li>Después el turno pasa al vecino al que le tomaste la carta.</li><li>Quien se queda sin cartas sale de la ronda y está a salvo.</li></ul>
+<h3>Fin</h3><p>Como hay un número impar de cartas y las parejas salen de dos en dos, al final solo queda el mono, en la mano de alguien. Esa persona pierde y suma un punto en el marcador de monos. Menos monos es mejor.</p>
+<h3>Muecas</h3><p>En una mesa de verdad mucha gente se delata cuando el otro toca el mono. Aquí, al pasar el ratón o el foco por una carta del rival, su cara puede cambiar a 😬. En fácil la mueca casi siempre es sincera; en normal a veces blufea; en difícil nadie cambia de cara. Las muecas son un invento de este app.</p>
+<h3>Qué hace la computadora</h3><p>Los rivales toman cartas al azar y mezclan su mano después de cada jugada, como hacen las personas. Todo lo sorteado sale de un generador con semilla.</p>
+<h3>Origen y fuentes</h3><p>En Brasil, el <em>Jogo do Mico</em> de Copag es una baraja infantil de parejas de animales, macho y hembra, fabricada en el país desde los años cincuenta; el origen del juego es desconocido. De ahí viene la expresión portuguesa <em>pagar mico</em> (“pagar el mono”, hacer el ridículo). La versión con baraja común es la inglesa <em>Old Maid</em>, que quita tres reinas; la variante <em>Old Bachelor</em> quita tres jotas. En Alemania, el <em>Schwarzer Peter</em> (Pedro negro) ya tenía reglas impresas en 1821, y Wikipedia dice que la Old Maid puede venir de él.</p>
+<p><strong>Divergencias:</strong> la página de Wikipedia sobre la Old Maid fecha en 1831 las reglas de Eliza Leslie; la del Black Peter dice que las reglas inglesas aparecieron en 1835. Sobre el lado, las fuentes coinciden: se roba de quien está a la izquierda. La opción por la derecha queda para quien juega así en casa.</p>
+<ol style="font-size:.88rem"><li>Auditório Ibirapuera. “O que é jogo do mico?” (en portugués), actualizado el 20/02/2023.</li><li>Wikipedia. “Old maid (card game)”, consultado el 14/11/2026.</li><li>Wikipedia. “Black Peter (card game)”, consultado el 14/11/2026.</li><li>Dicio. “Mico” (diccionario portugués), consultado el 14/11/2026.</li></ol>`]
+};
+const LANGS = ['pt','en','it','es'];
+const HTML_LANG = {pt:'pt-BR',en:'en',it:'it',es:'es'};
+let LANG = 'pt';
+function t(k, ...a) {
+  const r = I18N[k]; let s = r ? r[LANGS.indexOf(LANG)] : k;
+  a.forEach((v, i) => { s = s.split('{' + i + '}').join(v); });
+  return s;
+}
+const store = {
+  get(k) { try { return JSON.parse(localStorage.getItem('mico.' + k)); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem('mico.' + k, JSON.stringify(v)); } catch (e) { /* sem armazenamento */ } }
+};
+const $ = (s) => document.querySelector(s);
+
+/* ===================== Motor ===================== */
+function mulberry(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let x = Math.imul(a ^ a >>> 15, 1 | a); x = x + Math.imul(x ^ x >>> 7, 61 | x) ^ x; return ((x ^ x >>> 14) >>> 0) / 4294967296; }; }
+function shuffle(arr, rng) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
+const ANIMALS = [['dog','🐶'],['cat','🐱'],['mouse','🐭'],['rabbit','🐰'],['fox','🦊'],['bear','🐻'],['panda','🐼'],['koala','🐨'],['tiger','🐯'],['lion','🦁'],['horse','🐴'],['pig','🐷'],
+  ['frog','🐸'],['penguin','🐧'],['owl','🦉'],['duck','🦆'],['elephant','🐘'],['giraffe','🦒'],['turtle','🐢'],['octopus','🐙'],['zebra','🦓'],['wolf','🐺'],['hedgehog','🦔'],['whale','🐳']];
+const SUITS = [['S','♠'],['H','♥'],['D','♦'],['C','♣']];
+const RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+const NAMES = ['Ana','Beto','Caio','Duda','Edu'];
+const AVATAR = ['🙂','😊','😐','🙂','😌'];
+
+function makeDeck(cfg, rng) {
+  const deck = []; let id = 0;
+  if (cfg.deck === 'std') {
+    for (const [s] of SUITS) RANKS.forEach((r, i) => { if (r === 'Q' && s !== 'S') return; deck.push({ id: id++, kind: 's', r, ri: i + 1, s, key: r, odd: false }); });
+    const q = deck.find((c) => c.r === 'Q'); q.odd = true;
+  } else {
+    const sp = shuffle(ANIMALS.slice(), rng).slice(0, cfg.pairs);
+    for (const [k, e] of sp) for (const sex of ['m', 'f']) deck.push({ id: id++, kind: 'a', sp: k, emoji: e, sex, key: k, odd: false });
+    deck.push({ id: id++, kind: 'mico', key: 'mico', odd: true });
+  }
+  return deck;
+}
+// Pares possíveis numa mão: agrupa por chave e tira de dois em dois
+function findPairs(hand) {
+  const by = new Map(), out = [];
+  for (const c of hand) { if (c.odd) continue; const g = by.get(c.key) || []; g.push(c); by.set(c.key, g); }
+  for (const g of by.values()) for (let i = 0; i + 1 < g.length; i += 2) out.push([g[i], g[i + 1]]);
+  return out;
+}
+function cardName(c) {
+  if (c.kind === 'mico') return t('mico');
+  if (c.kind === 'a') return t('a_' + c.sp) + ' ' + (c.sex === 'm' ? '♂' : '♀');
+  const rn = c.r === 'A' ? t('r1') : c.r === 'J' ? t('r11') : c.r === 'Q' ? t('r12') : c.r === 'K' ? t('r13') : c.r;
+  return t('cardStd', rn, t('s' + c.s));
+}
+function cardAria(c) {
+  if (c.kind === 'a') return t('a_' + c.sp) + ', ' + (c.sex === 'm' ? t('male') : t('female'));
+  return cardName(c);
+}
+function pairName(a, b) {
+  if (a.kind === 'a') return t('a_' + a.sp) + ' ♂♀';
+  return cardName(a) + ' + ' + cardName(b);
+}
+function sortKey(c) { return c.kind === 'mico' ? 999 : c.kind === 'a' ? ANIMALS.findIndex((x) => x[0] === c.sp) * 2 + (c.sex === 'f') : c.ri * 4 + 'SHDC'.indexOf(c.s); }
+
+/* ===================== Estado ===================== */
+const DEF = { opp: 3, deck: 'animals', pairs: 15, dir: 'left', tells: 'normal', speed: 'normal', seed: '' };
+let CFG = Object.assign({}, DEF, store.get('settings') || {});
+let SCORE = store.get('score') || { n: 0, micos: [], rounds: 0 };
+let G = null, GEN = 0, FAST = false, SKIP = false;
+const CANCEL = { cancel: true };
+const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const SPEED = { slow: 900, normal: 560, fast: 260 };
+function dur() { return SKIP ? 0 : FAST ? 120 : SPEED[CFG.speed] || 560; }
+function wait(ms, gen) { return new Promise((res, rej) => { if (gen !== GEN) return rej(CANCEL); if (ms <= 0) return res(); setTimeout(() => (gen === GEN ? res() : rej(CANCEL)), ms); }); }
+function pname(i) { return i === 0 ? t('you') : G.players[i].name; }
+function activeList() { return G.players.map((p, i) => i).filter((i) => G.players[i].hand.length > 0); }
+function nextActive(i) { const n = G.players.length, st = G.dir; for (let k = 1; k < n; k++) { const j = ((i + st * k) % n + n) % n; if (G.players[j].hand.length > 0) return j; } return -1; }
+
+/* ===================== Desenho ===================== */
+function cardEl(c, opts = {}) {
+  const el = document.createElement(opts.button ? 'button' : 'div');
+  if (opts.button) el.type = 'button';
+  el.className = 'card' + (opts.sm ? ' sm' : '');
+  if (!c || opts.back) { el.classList.add('back'); return el; }
+  el.dataset.id = c.id;
+  if (c.kind === 'mico') {
+    el.classList.add('mico');
+    el.innerHTML = '<span class="cn">M</span><span class="big">🐒</span><span class="lbl">' + t('micoLabel') + '</span><span class="cn b">M</span>';
+  } else if (c.kind === 'a') {
+    el.classList.add(c.sex);
+    const sx = c.sex === 'm' ? '♂' : '♀';
+    el.innerHTML = '<span class="cn">' + sx + '</span><span class="big">' + c.emoji + '</span><span class="lbl">' + t('a_' + c.sp) + '</span><span class="cn b">' + sx + '</span>';
+  } else {
+    const sym = SUITS.find((s) => s[0] === c.s)[1];
+    el.classList.add('std'); if (c.s === 'H' || c.s === 'D') el.classList.add('red');
+    const face = 'JQK'.includes(c.r);
+    if (face) el.classList.add('face');
+    el.innerHTML = '<span class="cn">' + c.r + '<br>' + sym + '</span><span class="big">' + (face ? c.r + sym : sym) + '</span><span class="cn b">' + c.r + '<br>' + sym + '</span>';
+  }
+  el.setAttribute(opts.button ? 'aria-label' : 'aria-label', cardAria(c));
+  if (!opts.button) el.setAttribute('role', opts.listitem ? 'listitem' : 'img');
+  return el;
+}
+function seatPos(i, n) {
+  if (i === 0) return [50, 87];
+  // i=1 à esquerda, sentido horário até a direita; o arco desce um pouco nas laterais para não amontoar
+  const a = n >= 6 ? 0.8 : 0.45, th = -a + (Math.PI + 2 * a) * i / n;
+  return [50 - 42 * Math.cos(th), 50 - 40 * Math.sin(th)];
+}
+function renderSeats() {
+  const felt = $('#felt');
+  felt.querySelectorAll('.seat').forEach((e) => e.remove());
+  if (!G) return;
+  const n = G.players.length;
+  G.players.forEach((p, i) => {
+    const [x, y] = seatPos(i, n);
+    const d = document.createElement('div');
+    d.className = 'seat'; d.id = 'seat' + i;
+    const isTurn = !G.over && G.turn === i && p.hand.length, isSrc = !G.over && G.src === i;
+    if (isTurn) d.classList.add('turn');
+    if (isSrc) d.classList.add('src');
+    if (p.place) d.classList.add('out');
+    const tag = G.loser === i ? t('loserTag') : p.place ? t('outTag', p.place) : isTurn ? t('turnTag') : isSrc ? t('srcTag') : '';
+    const cnt = p.hand.length === 1 ? t('card1') : t('cards', p.hand.length);
+    let mini = '';
+    if (i !== 0) { const k = Math.min(p.hand.length, 8); const step = k > 1 ? Math.min(14, 73 / (k - 1)) : 0, st = (73 - step * (k - 1)) / 2; for (let j = 0; j < k; j++) mini += '<i style="left:' + (st + j * step) + '%;transform:rotate(' + ((j - (k - 1) / 2) * 5) + 'deg)"></i>'; }
+    d.innerHTML = '<span class="face" aria-hidden="true">' + (i === 0 ? '🧑' : p.face) + '</span><span class="nm">' + pname(i) + '</span><span class="ct">' + cnt + '</span>' +
+      (i !== 0 ? '<span class="mini" aria-hidden="true">' + mini + '</span>' : '') + '<span class="tag">' + tag + '</span><span class="badge" title="' + t('scoreTitle') + '">' + t('scoreBadge', SCORE.micos[i] || 0) + '</span>';
+    felt.appendChild(d);
+    const W = felt.clientWidth, H = felt.clientHeight, sw = d.offsetWidth, sh = d.offsetHeight;
+    d.style.left = Math.max(sw / 2 + 4, Math.min(W - sw / 2 - 4, x / 100 * W)) + 'px';
+    d.style.top = Math.max(sh / 2 + 4, Math.min(H - sh / 2 - 4, y / 100 * H)) + 'px';
+  });
+}
+function renderPile() {
+  const pile = $('#pile'); pile.innerHTML = '';
+  const n = G ? G.pile.length : 0, show = Math.min(n, 6);
+  for (let k = 0; k < show; k++) {
+    const c = G.pile[n - show + k], el = cardEl(c, { sm: true });
+    el.style.transform = 'rotate(' + (((c.id * 37) % 40) - 20) + 'deg) translate(' + (((c.id * 13) % 10) - 5) + 'px,' + (((c.id * 7) % 8) - 4) + 'px)';
+    el.removeAttribute('role'); el.removeAttribute('aria-label');
+    pile.appendChild(el);
+  }
+  $('#pileN').textContent = t('pile', n / 2);
+}
+function renderHand(newId) {
+  const h = $('#hand'); h.innerHTML = '';
+  const me = G ? G.players[0] : null;
+  $('#handTitle').textContent = t('yourHand', me ? (me.hand.length === 1 ? t('card1') : t('cards', me.hand.length)) : t('cards', 0));
+  if (!me || !me.hand.length) { const e = document.createElement('span'); e.className = 'empty'; e.textContent = t('handEmpty'); h.appendChild(e); return; }
+  me.hand.slice().sort((a, b) => sortKey(a) - sortKey(b)).forEach((c) => { const el = cardEl(c, { listitem: true }); if (c.id === newId) el.classList.add('new'); h.appendChild(el); });
+}
+let pickResolve = null, tellMap = [];
+function setFace(i, f) { const p = G.players[i]; p.face = f; const s = document.querySelector('#seat' + i + ' .face'); if (s) s.textContent = f; const z = $('#pickTitle .face'); if (z && G.src === i) z.textContent = f; }
+function renderPick() {
+  const z = $('#pick'), title = $('#pickTitle'), hint = $('#pickHint');
+  z.innerHTML = ''; hint.textContent = '';
+  $('#watchRow').hidden = !(G && !G.over && G.players[0].hand.length === 0 && G.started);
+  $('#bFast').textContent = FAST ? t('slowDown') : t('fast');
+  $('#pickZone').hidden = false;
+  if (!G || G.over || G.src < 0 || G.turn < 0) { title.textContent = G && G.players[0].hand.length === 0 && !G.over ? t('watching') : ''; z.hidden = true; $('#pickZone').hidden = !title.textContent && $('#watchRow').hidden; return; }
+  z.hidden = false;
+  const src = G.players[G.src];
+  if (G.src === 0) { title.textContent = t('drawsYou', pname(G.turn)); z.hidden = true; return; }
+  const human = G.turn === 0 && G.picking;
+  title.innerHTML = '';
+  const f = document.createElement('span'); f.className = 'face'; f.setAttribute('aria-hidden', 'true'); f.textContent = src.face;
+  const tx = document.createElement('span'); tx.textContent = human ? t('pickFrom', src.name) : t('othersDraw', pname(G.turn), src.name);
+  title.append(f, tx);
+  if (G.turn === 0 && !G.picking) tx.textContent = t('pickFrom', src.name);
+  if (human) hint.textContent = CFG.tells === 'off' ? t('pickHintOff') : t('pickHint');
+  src.hand.forEach((c, k) => {
+    const b = cardEl(null, { button: true, back: true });
+    b.setAttribute('aria-label', t('backLabel', k + 1, src.hand.length));
+    b.dataset.k = k;
+    if (!human) { b.disabled = true; b.tabIndex = -1; }
+    else {
+      const show = () => { if (CFG.tells !== 'off') setFace(G.src, tellMap[k] ? '😬' : '🙂'); };
+      b.addEventListener('mouseenter', show); b.addEventListener('focus', show);
+      b.addEventListener('click', () => { if (pickResolve) { const r = pickResolve; pickResolve = null; z.querySelectorAll('button').forEach((x) => { x.disabled = true; }); b.classList.add('lift'); r(k); } });
+    }
+    z.appendChild(b);
+  });
+}
+function renderAll(newId) { renderSeats(); renderPile(); renderHand(newId); renderPick(); }
+function setStatus(s) { $('#status').textContent = s; }
+function log(s) { const li = document.createElement('li'); li.textContent = s; $('#log').appendChild(li); const o = $('#log'); o.scrollTop = o.scrollHeight; }
+
+// Carta voando de um elemento a outro (só visual)
+function fly(fromEl, toEl, c, faceUp, d) {
+  if (!fromEl || !toEl || reduced() || d <= 0) return Promise.resolve();
+  const a = fromEl.getBoundingClientRect(), b = toEl.getBoundingClientRect();
+  const el = cardEl(faceUp ? c : null, { back: !faceUp, sm: true });
+  el.classList.add('fly'); el.removeAttribute('role'); el.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(el);
+  const w = el.offsetWidth, h = el.offsetHeight;
+  const ax = a.left + a.width / 2 - w / 2, ay = a.top + a.height / 2 - h / 2, bx = b.left + b.width / 2 - w / 2, by = b.top + b.height / 2 - h / 2;
+  el.style.left = ax + 'px'; el.style.top = ay + 'px'; el.style.setProperty('--fd', d + 'ms');
+  el.getBoundingClientRect();
+  el.style.transform = 'translate(' + (bx - ax) + 'px,' + (by - ay) + 'px) rotate(' + (faceUp ? 8 : -8) + 'deg)';
+  return new Promise((res) => setTimeout(() => { el.remove(); res(); }, d + 20));
+}
+function seatEl(i) { return i === 0 ? $('#hand') : document.querySelector('#seat' + i); }
+
+/* ===================== Rodada ===================== */
+function newSeed() { return ((Date.now() ^ Math.floor(performance.now() * 1000)) >>> 0) % 1000000000; }
+async function startRound(seed) {
+  const gen = ++GEN; FAST = false; SKIP = false; pickResolve = null;
+  const n = CFG.opp + 1;
+  if (SCORE.n !== n) SCORE = { n, micos: new Array(n).fill(0), rounds: 0 };
+  const rng = mulberry(seed);
+  G = { seed, rng, dir: CFG.dir === 'left' ? 1 : -1, pile: [], turn: -1, src: -1, over: false, started: false, loser: -1, places: 0,
+    players: Array.from({ length: n }, (_, i) => ({ name: i ? NAMES[i - 1] : '', face: i ? AVATAR[i - 1] : '🧑', hand: [], place: 0 })) };
+  $('#log').innerHTML = '';
+  const deck = shuffle(makeDeck(CFG, rng), rng);
+  const dealer = SCORE.rounds % n;
+  renderAll(); setStatus(t('dealing'));
+  try {
+    // Distribui uma a uma, a partir de quem está depois do carteador
+    const d = dur();
+    for (let k = 0; k < deck.length; k++) {
+      const to = ((dealer + G.dir * (k + 1)) % n + n) % n;
+      const c = deck[k];
+      fly($('#pile'), seatEl(to), c, false, d * 0.45);
+      await wait(d * 0.09, gen);
+      G.players[to].hand.push(c);
+      if (to !== 0 || k % 3 === 0 || k === deck.length - 1) { renderSeats(); renderHand(); }
+    }
+    await wait(d * 0.6, gen);
+    renderAll();
+    setStatus(t('discarding'));
+    for (let i = 0; i < n; i++) {
+      const p = G.players[i], prs = findPairs(p.hand);
+      if (!prs.length) continue;
+      for (const [a, b] of prs) {
+        p.hand = p.hand.filter((c) => c !== a && c !== b);
+        fly(seatEl(i), $('#pile'), a, true, d * 0.5); fly(seatEl(i), $('#pile'), b, true, d * 0.5);
+        await wait(d * 0.18, gen);
+        G.pile.push(a, b);
+      }
+      if (i) shuffle(p.hand, rng);
+      log(i === 0 ? t('firstPairsYou', prs.length) : t('firstPairs', pname(i), prs.length));
+      renderAll();
+    }
+    await wait(d * 0.5, gen);
+    for (let i = 0; i < n; i++) markOut(i);
+    G.started = true;
+    G.turn = nextActive(dealer);
+    if (G.players[dealer].hand.length && G.turn < 0) G.turn = dealer;
+    await loop(gen);
+  } catch (e) { if (e !== CANCEL) throw e; }
+}
+function markOut(i) {
+  const p = G.players[i];
+  if (p.hand.length || p.place) return;
+  p.place = ++G.places;
+  const msg = i === 0 ? t('youOut', p.place) : t('isOut', p.name, p.place);
+  log(msg); setStatus(msg);
+  if (i !== 0) p.face = '😄';
+}
+async function loop(gen) {
+  while (true) {
+    if (activeList().length <= 1) return endRound(gen);
+    const drawer = G.turn, src = nextActive(drawer);
+    G.src = src;
+    let k;
+    if (drawer === 0) {
+      tellMap = G.players[src].hand.map((c) => {
+        const r = G.rng();
+        if (CFG.tells === 'easy') return c.odd ? r < 0.85 : false;
+        if (CFG.tells === 'normal') return c.odd ? r < 0.5 : r < 0.12;
+        return false;
+      });
+      G.picking = true;
+      renderAll(); setStatus(t('yourTurn', G.players[src].name));
+      const first = $('#pick button'); if (first && document.activeElement && (document.activeElement === document.body || document.activeElement.closest('#pick'))) first.focus();
+      k = await new Promise((res, rej) => { pickResolve = res; const chk = setInterval(() => { if (gen !== GEN) { clearInterval(chk); rej(CANCEL); } else if (!pickResolve) clearInterval(chk); }, 200); });
+      G.picking = false;
+      if (gen !== GEN) throw CANCEL;
+      setFace(src, AVATAR[src - 1]);
+    } else {
+      renderAll(); setStatus(src === 0 ? t('drawsYou', pname(drawer)) : t('othersDraw', pname(drawer), pname(src)));
+      await wait(dur() * 0.9, gen);
+      k = Math.floor(G.rng() * G.players[src].hand.length);
+      // Mostra qual carta vai sair antes de voar
+      if (src === 0) { const sorted = G.players[0].hand.slice().sort((a, b) => sortKey(a) - sortKey(b)); const el = $('#hand [data-id="' + G.players[src].hand[k].id + '"]'); if (el) el.classList.add('lift'); void sorted; }
+      else { const el = $('#pick [data-k="' + k + '"]'); if (el) el.classList.add('lift'); }
+      await wait(dur() * 0.7, gen);
+    }
+    await transfer(drawer, src, k, gen);
+  }
+}
+async function transfer(drawer, src, k, gen) {
+  const S = G.players[src], D = G.players[drawer];
+  const c = S.hand[k];
+  const fromEl = src === 0 ? $('#hand [data-id="' + c.id + '"]') || $('#hand') : ($('#pick [data-k="' + k + '"]') || seatEl(src));
+  S.hand.splice(k, 1);
+  const d = dur();
+  await fly(fromEl, seatEl(drawer), c, drawer === 0 || src === 0, d);
+  if (gen !== GEN) throw CANCEL;
+  D.hand.push(c);
+  if (drawer === 0) log(t('youGot', cardName(c)));
+  else if (src === 0) log(t('tookFromYou', D.name, cardName(c)));
+  else log(t('drew', D.name, S.name));
+  if (drawer === 0) setStatus(t('youGot', cardName(c)));
+  renderAll(drawer === 0 ? c.id : undefined);
+  const match = findPairs(D.hand).find((p) => p.includes(c));
+  await wait(d * 0.6, gen);
+  if (match) {
+    D.hand = D.hand.filter((x) => !match.includes(x));
+    const fe = drawer === 0 ? $('#hand') : seatEl(drawer);
+    await Promise.all([fly(fe, $('#pile'), match[0], true, d * 0.8), fly(fe, $('#pile'), match[1], true, d * 0.8)]);
+    if (gen !== GEN) throw CANCEL;
+    G.pile.push(match[0], match[1]);
+    const msg = drawer === 0 ? t('pairDownYou', pairName(match[0], match[1])) : t('pairDown', pname(drawer), pairName(match[0], match[1]));
+    log(msg); setStatus(msg);
+  } else if (drawer !== 0) log(t('noPair', D.name));
+  if (drawer !== 0) shuffle(D.hand, G.rng);
+  markOut(src); markOut(drawer);
+  G.src = -1;
+  const nx = nextActive(drawer);
+  G.turn = nx;
+  renderAll();
+  await wait(d * 0.4, gen);
+}
+function endRound(gen) {
+  if (gen !== GEN) return;
+  G.over = true; G.src = -1;
+  const L = activeList()[0];
+  G.loser = L;
+  SCORE.micos[L] = (SCORE.micos[L] || 0) + 1; SCORE.rounds++;
+  store.set('score', SCORE);
+  G.players[L].face = L === 0 ? '🧑' : '🙈';
+  const std = CFG.deck === 'std';
+  const head = L === 0 ? t(std ? 'loserYouStd' : 'loserYou') : t(std ? 'loserOtherStd' : 'loserOther', G.players[L].name);
+  log(head); setStatus(head);
+  renderAll();
+  showEnd();
+}
+function showEnd() {
+  const L = G.loser, std = CFG.deck === 'std';
+  $('#endFace').textContent = L === 0 ? '🙈' : '🎉';
+  $('#hEnd').textContent = L === 0 ? t(std ? 'loserYouStd' : 'loserYou') : t(std ? 'loserOtherStd' : 'loserOther', G.players[L].name);
+  $('#endText').textContent = L === 0 ? t('endLose') : t('endWin', G.players[0].place);
+  const tb = $('#endRows'); tb.innerHTML = '';
+  G.players.map((p, i) => i).sort((a, b) => (G.players[a].place || 99) - (G.players[b].place || 99)).forEach((i) => {
+    const tr = document.createElement('tr');
+    const c1 = document.createElement('td'); c1.textContent = (i === L ? '🐒 ' : '') + pname(i);
+    const c2 = document.createElement('td'); c2.textContent = i === L ? t('stuck') : t('placeN', G.players[i].place);
+    const c3 = document.createElement('td'); c3.className = 'n'; c3.textContent = SCORE.micos[i] || 0;
+    tr.append(c1, c2, c3); tb.appendChild(tr);
+  });
+  $('#endSeed').textContent = t('seedWas', G.seed, SCORE.rounds);
+  if (!$('#dEnd').open) $('#dEnd').showModal();
+  $('#bAgain').focus();
+}
+
+/* ===================== Interface ===================== */
+function applyLang() {
+  document.documentElement.lang = HTML_LANG[LANG];
+  document.title = t('title') + ' · Giovani Perotto Mesquita';
+  document.querySelectorAll('[data-i]').forEach((e) => { e.textContent = t(e.dataset.i); });
+  document.querySelectorAll('[data-ta]').forEach((e) => { e.setAttribute('aria-label', t(e.dataset.ta)); e.title = t(e.dataset.ta); });
+  $('#rulesBody').innerHTML = t('rulesHtml');
+  $('#sLang').value = LANG;
+  $('#lnkTut').href = 'projects.html' + (LANG === 'pt' ? '' : '#' + LANG);
+  if (G) {
+    renderAll();
+    if (G.over) { setStatus($('#hEnd').textContent); if ($('#dEnd').open) showEnd(); }
+    else if (G.turn === 0 && G.src > 0) setStatus(t('yourTurn', G.players[G.src].name));
+  } else { renderHand(); setStatus(''); }
+}
+function setLang(l, push) {
+  LANG = LANGS.includes(l) ? l : 'pt'; store.set('lang', LANG);
+  if (push) history.replaceState(null, '', LANG === 'pt' ? location.pathname + location.search : '#' + LANG);
+  applyLang();
+}
+function setTheme(th) { document.documentElement.dataset.theme = th; }
+function fillSetup() {
+  $('#fOpp').value = String(CFG.opp); $('#fDeck').value = CFG.deck; $('#fPairs').value = String(CFG.pairs);
+  $('#fDir').value = CFG.dir; $('#fTells').value = CFG.tells; $('#fSpeed').value = CFG.speed; $('#fSeed').value = CFG.seed;
+  $('#lPairs').hidden = CFG.deck !== 'animals';
+}
+function openSetup() { fillSetup(); if ($('#dEnd').open) $('#dEnd').close(); $('#dSetup').showModal(); $('#bStart').focus(); }
+function readSetup() {
+  CFG = { opp: +$('#fOpp').value, deck: $('#fDeck').value, pairs: +$('#fPairs').value, dir: $('#fDir').value, tells: $('#fTells').value, speed: $('#fSpeed').value,
+    seed: ($('#fSeed').value.match(/\d+/) || [''])[0].slice(0, 9) };
+  store.set('settings', CFG);
+}
+function begin() { const s = CFG.seed ? +CFG.seed : newSeed(); startRound(s); }
+
+$('#fDeck').addEventListener('change', () => { $('#lPairs').hidden = $('#fDeck').value !== 'animals'; });
+$('#bNew').addEventListener('click', () => {
+  if (G && G.started && !G.over && !window.confirm(t('confirmNew'))) return;
+  openSetup();
+});
+$('#bStart').addEventListener('click', () => { readSetup(); $('#dSetup').close(); begin(); });
+$('#bSetupCancel').addEventListener('click', () => $('#dSetup').close());
+$('#bRules').addEventListener('click', () => { $('#dRules').showModal(); $('#dRules').querySelector('.dlg').scrollTop = 0; $('#hRules').focus(); });
+$('#bRulesClose').addEventListener('click', () => $('#dRules').close());
+$('#bTheme').addEventListener('click', () => { const th = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; setTheme(th); store.set('theme', th); });
+$('#sLang').addEventListener('change', (e) => setLang(e.target.value, true));
+$('#bAgain').addEventListener('click', () => { $('#dEnd').close(); startRound(CFG.seed ? (G.seed + 1) >>> 0 : newSeed()); });
+$('#bEndSetup').addEventListener('click', openSetup);
+$('#bResetScore').addEventListener('click', () => { SCORE = { n: G.players.length, micos: new Array(G.players.length).fill(0), rounds: 0 }; store.set('score', SCORE); showEnd(); renderSeats(); });
+$('#bFast').addEventListener('click', () => { FAST = !FAST; renderPick(); });
+$('#bSkip').addEventListener('click', () => { SKIP = true; });
+// Setas entre as cartas viradas
+$('#pick').addEventListener('keydown', (e) => {
+  const bs = [...$('#pick').querySelectorAll('button:not(:disabled)')]; const i = bs.indexOf(document.activeElement);
+  if (i < 0) return;
+  let j = -1;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') j = (i + 1) % bs.length;
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') j = (i - 1 + bs.length) % bs.length;
+  else if (e.key === 'Home') j = 0; else if (e.key === 'End') j = bs.length - 1;
+  if (j >= 0) { e.preventDefault(); bs[j].focus(); }
+});
+$('#pick').addEventListener('mouseleave', () => { if (G && G.turn === 0 && G.src > 0) setFace(G.src, AVATAR[G.src - 1]); });
+window.addEventListener('resize', () => { if (G) renderSeats(); });
+window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (LANGS.includes(h) && h !== LANG) setLang(h, false); });
+
+(function init() {
+  const th = store.get('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  setTheme(th);
+  const h = location.hash.slice(1), saved = store.get('lang'), nav = (navigator.language || 'pt').slice(0, 2).toLowerCase();
+  LANG = LANGS.includes(h) ? h : LANGS.includes(saved) ? saved : LANGS.includes(nav) ? nav : 'pt';
+  applyLang();
+  openSetup();
+})();
+</script>
+</body>
+</html>
