@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LLM Local: modelos de linguagem no seu computador · Giovani Perotto Mesquita</title>
+<meta name="description" content="Tutorial do LLM Local: como conversar com modelos de linguagem .gguf na GPU (WebGPU) ou na CPU, onde baixar modelos no Hugging Face, como treinar um mini-GPT no navegador e medições de velocidade feitas com o app.">
+<meta name="author" content="Giovani Perotto Mesquita">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Paleta alegre: roxo e magenta vibrantes, amarelo-girassol, verde-água e coral */
+    --bg: #FFF7EC;
+    --surface: #FFFFFF;
+    --ink: #2B1B3D;
+    --text: #3E3350;
+    --muted: #756986;
+    --line: #F1E2CF;
+    --accent: #0E8074;
+    --accent-soft: #E2F6F2;
+    --accent-strong: #5B2A86;
+    --navy: #5B2A86;
+    --navy-deep: #C2185B;
+    --on-navy: #FFFFFF;
+    --on-navy-muted: #FCE4F0;
+    --gold: #FFB703;
+    --gold-ink: #B35300;
+    --gold-soft: #FFF1C9;
+    --coral: #FF6B6B;
+    --sky: #3A86FF;
+    --mint: #2A9D8F;
+    --pink: #EF476F;
+    --sans: "Hanken Grotesk", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1A1328; --surface: #241A36; --ink: #F7F0FF; --text: #E2D8F0; --muted: #A898C0;
+      --line: #3A2D52; --accent: #5FD3C4; --accent-soft: #1D3A38; --accent-strong: #C9A7F5;
+      --navy: #3D1A5C; --navy-deep: #7A1240; --gold: #FFC94D; --gold-ink: #FFC94D; --gold-soft: #3A2E12;
+      --coral: #FF8A8A; --sky: #6FA8FF; --mint: #4CC3B3; --pink: #FF6F91;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 4px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 1.5rem; }
+
+  /* navegação */
+  .nav {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: saturate(160%) blur(10px); -webkit-backdrop-filter: saturate(160%) blur(10px);
+    border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px);
+  }
+  .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 58px; gap: 1rem; }
+  .brand { font-family: var(--serif); font-weight: 600; color: var(--accent-strong); text-decoration: none; font-size: 1.05rem; }
+  .nav ul { list-style: none; display: flex; gap: 1.4rem; margin: 0; padding: 0; }
+  .nav ul a { color: var(--muted); text-decoration: none; font-size: 0.93rem; font-weight: 500; }
+  .nav ul a:hover, .nav ul a[aria-current="page"] { color: var(--ink); }
+  .nav-right { display: flex; align-items: center; gap: 1rem; }
+  .lang { position: relative; }
+  .lang button { font: inherit; cursor: pointer; }
+  .lang .flag { width: 18px; height: 12px; border-radius: 2px; flex: none; box-shadow: 0 0 0 1px rgba(0,0,0,.12); }
+  .lang-current { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.8rem; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 0.3rem 0.5rem 0.3rem 0.55rem; }
+  .lang-current:hover { border-color: var(--muted); }
+  .lang-now { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .lang .chev { width: 12px; height: 12px; color: var(--muted); transition: transform .15s ease; }
+  .lang-current[aria-expanded="true"] .chev { transform: rotate(180deg); }
+  .lang-list { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; min-width: 10.5rem; padding: 0.3rem; display: grid; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 12px 30px rgba(0,0,0,.18); }
+  .lang-list[hidden] { display: none; }
+  .lang-list [role="option"] { display: flex; align-items: center; gap: 0.6rem; width: 100%; text-align: left; font-size: 0.9rem; font-weight: 500; color: var(--ink); background: none; border: 0; border-radius: 6px; padding: 0.45rem 0.6rem; }
+  .lang-list [role="option"]:hover, .lang-list [role="option"]:focus-visible { background: color-mix(in srgb, var(--muted) 14%, transparent); }
+  .lang-list [role="option"][aria-selected="true"] { color: var(--accent-strong); font-weight: 600; }
+  .lang-list [role="option"][aria-selected="true"]::after { content: "✓"; margin-left: auto; }
+  @media (max-width: 480px) { .lang-now { font-size: 0; gap: 0; } }
+  [hidden] { display: none !important; }
+  .progress { position: absolute; left: 0; bottom: -1px; height: 3px; width: 0; background: linear-gradient(90deg, var(--coral), var(--gold), var(--mint)); }
+
+  /* abertura */
+  .hero-band {
+    background:
+      radial-gradient(900px 420px at 85% -10%, rgba(255,255,255,.07), transparent 60%),
+      linear-gradient(160deg, var(--navy) 0%, var(--navy-deep) 100%);
+    border-top: 4px solid var(--gold); color: var(--on-navy);
+  }
+  .hero { padding: 3.5rem 0 3.5rem; max-width: 820px; }
+  .crumb { margin: 0 0 1.4rem; font-size: 0.92rem; }
+  .crumb a { color: var(--on-navy-muted); text-decoration: none; }
+  .crumb a:hover { color: var(--gold); }
+  .eyebrow { color: var(--gold); font-weight: 600; font-size: 1rem; margin: 0 0 0.7rem; }
+  h1 { font-family: var(--serif); font-weight: 600; color: var(--on-navy); font-size: clamp(2.3rem, 5.5vw, 3.8rem); line-height: 1.05; letter-spacing: -0.025em; margin: 0; }
+  .dek { font-family: var(--serif); font-style: italic; font-size: clamp(1.1rem, 2.2vw, 1.35rem); color: var(--on-navy-muted); margin: 1.1rem 0 1.6rem; max-width: 58ch; }
+  .byline { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; font-size: 0.92rem; color: var(--on-navy-muted); }
+  .byline strong { color: var(--on-navy); font-weight: 600; }
+  .byline .credit { margin-left: auto; font-style: italic; }
+
+  /* layout do artigo */
+  .layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 3rem; padding: 3rem 0 4rem; align-items: start; }
+  .toc { position: sticky; top: 82px; font-size: 0.92rem; max-height: calc(100vh - 100px); overflow-y: auto; }
+  .toc h2 { font-family: var(--sans); font-size: 0.85rem; font-weight: 600; color: var(--muted); margin: 0 0 0.7rem; border: 0; padding: 0; }
+  .toc ol { list-style: none; margin: 0; padding: 0; counter-reset: toc; border-left: 2px solid var(--line); }
+  .toc li { counter-increment: toc; }
+  .toc a { display: block; padding: 0.3rem 0 0.3rem 1rem; margin-left: -2px; border-left: 2px solid transparent; color: var(--muted); text-decoration: none; line-height: 1.35; }
+  .toc a::before { content: counter(toc) ". "; color: var(--gold-ink); font-weight: 600; }
+  .toc a:hover { color: var(--ink); }
+  .toc a[aria-current="true"] { color: var(--accent-strong); border-left-color: var(--gold); font-weight: 600; }
+
+  article { background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: var(--radius); padding: 3rem clamp(1.25rem, 4vw, 3.5rem); min-width: 0; }
+  article section + section { margin-top: 3.2rem; }
+  article h2 { font-family: var(--serif); font-weight: 600; color: var(--ink); font-size: clamp(1.5rem, 2.8vw, 1.9rem); letter-spacing: -0.015em; line-height: 1.2; margin: 0 0 1.1rem; padding-left: 0.9rem; border-left: 3px solid var(--gold); }
+  article h3 { font-family: var(--sans); font-size: 1.1rem; font-weight: 600; color: var(--ink); margin: 2rem 0 0.8rem; }
+  article p, article li { font-family: var(--serif); font-size: 1.12rem; line-height: 1.7; color: var(--text); }
+  article p { margin: 0 0 1.1rem; max-width: 68ch; }
+  article ul, article ol { margin: 0 0 1.1rem; padding-left: 1.4rem; max-width: 68ch; }
+  article li { margin-bottom: 0.3rem; }
+  article strong { color: var(--ink); }
+  sup a { font-family: var(--sans); font-size: 0.72rem; font-weight: 700; text-decoration: none; padding: 0 0.15em; }
+
+  figure { margin: 2rem 0; }
+  figure img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: #FFF7EC; }
+  figcaption { margin-top: 0.6rem; font-size: 0.9rem; color: var(--muted); text-align: center; font-family: var(--sans); line-height: 1.5; }
+
+  blockquote { margin: 1.5rem 0; padding: 1.2rem 1.5rem; background: var(--accent-soft); border-left: 3px solid var(--gold); border-radius: 0 10px 10px 0; }
+  blockquote p { font-size: 1.05rem; margin: 0 0 0.8rem; }
+  blockquote p:last-child { margin-bottom: 0; }
+  blockquote.pull p { font-size: clamp(1.15rem, 2.3vw, 1.35rem); font-style: italic; line-height: 1.45; color: var(--ink); }
+  blockquote cite { font-family: var(--sans); font-size: 0.88rem; font-style: normal; color: var(--muted); }
+
+  /* tabelas */
+  .table-wrap { overflow-x: auto; margin: 1.5rem 0; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-family: var(--sans); font-size: 0.95rem; }
+  th, td { text-align: left; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.5; }
+  thead th { background: var(--gold-soft); color: var(--ink); font-weight: 600; }
+  tbody th { color: var(--ink); font-weight: 600; }
+  tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
+  td code, th code { font-size: 0.9em; }
+
+  /* mitos */
+  .myths { list-style: none; padding: 0; margin: 1.5rem 0; max-width: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
+  .myths li { margin: 0; padding: 1rem 1.2rem; border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: 10px; }
+  .myths li:nth-child(4n+2) { border-top-color: var(--sky); }
+  .myths li:nth-child(4n+3) { border-top-color: var(--mint); }
+  .myths li:nth-child(4n+4) { border-top-color: var(--gold); }
+  .myths h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+  .myths p { margin: 0; font-size: 1rem; line-height: 1.6; }
+
+  /* para fixar */
+  .recap { margin: 1.8rem 0 0; padding: 1.1rem 1.4rem; background: var(--gold-soft); border-left: 4px solid var(--mint); border-radius: 0 10px 10px 0; }
+  .recap h3 { margin: 0 0 0.5rem; font-size: 0.85rem; letter-spacing: .05em; text-transform: uppercase; color: var(--gold-ink); }
+  .recap ul { margin: 0; padding-left: 1.2rem; }
+  .recap li { font-family: var(--sans); font-size: 0.98rem; line-height: 1.55; margin-bottom: 0.25rem; }
+
+  /* revisão rápida */
+  .quiz { display: grid; gap: 0.7rem; margin: 1.5rem 0; }
+  .quiz details { border: 1px solid var(--line); border-left: 4px solid var(--sky); border-radius: 0 10px 10px 0; padding: 0.8rem 1.1rem; }
+  .quiz details:nth-child(3n+2) { border-left-color: var(--pink); }
+  .quiz details:nth-child(3n+3) { border-left-color: var(--mint); }
+  .quiz summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); line-height: 1.45; }
+  .quiz details[open] summary { margin-bottom: 0.5rem; }
+  .quiz p { margin: 0; font-size: 1.02rem; }
+
+  .refs { font-family: var(--sans); padding-left: 1.4rem; margin: 0; }
+  .refs li { font-family: var(--sans); font-size: 0.92rem; line-height: 1.55; margin-bottom: 0.7rem; word-break: break-word; }
+  .refs li:target { background: var(--gold-soft); border-radius: 6px; }
+
+  .back { display: inline-block; margin-top: 1rem; font-family: var(--sans); font-size: 0.85rem; text-decoration: none; }
+
+  footer { background: var(--navy-deep); color: var(--on-navy-muted); border-top: 3px solid var(--gold); padding: 1.5rem 0 calc(1.5rem + env(safe-area-inset-bottom, 0px)); font-size: 0.88rem; }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1.5rem; }
+  footer a { color: var(--on-navy); text-decoration: none; }
+  footer a:hover { color: var(--gold); }
+
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+    .toc { position: static; max-height: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.2rem 1.4rem; }
+  }
+  @media (max-width: 760px) {
+    .myths { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .nav ul { display: none; }
+    .hero { padding: 2.5rem 0; }
+    .wrap { padding: 0 1rem; }
+    article p, article li { font-size: 1.05rem; }
+    th, td { padding: 0.6rem 0.7rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  @media print {
+    .nav, .toc, footer, .back, .crumb { display: none !important; }
+    body { background: #fff; }
+    .hero-band { background: none; color: #111; border: 0; }
+    .hero-band h1 { color: #5B2A86; }
+    .dek, .byline, .byline strong { color: #333; }
+    .layout { display: block; padding: 0; }
+    article { border: 0; padding: 0; }
+    .table-wrap { overflow: visible; }
+    figure, blockquote, .myths li, .recap, .quiz details, tr { break-inside: avoid; }
+  }
+
+  /* blocos de código (Gherkin) */
+  pre.code { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: #2B1B3D; color: #F7F0FF; border-radius: 10px; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.92rem; line-height: 1.6; tab-size: 2; }
+  pre.code code { font-family: inherit; white-space: pre; }
+  pre.code .k { color: #FFB703; font-weight: 700; }
+  pre.code .s { color: #5FD3C4; font-weight: 700; }
+  pre.code .c { color: #A898C0; }
+  pre.code .p { color: #C9A7F5; }
+  article code { font-family: Consolas, "Courier New", monospace; font-size: 0.92em; }
+  article :not(pre) > code { background: var(--accent-soft); color: var(--ink); padding: 0.05em 0.35em; border-radius: 4px; }
+
+  /* fórmulas */
+  pre.formula { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.95rem; line-height: 1.5; }
+
+  /* glossário */
+  dl.glossary { margin: 1.2rem 0; display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  dl.glossary dt, dl.glossary dd { margin: 0; padding: 0.65rem 0.9rem; border-bottom: 1px solid var(--line); font-family: var(--sans); font-size: 0.95rem; line-height: 1.5; }
+  dl.glossary dt { font-weight: 600; color: var(--ink); background: color-mix(in srgb, var(--gold-soft) 60%, var(--surface)); }
+  dl.glossary dd { color: var(--text); }
+  dl.glossary dt:nth-last-of-type(1), dl.glossary dd:last-of-type { border-bottom: 0; }
+  @media (max-width: 720px) { dl.glossary { grid-template-columns: 1fr; } dl.glossary dt { border-bottom: 0; padding-bottom: 0.2rem; } }
+
+  /* figuras geradas pelo PlantUML e código recolhível */
+  figure.puml img { width: auto; max-width: 100%; margin: 0 auto; background: #FFFFFF; padding: 12px; }
+  details.codebox { margin: 1rem 0 1.5rem; border: 1px solid var(--line); border-radius: 10px; padding: 0.6rem 1rem; }
+  details.codebox summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); }
+  details.codebox pre.code { max-height: 480px; overflow: auto; }
+
+  /* nota de atenção */
+  aside.note { margin: 1.2rem 0 1.5rem; padding: 0.8rem 1.1rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; }
+  aside.note p { margin: 0; }
+
+  /* link para o simulador e teclas */
+  .launch { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--sans); font-weight: 600; font-size: 1rem; background: var(--accent-strong); color: var(--surface); text-decoration: none; padding: 0.65rem 1.2rem; border-radius: 10px; }
+  .launch:hover { background: var(--navy-deep); color: #FFFFFF; }
+  kbd { font-family: var(--sans); font-size: 0.85em; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 0.05em 0.4em; white-space: nowrap; }
+  .promptbox { position: relative; margin: 1rem 0 1.6rem; }
+  .promptbox pre.code { margin: 0; padding-top: 2.6rem; max-height: 420px; overflow: auto; }
+  .promptbox pre.code code { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .promptbox .copy { position: absolute; top: 8px; right: 14px; z-index: 1; font: 600 0.8rem var(--sans); color: #2B1B3D; background: #FFB703; border: 0; border-radius: 6px; padding: 0.3rem 0.65rem; cursor: pointer; }
+  figure.tall img { width: auto; max-width: min(100%, 420px); margin: 0 auto; }
+  @media (max-width: 720px) { figure { overflow-x: auto; } figure img { width: 680px; max-width: none; } figure.tall { overflow-x: visible; } figure.tall img { width: auto; max-width: 100%; } }
+</style>
+</head>
+<body id="top">
+
+<nav class="nav" aria-label="Navegação do site">
+  <div class="wrap">
+    <a class="brand" href="index.html" data-home>Giovani Perotto Mesquita</a>
+    <div class="nav-right">
+      <ul>
+        <li><a href="index.html" data-home>Início</a></li>
+        <li><a href="about.html" data-about>Sobre</a></li>
+        <li><a href="resume.html" data-resume>Currículo</a></li>
+        <li><a href="projects.html" data-projects aria-current="page">Projetos</a></li>
+        <li><a href="contact.html" data-contact>Contato</a></li>
+      </ul>
+      <div class="lang">
+        <button type="button" class="lang-current" aria-haspopup="listbox" aria-expanded="false" aria-controls="lang-list" data-label="Idioma / Language / Lingua" aria-label="Idioma / Language / Lingua: Português"><span class="lang-now"><svg class="flag" viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009C3B"/><path d="M10 1.6 18.4 7 10 12.4 1.6 7z" fill="#FEDF00"/><circle cx="10" cy="7" r="3.3" fill="#002776"/><path d="M6.8 6.3c2.1-.6 4.5-.2 6.4 1" stroke="#fff" stroke-width=".7" fill="none"/></svg>PT</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="lang-list" id="lang-list" role="listbox" aria-label="Idioma / Language / Lingua" hidden>
+          <button type="button" role="option" id="tab-pt" aria-controls="pt" aria-selected="true" lang="pt-BR" data-code="PT"><svg class="flag" viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009C3B"/><path d="M10 1.6 18.4 7 10 12.4 1.6 7z" fill="#FEDF00"/><circle cx="10" cy="7" r="3.3" fill="#002776"/><path d="M6.8 6.3c2.1-.6 4.5-.2 6.4 1" stroke="#fff" stroke-width=".7" fill="none"/></svg><span>Português</span></button>
+          <button type="button" role="option" id="tab-en" aria-controls="en" aria-selected="false" lang="en" tabindex="-1" data-code="EN"><svg class="flag" viewBox="0 0 19 10" aria-hidden="true"><rect width="19" height="10" fill="#B22234"/><rect y="0.769" width="19" height="0.769" fill="#fff"/><rect y="2.308" width="19" height="0.769" fill="#fff"/><rect y="3.846" width="19" height="0.769" fill="#fff"/><rect y="5.385" width="19" height="0.769" fill="#fff"/><rect y="6.923" width="19" height="0.769" fill="#fff"/><rect y="8.462" width="19" height="0.769" fill="#fff"/><rect width="7.6" height="5.385" fill="#3C3B6E"/></svg><span>English</span></button>
+          <button type="button" role="option" id="tab-it" aria-controls="it" aria-selected="false" lang="it" tabindex="-1" data-code="IT"><svg class="flag" viewBox="0 0 3 2" aria-hidden="true"><rect width="1" height="2" fill="#009246"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#CE2B37"/></svg><span>Italiano</span></button>
+          <button type="button" role="option" id="tab-es" aria-controls="es" aria-selected="false" lang="es" tabindex="-1" data-code="ES"><svg class="flag" viewBox="0 0 750 500" aria-hidden="true"><rect width="750" height="500" fill="#AA151B"/><rect y="125" width="750" height="250" fill="#F1BF00"/></svg><span>Español</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="progress" aria-hidden="true"></div>
+</nav>
+
+<!-- ===================== PT ===================== -->
+<div id="pt" role="tabpanel" aria-labelledby="tab-pt" lang="pt-BR">
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projetos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>LLM Local: modelos de linguagem no seu computador</h1>
+      <p class="dek">Como conversar com um modelo de linguagem que roda na sua placa de vídeo ou nos núcleos do processador, onde baixar modelos no formato .gguf, como treinar um mini-GPT do zero no navegador e o que as medições de velocidade mostram.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado em <time datetime="2026-11-15">15/11/2026</time></span>
+        <span class="credit">Revisado e formatado usando Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-pt">
+    <h2 id="toc-pt">Índice</h2>
+    <ol>
+      <li><a href="#intro-pt">O app</a></li>
+      <li><a href="#llm-pt">Como um modelo de linguagem responde</a></li>
+      <li><a href="#baixar-pt">Onde baixar modelos .gguf</a></li>
+      <li><a href="#app-pt">Passo a passo: conversar</a></li>
+      <li><a href="#opcoes-pt">Opções de geração</a></li>
+      <li><a href="#treino-pt">Passo a passo: treinar um mini-GPT</a></li>
+      <li><a href="#numeros-pt">O que os números dizem</a></li>
+      <li><a href="#dicas-pt">Dicas</a></li>
+      <li><a href="#erros-pt">Erros comuns</a></li>
+      <li><a href="#revisao-pt">Revisão rápida</a></li>
+      <li><a href="#referencias-pt">Referências</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-pt" aria-labelledby="h-intro-pt">
+<h2 id="h-intro-pt">O app</h2>
+<p>O LLM Local é uma página única que faz duas coisas sem enviar nada para a internet: <sup><a href="#ref-1-pt">[1]</a></sup></p>
+<ul>
+<li><strong>Conversar com um modelo de linguagem</strong> que você baixou uma vez, no formato <strong>.gguf</strong>. O modelo roda na placa de vídeo pelo WebGPU ou, sem ela, em vários núcleos do processador.</li>
+<li><strong>Treinar um mini-GPT do zero</strong>, um modelo pequeno que aprende a prever o próximo caractere de um texto que você escolhe, e ver o aprendizado acontecer num gráfico.</li>
+</ul>
+<p>O WebGPU é a interface dos navegadores para fazer cálculos na placa de vídeo. <sup><a href="#ref-9-pt">[9]</a></sup> A página proíbe conexões de rede pela própria política de segurança: o arquivo do modelo é lido do disco e fica no computador.</p>
+<p><a class="launch" href="llm-local.html">Abrir o app <span aria-hidden="true">→</span></a></p>
+<figure>
+<img src="rc_images/LLMConversa.png" alt="Tela do app com o modelo Qwen3 0.6B carregado. À esquerda, a caixa Modelo com os botões Abrir arquivo .gguf, Recarregar e Descarregar, o aviso de pronto na GPU com a memória estimada e os dados do modelo: nome, arquivo, arquitetura qwen3, parâmetros, camadas, contexto de treino, quantização Q8_0 e tokenizador BPE. À direita, uma conversa: o usuário pede três dicas curtas para estudar melhor, o modelo responde com uma lista de três itens, o usuário pede um resumo em uma frase e o modelo resume. Embaixo, os tokens de entrada e gerados por segundo e o contexto usado" width="1280" height="900" loading="lazy">
+<figcaption>Uma conversa com o Qwen3 0.6B rodando na GPU.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="llm-pt" aria-labelledby="h-llm-pt">
+<h2 id="h-llm-pt">Como um modelo de linguagem responde</h2>
+<p>Um modelo de linguagem não procura respostas prontas. Ele recebe um texto e calcula, para cada pedaço de palavra que conhece, uma nota de quão provável é que ele venha a seguir. Um desses pedaços é sorteado, colado ao texto, e o processo se repete até a resposta terminar.</p>
+<figure>
+<img src="rc_images/LLMFluxo.svg" alt="Diagrama em cinco caixas ligadas por setas, da esquerda para a direita: Texto, a conversa montada no formato do modelo; Tokenizador, que transforma texto em números; Transformer, com N camadas de atenção e MLP; Logits, uma nota para cada token; e Amostragem, com temperatura, top-k e top-p. Uma seta volta da Amostragem ao Texto: o token sorteado vira texto na tela e volta como entrada. Em cima, o arquivo .gguf fornece os pesos, o vocabulário e os metadados ao tokenizador e ao transformer. Embaixo do transformer, o cache KV guarda o que já foi lido. No rodapé: roda na GPU, com WebGPU e pesos em 16 bits, ou na CPU, com workers e pesos em 8 bits." width="1000" height="520" loading="lazy">
+<figcaption>O caminho de cada token: do texto à amostragem, e de volta ao começo.</figcaption>
+</figure>
+<ol>
+<li><strong>Tokens.</strong> O tokenizador corta o texto em pedaços, os tokens, e troca cada um por um número. O Qwen conhece 151.936 tokens; o TinyLlama, 32.000.</li>
+<li><strong>Transformer.</strong> Os números passam por dezenas de camadas. Cada camada tem uma etapa de atenção, que decide quais partes do texto importam para a próxima palavra, e uma rede de neurônios. Essa arquitetura, baseada só em atenção, foi proposta em 2017. <sup><a href="#ref-8-pt">[8]</a></sup></li>
+<li><strong>Logits e amostragem.</strong> A última camada dá uma nota para cada token do vocabulário. A temperatura e os cortes top-k e top-p decidem o quanto o sorteio arrisca.</li>
+<li><strong>Cache KV.</strong> O que já foi lido fica guardado, então cada token novo custa pouco. Por isso o app reaproveita a conversa: a cada mensagem, só o texto novo é processado.</li>
+</ol>
+<p>Os <strong>parâmetros</strong> são os números aprendidos no treino: cerca de 0,6 bilhão no Qwen3 0.6B. No arquivo .gguf, eles vêm <strong>quantizados</strong>, isto é, guardados com menos bits para ocupar menos espaço. O GGUF é um formato binário feito para carregar modelos rápido, criado pelo mesmo autor do llama.cpp. <sup><a href="#ref-2-pt">[2]</a></sup> <sup><a href="#ref-11-pt">[11]</a></sup> Na GPU, o app converte os pesos para 16 bits; na CPU, para 8 bits por blocos de 32 valores.</p>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="baixar-pt" aria-labelledby="h-baixar-pt">
+<h2 id="h-baixar-pt">Onde baixar modelos .gguf</h2>
+<p>O lugar mais comum é o <strong>Hugging Face</strong>, um site que hospeda modelos abertos. A documentação dele explica que é possível listar todos os modelos com arquivos GGUF filtrando pela etiqueta GGUF. <sup><a href="#ref-2-pt">[2]</a></sup> Em 15/11/2026, essa lista tinha 221.936 modelos. <sup><a href="#ref-3-pt">[3]</a></sup></p>
+<ul>
+<li><a href="https://huggingface.co/models?library=gguf" rel="noopener">huggingface.co/models?library=gguf</a>: todos os modelos com arquivos .gguf.</li>
+<li><a href="https://huggingface.co/docs/hub/gguf" rel="noopener">huggingface.co/docs/hub/gguf</a>: o que é o formato e como ele aparece no site.</li>
+</ul>
+<p>Estes três repositórios foram testados no app. Os três têm licença Apache 2.0. <sup><a href="#ref-4-pt">[4]</a></sup> <sup><a href="#ref-5-pt">[5]</a></sup> <sup><a href="#ref-6-pt">[6]</a></sup></p>
+<div class="table-wrap"><table>
+<thead><tr><th>Repositório</th><th>Arquivo testado</th><th>Tamanho</th><th>Bom para</th></tr></thead>
+<tbody>
+<tr><td><a href="https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF" rel="noopener">Qwen/Qwen2.5-0.5B-Instruct-GGUF</a></td><td><code>qwen2.5-0.5b-instruct-q4_k_m.gguf</code><br><code>qwen2.5-0.5b-instruct-q2_k.gguf</code></td><td>491 MB<br>415 MB</td><td>começar: o menor e o mais rápido</td></tr>
+<tr><td><a href="https://huggingface.co/Qwen/Qwen3-0.6B-GGUF" rel="noopener">Qwen/Qwen3-0.6B-GGUF</a></td><td><code>Qwen3-0.6B-Q8_0.gguf</code></td><td>639 MB</td><td>respostas melhores e modo de pensamento</td></tr>
+<tr><td><a href="https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF" rel="noopener">TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF</a></td><td><code>tinyllama-1.1b-chat-v1.0.Q4_0.gguf</code></td><td>638 MB</td><td>inglês; arquitetura llama</td></tr>
+</tbody></table></div>
+<h3>Como baixar</h3>
+<ol>
+<li>Abra a página do repositório e entre na aba de arquivos (<em>Files and versions</em>).</li>
+<li>Escolha <strong>um</strong> arquivo .gguf e clique no ícone de download. Não baixe o repositório inteiro: ele traz todas as quantizações, e a página do TinyLlama avisa que quase nunca é isso que se quer. <sup><a href="#ref-6-pt">[6]</a></sup></li>
+<li>No app, clique em <strong>Abrir arquivo .gguf</strong> e escolha o arquivo baixado.</li>
+</ol>
+<p>Quem usa a linha de comando pode baixar um único arquivo com a ferramenta do Hugging Face, como as páginas dos modelos mostram. <sup><a href="#ref-4-pt">[4]</a></sup></p>
+<pre class="code"><code>huggingface-cli download Qwen/Qwen2.5-0.5B-Instruct-GGUF qwen2.5-0.5b-instruct-q4_k_m.gguf --local-dir .</code></pre>
+<h3>Como escolher o arquivo</h3>
+<ul>
+<li><strong>Arquitetura.</strong> O app abre modelos <code>llama</code>, <code>mistral</code>, <code>qwen2</code> e <code>qwen3</code>. Se a arquitetura não for aceita, ele avisa ao abrir o arquivo.</li>
+<li><strong>Quantização.</strong> O nome do arquivo diz quantos bits por peso: Q8_0 é o mais fiel, Q4_K_M é um bom meio-termo e Q2_K é o menor e o que mais perde. O app aceita F32, F16, BF16, Q4_0, Q4_1, Q5_0, Q5_1, Q8_0, Q2_K a Q6_K, IQ4_NL e IQ4_XS.</li>
+<li><strong>Tamanho.</strong> Na GPU, cada bilhão de parâmetros ocupa cerca de 2 GB, porque os pesos viram 16 bits. Modelos de até uns 3 bilhões de parâmetros são os que cabem melhor.</li>
+<li><strong>Arquivo único.</strong> O app ainda não abre modelos divididos em vários arquivos (<code>-00001-of-00002.gguf</code>) nem modelos de visão.</li>
+<li><strong>Licença.</strong> Cada modelo tem a sua. Leia antes de usar o modelo em um projeto.</li>
+</ul>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="app-pt" aria-labelledby="h-app-pt">
+<h2 id="h-app-pt">Passo a passo: conversar</h2>
+<h3>1. Abra o modelo</h3>
+<p>Clique em <strong>Abrir arquivo .gguf</strong>. O app lê o cabeçalho, mostra os dados do modelo e carrega os pesos, com uma barra de progresso. Em <strong>Onde rodar</strong>, o modo Automático usa a GPU quando há WebGPU. O <strong>Contexto</strong> é o tamanho máximo da conversa, em tokens; mais contexto ocupa mais memória.</p>
+<figure class="tall">
+<img src="rc_images/LLMModelo.png" alt="Caixa Modelo do app depois de abrir o arquivo do Qwen3: botões Abrir arquivo .gguf, Recarregar e Descarregar, barra de progresso cheia, o aviso pronto na GPU com a memória estimada e a lista com nome, arquivo, arquitetura qwen3, 596 milhões de parâmetros, 28 camadas e 16 cabeças, contexto de treino de 40.960 tokens, quantização Q8_0 e tokenizador BPE com 151.936 tokens. Embaixo, as opções Onde rodar, Contexto, Formato da conversa e a caixa Deixar o modelo pensar antes, e a lista de modelos testados" width="684" height="1424" loading="lazy">
+<figcaption>Os dados do modelo, lidos do próprio arquivo.</figcaption>
+</figure>
+<h3>2. Converse</h3>
+<p>Escreva no campo de baixo e tecle <kbd>Enter</kbd> (<kbd>Shift</kbd>+<kbd>Enter</kbd> quebra a linha). A resposta aparece enquanto é gerada. O botão <strong>Parar</strong> interrompe a geração, e <strong>Nova conversa</strong> limpa o histórico. Embaixo das mensagens, o app mostra quantos tokens processou e a que velocidade.</p>
+<p>O <strong>Formato da conversa</strong> é detectado no arquivo: ChatML para Qwen, Zephyr para TinyLlama, Llama 3 e Mistral. Ele monta a conversa com as marcas que o modelo aprendeu no treino. Com o formato errado, o modelo responde mal.</p>
+<h3>3. Deixe o Qwen3 pensar</h3>
+<p>Com um modelo Qwen3, aparece a opção <strong>Deixar o modelo pensar antes</strong>. Ligada, o modelo escreve um raciocínio antes da resposta, que o app mostra em itálico, separado. O cartão do modelo descreve esse modo e recomenda temperatura 0,6, top-p 0,95 e top-k 20 para ele; o app troca para esses valores quando você liga a opção. <sup><a href="#ref-7-pt">[7]</a></sup> Desligada, a resposta sai direto e mais rápido.</p>
+<figure>
+<img src="rc_images/LLMPensamento.png" alt="Conversa com o Qwen3 com o pensamento ligado: o usuário pergunta quanto é 15 vezes 6; a resposta do modelo começa com um bloco em itálico, marcado como pensamento, em que ele calcula 15 vezes 6 em inglês e confere o resultado, e termina com a frase 15 vezes 6 é 90" width="883" height="256" loading="lazy">
+<figcaption>O raciocínio aparece separado da resposta. O modelo pensa em inglês, mesmo quando responde em outro idioma.</figcaption>
+</figure>
+<h3>4. GPU ou CPU</h3>
+<p>O botão redondo no alto mostra a placa de vídeo encontrada. Clicando nele, a janela <strong>Seu computador</strong> mostra o que o navegador informa: WebGPU, recursos da GPU, o maior bloco de memória que a GPU aceita, os núcleos do processador e quantos workers o app usa. Para comparar, mude <strong>Onde rodar</strong> para CPU: o modelo é recarregado e passa a usar os núcleos do processador.</p>
+<figure>
+<img src="rc_images/LLMComputador.png" alt="Janela Seu computador: WebGPU sim; placa de vídeo nvidia, lovelace; recursos da GPU shader-f16, subgroups e timestamp-query; maior bloco de memória da GPU 2,15 GB; 28 núcleos lógicos da CPU; 16 workers usados; memória informada pelo navegador de pelo menos 32 GB; rede bloqueada pela política de segurança da página. Embaixo, uma nota sobre o arredondamento da memória e o botão Fechar" width="1464" height="868" loading="lazy">
+<figcaption>O que o navegador informa sobre o computador usado nos testes.</figcaption>
+</figure>
+<h3>5. No celular</h3>
+<p>O app funciona em telas pequenas: a conversa aparece logo abaixo da caixa do modelo, e as opções de geração ficam embaixo. Para rodar na GPU do celular, o navegador precisa oferecer WebGPU; sem ele, o app usa a CPU, bem mais devagar.</p>
+<figure class="tall">
+<img src="rc_images/LLMCelular.png" alt="Tela de celular no tema escuro, com o Qwen2.5 carregado: a pergunta pedindo três dicas para estudar melhor e a resposta do modelo em lista numerada. Embaixo, os tokens por segundo, o campo de mensagem e os botões Enviar, Parar e Nova conversa" width="390" height="844" loading="lazy">
+<figcaption>Numa tela de 390 pixels, no tema escuro.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="opcoes-pt" aria-labelledby="h-opcoes-pt">
+<h2 id="h-opcoes-pt">Opções de geração</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Opção</th><th>O que faz</th><th>Padrão</th></tr></thead>
+<tbody>
+<tr><td>Temperatura</td><td>Abaixo de 1, o sorteio fica mais conservador; acima, mais criativo e mais propenso a erro. Em 0, o app escolhe sempre o token mais provável.</td><td>0,7</td></tr>
+<tr><td>Top-k</td><td>Sorteia só entre os k tokens mais prováveis.</td><td>40</td></tr>
+<tr><td>Top-p</td><td>Sorteia só entre os tokens mais prováveis que, somados, chegam a essa probabilidade.</td><td>0,9</td></tr>
+<tr><td>Repetição</td><td>Penaliza tokens que o modelo já gerou nesta resposta, para evitar repetição. Valores altos atrapalham contas e listas.</td><td>1,05</td></tr>
+<tr><td>Máx. de tokens</td><td>Tamanho máximo da resposta.</td><td>512</td></tr>
+<tr><td>Semente</td><td>Com a mesma semente, a mesma conversa e as mesmas opções, a resposta se repete.</td><td>42</td></tr>
+<tr><td>Instrução de sistema</td><td>Texto que orienta o modelo em toda a conversa, por exemplo o idioma da resposta.</td><td>responder no idioma da página</td></tr>
+</tbody></table></div>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="treino-pt" aria-labelledby="h-treino-pt">
+<h2 id="h-treino-pt">Passo a passo: treinar um mini-GPT</h2>
+<p>Na aba <strong>Treinar um mini-GPT</strong>, nada vem pronto. Um transformer pequeno nasce com pesos aleatórios e aprende a prever o próximo caractere do texto. O cálculo para frente, a retropropagação e o otimizador AdamW, que separa o decaimento dos pesos do passo do gradiente, rodam em kernels WebGPU escritos para o app. <sup><a href="#ref-10-pt">[10]</a></sup> O treino precisa de WebGPU.</p>
+<ol>
+<li><strong>Escolha o texto.</strong> O app traz um conto curto de exemplo em cada idioma. Você pode colar outro texto ou abrir um <code>.txt</code>. 90% do texto é usado no treino e 10% fica de fora para medir a validação.</li>
+<li><strong>Escolha o tamanho.</strong> Camadas, largura, cabeças de atenção, contexto (quantos caracteres o modelo vê de uma vez), lote, taxa de aprendizado, passos e semente. O app mostra o número de parâmetros e a memória estimada.</li>
+<li><strong>Clique em Treinar.</strong> Os cartões mostram o passo, a perda de treino, a perda de validação, os caracteres por segundo e o tempo por passo. A cada 250 passos aparece uma amostra do que o modelo escreve.</li>
+<li><strong>Gere texto.</strong> Escreva um começo e clique em <strong>Gerar</strong>. Com a mesma semente, o texto se repete.</li>
+<li><strong>Salve o modelo.</strong> <strong>Salvar modelo</strong> baixa um arquivo <code>.bin</code>, que <strong>Abrir modelo</strong> carrega depois para continuar o treino ou gerar texto.</li>
+</ol>
+<figure>
+<img src="rc_images/LLMTreino.png" alt="Aba de treino depois de 1.000 passos com o texto de exemplo, um conto sobre um faroleiro. Cartões: passo 1.000, perda de treino 0,071, perda de validação 4,312, cerca de 146 mil caracteres por segundo, 14 ms por passo e uma estimativa de 532 GFLOP/s. No gráfico, a linha contínua do treino cai de 2,4 para perto de zero, e a linha tracejada da validação sobe de 3,4 para 4,3, acima da linha pontilhada do acaso, em 3,74. Embaixo, a amostra e o texto gerado a partir de Na quarta noite, que repetem quase palavra por palavra o conto de exemplo" width="1280" height="900" loading="lazy">
+<figcaption>Mil passos sobre o texto de exemplo: a perda de treino cai, a de validação sobe. O modelo decorou o texto.</figcaption>
+</figure>
+<p>O gráfico acima mostra o problema mais comum de quem treina: o <strong>sobreajuste</strong>. O conto de exemplo tem cerca de 1.400 caracteres, e o modelo tem mais de 600 mil parâmetros. Ele decora o texto: a perda de treino chega perto de zero, mas a de validação, medida no trecho que ele não viu, fica pior que o acaso (a linha pontilhada, que é a perda de chutar entre todos os símbolos do texto com a mesma chance). O texto gerado repete o conto quase palavra por palavra. Com um texto maior, de centenas de milhares de caracteres, as duas perdas caem juntas por mais tempo.</p>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="numeros-pt" aria-labelledby="h-numeros-pt">
+<h2 id="h-numeros-pt">O que os números dizem</h2>
+<p>Medi o carregamento e a velocidade de cada modelo com o código do próprio app, num computador com placa NVIDIA de arquitetura Lovelace e 28 núcleos lógicos, usando 16 workers na CPU. Cada caso rodou três vezes, com uma pergunta de 31 a 54 tokens e 64 tokens gerados no modo guloso; a tabela traz a mediana. <sup><a href="#ref-1-pt">[1]</a></sup></p>
+<div class="table-wrap"><table>
+<thead><tr><th>Modelo (arquivo)</th><th>Tamanho</th><th>Carregamento na GPU</th><th>GPU: leitura · geração</th><th>CPU: leitura · geração</th></tr></thead>
+<tbody>
+<tr><td>Qwen2.5-0.5B (Q4_K_M)</td><td>491 MB</td><td>1,4 s</td><td>219 · 115 tokens/s</td><td>17 · 13 tokens/s</td></tr>
+<tr><td>Qwen2.5-0.5B (Q2_K)</td><td>415 MB</td><td>1,6 s</td><td>220 · 130 tokens/s</td><td>13 · 10 tokens/s</td></tr>
+<tr><td>Qwen3-0.6B (Q8_0)</td><td>639 MB</td><td>1,6 s</td><td>160 · 106 tokens/s</td><td>11 · 9 tokens/s</td></tr>
+<tr><td>TinyLlama-1.1B (Q4_0)</td><td>638 MB</td><td>1,9 s</td><td>111 · 81 tokens/s</td><td>6 · 6 tokens/s</td></tr>
+</tbody></table></div>
+<ul>
+<li><strong>A GPU foi de cerca de 9 a 15 vezes mais rápida que a CPU</strong> na geração, nesses quatro modelos.</li>
+<li><strong>O tamanho do modelo pesa mais que a quantização.</strong> Na GPU, o app converte tudo para 16 bits, então o Qwen2.5 em Q2_K e em Q4_K_M rodam quase na mesma velocidade. O TinyLlama, com quase o dobro de parâmetros, foi o mais lento.</li>
+<li><strong>O mini-GPT de exemplo</strong> (608.640 parâmetros) treinou 1.000 passos em 13,9 s, cerca de 146 mil caracteres por segundo.</li>
+</ul>
+<p>Os dois motores, GPU e CPU, foram comparados entre si: com a mesma pergunta, geraram o mesmo texto, e a maior diferença entre as notas dos tokens foi de 0,23 numa escala de 17,5. A diferença vem dos 8 bits da CPU contra os 16 bits da GPU.</p>
+<blockquote><p><strong>O que estes números não medem.</strong> São medidas de um único computador; outra placa de vídeo ou outro processador dá outros números. A velocidade cai em conversas longas, porque a atenção relê todo o contexto. E velocidade não é qualidade: estes modelos pequenos erram fatos com frequência. Num dos testes, o Qwen2.5-0.5B disse que a capital do Brasil é São Paulo.</p></blockquote>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="dicas-pt" aria-labelledby="h-dicas-pt">
+<h2 id="h-dicas-pt">Dicas</h2>
+<ol>
+<li><strong>Comece pelo menor modelo.</strong> O Qwen2.5-0.5B em Q4_K_M carrega em pouco mais de um segundo e já mostra como tudo funciona.</li>
+<li><strong>Peça o idioma na instrução de sistema.</strong> Modelos pequenos tendem a responder em inglês.</li>
+<li><strong>Use temperatura baixa para fatos e contas</strong> e mais alta para textos criativos.</li>
+<li><strong>Diminua o contexto se a GPU travar.</strong> O cache de atenção cresce com o contexto escolhido.</li>
+<li><strong>Para treinar, use um texto grande.</strong> Um livro em domínio público em <code>.txt</code> rende muito mais que o conto de exemplo; aumente os passos e acompanhe a perda de validação.</li>
+<li><strong>Pare o treino quando a validação subir.</strong> A partir daí, o modelo só decora.</li>
+</ol>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="erros-pt" aria-labelledby="h-erros-pt">
+<h2 id="h-erros-pt">Erros comuns</h2>
+<ul class="myths">
+<li><h3>“Se roda no meu computador, é tão bom quanto os assistentes on-line.”</h3><p>Não. Os modelos que cabem aqui têm menos de um bilhão de parâmetros e erram fatos com frequência. Servem para estudar, experimentar e tarefas simples.</p></li>
+<li><h3>“Preciso baixar o repositório inteiro.”</h3><p>Baixe só um arquivo .gguf. O repositório traz várias quantizações do mesmo modelo, e cada uma ocupa centenas de megabytes.</p></li>
+<li><h3>“Quantização menor sempre deixa mais rápido.”</h3><p>No app, a GPU converte os pesos para 16 bits, então a quantização muda o tamanho do download, não a velocidade. O que pesa é o número de parâmetros.</p></li>
+<li><h3>“Perda de treino perto de zero significa modelo bom.”</h3><p>Pode significar só que ele decorou o texto. Olhe a perda de validação.</p></li>
+<li><h3>“O modelo é enviado para algum servidor.”</h3><p>Não. A página bloqueia conexões de rede, e o arquivo é lido do seu disco.</p></li>
+</ul>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="revisao-pt" aria-labelledby="h-revisao-pt">
+<h2 id="h-revisao-pt">Revisão rápida</h2>
+<div class="quiz">
+<details><summary>1. Onde encontrar modelos no formato .gguf?</summary><p>No Hugging Face, filtrando pela etiqueta GGUF: huggingface.co/models?library=gguf.</p></details>
+<details><summary>2. Quais arquiteturas o app abre?</summary><p>llama, mistral, qwen2 e qwen3.</p></details>
+<details><summary>3. O que é um token?</summary><p>Um pedaço de palavra que o tokenizador troca por um número. O modelo prevê um token de cada vez.</p></details>
+<details><summary>4. Para que serve o cache KV?</summary><p>Guarda o que o modelo já leu, para que cada token novo custe pouco e o app só processe o texto novo de cada mensagem.</p></details>
+<details><summary>5. O que a temperatura 0 faz?</summary><p>O app escolhe sempre o token mais provável: a resposta fica determinística.</p></details>
+<details><summary>6. Quanto a GPU foi mais rápida que a CPU nas medições?</summary><p>De 9 a 15 vezes na geração, nos quatro modelos testados.</p></details>
+<details><summary>7. O que indica a perda de validação subindo enquanto a de treino cai?</summary><p>Sobreajuste: o modelo está decorando o texto em vez de aprender padrões gerais.</p></details>
+<details><summary>8. O app envia o modelo ou a conversa para a internet?</summary><p>Não. A política de segurança da página bloqueia a rede.</p></details>
+</div>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+
+<section id="referencias-pt" aria-labelledby="h-referencias-pt">
+<h2 id="h-referencias-pt">Referências</h2>
+<ol class="refs">
+<li id="ref-1-pt"><strong>Giovani Perotto Mesquita</strong>, “LLM Local”, app deste site, <a href="llm-local.html">giovanipm.github.io/llm-local.html</a>. As capturas foram feitas usando o app com cliques e teclado; as medições de velocidade usam o mesmo código dos motores, três execuções por caso.</li>
+<li id="ref-2-pt"><strong>Hugging Face</strong>, “GGUF”, documentação do Hub, acesso em 15/11/2026, <a href="https://huggingface.co/docs/hub/gguf" rel="noopener">huggingface.co/docs/hub/gguf</a>. Definição do formato, autoria e filtro por GGUF.</li>
+<li id="ref-3-pt"><strong>Hugging Face</strong>, “Models compatible with the GGUF library”, acesso em 15/11/2026, <a href="https://huggingface.co/models?library=gguf" rel="noopener">huggingface.co/models?library=gguf</a>. 221.936 modelos listados na data do acesso.</li>
+<li id="ref-4-pt"><strong>Qwen</strong>, “Qwen2.5-0.5B-Instruct-GGUF”, acesso em 15/11/2026, <a href="https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF" rel="noopener">huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF</a>. Licença Apache 2.0 e comando de download de um único arquivo.</li>
+<li id="ref-5-pt"><strong>Qwen</strong>, “Qwen3-0.6B-GGUF”, acesso em 15/11/2026, <a href="https://huggingface.co/Qwen/Qwen3-0.6B-GGUF" rel="noopener">huggingface.co/Qwen/Qwen3-0.6B-GGUF</a>. Licença Apache 2.0; arquivo Q8_0 de 639 MB.</li>
+<li id="ref-6-pt"><strong>TheBloke</strong>, “TinyLlama-1.1B-Chat-v1.0-GGUF”, acesso em 15/11/2026, <a href="https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF" rel="noopener">huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF</a>. Licença Apache 2.0 e o aviso de não clonar o repositório inteiro.</li>
+<li id="ref-7-pt"><strong>Qwen</strong>, “Qwen3-0.6B”, cartão do modelo, acesso em 15/11/2026, <a href="https://huggingface.co/Qwen/Qwen3-0.6B" rel="noopener">huggingface.co/Qwen/Qwen3-0.6B</a>. Modos com e sem pensamento e parâmetros de amostragem recomendados (no modo sem pensamento, o cartão sugere temperatura 0,7, top-p 0,8 e top-k 20). A página informa 0,6 bilhão de parâmetros no texto e 0,8 bilhão nos metadados.</li>
+<li id="ref-8-pt"><strong>Ashish Vaswani et al.</strong>, “Attention Is All You Need”, 2017, <a href="https://arxiv.org/abs/1706.03762" rel="noopener">arxiv.org/abs/1706.03762</a>. O transformer, baseado só em mecanismos de atenção.</li>
+<li id="ref-9-pt"><strong>W3C</strong>, “WebGPU”, Candidate Recommendation Draft de 15/09/2026, acesso em 15/11/2026, <a href="https://www.w3.org/TR/webgpu/" rel="noopener">w3.org/TR/webgpu</a>. Interface para renderização e computação na GPU.</li>
+<li id="ref-10-pt"><strong>Ilya Loshchilov e Frank Hutter</strong>, “Decoupled Weight Decay Regularization”, 2017, ICLR 2019, <a href="https://arxiv.org/abs/1711.05101" rel="noopener">arxiv.org/abs/1711.05101</a>. O otimizador AdamW.</li>
+<li id="ref-11-pt"><strong>ggml-org</strong>, “llama.cpp: LLM inference in C/C++”, acesso em 15/11/2026, <a href="https://github.com/ggml-org/llama.cpp" rel="noopener">github.com/ggml-org/llama.cpp</a>.</li>
+</ol>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== EN ===================== -->
+<div id="en" role="tabpanel" aria-labelledby="tab-en" lang="en" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html#en" data-projects>← Projects</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Local LLM: language models on your computer</h1>
+      <p class="dek">How to chat with a language model that runs on your graphics card or on your processor cores, where to download models in the .gguf format, how to train a mini-GPT from scratch in the browser, and what the speed measurements show.</p>
+      <div class="byline">
+        <span>By <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Published on <time datetime="2026-11-15">15 November 2026</time></span>
+        <span class="credit">Reviewed and formatted using Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-en">
+    <h2 id="toc-en">Contents</h2>
+    <ol>
+      <li><a href="#intro-en">The app</a></li>
+      <li><a href="#llm-en">How a language model answers</a></li>
+      <li><a href="#baixar-en">Where to download .gguf models</a></li>
+      <li><a href="#app-en">Step by step: chatting</a></li>
+      <li><a href="#opcoes-en">Generation options</a></li>
+      <li><a href="#treino-en">Step by step: training a mini-GPT</a></li>
+      <li><a href="#numeros-en">What the numbers say</a></li>
+      <li><a href="#dicas-en">Tips</a></li>
+      <li><a href="#erros-en">Common mistakes</a></li>
+      <li><a href="#revisao-en">Quick review</a></li>
+      <li><a href="#referencias-en">References</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-en" aria-labelledby="h-intro-en">
+<h2 id="h-intro-en">The app</h2>
+<p>Local LLM is a single page that does two things without sending anything to the internet: <sup><a href="#ref-1-en">[1]</a></sup></p>
+<ul>
+<li><strong>Chat with a language model</strong> that you downloaded once, in the <strong>.gguf</strong> format. The model runs on the graphics card through WebGPU or, without one, on several processor cores.</li>
+<li><strong>Train a mini-GPT from scratch</strong>, a small model that learns to predict the next character of a text you choose, and watch the learning happen on a chart.</li>
+</ul>
+<p>WebGPU is the browser interface for computing on the graphics card. <sup><a href="#ref-9-en">[9]</a></sup> The page forbids network connections through its own security policy: the model file is read from disk and stays on the computer.</p>
+<p><a class="launch" href="llm-local.html#en">Open the app <span aria-hidden="true">→</span></a></p>
+<figure>
+<img src="rc_images/LLMConversa-en.png" alt="App screen with the Qwen3 0.6B model loaded. On the left, the Model box with the Open .gguf file, Reload and Unload buttons, the ready-on-GPU notice with the estimated memory and the model details: name, file, qwen3 architecture, parameters, layers, training context, Q8_0 quantization and BPE tokenizer. On the right, a chat: the user asks for three short tips for studying better, the model answers with a three-item list, the user asks for a one-sentence summary and the model summarises. At the bottom, the input and generated tokens per second and the context used" width="1280" height="900" loading="lazy">
+<figcaption>A chat with Qwen3 0.6B running on the GPU.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="llm-en" aria-labelledby="h-llm-en">
+<h2 id="h-llm-en">How a language model answers</h2>
+<p>A language model does not look up ready-made answers. It receives a text and computes, for each piece of word it knows, a score of how likely that piece is to come next. One of those pieces is drawn, appended to the text, and the process repeats until the answer ends.</p>
+<figure>
+<img src="rc_images/LLMFluxo-en.svg" alt="Diagram with five boxes linked by arrows, left to right: Text, the chat built in the model's format; Tokenizer, which turns text into numbers; Transformer, with N layers of attention and MLP; Logits, one score for every token; and Sampling, with temperature, top-k and top-p. An arrow goes back from Sampling to Text: the drawn token becomes text on screen and goes back in as input. At the top, the .gguf file supplies weights, vocabulary and metadata to the tokenizer and the transformer. Below the transformer, the KV cache keeps what was already read. At the bottom: runs on the GPU, with WebGPU and 16-bit weights, or on the CPU, with workers and 8-bit weights." width="1000" height="520" loading="lazy">
+<figcaption>The path of each token: from the text to sampling, and back to the start.</figcaption>
+</figure>
+<ol>
+<li><strong>Tokens.</strong> The tokenizer cuts the text into pieces, the tokens, and swaps each one for a number. Qwen knows 151,936 tokens; TinyLlama, 32,000.</li>
+<li><strong>Transformer.</strong> The numbers go through dozens of layers. Each layer has an attention step, which decides which parts of the text matter for the next word, and a neural network. This architecture, based solely on attention, was proposed in 2017. <sup><a href="#ref-8-en">[8]</a></sup></li>
+<li><strong>Logits and sampling.</strong> The last layer gives a score to every token in the vocabulary. Temperature and the top-k and top-p cut-offs decide how much risk the draw takes.</li>
+<li><strong>KV cache.</strong> What has already been read is kept, so each new token costs little. That is why the app reuses the chat: on each message, only the new text is processed.</li>
+</ol>
+<p><strong>Parameters</strong> are the numbers learned in training: about 0.6 billion in Qwen3 0.6B. In the .gguf file they come <strong>quantized</strong>, that is, stored with fewer bits to take less space. GGUF is a binary format designed for fast model loading, created by the same author as llama.cpp. <sup><a href="#ref-2-en">[2]</a></sup> <sup><a href="#ref-11-en">[11]</a></sup> On the GPU, the app converts the weights to 16 bits; on the CPU, to 8 bits in blocks of 32 values.</p>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="baixar-en" aria-labelledby="h-baixar-en">
+<h2 id="h-baixar-en">Where to download .gguf models</h2>
+<p>The most common place is <strong>Hugging Face</strong>, a site that hosts open models. Its documentation explains that you can list all models with GGUF files by filtering on the GGUF tag. <sup><a href="#ref-2-en">[2]</a></sup> On 15 November 2026 that list had 221,936 models. <sup><a href="#ref-3-en">[3]</a></sup></p>
+<ul>
+<li><a href="https://huggingface.co/models?library=gguf" rel="noopener">huggingface.co/models?library=gguf</a>: every model with .gguf files.</li>
+<li><a href="https://huggingface.co/docs/hub/gguf" rel="noopener">huggingface.co/docs/hub/gguf</a>: what the format is and how it shows up on the site.</li>
+</ul>
+<p>These three repositories were tested in the app. All three are under the Apache 2.0 licence. <sup><a href="#ref-4-en">[4]</a></sup> <sup><a href="#ref-5-en">[5]</a></sup> <sup><a href="#ref-6-en">[6]</a></sup></p>
+<div class="table-wrap"><table>
+<thead><tr><th>Repository</th><th>File tested</th><th>Size</th><th>Good for</th></tr></thead>
+<tbody>
+<tr><td><a href="https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF" rel="noopener">Qwen/Qwen2.5-0.5B-Instruct-GGUF</a></td><td><code>qwen2.5-0.5b-instruct-q4_k_m.gguf</code><br><code>qwen2.5-0.5b-instruct-q2_k.gguf</code></td><td>491 MB<br>415 MB</td><td>getting started: the smallest and fastest</td></tr>
+<tr><td><a href="https://huggingface.co/Qwen/Qwen3-0.6B-GGUF" rel="noopener">Qwen/Qwen3-0.6B-GGUF</a></td><td><code>Qwen3-0.6B-Q8_0.gguf</code></td><td>639 MB</td><td>better answers and thinking mode</td></tr>
+<tr><td><a href="https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF" rel="noopener">TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF</a></td><td><code>tinyllama-1.1b-chat-v1.0.Q4_0.gguf</code></td><td>638 MB</td><td>English; llama architecture</td></tr>
+</tbody></table></div>
+<h3>How to download</h3>
+<ol>
+<li>Open the repository page and go to the files tab (<em>Files and versions</em>).</li>
+<li>Pick <strong>one</strong> .gguf file and click the download icon. Don't download the whole repository: it holds every quantization, and the TinyLlama page warns that this is almost never what you want. <sup><a href="#ref-6-en">[6]</a></sup></li>
+<li>In the app, click <strong>Open .gguf file</strong> and choose the downloaded file.</li>
+</ol>
+<p>On the command line, you can download a single file with the Hugging Face tool, as the model pages show. <sup><a href="#ref-4-en">[4]</a></sup></p>
+<pre class="code"><code>huggingface-cli download Qwen/Qwen2.5-0.5B-Instruct-GGUF qwen2.5-0.5b-instruct-q4_k_m.gguf --local-dir .</code></pre>
+<h3>How to choose the file</h3>
+<ul>
+<li><strong>Architecture.</strong> The app opens <code>llama</code>, <code>mistral</code>, <code>qwen2</code> and <code>qwen3</code> models. If the architecture is not supported, it says so when you open the file.</li>
+<li><strong>Quantization.</strong> The file name tells how many bits per weight: Q8_0 is the most faithful, Q4_K_M is a good middle ground and Q2_K is the smallest and loses the most. The app accepts F32, F16, BF16, Q4_0, Q4_1, Q5_0, Q5_1, Q8_0, Q2_K to Q6_K, IQ4_NL and IQ4_XS.</li>
+<li><strong>Size.</strong> On the GPU, each billion parameters takes about 2 GB, because the weights become 16-bit. Models of up to about 3 billion parameters fit best.</li>
+<li><strong>Single file.</strong> The app does not yet open models split into several files (<code>-00001-of-00002.gguf</code>) or vision models.</li>
+<li><strong>Licence.</strong> Each model has its own. Read it before using the model in a project.</li>
+</ul>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="app-en" aria-labelledby="h-app-en">
+<h2 id="h-app-en">Step by step: chatting</h2>
+<h3>1. Open the model</h3>
+<p>Click <strong>Open .gguf file</strong>. The app reads the header, shows the model details and loads the weights, with a progress bar. Under <strong>Run on</strong>, Automatic uses the GPU when WebGPU is available. <strong>Context</strong> is the maximum chat length, in tokens; more context takes more memory.</p>
+<figure class="tall">
+<img src="rc_images/LLMModelo-en.png" alt="The app's Model box after opening the Qwen3 file: Open .gguf file, Reload and Unload buttons, a full progress bar, the ready-on-GPU notice with the estimated memory and the list with name, file, qwen3 architecture, 596 million parameters, 28 layers and 16 heads, a 40,960-token training context, Q8_0 quantization and a BPE tokenizer with 151,936 tokens. Below, the Run on, Context and Chat format options, the Let the model think first box and the list of tested models" width="684" height="1334" loading="lazy">
+<figcaption>The model details, read from the file itself.</figcaption>
+</figure>
+<h3>2. Chat</h3>
+<p>Type in the bottom field and press <kbd>Enter</kbd> (<kbd>Shift</kbd>+<kbd>Enter</kbd> for a new line). The answer appears as it is generated. The <strong>Stop</strong> button interrupts generation, and <strong>New chat</strong> clears the history. Below the messages, the app shows how many tokens it processed and at what speed.</p>
+<p>The <strong>Chat format</strong> is detected from the file: ChatML for Qwen, Zephyr for TinyLlama, Llama 3 and Mistral. It builds the chat with the markers the model learned in training. With the wrong format, the model answers badly.</p>
+<h3>3. Let Qwen3 think</h3>
+<p>With a Qwen3 model, the option <strong>Let the model think first</strong> appears. When it is on, the model writes its reasoning before the answer, and the app shows it apart, in italics. The model card describes this mode and recommends temperature 0.6, top-p 0.95 and top-k 20 for it; the app switches to these values when you turn the option on. <sup><a href="#ref-7-en">[7]</a></sup> When it is off, the answer comes straight away and faster.</p>
+<figure>
+<img src="rc_images/LLMPensamento-en.png" alt="Chat with Qwen3 with thinking on: the user asks what 15 times 6 is; the model's answer starts with an italic block marked as thinking, in which it works out 15 times 6 and checks the result, and ends with 15 × 6 = 90" width="883" height="277" loading="lazy">
+<figcaption>The reasoning appears apart from the answer.</figcaption>
+</figure>
+<h3>4. GPU or CPU</h3>
+<p>The round button at the top shows the graphics card found. Clicking it opens the <strong>Your computer</strong> window with what the browser reports: WebGPU, GPU features, the largest memory block the GPU accepts, the processor cores and how many workers the app uses. To compare, switch <strong>Run on</strong> to CPU: the model is reloaded and runs on the processor cores.</p>
+<figure>
+<img src="rc_images/LLMComputador-en.png" alt="Your computer window: WebGPU yes; graphics card nvidia, lovelace; GPU features shader-f16, subgroups and timestamp-query; largest GPU memory block 2.15 GB; 28 logical CPU cores; 16 workers used; memory reported by the browser of at least 32 GB; network blocked by the page's security policy. Below, a note about memory rounding and the Close button" width="1464" height="868" loading="lazy">
+<figcaption>What the browser reports about the computer used in the tests.</figcaption>
+</figure>
+<h3>5. On a phone</h3>
+<p>The app works on small screens: the chat appears right below the model box, and the generation options go underneath. To run on the phone's GPU, the browser must offer WebGPU; without it, the app uses the CPU, much more slowly.</p>
+<figure class="tall">
+<img src="rc_images/LLMCelular-en.png" alt="Phone screen in the dark theme with Qwen2.5 loaded: the question asking for three tips for studying better and the model's answer as a numbered list. Below, the tokens per second, the message field and the Send, Stop and New chat buttons" width="390" height="844" loading="lazy">
+<figcaption>On a 390-pixel screen, in the dark theme.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="opcoes-en" aria-labelledby="h-opcoes-en">
+<h2 id="h-opcoes-en">Generation options</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Option</th><th>What it does</th><th>Default</th></tr></thead>
+<tbody>
+<tr><td>Temperature</td><td>Below 1, the draw is more conservative; above, more creative and more error-prone. At 0, the app always picks the most likely token.</td><td>0.7</td></tr>
+<tr><td>Top-k</td><td>Draws only among the k most likely tokens.</td><td>40</td></tr>
+<tr><td>Top-p</td><td>Draws only among the most likely tokens that together reach this probability.</td><td>0.9</td></tr>
+<tr><td>Repetition</td><td>Penalises tokens the model has already generated in this answer, to avoid repetition. High values hurt sums and lists.</td><td>1.05</td></tr>
+<tr><td>Max tokens</td><td>Maximum answer length.</td><td>512</td></tr>
+<tr><td>Seed</td><td>With the same seed, chat and options, the answer repeats.</td><td>42</td></tr>
+<tr><td>System prompt</td><td>Text that guides the model through the whole chat, for example the answer language.</td><td>answer in the page language</td></tr>
+</tbody></table></div>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="treino-en" aria-labelledby="h-treino-en">
+<h2 id="h-treino-en">Step by step: training a mini-GPT</h2>
+<p>In the <strong>Train a mini-GPT</strong> tab, nothing comes ready-made. A small transformer starts with random weights and learns to predict the next character of the text. The forward pass, backpropagation and the AdamW optimizer, which decouples weight decay from the gradient step, run in WebGPU kernels written for the app. <sup><a href="#ref-10-en">[10]</a></sup> Training needs WebGPU.</p>
+<ol>
+<li><strong>Choose the text.</strong> The app comes with a short sample story in each language. You can paste another text or open a <code>.txt</code>. 90% of the text is used for training and 10% is held out to measure validation.</li>
+<li><strong>Choose the size.</strong> Layers, width, attention heads, context (how many characters the model sees at once), batch, learning rate, steps and seed. The app shows the number of parameters and the estimated memory.</li>
+<li><strong>Click Train.</strong> The cards show the step, training loss, validation loss, characters per second and time per step. Every 250 steps a sample of what the model writes appears.</li>
+<li><strong>Generate text.</strong> Type a start and click <strong>Generate</strong>. With the same seed, the text repeats.</li>
+<li><strong>Save the model.</strong> <strong>Save model</strong> downloads a <code>.bin</code> file, which <strong>Open model</strong> loads later to keep training or generate text.</li>
+</ol>
+<figure>
+<img src="rc_images/LLMTreino-en.png" alt="Training tab after 1,000 steps on the sample text, a story about a lighthouse keeper. The cards show the step, a training loss close to zero, a validation loss around 4, the characters per second, the milliseconds per step and an estimate of GFLOP/s. On the chart, the solid training line falls close to zero while the dashed validation line rises above the dotted chance line. Below, the sample and the text generated from On the fourth night, which repeat the sample story almost word for word" width="1280" height="900" loading="lazy">
+<figcaption>A thousand steps on the sample text: training loss falls, validation loss rises. The model memorised the text.</figcaption>
+</figure>
+<p>The chart shows the most common problem in training: <strong>overfitting</strong>. The sample story has about 1,450 characters, and the model has more than 600 thousand parameters. It memorises the text: training loss gets close to zero, but validation loss, measured on the part it never saw, ends up worse than chance (the dotted line, which is the loss of guessing among all the text's symbols with equal odds). The generated text repeats the story almost word for word. With a larger text, of hundreds of thousands of characters, both losses fall together for longer.</p>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="numeros-en" aria-labelledby="h-numeros-en">
+<h2 id="h-numeros-en">What the numbers say</h2>
+<p>I measured the load time and speed of each model with the app's own code, on a computer with an NVIDIA Lovelace-architecture graphics card and 28 logical cores, using 16 workers on the CPU. Each case ran three times, with a 31 to 54-token question and 64 tokens generated greedily; the table shows the median. <sup><a href="#ref-1-en">[1]</a></sup></p>
+<div class="table-wrap"><table>
+<thead><tr><th>Model (file)</th><th>Size</th><th>GPU load</th><th>GPU: reading · generation</th><th>CPU: reading · generation</th></tr></thead>
+<tbody>
+<tr><td>Qwen2.5-0.5B (Q4_K_M)</td><td>491 MB</td><td>1.4 s</td><td>219 · 115 tokens/s</td><td>17 · 13 tokens/s</td></tr>
+<tr><td>Qwen2.5-0.5B (Q2_K)</td><td>415 MB</td><td>1.6 s</td><td>220 · 130 tokens/s</td><td>13 · 10 tokens/s</td></tr>
+<tr><td>Qwen3-0.6B (Q8_0)</td><td>639 MB</td><td>1.6 s</td><td>160 · 106 tokens/s</td><td>11 · 9 tokens/s</td></tr>
+<tr><td>TinyLlama-1.1B (Q4_0)</td><td>638 MB</td><td>1.9 s</td><td>111 · 81 tokens/s</td><td>6 · 6 tokens/s</td></tr>
+</tbody></table></div>
+<ul>
+<li><strong>The GPU was about 9 to 15 times faster than the CPU</strong> at generation, across these four models.</li>
+<li><strong>Model size matters more than quantization.</strong> On the GPU, the app converts everything to 16 bits, so Qwen2.5 in Q2_K and in Q4_K_M run at almost the same speed. TinyLlama, with almost twice the parameters, was the slowest.</li>
+<li><strong>The sample mini-GPT</strong> (608,640 parameters) trained 1,000 steps in 13.9 s, about 146 thousand characters per second.</li>
+</ul>
+<p>The two engines, GPU and CPU, were compared with each other: with the same question, they generated the same text, and the largest difference between token scores was 0.23 on a scale of 17.5. The difference comes from the CPU's 8 bits against the GPU's 16 bits.</p>
+<blockquote><p><strong>What these numbers do not measure.</strong> They come from a single computer; another graphics card or processor gives other numbers. Speed drops in long chats, because attention rereads the whole context. And speed is not quality: these small models often get facts wrong. In one test, Qwen2.5-0.5B said the capital of Brazil is São Paulo.</p></blockquote>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="dicas-en" aria-labelledby="h-dicas-en">
+<h2 id="h-dicas-en">Tips</h2>
+<ol>
+<li><strong>Start with the smallest model.</strong> Qwen2.5-0.5B in Q4_K_M loads in just over a second and already shows how everything works.</li>
+<li><strong>Ask for the language in the system prompt.</strong> Small models tend to answer in English.</li>
+<li><strong>Use a low temperature for facts and sums</strong> and a higher one for creative writing.</li>
+<li><strong>Lower the context if the GPU stalls.</strong> The attention cache grows with the chosen context.</li>
+<li><strong>To train, use a large text.</strong> A public-domain book as a <code>.txt</code> gives far better results than the sample story; increase the steps and watch the validation loss.</li>
+<li><strong>Stop training when validation rises.</strong> From then on, the model only memorises.</li>
+</ol>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="erros-en" aria-labelledby="h-erros-en">
+<h2 id="h-erros-en">Common mistakes</h2>
+<ul class="myths">
+<li><h3>“If it runs on my computer, it's as good as online assistants.”</h3><p>No. The models that fit here have under a billion parameters and often get facts wrong. They are for studying, experimenting and simple tasks.</p></li>
+<li><h3>“I need to download the whole repository.”</h3><p>Download a single .gguf file. The repository holds several quantizations of the same model, each taking hundreds of megabytes.</p></li>
+<li><h3>“A smaller quantization is always faster.”</h3><p>In the app, the GPU converts weights to 16 bits, so quantization changes the download size, not the speed. What matters is the number of parameters.</p></li>
+<li><h3>“Training loss near zero means a good model.”</h3><p>It may only mean the model memorised the text. Look at the validation loss.</p></li>
+<li><h3>“The model is sent to some server.”</h3><p>No. The page blocks network connections, and the file is read from your disk.</p></li>
+</ul>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="revisao-en" aria-labelledby="h-revisao-en">
+<h2 id="h-revisao-en">Quick review</h2>
+<div class="quiz">
+<details><summary>1. Where can you find models in the .gguf format?</summary><p>On Hugging Face, filtering on the GGUF tag: huggingface.co/models?library=gguf.</p></details>
+<details><summary>2. Which architectures does the app open?</summary><p>llama, mistral, qwen2 and qwen3.</p></details>
+<details><summary>3. What is a token?</summary><p>A piece of word that the tokenizer swaps for a number. The model predicts one token at a time.</p></details>
+<details><summary>4. What is the KV cache for?</summary><p>It keeps what the model has already read, so each new token costs little and the app only processes the new text of each message.</p></details>
+<details><summary>5. What does temperature 0 do?</summary><p>The app always picks the most likely token: the answer becomes deterministic.</p></details>
+<details><summary>6. How much faster was the GPU than the CPU in the measurements?</summary><p>About 9 to 15 times at generation, across the four models tested.</p></details>
+<details><summary>7. What does a rising validation loss with a falling training loss indicate?</summary><p>Overfitting: the model is memorising the text instead of learning general patterns.</p></details>
+<details><summary>8. Does the app send the model or the chat to the internet?</summary><p>No. The page's security policy blocks the network.</p></details>
+</div>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+
+<section id="referencias-en" aria-labelledby="h-referencias-en">
+<h2 id="h-referencias-en">References</h2>
+<ol class="refs">
+<li id="ref-1-en"><strong>Giovani Perotto Mesquita</strong>, “Local LLM”, app on this site, <a href="llm-local.html#en">giovanipm.github.io/llm-local.html</a>. The screenshots were taken using the app with clicks and the keyboard; the speed measurements use the same engine code, three runs per case.</li>
+<li id="ref-2-en"><strong>Hugging Face</strong>, “GGUF”, Hub documentation, accessed 15 November 2026, <a href="https://huggingface.co/docs/hub/gguf" rel="noopener">huggingface.co/docs/hub/gguf</a>. Definition of the format, authorship and the GGUF filter.</li>
+<li id="ref-3-en"><strong>Hugging Face</strong>, “Models compatible with the GGUF library”, accessed 15 November 2026, <a href="https://huggingface.co/models?library=gguf" rel="noopener">huggingface.co/models?library=gguf</a>. 221,936 models listed on the access date.</li>
+<li id="ref-4-en"><strong>Qwen</strong>, “Qwen2.5-0.5B-Instruct-GGUF”, accessed 15 November 2026, <a href="https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF" rel="noopener">huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF</a>. Apache 2.0 licence and the command to download a single file.</li>
+<li id="ref-5-en"><strong>Qwen</strong>, “Qwen3-0.6B-GGUF”, accessed 15 November 2026, <a href="https://huggingface.co/Qwen/Qwen3-0.6B-GGUF" rel="noopener">huggingface.co/Qwen/Qwen3-0.6B-GGUF</a>. Apache 2.0 licence; 639 MB Q8_0 file.</li>
+<li id="ref-6-en"><strong>TheBloke</strong>, “TinyLlama-1.1B-Chat-v1.0-GGUF”, accessed 15 November 2026, <a href="https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF" rel="noopener">huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF</a>. Apache 2.0 licence and the warning not to clone the whole repository.</li>
+<li id="ref-7-en"><strong>Qwen</strong>, “Qwen3-0.6B”, model card, accessed 15 November 2026, <a href="https://huggingface.co/Qwen/Qwen3-0.6B" rel="noopener">huggingface.co/Qwen/Qwen3-0.6B</a>. Thinking and non-thinking modes and recommended sampling parameters (for non-thinking mode, the card suggests temperature 0.7, top-p 0.8 and top-k 20). The page states 0.6 billion parameters in the text and 0.8 billion in the metadata.</li>
+<li id="ref-8-en"><strong>Ashish Vaswani et al.</strong>, “Attention Is All You Need”, 2017, <a href="https://arxiv.org/abs/1706.03762" rel="noopener">arxiv.org/abs/1706.03762</a>. The transformer, based solely on attention mechanisms.</li>
+<li id="ref-9-en"><strong>W3C</strong>, “WebGPU”, Candidate Recommendation Draft of 15 September 2026, accessed 15 November 2026, <a href="https://www.w3.org/TR/webgpu/" rel="noopener">w3.org/TR/webgpu</a>. An interface for rendering and computation on the GPU.</li>
+<li id="ref-10-en"><strong>Ilya Loshchilov and Frank Hutter</strong>, “Decoupled Weight Decay Regularization”, 2017, ICLR 2019, <a href="https://arxiv.org/abs/1711.05101" rel="noopener">arxiv.org/abs/1711.05101</a>. The AdamW optimizer.</li>
+<li id="ref-11-en"><strong>ggml-org</strong>, “llama.cpp: LLM inference in C/C++”, accessed 15 November 2026, <a href="https://github.com/ggml-org/llama.cpp" rel="noopener">github.com/ggml-org/llama.cpp</a>.</li>
+</ol>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== IT ===================== -->
+<div id="it" role="tabpanel" aria-labelledby="tab-it" lang="it" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html#it" data-projects>← Progetti</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>LLM Locale: modelli linguistici sul tuo computer</h1>
+      <p class="dek">Come parlare con un modello linguistico che gira sulla scheda video o sui core del processore, dove scaricare modelli nel formato .gguf, come addestrare un mini-GPT da zero nel browser e cosa mostrano le misure di velocità.</p>
+      <div class="byline">
+        <span>Di <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Pubblicato il <time datetime="2026-11-15">15/11/2026</time></span>
+        <span class="credit">Rivisto e formattato usando Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-it">
+    <h2 id="toc-it">Indice</h2>
+    <ol>
+      <li><a href="#intro-it">L’app</a></li>
+      <li><a href="#llm-it">Come risponde un modello linguistico</a></li>
+      <li><a href="#baixar-it">Dove scaricare modelli .gguf</a></li>
+      <li><a href="#app-it">Passo passo: parlare</a></li>
+      <li><a href="#opcoes-it">Opzioni di generazione</a></li>
+      <li><a href="#treino-it">Passo passo: addestrare un mini-GPT</a></li>
+      <li><a href="#numeros-it">Cosa dicono i numeri</a></li>
+      <li><a href="#dicas-it">Consigli</a></li>
+      <li><a href="#erros-it">Errori comuni</a></li>
+      <li><a href="#revisao-it">Ripasso rapido</a></li>
+      <li><a href="#referencias-it">Riferimenti</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-it" aria-labelledby="h-intro-it">
+<h2 id="h-intro-it">L’app</h2>
+<p>LLM Locale è una pagina unica che fa due cose senza inviare niente a internet: <sup><a href="#ref-1-it">[1]</a></sup></p>
+<ul>
+<li><strong>Parlare con un modello linguistico</strong> scaricato una volta, nel formato <strong>.gguf</strong>. Il modello gira sulla scheda video con WebGPU o, senza, su più core del processore.</li>
+<li><strong>Addestrare un mini-GPT da zero</strong>, un piccolo modello che impara a prevedere il carattere successivo di un testo scelto da te, e vedere l’apprendimento in un grafico.</li>
+</ul>
+<p>WebGPU è l’interfaccia dei browser per fare calcoli sulla scheda video. <sup><a href="#ref-9-it">[9]</a></sup> La pagina vieta le connessioni di rete con la propria politica di sicurezza: il file del modello viene letto dal disco e resta sul computer.</p>
+<p><a class="launch" href="llm-local.html#it">Apri l’app <span aria-hidden="true">→</span></a></p>
+<figure>
+<img src="rc_images/LLMConversa-it.png" alt="Schermata dell’app con il modello Qwen3 0.6B caricato. A sinistra, il riquadro Modello con i pulsanti Apri file .gguf, Ricarica e Scarica, l’avviso di pronto su GPU con la memoria stimata e i dati del modello: nome, file, architettura qwen3, parametri, strati, contesto di addestramento, quantizzazione Q8_0 e tokenizzatore BPE. A destra, una chat: l’utente chiede tre brevi consigli per studiare meglio, il modello risponde con un elenco di tre punti, l’utente chiede un riassunto in una frase e il modello riassume. In basso, i token di input e generati al secondo e il contesto usato" width="1280" height="900" loading="lazy">
+<figcaption>Una chat con Qwen3 0.6B sulla GPU.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="llm-it" aria-labelledby="h-llm-it">
+<h2 id="h-llm-it">Come risponde un modello linguistico</h2>
+<p>Un modello linguistico non cerca risposte già pronte. Riceve un testo e calcola, per ogni pezzo di parola che conosce, un punteggio di quanto è probabile che venga dopo. Uno di questi pezzi viene estratto, aggiunto al testo, e il processo si ripete fino alla fine della risposta.</p>
+<figure>
+<img src="rc_images/LLMFluxo-it.svg" alt="Diagramma con cinque riquadri collegati da frecce, da sinistra a destra: Testo, la chat composta nel formato del modello; Tokenizzatore, che trasforma il testo in numeri; Transformer, con N strati di attenzione e MLP; Logit, un punteggio per ogni token; e Campionamento, con temperatura, top-k e top-p. Una freccia torna dal Campionamento al Testo: il token estratto diventa testo sullo schermo e rientra come input. In alto, il file .gguf fornisce pesi, vocabolario e metadati al tokenizzatore e al transformer. Sotto il transformer, la cache KV conserva ciò che è già stato letto. In fondo: gira sulla GPU, con WebGPU e pesi a 16 bit, o sulla CPU, con worker e pesi a 8 bit." width="1000" height="520" loading="lazy">
+<figcaption>Il percorso di ogni token: dal testo al campionamento, e di nuovo all’inizio.</figcaption>
+</figure>
+<ol>
+<li><strong>Token.</strong> Il tokenizzatore taglia il testo in pezzi, i token, e sostituisce ciascuno con un numero. Qwen conosce 151.936 token; TinyLlama, 32.000.</li>
+<li><strong>Transformer.</strong> I numeri attraversano decine di strati. Ogni strato ha una fase di attenzione, che decide quali parti del testo contano per la parola successiva, e una rete neurale. Questa architettura, basata solo sull’attenzione, è stata proposta nel 2017. <sup><a href="#ref-8-it">[8]</a></sup></li>
+<li><strong>Logit e campionamento.</strong> L’ultimo strato dà un punteggio a ogni token del vocabolario. La temperatura e i tagli top-k e top-p decidono quanto rischia l’estrazione.</li>
+<li><strong>Cache KV.</strong> Ciò che è già stato letto viene conservato, così ogni nuovo token costa poco. Per questo l’app riusa la chat: a ogni messaggio elabora solo il testo nuovo.</li>
+</ol>
+<p>I <strong>parametri</strong> sono i numeri appresi nell’addestramento: circa 0,6 miliardi in Qwen3 0.6B. Nel file .gguf arrivano <strong>quantizzati</strong>, cioè salvati con meno bit per occupare meno spazio. GGUF è un formato binario pensato per caricare i modelli in fretta, creato dallo stesso autore di llama.cpp. <sup><a href="#ref-2-it">[2]</a></sup> <sup><a href="#ref-11-it">[11]</a></sup> Sulla GPU l’app converte i pesi a 16 bit; sulla CPU, a 8 bit in blocchi di 32 valori.</p>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="baixar-it" aria-labelledby="h-baixar-it">
+<h2 id="h-baixar-it">Dove scaricare modelli .gguf</h2>
+<p>Il posto più comune è <strong>Hugging Face</strong>, un sito che ospita modelli aperti. La sua documentazione spiega che si possono elencare tutti i modelli con file GGUF filtrando per l’etichetta GGUF. <sup><a href="#ref-2-it">[2]</a></sup> Il 15/11/2026 l’elenco contava 221.936 modelli. <sup><a href="#ref-3-it">[3]</a></sup></p>
+<ul>
+<li><a href="https://huggingface.co/models?library=gguf" rel="noopener">huggingface.co/models?library=gguf</a>: tutti i modelli con file .gguf.</li>
+<li><a href="https://huggingface.co/docs/hub/gguf" rel="noopener">huggingface.co/docs/hub/gguf</a>: che cos’è il formato e come compare sul sito.</li>
+</ul>
+<p>Questi tre repository sono stati provati nell’app. Tutti e tre hanno licenza Apache 2.0. <sup><a href="#ref-4-it">[4]</a></sup> <sup><a href="#ref-5-it">[5]</a></sup> <sup><a href="#ref-6-it">[6]</a></sup></p>
+<div class="table-wrap"><table>
+<thead><tr><th>Repository</th><th>File provato</th><th>Dimensione</th><th>Adatto a</th></tr></thead>
+<tbody>
+<tr><td><a href="https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF" rel="noopener">Qwen/Qwen2.5-0.5B-Instruct-GGUF</a></td><td><code>qwen2.5-0.5b-instruct-q4_k_m.gguf</code><br><code>qwen2.5-0.5b-instruct-q2_k.gguf</code></td><td>491 MB<br>415 MB</td><td>iniziare: il più piccolo e il più veloce</td></tr>
+<tr><td><a href="https://huggingface.co/Qwen/Qwen3-0.6B-GGUF" rel="noopener">Qwen/Qwen3-0.6B-GGUF</a></td><td><code>Qwen3-0.6B-Q8_0.gguf</code></td><td>639 MB</td><td>risposte migliori e modalità di ragionamento</td></tr>
+<tr><td><a href="https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF" rel="noopener">TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF</a></td><td><code>tinyllama-1.1b-chat-v1.0.Q4_0.gguf</code></td><td>638 MB</td><td>inglese; architettura llama</td></tr>
+</tbody></table></div>
+<h3>Come scaricare</h3>
+<ol>
+<li>Apri la pagina del repository ed entra nella scheda dei file (<em>Files and versions</em>).</li>
+<li>Scegli <strong>un</strong> file .gguf e fai clic sull’icona di download. Non scaricare tutto il repository: contiene tutte le quantizzazioni, e la pagina di TinyLlama avverte che quasi mai è ciò che si vuole. <sup><a href="#ref-6-it">[6]</a></sup></li>
+<li>Nell’app, fai clic su <strong>Apri file .gguf</strong> e scegli il file scaricato.</li>
+</ol>
+<p>Da riga di comando si può scaricare un solo file con lo strumento di Hugging Face, come mostrano le pagine dei modelli. <sup><a href="#ref-4-it">[4]</a></sup></p>
+<pre class="code"><code>huggingface-cli download Qwen/Qwen2.5-0.5B-Instruct-GGUF qwen2.5-0.5b-instruct-q4_k_m.gguf --local-dir .</code></pre>
+<h3>Come scegliere il file</h3>
+<ul>
+<li><strong>Architettura.</strong> L’app apre modelli <code>llama</code>, <code>mistral</code>, <code>qwen2</code> e <code>qwen3</code>. Se l’architettura non è supportata, lo dice all’apertura del file.</li>
+<li><strong>Quantizzazione.</strong> Il nome del file dice quanti bit per peso: Q8_0 è il più fedele, Q4_K_M è un buon compromesso e Q2_K è il più piccolo e quello che perde di più. L’app accetta F32, F16, BF16, Q4_0, Q4_1, Q5_0, Q5_1, Q8_0, da Q2_K a Q6_K, IQ4_NL e IQ4_XS.</li>
+<li><strong>Dimensione.</strong> Sulla GPU ogni miliardo di parametri occupa circa 2 GB, perché i pesi diventano a 16 bit. I modelli fino a circa 3 miliardi di parametri sono quelli che si adattano meglio.</li>
+<li><strong>File unico.</strong> L’app non apre ancora modelli divisi in più file (<code>-00001-of-00002.gguf</code>) né modelli di visione.</li>
+<li><strong>Licenza.</strong> Ogni modello ha la sua. Leggila prima di usare il modello in un progetto.</li>
+</ul>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="app-it" aria-labelledby="h-app-it">
+<h2 id="h-app-it">Passo passo: parlare</h2>
+<h3>1. Apri il modello</h3>
+<p>Fai clic su <strong>Apri file .gguf</strong>. L’app legge l’intestazione, mostra i dati del modello e carica i pesi, con una barra di avanzamento. In <strong>Dove eseguire</strong>, la modalità Automatico usa la GPU quando c’è WebGPU. Il <strong>Contesto</strong> è la lunghezza massima della chat, in token; più contesto occupa più memoria.</p>
+<figure class="tall">
+<img src="rc_images/LLMModelo-it.png" alt="Riquadro Modello dell’app dopo l’apertura del file di Qwen3: pulsanti Apri file .gguf, Ricarica e Scarica, barra di avanzamento piena, l’avviso di pronto su GPU con la memoria stimata e l’elenco con nome, file, architettura qwen3, 596 milioni di parametri, 28 strati e 16 teste, contesto di addestramento di 40.960 token, quantizzazione Q8_0 e tokenizzatore BPE con 151.936 token. Sotto, le opzioni Dove eseguire, Contesto e Formato della chat, la casella Lascia pensare il modello prima e l’elenco dei modelli provati" width="684" height="1332" loading="lazy">
+<figcaption>I dati del modello, letti dal file stesso.</figcaption>
+</figure>
+<h3>2. Parla</h3>
+<p>Scrivi nel campo in basso e premi <kbd>Invio</kbd> (<kbd>Maiusc</kbd>+<kbd>Invio</kbd> per andare a capo). La risposta compare mentre viene generata. Il pulsante <strong>Ferma</strong> interrompe la generazione e <strong>Nuova chat</strong> cancella la cronologia. Sotto i messaggi, l’app mostra quanti token ha elaborato e a che velocità.</p>
+<p>Il <strong>Formato della chat</strong> viene rilevato dal file: ChatML per Qwen, Zephyr per TinyLlama, Llama 3 e Mistral. Compone la chat con i segni che il modello ha imparato nell’addestramento. Con il formato sbagliato, il modello risponde male.</p>
+<h3>3. Lascia pensare Qwen3</h3>
+<p>Con un modello Qwen3 compare l’opzione <strong>Lascia pensare il modello prima</strong>. Se è attiva, il modello scrive un ragionamento prima della risposta, che l’app mostra a parte, in corsivo. La scheda del modello descrive questa modalità e raccomanda temperatura 0,6, top-p 0,95 e top-k 20; l’app passa a questi valori quando attivi l’opzione. <sup><a href="#ref-7-it">[7]</a></sup> Se è disattivata, la risposta arriva subito e più in fretta.</p>
+<figure>
+<img src="rc_images/LLMPensamento-it.png" alt="Chat con Qwen3 con il ragionamento attivo: l’utente chiede quanto fa 15 moltiplicato per 6; la risposta del modello comincia con un blocco in corsivo, segnato come ragionamento, in cui calcola 15 per 6 in inglese e controlla il risultato, e finisce con la frase 15 moltiplicato per 6 è 90" width="883" height="469" loading="lazy">
+<figcaption>Il ragionamento compare separato dalla risposta. Il modello ragiona in inglese, anche quando risponde in un’altra lingua.</figcaption>
+</figure>
+<h3>4. GPU o CPU</h3>
+<p>Il pulsante rotondo in alto mostra la scheda video trovata. Facendo clic, la finestra <strong>Il tuo computer</strong> mostra ciò che indica il browser: WebGPU, funzionalità della GPU, il blocco di memoria più grande che la GPU accetta, i core del processore e quanti worker usa l’app. Per confrontare, cambia <strong>Dove eseguire</strong> in CPU: il modello viene ricaricato e usa i core del processore.</p>
+<figure>
+<img src="rc_images/LLMComputador-it.png" alt="Finestra Il tuo computer: WebGPU sì; scheda video nvidia, lovelace; funzionalità GPU shader-f16, subgroups e timestamp-query; blocco di memoria GPU più grande 2,15 GB; 28 core logici della CPU; 16 worker usati; memoria indicata dal browser di almeno 32 GB; rete bloccata dalla politica di sicurezza della pagina. Sotto, una nota sull’arrotondamento della memoria e il pulsante Chiudi" width="1464" height="868" loading="lazy">
+<figcaption>Ciò che il browser indica sul computer usato nelle prove.</figcaption>
+</figure>
+<h3>5. Sul cellulare</h3>
+<p>L’app funziona sugli schermi piccoli: la chat compare subito sotto il riquadro del modello e le opzioni di generazione restano in fondo. Per usare la GPU del cellulare, il browser deve offrire WebGPU; senza, l’app usa la CPU, molto più lentamente.</p>
+<figure class="tall">
+<img src="rc_images/LLMCelular-it.png" alt="Schermata di cellulare con il tema scuro e Qwen2.5 caricato: la risposta del modello in un elenco numerato con i titoli dei punti in grassetto. Sotto, i token al secondo, il campo del messaggio e i pulsanti Invia, Ferma e Nuova chat" width="390" height="844" loading="lazy">
+<figcaption>Su uno schermo di 390 pixel, con il tema scuro.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="opcoes-it" aria-labelledby="h-opcoes-it">
+<h2 id="h-opcoes-it">Opzioni di generazione</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Opzione</th><th>Cosa fa</th><th>Predefinito</th></tr></thead>
+<tbody>
+<tr><td>Temperatura</td><td>Sotto 1, l’estrazione è più prudente; sopra, più creativa e più soggetta a errori. A 0, l’app sceglie sempre il token più probabile.</td><td>0,7</td></tr>
+<tr><td>Top-k</td><td>Estrae solo tra i k token più probabili.</td><td>40</td></tr>
+<tr><td>Top-p</td><td>Estrae solo tra i token più probabili che, sommati, arrivano a questa probabilità.</td><td>0,9</td></tr>
+<tr><td>Ripetizione</td><td>Penalizza i token già generati in questa risposta, per evitare ripetizioni. Valori alti disturbano conti ed elenchi.</td><td>1,05</td></tr>
+<tr><td>Token massimi</td><td>Lunghezza massima della risposta.</td><td>512</td></tr>
+<tr><td>Seme</td><td>Con lo stesso seme, la stessa chat e le stesse opzioni, la risposta si ripete.</td><td>42</td></tr>
+<tr><td>Istruzione di sistema</td><td>Testo che guida il modello in tutta la chat, per esempio la lingua della risposta.</td><td>rispondere nella lingua della pagina</td></tr>
+</tbody></table></div>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="treino-it" aria-labelledby="h-treino-it">
+<h2 id="h-treino-it">Passo passo: addestrare un mini-GPT</h2>
+<p>Nella scheda <strong>Addestra un mini-GPT</strong> niente è già pronto. Un piccolo transformer nasce con pesi casuali e impara a prevedere il carattere successivo del testo. Il passo in avanti, la retropropagazione e l’ottimizzatore AdamW, che separa il decadimento dei pesi dal passo del gradiente, girano in kernel WebGPU scritti per l’app. <sup><a href="#ref-10-it">[10]</a></sup> L’addestramento richiede WebGPU.</p>
+<ol>
+<li><strong>Scegli il testo.</strong> L’app ha un breve racconto di esempio in ogni lingua. Puoi incollare un altro testo o aprire un <code>.txt</code>. Il 90% del testo serve all’addestramento e il 10% resta fuori per misurare la validazione.</li>
+<li><strong>Scegli la dimensione.</strong> Strati, larghezza, teste di attenzione, contesto (quanti caratteri il modello vede alla volta), lotto, tasso di apprendimento, passi e seme. L’app mostra il numero di parametri e la memoria stimata.</li>
+<li><strong>Fai clic su Addestra.</strong> Le schede mostrano il passo, la perdita di addestramento, la perdita di validazione, i caratteri al secondo e il tempo per passo. Ogni 250 passi compare un campione di ciò che il modello scrive.</li>
+<li><strong>Genera testo.</strong> Scrivi un inizio e fai clic su <strong>Genera</strong>. Con lo stesso seme, il testo si ripete.</li>
+<li><strong>Salva il modello.</strong> <strong>Salva modello</strong> scarica un file <code>.bin</code>, che <strong>Apri modello</strong> carica in seguito per continuare l’addestramento o generare testo.</li>
+</ol>
+<figure>
+<img src="rc_images/LLMTreino-it.png" alt="Scheda di addestramento dopo 1.000 passi sul testo di esempio, un racconto su un guardiano del faro. Le schede mostrano il passo, una perdita di addestramento vicina a zero, una perdita di validazione intorno a 4, i caratteri al secondo, i millisecondi per passo e una stima dei GFLOP/s. Nel grafico, la linea continua dell’addestramento scende vicino a zero mentre la linea tratteggiata della validazione sale sopra la linea punteggiata del caso. Sotto, il campione e il testo generato a partire da La quarta notte, che ripetono quasi parola per parola il racconto di esempio" width="1280" height="900" loading="lazy">
+<figcaption>Mille passi sul testo di esempio: la perdita di addestramento scende, quella di validazione sale. Il modello ha memorizzato il testo.</figcaption>
+</figure>
+<p>Il grafico mostra il problema più comune di chi addestra: il <strong>sovradattamento</strong>. Il racconto di esempio ha circa 1.400 caratteri, e il modello ha più di 600 mila parametri. Memorizza il testo: la perdita di addestramento arriva vicino a zero, ma quella di validazione, misurata sulla parte che non ha visto, finisce peggio del caso (la linea punteggiata, cioè la perdita di chi tira a indovinare tra tutti i simboli del testo con la stessa probabilità). Il testo generato ripete il racconto quasi parola per parola. Con un testo più grande, di centinaia di migliaia di caratteri, le due perdite scendono insieme più a lungo.</p>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="numeros-it" aria-labelledby="h-numeros-it">
+<h2 id="h-numeros-it">Cosa dicono i numeri</h2>
+<p>Ho misurato caricamento e velocità di ogni modello con il codice dell’app stessa, su un computer con scheda NVIDIA di architettura Lovelace e 28 core logici, usando 16 worker sulla CPU. Ogni caso è stato eseguito tre volte, con una domanda da 31 a 54 token e 64 token generati in modo greedy (sempre il token più probabile); la tabella riporta la mediana. <sup><a href="#ref-1-it">[1]</a></sup></p>
+<div class="table-wrap"><table>
+<thead><tr><th>Modello (file)</th><th>Dimensione</th><th>Caricamento su GPU</th><th>GPU: lettura · generazione</th><th>CPU: lettura · generazione</th></tr></thead>
+<tbody>
+<tr><td>Qwen2.5-0.5B (Q4_K_M)</td><td>491 MB</td><td>1,4 s</td><td>219 · 115 token/s</td><td>17 · 13 token/s</td></tr>
+<tr><td>Qwen2.5-0.5B (Q2_K)</td><td>415 MB</td><td>1,6 s</td><td>220 · 130 token/s</td><td>13 · 10 token/s</td></tr>
+<tr><td>Qwen3-0.6B (Q8_0)</td><td>639 MB</td><td>1,6 s</td><td>160 · 106 token/s</td><td>11 · 9 token/s</td></tr>
+<tr><td>TinyLlama-1.1B (Q4_0)</td><td>638 MB</td><td>1,9 s</td><td>111 · 81 token/s</td><td>6 · 6 token/s</td></tr>
+</tbody></table></div>
+<ul>
+<li><strong>La GPU è stata da circa 9 a 15 volte più veloce della CPU</strong> nella generazione, su questi quattro modelli.</li>
+<li><strong>La dimensione del modello conta più della quantizzazione.</strong> Sulla GPU l’app converte tutto a 16 bit, quindi Qwen2.5 in Q2_K e in Q4_K_M girano quasi alla stessa velocità. TinyLlama, con quasi il doppio dei parametri, è stato il più lento.</li>
+<li><strong>Il mini-GPT di esempio</strong> (608.640 parametri) ha fatto 1.000 passi in 13,9 s, circa 146 mila caratteri al secondo.</li>
+</ul>
+<p>I due motori, GPU e CPU, sono stati confrontati tra loro: con la stessa domanda hanno generato lo stesso testo, e la differenza più grande tra i punteggi dei token è stata 0,23 su una scala di 17,5. La differenza viene dagli 8 bit della CPU contro i 16 bit della GPU.</p>
+<blockquote><p><strong>Cosa non misurano questi numeri.</strong> Sono misure di un solo computer; un’altra scheda video o un altro processore dà altri numeri. La velocità cala nelle chat lunghe, perché l’attenzione rilegge tutto il contesto. E velocità non è qualità: questi piccoli modelli sbagliano spesso i fatti. In una prova, Qwen2.5-0.5B ha detto che la capitale del Brasile è San Paolo.</p></blockquote>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="dicas-it" aria-labelledby="h-dicas-it">
+<h2 id="h-dicas-it">Consigli</h2>
+<ol>
+<li><strong>Comincia dal modello più piccolo.</strong> Qwen2.5-0.5B in Q4_K_M si carica in poco più di un secondo e mostra già come funziona tutto.</li>
+<li><strong>Chiedi la lingua nell’istruzione di sistema.</strong> I modelli piccoli tendono a rispondere in inglese.</li>
+<li><strong>Usa una temperatura bassa per fatti e conti</strong> e più alta per i testi creativi.</li>
+<li><strong>Riduci il contesto se la GPU si blocca.</strong> La cache dell’attenzione cresce con il contesto scelto.</li>
+<li><strong>Per addestrare, usa un testo grande.</strong> Un libro di pubblico dominio in <code>.txt</code> rende molto più del racconto di esempio; aumenta i passi e segui la perdita di validazione.</li>
+<li><strong>Ferma l’addestramento quando la validazione sale.</strong> Da lì in poi il modello memorizza soltanto.</li>
+</ol>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="erros-it" aria-labelledby="h-erros-it">
+<h2 id="h-erros-it">Errori comuni</h2>
+<ul class="myths">
+<li><h3>“Se gira sul mio computer, è buono come gli assistenti online.”</h3><p>No. I modelli che stanno qui hanno meno di un miliardo di parametri e sbagliano spesso i fatti. Servono per studiare, sperimentare e compiti semplici.</p></li>
+<li><h3>“Devo scaricare tutto il repository.”</h3><p>Scarica un solo file .gguf. Il repository contiene diverse quantizzazioni dello stesso modello, e ognuna occupa centinaia di megabyte.</p></li>
+<li><h3>“Una quantizzazione più piccola è sempre più veloce.”</h3><p>Nell’app la GPU converte i pesi a 16 bit, quindi la quantizzazione cambia la dimensione del download, non la velocità. Conta il numero di parametri.</p></li>
+<li><h3>“Perdita di addestramento vicina a zero significa modello buono.”</h3><p>Può significare solo che il modello ha memorizzato il testo. Guarda la perdita di validazione.</p></li>
+<li><h3>“Il modello viene inviato a un server.”</h3><p>No. La pagina blocca le connessioni di rete e il file viene letto dal tuo disco.</p></li>
+</ul>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="revisao-it" aria-labelledby="h-revisao-it">
+<h2 id="h-revisao-it">Ripasso rapido</h2>
+<div class="quiz">
+<details><summary>1. Dove si trovano modelli nel formato .gguf?</summary><p>Su Hugging Face, filtrando per l’etichetta GGUF: huggingface.co/models?library=gguf.</p></details>
+<details><summary>2. Quali architetture apre l’app?</summary><p>llama, mistral, qwen2 e qwen3.</p></details>
+<details><summary>3. Che cos’è un token?</summary><p>Un pezzo di parola che il tokenizzatore sostituisce con un numero. Il modello prevede un token alla volta.</p></details>
+<details><summary>4. A cosa serve la cache KV?</summary><p>Conserva ciò che il modello ha già letto, così ogni nuovo token costa poco e l’app elabora solo il testo nuovo di ogni messaggio.</p></details>
+<details><summary>5. Che cosa fa la temperatura 0?</summary><p>L’app sceglie sempre il token più probabile: la risposta diventa deterministica.</p></details>
+<details><summary>6. Di quanto la GPU è stata più veloce della CPU nelle misure?</summary><p>Da circa 9 a 15 volte nella generazione, sui quattro modelli provati.</p></details>
+<details><summary>7. Che cosa indica la perdita di validazione che sale mentre quella di addestramento scende?</summary><p>Sovradattamento: il modello memorizza il testo invece di imparare schemi generali.</p></details>
+<details><summary>8. L’app invia il modello o la chat a internet?</summary><p>No. La politica di sicurezza della pagina blocca la rete.</p></details>
+</div>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+
+<section id="referencias-it" aria-labelledby="h-referencias-it">
+<h2 id="h-referencias-it">Riferimenti</h2>
+<ol class="refs">
+<li id="ref-1-it"><strong>Giovani Perotto Mesquita</strong>, “LLM Locale”, app di questo sito, <a href="llm-local.html#it">giovanipm.github.io/llm-local.html</a>. Le schermate sono state fatte usando l’app con clic e tastiera; le misure di velocità usano lo stesso codice dei motori, tre esecuzioni per caso.</li>
+<li id="ref-2-it"><strong>Hugging Face</strong>, “GGUF”, documentazione dell’Hub, consultato il 15/11/2026, <a href="https://huggingface.co/docs/hub/gguf" rel="noopener">huggingface.co/docs/hub/gguf</a>. Definizione del formato, autore e filtro GGUF.</li>
+<li id="ref-3-it"><strong>Hugging Face</strong>, “Models compatible with the GGUF library”, consultato il 15/11/2026, <a href="https://huggingface.co/models?library=gguf" rel="noopener">huggingface.co/models?library=gguf</a>. 221.936 modelli elencati alla data della consultazione.</li>
+<li id="ref-4-it"><strong>Qwen</strong>, “Qwen2.5-0.5B-Instruct-GGUF”, consultato il 15/11/2026, <a href="https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF" rel="noopener">huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF</a>. Licenza Apache 2.0 e comando per scaricare un solo file.</li>
+<li id="ref-5-it"><strong>Qwen</strong>, “Qwen3-0.6B-GGUF”, consultato il 15/11/2026, <a href="https://huggingface.co/Qwen/Qwen3-0.6B-GGUF" rel="noopener">huggingface.co/Qwen/Qwen3-0.6B-GGUF</a>. Licenza Apache 2.0; file Q8_0 da 639 MB.</li>
+<li id="ref-6-it"><strong>TheBloke</strong>, “TinyLlama-1.1B-Chat-v1.0-GGUF”, consultato il 15/11/2026, <a href="https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF" rel="noopener">huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF</a>. Licenza Apache 2.0 e l’avviso di non clonare tutto il repository.</li>
+<li id="ref-7-it"><strong>Qwen</strong>, “Qwen3-0.6B”, scheda del modello, consultato il 15/11/2026, <a href="https://huggingface.co/Qwen/Qwen3-0.6B" rel="noopener">huggingface.co/Qwen/Qwen3-0.6B</a>. Modalità con e senza ragionamento e parametri di campionamento raccomandati (senza ragionamento, la scheda suggerisce temperatura 0,7, top-p 0,8 e top-k 20). La pagina indica 0,6 miliardi di parametri nel testo e 0,8 miliardi nei metadati.</li>
+<li id="ref-8-it"><strong>Ashish Vaswani et al.</strong>, “Attention Is All You Need”, 2017, <a href="https://arxiv.org/abs/1706.03762" rel="noopener">arxiv.org/abs/1706.03762</a>. Il transformer, basato solo su meccanismi di attenzione.</li>
+<li id="ref-9-it"><strong>W3C</strong>, “WebGPU”, Candidate Recommendation Draft del 15/09/2026, consultato il 15/11/2026, <a href="https://www.w3.org/TR/webgpu/" rel="noopener">w3.org/TR/webgpu</a>. Interfaccia per rendering e calcolo sulla GPU.</li>
+<li id="ref-10-it"><strong>Ilya Loshchilov e Frank Hutter</strong>, “Decoupled Weight Decay Regularization”, 2017, ICLR 2019, <a href="https://arxiv.org/abs/1711.05101" rel="noopener">arxiv.org/abs/1711.05101</a>. L’ottimizzatore AdamW.</li>
+<li id="ref-11-it"><strong>ggml-org</strong>, “llama.cpp: LLM inference in C/C++”, consultato il 15/11/2026, <a href="https://github.com/ggml-org/llama.cpp" rel="noopener">github.com/ggml-org/llama.cpp</a>.</li>
+</ol>
+<a class="back" href="#top">↑ Torna all’inizio</a>
+</section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== ES ===================== -->
+<div id="es" role="tabpanel" aria-labelledby="tab-es" lang="es" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html#es" data-projects>← Proyectos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>LLM Local: modelos de lenguaje en tu ordenador</h1>
+      <p class="dek">Cómo conversar con un modelo de lenguaje que se ejecuta en tu tarjeta gráfica o en los núcleos del procesador, dónde descargar modelos en formato .gguf, cómo entrenar un mini-GPT desde cero en el navegador y qué muestran las mediciones de velocidad.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado el <time datetime="2026-11-15">15/11/2026</time></span>
+        <span class="credit">Revisado y formateado usando Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-es">
+    <h2 id="toc-es">Índice</h2>
+    <ol>
+      <li><a href="#intro-es">La app</a></li>
+      <li><a href="#llm-es">Cómo responde un modelo de lenguaje</a></li>
+      <li><a href="#baixar-es">Dónde descargar modelos .gguf</a></li>
+      <li><a href="#app-es">Paso a paso: conversar</a></li>
+      <li><a href="#opcoes-es">Opciones de generación</a></li>
+      <li><a href="#treino-es">Paso a paso: entrenar un mini-GPT</a></li>
+      <li><a href="#numeros-es">Lo que dicen los números</a></li>
+      <li><a href="#dicas-es">Consejos</a></li>
+      <li><a href="#erros-es">Errores comunes</a></li>
+      <li><a href="#revisao-es">Repaso rápido</a></li>
+      <li><a href="#referencias-es">Referencias</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-es" aria-labelledby="h-intro-es">
+<h2 id="h-intro-es">La app</h2>
+<p>LLM Local es una página única que hace dos cosas sin enviar nada a internet: <sup><a href="#ref-1-es">[1]</a></sup></p>
+<ul>
+<li><strong>Conversar con un modelo de lenguaje</strong> que descargaste una vez, en formato <strong>.gguf</strong>. El modelo se ejecuta en la tarjeta gráfica con WebGPU o, sin ella, en varios núcleos del procesador.</li>
+<li><strong>Entrenar un mini-GPT desde cero</strong>, un modelo pequeño que aprende a predecir el siguiente carácter de un texto que eliges, y ver el aprendizaje en un gráfico.</li>
+</ul>
+<p>WebGPU es la interfaz de los navegadores para hacer cálculos en la tarjeta gráfica. <sup><a href="#ref-9-es">[9]</a></sup> La página prohíbe las conexiones de red mediante su propia política de seguridad: el archivo del modelo se lee del disco y se queda en el ordenador.</p>
+<p><a class="launch" href="llm-local.html#es">Abrir la app <span aria-hidden="true">→</span></a></p>
+<figure>
+<img src="rc_images/LLMConversa-es.png" alt="Pantalla de la app con el modelo Qwen3 0.6B cargado. A la izquierda, la caja Modelo con los botones Abrir archivo .gguf, Recargar y Descargar, el aviso de listo en la GPU con la memoria estimada y los datos del modelo: nombre, archivo, arquitectura qwen3, parámetros, capas, contexto de entrenamiento, cuantización Q8_0 y tokenizador BPE. A la derecha, una conversación: el usuario pide tres consejos breves para estudiar mejor, el modelo responde con una lista de tres puntos, el usuario pide un resumen en una frase y el modelo resume. Abajo, los tokens de entrada y generados por segundo y el contexto usado" width="1280" height="900" loading="lazy">
+<figcaption>Una conversación con Qwen3 0.6B en la GPU.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="llm-es" aria-labelledby="h-llm-es">
+<h2 id="h-llm-es">Cómo responde un modelo de lenguaje</h2>
+<p>Un modelo de lenguaje no busca respuestas hechas. Recibe un texto y calcula, para cada trozo de palabra que conoce, una puntuación de lo probable que es que venga después. Se sortea uno de esos trozos, se añade al texto, y el proceso se repite hasta que termina la respuesta.</p>
+<figure>
+<img src="rc_images/LLMFluxo-es.svg" alt="Diagrama con cinco cajas unidas por flechas, de izquierda a derecha: Texto, la conversación armada en el formato del modelo; Tokenizador, que convierte el texto en números; Transformer, con N capas de atención y MLP; Logits, una puntuación para cada token; y Muestreo, con temperatura, top-k y top-p. Una flecha vuelve del Muestreo al Texto: el token sorteado se vuelve texto en pantalla y vuelve a entrar. Arriba, el archivo .gguf entrega pesos, vocabulario y metadatos al tokenizador y al transformer. Debajo del transformer, la caché KV guarda lo que ya se leyó. Abajo: se ejecuta en la GPU, con WebGPU y pesos de 16 bits, o en la CPU, con workers y pesos de 8 bits." width="1000" height="520" loading="lazy">
+<figcaption>El camino de cada token: del texto al muestreo, y de vuelta al principio.</figcaption>
+</figure>
+<ol>
+<li><strong>Tokens.</strong> El tokenizador corta el texto en trozos, los tokens, y cambia cada uno por un número. Qwen conoce 151.936 tokens; TinyLlama, 32.000.</li>
+<li><strong>Transformer.</strong> Los números pasan por decenas de capas. Cada capa tiene una etapa de atención, que decide qué partes del texto importan para la siguiente palabra, y una red neuronal. Esta arquitectura, basada solo en la atención, se propuso en 2017. <sup><a href="#ref-8-es">[8]</a></sup></li>
+<li><strong>Logits y muestreo.</strong> La última capa da una puntuación a cada token del vocabulario. La temperatura y los cortes top-k y top-p deciden cuánto arriesga el sorteo.</li>
+<li><strong>Caché KV.</strong> Lo que ya se leyó se guarda, así que cada token nuevo cuesta poco. Por eso la app reaprovecha la conversación: en cada mensaje solo se procesa el texto nuevo.</li>
+</ol>
+<p>Los <strong>parámetros</strong> son los números aprendidos en el entrenamiento: unos 0,6 mil millones en Qwen3 0.6B. En el archivo .gguf vienen <strong>cuantizados</strong>, es decir, guardados con menos bits para ocupar menos espacio. GGUF es un formato binario pensado para cargar modelos rápido, creado por el mismo autor de llama.cpp. <sup><a href="#ref-2-es">[2]</a></sup> <sup><a href="#ref-11-es">[11]</a></sup> En la GPU, la app convierte los pesos a 16 bits; en la CPU, a 8 bits en bloques de 32 valores.</p>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="baixar-es" aria-labelledby="h-baixar-es">
+<h2 id="h-baixar-es">Dónde descargar modelos .gguf</h2>
+<p>El lugar más habitual es <strong>Hugging Face</strong>, un sitio que aloja modelos abiertos. Su documentación explica que se pueden listar todos los modelos con archivos GGUF filtrando por la etiqueta GGUF. <sup><a href="#ref-2-es">[2]</a></sup> El 15/11/2026, esa lista tenía 221.936 modelos. <sup><a href="#ref-3-es">[3]</a></sup></p>
+<ul>
+<li><a href="https://huggingface.co/models?library=gguf" rel="noopener">huggingface.co/models?library=gguf</a>: todos los modelos con archivos .gguf.</li>
+<li><a href="https://huggingface.co/docs/hub/gguf" rel="noopener">huggingface.co/docs/hub/gguf</a>: qué es el formato y cómo aparece en el sitio.</li>
+</ul>
+<p>Estos tres repositorios se probaron en la app. Los tres tienen licencia Apache 2.0. <sup><a href="#ref-4-es">[4]</a></sup> <sup><a href="#ref-5-es">[5]</a></sup> <sup><a href="#ref-6-es">[6]</a></sup></p>
+<div class="table-wrap"><table>
+<thead><tr><th>Repositorio</th><th>Archivo probado</th><th>Tamaño</th><th>Bueno para</th></tr></thead>
+<tbody>
+<tr><td><a href="https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF" rel="noopener">Qwen/Qwen2.5-0.5B-Instruct-GGUF</a></td><td><code>qwen2.5-0.5b-instruct-q4_k_m.gguf</code><br><code>qwen2.5-0.5b-instruct-q2_k.gguf</code></td><td>491 MB<br>415 MB</td><td>empezar: el más pequeño y rápido</td></tr>
+<tr><td><a href="https://huggingface.co/Qwen/Qwen3-0.6B-GGUF" rel="noopener">Qwen/Qwen3-0.6B-GGUF</a></td><td><code>Qwen3-0.6B-Q8_0.gguf</code></td><td>639 MB</td><td>mejores respuestas y modo de razonamiento</td></tr>
+<tr><td><a href="https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF" rel="noopener">TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF</a></td><td><code>tinyllama-1.1b-chat-v1.0.Q4_0.gguf</code></td><td>638 MB</td><td>inglés; arquitectura llama</td></tr>
+</tbody></table></div>
+<h3>Cómo descargar</h3>
+<ol>
+<li>Abre la página del repositorio y entra en la pestaña de archivos (<em>Files and versions</em>).</li>
+<li>Elige <strong>un</strong> archivo .gguf y haz clic en el icono de descarga. No descargues el repositorio entero: trae todas las cuantizaciones, y la página de TinyLlama avisa de que casi nunca es lo que se quiere. <sup><a href="#ref-6-es">[6]</a></sup></li>
+<li>En la app, haz clic en <strong>Abrir archivo .gguf</strong> y elige el archivo descargado.</li>
+</ol>
+<p>Desde la línea de comandos se puede descargar un solo archivo con la herramienta de Hugging Face, como muestran las páginas de los modelos. <sup><a href="#ref-4-es">[4]</a></sup></p>
+<pre class="code"><code>huggingface-cli download Qwen/Qwen2.5-0.5B-Instruct-GGUF qwen2.5-0.5b-instruct-q4_k_m.gguf --local-dir .</code></pre>
+<h3>Cómo elegir el archivo</h3>
+<ul>
+<li><strong>Arquitectura.</strong> La app abre modelos <code>llama</code>, <code>mistral</code>, <code>qwen2</code> y <code>qwen3</code>. Si la arquitectura no se admite, lo avisa al abrir el archivo.</li>
+<li><strong>Cuantización.</strong> El nombre del archivo indica cuántos bits por peso: Q8_0 es el más fiel, Q4_K_M es un buen término medio y Q2_K es el más pequeño y el que más pierde. La app acepta F32, F16, BF16, Q4_0, Q4_1, Q5_0, Q5_1, Q8_0, de Q2_K a Q6_K, IQ4_NL e IQ4_XS.</li>
+<li><strong>Tamaño.</strong> En la GPU, cada mil millones de parámetros ocupa unos 2 GB, porque los pesos pasan a 16 bits. Los modelos de hasta unos 3 mil millones de parámetros son los que mejor caben.</li>
+<li><strong>Archivo único.</strong> La app aún no abre modelos divididos en varios archivos (<code>-00001-of-00002.gguf</code>) ni modelos de visión.</li>
+<li><strong>Licencia.</strong> Cada modelo tiene la suya. Léela antes de usar el modelo en un proyecto.</li>
+</ul>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="app-es" aria-labelledby="h-app-es">
+<h2 id="h-app-es">Paso a paso: conversar</h2>
+<h3>1. Abre el modelo</h3>
+<p>Haz clic en <strong>Abrir archivo .gguf</strong>. La app lee la cabecera, muestra los datos del modelo y carga los pesos, con una barra de progreso. En <strong>Dónde ejecutar</strong>, el modo Automático usa la GPU cuando hay WebGPU. El <strong>Contexto</strong> es la longitud máxima de la conversación, en tokens; más contexto ocupa más memoria.</p>
+<figure class="tall">
+<img src="rc_images/LLMModelo-es.png" alt="Caja Modelo de la app después de abrir el archivo de Qwen3: botones Abrir archivo .gguf, Recargar y Descargar, barra de progreso llena, el aviso de listo en la GPU con la memoria estimada y la lista con nombre, archivo, arquitectura qwen3, 596 millones de parámetros, 28 capas y 16 cabezas, contexto de entrenamiento de 40.960 tokens, cuantización Q8_0 y tokenizador BPE con 151.936 tokens. Debajo, las opciones Dónde ejecutar, Contexto y Formato de la conversación, la casilla Dejar que el modelo piense antes y la lista de modelos probados" width="684" height="1458" loading="lazy">
+<figcaption>Los datos del modelo, leídos del propio archivo.</figcaption>
+</figure>
+<h3>2. Conversa</h3>
+<p>Escribe en el campo de abajo y pulsa <kbd>Intro</kbd> (<kbd>Mayús</kbd>+<kbd>Intro</kbd> para una nueva línea). La respuesta aparece mientras se genera. El botón <strong>Parar</strong> interrumpe la generación y <strong>Nueva conversación</strong> borra el historial. Debajo de los mensajes, la app muestra cuántos tokens procesó y a qué velocidad.</p>
+<p>El <strong>Formato de la conversación</strong> se detecta en el archivo: ChatML para Qwen, Zephyr para TinyLlama, Llama 3 y Mistral. Arma la conversación con las marcas que el modelo aprendió en el entrenamiento. Con el formato equivocado, el modelo responde mal.</p>
+<h3>3. Deja pensar a Qwen3</h3>
+<p>Con un modelo Qwen3 aparece la opción <strong>Dejar que el modelo piense antes</strong>. Activada, el modelo escribe un razonamiento antes de la respuesta, que la app muestra aparte, en cursiva. La ficha del modelo describe este modo y recomienda temperatura 0,6, top-p 0,95 y top-k 20; la app cambia a esos valores al activar la opción. <sup><a href="#ref-7-es">[7]</a></sup> Desactivada, la respuesta sale directamente y más rápido.</p>
+<figure>
+<img src="rc_images/LLMPensamento-es.png" alt="Conversación con Qwen3 con el razonamiento activado: el usuario pregunta cuánto es 15 multiplicado por 6; la respuesta del modelo empieza con un bloque en cursiva, marcado como razonamiento, en el que calcula 15 por 6 en inglés y comprueba el resultado, y termina con la frase 15 multiplicado por 6 es 90" width="883" height="320" loading="lazy">
+<figcaption>El razonamiento aparece separado de la respuesta. El modelo razona en inglés, aunque responda en otro idioma.</figcaption>
+</figure>
+<h3>4. GPU o CPU</h3>
+<p>El botón redondo de arriba muestra la tarjeta gráfica encontrada. Al hacer clic, la ventana <strong>Tu ordenador</strong> muestra lo que indica el navegador: WebGPU, funciones de la GPU, el mayor bloque de memoria que acepta la GPU, los núcleos del procesador y cuántos workers usa la app. Para comparar, cambia <strong>Dónde ejecutar</strong> a CPU: el modelo se recarga y pasa a usar los núcleos del procesador.</p>
+<figure>
+<img src="rc_images/LLMComputador-es.png" alt="Ventana Tu ordenador: WebGPU sí; tarjeta gráfica nvidia, lovelace; funciones de la GPU shader-f16, subgroups y timestamp-query; mayor bloque de memoria GPU 2,15 GB; 28 núcleos lógicos de la CPU; 16 workers usados; memoria indicada por el navegador de al menos 32 GB; red bloqueada por la política de seguridad de la página. Debajo, una nota sobre el redondeo de la memoria y el botón Cerrar" width="1464" height="868" loading="lazy">
+<figcaption>Lo que el navegador indica sobre el ordenador usado en las pruebas.</figcaption>
+</figure>
+<h3>5. En el móvil</h3>
+<p>La app funciona en pantallas pequeñas: la conversación aparece justo debajo de la caja del modelo y las opciones de generación quedan abajo. Para usar la GPU del móvil, el navegador debe ofrecer WebGPU; sin él, la app usa la CPU, mucho más despacio.</p>
+<figure class="tall">
+<img src="rc_images/LLMCelular-es.png" alt="Pantalla de móvil con el tema oscuro y Qwen2.5 cargado: la pregunta pidiendo tres consejos para estudiar mejor y la respuesta del modelo en una lista numerada. Debajo, los tokens por segundo, el campo del mensaje y los botones Enviar, Parar y Nueva conversación" width="390" height="844" loading="lazy">
+<figcaption>En una pantalla de 390 píxeles, con el tema oscuro.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="opcoes-es" aria-labelledby="h-opcoes-es">
+<h2 id="h-opcoes-es">Opciones de generación</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Opción</th><th>Qué hace</th><th>Por defecto</th></tr></thead>
+<tbody>
+<tr><td>Temperatura</td><td>Por debajo de 1, el sorteo es más conservador; por encima, más creativo y más propenso a errores. En 0, la app elige siempre el token más probable.</td><td>0,7</td></tr>
+<tr><td>Top-k</td><td>Sortea solo entre los k tokens más probables.</td><td>40</td></tr>
+<tr><td>Top-p</td><td>Sortea solo entre los tokens más probables que, sumados, llegan a esa probabilidad.</td><td>0,9</td></tr>
+<tr><td>Repetición</td><td>Penaliza los tokens que el modelo ya generó en esta respuesta, para evitar repeticiones. Los valores altos estorban en cuentas y listas.</td><td>1,05</td></tr>
+<tr><td>Máx. de tokens</td><td>Longitud máxima de la respuesta.</td><td>512</td></tr>
+<tr><td>Semilla</td><td>Con la misma semilla, la misma conversación y las mismas opciones, la respuesta se repite.</td><td>42</td></tr>
+<tr><td>Instrucción de sistema</td><td>Texto que orienta al modelo durante toda la conversación, por ejemplo el idioma de la respuesta.</td><td>responder en el idioma de la página</td></tr>
+</tbody></table></div>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="treino-es" aria-labelledby="h-treino-es">
+<h2 id="h-treino-es">Paso a paso: entrenar un mini-GPT</h2>
+<p>En la pestaña <strong>Entrenar un mini-GPT</strong>, nada viene hecho. Un transformer pequeño nace con pesos aleatorios y aprende a predecir el siguiente carácter del texto. El paso hacia delante, la retropropagación y el optimizador AdamW, que separa el decaimiento de los pesos del paso del gradiente, se ejecutan en kernels WebGPU escritos para la app. <sup><a href="#ref-10-es">[10]</a></sup> El entrenamiento necesita WebGPU.</p>
+<ol>
+<li><strong>Elige el texto.</strong> La app trae un cuento corto de ejemplo en cada idioma. Puedes pegar otro texto o abrir un <code>.txt</code>. El 90% del texto se usa para entrenar y el 10% queda fuera para medir la validación.</li>
+<li><strong>Elige el tamaño.</strong> Capas, anchura, cabezas de atención, contexto (cuántos caracteres ve el modelo a la vez), lote, tasa de aprendizaje, pasos y semilla. La app muestra el número de parámetros y la memoria estimada.</li>
+<li><strong>Haz clic en Entrenar.</strong> Las tarjetas muestran el paso, la pérdida de entrenamiento, la pérdida de validación, los caracteres por segundo y el tiempo por paso. Cada 250 pasos aparece una muestra de lo que escribe el modelo.</li>
+<li><strong>Genera texto.</strong> Escribe un comienzo y haz clic en <strong>Generar</strong>. Con la misma semilla, el texto se repite.</li>
+<li><strong>Guarda el modelo.</strong> <strong>Guardar modelo</strong> descarga un archivo <code>.bin</code>, que <strong>Abrir modelo</strong> carga después para seguir entrenando o generar texto.</li>
+</ol>
+<figure>
+<img src="rc_images/LLMTreino-es.png" alt="Pestaña de entrenamiento después de 1.000 pasos con el texto de ejemplo, un cuento sobre un farero. Las tarjetas muestran el paso, una pérdida de entrenamiento cercana a cero, una pérdida de validación en torno a 4, los caracteres por segundo, los milisegundos por paso y una estimación de GFLOP/s. En el gráfico, la línea continua del entrenamiento baja casi a cero mientras la línea discontinua de la validación sube por encima de la línea punteada del azar. Debajo, la muestra y el texto generado a partir de La cuarta noche, que repiten casi palabra por palabra el cuento de ejemplo" width="1280" height="900" loading="lazy">
+<figcaption>Mil pasos con el texto de ejemplo: la pérdida de entrenamiento baja y la de validación sube. El modelo memorizó el texto.</figcaption>
+</figure>
+<p>El gráfico muestra el problema más común al entrenar: el <strong>sobreajuste</strong>. El cuento de ejemplo tiene unos 1.450 caracteres, y el modelo tiene más de 600 mil parámetros. Memoriza el texto: la pérdida de entrenamiento llega casi a cero, pero la de validación, medida en la parte que no vio, acaba peor que el azar (la línea punteada, que es la pérdida de adivinar entre todos los símbolos del texto con la misma probabilidad). El texto generado repite el cuento casi palabra por palabra. Con un texto mayor, de cientos de miles de caracteres, las dos pérdidas bajan juntas durante más tiempo.</p>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="numeros-es" aria-labelledby="h-numeros-es">
+<h2 id="h-numeros-es">Lo que dicen los números</h2>
+<p>Medí la carga y la velocidad de cada modelo con el código de la propia app, en un ordenador con tarjeta NVIDIA de arquitectura Lovelace y 28 núcleos lógicos, usando 16 workers en la CPU. Cada caso se ejecutó tres veces, con una pregunta de 31 a 54 tokens y 64 tokens generados en modo voraz (siempre el token más probable); la tabla muestra la mediana. <sup><a href="#ref-1-es">[1]</a></sup></p>
+<div class="table-wrap"><table>
+<thead><tr><th>Modelo (archivo)</th><th>Tamaño</th><th>Carga en la GPU</th><th>GPU: lectura · generación</th><th>CPU: lectura · generación</th></tr></thead>
+<tbody>
+<tr><td>Qwen2.5-0.5B (Q4_K_M)</td><td>491 MB</td><td>1,4 s</td><td>219 · 115 tokens/s</td><td>17 · 13 tokens/s</td></tr>
+<tr><td>Qwen2.5-0.5B (Q2_K)</td><td>415 MB</td><td>1,6 s</td><td>220 · 130 tokens/s</td><td>13 · 10 tokens/s</td></tr>
+<tr><td>Qwen3-0.6B (Q8_0)</td><td>639 MB</td><td>1,6 s</td><td>160 · 106 tokens/s</td><td>11 · 9 tokens/s</td></tr>
+<tr><td>TinyLlama-1.1B (Q4_0)</td><td>638 MB</td><td>1,9 s</td><td>111 · 81 tokens/s</td><td>6 · 6 tokens/s</td></tr>
+</tbody></table></div>
+<ul>
+<li><strong>La GPU fue entre unas 9 y 15 veces más rápida que la CPU</strong> en la generación, en estos cuatro modelos.</li>
+<li><strong>El tamaño del modelo pesa más que la cuantización.</strong> En la GPU, la app convierte todo a 16 bits, así que Qwen2.5 en Q2_K y en Q4_K_M van casi a la misma velocidad. TinyLlama, con casi el doble de parámetros, fue el más lento.</li>
+<li><strong>El mini-GPT de ejemplo</strong> (608.640 parámetros) entrenó 1.000 pasos en 13,9 s, unos 146 mil caracteres por segundo.</li>
+</ul>
+<p>Los dos motores, GPU y CPU, se compararon entre sí: con la misma pregunta generaron el mismo texto, y la mayor diferencia entre las puntuaciones de los tokens fue de 0,23 en una escala de 17,5. La diferencia viene de los 8 bits de la CPU frente a los 16 bits de la GPU.</p>
+<blockquote><p><strong>Lo que estas cifras no miden.</strong> Son medidas de un único ordenador; otra tarjeta gráfica u otro procesador dan otras cifras. La velocidad baja en conversaciones largas, porque la atención relee todo el contexto. Y velocidad no es calidad: estos modelos pequeños se equivocan a menudo con los hechos. En una prueba, Qwen2.5-0.5B dijo que la capital de Brasil es São Paulo.</p></blockquote>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="dicas-es" aria-labelledby="h-dicas-es">
+<h2 id="h-dicas-es">Consejos</h2>
+<ol>
+<li><strong>Empieza por el modelo más pequeño.</strong> Qwen2.5-0.5B en Q4_K_M carga en poco más de un segundo y ya muestra cómo funciona todo.</li>
+<li><strong>Pide el idioma en la instrucción de sistema.</strong> Los modelos pequeños tienden a responder en inglés.</li>
+<li><strong>Usa temperatura baja para hechos y cuentas</strong> y más alta para textos creativos.</li>
+<li><strong>Reduce el contexto si la GPU se bloquea.</strong> La caché de atención crece con el contexto elegido.</li>
+<li><strong>Para entrenar, usa un texto grande.</strong> Un libro de dominio público en <code>.txt</code> rinde mucho más que el cuento de ejemplo; aumenta los pasos y sigue la pérdida de validación.</li>
+<li><strong>Detén el entrenamiento cuando suba la validación.</strong> A partir de ahí, el modelo solo memoriza.</li>
+</ol>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="erros-es" aria-labelledby="h-erros-es">
+<h2 id="h-erros-es">Errores comunes</h2>
+<ul class="myths">
+<li><h3>«Si funciona en mi ordenador, es tan bueno como los asistentes en línea.»</h3><p>No. Los modelos que caben aquí tienen menos de mil millones de parámetros y se equivocan a menudo con los hechos. Sirven para estudiar, experimentar y tareas sencillas.</p></li>
+<li><h3>«Tengo que descargar el repositorio entero.»</h3><p>Descarga un solo archivo .gguf. El repositorio trae varias cuantizaciones del mismo modelo, y cada una ocupa cientos de megabytes.</p></li>
+<li><h3>«Una cuantización más pequeña siempre es más rápida.»</h3><p>En la app, la GPU convierte los pesos a 16 bits, así que la cuantización cambia el tamaño de la descarga, no la velocidad. Lo que pesa es el número de parámetros.</p></li>
+<li><h3>«Pérdida de entrenamiento cercana a cero significa buen modelo.»</h3><p>Puede significar solo que memorizó el texto. Mira la pérdida de validación.</p></li>
+<li><h3>«El modelo se envía a algún servidor.»</h3><p>No. La página bloquea las conexiones de red y el archivo se lee de tu disco.</p></li>
+</ul>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="revisao-es" aria-labelledby="h-revisao-es">
+<h2 id="h-revisao-es">Repaso rápido</h2>
+<div class="quiz">
+<details><summary>1. ¿Dónde encontrar modelos en formato .gguf?</summary><p>En Hugging Face, filtrando por la etiqueta GGUF: huggingface.co/models?library=gguf.</p></details>
+<details><summary>2. ¿Qué arquitecturas abre la app?</summary><p>llama, mistral, qwen2 y qwen3.</p></details>
+<details><summary>3. ¿Qué es un token?</summary><p>Un trozo de palabra que el tokenizador cambia por un número. El modelo predice un token cada vez.</p></details>
+<details><summary>4. ¿Para qué sirve la caché KV?</summary><p>Guarda lo que el modelo ya leyó, para que cada token nuevo cueste poco y la app solo procese el texto nuevo de cada mensaje.</p></details>
+<details><summary>5. ¿Qué hace la temperatura 0?</summary><p>La app elige siempre el token más probable: la respuesta se vuelve determinista.</p></details>
+<details><summary>6. ¿Cuánto más rápida fue la GPU que la CPU en las mediciones?</summary><p>Entre unas 9 y 15 veces en la generación, en los cuatro modelos probados.</p></details>
+<details><summary>7. ¿Qué indica una pérdida de validación que sube mientras la de entrenamiento baja?</summary><p>Sobreajuste: el modelo memoriza el texto en lugar de aprender patrones generales.</p></details>
+<details><summary>8. ¿La app envía el modelo o la conversación a internet?</summary><p>No. La política de seguridad de la página bloquea la red.</p></details>
+</div>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+
+<section id="referencias-es" aria-labelledby="h-referencias-es">
+<h2 id="h-referencias-es">Referencias</h2>
+<ol class="refs">
+<li id="ref-1-es"><strong>Giovani Perotto Mesquita</strong>, «LLM Local», app de este sitio, <a href="llm-local.html#es">giovanipm.github.io/llm-local.html</a>. Las capturas se hicieron usando la app con clics y teclado; las mediciones de velocidad usan el mismo código de los motores, tres ejecuciones por caso.</li>
+<li id="ref-2-es"><strong>Hugging Face</strong>, «GGUF», documentación del Hub, consultado el 15/11/2026, <a href="https://huggingface.co/docs/hub/gguf" rel="noopener">huggingface.co/docs/hub/gguf</a>. Definición del formato, autoría y filtro GGUF.</li>
+<li id="ref-3-es"><strong>Hugging Face</strong>, «Models compatible with the GGUF library», consultado el 15/11/2026, <a href="https://huggingface.co/models?library=gguf" rel="noopener">huggingface.co/models?library=gguf</a>. 221.936 modelos listados en la fecha de consulta.</li>
+<li id="ref-4-es"><strong>Qwen</strong>, «Qwen2.5-0.5B-Instruct-GGUF», consultado el 15/11/2026, <a href="https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF" rel="noopener">huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF</a>. Licencia Apache 2.0 y comando para descargar un solo archivo.</li>
+<li id="ref-5-es"><strong>Qwen</strong>, «Qwen3-0.6B-GGUF», consultado el 15/11/2026, <a href="https://huggingface.co/Qwen/Qwen3-0.6B-GGUF" rel="noopener">huggingface.co/Qwen/Qwen3-0.6B-GGUF</a>. Licencia Apache 2.0; archivo Q8_0 de 639 MB.</li>
+<li id="ref-6-es"><strong>TheBloke</strong>, «TinyLlama-1.1B-Chat-v1.0-GGUF», consultado el 15/11/2026, <a href="https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF" rel="noopener">huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF</a>. Licencia Apache 2.0 y el aviso de no clonar el repositorio entero.</li>
+<li id="ref-7-es"><strong>Qwen</strong>, «Qwen3-0.6B», ficha del modelo, consultado el 15/11/2026, <a href="https://huggingface.co/Qwen/Qwen3-0.6B" rel="noopener">huggingface.co/Qwen/Qwen3-0.6B</a>. Modos con y sin razonamiento y parámetros de muestreo recomendados (sin razonamiento, la ficha sugiere temperatura 0,7, top-p 0,8 y top-k 20). La página indica 0,6 mil millones de parámetros en el texto y 0,8 mil millones en los metadatos.</li>
+<li id="ref-8-es"><strong>Ashish Vaswani et al.</strong>, «Attention Is All You Need», 2017, <a href="https://arxiv.org/abs/1706.03762" rel="noopener">arxiv.org/abs/1706.03762</a>. El transformer, basado solo en mecanismos de atención.</li>
+<li id="ref-9-es"><strong>W3C</strong>, «WebGPU», Candidate Recommendation Draft del 15/09/2026, consultado el 15/11/2026, <a href="https://www.w3.org/TR/webgpu/" rel="noopener">w3.org/TR/webgpu</a>. Interfaz para renderizado y cálculo en la GPU.</li>
+<li id="ref-10-es"><strong>Ilya Loshchilov y Frank Hutter</strong>, «Decoupled Weight Decay Regularization», 2017, ICLR 2019, <a href="https://arxiv.org/abs/1711.05101" rel="noopener">arxiv.org/abs/1711.05101</a>. El optimizador AdamW.</li>
+<li id="ref-11-es"><strong>ggml-org</strong>, «llama.cpp: LLM inference in C/C++», consultado el 15/11/2026, <a href="https://github.com/ggml-org/llama.cpp" rel="noopener">github.com/ggml-org/llama.cpp</a>.</li>
+</ol>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+  </article>
+</div>
+</div>
+
+
+
+<footer>
+  <div class="wrap">
+    <span>Giovani Perotto Mesquita · Porto Alegre, RS</span>
+    <span><a href="projects.html" data-projects data-foot="0">Projetos</a> · <a href="resume.html" data-resume data-foot="1">Currículo</a> · <a href="contact.html" data-contact data-foot="2">Contato</a></span>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('.lang [role="option"]'));
+    var titles = {"pt": "LLM Local: modelos de linguagem no seu computador · Giovani Perotto Mesquita", "en": "Local LLM: language models on your computer · Giovani Perotto Mesquita", "it": "LLM Locale: modelli linguistici sul tuo computer · Giovani Perotto Mesquita", "es": "LLM Local: modelos de lenguaje en tu ordenador · Giovani Perotto Mesquita"};
+    var foots = {"pt": ["Projetos", "Currículo", "Contato"], "en": ["Projects", "Resume", "Contact"], "it": ["Progetti", "Curriculum", "Contatti"], "es": ["Proyectos", "Currículum", "Contacto"]};
+    var langs = { pt: 'pt-BR', en: 'en', it: 'it', es: 'es' };
+    var bar = document.querySelector('.progress');
+    var article = document.querySelector('[role="tabpanel"]:not([hidden]) article');
+
+    function show(id, focus) {
+      tabs.forEach(function (t) {
+        var on = t.getAttribute('aria-controls') === id;
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+        if (on && focus) t.focus();
+      });
+      document.documentElement.lang = langs[id];
+      document.title = titles[id];
+      var suffix = id === 'pt' ? '' : '#' + id;
+      [['data-home', 'index.html'], ['data-about', 'about.html'], ['data-resume', 'resume.html'], ['data-projects', 'projects.html'], ['data-contact', 'contact.html']].forEach(function (p) {
+        document.querySelectorAll('[' + p[0] + ']').forEach(function (a) { a.href = p[1] + suffix; });
+      });
+      document.querySelectorAll('[data-foot]').forEach(function (a) { a.textContent = foots[id][+a.getAttribute('data-foot')]; });
+      article = document.querySelector('#' + id + ' article');
+      if (history.replaceState) history.replaceState(null, '', id === 'pt' ? location.pathname : '#' + id);
+      progress();
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () { show(t.getAttribute('aria-controls')); });
+      t.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (d) { e.preventDefault(); show(tabs[(i + d + tabs.length) % tabs.length].getAttribute('aria-controls'), true); }
+      });
+    });
+
+    // barra de progresso de leitura
+    function progress() {
+      if (!article) return;
+      var r = article.getBoundingClientRect();
+      var total = r.height - window.innerHeight;
+      var p = total > 0 ? Math.min(Math.max(-r.top / total, 0), 1) : 1;
+      bar.style.width = (p * 100) + '%';
+    }
+    window.addEventListener('scroll', progress, { passive: true });
+    window.addEventListener('resize', progress);
+
+    // destaca a seção atual no índice
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          var panel = e.target.closest('[role="tabpanel"]');
+          panel.querySelectorAll('.toc a').forEach(function (a) {
+            if (a.getAttribute('href') === '#' + e.target.id) a.setAttribute('aria-current', 'true');
+            else a.removeAttribute('aria-current');
+          });
+        });
+      }, { rootMargin: '-20% 0px -70% 0px' });
+      document.querySelectorAll('article section[id]').forEach(function (s) { io.observe(s); });
+    }
+
+    var h = (location.hash || '').replace('#', '');
+    var m = h.match(/^(?:.*-)?(en|it|es)$/);
+    if (m) {
+      show(m[1]);
+      if (h !== m[1]) { var el = document.getElementById(h); if (el) el.scrollIntoView(); if (history.replaceState) history.replaceState(null, '', '#' + h); }
+    } else progress();
+  })();
+</script>
+<script>
+  // seletor de idioma em combobox: abre a lista, sincroniza o botão e fecha
+  (function () {
+    var box = document.querySelector('.lang'); if (!box) return;
+    var btn = box.querySelector('.lang-current'), list = box.querySelector('.lang-list'), now = btn.querySelector('.lang-now');
+    var opts = Array.prototype.slice.call(list.querySelectorAll('[role="option"]'));
+    var menu = {
+      pt: { index: 'Início', about: 'Sobre', resume: 'Currículo', projects: 'Projetos', contact: 'Contato' },
+      en: { index: 'Home', about: 'About', resume: 'Resume', projects: 'Projects', contact: 'Contact' },
+      it: { index: 'Home', about: 'Chi sono', resume: 'Curriculum', projects: 'Progetti', contact: 'Contatti' },
+      es: { index: 'Inicio', about: 'Sobre mí', resume: 'Currículum', projects: 'Proyectos', contact: 'Contacto' }
+    };
+    function translate(id) {
+      document.querySelectorAll('.nav ul a').forEach(function (l) {
+        var k = (l.getAttribute('href') || '').split('#')[0].replace('.html', '');
+        if (menu[id] && menu[id][k]) l.textContent = menu[id][k];
+      });
+      // links do menu para as páginas principais levam o idioma selecionado
+      var suf = id === 'pt' ? '' : '#' + id;
+      document.querySelectorAll('.nav a[href]').forEach(function (l) {
+        var m = l.getAttribute('href').match(/^(index|about|resume|projects|contact)\.html(#(pt|en|it|es))?$/);
+        if (m) l.setAttribute('href', m[1] + '.html' + suf);
+      });
+    }
+    function sync() {
+      var sel = opts.filter(function (o) { return o.getAttribute('aria-selected') === 'true'; })[0] || opts[0];
+      now.innerHTML = sel.querySelector('.flag').outerHTML + sel.getAttribute('data-code');
+      btn.setAttribute('aria-label', btn.getAttribute('data-label') + ': ' + sel.textContent.trim());
+      translate(sel.getAttribute('aria-controls'));
+      return sel;
+    }
+    function open() { list.hidden = false; btn.setAttribute('aria-expanded', 'true'); sync().focus(); }
+    function close(back) { list.hidden = true; btn.setAttribute('aria-expanded', 'false'); if (back) btn.focus(); }
+    btn.addEventListener('click', function () { if (list.hidden) open(); else close(); });
+    btn.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); open(); }
+      else if (e.key === 'Escape') close();
+    });
+    opts.forEach(function (o, i) {
+      o.addEventListener('click', function () { sync(); close(true); });
+      o.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0;
+        if (d) { e.preventDefault(); opts[(i + d + opts.length) % opts.length].focus(); }
+        else if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); opts[e.key === 'Home' ? 0 : opts.length - 1].focus(); }
+        else if (e.key === 'Escape') { e.preventDefault(); close(true); }
+        else if (e.key === 'Tab') close();
+      });
+    });
+    document.addEventListener('click', function (e) { if (!box.contains(e.target)) close(); });
+    new MutationObserver(sync).observe(list, { attributes: true, subtree: true, attributeFilter: ['aria-selected'] });
+    sync();
+  })();
+</script>
+<script>
+document.addEventListener('click', function (e) {
+  var b = e.target.closest && e.target.closest('[data-copy]');
+  if (!b) return;
+  var code = document.getElementById(b.getAttribute('data-copy')), old = b.textContent;
+  function done() { b.textContent = b.getAttribute('data-done'); setTimeout(function () { b.textContent = old; }, 1500); }
+  function fallback() { var r = document.createRange(); r.selectNodeContents(code); var s = getSelection(); s.removeAllRanges(); s.addRange(r); try { document.execCommand('copy'); done(); } catch (x) {} }
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code.textContent).then(done, fallback); else fallback();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,1849 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; worker-src blob:; base-uri 'none'; form-action 'none'">
+<title>LLM Local · Giovani Perotto Mesquita</title>
+<meta name="description" content="LLM Local: converse com modelos de linguagem GGUF rodando na GPU (WebGPU) ou em todos os núcleos da CPU, e treine um mini-GPT do zero no navegador. Nada sai do computador. Em português, inglês, italiano e espanhol.">
+<meta name="author" content="Giovani Perotto Mesquita">
+<style>
+:root{
+  --bg:#FFF7EC; --surface:#FFFFFF; --surface-2:#FBF1E3; --ink:#2B1B3D; --text:#3E3350; --muted:#756986; --line:#F1E2CF;
+  --accent:#0E8074; --accent-ink:#FFFFFF; --accent-soft:#E2F6F2; --violet:#5B2A86; --gold:#B35300; --gold-soft:#FFF1C9; --bad:#C62828; --ok:#1B7F3B;
+  --user:#EFE6FA; --bot:#FFFFFF;
+  --sans:"Hanken Grotesk","Segoe UI","Helvetica Neue",Arial,sans-serif; --serif:"Source Serif 4",Georgia,"Times New Roman",serif; --mono:ui-monospace,"Cascadia Mono",Consolas,monospace; --radius:14px;
+}
+:root[data-theme="dark"]{
+  --bg:#1A1328; --surface:#241A36; --surface-2:#2D2244; --ink:#F7F0FF; --text:#E2D8F0; --muted:#A898C0; --line:#3A2D52;
+  --accent:#5FD3C4; --accent-ink:#10231F; --accent-soft:#1D3A38; --violet:#C9A7F5; --gold:#FFC94D; --gold-soft:#3A2E12; --bad:#FF8A8A; --ok:#7BD88F;
+  --user:#33264D; --bot:#241A36;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans)}
+body{min-height:100vh;display:flex;flex-direction:column}
+button,select,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.top{display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap;padding:.5rem .9rem;background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.brand{display:flex;align-items:center;gap:.6rem;min-width:0}
+.brand svg{width:36px;height:36px;flex:none}
+.brand h1{font-family:var(--serif);font-size:1.25rem;margin:0;color:var(--ink);line-height:1.1}
+.brand p{margin:0;font-size:.8rem;color:var(--muted)}
+.tools{display:flex;gap:.35rem;flex-wrap:wrap;align-items:center}
+.btn{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:.4rem .75rem;min-height:38px;color:var(--ink)}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.small{min-height:32px;padding:.25rem .6rem;font-size:.85rem}
+select,input[type=text],input[type=number],textarea{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:.35rem .5rem;min-height:38px;color:var(--ink);max-width:100%}
+textarea{resize:vertical;line-height:1.45}
+.chip{display:inline-flex;align-items:center;gap:.35rem;border:1px solid var(--line);border-radius:999px;padding:.25rem .65rem;font-size:.82rem;background:var(--surface-2);color:var(--ink);min-height:34px}
+.chip .dot{width:9px;height:9px;border-radius:50%;background:var(--muted)}
+.chip .dot.on{background:var(--ok)}
+.tabs{display:flex;gap:.3rem;padding:.6rem .9rem 0;max-width:1320px;width:100%;margin:0 auto}
+.tabs button{border:1px solid var(--line);border-bottom:none;background:var(--surface-2);border-radius:12px 12px 0 0;padding:.55rem 1rem;font-weight:700;color:var(--muted);min-height:44px}
+.tabs button[aria-selected=true]{background:var(--surface);color:var(--ink);box-shadow:inset 0 3px 0 var(--accent)}
+main{flex:1;max-width:1320px;width:100%;margin:0 auto;padding:0 .9rem 1.2rem}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:0 var(--radius) var(--radius) var(--radius);padding:1rem;display:grid;grid-template-columns:330px minmax(0,1fr);gap:1rem;min-height:calc(100vh - 150px)}
+aside.side{display:flex;flex-direction:column;gap:.8rem;min-width:0}
+.box{border:1px solid var(--line);border-radius:12px;padding:.75rem;background:var(--surface-2);min-width:0}
+.box h2{font-size:1rem;margin:0 0 .55rem;color:var(--ink);display:flex;align-items:center;gap:.4rem}
+.box h2 small{font-weight:400;color:var(--muted);font-size:.8rem}
+.field{display:flex;flex-direction:column;gap:.2rem;font-size:.84rem;font-weight:600;color:var(--ink);margin-bottom:.55rem;min-width:0}
+.field select,.field input,.field textarea{width:100%;font-weight:400}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem}
+.field output{font-weight:400;color:var(--muted)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.check{display:flex;align-items:center;gap:.45rem;font-size:.86rem;margin-bottom:.4rem}
+.check input{width:18px;height:18px;accent-color:var(--accent)}
+dl.info{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.2rem .7rem;margin:.2rem 0 .3rem;font-size:.83rem}
+dl.info dt{color:var(--muted)}
+dl.info dd{margin:0;color:var(--ink);overflow-wrap:anywhere}
+.prog{height:10px;border-radius:6px;background:var(--line);overflow:hidden;margin:.4rem 0 .2rem}
+.prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--violet));transition:width .15s}
+.status{font-size:.84rem;color:var(--muted);min-height:1.2em;overflow-wrap:anywhere}
+.status.err{color:var(--bad);font-weight:600}
+.status.ok{color:var(--ok);font-weight:600}
+.hint{font-size:.8rem;color:var(--muted);line-height:1.45;margin:.35rem 0 0}
+.hint code{font-family:var(--mono);font-size:.78rem;background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:0 .25rem}
+.hint ul{margin:.3rem 0 0;padding-left:1.1rem}
+/* conversa */
+.chat{display:flex;flex-direction:column;min-width:0;min-height:0}
+.msgs{flex:1;overflow:auto;display:flex;flex-direction:column;gap:.7rem;padding:.3rem .2rem .8rem;min-height:320px;max-height:calc(100vh - 290px)}
+.empty{margin:auto;max-width:56ch;text-align:center;color:var(--muted);line-height:1.55;padding:1rem}
+.empty strong{color:var(--ink)}
+.msg{max-width:min(78ch,92%);border:1px solid var(--line);border-radius:14px;padding:.6rem .8rem;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.user{align-self:flex-end;background:var(--user);border-bottom-right-radius:4px}
+.msg.bot{align-self:flex-start;background:var(--bot);border-bottom-left-radius:4px}
+.msg .who{display:block;font-size:.74rem;font-weight:700;color:var(--muted);margin-bottom:.15rem;white-space:normal}
+.msg .think{display:block;color:var(--muted);font-size:.86rem;border-left:3px solid var(--line);padding-left:.55rem;margin-bottom:.4rem;font-style:italic}
+.msg .body code{font-family:var(--mono);font-size:.88em;background:var(--surface-2);border:1px solid var(--line);border-radius:5px;padding:0 .25rem}
+.msg .body strong{color:var(--ink)}
+.msg .meta{display:block;font-size:.72rem;color:var(--muted);margin-top:.3rem;white-space:normal}
+.msg.err{border-color:var(--bad);color:var(--bad)}
+.caret::after{content:"▍";animation:blink 1s steps(1) infinite;color:var(--accent)}
+@keyframes blink{50%{opacity:0}}
+.compose{display:flex;gap:.5rem;align-items:flex-end;border-top:1px solid var(--line);padding-top:.7rem}
+.compose textarea{flex:1;min-height:52px;max-height:200px}
+.compose .acts{display:flex;flex-direction:column;gap:.35rem}
+.stats{display:flex;flex-wrap:wrap;gap:.35rem;font-size:.8rem;color:var(--muted);margin:.4rem 0 0}
+.stats span{border:1px solid var(--line);border-radius:999px;padding:.1rem .55rem;background:var(--surface-2)}
+/* treino */
+.tmain{display:flex;flex-direction:column;gap:.8rem;min-width:0}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:.5rem}
+.card{border:1px solid var(--line);border-radius:12px;padding:.5rem .65rem;background:var(--surface-2)}
+.card b{display:block;font-size:1.25rem;color:var(--ink);font-variant-numeric:tabular-nums}
+.card span{font-size:.76rem;color:var(--muted)}
+.chartbox{border:1px solid var(--line);border-radius:12px;background:var(--surface-2);padding:.5rem}
+#chart{display:block;width:100%;height:260px}
+.legend{display:flex;gap:1rem;font-size:.8rem;color:var(--muted);padding:.2rem .3rem;flex-wrap:wrap}
+.legend i{display:inline-block;width:22px;height:0;border-top:3px solid var(--accent);vertical-align:middle;margin-right:.3rem}
+.legend i.val{border-top:3px dashed var(--gold)}
+pre.out{white-space:pre-wrap;overflow-wrap:anywhere;font-family:var(--mono);font-size:.86rem;line-height:1.5;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:.6rem .7rem;margin:.3rem 0 0;min-height:4.5em;max-height:260px;overflow:auto;color:var(--ink)}
+.btns{display:flex;flex-wrap:wrap;gap:.4rem}
+.gen{display:grid;grid-template-columns:minmax(0,1fr) 90px 90px auto;gap:.5rem;align-items:end}
+dialog{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);color:var(--text);padding:0;width:min(720px,calc(100vw - 20px));max-height:calc(100vh - 20px)}
+dialog::backdrop{background:rgba(10,6,20,.6)}
+.dlg{padding:1rem 1.2rem 1.2rem;overflow:auto;max-height:calc(100vh - 22px)}
+.dlg h2{font-family:var(--serif);color:var(--ink);margin:0 0 .7rem;font-size:1.35rem}
+.dlg h3{color:var(--ink);margin:1rem 0 .3rem;font-size:1rem}
+.dlg p,.dlg li{line-height:1.55;max-width:68ch}
+.dlg table{width:100%;border-collapse:collapse;font-size:.88rem}
+.dlg th,.dlg td{border-bottom:1px solid var(--line);padding:.35rem .4rem;text-align:left;vertical-align:top}
+.acts2{display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem}
+@media (max-width:960px){.panel{grid-template-columns:1fr;min-height:0}.msgs{max-height:60vh}#pChat aside.side{display:contents}#pChat aside.side>.box:first-child{order:1}#pChat .chat{order:2}#pChat aside.side>.box:last-child{order:3}}
+@media (max-width:760px){.brand p{display:none}.gen{grid-template-columns:1fr 1fr}.gen .field:first-child{grid-column:1/-1}}
+@media (max-width:480px){.row3{grid-template-columns:1fr 1fr}.tabs{padding:.5rem .5rem 0}main{padding:0 .5rem 1rem}.panel{padding:.7rem}.tools .btn{padding:.35rem .55rem}.chip .lbl{display:none}.compose{flex-direction:column;align-items:stretch}.compose .acts{flex-direction:row}.compose .acts .btn{flex:1}.tabs button{padding:.5rem .7rem}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media print{.top,.tabs,.compose,aside.side{display:none}.panel{border:none}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="10" fill="#5B2A86"/><rect x="9" y="9" width="22" height="22" rx="4" fill="#0E8074"/><g fill="#FFB703"><rect x="13" y="4" width="2.4" height="5" rx="1"/><rect x="19" y="4" width="2.4" height="5" rx="1"/><rect x="25" y="4" width="2.4" height="5" rx="1"/><rect x="13" y="31" width="2.4" height="5" rx="1"/><rect x="19" y="31" width="2.4" height="5" rx="1"/><rect x="25" y="31" width="2.4" height="5" rx="1"/><rect x="4" y="13" width="5" height="2.4" rx="1"/><rect x="4" y="19" width="5" height="2.4" rx="1"/><rect x="4" y="25" width="5" height="2.4" rx="1"/><rect x="31" y="13" width="5" height="2.4" rx="1"/><rect x="31" y="19" width="5" height="2.4" rx="1"/><rect x="31" y="25" width="5" height="2.4" rx="1"/></g><path d="M14 16h12M14 20h9M14 24h11" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+    <div><h1 data-i="title"></h1><p data-i="subtitle"></p></div>
+  </div>
+  <div class="tools">
+    <button type="button" class="chip" id="bDevice" aria-haspopup="dialog"><span class="dot" id="devDot"></span><span id="devText"></span></button>
+    <button type="button" class="btn" id="bHelp" data-i="help"></button>
+    <button type="button" class="btn" id="bTheme" data-ta="theme">◐</button>
+    <select id="sLang" data-ta="lang"><option value="pt">🇧🇷 PT</option><option value="en">🇬🇧 EN</option><option value="it">🇮🇹 IT</option><option value="es">🇪🇸 ES</option></select>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist" data-ta="tabsLabel">
+  <button type="button" role="tab" id="tab-chat" aria-controls="pChat" aria-selected="true"><span aria-hidden="true">💬 </span><span data-i="tabChat"></span></button>
+  <button type="button" role="tab" id="tab-train" aria-controls="pTrain" aria-selected="false" tabindex="-1"><span aria-hidden="true">🧠 </span><span data-i="tabTrain"></span></button>
+</nav>
+
+<main>
+<section class="panel" id="pChat" role="tabpanel" aria-labelledby="tab-chat">
+  <aside class="side">
+    <div class="box">
+      <h2 data-i="model"></h2>
+      <input type="file" id="fGguf" accept=".gguf" hidden>
+      <div class="btns"><button type="button" class="btn primary" id="bOpen" data-i="openGguf"></button><button type="button" class="btn" id="bReload" data-i="reload" disabled></button><button type="button" class="btn" id="bUnload" data-i="unload" disabled></button></div>
+      <div class="prog" aria-hidden="true"><i id="loadBar"></i></div>
+      <p class="status" id="loadStatus" role="status" aria-live="polite"></p>
+      <dl class="info" id="modelInfo" hidden></dl>
+      <div class="row2">
+        <label class="field"><span data-i="backend"></span><select id="sBackend"><option value="auto" data-i="beAuto"></option><option value="gpu" data-i="beGpu"></option><option value="cpu" id="optCpu"></option></select></label>
+        <label class="field"><span data-i="context"></span><select id="sCtx"><option>512</option><option>1024</option><option selected>2048</option><option>4096</option><option>8192</option></select></label>
+      </div>
+      <label class="field"><span data-i="template"></span><select id="sTpl"><option value="auto" id="optTplAuto"></option><option value="chatml">ChatML (Qwen, SmolLM)</option><option value="llama3">Llama 3</option><option value="zephyr">Zephyr (TinyLlama)</option><option value="mistral">Mistral / Llama 2</option><option value="none" data-i="tplNone"></option></select></label>
+      <label class="check" hidden><input type="checkbox" id="cThink"><span data-i="think"></span></label>
+      <div class="hint" data-i="whereModels"></div>
+    </div>
+    <div class="box">
+      <h2 data-i="genTitle"></h2>
+      <label class="field"><span><span data-i="temp"></span> <output id="oTemp"></output></span><input type="range" id="rTemp" min="0" max="1.5" step="0.05" value="0.7"></label>
+      <div class="row3">
+        <label class="field"><span>Top-k</span><input type="number" id="nTopK" min="0" max="500" value="40"></label>
+        <label class="field"><span>Top-p</span><input type="number" id="nTopP" min="0" max="1" step="0.05" value="0.9"></label>
+        <label class="field"><span data-i="rep"></span><input type="number" id="nRep" min="1" max="2" step="0.05" value="1.05"></label>
+      </div>
+      <div class="row2">
+        <label class="field"><span data-i="maxTok"></span><input type="number" id="nMax" min="16" max="4096" value="512"></label>
+        <label class="field"><span data-i="seed"></span><input type="number" id="nSeed" min="0" max="999999999" value="42"></label>
+      </div>
+      <label class="field"><span data-i="system"></span><textarea id="tSystem" rows="3"></textarea></label>
+    </div>
+  </aside>
+  <div class="chat">
+    <div class="msgs" id="msgs" role="log" aria-live="polite" aria-relevant="additions"><div class="empty" id="empty"></div></div>
+    <div class="stats" id="chatStats"></div>
+    <form class="compose" id="compose">
+      <label class="sr" for="inp" data-i="yourMsg"></label>
+      <textarea id="inp" rows="2" disabled></textarea>
+      <div class="acts">
+        <button type="submit" class="btn primary" id="bSend" data-i="send" disabled></button>
+        <button type="button" class="btn" id="bStop" data-i="stop" disabled></button>
+        <button type="button" class="btn" id="bClear" data-i="newChat"></button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<section class="panel" id="pTrain" role="tabpanel" aria-labelledby="tab-train" hidden>
+  <aside class="side">
+    <div class="box">
+      <h2 data-i="corpus"></h2>
+      <div class="btns" style="margin-bottom:.5rem"><button type="button" class="btn small" id="bSample" data-i="sampleText"></button><button type="button" class="btn small" id="bTxt" data-i="openTxt"></button><input type="file" id="fTxt" accept=".txt,text/plain" hidden></div>
+      <label class="field"><span class="sr" data-i="corpus"></span><textarea id="tCorpus" rows="8" spellcheck="false"></textarea></label>
+      <p class="hint" id="corpusInfo"></p>
+    </div>
+    <div class="box">
+      <h2 data-i="arch"></h2>
+      <div class="row3">
+        <label class="field"><span data-i="layers"></span><select id="sL"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>6</option></select></label>
+        <label class="field"><span data-i="width"></span><select id="sC"><option>32</option><option>64</option><option selected>128</option><option>192</option><option>256</option></select></label>
+        <label class="field"><span data-i="heads"></span><select id="sH"><option>2</option><option selected>4</option><option>8</option></select></label>
+      </div>
+      <div class="row3">
+        <label class="field"><span data-i="block"></span><select id="sT"><option>32</option><option selected>64</option><option>128</option><option>256</option></select></label>
+        <label class="field"><span data-i="batch"></span><select id="sB"><option>8</option><option>16</option><option selected>32</option><option>64</option></select></label>
+        <label class="field"><span data-i="lr"></span><select id="sLr"><option>0.0003</option><option>0.001</option><option selected>0.002</option><option>0.003</option></select></label>
+      </div>
+      <div class="row2">
+        <label class="field"><span data-i="steps"></span><select id="sSteps"><option>300</option><option>1000</option><option selected>2000</option><option>5000</option><option>20000</option></select></label>
+        <label class="field"><span data-i="seed"></span><input type="number" id="nTSeed" min="0" max="999999999" value="1234"></label>
+      </div>
+      <p class="hint" id="archInfo"></p>
+      <div class="btns"><button type="button" class="btn primary" id="bTrain" data-i="train"></button><button type="button" class="btn" id="bReset" data-i="reset" disabled></button></div>
+      <div class="btns" style="margin-top:.4rem"><button type="button" class="btn small" id="bSaveM" data-i="saveModel" disabled></button><button type="button" class="btn small" id="bLoadM" data-i="loadModel"></button><input type="file" id="fModel" accept=".bin" hidden></div>
+      <p class="status" id="trainStatus" role="status" aria-live="polite"></p>
+    </div>
+  </aside>
+  <div class="tmain">
+    <div class="cards">
+      <div class="card"><b id="kStep">0</b><span data-i="kStep"></span></div>
+      <div class="card"><b id="kLoss">—</b><span data-i="kLoss"></span></div>
+      <div class="card"><b id="kVal">—</b><span data-i="kVal"></span></div>
+      <div class="card"><b id="kRate">—</b><span data-i="kRate"></span></div>
+      <div class="card"><b id="kMs">—</b><span data-i="kMs"></span></div>
+      <div class="card"><b id="kFlops">—</b><span data-i="kFlops"></span></div>
+    </div>
+    <div class="chartbox">
+      <canvas id="chart" role="img" data-ta="chartLabel"></canvas>
+      <div class="legend"><span><i></i><span data-i="lgTrain"></span></span><span><i class="val"></i><span data-i="lgVal"></span></span><span id="lgBase"></span></div>
+    </div>
+    <div class="box">
+      <h2><span data-i="preview"></span> <small data-i="previewHint"></small></h2>
+      <pre class="out" id="preview" aria-live="off"></pre>
+    </div>
+    <div class="box">
+      <h2 data-i="generate"></h2>
+      <div class="gen">
+        <label class="field"><span data-i="start"></span><input type="text" id="gPrompt"></label>
+        <label class="field"><span data-i="length"></span><input type="number" id="gLen" min="10" max="5000" value="400"></label>
+        <label class="field"><span data-i="temp"></span><input type="number" id="gTemp" min="0" max="2" step="0.05" value="0.8"></label>
+        <div class="field"><span>&nbsp;</span><button type="button" class="btn primary" id="bGen" data-i="genBtn" disabled></button></div>
+      </div>
+      <pre class="out" id="genOut" aria-live="polite"></pre>
+    </div>
+  </div>
+</section>
+</main>
+
+<dialog id="dDevice" aria-labelledby="hDevice"><div class="dlg">
+  <h2 id="hDevice" data-i="devTitle"></h2>
+  <table><tbody id="devTable"></tbody></table>
+  <p class="hint" data-i="devNote"></p>
+  <div class="acts2"><button type="button" class="btn primary" data-close data-i="close"></button></div>
+</div></dialog>
+
+<dialog id="dHelp" aria-labelledby="hHelp"><div class="dlg">
+  <h2 id="hHelp" data-i="helpTitle"></h2>
+  <div id="helpBody"></div>
+  <div class="acts2"><button type="button" class="btn primary" data-close data-i="close"></button></div>
+</div></dialog>
+<p class="sr" id="live" aria-live="polite"></p>
+<script id="src-core">
+/* ===================== Núcleo: GGUF, dequantização, tokenizadores, modelos de conversa, amostragem =====================
+   Este bloco não usa o DOM: roda na página, nos workers (o texto dele é reaproveitado) e no Node, nos testes. */
+'use strict';
+const GG = {};
+(function (G) {
+  /* ---------- f16 / bf16 ---------- */
+  const F16 = new Float32Array(65536);
+  for (let h = 0; h < 65536; h++) {
+    const s = h & 0x8000 ? -1 : 1, e = (h >> 10) & 31, m = h & 1023;
+    F16[h] = e === 0 ? s * m * 5.960464477539063e-8 : e === 31 ? (m ? NaN : s * Infinity) : s * Math.pow(2, e - 15) * (1 + m / 1024);
+  }
+  G.F16 = F16;
+  const f32b = new Float32Array(1), u32b = new Uint32Array(f32b.buffer);
+  G.toF16 = function (v) { // arredonda para o par mais próximo
+    f32b[0] = v; const x = u32b[0], sign = (x >>> 16) & 0x8000; let e = ((x >>> 23) & 255) - 127 + 15, m = x & 0x7FFFFF;
+    if (((x >>> 23) & 255) === 255) return sign | 0x7C00 | (m ? 0x200 : 0);
+    if (e >= 31) return sign | 0x7C00;
+    if (e <= 0) { if (e < -10) return sign; m |= 0x800000; const sh = 14 - e; let r = m >> sh; const rem = m & ((1 << sh) - 1), half = 1 << (sh - 1); if (rem > half || (rem === half && (r & 1))) r++; return sign | r; }
+    let r = (e << 10) | (m >> 13); const rem = m & 0x1FFF; if (rem > 0x1000 || (rem === 0x1000 && (r & 1))) r++; return sign | r;
+  };
+
+  /* ---------- tipos de tensor do GGML ---------- */
+  // [nome, elementos por bloco, bytes por bloco]
+  const T = { 0: ['F32', 1, 4], 1: ['F16', 1, 2], 2: ['Q4_0', 32, 18], 3: ['Q4_1', 32, 20], 6: ['Q5_0', 32, 22], 7: ['Q5_1', 32, 24], 8: ['Q8_0', 32, 34],
+    10: ['Q2_K', 256, 84], 20: ['IQ4_NL', 32, 18], 23: ['IQ4_XS', 256, 136], 11: ['Q3_K', 256, 110], 12: ['Q4_K', 256, 144], 13: ['Q5_K', 256, 176], 14: ['Q6_K', 256, 210], 30: ['BF16', 1, 2] };
+  G.TYPES = T;
+  const KV4 = [-127, -104, -83, -65, -49, -35, -22, -10, 1, 13, 25, 38, 53, 69, 89, 113];
+  G.typeName = (t) => (T[t] ? T[t][0] : 'tipo ' + t);
+  G.rowBytes = (type, n) => { const d = T[type]; if (!d) throw new Error('unsupported-type:' + type); return n / d[1] * d[2]; };
+
+  /* dequantiza `nel` elementos a partir de bytes (Uint8Array alinhado ao início de um bloco) para out (Float32Array) */
+  G.dequant = function (type, u8, nel, out) {
+    const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength), i8 = new Int8Array(u8.buffer, u8.byteOffset, u8.byteLength);
+    const h = (o) => F16[dv.getUint16(o, true)];
+    let o = 0, y = 0;
+    switch (type) {
+      case 0: for (let i = 0; i < nel; i++) out[i] = dv.getFloat32(i * 4, true); return out;
+      case 1: for (let i = 0; i < nel; i++) out[i] = F16[dv.getUint16(i * 2, true)]; return out;
+      case 30: for (let i = 0; i < nel; i++) { u32b[0] = dv.getUint16(i * 2, true) << 16; out[i] = f32b[0]; } return out;
+      case 2: for (; y < nel; o += 18, y += 32) { const d = h(o); for (let j = 0; j < 16; j++) { const q = u8[o + 2 + j]; out[y + j] = ((q & 15) - 8) * d; out[y + j + 16] = ((q >> 4) - 8) * d; } } return out;
+      case 3: for (; y < nel; o += 20, y += 32) { const d = h(o), m = h(o + 2); for (let j = 0; j < 16; j++) { const q = u8[o + 4 + j]; out[y + j] = (q & 15) * d + m; out[y + j + 16] = (q >> 4) * d + m; } } return out;
+      case 6: for (; y < nel; o += 22, y += 32) { const d = h(o), qh = dv.getUint32(o + 2, true); for (let j = 0; j < 16; j++) { const q = u8[o + 6 + j], x0 = (q & 15) | (((qh >>> j) << 4) & 16), x1 = (q >> 4) | ((qh >>> (j + 12)) & 16); out[y + j] = (x0 - 16) * d; out[y + j + 16] = (x1 - 16) * d; } } return out;
+      case 7: for (; y < nel; o += 24, y += 32) { const d = h(o), m = h(o + 2), qh = dv.getUint32(o + 4, true); for (let j = 0; j < 16; j++) { const q = u8[o + 8 + j], x0 = (q & 15) | (((qh >>> j) << 4) & 16), x1 = (q >> 4) | ((qh >>> (j + 12)) & 16); out[y + j] = x0 * d + m; out[y + j + 16] = x1 * d + m; } } return out;
+      case 8: for (; y < nel; o += 34, y += 32) { const d = h(o); for (let j = 0; j < 32; j++) out[y + j] = i8[o + 2 + j] * d; } return out;
+      case 20: for (; y < nel; o += 18, y += 32) { const d = h(o); for (let j = 0; j < 16; j++) { const q = u8[o + 2 + j]; out[y + j] = d * KV4[q & 15]; out[y + j + 16] = d * KV4[q >> 4]; } } return out;
+      case 23: for (; y < nel; o += 136) { // IQ4_XS: d scales_h scales_l[4] qs[128]
+        const d = h(o), sh = dv.getUint16(o + 2, true); let q = o + 8;
+        for (let ib = 0; ib < 8; ib++) { const ls = ((u8[o + 4 + (ib >> 1)] >> (4 * (ib & 1))) & 15) | (((sh >> (2 * ib)) & 3) << 4), dl = d * (ls - 32);
+          for (let j = 0; j < 16; j++) { out[y + j] = dl * KV4[u8[q + j] & 15]; out[y + j + 16] = dl * KV4[u8[q + j] >> 4]; } y += 32; q += 16; } } return out;
+      case 10: for (; y < nel; o += 84) { // Q2_K: scales[16] qs[64] d dmin
+        const d = h(o + 80), dmin = h(o + 82); let is = 0, q = o + 16;
+        for (let n = 0; n < 256; n += 128) { let shift = 0;
+          for (let j = 0; j < 4; j++) {
+            let sc = u8[o + is++], dl = d * (sc & 15), ml = dmin * (sc >> 4); for (let l = 0; l < 16; l++) out[y++] = dl * ((u8[q + l] >> shift) & 3) - ml;
+            sc = u8[o + is++]; dl = d * (sc & 15); ml = dmin * (sc >> 4); for (let l = 0; l < 16; l++) out[y++] = dl * ((u8[q + l + 16] >> shift) & 3) - ml;
+            shift += 2; }
+          q += 32; } } return out;
+      case 11: for (; y < nel; o += 110) { // Q3_K: hmask[32] qs[64] scales[12] d
+        const dAll = h(o + 108), a0 = dv.getUint32(o + 96, true), a1 = dv.getUint32(o + 100, true), tmp = dv.getUint32(o + 104, true), k1 = 0x03030303, k2 = 0x0f0f0f0f;
+        const aux = new Uint32Array([(a0 & k2) | (((tmp >>> 0) & k1) << 4), (a1 & k2) | (((tmp >>> 2) & k1) << 4), ((a0 >>> 4) & k2) | (((tmp >>> 4) & k1) << 4), ((a1 >>> 4) & k2) | (((tmp >>> 6) & k1) << 4)]);
+        const sc = new Int8Array(aux.buffer); let m = 1, is = 0, q = o + 32;
+        for (let n = 0; n < 256; n += 128) { let shift = 0;
+          for (let j = 0; j < 4; j++) {
+            let dl = dAll * (sc[is++] - 32); for (let l = 0; l < 16; l++) out[y++] = dl * (((u8[q + l] >> shift) & 3) - ((u8[o + l] & m) ? 0 : 4));
+            dl = dAll * (sc[is++] - 32); for (let l = 0; l < 16; l++) out[y++] = dl * (((u8[q + l + 16] >> shift) & 3) - ((u8[o + l + 16] & m) ? 0 : 4));
+            shift += 2; m <<= 1; }
+          q += 32; } } return out;
+      case 12: case 13: for (; y < nel;) { // Q4_K: d dmin scales[12] qs[128] · Q5_K: d dmin scales[12] qh[32] qs[128]
+        const five = type === 13, d = h(o), dmin = h(o + 2), S = o + 4, qh = o + 16; let q = o + (five ? 48 : 16), is = 0, u1 = 1, u2 = 2;
+        const sm = (j) => j < 4 ? [u8[S + j] & 63, u8[S + j + 4] & 63] : [(u8[S + j + 4] & 15) | ((u8[S + j - 4] >> 6) << 4), (u8[S + j + 4] >> 4) | ((u8[S + j] >> 6) << 4)];
+        for (let j = 0; j < 256; j += 64) {
+          const [s1, m1] = sm(is), [s2, m2] = sm(is + 1), d1 = d * s1, mm1 = dmin * m1, d2 = d * s2, mm2 = dmin * m2;
+          for (let l = 0; l < 32; l++) out[y++] = d1 * ((u8[q + l] & 15) + (five && (u8[qh + l] & u1) ? 16 : 0)) - mm1;
+          for (let l = 0; l < 32; l++) out[y++] = d2 * ((u8[q + l] >> 4) + (five && (u8[qh + l] & u2) ? 16 : 0)) - mm2;
+          q += 32; is += 2; u1 <<= 2; u2 <<= 2; }
+        o += five ? 176 : 144; } return out;
+      case 14: for (; y < nel; o += 210) { // Q6_K: ql[128] qh[64] scales[16] d
+        const d = h(o + 208); let ql = o, qh = o + 128, sc = o + 192;
+        for (let n = 0; n < 256; n += 128) {
+          for (let l = 0; l < 32; l++) { const is = l >> 4, H = u8[qh + l];
+            out[y + l] = d * i8[sc + is] * (((u8[ql + l] & 15) | ((H & 3) << 4)) - 32);
+            out[y + l + 32] = d * i8[sc + is + 2] * (((u8[ql + l + 32] & 15) | (((H >> 2) & 3) << 4)) - 32);
+            out[y + l + 64] = d * i8[sc + is + 4] * (((u8[ql + l] >> 4) | (((H >> 4) & 3) << 4)) - 32);
+            out[y + l + 96] = d * i8[sc + is + 6] * (((u8[ql + l + 32] >> 4) | (((H >> 6) & 3) << 4)) - 32); }
+          y += 128; ql += 64; qh += 32; sc += 8; } } return out;
+    }
+    throw new Error('unsupported-type:' + type);
+  };
+
+  /* ---------- leitura do cabeçalho GGUF ---------- */
+  // read(offset, length) -> Promise<Uint8Array>. Lê em pedaços crescentes até o cabeçalho caber.
+  G.parseHeader = async function (read, fileSize) {
+    let size = Math.min(fileSize, 8 << 20);
+    for (;;) {
+      const u8 = await read(0, size);
+      try { return parseBuf(u8, fileSize); } catch (e) { if (e.message !== 'short' || size >= fileSize) throw e; size = Math.min(fileSize, size * 4); }
+    }
+  };
+  const td = new TextDecoder('utf-8');
+  function parseBuf(u8, fileSize) {
+    const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength); let p = 0;
+    const need = (n) => { if (p + n > u8.byteLength) throw new Error('short'); };
+    const u32 = () => { need(4); const v = dv.getUint32(p, true); p += 4; return v; };
+    const u64 = () => { need(8); const lo = dv.getUint32(p, true), hi = dv.getUint32(p + 4, true); p += 8; return hi * 4294967296 + lo; };
+    const str = () => { const n = u64(); need(n); const s = td.decode(u8.subarray(p, p + n)); p += n; return s; };
+    const val = (t) => {
+      switch (t) {
+        case 0: need(1); return dv.getUint8(p++); case 1: need(1); return dv.getInt8(p++);
+        case 2: need(2); p += 2; return dv.getUint16(p - 2, true); case 3: need(2); p += 2; return dv.getInt16(p - 2, true);
+        case 4: return u32(); case 5: need(4); p += 4; return dv.getInt32(p - 4, true);
+        case 6: need(4); p += 4; return dv.getFloat32(p - 4, true); case 7: need(1); return dv.getUint8(p++) !== 0;
+        case 8: return str(); case 10: return u64(); case 11: need(8); p += 8; return Number(dv.getBigInt64(p - 8, true));
+        case 12: need(8); p += 8; return dv.getFloat64(p - 8, true);
+        case 9: { const at = u32(), n = u64();
+          if (at === 8) { const a = new Array(n); for (let i = 0; i < n; i++) a[i] = str(); return a; }
+          if (at === 6) { need(n * 4); const a = new Float32Array(n); for (let i = 0; i < n; i++) a[i] = dv.getFloat32(p + i * 4, true); p += n * 4; return a; }
+          if (at === 5 || at === 4) { need(n * 4); const a = new Int32Array(n); for (let i = 0; i < n; i++) a[i] = dv.getInt32(p + i * 4, true); p += n * 4; return a; }
+          const a = new Array(n); for (let i = 0; i < n; i++) a[i] = val(at); return a; }
+      }
+      throw new Error('bad-meta-type:' + t);
+    };
+    need(4); if (td.decode(u8.subarray(0, 4)) !== 'GGUF') throw new Error('not-gguf'); p = 4;
+    const version = u32(); if (version < 2) throw new Error('old-gguf');
+    const nT = u64(), nKV = u64(), meta = {};
+    for (let i = 0; i < nKV; i++) { const k = str(), t = u32(); meta[k] = val(t); }
+    const tensors = {};
+    for (let i = 0; i < nT; i++) {
+      const name = str(), nd = u32(), dims = []; for (let j = 0; j < nd; j++) dims.push(u64());
+      const type = u32(), offset = u64(); let nel = 1; for (const d of dims) nel *= d;
+      tensors[name] = { name, dims, type, offset, nel, bytes: T[type] ? nel / T[type][1] * T[type][2] : 0 };
+    }
+    const align = meta['general.alignment'] || 32, dataStart = Math.ceil(p / align) * align;
+    for (const t of Object.values(tensors)) { t.start = dataStart + t.offset; if (T[t.type] && t.start + t.bytes > fileSize) throw new Error('truncated'); }
+    return { version, meta, tensors, dataStart };
+  }
+
+  /* ---------- configuração do modelo a partir dos metadados ---------- */
+  G.config = function (h) {
+    const m = h.meta, a = m['general.architecture'], k = (s, d) => (m[a + '.' + s] !== undefined ? m[a + '.' + s] : d);
+    if (!['llama', 'qwen2', 'qwen3', 'mistral'].includes(a)) throw new Error('arch:' + a);
+    const nEmbd = k('embedding_length'), nHead = k('attention.head_count'), nKv = k('attention.head_count_kv', nHead);
+    const hd = k('attention.key_length', nEmbd / nHead);
+    const c = { arch: a, name: m['general.name'] || '', nEmbd, nHead, nKv, hd, nLayer: k('block_count'), nFF: k('feed_forward_length'),
+      eps: k('attention.layer_norm_rms_epsilon', 1e-5), theta: k('rope.freq_base', 10000), ropeDim: k('rope.dimension_count', hd), ctxTrain: k('context_length', 2048),
+      neox: a === 'qwen2' || a === 'qwen3', qkNorm: !!h.tensors['blk.0.attn_q_norm.weight'], qkvBias: !!h.tensors['blk.0.attn_q.bias'],
+      tied: !h.tensors['output.weight'], nVocab: h.tensors['token_embd.weight'].dims[1] };
+    if (m[a + '.rope.scaling.type'] && m[a + '.rope.scaling.type'] !== 'none') c.ropeScaling = m[a + '.rope.scaling.type'];
+    if (h.tensors['rope_freqs.weight']) c.ropeFreqs = true;
+    let params = 0; const types = {};
+    for (const t of Object.values(h.tensors)) { params += t.nel; const n = G.typeName(t.type); types[n] = (types[n] || 0) + t.nel; if (!T[t.type]) throw new Error('unsupported-type:' + t.type + ':' + t.name); }
+    c.params = params; c.types = types; return c;
+  };
+
+  /* ---------- tokenizadores ---------- */
+  const BYTE_ENC = [], BYTE_DEC = new Map();
+  (function () { const bs = []; for (let i = 33; i <= 126; i++) bs.push(i); for (let i = 161; i <= 172; i++) bs.push(i); for (let i = 174; i <= 255; i++) bs.push(i);
+    const cs = bs.slice(); let n = 0; for (let b = 0; b < 256; b++) if (!bs.includes(b)) { bs.push(b); cs.push(256 + n++); }
+    for (let i = 0; i < 256; i++) { BYTE_ENC[bs[i]] = String.fromCodePoint(cs[i]); BYTE_DEC.set(String.fromCodePoint(cs[i]), bs[i]); } })();
+  const CONTR = "'[sS]|'[tT]|'[rR][eE]|'[vV][eE]|'[mM]|'[lL][lL]|'[dD]";
+  const PRE = {
+    gpt2: ["'s|'t|'re|'ve|'m|'ll|'d| ?\\p{L}+| ?\\p{N}+| ?[^\\s\\p{L}\\p{N}]+|\\s+(?!\\S)|\\s+"],
+    qwen2: ['(?:' + CONTR + ")|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+"],
+    llama3: ['(?:' + CONTR + ")|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}{1,3}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+"],
+    smollm: ['\\p{N}', "'s|'t|'re|'ve|'m|'ll|'d| ?\\p{L}+| ?\\p{N}+| ?[^\\s\\p{L}\\p{N}]+|\\s+(?!\\S)"]
+  };
+  const PRE_ALIAS = { qwen2: 'qwen2', 'deepseek-llm': 'llama3', 'llama-bpe': 'llama3', llama3: 'llama3', smollm: 'smollm', default: 'gpt2', 'gpt-2': 'gpt2' };
+  function splitRegex(text, exprs) { // aplica as expressões em sequência, como o llama.cpp: cada uma divide os pedaços da anterior
+    let parts = [text];
+    for (const e of exprs) { const re = new RegExp(e, 'gu'), next = [];
+      for (const s of parts) { let last = 0; for (const m of s.matchAll(re)) { if (m.index > last) next.push(s.slice(last, m.index)); if (m[0]) next.push(m[0]); last = m.index + m[0].length; } if (last < s.length) next.push(s.slice(last)); }
+      parts = next; }
+    return parts;
+  }
+
+  G.Tokenizer = function (meta) {
+    const model = meta['tokenizer.ggml.model'], toks = meta['tokenizer.ggml.tokens'], types = meta['tokenizer.ggml.token_type'] || [], scores = meta['tokenizer.ggml.scores'];
+    if (model !== 'gpt2' && model !== 'llama') throw new Error('tokenizer:' + model);
+    const id = new Map(); toks.forEach((s, i) => { if (!id.has(s)) id.set(s, i); });
+    const special = []; toks.forEach((s, i) => { if ((types[i] === 3 || types[i] === 4) && s.length) special.push(s); });
+    special.sort((a, b) => b.length - a.length);
+    const bos = meta['tokenizer.ggml.bos_token_id'], eos = meta['tokenizer.ggml.eos_token_id'];
+    const addBos = meta['tokenizer.ggml.add_bos_token'] !== undefined ? meta['tokenizer.ggml.add_bos_token'] : model === 'llama';
+    const addSpace = meta['tokenizer.ggml.add_space_prefix'] !== undefined ? meta['tokenizer.ggml.add_space_prefix'] : model === 'llama';
+    const pre = PRE[PRE_ALIAS[meta['tokenizer.ggml.pre']] || 'gpt2'];
+    const ranks = new Map(); if (model === 'gpt2') (meta['tokenizer.ggml.merges'] || []).forEach((m, i) => ranks.set(m, i));
+    const cache = new Map();
+    function bpeWord(w) { // w: texto já mapeado byte→unicode
+      const c = cache.get(w); if (c) return c;
+      let sy = Array.from(w);
+      while (sy.length > 1) { let best = -1, br = Infinity; for (let i = 0; i < sy.length - 1; i++) { const r = ranks.get(sy[i] + ' ' + sy[i + 1]); if (r !== undefined && r < br) { br = r; best = i; } }
+        if (best < 0) break; const a = sy[best], b = sy[best + 1], nx = [];
+        for (let i = 0; i < sy.length; i++) { if (i < sy.length - 1 && sy[i] === a && sy[i + 1] === b) { nx.push(a + b); i++; } else nx.push(sy[i]); }
+        sy = nx; }
+      const out = []; for (const s of sy) { const t = id.get(s); if (t !== undefined) out.push(t); else for (const ch of s) { const u = id.get(ch); if (u !== undefined) out.push(u); } }
+      if (cache.size < 50000) cache.set(w, out); return out;
+    }
+    const enc = new TextEncoder();
+    function spm(text, out) {
+      const sy = Array.from(text.replace(/ /g, '▁'));
+      if (!sy.length) return;
+      // fusão gulosa pelo maior score, como o tokenizador SentencePiece do llama.cpp
+      for (;;) { let best = -1, bs = -Infinity;
+        for (let i = 0; i < sy.length - 1; i++) { const t = id.get(sy[i] + sy[i + 1]); if (t !== undefined && scores[t] > bs) { bs = scores[t]; best = i; } }
+        if (best < 0) break; sy.splice(best, 2, sy[best] + sy[best + 1]); }
+      for (const s of sy) { const t = id.get(s); if (t !== undefined) out.push(t); else for (const b of enc.encode(s)) { const u = id.get('<0x' + b.toString(16).toUpperCase().padStart(2, '0') + '>'); if (u !== undefined) out.push(u); } }
+    }
+    this.model = model; this.bos = bos; this.eos = eos; this.addBos = addBos; this.n = toks.length; this.tokens = toks; this.types = types; this.id = (s) => id.get(s);
+    this.isControl = (t) => types[t] === 3;
+    this.encode = function (text, opts) { // opts.bos: true/false/undefined(=padrão do modelo)
+      const out = [], wantBos = opts && opts.bos !== undefined ? opts.bos : addBos;
+      if (wantBos && bos !== undefined) out.push(bos);
+      // separa os tokens especiais escritos no texto
+      const frags = []; let rest = text;
+      while (rest.length) { let at = -1, which = null;
+        for (const s of special) { const k = rest.indexOf(s); if (k >= 0 && (at < 0 || k < at || (k === at && s.length > which.length))) { at = k; which = s; } }
+        if (at < 0) { frags.push(rest); break; } if (at > 0) frags.push(rest.slice(0, at)); frags.push({ sp: id.get(which) }); rest = rest.slice(at + which.length); }
+      let prevSpecial = true;
+      for (const f of frags) {
+        if (typeof f !== 'string') { out.push(f.sp); prevSpecial = true; continue; }
+        if (model === 'llama') { spm((addSpace && prevSpecial ? ' ' : '') + f, out); }
+        else for (const w of splitRegex(f, pre)) { let m = ''; for (const b of enc.encode(w)) m += BYTE_ENC[b]; for (const t of bpeWord(m)) out.push(t); }
+        prevSpecial = false;
+      }
+      return out;
+    };
+    // decodificador incremental: devolve só o texto completo (UTF-8 inteiro) já disponível
+    this.decoder = function () {
+      const d = new TextDecoder('utf-8'); let first = true;
+      return (t) => {
+        if (types[t] === 3) return '';
+        const s = toks[t]; let bytes;
+        if (model === 'llama') { const m = /^<0x([0-9A-Fa-f]{2})>$/.exec(s); if (m) bytes = [parseInt(m[1], 16)]; else { let x = s.replace(/▁/g, ' '); if (first && addSpace && x[0] === ' ') x = x.slice(1); bytes = enc.encode(x); } }
+        else { bytes = []; for (const ch of s) { const b = BYTE_DEC.get(ch); if (b !== undefined) bytes.push(b); else for (const x of enc.encode(ch)) bytes.push(x); } }
+        first = false; return d.decode(new Uint8Array(bytes), { stream: true });
+      };
+    };
+    this.decode = function (ts) { const f = this.decoder(); return ts.map(f).join(''); };
+  };
+
+  /* ---------- modelos de conversa ---------- */
+  G.TEMPLATES = {
+    chatml: { sys: (s) => '<|im_start|>system\n' + s + '<|im_end|>\n', user: (s) => '<|im_start|>user\n' + s + '<|im_end|>\n', asst: (s) => '<|im_start|>assistant\n' + s + '<|im_end|>\n', open: '<|im_start|>assistant\n', stop: ['<|im_end|>', '<|endoftext|>'] },
+    llama3: { pre: '<|begin_of_text|>', sys: (s) => '<|start_header_id|>system<|end_header_id|>\n\n' + s + '<|eot_id|>', user: (s) => '<|start_header_id|>user<|end_header_id|>\n\n' + s + '<|eot_id|>', asst: (s) => '<|start_header_id|>assistant<|end_header_id|>\n\n' + s + '<|eot_id|>', open: '<|start_header_id|>assistant<|end_header_id|>\n\n', stop: ['<|eot_id|>', '<|end_of_text|>'], noBos: true },
+    zephyr: { sys: (s) => '<|system|>\n' + s + '</s>\n', user: (s) => '<|user|>\n' + s + '</s>\n', asst: (s) => '<|assistant|>\n' + s + '</s>\n', open: '<|assistant|>\n', stop: ['</s>'] },
+    mistral: { sys: null, user: (s, sys) => '[INST] ' + (sys ? sys + '\n\n' : '') + s + ' [/INST]', asst: (s) => ' ' + s + '</s>', open: '', stop: ['</s>'] },
+    none: { raw: true, stop: [] }
+  };
+  G.detectTemplate = function (meta) {
+    const j = meta['tokenizer.chat_template'] || '';
+    if (j.includes('<|im_start|>')) return 'chatml';
+    if (j.includes('<|start_header_id|>')) return 'llama3';
+    if (j.includes('<|user|>') && j.includes('<|assistant|>')) return 'zephyr';
+    if (j.includes('[INST]')) return 'mistral';
+    return j ? 'chatml' : 'none';
+  };
+  // monta o texto da conversa; msgs: [{role, text}] já truncadas
+  G.renderChat = function (tpl, system, msgs, opts) {
+    const T = G.TEMPLATES[tpl];
+    if (T.raw) return msgs.map((m) => m.text).join('\n');
+    let s = T.pre || '', firstUser = true;
+    if (system && T.sys) s += T.sys(system);
+    for (const m of msgs) { if (m.role === 'user') { s += T.user(m.text, !T.sys && firstUser ? system : ''); firstUser = false; } else s += T.asst(m.text); }
+    s += T.open; if (opts && opts.noThink) s += '<think>\n\n</think>\n\n';
+    return s;
+  };
+
+  /* ---------- amostragem com semente ---------- */
+  G.rng = function (seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
+  G.sample = function (logits, o, rand, recent) {
+    const n = logits.length;
+    if (o.rep && o.rep !== 1 && recent) for (const t of recent) { const v = logits[t]; logits[t] = v > 0 ? v / o.rep : v * o.rep; }
+    if (!o.temp || o.temp <= 0) { let b = 0; for (let i = 1; i < n; i++) if (logits[i] > logits[b]) b = i; return b; }
+    const k = Math.min(o.topK > 0 ? o.topK : 200, n);
+    // top-k por seleção parcial
+    const idx = [], val = []; let minV = -Infinity, minI = -1;
+    for (let i = 0; i < n; i++) { const v = logits[i]; if (idx.length < k) { idx.push(i); val.push(v); if (idx.length === k) { minI = 0; for (let j = 1; j < k; j++) if (val[j] < val[minI]) minI = j; minV = val[minI]; } }
+      else if (v > minV) { idx[minI] = i; val[minI] = v; minI = 0; for (let j = 1; j < k; j++) if (val[j] < val[minI]) minI = j; minV = val[minI]; } }
+    const ord = idx.map((t, j) => [t, val[j] / o.temp]).sort((a, b) => b[1] - a[1]);
+    const mx = ord[0][1]; let sum = 0; for (const e of ord) { e[1] = Math.exp(e[1] - mx); sum += e[1]; }
+    let cut = ord.length, acc = 0; const p = o.topP > 0 && o.topP < 1 ? o.topP : 1;
+    for (let j = 0; j < ord.length; j++) { acc += ord[j][1] / sum; if (acc >= p) { cut = j + 1; break; } }
+    let s2 = 0; for (let j = 0; j < cut; j++) s2 += ord[j][1];
+    let r = rand() * s2; for (let j = 0; j < cut; j++) { r -= ord[j][1]; if (r <= 0) return ord[j][0]; }
+    return ord[cut - 1][0];
+  };
+})(GG);
+if (typeof module !== 'undefined') module.exports = GG;
+</script>
+<script type="text/plain" id="src-worker">
+/* ===================== Worker: dequantização paralela e produto matriz-vetor em int8 =====================
+   Recebe o texto do núcleo (GG) antes deste. Mensagens:
+   deq   -> dequantiza bytes e devolve f16 (Uint16Array) ou f32
+   store -> guarda uma fatia de linhas de uma matriz, requantizada em int8 por blocos de 32
+   mv    -> calcula y = W·x para várias matrizes guardadas
+   free  -> apaga tudo */
+const MATS = new Map();
+function toQ8(f, rows, cols) {
+  const nb = cols / 32, q = new Int8Array(rows * cols), s = new Float32Array(rows * nb);
+  for (let b = 0, o = 0; b < rows * nb; b++, o += 32) {
+    let m = 0; for (let j = 0; j < 32; j++) { const a = Math.abs(f[o + j]); if (a > m) m = a; }
+    const d = m / 127, inv = d ? 1 / d : 0; s[b] = d;
+    for (let j = 0; j < 32; j++) q[o + j] = Math.round(f[o + j] * inv);
+  }
+  return { q, s, rows, cols };
+}
+function mv(M, x, y) {
+  const { q, s, rows, cols } = M, nb = cols / 32;
+  for (let r = 0; r < rows; r++) {
+    let acc = 0, o = r * cols, sb = r * nb;
+    for (let b = 0; b < nb; b++, o += 32) {
+      let t = 0, k = b * 32;
+      for (let j = 0; j < 32; j += 4) t += q[o + j] * x[k + j] + q[o + j + 1] * x[k + j + 1] + q[o + j + 2] * x[k + j + 2] + q[o + j + 3] * x[k + j + 3];
+      acc += t * s[sb + b];
+    }
+    y[r] = acc;
+  }
+}
+self.onmessage = (ev) => {
+  const m = ev.data;
+  try {
+    if (m.op === 'deq') {
+      const f = GG.dequant(m.type, new Uint8Array(m.buf), m.nel, new Float32Array(m.nel));
+      if (m.f16) { const h = new Uint16Array(m.nel); for (let i = 0; i < m.nel; i++) h[i] = GG.toF16(f[i]); self.postMessage({ id: m.id, out: h }, [h.buffer]); }
+      else self.postMessage({ id: m.id, out: f }, [f.buffer]);
+    } else if (m.op === 'store') {
+      const f = GG.dequant(m.type, new Uint8Array(m.buf), m.rows * m.cols, new Float32Array(m.rows * m.cols));
+      MATS.set(m.name, toQ8(f, m.rows, m.cols)); self.postMessage({ id: m.id });
+    } else if (m.op === 'mv') {
+      const outs = m.jobs.map((j) => { const M = MATS.get(j.name); const y = new Float32Array(M.rows); mv(M, m.xs[j.x], y); return y; });
+      self.postMessage({ id: m.id, out: outs }, outs.map((o) => o.buffer));
+    } else if (m.op === 'free') { MATS.clear(); self.postMessage({ id: m.id }); }
+  } catch (e) { self.postMessage({ id: m.id, err: String(e && e.message || e) }); }
+};
+</script>
+<script>
+'use strict';
+/* ===================== Conjunto de workers, motor de CPU e carregador ===================== */
+class Pool {
+  constructor(src, n) {
+    this.url = URL.createObjectURL(new Blob([src], { type: 'text/javascript' }));
+    this.ws = []; this.wait = new Map(); this.seq = 0; this.free = [];
+    for (let i = 0; i < n; i++) { const w = new Worker(this.url); w.onmessage = (e) => { const r = this.wait.get(e.data.id); this.wait.delete(e.data.id); if (e.data.err) r[1](new Error(e.data.err)); else r[0](e.data.out); }; w.onerror = (e) => { for (const [, r] of this.wait) r[1](new Error(e.message || 'worker')); this.wait.clear(); }; this.ws.push(w); }
+    this.rr = 0;
+  }
+  get n() { return this.ws.length; }
+  call(i, msg, transfer) { return new Promise((res, rej) => { const id = ++this.seq; this.wait.set(id, [res, rej]); msg.id = id; this.ws[i].postMessage(msg, transfer || []); }); }
+  next() { this.rr = (this.rr + 1) % this.ws.length; return this.rr; }
+  terminate() { for (const w of this.ws) w.terminate(); URL.revokeObjectURL(this.url); this.ws = []; }
+}
+// divisão de linhas entre workers
+const split = (rows, n, i) => [Math.floor(rows * i / n), Math.floor(rows * (i + 1) / n)];
+
+class CpuLLM {
+  constructor(pool, cfg, nCtx) { this.pool = pool; this.cfg = cfg; this.nCtx = nCtx; this.vec = {}; this.mats = {}; }
+  async mvAll(jobs, xs) { // jobs: [{name}], xs: [Float32Array] -> saídas completas
+    const n = this.pool.n, parts = await Promise.all(this.pool.ws.map((_, i) => this.pool.call(i, { op: 'mv', jobs: jobs.map((j) => ({ name: j.name, x: j.x || 0 })), xs })));
+    return jobs.map((j, k) => { const rows = this.mats[j.name], y = new Float32Array(rows); for (let i = 0; i < n; i++) y.set(parts[i][k], split(rows, n, i)[0]); return y; });
+  }
+  build() {
+    const c = this.cfg, kvd = c.nKv * c.hd;
+    this.kc = []; this.vc = []; for (let l = 0; l < c.nLayer; l++) { this.kc.push(new Float32Array(this.nCtx * kvd)); this.vc.push(new Float32Array(this.nCtx * kvd)); }
+    this.att = new Float32Array(this.nCtx);
+  }
+  rms(x, w) { const c = this.cfg; let s = 0; for (let i = 0; i < x.length; i++) s += x[i] * x[i]; const r = 1 / Math.sqrt(s / x.length + c.eps), y = new Float32Array(x.length); for (let i = 0; i < x.length; i++) y[i] = x[i] * r * w[i]; return y; }
+  rope(v, off, nh, pos) {
+    const c = this.cfg, hp = c.ropeDim / 2;
+    for (let h = 0; h < nh; h++) for (let i = 0; i < hp; i++) {
+      const ang = pos * Math.pow(c.theta, -2 * i / c.ropeDim), co = Math.cos(ang), si = Math.sin(ang), base = off + h * c.hd;
+      const a = c.neox ? base + i : base + 2 * i, b = c.neox ? base + i + hp : a + 1, x0 = v[a], x1 = v[b];
+      v[a] = x0 * co - x1 * si; v[b] = x0 * si + x1 * co;
+    }
+  }
+  headnorm(v, off, nh, w) { const c = this.cfg; for (let h = 0; h < nh; h++) { const b = off + h * c.hd; let s = 0; for (let i = 0; i < c.hd; i++) s += v[b + i] * v[b + i]; const r = 1 / Math.sqrt(s / c.hd + c.eps); for (let i = 0; i < c.hd; i++) v[b + i] = v[b + i] * r * w[i]; } }
+  async step(tok, pos, want) {
+    const c = this.cfg, V = this.vec, kvd = c.nKv * c.hd, grp = c.nHead / c.nKv, sc = 1 / Math.sqrt(c.hd);
+    const x = this.embedRow(tok);
+    for (let l = 0; l < c.nLayer; l++) {
+      const b = (s) => 'blk.' + l + '.' + s;
+      const xb = this.rms(x, V[b('attn_norm.weight')]);
+      const [q, k, v] = await this.mvAll([{ name: b('attn_q.weight') }, { name: b('attn_k.weight') }, { name: b('attn_v.weight') }], [xb]);
+      for (const [y, n] of [[q, 'attn_q.bias'], [k, 'attn_k.bias'], [v, 'attn_v.bias']]) { const bb = V[b(n)]; if (bb) for (let i = 0; i < y.length; i++) y[i] += bb[i]; }
+      if (c.qkNorm) { this.headnorm(q, 0, c.nHead, V[b('attn_q_norm.weight')]); this.headnorm(k, 0, c.nKv, V[b('attn_k_norm.weight')]); }
+      this.rope(q, 0, c.nHead, pos); this.rope(k, 0, c.nKv, pos);
+      const K = this.kc[l], Vc = this.vc[l]; K.set(k, pos * kvd); Vc.set(v, pos * kvd);
+      const ao = new Float32Array(c.nHead * c.hd), att = this.att;
+      for (let h = 0; h < c.nHead; h++) {
+        const kb = Math.floor(h / grp) * c.hd, qb = h * c.hd; let mx = -Infinity;
+        for (let t = 0; t <= pos; t++) { let s = 0; const o = t * kvd + kb; for (let i = 0; i < c.hd; i++) s += q[qb + i] * K[o + i]; s *= sc; att[t] = s; if (s > mx) mx = s; }
+        let sum = 0; for (let t = 0; t <= pos; t++) { att[t] = Math.exp(att[t] - mx); sum += att[t]; }
+        for (let t = 0; t <= pos; t++) { const a = att[t] / sum, o = t * kvd + kb; for (let i = 0; i < c.hd; i++) ao[qb + i] += a * Vc[o + i]; }
+      }
+      const [o] = await this.mvAll([{ name: b('attn_output.weight') }], [ao]);
+      for (let i = 0; i < x.length; i++) x[i] += o[i];
+      const xf = this.rms(x, V[b('ffn_norm.weight')]);
+      const [g, u] = await this.mvAll([{ name: b('ffn_gate.weight') }, { name: b('ffn_up.weight') }], [xf]);
+      for (let i = 0; i < g.length; i++) g[i] = g[i] / (1 + Math.exp(-g[i])) * u[i];
+      const [dn] = await this.mvAll([{ name: b('ffn_down.weight') }], [g]);
+      for (let i = 0; i < x.length; i++) x[i] += dn[i];
+    }
+    if (!want) return null;
+    const xo = this.rms(x, V['output_norm.weight']);
+    const [lg] = await this.mvAll([{ name: c.tied ? 'token_embd.weight' : 'output.weight' }], [xo]);
+    return lg;
+  }
+  embedRow(tok) { const t = this.embed, rb = GG.rowBytes(t.type, t.cols); return GG.dequant(t.type, t.u8.subarray(tok * rb, (tok + 1) * rb), t.cols, new Float32Array(t.cols)); }
+  destroy() { this.pool.ws.forEach((_, i) => this.pool.call(i, { op: 'free' }).catch(() => {})); }
+}
+
+/* carrega os tensores do arquivo para o motor escolhido; onProg(feito, total) */
+async function loadTensors(engine, kind, h, read, pool, onProg, cancel) {
+  const ts = Object.values(h.tensors).filter((t) => t.name !== 'rope_freqs.weight');
+  const total = ts.reduce((a, t) => a + t.bytes, 0); let done = 0;
+  const prog = (b) => { done += b; onProg(done, total); };
+  const CH = 16 << 20; // bytes por tarefa
+  if (kind === 'gpu') {
+    const q = []; let inflight = [];
+    for (const t of ts) {
+      if (t.dims.length === 1 || t.type === 0 && t.dims.length === 1) { // vetores: f32
+        const u8 = await read(t.start, t.bytes); const f = GG.dequant(t.type, u8, t.nel, new Float32Array(t.nel));
+        engine.dev.queue.writeBuffer(engine.alloc(t.name, t.nel * 4), 0, f); prog(t.bytes); continue;
+      }
+      const cols = t.dims[0], rows = t.nel / cols, rb = GG.rowBytes(t.type, cols), per = Math.max(1, Math.floor(CH / rb));
+      const buf = engine.alloc(t.name, t.nel * 2);
+      for (let r0 = 0; r0 < rows; r0 += per) q.push({ t, buf, r0, r1: Math.min(rows, r0 + per), cols, rb });
+    }
+    let qi = 0;
+    const worker = async (wi) => {
+      while (qi < q.length) { if (cancel()) throw new Error('cancel');
+        const j = q[qi++], u8 = await read(j.t.start + j.r0 * j.rb, (j.r1 - j.r0) * j.rb), nel = (j.r1 - j.r0) * j.cols;
+        const buf = u8.byteOffset === 0 && u8.byteLength === u8.buffer.byteLength ? u8.buffer : u8.slice().buffer;
+        const out = await pool.call(wi, { op: 'deq', type: j.t.type, buf, nel, f16: true }, [buf]);
+        engine.dev.queue.writeBuffer(j.buf, j.r0 * j.cols * 2, out); prog((j.r1 - j.r0) * j.rb); }
+    };
+    await Promise.all(pool.ws.map((_, i) => worker(i)));
+    await engine.dev.queue.onSubmittedWorkDone();
+  } else {
+    const n = pool.n;
+    for (const t of ts) {
+      if (cancel()) throw new Error('cancel');
+      const u8 = await read(t.start, t.bytes);
+      if (t.dims.length === 1) { engine.vec[t.name] = GG.dequant(t.type, u8, t.nel, new Float32Array(t.nel)); prog(t.bytes); continue; }
+      const cols = t.dims[0], rows = t.nel / cols, rb = GG.rowBytes(t.type, cols);
+      if (t.name === 'token_embd.weight') engine.embed = { type: t.type, cols, u8: u8.slice() };
+      if (t.name === 'token_embd.weight' && !engine.cfg.tied) { prog(t.bytes); continue; }
+      engine.mats[t.name] = rows;
+      await Promise.all(pool.ws.map((_, i) => { const [a, b] = split(rows, n, i); const part = u8.slice(a * rb, b * rb); return pool.call(i, { op: 'store', name: t.name, type: t.type, buf: part.buffer, rows: b - a, cols }, [part.buffer]); }));
+      prog(t.bytes);
+    }
+  }
+}
+
+/* ===================== Motor WebGPU: inferência de modelos llama / qwen2 / qwen3 =====================
+   Pesos em f16 (dois por u32), ativações e cache KV em f32. Cada passo é uma lista fixa de despachos,
+   montada no carregamento; por token só muda o uniforme com a posição e o token. */
+const WGSL_COMMON = `
+struct P { pos: u32, tok: u32, n: u32, pad: u32 };
+@group(0) @binding(0) var<uniform> p: P;
+`;
+const WGSL = {
+  embed: WGSL_COMMON + `
+struct D { half: u32, a: u32, b: u32, c: u32 };
+@group(0) @binding(1) var<storage, read> W: array<u32>;
+@group(0) @binding(2) var<storage, read_write> X: array<f32>;
+@group(0) @binding(3) var<uniform> d: D;
+@compute @workgroup_size(256) fn main(@builtin(global_invocation_id) g: vec3<u32>) {
+  _ = p.pos;
+  let i = g.x; if (i >= d.half) { return; }
+  let w = unpack2x16float(W[p.tok * d.half + i]); X[2u * i] = w.x; X[2u * i + 1u] = w.y;
+}`,
+  rmsnorm: WGSL_COMMON + `
+struct D { n: u32, a: u32, eps: f32, b: u32 };
+@group(0) @binding(1) var<storage, read> X: array<f32>;
+@group(0) @binding(2) var<storage, read> Wt: array<f32>;
+@group(0) @binding(3) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(4) var<uniform> d: D;
+var<workgroup> red: array<f32, 256>;
+@compute @workgroup_size(256) fn main(@builtin(local_invocation_index) li: u32) {
+  _ = p.pos;
+  var s = 0.0; for (var i = li; i < d.n; i += 256u) { let v = X[i]; s += v * v; }
+  red[li] = s; workgroupBarrier();
+  for (var st = 128u; st > 0u; st >>= 1u) { if (li < st) { red[li] += red[li + st]; } workgroupBarrier(); }
+  let r = inverseSqrt(red[0] / f32(d.n) + d.eps);
+  for (var i = li; i < d.n; i += 256u) { Y[i] = X[i] * r * Wt[i]; }
+}`,
+  headnorm: WGSL_COMMON + `
+struct D { hd: u32, posMul: u32, eps: f32, b: u32 };
+@group(0) @binding(1) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(2) var<storage, read> Wt: array<f32>;
+@group(0) @binding(3) var<uniform> d: D;
+var<workgroup> red: array<f32, 256>;
+@compute @workgroup_size(256) fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) li: u32) {
+  _ = p.pos;
+  let base = d.posMul * p.pos + wg.x * d.hd;
+  var s = 0.0; for (var i = li; i < d.hd; i += 256u) { let v = Y[base + i]; s += v * v; }
+  red[li] = s; workgroupBarrier();
+  for (var st = 128u; st > 0u; st >>= 1u) { if (li < st) { red[li] += red[li + st]; } workgroupBarrier(); }
+  let r = inverseSqrt(red[0] / f32(d.hd) + d.eps);
+  storageBarrier();
+  for (var i = li; i < d.hd; i += 256u) { Y[base + i] = Y[base + i] * r * Wt[i]; }
+}`,
+  matvec: WGSL_COMMON + `
+struct D { rows: u32, half: u32, flags: u32, posMul: u32 };
+@group(0) @binding(1) var<storage, read> W: array<u32>;
+@group(0) @binding(2) var<storage, read> X: array<vec2<f32>>;
+@group(0) @binding(3) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(4) var<storage, read> B: array<f32>;
+@group(0) @binding(5) var<uniform> d: D;
+var<workgroup> red: array<f32, 64>;
+@compute @workgroup_size(64) fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) li: u32) {
+  _ = p.pos;
+  let r = wg.y * 32768u + wg.x;
+  if (r >= d.rows) { return; }
+  let base = r * d.half; var s = 0.0;
+  for (var i = li; i < d.half; i += 64u) { let w = unpack2x16float(W[base + i]); let x = X[i]; s += w.x * x.x + w.y * x.y; }
+  red[li] = s; workgroupBarrier();
+  for (var st = 32u; st > 0u; st >>= 1u) { if (li < st) { red[li] += red[li + st]; } workgroupBarrier(); }
+  if (li == 0u) {
+    var v = red[0]; if ((d.flags & 1u) != 0u) { v += B[r]; }
+    let o = d.posMul * p.pos + r;
+    if ((d.flags & 2u) != 0u) { Y[o] += v; } else { Y[o] = v; }
+  }
+}`,
+  rope: WGSL_COMMON + `
+struct D { nh: u32, hd: u32, rd: u32, neox: u32, theta: f32, posMul: u32, a: u32, b: u32 };
+@group(0) @binding(1) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(2) var<uniform> d: D;
+@compute @workgroup_size(64) fn main(@builtin(global_invocation_id) g: vec3<u32>) {
+  _ = p.pos;
+  let hp = d.rd / 2u; let h = g.x / hp; let i = g.x % hp;
+  if (h >= d.nh) { return; }
+  let base = d.posMul * p.pos + h * d.hd;
+  let ang = f32(p.pos) * pow(d.theta, -2.0 * f32(i) / f32(d.rd));
+  let c = cos(ang); let s = sin(ang);
+  var a = base + 2u * i; var b = a + 1u;
+  if (d.neox != 0u) { a = base + i; b = base + i + hp; }
+  let x0 = Y[a]; let x1 = Y[b];
+  Y[a] = x0 * c - x1 * s; Y[b] = x0 * s + x1 * c;
+}`,
+  attn: WGSL_COMMON + `
+struct D { nh: u32, grp: u32, hd: u32, kvd: u32, nctx: u32, scale: f32, a: u32, b: u32 };
+@group(0) @binding(1) var<storage, read> Q: array<f32>;
+@group(0) @binding(2) var<storage, read> K: array<f32>;
+@group(0) @binding(3) var<storage, read> V: array<f32>;
+@group(0) @binding(4) var<storage, read_write> S: array<f32>;
+@group(0) @binding(5) var<storage, read_write> O: array<f32>;
+@group(0) @binding(6) var<uniform> d: D;
+var<workgroup> red: array<f32, 256>;
+@compute @workgroup_size(256) fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) li: u32) {
+  _ = p.pos;
+  let h = wg.x; let kh = h / d.grp; let n = p.pos + 1u;
+  let qb = h * d.hd; let sb = h * d.nctx; let kb = kh * d.hd;
+  var mx = -3.0e38;
+  for (var t = li; t < n; t += 256u) {
+    var s = 0.0; let ko = t * d.kvd + kb;
+    for (var i = 0u; i < d.hd; i += 1u) { s += Q[qb + i] * K[ko + i]; }
+    s *= d.scale; S[sb + t] = s; mx = max(mx, s);
+  }
+  red[li] = mx; workgroupBarrier();
+  for (var st = 128u; st > 0u; st >>= 1u) { if (li < st) { red[li] = max(red[li], red[li + st]); } workgroupBarrier(); }
+  let m = red[0]; workgroupBarrier();
+  var sum = 0.0;
+  for (var t = li; t < n; t += 256u) { let e = exp(S[sb + t] - m); S[sb + t] = e; sum += e; }
+  red[li] = sum; workgroupBarrier();
+  for (var st = 128u; st > 0u; st >>= 1u) { if (li < st) { red[li] += red[li + st]; } workgroupBarrier(); }
+  let inv = 1.0 / red[0];
+  storageBarrier(); workgroupBarrier();
+  for (var i = li; i < d.hd; i += 256u) {
+    var acc = 0.0;
+    for (var t = 0u; t < n; t += 1u) { acc += S[sb + t] * V[t * d.kvd + kb + i]; }
+    O[qb + i] = acc * inv;
+  }
+}`,
+  silu: WGSL_COMMON + `
+struct D { n: u32, a: u32, b: u32, c: u32 };
+@group(0) @binding(1) var<storage, read_write> G: array<f32>;
+@group(0) @binding(2) var<storage, read> U: array<f32>;
+@group(0) @binding(3) var<uniform> d: D;
+@compute @workgroup_size(256) fn main(@builtin(global_invocation_id) g: vec3<u32>) {
+  _ = p.pos;
+  let i = g.x; if (i >= d.n) { return; }
+  let x = G[i]; G[i] = x / (1.0 + exp(-x)) * U[i];
+}`
+};
+
+class GpuLLM {
+  static async device() {
+    if (!navigator.gpu) throw new Error('no-webgpu');
+    const ad = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
+    if (!ad) throw new Error('no-adapter');
+    const L = ad.limits;
+    const dev = await ad.requestDevice({ requiredLimits: { maxStorageBufferBindingSize: L.maxStorageBufferBindingSize, maxBufferSize: L.maxBufferSize, maxStorageBuffersPerShaderStage: Math.min(L.maxStorageBuffersPerShaderStage, 10) } });
+    return { ad, dev };
+  }
+  constructor(dev, cfg, nCtx) {
+    this.dev = dev; this.cfg = cfg; this.nCtx = nCtx; this.buf = {}; this.lost = false;
+    this.pipes = {}; for (const k in WGSL) this.pipes[k] = dev.createComputePipeline({ layout: 'auto', compute: { module: dev.createShaderModule({ code: WGSL[k] }), entryPoint: 'main' } });
+  }
+  sbuf(bytes, usage) { return this.dev.createBuffer({ size: Math.max(16, Math.ceil(bytes / 4) * 4), usage: usage || (GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC) }); }
+  ubuf(u32s) { const b = this.dev.createBuffer({ size: Math.max(16, u32s.length * 4), usage: GPUBufferUsage.UNIFORM, mappedAtCreation: true }); new Uint32Array(b.getMappedRange()).set(u32s); b.unmap(); return b; }
+  f32u(v) { const f = new Float32Array([v]); return new Uint32Array(f.buffer)[0]; }
+  // aloca o tensor; o carregador escreve os dados depois
+  alloc(name, bytes) { const b = this.sbuf(bytes); this.buf[name] = b; return b; }
+  build() {
+    const c = this.cfg, dev = this.dev, N = this.nCtx, qd = c.nHead * c.hd, kvd = c.nKv * c.hd, w = (n) => { const b = this.buf[n]; if (!b) throw new Error('missing-tensor:' + n); return b; };
+    this.P = this.dev.createBuffer({ size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+    const A = this.A = { x: this.sbuf(c.nEmbd * 4), xb: this.sbuf(c.nEmbd * 4), q: this.sbuf(qd * 4), ao: this.sbuf(qd * 4), s: this.sbuf(c.nHead * N * 4), hb: this.sbuf(c.nFF * 4), hb2: this.sbuf(c.nFF * 4), logits: this.sbuf(c.nVocab * 4), dummy: this.sbuf(16) };
+    this.kc = []; this.vc = []; for (let l = 0; l < c.nLayer; l++) { this.kc.push(this.sbuf(N * kvd * 4)); this.vc.push(this.sbuf(N * kvd * 4)); }
+    this.read = dev.createBuffer({ size: c.nVocab * 4, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST });
+    const ops = this.ops = [];
+    const bg = (pipe, bufs) => dev.createBindGroup({ layout: this.pipes[pipe].getBindGroupLayout(0), entries: [{ binding: 0, resource: { buffer: this.P } }].concat(bufs.map((b, i) => ({ binding: i + 1, resource: { buffer: b } }))) });
+    const op = (pipe, bufs, wg) => ops.push({ pipe: this.pipes[pipe], bg: bg(pipe, bufs), wg });
+    const mv = (W, X, Y, rows, cols, opt) => { opt = opt || {}; op('matvec', [W, X, Y, opt.bias || A.dummy, this.ubuf([rows, cols / 2, (opt.bias ? 1 : 0) | (opt.acc ? 2 : 0), opt.posMul || 0])], [Math.min(rows, 32768), Math.ceil(rows / 32768), 1]); };
+    const rms = (X, Wt, Y, n) => op('rmsnorm', [X, Wt, Y, this.ubuf([n, 0, this.f32u(c.eps), 0])], [1, 1, 1]);
+    const rope = (Y, nh, posMul) => op('rope', [Y, this.ubuf([nh, c.hd, c.ropeDim, c.neox ? 1 : 0, this.f32u(c.theta), posMul, 0, 0])], [Math.ceil(nh * c.ropeDim / 2 / 64), 1, 1]);
+    op('embed', [w('token_embd.weight'), A.x, this.ubuf([c.nEmbd / 2, 0, 0, 0])], [Math.ceil(c.nEmbd / 2 / 256), 1, 1]);
+    for (let l = 0; l < c.nLayer; l++) {
+      const b = (s) => 'blk.' + l + '.' + s, has = (s) => !!this.buf[b(s)];
+      rms(A.x, w(b('attn_norm.weight')), A.xb, c.nEmbd);
+      mv(w(b('attn_q.weight')), A.xb, A.q, qd, c.nEmbd, { bias: has('attn_q.bias') && w(b('attn_q.bias')) });
+      mv(w(b('attn_k.weight')), A.xb, this.kc[l], kvd, c.nEmbd, { bias: has('attn_k.bias') && w(b('attn_k.bias')), posMul: kvd });
+      mv(w(b('attn_v.weight')), A.xb, this.vc[l], kvd, c.nEmbd, { bias: has('attn_v.bias') && w(b('attn_v.bias')), posMul: kvd });
+      if (c.qkNorm) {
+        op('headnorm', [A.q, w(b('attn_q_norm.weight')), this.ubuf([c.hd, 0, this.f32u(c.eps), 0])], [c.nHead, 1, 1]);
+        op('headnorm', [this.kc[l], w(b('attn_k_norm.weight')), this.ubuf([c.hd, kvd, this.f32u(c.eps), 0])], [c.nKv, 1, 1]);
+      }
+      rope(A.q, c.nHead, 0); rope(this.kc[l], c.nKv, kvd);
+      op('attn', [A.q, this.kc[l], this.vc[l], A.s, A.ao, this.ubuf([c.nHead, c.nHead / c.nKv, c.hd, kvd, N, this.f32u(1 / Math.sqrt(c.hd)), 0, 0])], [c.nHead, 1, 1]);
+      mv(w(b('attn_output.weight')), A.ao, A.x, c.nEmbd, qd, { acc: true });
+      rms(A.x, w(b('ffn_norm.weight')), A.xb, c.nEmbd);
+      mv(w(b('ffn_gate.weight')), A.xb, A.hb, c.nFF, c.nEmbd);
+      mv(w(b('ffn_up.weight')), A.xb, A.hb2, c.nFF, c.nEmbd);
+      op('silu', [A.hb, A.hb2, this.ubuf([c.nFF, 0, 0, 0])], [Math.ceil(c.nFF / 256), 1, 1]);
+      mv(w(b('ffn_down.weight')), A.hb, A.x, c.nEmbd, c.nFF, { acc: true });
+    }
+    rms(A.x, w('output_norm.weight'), A.xb, c.nEmbd);
+    this.headOp = ops.length;
+    mv(w(c.tied ? 'token_embd.weight' : 'output.weight'), A.xb, A.logits, c.nVocab, c.nEmbd);
+  }
+  // processa um token na posição pos; se want, devolve os logits
+  async step(tok, pos, want) {
+    if (this.lost) throw new Error('device-lost');
+    this.dev.queue.writeBuffer(this.P, 0, new Uint32Array([pos, tok, 0, 0]));
+    const enc = this.dev.createCommandEncoder(), pass = enc.beginComputePass();
+    const end = want ? this.ops.length : this.headOp;
+    for (let i = 0; i < end; i++) { const o = this.ops[i]; pass.setPipeline(o.pipe); pass.setBindGroup(0, o.bg); pass.dispatchWorkgroups(o.wg[0], o.wg[1], o.wg[2]); }
+    pass.end();
+    if (want) enc.copyBufferToBuffer(this.A.logits, 0, this.read, 0, this.cfg.nVocab * 4);
+    this.dev.queue.submit([enc.finish()]);
+    if (!want) return null;
+    await this.read.mapAsync(GPUMapMode.READ);
+    const out = new Float32Array(this.read.getMappedRange().slice(0)); this.read.unmap();
+    return out;
+  }
+  destroy() { for (const b of Object.values(this.buf)) b.destroy(); if (this.A) for (const b of Object.values(this.A)) b.destroy(); for (const b of (this.kc || []).concat(this.vc || [])) b.destroy(); }
+}
+
+/* ===================== Mini-GPT: transformer de caracteres treinado na GPU =====================
+   Avanço e retropropagação escritos à mão em WGSL. Uma multiplicação de matrizes genérica, com passos (strides)
+   e lote de dois níveis (exemplo, cabeça), cobre as camadas lineares e a atenção. */
+const TG = {
+  matmul: `
+struct MM { M: u32, N: u32, K: u32, H: u32,
+  aOff: u32, aSb: u32, aSh: u32, aSi: u32, aSk: u32,
+  bOff: u32, bSb: u32, bSh: u32, bSk: u32, bSj: u32,
+  cOff: u32, cSb: u32, cSh: u32, cSi: u32, cSj: u32,
+  alpha: f32, accum: u32, bias: u32, p1: u32, p2: u32 };
+@group(0) @binding(0) var<storage, read> A: array<f32>;
+@group(0) @binding(1) var<storage, read> B: array<f32>;
+@group(0) @binding(2) var<storage, read_write> C: array<f32>;
+@group(0) @binding(3) var<storage, read> Bias: array<f32>;
+@group(0) @binding(4) var<uniform> m: MM;
+var<workgroup> As: array<array<f32, 16>, 16>;
+var<workgroup> Bs: array<array<f32, 16>, 16>;
+@compute @workgroup_size(16, 16) fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_id) l: vec3<u32>) {
+  let b = wg.z / m.H; let h = wg.z % m.H;
+  let i = wg.y * 16u + l.y; let j = wg.x * 16u + l.x;
+  let aB = m.aOff + b * m.aSb + h * m.aSh; let bB = m.bOff + b * m.bSb + h * m.bSh;
+  var acc = 0.0;
+  for (var k0 = 0u; k0 < m.K; k0 += 16u) {
+    let ka = k0 + l.x; let kb = k0 + l.y;
+    var av = 0.0; if (i < m.M && ka < m.K) { av = A[aB + i * m.aSi + ka * m.aSk]; }
+    var bv = 0.0; if (kb < m.K && j < m.N) { bv = B[bB + kb * m.bSk + j * m.bSj]; }
+    As[l.y][l.x] = av; Bs[l.y][l.x] = bv;
+    workgroupBarrier();
+    for (var kk = 0u; kk < 16u; kk += 1u) { acc += As[l.y][kk] * Bs[kk][l.x]; }
+    workgroupBarrier();
+  }
+  if (i < m.M && j < m.N) {
+    var v = m.alpha * acc; if (m.bias != 0u) { v += Bias[j]; }
+    let o = m.cOff + b * m.cSb + h * m.cSh + i * m.cSi + j * m.cSj;
+    if (m.accum != 0u) { C[o] += v; } else { C[o] = v; }
+  }
+}`,
+  embed: `
+struct D { N: u32, C: u32, T: u32, V: u32 };
+@group(0) @binding(0) var<storage, read> tok: array<u32>;
+@group(0) @binding(1) var<storage, read> wte: array<f32>;
+@group(0) @binding(2) var<storage, read> wpe: array<f32>;
+@group(0) @binding(3) var<storage, read_write> X: array<f32>;
+@group(0) @binding(4) var<uniform> d: D;
+@compute @workgroup_size(256) fn main(@builtin(global_invocation_id) g: vec3<u32>) {
+  let id = g.x; if (id >= d.N * d.C) { return; }
+  let n = id / d.C; let c = id % d.C;
+  X[id] = wte[tok[n] * d.C + c] + wpe[(n % d.T) * d.C + c];
+}`,
+  embedBwd: `
+struct D { N: u32, C: u32, T: u32, V: u32 };
+@group(0) @binding(0) var<storage, read> tok: array<u32>;
+@group(0) @binding(1) var<storage, read> dX: array<f32>;
+@group(0) @binding(2) var<storage, read_write> dwte: array<f32>;
+@group(0) @binding(3) var<storage, read_write> dwpe: array<f32>;
+@group(0) @binding(4) var<uniform> d: D;
+@compute @workgroup_size(256) fn main(@builtin(global_invocation_id) g: vec3<u32>) {
+  let id = g.x;
+  if (id < d.V * d.C) { let v = id / d.C; let c = id % d.C; var s = 0.0;
+    for (var n = 0u; n < d.N; n += 1u) { if (tok[n] == v) { s += dX[n * d.C + c]; } }
+    dwte[id] += s; }
+  if (id < d.T * d.C) { let t = id / d.C; let c = id % d.C; var s = 0.0;
+    for (var n = t; n < d.N; n += d.T) { s += dX[n * d.C + c]; }
+    dwpe[id] += s; }
+}`,
+  ln: `
+struct D { N: u32, C: u32, a: u32, b: u32 };
+@group(0) @binding(0) var<storage, read> X: array<f32>;
+@group(0) @binding(1) var<storage, read> G: array<f32>;
+@group(0) @binding(2) var<storage, read> Bb: array<f32>;
+@group(0) @binding(3) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(4) var<storage, read_write> S: array<f32>;
+@group(0) @binding(5) var<uniform> d: D;
+var<workgroup> r1: array<f32, 64>;
+var<workgroup> r2: array<f32, 64>;
+@compute @workgroup_size(64) fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) li: u32) {
+  let n = wg.y * 32768u + wg.x; if (n >= d.N) { return; }
+  let o = n * d.C; var s = 0.0; var q = 0.0;
+  for (var c = li; c < d.C; c += 64u) { let v = X[o + c]; s += v; q += v * v; }
+  r1[li] = s; r2[li] = q; workgroupBarrier();
+  for (var st = 32u; st > 0u; st >>= 1u) { if (li < st) { r1[li] += r1[li + st]; r2[li] += r2[li + st]; } workgroupBarrier(); }
+  let mean = r1[0] / f32(d.C); let rstd = inverseSqrt(max(r2[0] / f32(d.C) - mean * mean, 0.0) + 1e-5);
+  for (var c = li; c < d.C; c += 64u) { Y[o + c] = (X[o + c] - mean) * rstd * G[c] + Bb[c]; }
+  if (li == 0u) { S[2u * n] = mean; S[2u * n + 1u] = rstd; }
+}`,
+  lnBwd: `
+struct D { N: u32, C: u32, a: u32, b: u32 };
+@group(0) @binding(0) var<storage, read> dY: array<f32>;
+@group(0) @binding(1) var<storage, read> X: array<f32>;
+@group(0) @binding(2) var<storage, read> G: array<f32>;
+@group(0) @binding(3) var<storage, read> S: array<f32>;
+@group(0) @binding(4) var<storage, read_write> dX: array<f32>;
+@group(0) @binding(5) var<uniform> d: D;
+var<workgroup> r1: array<f32, 64>;
+var<workgroup> r2: array<f32, 64>;
+@compute @workgroup_size(64) fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) li: u32) {
+  let n = wg.y * 32768u + wg.x; if (n >= d.N) { return; }
+  let o = n * d.C; let mean = S[2u * n]; let rstd = S[2u * n + 1u]; var a = 0.0; var b = 0.0;
+  for (var c = li; c < d.C; c += 64u) { let xh = (X[o + c] - mean) * rstd; let dxh = dY[o + c] * G[c]; a += dxh; b += dxh * xh; }
+  r1[li] = a; r2[li] = b; workgroupBarrier();
+  for (var st = 32u; st > 0u; st >>= 1u) { if (li < st) { r1[li] += r1[li + st]; r2[li] += r2[li + st]; } workgroupBarrier(); }
+  let m1 = r1[0] / f32(d.C); let m2 = r2[0] / f32(d.C);
+  for (var c = li; c < d.C; c += 64u) { let xh = (X[o + c] - mean) * rstd; let dxh = dY[o + c] * G[c]; dX[o + c] += rstd * (dxh - m1 - xh * m2); }
+}`,
+  lnGrad: `
+struct D { N: u32, C: u32, a: u32, b: u32 };
+@group(0) @binding(0) var<storage, read> dY: array<f32>;
+@group(0) @binding(1) var<storage, read> X: array<f32>;
+@group(0) @binding(2) var<storage, read> S: array<f32>;
+@group(0) @binding(3) var<storage, read_write> dG: array<f32>;
+@group(0) @binding(4) var<storage, read_write> dB: array<f32>;
+@group(0) @binding(5) var<uniform> d: D;
+@compute @workgroup_size(64) fn main(@builtin(global_invocation_id) g: vec3<u32>) {
+  let c = g.x; if (c >= d.C) { return; }
+  var a = 0.0; var b = 0.0;
+  for (var n = 0u; n < d.N; n += 1u) { let o = n * d.C + c; let xh = (X[o] - S[2u * n]) * S[2u * n + 1u]; a += dY[o] * xh; b += dY[o]; }
+  dG[c] += a; dB[c] += b;
+}`,
+  colsum: `
+struct D { N: u32, C: u32, a: u32, b: u32 };
+@group(0) @binding(0) var<storage, read> dY: array<f32>;
+@group(0) @binding(1) var<storage, read_write> dB: array<f32>;
+@group(0) @binding(2) var<uniform> d: D;
+@compute @workgroup_size(64) fn main(@builtin(global_invocation_id) g: vec3<u32>) {
+  let c = g.x; if (c >= d.C) { return; }
+  var s = 0.0; for (var n = 0u; n < d.N; n += 1u) { s += dY[n * d.C + c]; }
+  dB[c] += s;
+}`,
+  softmax: `
+struct D { R: u32, T: u32, a: u32, b: u32 };
+@group(0) @binding(0) var<storage, read_write> P: array<f32>;
+@group(0) @binding(1) var<uniform> d: D;
+@compute @workgroup_size(64) fn main(@builtin(global_invocation_id) g: vec3<u32>) {
+  let r = g.y * 65535u * 64u + g.x; if (r >= d.R) { return; }
+  let t = r % d.T; let o = r * d.T; var mx = -3.0e38;
+  for (var j = 0u; j <= t; j += 1u) { mx = max(mx, P[o + j]); }
+  var s = 0.0; for (var j = 0u; j <= t; j += 1u) { let e = exp(P[o + j] - mx); P[o + j] = e; s += e; }
+  let inv = 1.0 / s;
+  for (var j = 0u; j < d.T; j += 1u) { if (j <= t) { P[o + j] *= inv; } else { P[o + j] = 0.0; } }
+}`,
+  softmaxBwd: `
+struct D { R: u32, T: u32, a: u32, b: u32 };
+@group(0) @binding(0) var<storage, read> P: array<f32>;
+@group(0) @binding(1) var<storage, read_write> dP: array<f32>;
+@group(0) @binding(2) var<uniform> d: D;
+@compute @workgroup_size(64) fn main(@builtin(global_invocation_id) g: vec3<u32>) {
+  let r = g.y * 65535u * 64u + g.x; if (r >= d.R) { return; }
+  let o = r * d.T; var s = 0.0;
+  for (var j = 0u; j < d.T; j += 1u) { s += P[o + j] * dP[o + j]; }
+  for (var j = 0u; j < d.T; j += 1u) { dP[o + j] = P[o + j] * (dP[o + j] - s); }
+}`,
+  gelu: `
+struct D { n: u32, a: u32, b: u32, c: u32 };
+@group(0) @binding(0) var<storage, read> X: array<f32>;
+@group(0) @binding(1) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(2) var<uniform> d: D;
+@compute @workgroup_size(256) fn main(@builtin(global_invocation_id) g: vec3<u32>) {
+  let i = g.y * 65535u * 256u + g.x; if (i >= d.n) { return; }
+  let x = X[i]; let u = 0.7978845608 * (x + 0.044715 * x * x * x);
+  Y[i] = 0.5 * x * (1.0 + tanh(clamp(u, -15.0, 15.0)));
+}`,
+  geluBwd: `
+struct D { n: u32, a: u32, b: u32, c: u32 };
+@group(0) @binding(0) var<storage, read> X: array<f32>;
+@group(0) @binding(1) var<storage, read> dY: array<f32>;
+@group(0) @binding(2) var<storage, read_write> dX: array<f32>;
+@group(0) @binding(3) var<uniform> d: D;
+@compute @workgroup_size(256) fn main(@builtin(global_invocation_id) g: vec3<u32>) {
+  let i = g.y * 65535u * 256u + g.x; if (i >= d.n) { return; }
+  let x = X[i]; let u = 0.7978845608 * (x + 0.044715 * x * x * x); let th = tanh(clamp(u, -15.0, 15.0));
+  let du = 0.7978845608 * (1.0 + 3.0 * 0.044715 * x * x);
+  dX[i] = dY[i] * (0.5 * (1.0 + th) + 0.5 * x * (1.0 - th * th) * du);
+}`,
+  copy: `
+struct D { n: u32, a: u32, b: u32, c: u32 };
+@group(0) @binding(0) var<storage, read> X: array<f32>;
+@group(0) @binding(1) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(2) var<uniform> d: D;
+@compute @workgroup_size(256) fn main(@builtin(global_invocation_id) g: vec3<u32>) {
+  let i = g.y * 65535u * 256u + g.x; if (i >= d.n) { return; }
+  Y[i] = X[i];
+}`,
+  xent: `
+struct D { N: u32, V: u32, a: u32, b: u32 };
+@group(0) @binding(0) var<storage, read> L: array<f32>;
+@group(0) @binding(1) var<storage, read> tgt: array<u32>;
+@group(0) @binding(2) var<storage, read_write> dL: array<f32>;
+@group(0) @binding(3) var<storage, read_write> loss: array<f32>;
+@group(0) @binding(4) var<uniform> d: D;
+var<workgroup> r: array<f32, 64>;
+@compute @workgroup_size(64) fn main(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index) li: u32) {
+  let n = wg.y * 32768u + wg.x; if (n >= d.N) { return; }
+  let o = n * d.V; var mx = -3.0e38;
+  for (var v = li; v < d.V; v += 64u) { mx = max(mx, L[o + v]); }
+  r[li] = mx; workgroupBarrier();
+  for (var st = 32u; st > 0u; st >>= 1u) { if (li < st) { r[li] = max(r[li], r[li + st]); } workgroupBarrier(); }
+  let m = r[0]; workgroupBarrier();
+  var s = 0.0; for (var v = li; v < d.V; v += 64u) { s += exp(L[o + v] - m); }
+  r[li] = s; workgroupBarrier();
+  for (var st = 32u; st > 0u; st >>= 1u) { if (li < st) { r[li] += r[li + st]; } workgroupBarrier(); }
+  let sum = r[0]; let t = tgt[n]; let inv = 1.0 / f32(d.N);
+  for (var v = li; v < d.V; v += 64u) { var p = exp(L[o + v] - m) / sum; if (v == t) { p -= 1.0; } dL[o + v] = p * inv; }
+  if (li == 0u) { loss[n] = log(sum) + m - L[o + t]; }
+}`,
+  reduce: `
+struct D { n: u32, a: u32, b: u32, c: u32 };
+@group(0) @binding(0) var<storage, read> X: array<f32>;
+@group(0) @binding(1) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(2) var<uniform> d: D;
+var<workgroup> r: array<f32, 256>;
+@compute @workgroup_size(256) fn main(@builtin(local_invocation_index) li: u32) {
+  var s = 0.0; for (var i = li; i < d.n; i += 256u) { s += X[i]; }
+  r[li] = s; workgroupBarrier();
+  for (var st = 128u; st > 0u; st >>= 1u) { if (li < st) { r[li] += r[li + st]; } workgroupBarrier(); }
+  if (li == 0u) { Y[d.a] = r[0] / f32(d.n); }
+}`,
+  sumsq: `
+struct D { n: u32, slot: u32, b: u32, c: u32 };
+@group(0) @binding(0) var<storage, read> X: array<f32>;
+@group(0) @binding(1) var<storage, read_write> Y: array<f32>;
+@group(0) @binding(2) var<uniform> d: D;
+var<workgroup> r: array<f32, 256>;
+@compute @workgroup_size(256) fn main(@builtin(local_invocation_index) li: u32) {
+  var s = 0.0; for (var i = li; i < d.n; i += 256u) { s += X[i] * X[i]; }
+  r[li] = s; workgroupBarrier();
+  for (var st = 128u; st > 0u; st >>= 1u) { if (li < st) { r[li] += r[li + st]; } workgroupBarrier(); }
+  if (li == 0u) { Y[d.slot] = r[0]; }
+}`,
+  adam: `
+struct D { n: u32, wd: u32, nslots: u32, c: u32 };
+struct O { lr: f32, bc1: f32, bc2: f32, clip: f32 };
+@group(0) @binding(0) var<storage, read_write> W: array<f32>;
+@group(0) @binding(1) var<storage, read> G: array<f32>;
+@group(0) @binding(2) var<storage, read_write> M1: array<f32>;
+@group(0) @binding(3) var<storage, read_write> M2: array<f32>;
+@group(0) @binding(4) var<storage, read> norms: array<f32>;
+@group(0) @binding(5) var<uniform> d: D;
+@group(0) @binding(6) var<uniform> o: O;
+@compute @workgroup_size(256) fn main(@builtin(global_invocation_id) g: vec3<u32>) {
+  let i = g.y * 65535u * 256u + g.x; if (i >= d.n) { return; }
+  var tot = 0.0; for (var k = 0u; k < d.nslots; k += 1u) { tot += norms[k]; }
+  let nrm = sqrt(tot); var sc = 1.0; if (nrm > o.clip) { sc = o.clip / nrm; }
+  let gr = G[i] * sc;
+  let m = 0.9 * M1[i] + 0.1 * gr; let v = 0.95 * M2[i] + 0.05 * gr * gr; M1[i] = m; M2[i] = v;
+  var w = W[i]; if (d.wd != 0u) { w -= o.lr * 0.1 * w; }
+  W[i] = w - o.lr * (m / o.bc1) / (sqrt(v / o.bc2) + 1e-8);
+}`
+};
+
+class MiniGPT {
+  constructor(dev, cfg) { // cfg: {V, C, L, H, T, B, seed}
+    this.dev = dev; this.cfg = cfg; this.step = 0; this.pipes = {};
+    for (const k in TG) this.pipes[k] = dev.createComputePipeline({ layout: 'auto', compute: { module: dev.createShaderModule({ code: TG[k] }), entryPoint: 'main' } });
+    this.bufs = [];
+  }
+  sb(n, data) { const b = this.dev.createBuffer({ size: Math.max(16, n * 4), usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.COPY_SRC }); if (data) this.dev.queue.writeBuffer(b, 0, data); this.bufs.push(b); return b; }
+  ub(arr) { const b = this.dev.createBuffer({ size: Math.max(16, arr.length * 4), usage: GPUBufferUsage.UNIFORM, mappedAtCreation: true }); new Uint32Array(b.getMappedRange()).set(arr); b.unmap(); this.bufs.push(b); return b; }
+  fu(v) { return new Uint32Array(new Float32Array([v]).buffer)[0]; }
+  static paramShapes(c) {
+    const S = [['wte', c.V * c.C, 'n2', 1], ['wpe', c.T * c.C, 'n1', 1]];
+    for (let l = 0; l < c.L; l++) S.push(['ln1g' + l, c.C, 'one', 0], ['ln1b' + l, c.C, 'zero', 0], ['wqkv' + l, 3 * c.C * c.C, 'n', 1], ['bqkv' + l, 3 * c.C, 'zero', 0], ['wo' + l, c.C * c.C, 'np', 1], ['bo' + l, c.C, 'zero', 0],
+      ['ln2g' + l, c.C, 'one', 0], ['ln2b' + l, c.C, 'zero', 0], ['wfc' + l, 4 * c.C * c.C, 'n', 1], ['bfc' + l, 4 * c.C, 'zero', 0], ['wpr' + l, 4 * c.C * c.C, 'np', 1], ['bpr' + l, c.C, 'zero', 0]);
+    S.push(['lnfg', c.C, 'one', 0], ['lnfb', c.C, 'zero', 0]);
+    return S;
+  }
+  static count(c) { return MiniGPT.paramShapes(c).reduce((a, s) => a + s[1], 0); }
+  init(saved) {
+    const c = this.cfg, rnd = GG.rng(c.seed >>> 0), gauss = () => { let u = 0; while (!u) u = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * rnd()); };
+    this.P = {}; this.Gr = {}; this.M1 = {}; this.M2 = {}; this.shapes = MiniGPT.paramShapes(c); let off = 0;
+    for (const [name, n, kind, wd] of this.shapes) {
+      let a;
+      if (saved) a = saved.subarray(off, off + n);
+      else { a = new Float32Array(n); const sd = kind === 'np' ? 0.02 / Math.sqrt(2 * c.L) : kind === 'n1' ? 0.01 : 0.02;
+        if (kind === 'one') a.fill(1); else if (kind !== 'zero') for (let i = 0; i < n; i++) a[i] = gauss() * sd; }
+      off += n;
+      this.P[name] = this.sb(n, a); this.Gr[name] = this.sb(n); this.M1[name] = this.sb(n); this.M2[name] = this.sb(n); this.P[name].wd = wd; this.P[name].n = n;
+    }
+    this.norms = this.sb(this.shapes.length); this.O = this.dev.createBuffer({ size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST }); this.bufs.push(this.O);
+    this.dummy = this.sb(4);
+    this.train = this.graph(c.B, true); this.infer = this.graph(1, false);
+  }
+  /* monta a lista de despachos para um lote Bsz; train: inclui retropropagação e otimizador */
+  graph(Bsz, train) {
+    const c = this.cfg, C = c.C, T = c.T, H = c.H, hd = C / H, N = Bsz * T, V = c.V, P = this.P, Gr = this.Gr, dev = this.dev;
+    const g = { N, ops: [], fwdEnd: 0 }, ops = g.ops, sb = (n) => this.sb(n);
+    const bind = (pipe, bufs) => dev.createBindGroup({ layout: this.pipes[pipe].getBindGroupLayout(0), entries: bufs.map((b, i) => ({ binding: i, resource: { buffer: b } })) });
+    const op = (pipe, bufs, wg) => ops.push({ p: this.pipes[pipe], bg: bind(pipe, bufs), wg });
+    const wg1 = (n, per) => { const w = Math.ceil(n / per); return [Math.min(w, 65535), Math.ceil(w / 65535), 1]; };
+    const rowsWg = (n) => [Math.min(n, 32768), Math.ceil(n / 32768), 1];
+    // C[M,Nn] (+)= alpha * A·B (+bias); a/b/cs: {off, sb, sh, si|sk, sk|sj}
+    const mm = (A, a, B, b, Cb, cc, Mm, Nn, K, nb, nh, opt) => { opt = opt || {};
+      op('matmul', [A, B, Cb, opt.bias || this.dummy, this.ub([Mm, Nn, K, nh, a.off || 0, a.sb || 0, a.sh || 0, a.si, a.sk, b.off || 0, b.sb || 0, b.sh || 0, b.sk, b.sj, cc.off || 0, cc.sb || 0, cc.sh || 0, cc.si, cc.sj, this.fu(opt.alpha || 1), opt.acc ? 1 : 0, opt.bias ? 1 : 0, 0, 0])], [Math.ceil(Nn / 16), Math.ceil(Mm / 16), nb * nh]); };
+    // Y[N,out] = X[N,in]·Wᵀ + b
+    const lin = (X, W, bias, Y, nIn, nOut, acc) => mm(X, { si: nIn, sk: 1 }, W, { sk: 1, sj: nIn }, Y, { si: nOut, sj: 1 }, N, nOut, nIn, 1, 1, { bias, acc });
+    const linBwd = (dY, X, W, dX, dW, dB, nIn, nOut, accX) => {
+      if (dX) mm(dY, { si: nOut, sk: 1 }, W, { sk: nIn, sj: 1 }, dX, { si: nIn, sj: 1 }, N, nIn, nOut, 1, 1, { acc: accX });
+      mm(dY, { si: 1, sk: nOut }, X, { sk: nIn, sj: 1 }, dW, { si: nIn, sj: 1 }, nOut, nIn, N, 1, 1, { acc: true });
+      if (dB) op('colsum', [dY, dB, this.ub([N, nOut, 0, 0])], [Math.ceil(nOut / 64), 1, 1]);
+    };
+    const u4 = (a, b, c2, d) => this.ub([a, b || 0, c2 || 0, d || 0]);
+    const copy = (X, Y, n) => op('copy', [X, Y, u4(n)], wg1(n, 256));
+    g.tok = sb(N); g.tgt = sb(N);
+    const A = []; // ativações por camada
+    for (let l = 0; l <= c.L; l++) A.push({ x: sb(N * C) });
+    op('embed', [g.tok, P.wte, P.wpe, A[0].x, u4(N, C, T, V)], wg1(N * C, 256));
+    const scale = 1 / Math.sqrt(hd);
+    for (let l = 0; l < c.L; l++) {
+      const a = A[l]; Object.assign(a, { a1: sb(N * C), s1: sb(2 * N), qkv: sb(N * 3 * C), att: sb(Bsz * H * T * T), y: sb(N * C), xm: sb(N * C), a2: sb(N * C), s2: sb(2 * N), fc: sb(N * 4 * C), ge: sb(N * 4 * C) });
+      op('ln', [a.x, P['ln1g' + l], P['ln1b' + l], a.a1, a.s1, u4(N, C)], rowsWg(N));
+      lin(a.a1, P['wqkv' + l], P['bqkv' + l], a.qkv, C, 3 * C);
+      // S = scale·Q·Kᵀ  (lote: exemplo b, cabeça h)
+      mm(a.qkv, { off: 0, sb: T * 3 * C, sh: hd, si: 3 * C, sk: 1 }, a.qkv, { off: C, sb: T * 3 * C, sh: hd, sk: 1, sj: 3 * C }, a.att, { sb: H * T * T, sh: T * T, si: T, sj: 1 }, T, T, hd, Bsz, H, { alpha: scale });
+      op('softmax', [a.att, u4(Bsz * H * T, T)], wg1(Bsz * H * T, 64));
+      mm(a.att, { sb: H * T * T, sh: T * T, si: T, sk: 1 }, a.qkv, { off: 2 * C, sb: T * 3 * C, sh: hd, sk: 3 * C, sj: 1 }, a.y, { sb: T * C, sh: hd, si: C, sj: 1 }, T, hd, T, Bsz, H);
+      copy(a.x, a.xm, N * C); lin(a.y, P['wo' + l], P['bo' + l], a.xm, C, C, true);
+      op('ln', [a.xm, P['ln2g' + l], P['ln2b' + l], a.a2, a.s2, u4(N, C)], rowsWg(N));
+      lin(a.a2, P['wfc' + l], P['bfc' + l], a.fc, C, 4 * C);
+      op('gelu', [a.fc, a.ge, u4(N * 4 * C)], wg1(N * 4 * C, 256));
+      copy(a.xm, A[l + 1].x, N * C); lin(a.ge, P['wpr' + l], P['bpr' + l], A[l + 1].x, 4 * C, C, true);
+    }
+    g.af = sb(N * C); g.sf = sb(2 * N); g.logits = sb(N * V);
+    op('ln', [A[c.L].x, P.lnfg, P.lnfb, g.af, g.sf, u4(N, C)], rowsWg(N));
+    mm(g.af, { si: C, sk: 1 }, P.wte, { sk: 1, sj: C }, g.logits, { si: V, sj: 1 }, N, V, C, 1, 1);
+    g.dlog = sb(N * V); g.lossRows = sb(N); g.loss = sb(4);
+    op('xent', [g.logits, g.tgt, g.dlog, g.lossRows, u4(N, V)], rowsWg(N));
+    op('reduce', [g.lossRows, g.loss, u4(N, 0)], [1, 1, 1]);
+    g.fwdEnd = ops.length; g.A = A;
+    if (!train) return g;
+    // ---------- retropropagação ----------
+    const dX = []; for (let l = 0; l <= c.L; l++) dX.push(sb(N * C));
+    const daf = sb(N * C), dxm = sb(N * C), da = sb(N * C), dy = sb(N * C), dqkv = sb(N * 3 * C), datt = sb(Bsz * H * T * T), dge = sb(N * 4 * C), dfc = sb(N * 4 * C);
+    g.grads = dX.concat([daf, dxm]); // zeradas a cada passo
+    mm(g.dlog, { si: V, sk: 1 }, P.wte, { sk: C, sj: 1 }, daf, { si: C, sj: 1 }, N, C, V, 1, 1);
+    mm(g.dlog, { si: 1, sk: V }, g.af, { sk: C, sj: 1 }, Gr.wte, { si: C, sj: 1 }, V, C, N, 1, 1, { acc: true });
+    op('lnBwd', [daf, A[c.L].x, P.lnfg, g.sf, dX[c.L], u4(N, C)], rowsWg(N));
+    op('lnGrad', [daf, A[c.L].x, g.sf, Gr.lnfg, Gr.lnfb, u4(N, C)], [Math.ceil(C / 64), 1, 1]);
+    for (let l = c.L - 1; l >= 0; l--) {
+      const a = A[l], dout = dX[l + 1];
+      copy(dout, dxm, N * C);
+      linBwd(dout, a.ge, P['wpr' + l], dge, Gr['wpr' + l], Gr['bpr' + l], 4 * C, C, false);
+      op('geluBwd', [a.fc, dge, dfc, u4(N * 4 * C)], wg1(N * 4 * C, 256));
+      linBwd(dfc, a.a2, P['wfc' + l], da, Gr['wfc' + l], Gr['bfc' + l], C, 4 * C, false);
+      op('lnBwd', [da, a.xm, P['ln2g' + l], a.s2, dxm, u4(N, C)], rowsWg(N));
+      op('lnGrad', [da, a.xm, a.s2, Gr['ln2g' + l], Gr['ln2b' + l], u4(N, C)], [Math.ceil(C / 64), 1, 1]);
+      copy(dxm, dX[l], N * C);
+      linBwd(dxm, a.y, P['wo' + l], dy, Gr['wo' + l], Gr['bo' + l], C, C, false);
+      // atenção: dP = dY·Vᵀ ; dV = Pᵀ·dY ; dS = softmax'(dP) ; dQ = s·dS·K ; dK = s·dSᵀ·Q
+      mm(dy, { sb: T * C, sh: hd, si: C, sk: 1 }, a.qkv, { off: 2 * C, sb: T * 3 * C, sh: hd, sk: 1, sj: 3 * C }, datt, { sb: H * T * T, sh: T * T, si: T, sj: 1 }, T, T, hd, Bsz, H);
+      mm(a.att, { sb: H * T * T, sh: T * T, si: 1, sk: T }, dy, { sb: T * C, sh: hd, sk: C, sj: 1 }, dqkv, { off: 2 * C, sb: T * 3 * C, sh: hd, si: 3 * C, sj: 1 }, T, hd, T, Bsz, H);
+      op('softmaxBwd', [a.att, datt, u4(Bsz * H * T, T)], wg1(Bsz * H * T, 64));
+      mm(datt, { sb: H * T * T, sh: T * T, si: T, sk: 1 }, a.qkv, { off: C, sb: T * 3 * C, sh: hd, sk: 3 * C, sj: 1 }, dqkv, { off: 0, sb: T * 3 * C, sh: hd, si: 3 * C, sj: 1 }, T, hd, T, Bsz, H, { alpha: scale });
+      mm(datt, { sb: H * T * T, sh: T * T, si: 1, sk: T }, a.qkv, { off: 0, sb: T * 3 * C, sh: hd, sk: 3 * C, sj: 1 }, dqkv, { off: C, sb: T * 3 * C, sh: hd, si: 3 * C, sj: 1 }, T, hd, T, Bsz, H, { alpha: scale });
+      linBwd(dqkv, a.a1, P['wqkv' + l], da, Gr['wqkv' + l], Gr['bqkv' + l], C, 3 * C, false);
+      op('lnBwd', [da, a.x, P['ln1g' + l], a.s1, dX[l], u4(N, C)], rowsWg(N));
+      op('lnGrad', [da, a.x, a.s1, Gr['ln1g' + l], Gr['ln1b' + l], u4(N, C)], [Math.ceil(C / 64), 1, 1]);
+    }
+    op('embedBwd', [g.tok, dX[0], Gr.wte, Gr.wpe, u4(N, C, T, V)], wg1(Math.max(V, T) * C, 256));
+    g.gradEnd = ops.length;
+    // ---------- recorte global do gradiente e AdamW ----------
+    this.shapes.forEach(([name, n], k) => op('sumsq', [Gr[name], this.norms, u4(n, k)], [1, 1, 1]));
+    this.shapes.forEach(([name, n]) => op('adam', [P[name], Gr[name], this.M1[name], this.M2[name], this.norms, u4(n, P[name].wd, this.shapes.length), this.O], wg1(n, 256)));
+    return g;
+  }
+  run(g, end, extra) {
+    const enc = this.dev.createCommandEncoder();
+    if (extra && extra.clear) { for (const b of g.grads) enc.clearBuffer(b); for (const n in this.Gr) enc.clearBuffer(this.Gr[n]); }
+    const pass = enc.beginComputePass();
+    for (let i = 0; i < end; i++) { const o = g.ops[i]; pass.setPipeline(o.p); pass.setBindGroup(0, o.bg); pass.dispatchWorkgroups(o.wg[0], o.wg[1], o.wg[2]); }
+    pass.end();
+    if (extra && extra.copy) for (const [src, so, dst, n] of extra.copy) enc.copyBufferToBuffer(src, so, dst, 0, n);
+    this.dev.queue.submit([enc.finish()]);
+  }
+  trainStep(tok, tgt, lr) {
+    const g = this.train; this.step++;
+    this.dev.queue.writeBuffer(g.tok, 0, tok); this.dev.queue.writeBuffer(g.tgt, 0, tgt);
+    this.dev.queue.writeBuffer(this.O, 0, new Float32Array([lr, 1 - Math.pow(0.9, this.step), 1 - Math.pow(0.95, this.step), 1.0]));
+    this.run(g, g.ops.length, { clear: true });
+  }
+  evalLoss(tok, tgt) { const g = this.train; this.dev.queue.writeBuffer(g.tok, 0, tok); this.dev.queue.writeBuffer(g.tgt, 0, tgt); this.run(g, g.fwdEnd); }
+  async readLoss() {
+    const rb = this.dev.createBuffer({ size: 4, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST });
+    const enc = this.dev.createCommandEncoder(); enc.copyBufferToBuffer(this.train.loss, 0, rb, 0, 4); this.dev.queue.submit([enc.finish()]);
+    await rb.mapAsync(GPUMapMode.READ); const v = new Float32Array(rb.getMappedRange())[0]; rb.unmap(); rb.destroy(); return v;
+  }
+  // logits do último caractere do contexto
+  async nextLogits(ctx) {
+    const c = this.cfg, g = this.infer, T = c.T, V = c.V, x = ctx.slice(-T), tok = new Uint32Array(T); tok.set(x);
+    this.dev.queue.writeBuffer(g.tok, 0, tok); this.dev.queue.writeBuffer(g.tgt, 0, new Uint32Array(T));
+    if (!this.rb) this.rb = this.dev.createBuffer({ size: V * 4, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST });
+    this.run(g, g.fwdEnd - 2, { copy: [[g.logits, (x.length - 1) * V * 4, this.rb, V * 4]] });
+    await this.rb.mapAsync(GPUMapMode.READ); const out = new Float32Array(this.rb.getMappedRange().slice(0)); this.rb.unmap(); return out;
+  }
+  async exportParams() {
+    const total = MiniGPT.count(this.cfg), out = new Float32Array(total), rb = this.dev.createBuffer({ size: total * 4, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST });
+    const enc = this.dev.createCommandEncoder(); let off = 0; for (const [name, n] of this.shapes) { enc.copyBufferToBuffer(this.P[name], 0, rb, off * 4, n * 4); off += n; }
+    this.dev.queue.submit([enc.finish()]); await rb.mapAsync(GPUMapMode.READ); out.set(new Float32Array(rb.getMappedRange())); rb.unmap(); rb.destroy(); return out;
+  }
+  async readBuf(b, n) { const rb = this.dev.createBuffer({ size: n * 4, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST }); const enc = this.dev.createCommandEncoder(); enc.copyBufferToBuffer(b, 0, rb, 0, n * 4); this.dev.queue.submit([enc.finish()]); await rb.mapAsync(GPUMapMode.READ); const o = new Float32Array(rb.getMappedRange().slice(0)); rb.unmap(); rb.destroy(); return o; }
+  destroy() { for (const b of this.bufs) b.destroy(); this.bufs = []; if (this.rb) this.rb.destroy(); }
+}
+
+/* ===================== Textos [pt, en, it, es] ===================== */
+const LANGS = ['pt', 'en', 'it', 'es'], HTML_LANG = { pt: 'pt-BR', en: 'en', it: 'it', es: 'es' };
+const I18N = {
+  title: ['LLM Local', 'Local LLM', 'LLM Locale', 'LLM Local'],
+  subtitle: ['Modelos de linguagem rodando no seu computador', 'Language models running on your computer', 'Modelli linguistici sul tuo computer', 'Modelos de lenguaje en tu ordenador'],
+  help: ['Ajuda', 'Help', 'Aiuto', 'Ayuda'], theme: ['Alternar tema claro ou escuro', 'Toggle light or dark theme', 'Cambia tema chiaro o scuro', 'Cambiar tema claro u oscuro'],
+  lang: ['Idioma', 'Language', 'Lingua', 'Idioma'], tabsLabel: ['Modos do aplicativo', 'App modes', 'Modalità dell’app', 'Modos de la aplicación'],
+  tabChat: ['Conversar com um modelo', 'Chat with a model', 'Parla con un modello', 'Conversar con un modelo'],
+  tabTrain: ['Treinar um mini-GPT', 'Train a mini-GPT', 'Addestra un mini-GPT', 'Entrenar un mini-GPT'],
+  devGpu: ['GPU: {0}', 'GPU: {0}', 'GPU: {0}', 'GPU: {0}'], devNoGpu: ['Sem WebGPU · CPU {0} núcleos', 'No WebGPU · CPU {0} cores', 'Senza WebGPU · CPU {0} core', 'Sin WebGPU · CPU {0} núcleos'],
+  devChecking: ['Verificando o computador…', 'Checking the computer…', 'Controllo del computer…', 'Comprobando el ordenador…'],
+  model: ['Modelo', 'Model', 'Modello', 'Modelo'], openGguf: ['Abrir arquivo .gguf', 'Open .gguf file', 'Apri file .gguf', 'Abrir archivo .gguf'],
+  reload: ['Recarregar', 'Reload', 'Ricarica', 'Recargar'], unload: ['Descarregar', 'Unload', 'Scarica', 'Descargar'],
+  backend: ['Onde rodar', 'Run on', 'Dove eseguire', 'Dónde ejecutar'], beAuto: ['Automático', 'Automatic', 'Automatico', 'Automático'],
+  beGpu: ['GPU (WebGPU)', 'GPU (WebGPU)', 'GPU (WebGPU)', 'GPU (WebGPU)'], beCpu: ['CPU ({0} núcleos)', 'CPU ({0} cores)', 'CPU ({0} core)', 'CPU ({0} núcleos)'],
+  context: ['Contexto (tokens)', 'Context (tokens)', 'Contesto (token)', 'Contexto (tokens)'],
+  template: ['Formato da conversa', 'Chat format', 'Formato della chat', 'Formato de la conversación'],
+  tplAuto: ['Automático: {0}', 'Automatic: {0}', 'Automatico: {0}', 'Automático: {0}'], tplAutoNone: ['Automático', 'Automatic', 'Automatico', 'Automático'],
+  tplNone: ['Nenhum: completar texto', 'None: complete text', 'Nessuno: completa il testo', 'Ninguno: completar texto'],
+  think: ['Deixar o modelo pensar antes (Qwen3)', 'Let the model think first (Qwen3)', 'Lascia pensare il modello prima (Qwen3)', 'Dejar que el modelo piense antes (Qwen3)'],
+  whereModels: ['Baixe um modelo <strong>.gguf</strong> uma vez (por exemplo, no Hugging Face) e abra aqui. Testados: <ul><li>Qwen2.5-0.5B-Instruct, Q4_K_M ou Q2_K (≈ 0,4–0,5 GB)</li><li>Qwen3-0.6B, Q8_0 (≈ 0,64 GB)</li><li>TinyLlama-1.1B-Chat, Q4_0 (≈ 0,64 GB)</li></ul>Arquiteturas: llama, mistral, qwen2, qwen3. O arquivo é lido do disco e nunca é enviado.',
+    'Download a <strong>.gguf</strong> model once (for example, from Hugging Face) and open it here. Tested: <ul><li>Qwen2.5-0.5B-Instruct, Q4_K_M or Q2_K (≈ 0.4–0.5 GB)</li><li>Qwen3-0.6B, Q8_0 (≈ 0.64 GB)</li><li>TinyLlama-1.1B-Chat, Q4_0 (≈ 0.64 GB)</li></ul>Architectures: llama, mistral, qwen2, qwen3. The file is read from disk and never uploaded.',
+    'Scarica una volta un modello <strong>.gguf</strong> (per esempio da Hugging Face) e aprilo qui. Provati: <ul><li>Qwen2.5-0.5B-Instruct, Q4_K_M o Q2_K (≈ 0,4–0,5 GB)</li><li>Qwen3-0.6B, Q8_0 (≈ 0,64 GB)</li><li>TinyLlama-1.1B-Chat, Q4_0 (≈ 0,64 GB)</li></ul>Architetture: llama, mistral, qwen2, qwen3. Il file viene letto dal disco e non viene mai inviato.',
+    'Descarga una vez un modelo <strong>.gguf</strong> (por ejemplo, de Hugging Face) y ábrelo aquí. Probados: <ul><li>Qwen2.5-0.5B-Instruct, Q4_K_M o Q2_K (≈ 0,4–0,5 GB)</li><li>Qwen3-0.6B, Q8_0 (≈ 0,64 GB)</li><li>TinyLlama-1.1B-Chat, Q4_0 (≈ 0,64 GB)</li></ul>Arquitecturas: llama, mistral, qwen2, qwen3. El archivo se lee del disco y nunca se envía.'],
+  genTitle: ['Geração', 'Generation', 'Generazione', 'Generación'], temp: ['Temperatura', 'Temperature', 'Temperatura', 'Temperatura'],
+  rep: ['Repetição', 'Repetition', 'Ripetizione', 'Repetición'], maxTok: ['Máx. de tokens', 'Max tokens', 'Token massimi', 'Máx. de tokens'], seed: ['Semente', 'Seed', 'Seme', 'Semilla'],
+  system: ['Instrução de sistema', 'System prompt', 'Istruzione di sistema', 'Instrucción de sistema'],
+  systemDefault: ['Você é um assistente prestativo. Responda em português do Brasil, de forma clara e curta.', 'You are a helpful assistant. Answer in English, clearly and briefly.', 'Sei un assistente disponibile. Rispondi in italiano, in modo chiaro e breve.', 'Eres un asistente útil. Responde en español, de forma clara y breve.'],
+  yourMsg: ['Sua mensagem', 'Your message', 'Il tuo messaggio', 'Tu mensaje'], send: ['Enviar', 'Send', 'Invia', 'Enviar'], stop: ['Parar', 'Stop', 'Ferma', 'Parar'], newChat: ['Nova conversa', 'New chat', 'Nuova chat', 'Nueva conversación'],
+  inpNoModel: ['Abra um modelo .gguf para conversar', 'Open a .gguf model to chat', 'Apri un modello .gguf per parlare', 'Abre un modelo .gguf para conversar'],
+  inpReady: ['Escreva e tecle Enter (Shift+Enter quebra a linha)', 'Type and press Enter (Shift+Enter for a new line)', 'Scrivi e premi Invio (Maiusc+Invio per andare a capo)', 'Escribe y pulsa Intro (Mayús+Intro para nueva línea)'],
+  emptyChat: ['<strong>Nenhum modelo carregado.</strong><br>Abra um arquivo <strong>.gguf</strong> à esquerda. O modelo roda na sua placa de vídeo pelo WebGPU ou, sem ela, em todos os núcleos do processador. Nada sai do computador.', '<strong>No model loaded.</strong><br>Open a <strong>.gguf</strong> file on the left. The model runs on your graphics card through WebGPU or, without one, on all processor cores. Nothing leaves your computer.', '<strong>Nessun modello caricato.</strong><br>Apri un file <strong>.gguf</strong> a sinistra. Il modello gira sulla scheda video con WebGPU o, senza, su tutti i core del processore. Niente esce dal computer.', '<strong>Ningún modelo cargado.</strong><br>Abre un archivo <strong>.gguf</strong> a la izquierda. El modelo se ejecuta en tu tarjeta gráfica con WebGPU o, sin ella, en todos los núcleos del procesador. Nada sale del ordenador.'],
+  emptyReady: ['<strong>{0}</strong> está pronto. Escreva uma mensagem abaixo.', '<strong>{0}</strong> is ready. Type a message below.', '<strong>{0}</strong> è pronto. Scrivi un messaggio qui sotto.', '<strong>{0}</strong> está listo. Escribe un mensaje abajo.'],
+  you: ['Você', 'You', 'Tu', 'Tú'], thinking: ['pensamento', 'thinking', 'ragionamento', 'razonamiento'],
+  reading: ['Lendo o cabeçalho…', 'Reading the header…', 'Lettura dell’intestazione…', 'Leyendo la cabecera…'],
+  loading: ['Carregando {0}: {1}% · {2} MB/s', 'Loading {0}: {1}% · {2} MB/s', 'Caricamento {0}: {1}% · {2} MB/s', 'Cargando {0}: {1}% · {2} MB/s'],
+  loaded: ['Pronto em {0} s, na {1}.', 'Ready in {0} s, on the {1}.', 'Pronto in {0} s, su {1}.', 'Listo en {0} s, en la {1}.'],
+  gpuName: ['GPU', 'GPU', 'GPU', 'GPU'], cpuName: ['CPU ({0} workers)', 'CPU ({0} workers)', 'CPU ({0} worker)', 'CPU ({0} workers)'],
+  iName: ['Nome', 'Name', 'Nome', 'Nombre'], iArch: ['Arquitetura', 'Architecture', 'Architettura', 'Arquitectura'], iParams: ['Parâmetros', 'Parameters', 'Parametri', 'Parámetros'],
+  iLayers: ['Camadas · cabeças', 'Layers · heads', 'Strati · teste', 'Capas · cabezas'], iCtx: ['Contexto de treino', 'Training context', 'Contesto di addestramento', 'Contexto de entrenamiento'],
+  iQuant: ['Quantização', 'Quantization', 'Quantizzazione', 'Cuantización'], iTok: ['Tokenizador', 'Tokenizer', 'Tokenizzatore', 'Tokenizador'], iFile: ['Arquivo', 'File', 'File', 'Archivo'],
+  mem: ['Memória estimada: {0}', 'Estimated memory: {0}', 'Memoria stimata: {0}', 'Memoria estimada: {0}'],
+  e_notgguf: ['O arquivo não é um GGUF.', 'The file is not a GGUF.', 'Il file non è un GGUF.', 'El archivo no es un GGUF.'],
+  e_arch: ['Arquitetura “{0}” ainda não suportada. Use llama, mistral, qwen2 ou qwen3.', 'Architecture “{0}” is not supported yet. Use llama, mistral, qwen2 or qwen3.', 'Architettura “{0}” non ancora supportata. Usa llama, mistral, qwen2 o qwen3.', 'Arquitectura «{0}» aún no soportada. Usa llama, mistral, qwen2 o qwen3.'],
+  e_type: ['Tipo de quantização não suportado ({0}). Use F32, F16, BF16, Q4_0, Q4_1, Q5_0, Q5_1, Q8_0, Q2_K a Q6_K, IQ4_NL ou IQ4_XS.', 'Unsupported quantization type ({0}). Use F32, F16, BF16, Q4_0, Q4_1, Q5_0, Q5_1, Q8_0, Q2_K to Q6_K, IQ4_NL or IQ4_XS.', 'Tipo di quantizzazione non supportato ({0}). Usa F32, F16, BF16, Q4_0, Q4_1, Q5_0, Q5_1, Q8_0, da Q2_K a Q6_K, IQ4_NL o IQ4_XS.', 'Tipo de cuantización no soportado ({0}). Usa F32, F16, BF16, Q4_0, Q4_1, Q5_0, Q5_1, Q8_0, Q2_K a Q6_K, IQ4_NL o IQ4_XS.'],
+  e_tok: ['Tokenizador “{0}” não suportado.', 'Tokenizer “{0}” is not supported.', 'Tokenizzatore “{0}” non supportato.', 'Tokenizador «{0}» no soportado.'],
+  e_nogpu: ['Este navegador não oferece WebGPU. Use “CPU” ou um Chrome/Edge recente.', 'This browser does not offer WebGPU. Use “CPU” or a recent Chrome/Edge.', 'Questo browser non offre WebGPU. Usa “CPU” o un Chrome/Edge recente.', 'Este navegador no ofrece WebGPU. Usa «CPU» o un Chrome/Edge reciente.'],
+  e_big: ['O tensor {0} ({1}) passa do limite da GPU ({2}). Tente “CPU” ou um modelo menor.', 'Tensor {0} ({1}) exceeds the GPU limit ({2}). Try “CPU” or a smaller model.', 'Il tensore {0} ({1}) supera il limite della GPU ({2}). Prova “CPU” o un modello più piccolo.', 'El tensor {0} ({1}) supera el límite de la GPU ({2}). Prueba «CPU» o un modelo más pequeño.'],
+  e_lost: ['A GPU foi perdida ({0}). Recarregue o modelo, talvez com contexto menor.', 'The GPU was lost ({0}). Reload the model, maybe with a smaller context.', 'La GPU è stata persa ({0}). Ricarica il modello, magari con un contesto minore.', 'Se perdió la GPU ({0}). Recarga el modelo, quizá con un contexto menor.'],
+  warnRope: ['Atenção: este modelo usa escala de RoPE estendida, que o app ainda não aplica; as respostas podem piorar.', 'Note: this model uses extended RoPE scaling, which the app does not apply yet; answers may be worse.', 'Attenzione: questo modello usa una scala RoPE estesa, che l’app non applica ancora; le risposte possono peggiorare.', 'Atención: este modelo usa una escala de RoPE extendida que la app aún no aplica; las respuestas pueden empeorar.'],
+  e_generic: ['Erro: {0}', 'Error: {0}', 'Errore: {0}', 'Error: {0}'],
+  ctxFull: ['A conversa passou do contexto: as mensagens mais antigas foram deixadas de fora.', 'The chat exceeded the context: the oldest messages were left out.', 'La chat ha superato il contesto: i messaggi più vecchi sono stati esclusi.', 'La conversación superó el contexto: se dejaron fuera los mensajes más antiguos.'],
+  sPrompt: ['{0} tokens de entrada a {1}/s', '{0} input tokens at {1}/s', '{0} token di input a {1}/s', '{0} tokens de entrada a {1}/s'],
+  sGen: ['{0} tokens gerados a {1}/s', '{0} tokens generated at {1}/s', '{0} token generati a {1}/s', '{0} tokens generados a {1}/s'],
+  sCtx: ['contexto {0}/{1}', 'context {0}/{1}', 'contesto {0}/{1}', 'contexto {0}/{1}'], stopped: ['interrompido', 'stopped', 'interrotto', 'interrumpido'],
+  corpus: ['Texto de treino', 'Training text', 'Testo di addestramento', 'Texto de entrenamiento'], sampleText: ['Texto de exemplo', 'Sample text', 'Testo di esempio', 'Texto de ejemplo'], openTxt: ['Abrir .txt', 'Open .txt', 'Apri .txt', 'Abrir .txt'],
+  corpusInfo: ['{0} caracteres · {1} símbolos diferentes · 90% para treino, 10% para validação', '{0} characters · {1} distinct symbols · 90% for training, 10% for validation', '{0} caratteri · {1} simboli diversi · 90% per l’addestramento, 10% per la validazione', '{0} caracteres · {1} símbolos distintos · 90% para entrenamiento, 10% para validación'],
+  arch: ['Arquitetura e treino', 'Architecture and training', 'Architettura e addestramento', 'Arquitectura y entrenamiento'], layers: ['Camadas', 'Layers', 'Strati', 'Capas'], width: ['Largura', 'Width', 'Larghezza', 'Anchura'], heads: ['Cabeças', 'Heads', 'Teste', 'Cabezas'],
+  block: ['Contexto', 'Context', 'Contesto', 'Contexto'], batch: ['Lote', 'Batch', 'Lotto', 'Lote'], lr: ['Aprendizado', 'Learning rate', 'Apprendimento', 'Aprendizaje'], steps: ['Passos', 'Steps', 'Passi', 'Pasos'],
+  archInfo: ['{0} parâmetros · {1} caracteres por passo · cerca de {2} de memória na GPU', '{0} parameters · {1} characters per step · about {2} of GPU memory', '{0} parametri · {1} caratteri per passo · circa {2} di memoria GPU', '{0} parámetros · {1} caracteres por paso · unos {2} de memoria GPU'],
+  train: ['Treinar', 'Train', 'Addestra', 'Entrenar'], pause: ['Pausar', 'Pause', 'Pausa', 'Pausar'], resume: ['Continuar', 'Resume', 'Riprendi', 'Continuar'], reset: ['Recomeçar', 'Start over', 'Ricomincia', 'Empezar de nuevo'],
+  saveModel: ['Salvar modelo', 'Save model', 'Salva modello', 'Guardar modelo'], loadModel: ['Abrir modelo', 'Open model', 'Apri modello', 'Abrir modelo'],
+  kStep: ['passo', 'step', 'passo', 'paso'], kLoss: ['perda de treino', 'training loss', 'perdita di addestramento', 'pérdida de entrenamiento'], kVal: ['perda de validação', 'validation loss', 'perdita di validazione', 'pérdida de validación'],
+  kRate: ['caracteres/s', 'characters/s', 'caratteri/s', 'caracteres/s'], kMs: ['ms por passo', 'ms per step', 'ms per passo', 'ms por paso'], kFlops: ['GFLOP/s (estimativa)', 'GFLOP/s (estimate)', 'GFLOP/s (stima)', 'GFLOP/s (estimación)'],
+  chartLabel: ['Gráfico da perda de treino e de validação ao longo dos passos', 'Chart of training and validation loss over steps', 'Grafico della perdita di addestramento e di validazione nei passi', 'Gráfico de la pérdida de entrenamiento y validación a lo largo de los pasos'],
+  lgTrain: ['treino', 'training', 'addestramento', 'entrenamiento'], lgVal: ['validação', 'validation', 'validazione', 'validación'], lgBase: ['acaso: {0}', 'chance: {0}', 'caso: {0}', 'azar: {0}'],
+  preview: ['Amostra durante o treino', 'Sample during training', 'Campione durante l’addestramento', 'Muestra durante el entrenamiento'], previewHint: ['a cada 250 passos', 'every 250 steps', 'ogni 250 passi', 'cada 250 pasos'],
+  generate: ['Gerar texto com o mini-GPT', 'Generate text with the mini-GPT', 'Genera testo con il mini-GPT', 'Generar texto con el mini-GPT'], start: ['Começo', 'Start', 'Inizio', 'Comienzo'], length: ['Tamanho', 'Length', 'Lunghezza', 'Longitud'], genBtn: ['Gerar', 'Generate', 'Genera', 'Generar'],
+  tNoGpu: ['O treino precisa de WebGPU, que este navegador não oferece.', 'Training needs WebGPU, which this browser does not offer.', 'L’addestramento richiede WebGPU, che questo browser non offre.', 'El entrenamiento necesita WebGPU, que este navegador no ofrece.'],
+  tShort: ['O texto é curto demais: precisa de pelo menos {0} caracteres para este contexto.', 'The text is too short: it needs at least {0} characters for this context.', 'Il testo è troppo corto: servono almeno {0} caratteri per questo contesto.', 'El texto es demasiado corto: necesita al menos {0} caracteres para este contexto.'],
+  tRunning: ['Treinando na GPU…', 'Training on the GPU…', 'Addestramento sulla GPU…', 'Entrenando en la GPU…'], tPaused: ['Pausado no passo {0}.', 'Paused at step {0}.', 'In pausa al passo {0}.', 'En pausa en el paso {0}.'],
+  tDone: ['Terminado: {0} passos em {1} s.', 'Done: {0} steps in {1} s.', 'Finito: {0} passi in {1} s.', 'Terminado: {0} pasos en {1} s.'],
+  tLoaded: ['Modelo aberto: {0} passos já treinados, {1} símbolos.', 'Model opened: {0} steps already trained, {1} symbols.', 'Modello aperto: {0} passi già addestrati, {1} simboli.', 'Modelo abierto: {0} pasos ya entrenados, {1} símbolos.'],
+  tDropped: ['{0} caracteres do texto não existem no vocabulário do modelo aberto e foram ignorados.', '{0} characters of the text are not in the opened model’s vocabulary and were ignored.', '{0} caratteri del testo non sono nel vocabolario del modello aperto e sono stati ignorati.', '{0} caracteres del texto no están en el vocabulario del modelo abierto y se ignoraron.'],
+  tBadFile: ['Arquivo de modelo inválido.', 'Invalid model file.', 'File di modello non valido.', 'Archivo de modelo no válido.'],
+  devTitle: ['Seu computador', 'Your computer', 'Il tuo computer', 'Tu ordenador'], close: ['Fechar', 'Close', 'Chiudi', 'Cerrar'],
+  dWebgpu: ['WebGPU', 'WebGPU', 'WebGPU', 'WebGPU'], dAdapter: ['Placa de vídeo', 'Graphics card', 'Scheda video', 'Tarjeta gráfica'], dF16: ['Recursos da GPU', 'GPU features', 'Funzionalità GPU', 'Funciones de la GPU'],
+  dMaxBuf: ['Maior bloco de memória da GPU', 'Largest GPU memory block', 'Blocco di memoria GPU più grande', 'Mayor bloque de memoria GPU'], dCores: ['Núcleos lógicos da CPU', 'Logical CPU cores', 'Core logici della CPU', 'Núcleos lógicos de la CPU'],
+  dWorkers: ['Workers usados', 'Workers used', 'Worker usati', 'Workers usados'], dMem: ['Memória (informada pelo navegador)', 'Memory (as reported by the browser)', 'Memoria (secondo il browser)', 'Memoria (según el navegador)'], dNet: ['Rede', 'Network', 'Rete', 'Red'],
+  dNetV: ['bloqueada pela política de segurança da página', 'blocked by the page’s security policy', 'bloccata dalla politica di sicurezza della pagina', 'bloqueada por la política de seguridad de la página'],
+  yes: ['sim', 'yes', 'sì', 'sí'], no: ['não', 'no', 'no', 'no'], unknown: ['não informado', 'not reported', 'non indicato', 'no indicado'],
+  devNote: ['O navegador arredonda a memória informada e pode esconder o nome exato da placa. Os números de desempenho aparecem durante o uso.', 'The browser rounds the reported memory and may hide the exact card name. Performance numbers appear while you use the app.', 'Il browser arrotonda la memoria indicata e può nascondere il nome esatto della scheda. I numeri di prestazione compaiono durante l’uso.', 'El navegador redondea la memoria indicada y puede ocultar el nombre exacto de la tarjeta. Las cifras de rendimiento aparecen durante el uso.'],
+  helpTitle: ['Como funciona', 'How it works', 'Come funziona', 'Cómo funciona'],
+  helpBody: [`<h3>Conversar com um modelo</h3><p>Abra um arquivo <strong>.gguf</strong>, o formato de modelos do llama.cpp. O app lê o cabeçalho, mostra os dados do modelo e carrega os pesos. Na <strong>GPU</strong>, os pesos são convertidos para meia precisão (16 bits) e cada token passa por kernels WebGPU escritos para este app. Na <strong>CPU</strong>, as linhas de cada matriz são divididas entre os núcleos, em workers, com pesos em 8 bits.</p><p>A conversa é montada no formato que o modelo aprendeu (ChatML, Llama 3, Zephyr ou Mistral). O app reaproveita o que já está no cache de atenção, então só o texto novo é processado a cada mensagem. Temperatura, top-k, top-p e repetição controlam o sorteio do próximo token; com a mesma semente, a resposta se repete.</p><h3>Treinar um mini-GPT</h3><p>Aqui nada vem pronto: um transformer pequeno, que prevê o próximo caractere, é criado com pesos aleatórios e treinado na GPU sobre o texto que você escolher. O avanço, a retropropagação e o otimizador AdamW rodam em kernels WebGPU. O gráfico mostra a perda caindo; a perda de validação, medida em 10% do texto que o modelo não vê no treino, mostra quando ele começa a decorar em vez de generalizar.</p><h3>Privacidade</h3><p>A página proíbe conexões de rede pela política de segurança. Os arquivos são lidos do seu disco e ficam no seu computador.</p><h3>Limites</h3><ul><li>Modelos pequenos (até uns 3 bilhões de parâmetros) cabem melhor: na GPU, cada bilhão de parâmetros ocupa cerca de 2 GB.</li><li>Ainda sem suporte: modelos de visão, outras arquiteturas (Gemma, Phi, Mixtral) e escalas de RoPE estendidas.</li><li>Modelos pequenos erram fatos com frequência. Não confie neles para informação importante.</li></ul>`,
+    `<h3>Chat with a model</h3><p>Open a <strong>.gguf</strong> file, the llama.cpp model format. The app reads the header, shows the model's details and loads the weights. On the <strong>GPU</strong>, weights are converted to half precision (16 bits) and each token runs through WebGPU kernels written for this app. On the <strong>CPU</strong>, the rows of each matrix are split across the cores, in workers, with 8-bit weights.</p><p>The chat is built in the format the model learned (ChatML, Llama 3, Zephyr or Mistral). The app reuses what is already in the attention cache, so only the new text is processed on each message. Temperature, top-k, top-p and repetition control how the next token is drawn; with the same seed, the answer repeats.</p><h3>Train a mini-GPT</h3><p>Nothing here comes ready-made: a small transformer that predicts the next character is created with random weights and trained on the GPU on the text you choose. The forward pass, backpropagation and the AdamW optimizer run in WebGPU kernels. The chart shows the loss falling; the validation loss, measured on 10% of the text the model never sees in training, shows when it starts memorising instead of generalising.</p><h3>Privacy</h3><p>The page forbids network connections through its security policy. Files are read from your disk and stay on your computer.</p><h3>Limits</h3><ul><li>Small models (up to about 3 billion parameters) fit best: on the GPU, each billion parameters takes about 2 GB.</li><li>Not supported yet: vision models, other architectures (Gemma, Phi, Mixtral) and extended RoPE scaling.</li><li>Small models often get facts wrong. Don't rely on them for important information.</li></ul>`,
+    `<h3>Parlare con un modello</h3><p>Apri un file <strong>.gguf</strong>, il formato dei modelli di llama.cpp. L’app legge l’intestazione, mostra i dati del modello e carica i pesi. Sulla <strong>GPU</strong>, i pesi vengono convertiti in mezza precisione (16 bit) e ogni token passa per kernel WebGPU scritti per questa app. Sulla <strong>CPU</strong>, le righe di ogni matrice vengono divise tra i core, in worker, con pesi a 8 bit.</p><p>La chat viene composta nel formato che il modello ha imparato (ChatML, Llama 3, Zephyr o Mistral). L’app riusa ciò che è già nella cache dell’attenzione, così a ogni messaggio elabora solo il testo nuovo. Temperatura, top-k, top-p e ripetizione controllano l’estrazione del token successivo; con lo stesso seme la risposta si ripete.</p><h3>Addestrare un mini-GPT</h3><p>Qui niente è già pronto: un piccolo transformer che prevede il carattere successivo nasce con pesi casuali e viene addestrato sulla GPU con il testo che scegli. Il passo in avanti, la retropropagazione e l’ottimizzatore AdamW girano in kernel WebGPU. Il grafico mostra la perdita che scende; la perdita di validazione, misurata sul 10% del testo che il modello non vede in addestramento, mostra quando inizia a memorizzare invece di generalizzare.</p><h3>Privacy</h3><p>La pagina vieta le connessioni di rete con la sua politica di sicurezza. I file vengono letti dal tuo disco e restano sul tuo computer.</p><h3>Limiti</h3><ul><li>I modelli piccoli (fino a circa 3 miliardi di parametri) si adattano meglio: sulla GPU ogni miliardo di parametri occupa circa 2 GB.</li><li>Non ancora supportati: modelli di visione, altre architetture (Gemma, Phi, Mixtral) e scale RoPE estese.</li><li>I modelli piccoli sbagliano spesso i fatti. Non affidarti a loro per informazioni importanti.</li></ul>`,
+    `<h3>Conversar con un modelo</h3><p>Abre un archivo <strong>.gguf</strong>, el formato de modelos de llama.cpp. La app lee la cabecera, muestra los datos del modelo y carga los pesos. En la <strong>GPU</strong>, los pesos se convierten a media precisión (16 bits) y cada token pasa por kernels WebGPU escritos para esta app. En la <strong>CPU</strong>, las filas de cada matriz se reparten entre los núcleos, en workers, con pesos de 8 bits.</p><p>La conversación se arma en el formato que el modelo aprendió (ChatML, Llama 3, Zephyr o Mistral). La app reaprovecha lo que ya está en la caché de atención, así que en cada mensaje solo se procesa el texto nuevo. La temperatura, top-k, top-p y la repetición controlan el sorteo del siguiente token; con la misma semilla, la respuesta se repite.</p><h3>Entrenar un mini-GPT</h3><p>Aquí nada viene hecho: un transformer pequeño que predice el siguiente carácter se crea con pesos aleatorios y se entrena en la GPU con el texto que elijas. El paso hacia delante, la retropropagación y el optimizador AdamW se ejecutan en kernels WebGPU. El gráfico muestra cómo baja la pérdida; la pérdida de validación, medida en el 10% del texto que el modelo no ve al entrenar, muestra cuándo empieza a memorizar en lugar de generalizar.</p><h3>Privacidad</h3><p>La página prohíbe las conexiones de red mediante su política de seguridad. Los archivos se leen de tu disco y se quedan en tu ordenador.</p><h3>Límites</h3><ul><li>Los modelos pequeños (hasta unos 3 mil millones de parámetros) encajan mejor: en la GPU, cada mil millones de parámetros ocupa unos 2 GB.</li><li>Aún sin soporte: modelos de visión, otras arquitecturas (Gemma, Phi, Mixtral) y escalas de RoPE extendidas.</li><li>Los modelos pequeños se equivocan a menudo con los hechos. No confíes en ellos para información importante.</li></ul>`],
+  sample: [
+`O farol da ilha acendia sempre às seis. A luz girava devagar sobre o mar, e os barcos voltavam para casa seguindo o brilho.
+Na primeira noite de inverno, o faroleiro subiu a escada com uma lanterna e um caderno. Contou os degraus, como fazia todos os dias: cento e doze.
+Lá em cima, limpou o vidro, olhou o horizonte e anotou no caderno: vento do sul, mar calmo, três barcos ao longe.
+Na segunda noite, o vento mudou. O faroleiro subiu a escada, contou os degraus e anotou: vento do leste, mar agitado, dois barcos ao longe.
+Na terceira noite, veio a neblina. O faroleiro subiu a escada, contou os degraus e anotou: sem vento, mar escondido, nenhum barco à vista.
+Então ele tocou o sino. Tocou uma vez, esperou, tocou de novo. Do meio da neblina, um apito respondeu, e depois outro, e mais outro.
+Os barcos encontraram o caminho pelo som. Quando o último chegou ao cais, o faroleiro escreveu no caderno: neblina, sino, três barcos em casa.
+Na manhã seguinte, as crianças da vila subiram a escada com ele. Contaram os degraus juntos: cento e doze. Lá em cima, viram o mar inteiro.
+O faroleiro mostrou o caderno. Em cada página havia uma noite: o vento, o mar e os barcos. As crianças leram em voz alta, uma página de cada vez.
+Desde então, todas as tardes, alguém sobe a escada com o faroleiro. A luz acende às seis, o sino espera a neblina, e o caderno ganha mais uma página.
+`,
+`The island lighthouse always came on at six. The light turned slowly over the sea, and the boats came home by following its glow.
+On the first night of winter, the keeper climbed the stairs with a lantern and a notebook. He counted the steps, as he did every day: one hundred and twelve.
+At the top, he cleaned the glass, looked at the horizon and wrote in the notebook: wind from the south, calm sea, three boats far away.
+On the second night, the wind changed. The keeper climbed the stairs, counted the steps and wrote: wind from the east, rough sea, two boats far away.
+On the third night, the fog came. The keeper climbed the stairs, counted the steps and wrote: no wind, hidden sea, no boat in sight.
+Then he rang the bell. He rang it once, waited, and rang it again. From the middle of the fog a whistle answered, then another, and one more.
+The boats found their way by the sound. When the last one reached the pier, the keeper wrote in the notebook: fog, bell, three boats home.
+The next morning, the village children climbed the stairs with him. They counted the steps together: one hundred and twelve. At the top, they saw the whole sea.
+The keeper showed them the notebook. Each page held one night: the wind, the sea and the boats. The children read it aloud, one page at a time.
+Since then, every afternoon, someone climbs the stairs with the keeper. The light comes on at six, the bell waits for the fog, and the notebook gains one more page.
+`,
+`Il faro dell’isola si accendeva sempre alle sei. La luce girava piano sul mare, e le barche tornavano a casa seguendo il suo bagliore.
+La prima notte d’inverno, il guardiano salì le scale con una lanterna e un quaderno. Contò i gradini, come faceva ogni giorno: centododici.
+In cima pulì il vetro, guardò l’orizzonte e scrisse sul quaderno: vento da sud, mare calmo, tre barche lontane.
+La seconda notte il vento cambiò. Il guardiano salì le scale, contò i gradini e scrisse: vento da est, mare mosso, due barche lontane.
+La terza notte arrivò la nebbia. Il guardiano salì le scale, contò i gradini e scrisse: niente vento, mare nascosto, nessuna barca in vista.
+Allora suonò la campana. Suonò una volta, aspettò, suonò di nuovo. Dal mezzo della nebbia rispose un fischio, poi un altro, e un altro ancora.
+Le barche trovarono la strada grazie al suono. Quando l’ultima arrivò al molo, il guardiano scrisse sul quaderno: nebbia, campana, tre barche a casa.
+La mattina dopo, i bambini del paese salirono le scale con lui. Contarono i gradini insieme: centododici. In cima videro tutto il mare.
+Il guardiano mostrò il quaderno. In ogni pagina c’era una notte: il vento, il mare e le barche. I bambini lessero ad alta voce, una pagina alla volta.
+Da allora, ogni pomeriggio, qualcuno sale le scale con il guardiano. La luce si accende alle sei, la campana aspetta la nebbia e il quaderno guadagna un’altra pagina.
+`,
+`El faro de la isla se encendía siempre a las seis. La luz giraba despacio sobre el mar, y los barcos volvían a casa siguiendo su brillo.
+La primera noche de invierno, el farero subió la escalera con una linterna y un cuaderno. Contó los escalones, como hacía cada día: ciento doce.
+Arriba limpió el cristal, miró el horizonte y anotó en el cuaderno: viento del sur, mar en calma, tres barcos a lo lejos.
+La segunda noche cambió el viento. El farero subió la escalera, contó los escalones y anotó: viento del este, mar agitado, dos barcos a lo lejos.
+La tercera noche llegó la niebla. El farero subió la escalera, contó los escalones y anotó: sin viento, mar escondido, ningún barco a la vista.
+Entonces tocó la campana. La tocó una vez, esperó y la tocó de nuevo. Desde el medio de la niebla respondió un silbido, luego otro, y otro más.
+Los barcos encontraron el camino por el sonido. Cuando el último llegó al muelle, el farero escribió en el cuaderno: niebla, campana, tres barcos en casa.
+A la mañana siguiente, los niños del pueblo subieron la escalera con él. Contaron los escalones juntos: ciento doce. Arriba vieron el mar entero.
+El farero les mostró el cuaderno. En cada página había una noche: el viento, el mar y los barcos. Los niños lo leyeron en voz alta, una página cada vez.
+Desde entonces, cada tarde, alguien sube la escalera con el farero. La luz se enciende a las seis, la campana espera la niebla y el cuaderno gana una página más.
+`],
+  samplePrompt: ['Na quarta noite', 'On the fourth night', 'La quarta notte', 'La cuarta noche']
+};
+
+/* ===================== Interface ===================== */
+const $ = (s) => document.querySelector(s);
+const store = { get(k, d) { try { const v = localStorage.getItem('llmlocal.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem('llmlocal.' + k, JSON.stringify(v)); } catch (e) {} } };
+let LANG = 'pt';
+function t(key, ...a) { const e = I18N[key]; let s = e ? e[LANGS.indexOf(LANG)] : key; a.forEach((v, i) => { s = s.split('{' + i + '}').join(String(v)); }); return s; }
+const nf = (v, d) => new Intl.NumberFormat(HTML_LANG[LANG], { maximumFractionDigits: d === undefined ? 0 : d, minimumFractionDigits: d === undefined ? 0 : d }).format(v);
+const bytesH = (b) => b >= 1e9 ? nf(b / 1e9, 2) + ' GB' : b >= 1e6 ? nf(b / 1e6, 0) + ' MB' : nf(b / 1e3, 0) + ' kB';
+const paramsH = (n) => n >= 1e9 ? nf(n / 1e9, 2) + ' B' : n >= 1e6 ? nf(n / 1e6, 1) + ' M' : nf(n / 1e3, 1) + ' k';
+const say = (s) => { $('#live').textContent = s; };
+const CORES = navigator.hardwareConcurrency || 4, NWORK = Math.max(1, Math.min(16, CORES - 1));
+const DEV = { gpu: null, ad: null, err: null, info: null };
+let POOL = null;
+const pool = () => POOL || (POOL = new Pool($('#src-core').textContent + '\n' + $('#src-worker').textContent, NWORK));
+
+/* ---------- idioma e tema ---------- */
+function applyLang() {
+  document.documentElement.lang = HTML_LANG[LANG]; document.title = t('title') + ' · Giovani Perotto Mesquita';
+  document.querySelectorAll('[data-i]').forEach((e) => { e.textContent = t(e.dataset.i); });
+  document.querySelectorAll('[data-ta]').forEach((e) => { e.setAttribute('aria-label', t(e.dataset.ta)); e.title = t(e.dataset.ta); });
+  document.querySelectorAll('[data-i="whereModels"]').forEach((e) => { e.innerHTML = t('whereModels'); });
+  $('#helpBody').innerHTML = t('helpBody'); $('#sLang').value = LANG;
+  $('#optCpu').textContent = t('beCpu', NWORK);
+  const sys = $('#tSystem'); if (!sys.value || LANGS.some((l, i) => sys.value === I18N.systemDefault[i])) sys.value = t('systemDefault');
+  const cp = $('#tCorpus'); if (!TR.model && (!cp.value || I18N.sample.includes(cp.value))) { cp.value = t('sample'); onCorpus(); }
+  const gp = $('#gPrompt'); if (!gp.value || I18N.samplePrompt.includes(gp.value)) gp.value = t('samplePrompt');
+  if (LAST_STATUS) status(...LAST_STATUS); if (LAST_TSTATUS) tstatus(...LAST_TSTATUS);
+  devChip(); renderModelInfo(); refreshChatUI(); onCorpus(); archInfo(); updateTrainUI(); drawChart();
+  for (const m of CHAT.msgs) if (m.el) { m.el.querySelector('.who').textContent = m.role === 'user' ? t('you') : m.who; const th = m.el.querySelector('.think'); if (m.think) th.textContent = t('thinking') + ': ' + m.think; }
+}
+function setLang(l) { LANG = LANGS.includes(l) ? l : 'pt'; store.set('lang', LANG); if (location.hash.slice(1) !== (LANG === 'pt' ? '' : LANG)) history.replaceState(null, '', LANG === 'pt' ? location.pathname : '#' + LANG); applyLang(); }
+function setTheme(th) { document.documentElement.dataset.theme = th; store.set('theme', th); drawChart(); }
+
+/* ---------- abas ---------- */
+const TABS = [['#tab-chat', '#pChat'], ['#tab-train', '#pTrain']];
+function selectTab(i, focus) { TABS.forEach(([tb, pn], k) => { const on = k === i; $(tb).setAttribute('aria-selected', on); $(tb).tabIndex = on ? 0 : -1; $(pn).hidden = !on; }); if (focus) $(TABS[i][0]).focus(); store.set('tab', i); if (i === 1) drawChart(); }
+TABS.forEach(([tb], i) => { $(tb).addEventListener('click', () => selectTab(i)); $(tb).addEventListener('keydown', (e) => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); selectTab((i + 1) % 2, true); } else if (e.key === 'Home') { e.preventDefault(); selectTab(0, true); } else if (e.key === 'End') { e.preventDefault(); selectTab(1, true); } }); });
+
+/* ---------- computador ---------- */
+async function probe() {
+  try { const r = await GpuLLM.device(); DEV.gpu = r.dev; DEV.ad = r.ad; DEV.info = r.ad.info || {};
+    DEV.gpu.lost.then((i) => { DEV.lostMsg = i.message || i.reason; DEV.gpu = null; if (CHAT.eng && CHAT.kind === 'gpu') { CHAT.eng.lost = true; status(() => t('e_lost', DEV.lostMsg), 'err'); } });
+  } catch (e) { DEV.err = e.message; }
+  devChip();
+}
+function devChip() {
+  const el = $('#devText'); if (!el) return;
+  if (!DEV.gpu && !DEV.err) { el.textContent = t('devChecking'); return; }
+  const i = DEV.info || {}, name = [i.vendor, i.architecture].filter(Boolean).join(' ') || 'WebGPU';
+  el.innerHTML = ''; const s = document.createElement('span'); s.className = 'lbl'; s.textContent = DEV.gpu ? t('devGpu', name) : t('devNoGpu', CORES); el.appendChild(s);
+  $('#devDot').classList.toggle('on', !!DEV.gpu); $('#bDevice').setAttribute('aria-label', t('devTitle') + ': ' + s.textContent);
+}
+function deviceDialog() {
+  const tb = $('#devTable'); tb.textContent = ''; const i = DEV.info || {}, L = DEV.ad ? DEV.ad.limits : null, f = DEV.ad ? DEV.ad.features : null;
+  const rows = [[t('dWebgpu'), DEV.gpu ? t('yes') : t('no') + (DEV.err ? ' (' + DEV.err + ')' : '')], [t('dAdapter'), [i.vendor, i.architecture, i.description, i.device].filter(Boolean).join(' · ') || t('unknown')],
+    [t('dF16'), f ? ['shader-f16', 'subgroups', 'timestamp-query'].filter((x) => f.has(x)).join(', ') || '—' : '—'], [t('dMaxBuf'), L ? bytesH(Math.min(L.maxBufferSize, L.maxStorageBufferBindingSize)) : '—'],
+    [t('dCores'), String(CORES)], [t('dWorkers'), String(NWORK)], [t('dMem'), navigator.deviceMemory ? '≥ ' + navigator.deviceMemory + ' GB' : t('unknown')], [t('dNet'), t('dNetV')]];
+  for (const [k, v] of rows) { const tr = document.createElement('tr'), th = document.createElement('th'), td = document.createElement('td'); th.textContent = k; td.textContent = v; tr.append(th, td); tb.appendChild(tr); }
+  $('#dDevice').showModal();
+}
+
+/* ===================== Conversa ===================== */
+const CHAT = { file: null, h: null, cfg: null, tk: null, eng: null, kind: null, msgs: [], kv: [], busy: false, abort: false, name: '', loadId: 0 };
+let LAST_STATUS = null, LAST_TSTATUS = null;
+function status(msg, cls) { if (typeof msg === 'function') { LAST_STATUS = [msg, cls]; msg = msg(); } else LAST_STATUS = null; const s = $('#loadStatus'); s.textContent = msg || ''; s.className = 'status' + (cls ? ' ' + cls : ''); }
+function errText(e) {
+  const m = String(e && e.message || e);
+  if (m === 'not-gguf' || m === 'old-gguf' || m === 'short' || m === 'truncated') return t('e_notgguf');
+  if (m.startsWith('arch:')) return t('e_arch', m.slice(5));
+  if (m.startsWith('unsupported-type:')) return t('e_type', m.split(':').slice(1).join(':'));
+  if (m.startsWith('tokenizer:')) return t('e_tok', m.slice(10));
+  if (m === 'no-webgpu' || m === 'no-adapter') return t('e_nogpu');
+  if (m.startsWith('big:')) { const [, n, a, b] = m.split('|'); return t('e_big', n, a, b); }
+  if (m === 'device-lost') return t('e_lost', DEV.lostMsg || '');
+  return t('e_generic', m);
+}
+const readFile = (file) => async (o, n) => new Uint8Array(await file.slice(o, o + n).arrayBuffer());
+async function pickModel(file) {
+  if (CHAT.busy) return;
+  await unload(); newChat(); CHAT.file = file; CHAT.h = null; status(t('reading')); $('#modelInfo').hidden = true;
+  try {
+    const h = await GG.parseHeader(readFile(file), file.size), cfg = GG.config(h), tk = new GG.Tokenizer(h.meta);
+    CHAT.h = h; CHAT.cfg = cfg; CHAT.tk = tk; CHAT.name = cfg.name || file.name.replace(/\.gguf$/i, ''); CHAT.tplAuto = GG.detectTemplate(h.meta);
+    const tplTxt = h.meta['tokenizer.chat_template'] || ''; $('#cThink').closest('label').hidden = !tplTxt.includes('<think>');
+    const sel = $('#sCtx'); for (const o of sel.options) o.disabled = +o.value > cfg.ctxTrain; if (+sel.value > cfg.ctxTrain) sel.value = [...sel.options].filter((o) => !o.disabled).pop().value;
+    renderModelInfo(); await loadModel();
+  } catch (e) { status(() => errText(e), 'err'); CHAT.h = null; renderModelInfo(); refreshChatUI(); }
+}
+function renderModelInfo() {
+  const dl = $('#modelInfo'); if (!dl) return; dl.textContent = '';
+  $('#optTplAuto').textContent = CHAT.h ? t('tplAuto', ({ chatml: 'ChatML', llama3: 'Llama 3', zephyr: 'Zephyr', mistral: 'Mistral', none: '—' })[CHAT.tplAuto]) : t('tplAutoNone');
+  if (!CHAT.h) { dl.hidden = true; return; }
+  const c = CHAT.cfg, q = Object.entries(c.types).sort((a, b) => b[1] - a[1]).map(([k, v]) => k + ' ' + Math.round(v / c.params * 100) + '%').join(', ');
+  const rows = [[t('iName'), CHAT.name], [t('iFile'), CHAT.file.name + ' · ' + bytesH(CHAT.file.size)], [t('iArch'), c.arch], [t('iParams'), paramsH(c.params)], [t('iLayers'), c.nLayer + ' · ' + c.nHead + (c.nKv !== c.nHead ? ' (KV ' + c.nKv + ')' : '')],
+    [t('iCtx'), nf(c.ctxTrain)], [t('iQuant'), q], [t('iTok'), CHAT.tk.model === 'llama' ? 'SentencePiece · ' + nf(CHAT.tk.n) : 'BPE · ' + nf(CHAT.tk.n)]];
+  for (const [k, v] of rows) { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = k; dd.textContent = v; dl.append(dt, dd); }
+  dl.hidden = false;
+}
+async function unload() {
+  CHAT.abort = true; if (CHAT.eng) { try { CHAT.eng.destroy(); } catch (e) {} } CHAT.eng = null; CHAT.kv = []; CHAT.kind = null; refreshChatUI();
+}
+async function loadModel() {
+  if (!CHAT.h) return; const id = ++CHAT.loadId; await unload(); CHAT.abort = false;
+  const c = CHAT.cfg, nCtx = +$('#sCtx').value; let kind = $('#sBackend').value; if (kind === 'auto') kind = DEV.gpu ? 'gpu' : 'cpu';
+  const t0 = performance.now(); $('#bReload').disabled = true; $('#bOpen').disabled = true;
+  try {
+    let eng;
+    if (kind === 'gpu') {
+      if (!DEV.gpu) throw new Error(DEV.lostMsg ? 'device-lost' : 'no-webgpu');
+      const lim = Math.min(DEV.ad.limits.maxStorageBufferBindingSize, DEV.ad.limits.maxBufferSize);
+      for (const tt of Object.values(CHAT.h.tensors)) { const b = tt.dims.length > 1 ? tt.nel * 2 : tt.nel * 4; if (b > lim) throw new Error('big:|' + tt.name + '|' + bytesH(b) + '|' + bytesH(lim)); }
+      eng = new GpuLLM(DEV.gpu, c, nCtx);
+    } else eng = new CpuLLM(pool(), c, nCtx);
+    let last = 0;
+    await loadTensors(eng, kind, CHAT.h, readFile(CHAT.file), pool(), (done, total) => {
+      const now = performance.now(); if (now - last < 120 && done < total) return; last = now;
+      $('#loadBar').style.width = (done / total * 100).toFixed(1) + '%';
+      status(t('loading', CHAT.name, Math.round(done / total * 100), nf(done / 1e6 / ((now - t0) / 1000), 0)));
+    }, () => id !== CHAT.loadId);
+    eng.build(); if (id !== CHAT.loadId) { eng.destroy(); return; }
+    CHAT.eng = eng; CHAT.kind = kind; CHAT.nCtx = nCtx; CHAT.kv = [];
+    $('#loadBar').style.width = '100%';
+    const mem = kind === 'gpu' ? c.params * 2 + c.nLayer * nCtx * c.nKv * c.hd * 8 : c.params * 1.15;
+    const secs = (performance.now() - t0) / 1000; status(() => t('loaded', nf(secs, 1), kind === 'gpu' ? t('gpuName') : t('cpuName', NWORK)) + ' ' + t('mem', bytesH(mem)) + (c.ropeScaling || c.ropeFreqs ? ' ' + t('warnRope') : ''), 'ok');
+    say(t('emptyReady', CHAT.name).replace(/<[^>]+>/g, ''));
+  } catch (e) { if (String(e.message) !== 'cancel') status(() => errText(e), 'err'); $('#loadBar').style.width = '0'; }
+  $('#bOpen').disabled = false; refreshChatUI();
+}
+function refreshChatUI() {
+  const ready = !!CHAT.eng, busy = CHAT.busy;
+  $('#inp').disabled = !ready; $('#inp').placeholder = ready ? t('inpReady') : t('inpNoModel');
+  $('#bSend').disabled = !ready || busy; $('#bStop').disabled = !busy; $('#bReload').disabled = !CHAT.h || busy; $('#bUnload').disabled = !ready || busy;
+  $('#sBackend').disabled = busy; $('#sCtx').disabled = busy;
+  const em = $('#empty'); if (em) { em.hidden = CHAT.msgs.length > 0; em.innerHTML = ready ? t('emptyReady', escapeHtml(CHAT.name)) : t('emptyChat'); }
+}
+const escapeHtml = (s) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+function addMsg(role, text) {
+  const el = document.createElement('div'); el.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
+  const who = document.createElement('span'); who.className = 'who'; who.textContent = role === 'user' ? t('you') : (CHAT.name || 'LLM');
+  const th = document.createElement('span'); th.className = 'think'; th.hidden = true;
+  const body = document.createElement('span'); body.className = 'body'; body.textContent = text || '';
+  const meta = document.createElement('span'); meta.className = 'meta'; meta.hidden = true;
+  el.append(who, th, body, meta); $('#msgs').appendChild(el); $('#empty').hidden = true;
+  const m = { role, text: text || '', el, who: who.textContent, think: '' }; CHAT.msgs.push(m); scrollChat(); return m;
+}
+function scrollChat() { const b = $('#msgs'); b.scrollTop = b.scrollHeight; }
+function splitThink(s) { // separa <think>…</think>
+  const a = s.indexOf('<think>'); if (a < 0) return { think: '', text: s };
+  const b = s.indexOf('</think>', a); if (b < 0) return { think: s.slice(a + 7).trim(), text: '', open: true };
+  return { think: s.slice(a + 7, b).trim(), text: (s.slice(0, a) + s.slice(b + 8)).replace(/^\s+/, '') };
+}
+// markdown simples (negrito, código, títulos), montado com nós de texto: nada vira HTML
+function renderMd(el, text) {
+  el.textContent = '';
+  const NL = String.fromCharCode(10);
+  for (const line of text.split(NL).map((l, i, a) => l + (i < a.length - 1 ? NL : ''))) {
+    const h = /^\s{0,3}#{1,6}\s+(.*)$/s.exec(line), src = h ? h[1] : line, host = h ? document.createElement('strong') : el;
+    for (const part of src.split(/(\*\*[^*\n]+\*\*|`[^`\n]+`)/)) {
+      if (!part) continue;
+      if (/^\*\*[^*]+\*\*$/.test(part)) { const b = document.createElement('strong'); b.textContent = part.slice(2, -2); host.appendChild(b); }
+      else if (/^`[^`]+`$/.test(part)) { const c = document.createElement('code'); c.textContent = part.slice(1, -1); host.appendChild(c); }
+      else host.appendChild(document.createTextNode(part));
+    }
+    if (h) el.appendChild(host);
+  }
+}
+function showBot(m, raw, done) {
+  const p = splitThink(raw), th = m.el.querySelector('.think'), body = m.el.querySelector('.body');
+  th.hidden = !p.think; th.textContent = p.think ? t('thinking') + ': ' + p.think : ''; m.think = p.think;
+  renderMd(body, p.text); body.classList.toggle('caret', !done); m.text = p.text;
+}
+async function send() {
+  const txt = $('#inp').value.trim(); if (!txt || !CHAT.eng || CHAT.busy) return;
+  $('#inp').value = ''; CHAT.busy = true; CHAT.abort = false; refreshChatUI();
+  addMsg('user', txt); const bot = addMsg('bot', ''); showBot(bot, '', false);
+  const tk = CHAT.tk, eng = CHAT.eng, tplName = $('#sTpl').value === 'auto' ? CHAT.tplAuto : $('#sTpl').value, T = GG.TEMPLATES[tplName];
+  const maxNew = Math.max(1, +$('#nMax').value || 256), opts = { temp: +$('#rTemp').value, topK: +$('#nTopK').value, topP: +$('#nTopP').value, rep: +$('#nRep').value };
+  const rand = GG.rng((+$('#nSeed').value || 0) + CHAT.msgs.length * 7919);
+  const noThink = !$('#cThink').checked && !$('#cThink').closest('label').hidden;
+  const hist = CHAT.msgs.filter((m) => m !== bot).map((m) => ({ role: m.role, text: m.text }));
+  let ids, dropped = false;
+  for (;;) { const text = GG.renderChat(tplName, $('#tSystem').value.trim(), hist, { noThink }); ids = tk.encode(text, T.noBos ? { bos: false } : undefined);
+    if (ids.length + Math.min(maxNew, CHAT.nCtx >> 1) <= CHAT.nCtx || hist.length <= 1) break; hist.splice(0, hist.length > 2 ? 2 : 1); dropped = true; }
+  if (ids.length >= CHAT.nCtx) ids = ids.slice(ids.length - CHAT.nCtx + Math.min(maxNew, CHAT.nCtx >> 2));
+  const stopIds = new Set([tk.eos].concat(T.stop.map((s) => tk.id(s)).filter((x) => x !== undefined)));
+  let raw = '', nGen = 0, tP = 0, tG = 0, err = null;
+  try {
+    let lcp = 0; while (lcp < ids.length - 1 && lcp < CHAT.kv.length && CHAT.kv[lcp] === ids[lcp]) lcp++;
+    CHAT.kv = ids.slice(0, lcp); const t0 = performance.now(); let lg;
+    for (let i = lcp; i < ids.length; i++) { lg = await eng.step(ids[i], i, i === ids.length - 1); CHAT.kv.push(ids[i]); if (CHAT.abort) throw new Error('stop'); }
+    tP = performance.now() - t0; const nPrompt = ids.length - lcp;
+    const dec = tk.decoder(), recent = [], t1 = performance.now(); let lastPaint = 0;
+    while (nGen < maxNew && CHAT.kv.length < CHAT.nCtx) {
+      const tok = GG.sample(lg, opts, rand, recent);
+      if (stopIds.has(tok) || (tk.isControl(tok) && tok !== tk.bos)) break;
+      raw += dec(tok); nGen++; recent.push(tok); if (recent.length > 64) recent.shift();
+      if (T.stop.some((s) => raw.endsWith(s))) { for (const s of T.stop) if (raw.endsWith(s)) raw = raw.slice(0, -s.length); break; }
+      const now = performance.now(); if (now - lastPaint > 50) { showBot(bot, raw, false); scrollChat(); lastPaint = now; }
+      lg = await eng.step(tok, CHAT.kv.length, true); CHAT.kv.push(tok);
+      if (CHAT.abort) break;
+    }
+    tG = performance.now() - t1;
+    stats(nPrompt, tP, nGen, tG);
+  } catch (e) { if (e.message !== 'stop') err = e; CHAT.kv = []; }
+  showBot(bot, raw, true);
+  const meta = bot.el.querySelector('.meta'); const notes = [];
+  if (CHAT.abort) notes.push(t('stopped')); if (dropped) notes.push(t('ctxFull'));
+  if (err) { bot.el.classList.add('err'); bot.el.querySelector('.body').textContent = errText(err); bot.text = ''; }
+  meta.textContent = notes.join(' · '); meta.hidden = !notes.length;
+  if (!raw.trim() && !err) { CHAT.msgs.splice(CHAT.msgs.indexOf(bot), 1); bot.el.remove(); }
+  CHAT.busy = false; CHAT.abort = false; refreshChatUI(); scrollChat(); $('#inp').focus();
+  say(bot.text.slice(0, 300));
+}
+function stats(nP, tP, nG, tG) {
+  const s = $('#chatStats'); s.textContent = ''; const add = (x) => { const e = document.createElement('span'); e.textContent = x; s.appendChild(e); };
+  add(CHAT.kind === 'gpu' ? t('gpuName') : t('cpuName', NWORK));
+  if (nP) add(t('sPrompt', nP, nf(nP / tP * 1000, 1))); if (nG) add(t('sGen', nG, nf(nG / tG * 1000, 1)));
+  add(t('sCtx', CHAT.kv.length, CHAT.nCtx));
+}
+function newChat() { if (CHAT.busy) { CHAT.abort = true; return; } CHAT.msgs.forEach((m) => m.el.remove()); CHAT.msgs = []; $('#chatStats').textContent = ''; refreshChatUI(); $('#inp').focus(); }
+
+/* ===================== Treino ===================== */
+const TR = { model: null, running: false, vocab: null, data: null, hist: [], val: [], t0: 0, elapsed: 0, lastRate: 0, lastMs: 0, dropped: 0 };
+function corpusText() { return $('#tCorpus').value.replace(/\r\n?/g, '\n'); }
+function onCorpus() {
+  if (!$('#corpusInfo')) return; const s = corpusText(), set = new Set(s);
+  $('#corpusInfo').textContent = t('corpusInfo', nf(s.length), set.size); archInfo();
+}
+function tcfg() { return { L: +$('#sL').value, C: +$('#sC').value, H: +$('#sH').value, T: +$('#sT').value, B: +$('#sB').value, lr: +$('#sLr').value, steps: +$('#sSteps').value, seed: (+$('#nTSeed').value || 0) >>> 0 }; }
+function archInfo() {
+  const el = $('#archInfo'); if (!el) return; const c = tcfg(), V = TR.model ? TR.model.cfg.V : Math.max(2, new Set(corpusText()).size);
+  const P = MiniGPT.count({ ...c, V }), N = c.B * c.T, act = c.L * (N * c.C * 18 + c.B * c.H * c.T * c.T * 2) + N * V * 3;
+  el.textContent = t('archInfo', nf(P), nf(N), bytesH((P * 4 + act) * 4));
+}
+function updateTrainUI() {
+  const has = !!TR.model, run = TR.running;
+  const doneAll = has && !run && TR.model.step >= tcfg().steps;
+  $('#bTrain').textContent = run ? t('pause') : has && TR.model.step > 0 && !doneAll ? t('resume') : t('train'); $('#bTrain').disabled = doneAll;
+  $('#bReset').disabled = !has || run; $('#bSaveM').disabled = !has || run; $('#bLoadM').disabled = run; $('#bGen').disabled = !has || run || TR.gen;
+  for (const s of ['#sL', '#sC', '#sH', '#sT', '#sB', '#nTSeed']) $(s).disabled = has;
+  $('#tCorpus').disabled = run; $('#bSample').disabled = run; $('#bTxt').disabled = run;
+  if (TR.model) { $('#kStep').textContent = nf(TR.model.step); }
+  $('#lgBase').textContent = TR.vocab ? t('lgBase', nf(Math.log(TR.vocab.length), 2)) : '';
+}
+function tstatus(msg, cls) { if (typeof msg === 'function') { LAST_TSTATUS = [msg, cls]; msg = msg(); } else LAST_TSTATUS = null; const s = $('#trainStatus'); s.textContent = msg || ''; s.className = 'status' + (cls ? ' ' + cls : ''); }
+function encodeText(s) { const map = new Map(TR.vocab.map((c, i) => [c, i])), out = []; let drop = 0; for (const ch of s) { const k = map.get(ch); if (k === undefined) drop++; else out.push(k); } TR.dropped = drop; return Uint32Array.from(out); }
+function prepData() {
+  const d = TR.data = encodeText(corpusText()), cut = Math.floor(d.length * 0.9); TR.train = d.subarray(0, cut); TR.valD = d.subarray(cut);
+  return d.length;
+}
+function batch(src, B, T, rnd) {
+  const tok = new Uint32Array(B * T), tgt = new Uint32Array(B * T);
+  for (let b = 0; b < B; b++) { const o = Math.floor(rnd() * (src.length - T - 1)); tok.set(src.subarray(o, o + T), b * T); tgt.set(src.subarray(o + 1, o + T + 1), b * T); }
+  return [tok, tgt];
+}
+async function startTrain() {
+  if (TR.running) { TR.running = false; return; }
+  if (!DEV.gpu) { tstatus(() => t('tNoGpu'), 'err'); return; }
+  const c = tcfg();
+  if (!TR.model) {
+    const s = corpusText(); TR.vocab = [...new Set(s)].sort();
+    if (s.length < (c.T + 2) * 10) { tstatus(() => t('tShort', nf((c.T + 2) * 10)), 'err'); TR.vocab = null; return; }
+    try { TR.model = new MiniGPT(DEV.gpu, { V: TR.vocab.length, C: c.C, L: c.L, H: c.H, T: c.T, B: c.B, seed: c.seed }); TR.model.init(); }
+    catch (e) { tstatus(() => errText(e), 'err'); TR.model = null; return; }
+    TR.hist = []; TR.val = []; TR.elapsed = 0; $('#preview').textContent = '';
+  }
+  const n = prepData(); if (TR.valD.length < TR.model.cfg.T + 2 || TR.train.length < TR.model.cfg.T + 2) { tstatus(() => t('tShort', nf((TR.model.cfg.T + 2) * 10)), 'err'); return; }
+  TR.running = true; updateTrainUI(); const dropped = TR.dropped; tstatus(() => t('tRunning') + (dropped ? ' ' + t('tDropped', nf(dropped)) : ''));
+  const m = TR.model, mc = m.cfg, rnd = GG.rng(mc.seed * 31 + m.step), steps = c.steps, P = MiniGPT.count(mc);
+  const lrAt = (s) => { const w = 50; if (s < w) return c.lr * (s + 1) / w; const p = Math.min(1, (s - w) / Math.max(1, steps - w)); return c.lr * (0.1 + 0.9 * 0.5 * (1 + Math.cos(Math.PI * p))); };
+  let tic = performance.now(), sinceStep = m.step, nextRead = m.step + 25, nextVal = Math.ceil((m.step + 1) / 250) * 250;
+  try {
+    while (TR.running && m.step < steps) {
+      for (let k = 0; k < 5 && m.step < steps; k++) { const [tok, tgt] = batch(TR.train, mc.B, mc.T, rnd); m.trainStep(tok, tgt, lrAt(m.step)); }
+      if (m.step >= nextRead || m.step >= steps) { nextRead = m.step + 25;
+        const loss = await m.readLoss(); TR.hist.push([m.step, loss]);
+        const now = performance.now(), dt = now - tic, ds = m.step - sinceStep; TR.elapsed += dt; tic = now; sinceStep = m.step;
+        if (ds > 0) { TR.lastMs = dt / ds; TR.lastRate = ds * mc.B * mc.T / dt * 1000; }
+        $('#kLoss').textContent = nf(loss, 3); $('#kRate').textContent = nf(TR.lastRate); $('#kMs').textContent = nf(TR.lastMs, 1);
+        $('#kFlops').textContent = nf(6 * P * TR.lastRate / 1e9, 1); $('#kStep').textContent = nf(m.step);
+        if (m.step >= nextVal || m.step >= steps) { nextVal = m.step + 250;
+          let vs = 0; const vr = GG.rng(99); for (let k = 0; k < 4; k++) { const [tok, tgt] = batch(TR.valD, mc.B, mc.T, vr); m.evalLoss(tok, tgt); vs += await m.readLoss(); }
+          TR.val.push([m.step, vs / 4]); $('#kVal').textContent = nf(vs / 4, 3);
+          $('#preview').textContent = await sampleText(t('samplePrompt'), 160, 0.8, m.step); tic = performance.now();
+        }
+        drawChart(); await new Promise((r) => setTimeout(r, 0));
+      } else await m.dev.queue.onSubmittedWorkDone();
+    }
+    const st = m.step, el = TR.elapsed / 1000, fin = st >= steps; tstatus(() => fin ? t('tDone', nf(st), nf(el, 1)) : t('tPaused', nf(st)), fin ? 'ok' : '');
+  } catch (e) { tstatus(() => errText(e), 'err'); }
+  TR.running = false; updateTrainUI();
+}
+async function sampleText(prompt, len, temp, seed, onTok) {
+  const m = TR.model, map = new Map(TR.vocab.map((c, i) => [c, i])); let ctx = []; for (const ch of prompt) { const k = map.get(ch); if (k !== undefined) ctx.push(k); }
+  if (!ctx.length) ctx = [map.get('\n') !== undefined ? map.get('\n') : 0];
+  const rnd = GG.rng((seed >>> 0) + 17); let out = '';
+  for (let i = 0; i < len; i++) { const lg = await m.nextLogits(ctx), tok = GG.sample(lg, { temp, topK: 0, topP: 1 }, rnd); ctx.push(tok); out += TR.vocab[tok]; if (onTok && i % 4 === 0) onTok(out); }
+  return prompt + out;
+}
+async function generate() {
+  if (!TR.model || TR.running || TR.gen) return; TR.gen = true; updateTrainUI();
+  const p = $('#gPrompt').value, out = $('#genOut');
+  try { out.textContent = await sampleText(p, Math.min(5000, Math.max(10, +$('#gLen').value || 200)), +$('#gTemp').value, +$('#nTSeed').value || 0, (s) => { out.textContent = p + s; }); }
+  catch (e) { out.textContent = errText(e); }
+  TR.gen = false; updateTrainUI();
+}
+function resetTrain() { if (TR.running) return; if (TR.model) TR.model.destroy(); TR.model = null; TR.vocab = null; TR.hist = []; TR.val = []; for (const k of ['#kLoss', '#kVal', '#kRate', '#kMs', '#kFlops']) $(k).textContent = '—'; $('#kStep').textContent = '0'; $('#preview').textContent = ''; $('#genOut').textContent = ''; tstatus(''); updateTrainUI(); archInfo(); drawChart(); }
+async function saveModel() {
+  const m = TR.model; if (!m) return; const params = await m.exportParams();
+  const head = new TextEncoder().encode(JSON.stringify({ format: 'minigpt-1', cfg: m.cfg, vocab: TR.vocab.join(''), step: m.step, hist: TR.hist, val: TR.val }));
+  const pad = (4 - ((8 + head.length) % 4)) % 4, hb = new Uint8Array(8 + head.length + pad); hb.set(new TextEncoder().encode('MGPT')); new DataView(hb.buffer).setUint32(4, head.length, true); hb.set(head, 8);
+  const url = URL.createObjectURL(new Blob([hb, params.buffer], { type: 'application/octet-stream' })), a = document.createElement('a');
+  a.href = url; a.download = 'mini-gpt-' + m.step + '.bin'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+async function loadModelFile(file) {
+  if (TR.running) return;
+  if (!DEV.gpu) { tstatus(() => t('tNoGpu'), 'err'); return; }
+  try {
+    const buf = new Uint8Array(await file.arrayBuffer()); if (new TextDecoder().decode(buf.subarray(0, 4)) !== 'MGPT') throw new Error('bad');
+    const hl = new DataView(buf.buffer).getUint32(4, true), H = JSON.parse(new TextDecoder().decode(buf.subarray(8, 8 + hl))), off = 8 + hl + (4 - ((8 + hl) % 4)) % 4;
+    if (H.format !== 'minigpt-1') throw new Error('bad');
+    const params = new Float32Array(buf.buffer.slice(off)); if (params.length !== MiniGPT.count(H.cfg)) throw new Error('bad');
+    resetTrain(); TR.vocab = [...H.vocab]; TR.model = new MiniGPT(DEV.gpu, H.cfg); TR.model.init(params); TR.model.step = H.step; TR.hist = H.hist || []; TR.val = H.val || [];
+    for (const [s, k] of [['#sL', 'L'], ['#sC', 'C'], ['#sH', 'H'], ['#sT', 'T'], ['#sB', 'B']]) $(s).value = String(H.cfg[k]); $('#nTSeed').value = H.cfg.seed;
+    if (+$('#sSteps').value <= H.step) $('#sSteps').value = [...$('#sSteps').options].map((o) => o.value).find((v) => +v > H.step) || '20000';
+    tstatus(() => t('tLoaded', nf(H.step), TR.vocab.length), 'ok'); updateTrainUI(); archInfo(); drawChart();
+  } catch (e) { tstatus(() => t('tBadFile'), 'err'); }
+}
+function drawChart() {
+  const cv = $('#chart'); if (!cv || cv.offsetParent === null) return;
+  const dpr = window.devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight; cv.width = W * dpr; cv.height = H * dpr;
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); const css = getComputedStyle(document.documentElement), col = (v) => css.getPropertyValue(v).trim();
+  g.clearRect(0, 0, W, H); const pl = 46, pr = 12, pt = 10, pb = 26;
+  const all = TR.hist.concat(TR.val); const base = TR.vocab ? Math.log(TR.vocab.length) : 4.5;
+  const xmax = Math.max(100, TR.model ? Math.max(tcfg().steps, TR.model.step) : tcfg().steps), ymax = Math.max(base, ...all.map((p) => p[1])) * 1.05, ymin = 0;
+  const X = (s) => pl + (W - pl - pr) * s / xmax, Y = (v) => pt + (H - pt - pb) * (1 - (v - ymin) / (ymax - ymin));
+  g.strokeStyle = col('--line'); g.fillStyle = col('--muted'); g.lineWidth = 1; g.font = '11px ' + col('--sans');
+  g.textAlign = 'right'; g.textBaseline = 'middle';
+  for (let k = 0; k <= 4; k++) { const v = ymin + (ymax - ymin) * k / 4, y = Y(v); g.beginPath(); g.moveTo(pl, y); g.lineTo(W - pr, y); g.stroke(); g.fillText(nf(v, 1), pl - 6, y); }
+  g.textAlign = 'center'; g.textBaseline = 'top'; for (let k = 0; k <= 4; k++) { const s = xmax * k / 4; g.fillText(nf(s), X(s), H - pb + 6); }
+  g.setLineDash([2, 4]); g.strokeStyle = col('--muted'); g.beginPath(); g.moveTo(pl, Y(base)); g.lineTo(W - pr, Y(base)); g.stroke(); g.setLineDash([]);
+  const line = (pts, c, dash) => { if (!pts.length) return; g.strokeStyle = c; g.lineWidth = 2.2; g.setLineDash(dash || []); g.beginPath(); pts.forEach(([s, v], i) => (i ? g.lineTo(X(s), Y(v)) : g.moveTo(X(s), Y(v)))); g.stroke(); g.setLineDash([]); if (pts.length === 1) { g.fillStyle = c; g.beginPath(); g.arc(X(pts[0][0]), Y(pts[0][1]), 3, 0, 7); g.fill(); } };
+  line(TR.hist, col('--accent')); line(TR.val, col('--gold'), [7, 5]);
+}
+
+/* ===================== Eventos ===================== */
+$('#bOpen').addEventListener('click', () => $('#fGguf').click());
+$('#fGguf').addEventListener('change', (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) pickModel(f); });
+$('#bReload').addEventListener('click', () => loadModel());
+$('#bUnload').addEventListener('click', async () => { await unload(); status(''); $('#loadBar').style.width = '0'; });
+$('#sBackend').addEventListener('change', () => { store.set('backend', $('#sBackend').value); if (CHAT.h) loadModel(); });
+$('#sCtx').addEventListener('change', () => { store.set('ctx', $('#sCtx').value); if (CHAT.h) loadModel(); });
+$('#sTpl').addEventListener('change', () => { CHAT.kv = []; });
+$('#cThink').addEventListener('change', () => { const on = $('#cThink').checked; $('#rTemp').value = on ? 0.6 : 0.7; $('#nTopK').value = on ? 20 : 40; $('#nTopP').value = on ? 0.95 : 0.9; $('#nRep').value = on ? 1 : 1.05; $('#oTemp').value = nf(+$('#rTemp').value, 2); });
+$('#rTemp').addEventListener('input', () => { $('#oTemp').value = nf(+$('#rTemp').value, 2); });
+$('#compose').addEventListener('submit', (e) => { e.preventDefault(); send(); });
+$('#inp').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } });
+$('#bStop').addEventListener('click', () => { CHAT.abort = true; });
+$('#bClear').addEventListener('click', newChat);
+$('#bDevice').addEventListener('click', deviceDialog);
+$('#bHelp').addEventListener('click', () => $('#dHelp').showModal());
+document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => b.closest('dialog').close()));
+$('#bTheme').addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+$('#sLang').addEventListener('change', () => setLang($('#sLang').value));
+window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (LANGS.includes(h) && h !== LANG) setLang(h); });
+$('#tCorpus').addEventListener('input', () => { onCorpus(); });
+$('#bSample').addEventListener('click', () => { $('#tCorpus').value = t('sample'); onCorpus(); });
+$('#bTxt').addEventListener('click', () => $('#fTxt').click());
+$('#fTxt').addEventListener('change', async (e) => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; $('#tCorpus').value = (await f.text()).slice(0, 5000000); onCorpus(); });
+for (const s of ['#sL', '#sC', '#sH', '#sT', '#sB', '#sSteps', '#sLr']) $(s).addEventListener('change', () => { archInfo(); drawChart(); updateTrainUI(); });
+$('#bTrain').addEventListener('click', startTrain);
+$('#bReset').addEventListener('click', resetTrain);
+$('#bGen').addEventListener('click', generate);
+$('#bSaveM').addEventListener('click', saveModel);
+$('#bLoadM').addEventListener('click', () => $('#fModel').click());
+$('#fModel').addEventListener('change', (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) loadModelFile(f); });
+window.addEventListener('resize', () => drawChart());
+
+/* ===================== Início ===================== */
+(function init() {
+  const sys = store.get('theme', null); setThemeQuiet(sys || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+  function setThemeQuiet(th) { document.documentElement.dataset.theme = th; }
+  const h = (location.hash || '').slice(1); LANG = LANGS.includes(h) ? h : store.get('lang', null) || ((navigator.language || 'pt').slice(0, 2) in HTML_LANG ? (navigator.language || 'pt').slice(0, 2) : 'pt');
+  if (!LANGS.includes(LANG)) LANG = 'pt';
+  $('#sBackend').value = store.get('backend', 'auto'); $('#sCtx').value = store.get('ctx', '2048');
+  $('#oTemp').value = nf(+$('#rTemp').value, 2);
+  applyLang(); selectTab(store.get('tab', 0) === 1 ? 1 : 0);
+  probe();
+})();
+</script>
+</body>
+</html>
