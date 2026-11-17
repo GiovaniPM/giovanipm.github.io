@@ -818,6 +818,11 @@ const I18N={
 'sp.dlHint':['Se você já fez alterações nesta sessão, pode baixar uma cópia local com elas agora.','If you already made changes in this session, you can download a local copy with them now.','Se hai già fatto modifiche in questa sessione, puoi scaricare ora una copia locale che le contiene.','Si ya hiciste cambios en esta sesión, puedes descargar ahora una copia local con ellos.'],
 'sp.dl':['⬇ Baixar cópia local','⬇ Download local copy','⬇ Scarica copia locale','⬇ Descargar copia local'],
 'sp.noData':['Não há dados para baixar.','There is no data to download.','Non ci sono dati da scaricare.','No hay datos para descargar.'],
+'gh.web':['Este arquivo foi aberto a partir do <b>GitHub</b> ({0}). O navegador não grava no repositório: salvar aqui criaria só uma cópia solta, e a versão publicada continuaria a antiga. Para evitar versões divergentes e a falsa impressão de que o projeto foi atualizado, o salvamento está <b>bloqueado</b>.','This file was opened from <b>GitHub</b> ({0}). The browser cannot write to the repository: saving here would only create a stray copy, and the published version would stay the old one. To avoid diverging versions and the false impression that the project was updated, saving is <b>blocked</b>.','Questo file è stato aperto da <b>GitHub</b> ({0}). Il browser non può scrivere nel repository: salvare qui creerebbe solo una copia isolata, e la versione pubblicata resterebbe quella vecchia. Per evitare versioni divergenti e la falsa impressione che il progetto sia stato aggiornato, il salvataggio è <b>bloccato</b>.','Este archivo se abrió desde <b>GitHub</b> ({0}). El navegador no puede escribir en el repositorio: guardar aquí crearía solo una copia suelta, y la versión publicada seguiría siendo la antigua. Para evitar versiones divergentes y la falsa impresión de que el proyecto se actualizó, el guardado está <b>bloqueado</b>.'],
+'gh.steps':['<li>Baixe uma cópia local (botão abaixo) ou clone o repositório.</li><li>Abra a cópia local no navegador, faça as alterações e clique em <b>Salvar</b>.</li><li>Envie a nova versão ao GitHub: faça commit e push, ou use <b>Add file › Upload files</b> no site do GitHub (o histórico de commits é preservado).</li>','<li>Download a local copy (button below) or clone the repository.</li><li>Open the local copy in the browser, make the changes and click <b>Save</b>.</li><li>Send the new version to GitHub: commit and push, or use <b>Add file › Upload files</b> on the GitHub site (the commit history is kept).</li>','<li>Scarica una copia locale (pulsante qui sotto) o clona il repository.</li><li>Apri la copia locale nel browser, fai le modifiche e clicca su <b>Salva</b>.</li><li>Invia la nuova versione a GitHub: fai commit e push, o usa <b>Add file › Upload files</b> sul sito di GitHub (la cronologia dei commit viene conservata).</li>','<li>Descarga una copia local (botón de abajo) o clona el repositorio.</li><li>Abre la copia local en el navegador, haz los cambios y haz clic en <b>Guardar</b>.</li><li>Envía la nueva versión a GitHub: haz commit y push, o usa <b>Add file › Upload files</b> en el sitio de GitHub (el historial de commits se conserva).</li>'],
+'gh.btnT':['Arquivo aberto do GitHub: salvamento bloqueado','File opened from GitHub: saving is blocked','File aperto da GitHub: salvataggio bloccato','Archivo abierto desde GitHub: guardado bloqueado'],
+'gh.dirty':['● Alterações não serão gravadas (GitHub)','● Changes will not be saved (GitHub)','● Le modifiche non verranno salvate (GitHub)','● Los cambios no se guardarán (GitHub)'],
+'gh.dlDone':['Cópia local baixada. Edite-a fora do GitHub e depois envie-a ao repositório.','Local copy downloaded. Edit it outside GitHub and then send it to the repository.','Copia locale scaricata. Modificala fuori da GitHub e poi inviala al repository.','Copia local descargada. Edítala fuera de GitHub y después envíala al repositorio.'],
 'sp.dlDone':['Cópia local baixada. Edite-a fora do SharePoint e depois faça o upload.','Local copy downloaded. Edit it outside SharePoint and then upload it.','Copia locale scaricata. Modificala fuori da SharePoint e poi caricala.','Copia local descargada. Edítala fuera de SharePoint y después súbela.'],
 'sv.nothing':['Nada para salvar ainda.','Nothing to save yet.','Ancora niente da salvare.','Nada para guardar aún.'],
 'sv.html':['Arquivo HTML','HTML file','File HTML','Archivo HTML'],
@@ -1475,7 +1480,7 @@ function applyStatic(){
   document.querySelectorAll('[data-i18n]').forEach(e=>{e.textContent=_t(e.dataset.i18n);});
   document.querySelectorAll('[data-i18n-title]').forEach(e=>{e.title=_t(e.dataset.i18nTitle);});
   $('#langSel').value=LANG;
-  if(SP){const b=$('#saveBtn');b.textContent=_t('sp.btn');b.classList.remove('primary');b.title=_t('sp.btnT');$('#dirty').textContent=_t('sp.dirty');}
+  if(SP){const b=$('#saveBtn');b.textContent=_t('sp.btn');b.classList.remove('primary');b.title=_t(spK('btnT'));$('#dirty').textContent=_t(spK('dirty'));}
 }
 function setLang(l,keepHash){
   if(!LANGS.includes(l))l='pt';LANG=l;
@@ -1952,24 +1957,32 @@ let fileHandle=null;
 function detectSharePoint(){
   const host=(location.hostname||'').toLowerCase();
   const webHosts=[/\.sharepoint\.com$/,/\.sharepoint\.us$/,/\.sharepoint\.cn$/,/\.sharepoint\.de$/,/\.sharepoint-df\.com$/,/(^|\.)onedrive\.live\.com$/,/(^|\.)1drv\.ms$/,/\.officeapps\.live\.com$/,/\.svc\.ms$/];
-  if(webHosts.some(r=>r.test(host)))return {kind:'web',where:host};
+  if(webHosts.some(r=>r.test(host)))return {kind:'web',svc:'sp',where:host};
+  // GitHub: Pages (*.github.io, inclusive htmlpreview.github.io), github.com, arquivos brutos e o espelho raw.githack.com
+  const ghHosts=[/(^|\.)github\.io$/,/(^|\.)github\.com$/,/(^|\.)githubusercontent\.com$/,/(^|\.)githack\.com$/];
+  if(ghHosts.some(r=>r.test(host)))return {kind:'web',svc:'gh',where:host};
   // aberto dentro de uma visualização do SharePoint (iframe / pré-visualização)
-  let ctx='';try{ctx+=' '+(document.referrer||'');}catch(e){}
-  try{if(location.ancestorOrigins)ctx+=' '+[...location.ancestorOrigins].join(' ');}catch(e){}
-  ctx=ctx.toLowerCase();
+  let ctx='',anc='';try{ctx+=' '+(document.referrer||'');}catch(e){}
+  try{if(location.ancestorOrigins)anc=' '+[...location.ancestorOrigins].join(' ');}catch(e){}
+  ctx=(ctx+anc).toLowerCase();anc=anc.toLowerCase();
   const m=ctx.match(/https?:\/\/([^\/\s]*(sharepoint(-df)?\.(com|us|cn|de)|onedrive\.live\.com))/);
-  if(m)return {kind:'web',where:m[1]};
+  if(m)return {kind:'web',svc:'sp',where:m[1]};
+  // embutido numa página do GitHub (iframe). O referrer não conta: um link no README levaria a um falso bloqueio.
+  const g=anc.match(/https?:\/\/([^\/\s]*(github\.io|github\.com|githubusercontent\.com))/);
+  if(g)return {kind:'web',svc:'gh',where:g[1]};
   // pasta sincronizada do SharePoint/OneDrive aberta localmente (file://)
   if(location.protocol==='file:'){
     let p='';try{p=decodeURIComponent(location.pathname).toLowerCase();}catch(e){p=location.pathname.toLowerCase();}
     if(/\/onedrive - [^\/]+\//.test(p)||/\/cloudstorage\/onedrive-[^\/]+\//.test(p)||/\/sharepoint( - [^\/]+)?\//.test(p)||/\/[^\/]+ - (documentos|documentos compartilhados|documents|shared documents)\//.test(p))
-      return {kind:'sync',where:decodeURIComponent(location.pathname).split('/').slice(0,-1).join('/')};
+      return {kind:'sync',svc:'sp',where:decodeURIComponent(location.pathname).split('/').slice(0,-1).join('/')};
   }
   return null;
 }
 const SP=detectSharePoint();
+/* texto do serviço detectado: gh.* no GitHub, sp.* no SharePoint/OneDrive */
+function spK(k){return SP&&SP.svc==='gh'&&I18N['gh.'+k]?'gh.'+k:'sp.'+k;}
 function spMessage(){
-  return SP.kind==='web'?_t('sp.web',esc(SP.where)):_t('sp.sync');
+  return SP.kind==='web'?_t(spK('web'),esc(SP.where)):_t('sp.sync');
 }
 function spBanner(){
   if(!SP)return '';
@@ -1978,7 +1991,7 @@ function spBanner(){
 function spBlocked(){
   modal(`<h3>🔒 ${_t('sp.blocked')}</h3><p>${spMessage()}</p>
   <p><b>${_t('sp.toUpdate')}</b></p>
-  <ol class="small">${_t('sp.steps')}</ol>
+  <ol class="small">${_t(spK('steps'))}</ol>
   <p class="small muted">${_t('sp.dlHint')}</p>
   <div class="row"><span class="spacer"></span><button class="btn" data-act="close">${_t('close')}</button><button class="btn primary" data-act="spDownload">${_t('sp.dl')}</button></div>`);
 }
@@ -2337,7 +2350,7 @@ const ACT={
     const dur=dn(en)-dn(st);f.start.value=iso(need);f.end.value=iso(need+dur);toast(_t('tf.fitted',fmt(iso(need))));},
   resched:()=>openReschedule(planReschedule()),
   applyResched:()=>{(MD.resched||[]).forEach(c=>{c.t.start=c.ns;c.t.end=c.ne;});const n=(MD.resched||[]).length;MD.resched=null;closeModal();markDirty();render();toast(_t('rsch.done',_p(n,'task')));},
-  spDownload:()=>{if(!S){toast(_t('sp.noData'));return;}S.savedAt=new Date().toISOString();download(slug(S.project.name)+'.html',serialize(),'text/html');closeModal();toast(_t('sp.dlDone'));},
+  spDownload:()=>{if(!S){toast(_t('sp.noData'));return;}S.savedAt=new Date().toISOString();download(slug(S.project.name)+'.html',serialize(),'text/html');closeModal();toast(_t(spK('dlDone')));},
   restore:()=>{S=pendingRestore.data;pendingRestore=null;normalize();dirty=true;$('#dirty').classList.add('on');render();toast(_t('rs.done'));},
   discardRestore:()=>{pendingRestore=null;try{localStorage.removeItem(BK);}catch(e){}render();}
 };
