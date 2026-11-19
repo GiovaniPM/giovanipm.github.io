@@ -97,7 +97,16 @@ label.f>*{color:var(--ink)}
 .gantt .left .hd{height:44px;border-bottom:1px solid var(--line);display:flex;align-items:flex-end;padding:0 10px 6px;font-size:12px;color:var(--muted)}
 .gantt .right{flex:1;overflow-x:auto}
 .gantt svg text{font-size:11px;fill:#667085}
-.gantt .barg{cursor:pointer}
+.gantt .barg{cursor:grab;outline:none}
+.gantt .barg .hdl{cursor:ew-resize}
+.gantt .right{min-width:0}
+@media(max-width:720px){.gantt .left{flex-basis:150px;min-width:0;overflow:hidden}.gantt .left .r .o{display:none}.gantt .left .hd{font-size:11px}}
+@media(max-width:480px){.gantt .left{flex-basis:118px}.gantt .left .r{padding:0 6px;gap:4px}}
+.gantt .barg:focus-visible>rect:first-of-type,.gantt .barg:focus-visible>path{stroke:#3b5bdb;stroke-width:3}
+.gantt .ghost{fill:#3b5bdb;fill-opacity:.12;stroke:#3b5bdb;stroke-width:2;stroke-dasharray:5 3;pointer-events:none}
+.gantt .glbl{font-weight:700;fill:#1c2433;pointer-events:none;paint-order:stroke;stroke:#fff;stroke-width:3px}
+body.gdrag,body.gdrag *{cursor:grabbing!important;user-select:none}
+body.gdrag.gresize,body.gdrag.gresize *{cursor:ew-resize!important}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
 .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
 .chart{position:relative}
@@ -621,6 +630,11 @@ const I18N={
 'tl.month':['Mês','Month','Mese','Mes'],
 'tl.deps':['Dependências','Dependencies','Dipendenze','Dependencias'],
 'tl.crit':['Caminho crítico','Critical path','Percorso critico','Ruta crítica'],
+'tl.dragHint':['arraste a barra para mover a tarefa e as bordas para mudar início ou fim (teclado: ←/→ move um dia, Shift+←/→ muda o fim)','drag a bar to move the task and its edges to change start or finish (keyboard: ←/→ moves one day, Shift+←/→ changes the finish)','trascina la barra per spostare l’attività e i bordi per cambiare inizio o fine (tastiera: ←/→ sposta di un giorno, Maiusc+←/→ cambia la fine)','arrastra la barra para mover la tarea y los bordes para cambiar inicio o fin (teclado: ←/→ mueve un día, Mayús+←/→ cambia el fin)'],
+'tl.barAria':['{0}, de {1} a {2}. Enter abre; ←/→ move um dia; Shift+←/→ muda o fim.','{0}, from {1} to {2}. Enter opens; ←/→ moves one day; Shift+←/→ changes the finish.','{0}, dal {1} al {2}. Invio apre; ←/→ sposta di un giorno; Maiusc+←/→ cambia la fine.','{0}, del {1} al {2}. Enter abre; ←/→ mueve un día; Mayús+←/→ cambia el fin.'],
+'tl.moved':['{0}: {1} → {2}','{0}: {1} → {2}','{0}: {1} → {2}','{0}: {1} → {2}'],
+'tl.dragConf':['A nova data deixa {0} em conflito com as dependências.','The new date leaves {0} in conflict with the dependencies.','La nuova data lascia {0} in conflitto con le dipendenze.','La nueva fecha deja {0} en conflicto con las dependencias.'],
+'tl.kbdConf':['{0} em conflito: use Reagendar','{0} in conflict: use Reschedule','{0} in conflitto: usa Ripianifica','{0} en conflicto: usa Reprogramar'],
 'tl.reschedT':['Empurra tarefas não iniciadas para respeitar as dependências','Pushes tasks not yet started so that they respect the dependencies','Sposta in avanti le attività non iniziate per rispettare le dipendenze','Empuja las tareas no iniciadas para respetar las dependencias'],
 'tl.legend':['Barra clara = duração planejada · barra cheia = % concluído · contorno vermelho = atrasada · ◆ marco · seta = dependência (tracejada vermelha = conflito)','Light bar = planned duration · solid bar = % done · red outline = late · ◆ milestone · arrow = dependency (dashed red = conflict)','Barra chiara = durata pianificata · barra piena = % completata · bordo rosso = in ritardo · ◆ milestone · freccia = dipendenza (tratteggiata rossa = conflitto)','Barra clara = duración planificada · barra llena = % terminado · borde rojo = atrasada · ◆ hito · flecha = dependencia (discontinua roja = conflicto)'],
 'tl.legendCrit':['contorno escuro = caminho crítico','dark outline = critical path','bordo scuro = percorso critico','borde oscuro = ruta crítica'],
@@ -744,6 +758,8 @@ const I18N={
 'tf.ms':['É um marco (milestone)','It is a milestone','È una milestone','Es un hito'],
 'tf.deps':['Dependências: esta tarefa depende de','Dependencies: this task depends on','Dipendenze: questa attività dipende da','Dependencias: esta tarea depende de'],
 'tf.noOthers':['Não há outras tarefas disponíveis','No other tasks available','Nessun’altra attività disponibile','No hay otras tareas disponibles'],
+'tf.cycOpt':['depende desta tarefa (criaria um ciclo)','depends on this task (would create a cycle)','dipende da questa attività (creerebbe un ciclo)','depende de esta tarea (crearía un ciclo)'],
+'tf.allSucc':['Todas as outras tarefas dependem desta: escolher uma criaria um ciclo','All other tasks depend on this one: choosing one would create a cycle','Tutte le altre attività dipendono da questa: sceglierne una creerebbe un ciclo','Todas las demás tareas dependen de esta: elegir una crearía un ciclo'],
 'tf.addPred':['+ Predecessora','+ Predecessor','+ Predecessora','+ Predecesora'],
 'tf.fitT':['Move o início para a primeira data permitida pelas predecessoras, mantendo a duração','Moves the start to the first date the predecessors allow, keeping the duration','Sposta l’inizio alla prima data consentita dalle predecessore, mantenendo la durata','Mueve el inicio a la primera fecha que permiten las predecesoras, manteniendo la duración'],
 'tf.fit':['↦ Encaixar após predecessoras','↦ Fit after predecessors','↦ Accoda dopo le predecessore','↦ Encajar después de las predecesoras'],
@@ -1495,7 +1511,10 @@ function render(){
   const v={overview:vOverview,timeline:vTimeline,tasks:vTasks,followup:vFollowup,cfd:vCFD,team:vTeam,risk:vRisk,alerts:vAlerts,project:vProject};
   $('#app').innerHTML=spBanner()+(S?v[UI.view]():vWelcome())+restoreBanner();
   bindCharts();
-  if(UI.view==='timeline'&&S){const r=document.querySelector('.gantt .right');const t=document.getElementById('todayX');if(r&&t)r.scrollLeft=Math.max(0,+t.getAttribute('x1')-r.clientWidth/3);}
+  if(UI.view==='timeline'&&S){const r=document.querySelector('.gantt .right');const t=document.getElementById('todayX');
+    /* depois de arrastar uma barra, mantém a rolagem (compensando se o início do gráfico mudou) em vez de voltar para hoje */
+    if(r&&UI.keepScroll){r.scrollLeft=UI.keepScroll.left+(UI.keepScroll.d0-UI.gx.d0)*UI.gx.ppd;UI.keepScroll=null;}
+    else if(r&&t)r.scrollLeft=Math.max(0,+t.getAttribute('x1')-r.clientWidth/3);}
 }
 let pendingRestore=null;
 function restoreBanner(){
@@ -1559,6 +1578,7 @@ function vTimeline(){
   const from=addD(minDate(),-3),to=addD(maxDate(),7),d0=dn(from),N=dn(to)-d0+1,W=Math.round(N*ppd),RH=30,HD=44;
   const rows=[];phases().forEach(p=>{rows.push({ph:p});sortedTasks().filter(t=>phKey(t)===p).forEach(t=>rows.push({t}));});
   const H=HD+rows.length*RH;
+  UI.gx={d0,ppd};
   const rowOf=new Map();rows.forEach((r,i)=>{if(r.t)rowOf.set(r.t.id,i);});
   const crit=UI.showCrit?slackMap():null,isCrit=t=>crit&&t.status!=='done'&&crit.get(t.id)<=0;
   let g='<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#7a8699"/></marker><marker id="arR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#e03131"/></marker><marker id="arK" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#111a2e"/></marker></defs>';
@@ -1592,13 +1612,16 @@ function vTimeline(){
     const y=HD+i*RH;
     if(r.ph!==undefined){const ts=S.tasks.filter(t=>phKey(t)===r.ph);const a=Math.min(...ts.map(t=>dn(t.start))),b=Math.max(...ts.map(t=>dn(t.end)));g+=`<rect x="${(a-d0)*ppd}" y="${y+12}" width="${(b-a+1)*ppd}" height="6" rx="3" fill="#475467" opacity=".55"/>`;return;}
     const t=r.t,c=STM[t.status].c,x=(dn(t.start)-d0)*ppd,w=Math.max(ppd,(dn(t.end)-dn(t.start)+1)*ppd),late=isLate(t),ck=isCrit(t),dim=crit&&!ck?'opacity=".4"':'';
-    if(t.milestone){const cx=(dn(t.end)-d0)*ppd+ppd/2,cy=y+RH/2;g+=`<g class="barg" data-act="task" data-id="${t.id}" ${dim}><title>${esc(t.title)} · ${fmt(t.end)} · ${STM[t.status].l}</title><path d="M${cx} ${cy-9}L${cx+9} ${cy}L${cx} ${cy+9}L${cx-9} ${cy}Z" fill="${c}" stroke="${late?'#e03131':ck?'#111a2e':'#fff'}" stroke-width="2"/><text x="${cx+13}" y="${cy+4}">${esc(t.title)}</text></g>`;return;}
+    const kb=`tabindex="0" role="button" aria-label="${esc(_t('tl.barAria','#'+t.num+' '+t.title,fmt(t.start),fmt(t.end)))}"`;
+    if(t.milestone){const cx=(dn(t.end)-d0)*ppd+ppd/2,cy=y+RH/2;g+=`<g class="barg" data-act="task" data-id="${t.id}" ${kb} ${dim}><title>${esc(t.title)} · ${fmt(t.end)} · ${STM[t.status].l}</title><path d="M${cx} ${cy-9}L${cx+9} ${cy}L${cx} ${cy+9}L${cx-9} ${cy}Z" fill="${c}" stroke="${late?'#e03131':ck?'#111a2e':'#fff'}" stroke-width="2"/><text x="${cx+13}" y="${cy+4}">${esc(t.title)}</text></g>`;return;}
     const p=curProg(t);
     const dt=depsOf(t).length?'\n'+_t('c.dependsOn')+': '+depsOf(t).map(depLabel).join('; '):'';
-    g+=`<g class="barg" data-act="task" data-id="${t.id}" ${dim}><title>#${t.num} ${esc(t.title)}\n${fmt(t.start)} → ${fmt(t.end)}\n${STM[t.status].l} · ${p}% (${_t('tl.plannedPct',r0(plannedPct(t,TODAY)))})${esc(dt)}${crit?'\n'+_t('tl.slack',_p(crit.get(t.id),'day')):''}</title>
+    const hw=Math.min(8,Math.max(4,w/4));
+    g+=`<g class="barg" data-act="task" data-id="${t.id}" ${kb} ${dim}><title>#${t.num} ${esc(t.title)}\n${fmt(t.start)} → ${fmt(t.end)}\n${STM[t.status].l} · ${p}% (${_t('tl.plannedPct',r0(plannedPct(t,TODAY)))})${esc(dt)}${crit?'\n'+_t('tl.slack',_p(crit.get(t.id),'day')):''}</title>
       <rect x="${x}" y="${y+6}" width="${w}" height="${RH-12}" rx="4" fill="${c}" fill-opacity=".25" ${late?'stroke="#e03131" stroke-width="2"':ck?'stroke="#111a2e" stroke-width="2"':''}/>
       <rect x="${x}" y="${y+6}" width="${w*p/100}" height="${RH-12}" rx="4" fill="${c}"/>
-      <text x="${x+w+5}" y="${y+RH/2+4}">${p}%${late?' ⚠':''}</text></g>`;
+      <text x="${x+w+5}" y="${y+RH/2+4}">${p}%${late?' ⚠':''}</text>
+      <rect class="hdl" data-h="s" x="${x-hw/2}" y="${y+4}" width="${hw}" height="${RH-8}" fill="transparent"/><rect class="hdl" data-h="e" x="${x+w-hw/2}" y="${y+4}" width="${hw}" height="${RH-8}" fill="transparent"/></g>`;
   });
   const tx=(dn(TODAY)-d0)*ppd+ppd/2;
   g+=`<line id="todayX" x1="${tx}" x2="${tx}" y1="22" y2="${H}" stroke="#e03131" stroke-width="1.5" stroke-dasharray="4 3"/><text x="${tx+4}" y="${HD-2}" style="fill:#e03131;font-weight:700">${_t('today')}</text>`;
@@ -1612,7 +1635,7 @@ function vTimeline(){
     <button class="btn sm" data-act="resched" title="${_t('tl.reschedT')}">${_t('b.resched')}</button>
     <button class="btn sm" data-act="import">${_t('b.importShort')}</button><button class="btn sm primary" data-act="newTask">${_t('b.task')}</button></div>
   <div class="gantt"><div class="left"><div class="hd">${_t('c.taskOwner')}</div>${left}</div><div class="right"><svg width="${W}" height="${H}">${g}</svg></div></div>
-  <div class="row" style="margin-top:10px">${legend(ST.map(s=>s.k))}<span class="spacer"></span><span class="muted small">${_t('tl.legend')}${UI.showCrit?' · '+_t('tl.legendCrit'):''}</span></div>`;
+  <div class="row" style="margin-top:10px">${legend(ST.map(s=>s.k))}<span class="spacer"></span><span class="muted small">${_t('tl.legend')}${UI.showCrit?' · '+_t('tl.legendCrit'):''} · ${_t('tl.dragHint')}</span></div>`;
 }
 
 function vTasks(){
@@ -1766,7 +1789,7 @@ function closeModal(){const m=$('#modal');m.classList.add('hidden');m.innerHTML=
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast._t);toast._t=setTimeout(()=>e.classList.remove('on'),3200);}
 
 let MD={opts:[]};
-function depRow(d){return `<div class="dep-row"><select data-dep="id" aria-label="${_t('c.task')}">${MD.opts.map(o=>`<option value="${o.id}" ${d&&d.id===o.id?'selected':''}>#${o.num} ${esc(o.title)}</option>`).join('')}</select><select data-dep="type" aria-label="${_t('dp.type')}">${Object.entries(DEPT).map(([k,l])=>`<option value="${k}" ${d&&d.type===k?'selected':''}>${l}</option>`).join('')}</select><input type="number" data-dep="lag" value="${d?d.lag||0:0}" title="${_t('dp.lagT')}" aria-label="${_t('dp.lagT')}"><button type="button" class="btn sm ghost" data-act="depDel" title="${_t('remove')}">✕</button></div>`;}
+function depRow(d){return `<div class="dep-row"><select data-dep="id" aria-label="${_t('c.task')}">${MD.opts.map(o=>o.cyc?`<option value="${o.id}" disabled>#${o.num} ${esc(o.title)} — ${_t('tf.cycOpt')}</option>`:`<option value="${o.id}" ${d&&d.id===o.id?'selected':''}>#${o.num} ${esc(o.title)}</option>`).join('')}</select><select data-dep="type" aria-label="${_t('dp.type')}">${Object.entries(DEPT).map(([k,l])=>`<option value="${k}" ${d&&d.type===k?'selected':''}>${l}</option>`).join('')}</select><input type="number" data-dep="lag" value="${d?d.lag||0:0}" title="${_t('dp.lagT')}" aria-label="${_t('dp.lagT')}"><button type="button" class="btn sm ghost" data-act="depDel" title="${_t('remove')}">✕</button></div>`;}
 function readDepRows(){const seen=new Set();return [...document.querySelectorAll('#depRows .dep-row')].map(r=>({id:r.querySelector('[data-dep=id]').value,type:r.querySelector('[data-dep=type]').value,lag:parseInt(r.querySelector('[data-dep=lag]').value)||0})).filter(d=>d.id&&!seen.has(d.id)&&seen.add(d.id));}
 function openReschedule(changes,intro){
   if(!changes.length){toast(_t('rsch.ok'));return;}
@@ -1783,7 +1806,9 @@ function openTask(id){
   const t=id?S.tasks.find(x=>x.id===id):null;
   const v=t||{title:'',phase:phases()[0]||'',owner:'',start:TODAY,end:addD(TODAY,7),status:'todo',progress:0,notes:'',milestone:false,history:[],deps:[]};
   const excl=t?descendants(t.id):new Set();if(t)excl.add(t.id);
-  MD={opts:sortedTasks().filter(x=>!excl.has(x.id)),taskId:t?t.id:null};
+  /* todas as outras tarefas aparecem; as sucessoras (diretas ou indiretas) vêm desativadas, porque criariam um ciclo */
+  MD={opts:sortedTasks().filter(x=>!t||x.id!==t.id).map(x=>({id:x.id,num:x.num,title:x.title,cyc:excl.has(x.id)})),taskId:t?t.id:null};
+  MD.free=MD.opts.filter(o=>!o.cyc).length;
   const succ=t?succsOf(t):[];
   modal(`<h3>${t?_t('tf.edit'):_t('tf.new')}</h3><form id="taskForm" class="form">
     <label class="f full">${_t('fu.title')}<input type="text" name="title" value="${esc(v.title)}" required></label>
@@ -1798,7 +1823,7 @@ function openTask(id){
     <label class="row small full"><input type="checkbox" name="milestone" ${v.milestone?'checked':''}> ${_t('tf.ms')}</label>
     <div class="full"><div class="section-title" style="margin-top:4px">⛓ ${_t('tf.deps')}</div>
       <div id="depRows">${depsOf(v).map(depRow).join('')}</div>
-      <div class="row"><button type="button" class="btn sm" data-act="depAdd" ${MD.opts.length?'':`disabled title="${_t('tf.noOthers')}"`}>${_t('tf.addPred')}</button><button type="button" class="btn sm" data-act="depFit" title="${_t('tf.fitT')}">${_t('tf.fit')}</button></div>
+      <div class="row"><button type="button" class="btn sm" data-act="depAdd" ${MD.free?'':`disabled title="${_t(MD.opts.length?'tf.allSucc':'tf.noOthers')}"`}>${_t('tf.addPred')}</button><button type="button" class="btn sm" data-act="depFit" title="${_t('tf.fitT')}">${_t('tf.fit')}</button></div>
       <div class="small muted" style="margin-top:6px">${_t('tf.depHelp')}</div>
       ${succ.length?`<div class="small" style="margin-top:6px">${_t('tf.succ')}: ${succ.map(s=>'#'+s.num+' '+esc(s.title)).join(', ')}</div>`:''}
     </div>
@@ -2354,7 +2379,83 @@ const ACT={
   restore:()=>{S=pendingRestore.data;pendingRestore=null;normalize();dirty=true;$('#dirty').classList.add('on');render();toast(_t('rs.done'));},
   discardRestore:()=>{pendingRestore=null;try{localStorage.removeItem(BK);}catch(e){}render();}
 };
+/* ===================== Gantt: mover e redimensionar barras arrastando, como no MS Project =====================
+   meio da barra = move (mantém a duração) · borda esquerda = muda o início · borda direita = muda o fim · marco = muda a data.
+   Encaixa em dias inteiros. Esc cancela. Clique sem arrastar continua abrindo a tarefa. */
+let GD=null,gdSuppress=0;
+function ganttDates(t,mode,dd){
+  const s=dn(t.start),e=dn(t.end);
+  if(t.milestone||mode==='m')return {ns:iso(s+dd),ne:iso(e+dd)};
+  if(mode==='s')return {ns:iso(Math.min(s+dd,e)),ne:t.end};
+  return {ns:t.start,ne:iso(Math.max(e+dd,s))};
+}
+function commitDates(t,ns,ne,kbd){
+  if(ns===t.start&&ne===t.end)return false;
+  const r=document.querySelector('.gantt .right');
+  if(r&&UI.gx)UI.keepScroll={left:r.scrollLeft,d0:UI.gx.d0};
+  t.start=ns;t.end=ne;t.updatedAt=nowLocal();markDirty();render();
+  const bar=document.querySelector(`.gantt .barg[data-id="${t.id}"]`);if(kbd&&bar)bar.focus({preventScroll:true});
+  const scope=descendants(t.id);scope.add(t.id);
+  const ch=planReschedule().filter(c=>scope.has(c.t.id));
+  const msg=_t('tl.moved','#'+t.num,fmt(ns),fmt(ne));
+  if(ch.length&&!kbd)openReschedule(ch,_t('tl.dragConf',_p(ch.length,'task')));
+  else toast(ch.length?msg+' · '+_t('tl.kbdConf',_p(ch.length,'task')):msg);
+  return true;
+}
+function gdEnd(apply){
+  if(!GD)return;const g=GD;GD=null;
+  document.body.classList.remove('gdrag','gresize');
+  if(g.ghost)g.ghost.remove();if(g.lbl)g.lbl.remove();
+  if(g.moved)gdSuppress=Date.now();
+  if(apply&&g.moved){const {ns,ne}=ganttDates(g.t,g.mode,g.dd);commitDates(g.t,ns,ne,false);}
+}
+document.addEventListener('pointerdown',e=>{
+  const bar=e.target.closest&&e.target.closest('.gantt .barg[data-id]');
+  if(!bar||e.button!==0||!UI.gx)return;
+  const t=tById(bar.dataset.id);if(!t)return;
+  const h=e.target.closest('[data-h]');
+  GD={t,bar,svg:bar.ownerSVGElement,mode:t.milestone?'m':(h?h.dataset.h:'m'),x0:e.clientX,y0:e.clientY,dd:0,moved:false,id:e.pointerId,touch:e.pointerType==='touch'};
+  try{bar.setPointerCapture(e.pointerId);}catch(err){}
+});
+/* toque: o Chrome ignora touch-action dentro do SVG, então decide pelo primeiro movimento do dedo:
+   horizontal = arrasta a barra (e impede a rolagem); vertical = desiste do arraste e deixa a página rolar */
+document.addEventListener('touchmove',e=>{
+  if(!GD||!GD.touch||!e.touches[0])return;
+  if(!GD.axis){const dx=Math.abs(e.touches[0].clientX-GD.x0),dy=Math.abs(e.touches[0].clientY-GD.y0);if(dx<4&&dy<4)return;GD.axis=dx>=dy?'x':'y';}
+  if(GD.axis==='y'){gdEnd(false);return;}
+  if(e.cancelable)e.preventDefault();
+},{passive:false});
+document.addEventListener('pointermove',e=>{
+  if(!GD||e.pointerId!==GD.id)return;
+  const dx=e.clientX-GD.x0;
+  if(!GD.moved){if(Math.abs(dx)<4)return;GD.moved=true;
+    document.body.classList.add('gdrag');if(GD.mode!=='m')document.body.classList.add('gresize');
+    const ns='http://www.w3.org/2000/svg',bb=GD.bar.getBBox();
+    GD.y=GD.t.milestone?bb.y:+GD.bar.querySelector('rect').getAttribute('y');GD.h=GD.t.milestone?bb.height:+GD.bar.querySelector('rect').getAttribute('height');
+    GD.ghost=document.createElementNS(ns,'rect');GD.ghost.setAttribute('class','ghost');GD.ghost.setAttribute('rx','4');
+    GD.lbl=document.createElementNS(ns,'text');GD.lbl.setAttribute('class','glbl');
+    GD.svg.appendChild(GD.ghost);GD.svg.appendChild(GD.lbl);}
+  GD.dd=Math.round(dx/UI.gx.ppd);
+  const {ns,ne}=ganttDates(GD.t,GD.mode,GD.dd),{d0,ppd}=UI.gx;
+  const x=(dn(ns)-d0)*ppd,w=Math.max(ppd,(dn(ne)-dn(ns)+1)*ppd);
+  GD.ghost.setAttribute('x',x);GD.ghost.setAttribute('y',GD.y);GD.ghost.setAttribute('width',w);GD.ghost.setAttribute('height',GD.h);
+  GD.lbl.setAttribute('x',x);GD.lbl.setAttribute('y',GD.y-3);
+  GD.lbl.textContent=GD.t.milestone?fmt(ne):`${fmt(ns)} → ${fmt(ne)} · ${_p(dn(ne)-dn(ns)+1,'day')}`;
+});
+document.addEventListener('pointerup',e=>{if(GD&&e.pointerId===GD.id)gdEnd(true);});
+document.addEventListener('pointercancel',e=>{if(GD&&e.pointerId===GD.id)gdEnd(false);});
+document.addEventListener('keydown',e=>{
+  if(GD&&e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();gdEnd(false);return;}
+  const bar=e.target.closest&&e.target.closest('.gantt .barg[data-id]');if(!bar)return;
+  const t=tById(bar.dataset.id);if(!t)return;
+  if(e.key==='Enter'||e.key===' '){e.preventDefault();openTask(t.id);return;}
+  if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')return;
+  e.preventDefault();
+  const dd=e.key==='ArrowRight'?1:-1,mode=e.shiftKey&&!t.milestone?'e':'m';
+  const {ns,ne}=ganttDates(t,mode,dd);commitDates(t,ns,ne,true);
+},true);
 document.addEventListener('click',e=>{
+  if(gdSuppress&&Date.now()-gdSuppress<500&&e.target.closest&&e.target.closest('.gantt .barg')){gdSuppress=0;e.preventDefault();return;}
   const el=e.target.closest('[data-act]');
   if(el&&ACT[el.dataset.act]&&el.type!=='checkbox'){e.preventDefault();ACT[el.dataset.act](el);return;}
   if(e.target.id==='modal')closeModal();
