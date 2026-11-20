@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pontinhos: tutorial do jogo de ligar os pontos · Giovani Perotto Mesquita</title>
+<meta name="description" content="Tutorial do Pontinhos (Dots and Boxes, Timbiriche): a história da Pipopipette de Édouard Lucas, as regras, como jogar no app com tabuleiros de 2×2 a 15×15, cadeias, recusa dupla, regra da cadeia longa e o que mostra o computador do jogo.">
+<meta name="author" content="Giovani Perotto Mesquita">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Paleta alegre: roxo e magenta vibrantes, amarelo-girassol, verde-água e coral */
+    --bg: #FFF7EC;
+    --surface: #FFFFFF;
+    --ink: #2B1B3D;
+    --text: #3E3350;
+    --muted: #756986;
+    --line: #F1E2CF;
+    --accent: #0E8074;
+    --accent-soft: #E2F6F2;
+    --accent-strong: #5B2A86;
+    --navy: #5B2A86;
+    --navy-deep: #C2185B;
+    --on-navy: #FFFFFF;
+    --on-navy-muted: #FCE4F0;
+    --gold: #FFB703;
+    --gold-ink: #B35300;
+    --gold-soft: #FFF1C9;
+    --coral: #FF6B6B;
+    --sky: #3A86FF;
+    --mint: #2A9D8F;
+    --pink: #EF476F;
+    --sans: "Hanken Grotesk", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1A1328; --surface: #241A36; --ink: #F7F0FF; --text: #E2D8F0; --muted: #A898C0;
+      --line: #3A2D52; --accent: #5FD3C4; --accent-soft: #1D3A38; --accent-strong: #C9A7F5;
+      --navy: #3D1A5C; --navy-deep: #7A1240; --gold: #FFC94D; --gold-ink: #FFC94D; --gold-soft: #3A2E12;
+      --coral: #FF8A8A; --sky: #6FA8FF; --mint: #4CC3B3; --pink: #FF6F91;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 4px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 1.5rem; }
+
+  /* navegação */
+  .nav {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: saturate(160%) blur(10px); -webkit-backdrop-filter: saturate(160%) blur(10px);
+    border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px);
+  }
+  .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 58px; gap: 1rem; }
+  .brand { font-family: var(--serif); font-weight: 600; color: var(--accent-strong); text-decoration: none; font-size: 1.05rem; }
+  .nav ul { list-style: none; display: flex; gap: 1.4rem; margin: 0; padding: 0; }
+  .nav ul a { color: var(--muted); text-decoration: none; font-size: 0.93rem; font-weight: 500; }
+  .nav ul a:hover, .nav ul a[aria-current="page"] { color: var(--ink); }
+  .nav-right { display: flex; align-items: center; gap: 1rem; }
+  .lang { position: relative; }
+  .lang button { font: inherit; cursor: pointer; }
+  .lang .flag { width: 18px; height: 12px; border-radius: 2px; flex: none; box-shadow: 0 0 0 1px rgba(0,0,0,.12); }
+  .lang-current { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.8rem; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 0.3rem 0.5rem 0.3rem 0.55rem; }
+  .lang-current:hover { border-color: var(--muted); }
+  .lang-now { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .lang .chev { width: 12px; height: 12px; color: var(--muted); transition: transform .15s ease; }
+  .lang-current[aria-expanded="true"] .chev { transform: rotate(180deg); }
+  .lang-list { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; min-width: 10.5rem; padding: 0.3rem; display: grid; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 12px 30px rgba(0,0,0,.18); }
+  .lang-list[hidden] { display: none; }
+  .lang-list [role="option"] { display: flex; align-items: center; gap: 0.6rem; width: 100%; text-align: left; font-size: 0.9rem; font-weight: 500; color: var(--ink); background: none; border: 0; border-radius: 6px; padding: 0.45rem 0.6rem; }
+  .lang-list [role="option"]:hover, .lang-list [role="option"]:focus-visible { background: color-mix(in srgb, var(--muted) 14%, transparent); }
+  .lang-list [role="option"][aria-selected="true"] { color: var(--accent-strong); font-weight: 600; }
+  .lang-list [role="option"][aria-selected="true"]::after { content: "✓"; margin-left: auto; }
+  @media (max-width: 480px) { .lang-now { font-size: 0; gap: 0; } }
+  [hidden] { display: none !important; }
+  .progress { position: absolute; left: 0; bottom: -1px; height: 3px; width: 0; background: linear-gradient(90deg, var(--coral), var(--gold), var(--mint)); }
+
+  /* abertura */
+  .hero-band {
+    background:
+      radial-gradient(900px 420px at 85% -10%, rgba(255,255,255,.07), transparent 60%),
+      linear-gradient(160deg, var(--navy) 0%, var(--navy-deep) 100%);
+    border-top: 4px solid var(--gold); color: var(--on-navy);
+  }
+  .hero { padding: 3.5rem 0 3.5rem; max-width: 820px; }
+  .crumb { margin: 0 0 1.4rem; font-size: 0.92rem; }
+  .crumb a { color: var(--on-navy-muted); text-decoration: none; }
+  .crumb a:hover { color: var(--gold); }
+  .eyebrow { color: var(--gold); font-weight: 600; font-size: 1rem; margin: 0 0 0.7rem; }
+  h1 { font-family: var(--serif); font-weight: 600; color: var(--on-navy); font-size: clamp(2.3rem, 5.5vw, 3.8rem); line-height: 1.05; letter-spacing: -0.025em; margin: 0; }
+  .dek { font-family: var(--serif); font-style: italic; font-size: clamp(1.1rem, 2.2vw, 1.35rem); color: var(--on-navy-muted); margin: 1.1rem 0 1.6rem; max-width: 58ch; }
+  .byline { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; font-size: 0.92rem; color: var(--on-navy-muted); }
+  .byline strong { color: var(--on-navy); font-weight: 600; }
+  .byline .credit { margin-left: auto; font-style: italic; }
+
+  /* layout do artigo */
+  .layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 3rem; padding: 3rem 0 4rem; align-items: start; }
+  .toc { position: sticky; top: 82px; font-size: 0.92rem; max-height: calc(100vh - 100px); overflow-y: auto; }
+  .toc h2 { font-family: var(--sans); font-size: 0.85rem; font-weight: 600; color: var(--muted); margin: 0 0 0.7rem; border: 0; padding: 0; }
+  .toc ol { list-style: none; margin: 0; padding: 0; counter-reset: toc; border-left: 2px solid var(--line); }
+  .toc li { counter-increment: toc; }
+  .toc a { display: block; padding: 0.3rem 0 0.3rem 1rem; margin-left: -2px; border-left: 2px solid transparent; color: var(--muted); text-decoration: none; line-height: 1.35; }
+  .toc a::before { content: counter(toc) ". "; color: var(--gold-ink); font-weight: 600; }
+  .toc a:hover { color: var(--ink); }
+  .toc a[aria-current="true"] { color: var(--accent-strong); border-left-color: var(--gold); font-weight: 600; }
+
+  article { background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: var(--radius); padding: 3rem clamp(1.25rem, 4vw, 3.5rem); min-width: 0; }
+  article section + section { margin-top: 3.2rem; }
+  article h2 { font-family: var(--serif); font-weight: 600; color: var(--ink); font-size: clamp(1.5rem, 2.8vw, 1.9rem); letter-spacing: -0.015em; line-height: 1.2; margin: 0 0 1.1rem; padding-left: 0.9rem; border-left: 3px solid var(--gold); }
+  article h3 { font-family: var(--sans); font-size: 1.1rem; font-weight: 600; color: var(--ink); margin: 2rem 0 0.8rem; }
+  article p, article li { font-family: var(--serif); font-size: 1.12rem; line-height: 1.7; color: var(--text); }
+  article p { margin: 0 0 1.1rem; max-width: 68ch; }
+  article ul, article ol { margin: 0 0 1.1rem; padding-left: 1.4rem; max-width: 68ch; }
+  article li { margin-bottom: 0.3rem; }
+  article strong { color: var(--ink); }
+  sup a { font-family: var(--sans); font-size: 0.72rem; font-weight: 700; text-decoration: none; padding: 0 0.15em; }
+
+  figure { margin: 2rem 0; }
+  figure img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: #FFF7EC; }
+  figcaption { margin-top: 0.6rem; font-size: 0.9rem; color: var(--muted); text-align: center; font-family: var(--sans); line-height: 1.5; }
+
+  blockquote { margin: 1.5rem 0; padding: 1.2rem 1.5rem; background: var(--accent-soft); border-left: 3px solid var(--gold); border-radius: 0 10px 10px 0; }
+  blockquote p { font-size: 1.05rem; margin: 0 0 0.8rem; }
+  blockquote p:last-child { margin-bottom: 0; }
+  blockquote.pull p { font-size: clamp(1.15rem, 2.3vw, 1.35rem); font-style: italic; line-height: 1.45; color: var(--ink); }
+  blockquote cite { font-family: var(--sans); font-size: 0.88rem; font-style: normal; color: var(--muted); }
+
+  /* tabelas */
+  .table-wrap { overflow-x: auto; margin: 1.5rem 0; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-family: var(--sans); font-size: 0.95rem; }
+  th, td { text-align: left; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.5; }
+  thead th { background: var(--gold-soft); color: var(--ink); font-weight: 600; }
+  tbody th { color: var(--ink); font-weight: 600; }
+  tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
+  td code, th code { font-size: 0.9em; }
+
+  /* mitos */
+  .myths { list-style: none; padding: 0; margin: 1.5rem 0; max-width: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
+  .myths li { margin: 0; padding: 1rem 1.2rem; border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: 10px; }
+  .myths li:nth-child(4n+2) { border-top-color: var(--sky); }
+  .myths li:nth-child(4n+3) { border-top-color: var(--mint); }
+  .myths li:nth-child(4n+4) { border-top-color: var(--gold); }
+  .myths h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+  .myths p { margin: 0; font-size: 1rem; line-height: 1.6; }
+
+  /* para fixar */
+  .recap { margin: 1.8rem 0 0; padding: 1.1rem 1.4rem; background: var(--gold-soft); border-left: 4px solid var(--mint); border-radius: 0 10px 10px 0; }
+  .recap h3 { margin: 0 0 0.5rem; font-size: 0.85rem; letter-spacing: .05em; text-transform: uppercase; color: var(--gold-ink); }
+  .recap ul { margin: 0; padding-left: 1.2rem; }
+  .recap li { font-family: var(--sans); font-size: 0.98rem; line-height: 1.55; margin-bottom: 0.25rem; }
+
+  /* revisão rápida */
+  .quiz { display: grid; gap: 0.7rem; margin: 1.5rem 0; }
+  .quiz details { border: 1px solid var(--line); border-left: 4px solid var(--sky); border-radius: 0 10px 10px 0; padding: 0.8rem 1.1rem; }
+  .quiz details:nth-child(3n+2) { border-left-color: var(--pink); }
+  .quiz details:nth-child(3n+3) { border-left-color: var(--mint); }
+  .quiz summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); line-height: 1.45; }
+  .quiz details[open] summary { margin-bottom: 0.5rem; }
+  .quiz p { margin: 0; font-size: 1.02rem; }
+
+  .refs { font-family: var(--sans); padding-left: 1.4rem; margin: 0; }
+  .refs li { font-family: var(--sans); font-size: 0.92rem; line-height: 1.55; margin-bottom: 0.7rem; word-break: break-word; }
+  .refs li:target { background: var(--gold-soft); border-radius: 6px; }
+
+  .back { display: inline-block; margin-top: 1rem; font-family: var(--sans); font-size: 0.85rem; text-decoration: none; }
+
+  footer { background: var(--navy-deep); color: var(--on-navy-muted); border-top: 3px solid var(--gold); padding: 1.5rem 0 calc(1.5rem + env(safe-area-inset-bottom, 0px)); font-size: 0.88rem; }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1.5rem; }
+  footer a { color: var(--on-navy); text-decoration: none; }
+  footer a:hover { color: var(--gold); }
+
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+    .toc { position: static; max-height: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.2rem 1.4rem; }
+  }
+  @media (max-width: 760px) {
+    .myths { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .nav ul { display: none; }
+    .hero { padding: 2.5rem 0; }
+    .wrap { padding: 0 1rem; }
+    article p, article li { font-size: 1.05rem; }
+    th, td { padding: 0.6rem 0.7rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  @media print {
+    .nav, .toc, footer, .back, .crumb { display: none !important; }
+    body { background: #fff; }
+    .hero-band { background: none; color: #111; border: 0; }
+    .hero-band h1 { color: #5B2A86; }
+    .dek, .byline, .byline strong { color: #333; }
+    .layout { display: block; padding: 0; }
+    article { border: 0; padding: 0; }
+    .table-wrap { overflow: visible; }
+    figure, blockquote, .myths li, .recap, .quiz details, tr { break-inside: avoid; }
+  }
+
+  /* blocos de código (Gherkin) */
+  pre.code { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: #2B1B3D; color: #F7F0FF; border-radius: 10px; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.92rem; line-height: 1.6; tab-size: 2; }
+  pre.code code { font-family: inherit; white-space: pre; }
+  pre.code .k { color: #FFB703; font-weight: 700; }
+  pre.code .s { color: #5FD3C4; font-weight: 700; }
+  pre.code .c { color: #A898C0; }
+  pre.code .p { color: #C9A7F5; }
+  article code { font-family: Consolas, "Courier New", monospace; font-size: 0.92em; }
+  article :not(pre) > code { background: var(--accent-soft); color: var(--ink); padding: 0.05em 0.35em; border-radius: 4px; }
+
+  /* fórmulas */
+  pre.formula { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.95rem; line-height: 1.5; }
+
+  /* glossário */
+  dl.glossary { margin: 1.2rem 0; display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  dl.glossary dt, dl.glossary dd { margin: 0; padding: 0.65rem 0.9rem; border-bottom: 1px solid var(--line); font-family: var(--sans); font-size: 0.95rem; line-height: 1.5; }
+  dl.glossary dt { font-weight: 600; color: var(--ink); background: color-mix(in srgb, var(--gold-soft) 60%, var(--surface)); }
+  dl.glossary dd { color: var(--text); }
+  dl.glossary dt:nth-last-of-type(1), dl.glossary dd:last-of-type { border-bottom: 0; }
+  @media (max-width: 720px) { dl.glossary { grid-template-columns: 1fr; } dl.glossary dt { border-bottom: 0; padding-bottom: 0.2rem; } }
+
+  /* figuras geradas pelo PlantUML e código recolhível */
+  figure.puml img { width: auto; max-width: 100%; margin: 0 auto; background: #FFFFFF; padding: 12px; }
+  details.codebox { margin: 1rem 0 1.5rem; border: 1px solid var(--line); border-radius: 10px; padding: 0.6rem 1rem; }
+  details.codebox summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); }
+  details.codebox pre.code { max-height: 480px; overflow: auto; }
+
+  /* nota de atenção */
+  aside.note { margin: 1.2rem 0 1.5rem; padding: 0.8rem 1.1rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; }
+  aside.note p { margin: 0; }
+
+  /* link para o simulador e teclas */
+  .launch { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--sans); font-weight: 600; font-size: 1rem; background: var(--accent-strong); color: var(--surface); text-decoration: none; padding: 0.65rem 1.2rem; border-radius: 10px; }
+  .launch:hover { background: var(--navy-deep); color: #FFFFFF; }
+  kbd { font-family: var(--sans); font-size: 0.85em; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 0.05em 0.4em; white-space: nowrap; }
+  .promptbox { position: relative; margin: 1rem 0 1.6rem; }
+  .promptbox pre.code { margin: 0; padding-top: 2.6rem; max-height: 420px; overflow: auto; }
+  .promptbox pre.code code { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .promptbox .copy { position: absolute; top: 8px; right: 14px; z-index: 1; font: 600 0.8rem var(--sans); color: #2B1B3D; background: #FFB703; border: 0; border-radius: 6px; padding: 0.3rem 0.65rem; cursor: pointer; }
+  @media (max-width: 720px) { figure { overflow-x: auto; } figure img { width: 680px; max-width: none; } }
+</style>
+</head>
+<body id="top">
+
+<nav class="nav" aria-label="Navegação do site">
+  <div class="wrap">
+    <a class="brand" href="index.html" data-home>Giovani Perotto Mesquita</a>
+    <div class="nav-right">
+      <ul>
+        <li><a href="index.html" data-home>Início</a></li>
+        <li><a href="about.html" data-about>Sobre</a></li>
+        <li><a href="resume.html" data-resume>Currículo</a></li>
+        <li><a href="projects.html" data-projects aria-current="page">Projetos</a></li>
+        <li><a href="contact.html" data-contact>Contato</a></li>
+      </ul>
+      <div class="lang">
+        <button type="button" class="lang-current" aria-haspopup="listbox" aria-expanded="false" aria-controls="lang-list" data-label="Idioma / Language / Lingua" aria-label="Idioma / Language / Lingua: Português"><span class="lang-now"><svg class="flag" viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009C3B"/><path d="M10 1.6 18.4 7 10 12.4 1.6 7z" fill="#FEDF00"/><circle cx="10" cy="7" r="3.3" fill="#002776"/><path d="M6.8 6.3c2.1-.6 4.5-.2 6.4 1" stroke="#fff" stroke-width=".7" fill="none"/></svg>PT</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="lang-list" id="lang-list" role="listbox" aria-label="Idioma / Language / Lingua" hidden>
+          <button type="button" role="option" id="tab-pt" aria-controls="pt" aria-selected="true" lang="pt-BR" data-code="PT"><svg class="flag" viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009C3B"/><path d="M10 1.6 18.4 7 10 12.4 1.6 7z" fill="#FEDF00"/><circle cx="10" cy="7" r="3.3" fill="#002776"/><path d="M6.8 6.3c2.1-.6 4.5-.2 6.4 1" stroke="#fff" stroke-width=".7" fill="none"/></svg><span>Português</span></button>
+          <button type="button" role="option" id="tab-en" aria-controls="en" aria-selected="false" lang="en" tabindex="-1" data-code="EN"><svg class="flag" viewBox="0 0 19 10" aria-hidden="true"><rect width="19" height="10" fill="#B22234"/><rect y="0.769" width="19" height="0.769" fill="#fff"/><rect y="2.308" width="19" height="0.769" fill="#fff"/><rect y="3.846" width="19" height="0.769" fill="#fff"/><rect y="5.385" width="19" height="0.769" fill="#fff"/><rect y="6.923" width="19" height="0.769" fill="#fff"/><rect y="8.462" width="19" height="0.769" fill="#fff"/><rect width="7.6" height="5.385" fill="#3C3B6E"/></svg><span>English</span></button>
+          <button type="button" role="option" id="tab-it" aria-controls="it" aria-selected="false" lang="it" tabindex="-1" data-code="IT"><svg class="flag" viewBox="0 0 3 2" aria-hidden="true"><rect width="1" height="2" fill="#009246"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#CE2B37"/></svg><span>Italiano</span></button>
+          <button type="button" role="option" id="tab-es" aria-controls="es" aria-selected="false" lang="es" tabindex="-1" data-code="ES"><svg class="flag" viewBox="0 0 750 500" aria-hidden="true"><rect width="750" height="500" fill="#AA151B"/><rect y="125" width="750" height="250" fill="#F1BF00"/></svg><span>Español</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="progress" aria-hidden="true"></div>
+</nav>
+
+<!-- ===================== PT ===================== -->
+<div id="pt" role="tabpanel" aria-labelledby="tab-pt" lang="pt-BR">
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projetos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Pontinhos: tutorial do jogo de ligar os pontos</h1>
+      <p class="dek">A história da Pipopipette de Édouard Lucas, as regras, como jogar no app em tabuleiros de vários tamanhos e as ideias que decidem a partida: cadeias, recusa dupla e a regra da cadeia longa.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado em <time datetime="2026-11-20">20/11/2026</time></span>
+        <span class="credit">Revisado e formatado usando Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-pt">
+    <h2 id="toc-pt">Índice</h2>
+    <ol>
+      <li><a href="#intro-pt">O jogo</a></li>
+      <li><a href="#historia-pt">Uma breve história</a></li>
+      <li><a href="#regras-pt">As regras</a></li>
+      <li><a href="#app-pt">Como jogar no app</a></li>
+      <li><a href="#estrategia-pt">Estratégia</a></li>
+      <li><a href="#computador-pt">O que o computador do app mostra</a></li>
+      <li><a href="#erros-pt">Erros comuns</a></li>
+      <li><a href="#glossario-pt">Glossário</a></li>
+      <li><a href="#revisao-pt">Revisão rápida</a></li>
+      <li><a href="#referencias-pt">Referências</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-pt" aria-labelledby="h-intro-pt">
+<h2 id="h-intro-pt">O jogo</h2>
+<p>Pontinhos é um jogo de lápis e papel. Começa com uma grade de pontos. Na sua vez, você liga dois pontos vizinhos com uma linha. Quem traça o quarto lado de um quadrado marca ali a sua inicial e joga de novo. Quando não sobra nenhuma linha, vence quem tem mais quadrados. <sup><a href="#ref-2-pt">[2]</a></sup></p>
+<p>O app deste site joga Pontinhos em tabuleiros de 2 × 2 a 15 × 15 quadrados, com 2 a 4 jogadores, cada um pessoa ou computador em três níveis. <sup><a href="#ref-1-pt">[1]</a></sup> É um único arquivo HTML, que funciona sem internet e em quatro idiomas.</p>
+<p><a class="launch" href="Pontinhos.html">Abrir o jogo <span aria-hidden="true">→</span></a></p>
+<figure>
+<img src="rc_images/PontinhosPartida.png" alt="Tela do jogo num tabuleiro de 5 por 5 quadrados: Ana, pessoa, tem 5 quadrados marcados com a letra A na coluna da esquerda; o Computador, nível difícil, tem 1 quadrado marcado com C no canto de baixo. Uma linha sugerida pela dica aparece em verde-água, a última linha traçada está em laranja, e o painel ao lado mostra o tamanho, a regra, as linhas traçadas e o histórico" width="1100" height="860" loading="lazy">
+<figcaption>Partida no 5 × 5 contra o computador difícil, com a dica ligada.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+<section id="historia-pt" aria-labelledby="h-historia-pt">
+<h2 id="h-historia-pt">Uma breve história</h2>
+<p>O jogo foi publicado em 1889 pelo matemático francês Édouard Lucas, com o nome de <em>La Pipopipette</em>. <sup><a href="#ref-2-pt">[2]</a></sup> <sup><a href="#ref-5-pt">[5]</a></sup> Segundo a Wikipédia em francês, Lucas o descreveu no livro <em>Jeux scientifiques pour servir à l’histoire, à l’enseignement et à la pratique du calcul et du dessin</em> e atribuiu a invenção aos seus alunos da École polytechnique. <sup><a href="#ref-4-pt">[4]</a></sup></p>
+<h3>Um jogo, muitos nomes</h3>
+<ul>
+<li><strong>Português:</strong> Pontinhos ou Timbiriche. <sup><a href="#ref-2-pt">[2]</a></sup></li>
+<li><strong>Inglês:</strong> <em>Dots and Boxes</em>, e também <em>boxes</em>, <em>dots and dashes</em> e <em>pigs in a pen</em> (porcos no chiqueiro). <sup><a href="#ref-3-pt">[3]</a></sup></li>
+<li><strong>Espanhol:</strong> Timbiriche, além de nomes regionais como <em>puntitos</em>, <em>cuadritos</em> e <em>el juego de los cuadraditos</em>. <sup><a href="#ref-5-pt">[5]</a></sup></li>
+<li><strong>Italiano:</strong> <em>Punti e linee</em>. <sup><a href="#ref-6-pt">[6]</a></sup></li>
+</ul>
+<h3>Brincadeira de criança, assunto de matemático</h3>
+<p>O matemático Elwyn Berlekamp escreveu um livro inteiro sobre a estratégia do jogo, <em>The Dots-and-Boxes Game: Sophisticated Child’s Play</em> (“brincadeira de criança sofisticada”), publicado em 2000, e já havia tratado dele num capítulo de <em>Winning Ways for your Mathematical Plays</em>, com John Conway e Richard Guy. <sup><a href="#ref-3-pt">[3]</a></sup> <sup><a href="#ref-8-pt">[8]</a></sup> A Wikipédia em inglês registra que jogar de forma ótima é um problema PSPACE-completo: em termos práticos, não se conhece um atalho para calcular a melhor jogada em tabuleiros grandes. <sup><a href="#ref-3-pt">[3]</a></sup></p>
+<blockquote><p><strong>Divergências nas fontes.</strong> A data de 1889 está nas Wikipédias em português, espanhol e francês; a em inglês diz apenas “século XIX” e cita um texto de Lucas de 1895, <em>L’arithmétique amusante</em>. Só a Wikipédia em francês atribui a invenção aos alunos de Lucas. Sobre o tamanho clássico, a Wikipédia em inglês diz que 2 × 2 quadrados serve para aprender e 5 × 5 quadrados é bom para especialistas; a em espanhol diz que o mais comum e mais estudado é o de 5 por 5 <em>pontos</em> (4 × 4 quadrados), numa frase marcada como sem fonte. <sup><a href="#ref-2-pt">[2]</a></sup> <sup><a href="#ref-3-pt">[3]</a></sup> <sup><a href="#ref-4-pt">[4]</a></sup> <sup><a href="#ref-5-pt">[5]</a></sup></p></blockquote>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+<section id="regras-pt" aria-labelledby="h-regras-pt">
+<h2 id="h-regras-pt">As regras</h2>
+<figure>
+<img src="rc_images/PontinhosRegras.svg" alt="Três tabuleiros de 2 por 2 quadrados. No primeiro, uma linha acaba de ser traçada entre dois pontos vizinhos, destacada em laranja. No segundo, o quadrado do canto tem três lados traçados e o quarto lado aparece tracejado: quem jogar depois pode fechá-lo. No terceiro, Ana traçou o quarto lado: o quadrado recebe a inicial A e Ana joga de novo." width="1000" height="400" loading="lazy">
+<figcaption>Uma linha por vez; quem fecha um quadrado marca a inicial e joga de novo.</figcaption>
+</figure>
+<ul>
+<li>Um tabuleiro de R × C quadrados tem (R + 1) × (C + 1) pontos. No app, o 5 × 5 tem 36 pontos e 60 linhas possíveis.</li>
+<li>Na sua vez, trace uma linha horizontal ou vertical entre dois pontos vizinhos que ainda não estejam ligados. Linhas diagonais não valem. <sup><a href="#ref-5-pt">[5]</a></sup></li>
+<li>Quem completa o quarto lado de um quadrado marca nele a sua inicial e joga de novo. <sup><a href="#ref-2-pt">[2]</a></sup> <sup><a href="#ref-3-pt">[3]</a></sup> Uma única linha pode fechar dois quadrados vizinhos ao mesmo tempo.</li>
+<li>Jogar de novo não é opcional: depois de fechar, você traça mais uma linha, mesmo que ela entregue quadrados ao adversário.</li>
+<li>A partida acaba quando todas as linhas estão traçadas. Vence quem tem mais quadrados. Com um número par de quadrados, pode dar empate.</li>
+</ul>
+<h3>Variante: a vez sempre passa</h3>
+<p>A Wikipédia em italiano registra uma variante em que quem fecha um quadrado não joga de novo: a vez passa sempre. <sup><a href="#ref-6-pt">[6]</a></sup> No app, ela aparece desmarcando <strong>Quem fecha um quadrado joga de novo</strong>. Nessa variante, as estratégias de cadeias desta página deixam de valer, e o computador difícil não faz recusas duplas.</p>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+<section id="app-pt" aria-labelledby="h-app-pt">
+<h2 id="h-app-pt">Como jogar no app</h2>
+<h3>1. Monte a partida</h3>
+<p>Na primeira visita, o app abre a janela <strong>Nova partida</strong>. Escolha o tamanho do tabuleiro, monte de 2 a 4 jogadores e decida a regra. Cada jogador pode ser <strong>Pessoa</strong> ou <strong>Computador</strong> fácil, médio ou difícil. Pessoas jogam no mesmo aparelho, uma de cada vez.</p>
+<figure>
+<img src="rc_images/PontinhosConfiguracao.png" alt="Janela Nova partida com oito opções de tamanho, de 2 por 2 até 10 por 10 e Personalizado, com o 5 por 5 marcado; a contagem de 25 quadrados, 36 pontos e 60 linhas; os jogadores Ana, pessoa, e Computador, nível difícil, cada um com a inicial colorida; a opção Quem fecha um quadrado joga de novo marcada; o campo Semente com 2026 e o botão Começar" width="660" height="798" loading="lazy">
+<figcaption>A janela de configuração: tamanho, jogadores, regra e semente.</figcaption>
+</figure>
+<div class="table-wrap"><table>
+<thead><tr><th>Tabuleiro</th><th>Quadrados</th><th>Pontos</th><th>Linhas</th><th>Quem começa quer cadeias longas em número</th></tr></thead>
+<tbody>
+<tr><td>2 × 2</td><td>4</td><td>9</td><td>12</td><td>ímpar</td></tr>
+<tr><td>3 × 3</td><td>9</td><td>16</td><td>24</td><td>par</td></tr>
+<tr><td>4 × 4</td><td>16</td><td>25</td><td>40</td><td>ímpar</td></tr>
+<tr><td>5 × 5</td><td>25</td><td>36</td><td>60</td><td>par</td></tr>
+<tr><td>6 × 6</td><td>36</td><td>49</td><td>84</td><td>ímpar</td></tr>
+<tr><td>8 × 8</td><td>64</td><td>81</td><td>144</td><td>ímpar</td></tr>
+<tr><td>10 × 10</td><td>100</td><td>121</td><td>220</td><td>ímpar</td></tr>
+<tr><td>15 × 15 (Personalizado, máximo)</td><td>225</td><td>256</td><td>480</td><td>par</td></tr>
+</tbody></table></div>
+<p>A última coluna é a regra da cadeia longa, explicada em <a href="#estrategia-pt">Estratégia</a>. Em <strong>Personalizado</strong>, escolha de 1 a 15 linhas e colunas, por exemplo 3 × 7. As iniciais saem do nome; se dois nomes começam com a mesma letra, o app usa duas letras, como AS para Ana Souza e AL para Ana Lima.</p>
+<p>A <strong>semente</strong> define as escolhas do computador quando ele tem mais de uma jogada igualmente boa. Com a mesma semente e as mesmas jogadas, a partida se repete igual. Em branco, o app sorteia uma, que aparece embaixo do histórico.</p>
+<h3>2. Trace as linhas</h3>
+<ol>
+<li>Passe o mouse entre dois pontos: a linha possível aparece pontilhada. Clique ou toque para traçar.</li>
+<li>A última linha traçada fica em laranja. Um quadrado fechado ganha a cor e a inicial de quem o fechou.</li>
+<li>Acima do tabuleiro, a frase diz de quem é a vez e o que aconteceu, como “Ana fechou 1 quadrado e joga de novo”. O placar destaca quem joga agora.</li>
+</ol>
+<h3>3. Dica e desfazer</h3>
+<ul>
+<li><strong>💡 Dica</strong> marca uma linha piscando e explica o motivo: fecha um quadrado, é segura, entrega o mínimo, recusa os dois últimos de uma cadeia ou é a melhor calculando o fim. A dica usa o mesmo raciocínio do computador difícil.</li>
+<li><strong>↶ Desfazer</strong> volta até antes da sua última linha e apaga também as respostas do computador. Entre pessoas, volta uma linha de cada vez.</li>
+</ul>
+<h3>4. Teclado</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>Tecla</th><th>O que faz</th></tr></thead>
+<tbody>
+<tr><td>Tab</td><td>Chega ao tabuleiro.</td></tr>
+<tr><td>Setas</td><td>Movem o cursor dourado entre as linhas livres. O leitor de tela anuncia a linha e se ela fecha um quadrado, é segura ou dá a terceira linha.</td></tr>
+<tr><td>Enter ou Espaço</td><td>Traça a linha do cursor.</td></tr>
+<tr><td>D</td><td>Mostra a dica.</td></tr>
+<tr><td>Ctrl+Z</td><td>Desfaz.</td></tr>
+</tbody></table></div>
+<h3>5. Fim da partida</h3>
+<figure>
+<img src="rc_images/PontinhosFim.png" alt="Janela Fim de partida sobre o tabuleiro cheio: Ana venceu com 22 quadrados; a classificação mostra Ana, pessoa, com 22 quadrados e o Computador, difícil, com 3; abaixo, o tabuleiro, a semente 2026 e os botões Fechar, Mudar configuração e Jogar de novo" width="1100" height="860" loading="lazy">
+<figcaption>Fim de partida: Jogar de novo repete a configuração com outra semente, e quem começa passa a ser o próximo jogador.</figcaption>
+</figure>
+<p>A partida fica salva no navegador: feche a página e abra de novo para continuar. O painel <strong>Partida</strong>, ao lado do tabuleiro, mostra o tamanho, a regra, quantas linhas já foram traçadas e, em partidas de dois jogadores, a paridade que a regra da cadeia longa recomenda para quem começou. O seletor do topo troca o idioma, e o botão ◐ alterna os temas claro e escuro.</p>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+<section id="estrategia-pt" aria-labelledby="h-estrategia-pt">
+<h2 id="h-estrategia-pt">Estratégia</h2>
+<h3>1. Não dê a terceira linha</h3>
+<p>Para quem está começando, a única estratégia é evitar traçar o terceiro lado de um quadrado. <sup><a href="#ref-3-pt">[3]</a></sup> Um quadrado com três lados é um presente: o próximo jogador o fecha e ainda joga de novo. Linhas que não dão a terceira linha a nenhum quadrado são <strong>seguras</strong>. No começo da partida quase todas são.</p>
+<h3>2. Cadeias e ciclos</h3>
+<p>As linhas seguras acabam. A partir daí, toda linha entrega quadrados, e o tabuleiro se divide em <strong>cadeias</strong>: grupos de quadrados vizinhos em que qualquer jogada dá todos eles ao adversário. <sup><a href="#ref-3-pt">[3]</a></sup> Uma cadeia com três quadrados ou mais é uma <strong>cadeia longa</strong>. <sup><a href="#ref-7-pt">[7]</a></sup> Quando a cadeia fecha em volta de si mesma, sem ponta, é um <strong>ciclo</strong>.</p>
+<figure>
+<img src="rc_images/PontinhosCadeias.svg" alt="Tabuleiro de 2 por 5 quadrados em que não sobra nenhuma linha segura: cada quadrado livre tem dois lados traçados. Os quadrados formam quatro peças: a, um ciclo de 4 quadrados no lado esquerdo; b, uma cadeia longa de 3 quadrados na linha de cima; c, uma cadeia de 2 quadrados embaixo; e d, uma cadeia de 1 quadrado no canto. Qualquer linha traçada entrega uma dessas peças." width="1000" height="420" loading="lazy">
+<figcaption>Sem linha segura, o tabuleiro vira um conjunto de peças. Quem joga é obrigado a entregar uma delas.</figcaption>
+</figure>
+<p>Quando for obrigado a entregar, entregue a menor peça. Uma cadeia de 1 custa um quadrado; uma cadeia longa pode custar a partida.</p>
+<h3>3. A recusa dupla: pegue todos menos dois</h3>
+<p>Quando o adversário abre uma cadeia longa, o natural é pegar todos os quadrados. Mas quem fecha joga de novo e, se não sobrou linha segura, tem de abrir a próxima cadeia. A saída é pegar todos menos os dois últimos e traçar a linha da ponta: os dois quadrados que sobram ficam para o adversário, que os fecha com uma linha só e depois é obrigado a abrir a próxima cadeia. <sup><a href="#ref-3-pt">[3]</a></sup> Em inglês, a jogada se chama <em>double-cross</em> ou <em>double-dealing</em>.</p>
+<figure>
+<img src="rc_images/PontinhosRecusa.svg" alt="Três desenhos da mesma cadeia de 4 quadrados. No primeiro, o adversário acabou de abrir a cadeia pela ponta esquerda. No segundo, Ana pega os quatro quadrados, mas depois tem de traçar mais uma linha e abrir a próxima cadeia. No terceiro, Ana pega dois quadrados e traça a linha da ponta direita: os dois últimos quadrados ficam com três lados e uma linha do meio fecha os dois de uma vez; o adversário, Bruno, leva esses dois e tem de abrir a próxima cadeia." width="1000" height="330" loading="lazy">
+<figcaption>Pegar tudo dá 4 quadrados agora; deixar dois custa 2, mas obriga o adversário a abrir a próxima cadeia.</figcaption>
+</figure>
+<p>Quem consegue fazer o adversário abrir a primeira cadeia longa tem o <strong>controle</strong> e, com cadeias longas o bastante, vence. <sup><a href="#ref-3-pt">[3]</a></sup> A recusa custa dois quadrados por cadeia; num ciclo, a mesma ideia custa quatro, porque sobram dois pares. Por isso ela só compensa quando o que vem depois vale mais. O computador difícil faz essa conta antes de recusar.</p>
+<h3>4. Entregue pares pelo meio</h3>
+<figure>
+<img src="rc_images/PontinhosEntrega.svg" alt="Dois desenhos de uma cadeia de 2 quadrados. À esquerda, a cadeia foi aberta pela ponta: só o primeiro quadrado tem três lados, e quem recebe pode recusar os dois traçando a outra ponta. À direita, a cadeia foi aberta pela linha do meio: os dois quadrados ficam com três lados, cada um fechado por uma linha diferente, e não dá para recusar os dois com uma só jogada." width="1000" height="380" loading="lazy">
+<figcaption>A mesma entrega de dois quadrados, com consequências diferentes.</figcaption>
+</figure>
+<p>Se for obrigado a entregar uma cadeia de dois, trace a linha do meio. Pela ponta, o adversário pode recusar os dois e manter o controle. Pelo meio, cada quadrado fecha com uma linha diferente, e a recusa dupla deixa de ser possível.</p>
+<h3>5. A regra da cadeia longa</h3>
+<p>Quem vai ter o controle no fim? Para dois jogadores, a regra da cadeia longa responde pela paridade. Num tabuleiro de m linhas e n colunas de quadrados: se m e n são pares, quem começa deve jogar para que o número de cadeias longas seja ímpar; se m ou n é ímpar, para que seja par. Os ciclos não contam como cadeias longas. <sup><a href="#ref-7-pt">[7]</a></sup></p>
+<ul>
+<li>No 5 × 5, quem começa quer um número <strong>par</strong> de cadeias longas; o segundo jogador quer um número ímpar.</li>
+<li>No 4 × 4, 6 × 6, 8 × 8 e 10 × 10, quem começa quer um número <strong>ímpar</strong>.</li>
+<li>Durante o meio da partida, as linhas seguras que você escolhe podem juntar ou separar cadeias. É ali que se disputa a paridade.</li>
+</ul>
+<p>O app mostra essa recomendação no painel <strong>Partida</strong>. O computador do app não planeja a paridade no meio da partida: ele usa a recusa dupla e o cálculo do fim, mas escolhe as linhas seguras ao acaso.</p>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+<section id="computador-pt" aria-labelledby="h-computador-pt">
+<h2 id="h-computador-pt">O que o computador do app mostra</h2>
+<p>Os três níveis seguem regras simples e conferíveis:</p>
+<ul>
+<li><strong>Fácil:</strong> fecha quadrados quando pode, na maioria das vezes, mas muitas vezes dá a terceira linha.</li>
+<li><strong>Médio:</strong> fecha tudo o que pode, só joga linhas seguras e, quando elas acabam, entrega a jogada que dá menos quadrados.</li>
+<li><strong>Difícil:</strong> faz o mesmo que o médio, recusa os dois últimos de uma cadeia quando a conta do fim indica que compensa, entrega pares pelo meio e, com 18 linhas livres ou menos e dois jogadores, calcula todas as sequências até o fim e escolhe a melhor.</li>
+</ul>
+<p>Com 3 ou 4 jogadores, o difícil usa as mesmas regras, pensadas para dois. Para medir a diferença entre os níveis, coloquei o computador para jogar contra ele mesmo.</p>
+<figure>
+<img src="rc_images/PontinhosResultados.svg" alt="Barras horizontais com o resultado de partidas entre níveis do computador. 3 × 3: difícil vence 91,0%, empates 0,0%, médio vence 9,0%; 3 × 3: médio vence 88,0%, empates 0,0%, fácil vence 12,0%; 5 × 5: difícil vence 92,0%, empates 0,0%, médio vence 8,0%; 5 × 5: médio vence 98,0%, empates 0,0%, fácil vence 2,0%; 8 × 8: difícil vence 77,5%, empates 2,5%, médio vence 20,0%." width="1000" height="408" loading="lazy">
+<figcaption>O difícil vence o médio com folga nos tabuleiros pequenos; no 8 × 8 a vantagem diminui.</figcaption>
+</figure>
+<div class="table-wrap"><table>
+<thead><tr><th>Tabuleiro</th><th>Partida</th><th>Partidas</th><th>Esquerda vence</th><th>Empates</th><th>Direita vence</th></tr></thead>
+<tbody>
+<tr><td>3 × 3</td><td>difícil × médio</td><td>200</td><td>91,0%</td><td>0,0%</td><td>9,0%</td></tr>
+<tr><td>3 × 3</td><td>médio × fácil</td><td>200</td><td>88,0%</td><td>0,0%</td><td>12,0%</td></tr>
+<tr><td>5 × 5</td><td>difícil × médio</td><td>200</td><td>92,0%</td><td>0,0%</td><td>8,0%</td></tr>
+<tr><td>5 × 5</td><td>médio × fácil</td><td>200</td><td>98,0%</td><td>0,0%</td><td>2,0%</td></tr>
+<tr><td>8 × 8</td><td>difícil × médio</td><td>40</td><td>77,5%</td><td>2,5%</td><td>20,0%</td></tr>
+</tbody></table></div>
+<p><strong>Como foi medido.</strong> Cada linha usa as sementes 1 a 200 (1 a 40 no 8 × 8), e cada nível começa metade das partidas. As partidas rodaram no Chromium, com a mesma função de jogada do app. São números de uma simulação: medem esse computador contra ele mesmo, não pessoas. Num teste menor, de 30 partidas no 15 × 15, o difícil venceu o médio em 56,7%: nos tabuleiros grandes, o fim de jogo tem formas que as regras do difícil não decompõem. A jogada mais lenta do difícil levou 0,4 segundo num computador de mesa; celulares mais lentos podem demorar mais.</p>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+<section id="erros-pt" aria-labelledby="h-erros-pt">
+<h2 id="h-erros-pt">Erros comuns</h2>
+<ul class="myths">
+<li><h3>“Fechar um quadrado é sempre bom.”</h3><p>No meio da partida, sim. No fim, pegar todos os quadrados de uma cadeia pode obrigar você a abrir a próxima cadeia longa. Às vezes, deixar dois vale mais.</p></li>
+<li><h3>“Se não há linha segura, tanto faz.”</h3><p>Não. Entregue a menor peça, e uma cadeia de dois pelo meio. A diferença pode ser de vários quadrados.</p></li>
+<li><h3>“Quem está na frente no meio da partida vai ganhar.”</h3><p>Os quadrados do fim vêm em cadeias, muitas vezes longas. Quem tem o controle pode virar o placar de uma vez.</p></li>
+<li><h3>“Depois de fechar, a vez passa.”</h3><p>Na regra comum, quem fecha joga de novo e é obrigado a traçar outra linha. Só na variante a vez passa sempre.</p></li>
+<li><h3>“Vale linha na diagonal.”</h3><p>Não. Só linhas horizontais ou verticais entre pontos vizinhos.</p></li>
+</ul>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+<section id="glossario-pt" aria-labelledby="h-glossario-pt">
+<h2 id="h-glossario-pt">Glossário</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Termo</th><th>Significado</th></tr></thead>
+<tbody>
+<tr><td>Cadeia</td><td>Grupo de quadrados vizinhos em que qualquer linha entrega todos eles ao adversário.</td></tr>
+<tr><td>Cadeia longa</td><td>Cadeia com três quadrados ou mais.</td></tr>
+<tr><td>Ciclo</td><td>Cadeia que fecha em volta de si mesma, sem ponta.</td></tr>
+<tr><td>Controle</td><td>Situação de quem faz o adversário abrir as cadeias longas.</td></tr>
+<tr><td>Entrega pelo meio</td><td>Abrir uma cadeia de dois pela linha do meio, para que não possa ser recusada.</td></tr>
+<tr><td>Linha segura</td><td>Linha que não dá o terceiro lado a nenhum quadrado.</td></tr>
+<tr><td>Pipopipette</td><td>Nome que Édouard Lucas deu ao jogo em 1889.</td></tr>
+<tr><td>Recusa dupla</td><td>Pegar todos os quadrados de uma cadeia menos os dois últimos, deixando-os ao adversário; em inglês, <em>double-cross</em>.</td></tr>
+<tr><td>Regra da cadeia longa</td><td>Regra de paridade que diz quantas cadeias longas cada jogador quer, conforme o tamanho do tabuleiro.</td></tr>
+<tr><td>Semente</td><td>Número que define as escolhas do computador no app.</td></tr>
+</tbody></table></div>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+<section id="revisao-pt" aria-labelledby="h-revisao-pt">
+<h2 id="h-revisao-pt">Revisão rápida</h2>
+<div class="quiz">
+<details><summary>1. Quantas linhas tem um tabuleiro de 3 × 3 quadrados?</summary><p>24: são 4 fileiras de 3 linhas horizontais e 3 fileiras de 4 linhas verticais.</p></details>
+<details><summary>2. O que acontece quando você fecha um quadrado?</summary><p>Você marca a sua inicial nele e joga de novo, traçando mais uma linha.</p></details>
+<details><summary>3. Por que evitar a terceira linha de um quadrado?</summary><p>Porque o próximo jogador fecha o quadrado e ainda joga de novo.</p></details>
+<details><summary>4. O adversário abriu uma cadeia de 5, e depois dela só restam cadeias longas. O que fazer?</summary><p>Pegar 3 e deixar os 2 últimos: o adversário fecha esses dois e tem de abrir a próxima cadeia.</p></details>
+<details><summary>5. Por que entregar uma cadeia de dois pelo meio?</summary><p>Porque assim cada quadrado fecha com uma linha diferente, e o adversário não pode recusar os dois para manter o controle.</p></details>
+<details><summary>6. No 5 × 5, quem começa quer um número par ou ímpar de cadeias longas?</summary><p>Par, porque 5 é ímpar. No 4 × 4, ímpar.</p></details>
+<details><summary>7. Ciclos contam na regra da cadeia longa?</summary><p>Não. Só cadeias com três quadrados ou mais.</p></details>
+<details><summary>8. Para que serve a semente no app?</summary><p>Ela repete as escolhas do computador. Com a mesma semente e as mesmas jogadas, a partida sai igual.</p></details>
+</div>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+<section id="referencias-pt" aria-labelledby="h-referencias-pt">
+<h2 id="h-referencias-pt">Referências</h2>
+<ol class="refs">
+<li id="ref-1-pt"><strong>Giovani Perotto Mesquita</strong>, “Pontinhos”, jogo deste site, <a href="Pontinhos.html">giovanipm.github.io/Pontinhos.html</a>.</li>
+<li id="ref-2-pt"><strong>Wikipédia</strong>, “Timbiriche (jogo)”, acesso em 20/11/2026, <a href="https://pt.wikipedia.org/wiki/Timbiriche_(jogo)" rel="noopener">pt.wikipedia.org/wiki/Timbiriche_(jogo)</a>.</li>
+<li id="ref-3-pt"><strong>Wikipedia</strong>, “Dots and boxes”, acesso em 20/11/2026, <a href="https://en.wikipedia.org/wiki/Dots_and_boxes" rel="noopener">en.wikipedia.org/wiki/Dots_and_boxes</a>. Traz a história, as regras, as cadeias, a recusa dupla e o controle; cita Berlekamp (2000) e Lucas, <em>L’arithmétique amusante</em> (1895), pp. 204–209.</li>
+<li id="ref-4-pt"><strong>Wikipédia</strong>, “La Pipopipette”, acesso em 20/11/2026, <a href="https://fr.wikipedia.org/wiki/La_Pipopipette" rel="noopener">fr.wikipedia.org/wiki/La_Pipopipette</a>.</li>
+<li id="ref-5-pt"><strong>Wikipedia</strong>, “Timbiriche (juego)”, acesso em 20/11/2026, <a href="https://es.wikipedia.org/wiki/Timbiriche_(juego)" rel="noopener">es.wikipedia.org/wiki/Timbiriche_(juego)</a>. A frase sobre o tabuleiro mais comum está marcada como sem fonte na própria página.</li>
+<li id="ref-6-pt"><strong>Wikipedia</strong>, “Punti e linee”, acesso em 20/11/2026, <a href="https://it.wikipedia.org/wiki/Punti_e_linee" rel="noopener">it.wikipedia.org/wiki/Punti_e_linee</a>.</li>
+<li id="ref-7-pt"><strong>UCLA Mathematics</strong>, “Dots and Boxes hints”, acesso em 20/11/2026, <a href="https://www.math.ucla.edu/~tom/Games/dots&amp;boxes_hints.html" rel="noopener">math.ucla.edu/~tom/Games/dots&amp;boxes_hints.html</a>. Enuncia a regra da cadeia longa e define cadeia longa como três quadrados ou mais.</li>
+<li id="ref-8-pt"><strong>Elwyn Berlekamp</strong>, <em>The Dots-and-Boxes Game: Sophisticated Child’s Play</em>, A K Peters, 2000. Não consultado diretamente; citado nas referências 3 e 6.</li>
+</ol>
+<a class="back" href="#top">↑ Voltar ao topo</a>
+</section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== EN ===================== -->
+<div id="en" role="tabpanel" aria-labelledby="tab-en" lang="en" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html#en" data-projects>← Projects</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Dots and Boxes: tutorial for the game of joining dots</h1>
+      <p class="dek">The history of Édouard Lucas’s Pipopipette, the rules, how to play in the app on boards of several sizes, and the ideas that decide the game: chains, the double-cross and the long chain rule.</p>
+      <div class="byline">
+        <span>By <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Published on <time datetime="2026-11-20">20/11/2026</time></span>
+        <span class="credit">Reviewed and formatted using Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-en">
+    <h2 id="toc-en">Contents</h2>
+    <ol>
+      <li><a href="#intro-en">The game</a></li>
+      <li><a href="#historia-en">A short history</a></li>
+      <li><a href="#regras-en">The rules</a></li>
+      <li><a href="#app-en">Playing in the app</a></li>
+      <li><a href="#estrategia-en">Strategy</a></li>
+      <li><a href="#computador-en">What the app’s computer shows</a></li>
+      <li><a href="#erros-en">Common mistakes</a></li>
+      <li><a href="#glossario-en">Glossary</a></li>
+      <li><a href="#revisao-en">Quick review</a></li>
+      <li><a href="#referencias-en">References</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-en" aria-labelledby="h-intro-en">
+<h2 id="h-intro-en">The game</h2>
+<p>Dots and Boxes is a pencil-and-paper game. It starts with a grid of dots. On your turn, you join two neighbouring dots with a line. Whoever draws the fourth side of a box writes their initial in it and plays again. When no line is left, the player with the most boxes wins. <sup><a href="#ref-2-en">[2]</a></sup></p>
+<p>The app on this site plays Dots and Boxes on boards from 2 × 2 to 15 × 15 boxes, with 2 to 4 players, each a person or a computer at one of three levels. <sup><a href="#ref-1-en">[1]</a></sup> It is a single HTML file that works offline and in four languages.</p>
+<p><a class="launch" href="Pontinhos.html#en">Open the game <span aria-hidden="true">→</span></a></p>
+<figure>
+<img src="rc_images/PontinhosPartida-en.png" alt="Game screen on a 5 by 5 board: Ana, a person, has 5 boxes marked with the letter A in the left column; the Computer, hard level, has 1 box marked with C in the bottom corner. A line suggested by the hint shows in teal, the last line drawn is orange, and the panel beside it shows the size, the rule, the lines drawn and the history" width="1100" height="860" loading="lazy">
+<figcaption>A game on the 5 × 5 board against the hard computer, with the hint on.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+<section id="historia-en" aria-labelledby="h-historia-en">
+<h2 id="h-historia-en">A short history</h2>
+<p>The game was published in 1889 by the French mathematician Édouard Lucas, under the name <em>La Pipopipette</em>. <sup><a href="#ref-2-en">[2]</a></sup> <sup><a href="#ref-5-en">[5]</a></sup> According to the French Wikipedia, Lucas described it in his book <em>Jeux scientifiques pour servir à l’histoire, à l’enseignement et à la pratique du calcul et du dessin</em> and credited its invention to his students at the École polytechnique. <sup><a href="#ref-4-en">[4]</a></sup></p>
+<h3>One game, many names</h3>
+<ul>
+<li><strong>Portuguese:</strong> Pontinhos or Timbiriche. <sup><a href="#ref-2-en">[2]</a></sup></li>
+<li><strong>English:</strong> <em>Dots and Boxes</em>, and also <em>boxes</em>, <em>dots and dashes</em> and <em>pigs in a pen</em>. <sup><a href="#ref-3-en">[3]</a></sup></li>
+<li><strong>Spanish:</strong> Timbiriche, plus regional names such as <em>puntitos</em>, <em>cuadritos</em> and <em>el juego de los cuadraditos</em>. <sup><a href="#ref-5-en">[5]</a></sup></li>
+<li><strong>Italian:</strong> <em>Punti e linee</em>. <sup><a href="#ref-6-en">[6]</a></sup></li>
+</ul>
+<h3>Child’s play, a mathematician’s subject</h3>
+<p>The mathematician Elwyn Berlekamp wrote a whole book on the game’s strategy, <em>The Dots-and-Boxes Game: Sophisticated Child’s Play</em>, published in 2000, and had already covered it in a chapter of <em>Winning Ways for your Mathematical Plays</em>, with John Conway and Richard Guy. <sup><a href="#ref-3-en">[3]</a></sup> <sup><a href="#ref-8-en">[8]</a></sup> The English Wikipedia records that playing optimally is PSPACE-complete: in practical terms, no shortcut is known for working out the best move on large boards. <sup><a href="#ref-3-en">[3]</a></sup></p>
+<blockquote><p><strong>Where the sources disagree.</strong> The 1889 date appears in the Portuguese, Spanish and French Wikipedias; the English one only says “19th century” and cites an 1895 text by Lucas, <em>L’arithmétique amusante</em>. Only the French Wikipedia credits Lucas’s students with the invention. On the classic size, the English Wikipedia says a 2 × 2 box board is suitable for learning and a 5 × 5 box board is good for experts; the Spanish one says the most common and most studied is 5 by 5 <em>dots</em> (4 × 4 boxes), in a sentence flagged as needing a citation. <sup><a href="#ref-2-en">[2]</a></sup> <sup><a href="#ref-3-en">[3]</a></sup> <sup><a href="#ref-4-en">[4]</a></sup> <sup><a href="#ref-5-en">[5]</a></sup></p></blockquote>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+<section id="regras-en" aria-labelledby="h-regras-en">
+<h2 id="h-regras-en">The rules</h2>
+<figure>
+<img src="rc_images/PontinhosRegras-en.svg" alt="Three boards of 2 by 2 boxes. In the first, a line has just been drawn between two neighbouring dots, highlighted in orange. In the second, the corner box has three sides drawn and the fourth side is shown dashed: whoever plays next can close it. In the third, Ana drew the fourth side: the box gets the initial A and Ana plays again." width="1000" height="400" loading="lazy">
+<figcaption>One line at a time; whoever closes a box writes their initial and plays again.</figcaption>
+</figure>
+<ul>
+<li>A board of R × C boxes has (R + 1) × (C + 1) dots. In the app, the 5 × 5 board has 36 dots and 60 possible lines.</li>
+<li>On your turn, draw a horizontal or vertical line between two neighbouring dots that are not yet joined. Diagonal lines are not allowed. <sup><a href="#ref-5-en">[5]</a></sup></li>
+<li>Whoever completes the fourth side of a box writes their initial in it and plays again. <sup><a href="#ref-2-en">[2]</a></sup> <sup><a href="#ref-3-en">[3]</a></sup> A single line can close two neighbouring boxes at once.</li>
+<li>Playing again is not optional: after closing a box, you draw one more line, even if it gives boxes to your opponent.</li>
+<li>The game ends when every line is drawn. The player with the most boxes wins. With an even number of boxes, a tie is possible.</li>
+</ul>
+<h3>Variant: the turn always passes</h3>
+<p>The Italian Wikipedia records a variant in which whoever closes a box does not play again: the turn always passes. <sup><a href="#ref-6-en">[6]</a></sup> In the app, untick <strong>Closing a box earns another turn</strong>. In this variant, the chain strategies on this page no longer apply, and the hard computer makes no double-crosses.</p>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+<section id="app-en" aria-labelledby="h-app-en">
+<h2 id="h-app-en">Playing in the app</h2>
+<h3>1. Set up the game</h3>
+<p>On the first visit, the app opens the <strong>New game</strong> window. Choose the board size, set up 2 to 4 players and decide the rule. Each player can be a <strong>Person</strong> or an easy, medium or hard <strong>Computer</strong>. People play on the same device, one at a time.</p>
+<figure>
+<img src="rc_images/PontinhosConfiguracao-en.png" alt="New game window with eight size options, from 2 by 2 to 10 by 10 and Custom, with 5 by 5 selected; the count of 25 boxes, 36 dots and 60 lines; the players Ana, person, and Computer, hard level, each with a coloured initial; the option Closing a box earns another turn ticked; the Seed field with 2026 and the Start button" width="660" height="782" loading="lazy">
+<figcaption>The setup window: size, players, rule and seed.</figcaption>
+</figure>
+<div class="table-wrap"><table>
+<thead><tr><th>Board</th><th>Boxes</th><th>Dots</th><th>Lines</th><th>First player wants a number of long chains that is</th></tr></thead>
+<tbody>
+<tr><td>2 × 2</td><td>4</td><td>9</td><td>12</td><td>odd</td></tr>
+<tr><td>3 × 3</td><td>9</td><td>16</td><td>24</td><td>even</td></tr>
+<tr><td>4 × 4</td><td>16</td><td>25</td><td>40</td><td>odd</td></tr>
+<tr><td>5 × 5</td><td>25</td><td>36</td><td>60</td><td>even</td></tr>
+<tr><td>6 × 6</td><td>36</td><td>49</td><td>84</td><td>odd</td></tr>
+<tr><td>8 × 8</td><td>64</td><td>81</td><td>144</td><td>odd</td></tr>
+<tr><td>10 × 10</td><td>100</td><td>121</td><td>220</td><td>odd</td></tr>
+<tr><td>15 × 15 (Custom, maximum)</td><td>225</td><td>256</td><td>480</td><td>even</td></tr>
+</tbody></table></div>
+<p>The last column is the long chain rule, explained under <a href="#estrategia-en">Strategy</a>. Under <strong>Custom</strong>, choose 1 to 15 rows and columns, for example 3 × 7. Initials come from the names; if two names start with the same letter, the app uses two letters, such as AS for Ana Souza and AL for Ana Lima.</p>
+<p>The <strong>seed</strong> sets the computer’s choices when it has more than one equally good move. With the same seed and the same moves, the game repeats exactly. Leave it blank and the app picks one, shown below the history.</p>
+<h3>2. Draw lines</h3>
+<ol>
+<li>Move the mouse between two dots: the possible line appears dotted. Click or tap to draw it.</li>
+<li>The last line drawn is orange. A closed box takes the colour and initial of whoever closed it.</li>
+<li>Above the board, a sentence says whose turn it is and what happened, such as “Ana closed 1 box and plays again”. The scoreboard highlights who plays now.</li>
+</ol>
+<h3>3. Hint and undo</h3>
+<ul>
+<li><strong>💡 Hint</strong> marks a blinking line and explains why: it closes a box, it is safe, it gives away the least, it declines the last two boxes of a chain, or it is the best by working out the end. The hint uses the same reasoning as the hard computer.</li>
+<li><strong>↶ Undo</strong> goes back to before your last line and also removes the computer’s replies. Between people, it goes back one line at a time.</li>
+</ul>
+<h3>4. Keyboard</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>Key</th><th>What it does</th></tr></thead>
+<tbody>
+<tr><td>Tab</td><td>Reaches the board.</td></tr>
+<tr><td>Arrows</td><td>Move the gold cursor between free lines. Screen readers announce the line and whether it closes a box, is safe or gives a third side.</td></tr>
+<tr><td>Enter or Space</td><td>Draws the line under the cursor.</td></tr>
+<tr><td>H</td><td>Shows the hint.</td></tr>
+<tr><td>Ctrl+Z</td><td>Undoes.</td></tr>
+</tbody></table></div>
+<h3>5. End of the game</h3>
+<figure>
+<img src="rc_images/PontinhosFim-en.png" alt="Game over window over the full board: Ana won with 22 boxes; the ranking shows Ana, person, with 22 boxes and the Computer, hard, with 3; below, the board, seed 2026 and the buttons Close, Change setup and Play again" width="1100" height="860" loading="lazy">
+<figcaption>Game over: Play again repeats the setup with another seed, and the next player starts.</figcaption>
+</figure>
+<p>The game is saved in the browser: close the page and open it again to carry on. The <strong>Game</strong> panel, beside the board, shows the size, the rule, how many lines have been drawn and, in two-player games, the parity the long chain rule recommends for the first player. The selector at the top switches the language, and the ◐ button toggles the light and dark themes.</p>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+<section id="estrategia-en" aria-labelledby="h-estrategia-en">
+<h2 id="h-estrategia-en">Strategy</h2>
+<h3>1. Do not draw the third side</h3>
+<p>For beginners, the only strategy is to avoid adding the third side to any box. <sup><a href="#ref-3-en">[3]</a></sup> A box with three sides is a gift: the next player closes it and plays again. Lines that give no box a third side are <strong>safe</strong>. At the start of the game, nearly all of them are.</p>
+<h3>2. Chains and loops</h3>
+<p>Safe lines run out. From then on, every line gives boxes away, and the board splits into <strong>chains</strong>: groups of neighbouring boxes in which any move gives all of them to the opponent. <sup><a href="#ref-3-en">[3]</a></sup> A chain of three or more boxes is a <strong>long chain</strong>. <sup><a href="#ref-7-en">[7]</a></sup> When a chain closes back on itself, with no end, it is a <strong>loop</strong>.</p>
+<figure>
+<img src="rc_images/PontinhosCadeias-en.svg" alt="Board of 2 by 5 boxes with no safe line left: every free box has two sides drawn. The boxes form four pieces: a, a loop of 4 boxes on the left; b, a long chain of 3 boxes on the top row; c, a chain of 2 boxes below; and d, a chain of 1 box in the corner. Any line drawn gives away one of these pieces." width="1000" height="420" loading="lazy">
+<figcaption>With no safe line, the board becomes a set of pieces. Whoever plays has to give one away.</figcaption>
+</figure>
+<p>When you have to give something away, give the smallest piece. A chain of 1 costs one box; a long chain can cost the game.</p>
+<h3>3. The double-cross: take all but two</h3>
+<p>When your opponent opens a long chain, the natural move is to take every box. But whoever closes plays again and, if no safe line is left, has to open the next chain. The way out is to take all but the last two and draw the end line: the two remaining boxes go to your opponent, who closes them with a single line and then has to open the next chain. <sup><a href="#ref-3-en">[3]</a></sup> This move is called a <em>double-cross</em> or <em>double-dealing</em>.</p>
+<figure>
+<img src="rc_images/PontinhosRecusa-en.svg" alt="Three drawings of the same chain of 4 boxes. In the first, the opponent has just opened the chain at the left end. In the second, Ana takes all four boxes, but then has to draw another line and open the next chain. In the third, Ana takes two boxes and draws the right-end line: the last two boxes have three sides and one middle line closes both at once; the opponent, Bruno, takes those two and has to open the next chain." width="1000" height="330" loading="lazy">
+<figcaption>Taking everything gives 4 boxes now; leaving two costs 2, but forces the opponent to open the next chain.</figcaption>
+</figure>
+<p>Whoever makes the opponent open the first long chain has <strong>control</strong> and, with long enough chains, wins. <sup><a href="#ref-3-en">[3]</a></sup> The double-cross costs two boxes per chain; in a loop, the same idea costs four, because two pairs are left. So it only pays when what comes next is worth more. The hard computer does this sum before declining.</p>
+<h3>4. Give pairs away through the middle</h3>
+<figure>
+<img src="rc_images/PontinhosEntrega-en.svg" alt="Two drawings of a chain of 2 boxes. On the left, the chain was opened at one end: only the first box has three sides, and the receiver can decline both by drawing the other end. On the right, the chain was opened with the middle line: both boxes have three sides, each closed by a different line, and it is not possible to decline both in one move." width="1000" height="380" loading="lazy">
+<figcaption>The same gift of two boxes, with different consequences.</figcaption>
+</figure>
+<p>If you have to give away a chain of two, draw the middle line. From one end, your opponent can decline both and keep control. From the middle, each box closes with a different line, and the double-cross is no longer possible.</p>
+<h3>5. The long chain rule</h3>
+<p>Who will have control at the end? For two players, the long chain rule answers with parity. On a board of m rows and n columns of boxes: if m and n are both even, the first player should play to make the number of long chains odd; if m or n is odd, to make it even. Loops do not count as long chains. <sup><a href="#ref-7-en">[7]</a></sup></p>
+<ul>
+<li>On 5 × 5, the first player wants an <strong>even</strong> number of long chains; the second player wants an odd number.</li>
+<li>On 4 × 4, 6 × 6, 8 × 8 and 10 × 10, the first player wants an <strong>odd</strong> number.</li>
+<li>In the middle game, the safe lines you choose can join or split chains. That is where the parity is fought over.</li>
+</ul>
+<p>The app shows this recommendation in the <strong>Game</strong> panel. The app’s computer does not plan the parity in the middle game: it uses the double-cross and works out the end, but picks safe lines at random.</p>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+<section id="computador-en" aria-labelledby="h-computador-en">
+<h2 id="h-computador-en">What the app’s computer shows</h2>
+<p>The three levels follow simple rules that can be checked:</p>
+<ul>
+<li><strong>Easy:</strong> closes boxes when it can, most of the time, but often draws a third side.</li>
+<li><strong>Medium:</strong> closes everything it can, plays only safe lines and, when they run out, plays the line that gives away the fewest boxes.</li>
+<li><strong>Hard:</strong> does what medium does, declines the last two boxes of a chain when the endgame sum says it pays, gives pairs away through the middle and, with 18 free lines or fewer and two players, works out every sequence to the end and picks the best.</li>
+</ul>
+<p>With 3 or 4 players, hard uses the same rules, designed for two. To measure the difference between levels, I had the computer play against itself.</p>
+<figure>
+<img src="rc_images/PontinhosResultados-en.svg" alt="Horizontal bars with the results of games between computer levels. 3 × 3: hard wins 91.0%, ties 0.0%, medium wins 9.0%; 3 × 3: medium wins 88.0%, ties 0.0%, easy wins 12.0%; 5 × 5: hard wins 92.0%, ties 0.0%, medium wins 8.0%; 5 × 5: medium wins 98.0%, ties 0.0%, easy wins 2.0%; 8 × 8: hard wins 77.5%, ties 2.5%, medium wins 20.0%." width="1000" height="408" loading="lazy">
+<figcaption>Hard beats medium comfortably on small boards; on 8 × 8 the edge shrinks.</figcaption>
+</figure>
+<div class="table-wrap"><table>
+<thead><tr><th>Board</th><th>Game</th><th>Games</th><th>Left wins</th><th>Ties</th><th>Right wins</th></tr></thead>
+<tbody>
+<tr><td>3 × 3</td><td>hard vs medium</td><td>200</td><td>91.0%</td><td>0.0%</td><td>9.0%</td></tr>
+<tr><td>3 × 3</td><td>medium vs easy</td><td>200</td><td>88.0%</td><td>0.0%</td><td>12.0%</td></tr>
+<tr><td>5 × 5</td><td>hard vs medium</td><td>200</td><td>92.0%</td><td>0.0%</td><td>8.0%</td></tr>
+<tr><td>5 × 5</td><td>medium vs easy</td><td>200</td><td>98.0%</td><td>0.0%</td><td>2.0%</td></tr>
+<tr><td>8 × 8</td><td>hard vs medium</td><td>40</td><td>77.5%</td><td>2.5%</td><td>20.0%</td></tr>
+</tbody></table></div>
+<p><strong>How it was measured.</strong> Each row uses seeds 1 to 200 (1 to 40 on 8 × 8), and each level starts half the games. The games ran in Chromium, with the same move function as the app. These are simulation numbers: they measure this computer against itself, not people. In a smaller test of 30 games on 15 × 15, hard beat medium in 56.7%: on large boards, the endgame has shapes that hard’s rules do not break down. Hard’s slowest move took 0.4 seconds on a desktop computer; slower phones may take longer.</p>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+<section id="erros-en" aria-labelledby="h-erros-en">
+<h2 id="h-erros-en">Common mistakes</h2>
+<ul class="myths">
+<li><h3>“Closing a box is always good.”</h3><p>In the middle game, yes. At the end, taking every box of a chain can force you to open the next long chain. Sometimes leaving two is worth more.</p></li>
+<li><h3>“If there is no safe line, it does not matter.”</h3><p>It does. Give away the smallest piece, and a chain of two through the middle. The difference can be several boxes.</p></li>
+<li><h3>“Whoever leads in the middle game will win.”</h3><p>The boxes at the end come in chains, often long ones. Whoever has control can turn the score around in one go.</p></li>
+<li><h3>“After closing a box, the turn passes.”</h3><p>Under the usual rule, whoever closes plays again and must draw another line. Only in the variant does the turn always pass.</p></li>
+<li><h3>“Diagonal lines count.”</h3><p>No. Only horizontal or vertical lines between neighbouring dots.</p></li>
+</ul>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+<section id="glossario-en" aria-labelledby="h-glossario-en">
+<h2 id="h-glossario-en">Glossary</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Term</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td>Chain</td><td>Group of neighbouring boxes in which any line gives all of them to the opponent.</td></tr>
+<tr><td>Control</td><td>The position of whoever makes the opponent open the long chains.</td></tr>
+<tr><td>Double-cross</td><td>Taking every box of a chain except the last two, leaving them to the opponent.</td></tr>
+<tr><td>Long chain</td><td>Chain of three or more boxes.</td></tr>
+<tr><td>Long chain rule</td><td>Parity rule that says how many long chains each player wants, depending on the board size.</td></tr>
+<tr><td>Loop</td><td>Chain that closes back on itself, with no end.</td></tr>
+<tr><td>Middle handout</td><td>Opening a chain of two with the middle line, so it cannot be declined.</td></tr>
+<tr><td>Pipopipette</td><td>The name Édouard Lucas gave the game in 1889.</td></tr>
+<tr><td>Safe line</td><td>Line that gives no box its third side.</td></tr>
+<tr><td>Seed</td><td>Number that sets the computer’s choices in the app.</td></tr>
+</tbody></table></div>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+<section id="revisao-en" aria-labelledby="h-revisao-en">
+<h2 id="h-revisao-en">Quick review</h2>
+<div class="quiz">
+<details><summary>1. How many lines does a board of 3 × 3 boxes have?</summary><p>24: 4 rows of 3 horizontal lines and 3 rows of 4 vertical lines.</p></details>
+<details><summary>2. What happens when you close a box?</summary><p>You write your initial in it and play again, drawing one more line.</p></details>
+<details><summary>3. Why avoid drawing the third side of a box?</summary><p>Because the next player closes the box and plays again.</p></details>
+<details><summary>4. Your opponent opened a chain of 5, and after it only long chains are left. What do you do?</summary><p>Take 3 and leave the last 2: your opponent closes those two and has to open the next chain.</p></details>
+<details><summary>5. Why give away a chain of two through the middle?</summary><p>Because each box then closes with a different line, and your opponent cannot decline both to keep control.</p></details>
+<details><summary>6. On 5 × 5, does the first player want an even or odd number of long chains?</summary><p>Even, because 5 is odd. On 4 × 4, odd.</p></details>
+<details><summary>7. Do loops count in the long chain rule?</summary><p>No. Only chains of three or more boxes.</p></details>
+<details><summary>8. What is the seed for in the app?</summary><p>It repeats the computer’s choices. With the same seed and the same moves, the game comes out the same.</p></details>
+</div>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+<section id="referencias-en" aria-labelledby="h-referencias-en">
+<h2 id="h-referencias-en">References</h2>
+<ol class="refs">
+<li id="ref-1-en"><strong>Giovani Perotto Mesquita</strong>, “Pontinhos”, game on this site, <a href="Pontinhos.html#en">giovanipm.github.io/Pontinhos.html</a>.</li>
+<li id="ref-2-en"><strong>Wikipédia</strong>, “Timbiriche (jogo)”, accessed 20/11/2026, <a href="https://pt.wikipedia.org/wiki/Timbiriche_(jogo)" rel="noopener">pt.wikipedia.org/wiki/Timbiriche_(jogo)</a>.</li>
+<li id="ref-3-en"><strong>Wikipedia</strong>, “Dots and boxes”, accessed 20/11/2026, <a href="https://en.wikipedia.org/wiki/Dots_and_boxes" rel="noopener">en.wikipedia.org/wiki/Dots_and_boxes</a>. Covers the history, the rules, chains, the double-cross and control; cites Berlekamp (2000) and Lucas, <em>L’arithmétique amusante</em> (1895), pp. 204–209.</li>
+<li id="ref-4-en"><strong>Wikipédia</strong>, “La Pipopipette”, accessed 20/11/2026, <a href="https://fr.wikipedia.org/wiki/La_Pipopipette" rel="noopener">fr.wikipedia.org/wiki/La_Pipopipette</a>.</li>
+<li id="ref-5-en"><strong>Wikipedia</strong>, “Timbiriche (juego)”, accessed 20/11/2026, <a href="https://es.wikipedia.org/wiki/Timbiriche_(juego)" rel="noopener">es.wikipedia.org/wiki/Timbiriche_(juego)</a>. The sentence on the most common board is marked as needing a citation on the page itself.</li>
+<li id="ref-6-en"><strong>Wikipedia</strong>, “Punti e linee”, accessed 20/11/2026, <a href="https://it.wikipedia.org/wiki/Punti_e_linee" rel="noopener">it.wikipedia.org/wiki/Punti_e_linee</a>.</li>
+<li id="ref-7-en"><strong>UCLA Mathematics</strong>, “Dots and Boxes hints”, accessed 20/11/2026, <a href="https://www.math.ucla.edu/~tom/Games/dots&amp;boxes_hints.html" rel="noopener">math.ucla.edu/~tom/Games/dots&amp;boxes_hints.html</a>. States the long chain rule and defines a long chain as three or more boxes.</li>
+<li id="ref-8-en"><strong>Elwyn Berlekamp</strong>, <em>The Dots-and-Boxes Game: Sophisticated Child’s Play</em>, A K Peters, 2000. Not consulted directly; cited by references 3 and 6.</li>
+</ol>
+<a class="back" href="#top">↑ Back to top</a>
+</section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== IT ===================== -->
+<div id="it" role="tabpanel" aria-labelledby="tab-it" lang="it" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html#it" data-projects>← Progetti</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Punti e linee: tutorial del gioco dei puntini</h1>
+      <p class="dek">La storia della Pipopipette di Édouard Lucas, le regole, come giocare nell’app su tabelloni di varie dimensioni e le idee che decidono la partita: catene, doppio rifiuto e regola della catena lunga.</p>
+      <div class="byline">
+        <span>Di <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Pubblicato il <time datetime="2026-11-20">20/11/2026</time></span>
+        <span class="credit">Rivisto e formattato con Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-it">
+    <h2 id="toc-it">Indice</h2>
+    <ol>
+      <li><a href="#intro-it">Il gioco</a></li>
+      <li><a href="#historia-it">Un po’ di storia</a></li>
+      <li><a href="#regras-it">Le regole</a></li>
+      <li><a href="#app-it">Come giocare nell’app</a></li>
+      <li><a href="#estrategia-it">Strategia</a></li>
+      <li><a href="#computador-it">Cosa mostra il computer dell’app</a></li>
+      <li><a href="#erros-it">Errori comuni</a></li>
+      <li><a href="#glossario-it">Glossario</a></li>
+      <li><a href="#revisao-it">Ripasso veloce</a></li>
+      <li><a href="#referencias-it">Riferimenti</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-it" aria-labelledby="h-intro-it">
+<h2 id="h-intro-it">Il gioco</h2>
+<p>Punti e linee è un gioco con carta e matita. Si parte da una griglia di punti. Al tuo turno, unisci due punti vicini con una linea. Chi traccia il quarto lato di un quadrato vi scrive la propria iniziale e gioca ancora. Quando non resta nessuna linea, vince chi ha più quadrati. <sup><a href="#ref-2-it">[2]</a></sup></p>
+<p>L’app di questo sito gioca a Punti e linee su tabelloni da 2 × 2 a 15 × 15 quadrati, con 2-4 giocatori, ciascuno persona o computer di uno di tre livelli. <sup><a href="#ref-1-it">[1]</a></sup> È un unico file HTML, che funziona senza internet e in quattro lingue.</p>
+<p><a class="launch" href="Pontinhos.html#it">Apri il gioco <span aria-hidden="true">→</span></a></p>
+<figure>
+<img src="rc_images/PontinhosPartida-it.png" alt="Schermata del gioco su un tabellone di 5 per 5 quadrati: Ana, persona, ha 5 quadrati segnati con la lettera A nella colonna di sinistra; il Computer, livello difficile, ha 1 quadrato segnato con C nell’angolo in basso. Una linea suggerita appare in verde acqua, l’ultima linea tracciata è arancione, e il pannello accanto mostra la dimensione, la regola, le linee tracciate e la cronologia" width="1100" height="860" loading="lazy">
+<figcaption>Partita sul 5 × 5 contro il computer difficile, con il suggerimento attivo.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Torna su</a>
+</section>
+<section id="historia-it" aria-labelledby="h-historia-it">
+<h2 id="h-historia-it">Un po’ di storia</h2>
+<p>Il gioco fu pubblicato nel 1889 dal matematico francese Édouard Lucas, con il nome di <em>La Pipopipette</em>. <sup><a href="#ref-2-it">[2]</a></sup> <sup><a href="#ref-5-it">[5]</a></sup> Secondo la Wikipedia francese, Lucas lo descrisse nel libro <em>Jeux scientifiques pour servir à l’histoire, à l’enseignement et à la pratique du calcul et du dessin</em> e ne attribuì l’invenzione ai suoi allievi dell’École polytechnique. <sup><a href="#ref-4-it">[4]</a></sup></p>
+<h3>Un gioco, molti nomi</h3>
+<ul>
+<li><strong>Portoghese:</strong> Pontinhos o Timbiriche. <sup><a href="#ref-2-it">[2]</a></sup></li>
+<li><strong>Inglese:</strong> <em>Dots and Boxes</em>, e anche <em>boxes</em>, <em>dots and dashes</em> e <em>pigs in a pen</em> (maiali nel recinto). <sup><a href="#ref-3-it">[3]</a></sup></li>
+<li><strong>Spagnolo:</strong> Timbiriche, oltre a nomi regionali come <em>puntitos</em>, <em>cuadritos</em> e <em>el juego de los cuadraditos</em>. <sup><a href="#ref-5-it">[5]</a></sup></li>
+<li><strong>Italiano:</strong> <em>Punti e linee</em>. <sup><a href="#ref-6-it">[6]</a></sup></li>
+</ul>
+<h3>Un gioco da bambini, materia da matematici</h3>
+<p>Il matematico Elwyn Berlekamp ha scritto un intero libro sulla strategia del gioco, <em>The Dots-and-Boxes Game: Sophisticated Child’s Play</em> (“un gioco da bambini sofisticato”), pubblicato nel 2000, e ne aveva già trattato in un capitolo di <em>Winning Ways for your Mathematical Plays</em>, con John Conway e Richard Guy. <sup><a href="#ref-3-it">[3]</a></sup> <sup><a href="#ref-8-it">[8]</a></sup> La Wikipedia inglese riporta che giocare in modo ottimale è un problema PSPACE-completo: in pratica, non si conosce una scorciatoia per calcolare la mossa migliore sui tabelloni grandi. <sup><a href="#ref-3-it">[3]</a></sup></p>
+<blockquote><p><strong>Le fonti non concordano.</strong> La data del 1889 compare nelle Wikipedia portoghese, spagnola e francese; quella inglese dice solo “XIX secolo” e cita un testo di Lucas del 1895, <em>L’arithmétique amusante</em>. Solo la Wikipedia francese attribuisce l’invenzione agli allievi di Lucas. Sulla dimensione classica, la Wikipedia inglese dice che 2 × 2 quadrati va bene per imparare e 5 × 5 quadrati per esperti; quella spagnola dice che il più comune e più studiato è 5 per 5 <em>punti</em> (4 × 4 quadrati), in una frase segnata come priva di fonte. <sup><a href="#ref-2-it">[2]</a></sup> <sup><a href="#ref-3-it">[3]</a></sup> <sup><a href="#ref-4-it">[4]</a></sup> <sup><a href="#ref-5-it">[5]</a></sup></p></blockquote>
+<a class="back" href="#top">↑ Torna su</a>
+</section>
+<section id="regras-it" aria-labelledby="h-regras-it">
+<h2 id="h-regras-it">Le regole</h2>
+<figure>
+<img src="rc_images/PontinhosRegras-it.svg" alt="Tre tabelloni di 2 per 2 quadrati. Nel primo è appena stata tracciata una linea tra due punti vicini, evidenziata in arancione. Nel secondo, il quadrato d’angolo ha tre lati tracciati e il quarto lato è tratteggiato: chi gioca dopo può chiuderlo. Nel terzo, Ana ha tracciato il quarto lato: il quadrato riceve l’iniziale A e Ana gioca ancora." width="1000" height="400" loading="lazy">
+<figcaption>Una linea alla volta; chi chiude un quadrato scrive l’iniziale e gioca ancora.</figcaption>
+</figure>
+<ul>
+<li>Un tabellone di R × C quadrati ha (R + 1) × (C + 1) punti. Nell’app, il 5 × 5 ha 36 punti e 60 linee possibili.</li>
+<li>Al tuo turno, traccia una linea orizzontale o verticale tra due punti vicini non ancora uniti. Le linee diagonali non valgono. <sup><a href="#ref-5-it">[5]</a></sup></li>
+<li>Chi completa il quarto lato di un quadrato vi scrive la propria iniziale e gioca ancora. <sup><a href="#ref-2-it">[2]</a></sup> <sup><a href="#ref-3-it">[3]</a></sup> Una sola linea può chiudere due quadrati vicini insieme.</li>
+<li>Giocare ancora non è facoltativo: dopo aver chiuso, tracci un’altra linea, anche se regala quadrati all’avversario.</li>
+<li>La partita finisce quando tutte le linee sono tracciate. Vince chi ha più quadrati. Con un numero pari di quadrati, si può pareggiare.</li>
+</ul>
+<h3>Variante: il turno passa sempre</h3>
+<p>La Wikipedia italiana riporta una variante in cui chi chiude un quadrato non gioca ancora: il turno passa sempre. <sup><a href="#ref-6-it">[6]</a></sup> Nell’app, togli la spunta a <strong>Chi chiude un quadrato gioca ancora</strong>. In questa variante le strategie delle catene di questa pagina non valgono più, e il computer difficile non fa doppi rifiuti.</p>
+<a class="back" href="#top">↑ Torna su</a>
+</section>
+<section id="app-it" aria-labelledby="h-app-it">
+<h2 id="h-app-it">Come giocare nell’app</h2>
+<h3>1. Prepara la partita</h3>
+<p>Alla prima visita, l’app apre la finestra <strong>Nuova partita</strong>. Scegli la dimensione del tabellone, prepara da 2 a 4 giocatori e decidi la regola. Ogni giocatore può essere <strong>Persona</strong> o <strong>Computer</strong> facile, medio o difficile. Le persone giocano sullo stesso dispositivo, una alla volta.</p>
+<figure>
+<img src="rc_images/PontinhosConfiguracao-it.png" alt="Finestra Nuova partita con otto opzioni di dimensione, da 2 per 2 a 10 per 10 e Personalizzato, con il 5 per 5 selezionato; il conteggio di 25 quadrati, 36 punti e 60 linee; i giocatori Ana, persona, e Computer, livello difficile, ciascuno con l’iniziale colorata; l’opzione Chi chiude un quadrato gioca ancora spuntata; il campo Seme con 2026 e il pulsante Inizia" width="660" height="782" loading="lazy">
+<figcaption>La finestra di configurazione: dimensione, giocatori, regola e seme.</figcaption>
+</figure>
+<div class="table-wrap"><table>
+<thead><tr><th>Tabellone</th><th>Quadrati</th><th>Punti</th><th>Linee</th><th>Chi inizia vuole un numero di catene lunghe</th></tr></thead>
+<tbody>
+<tr><td>2 × 2</td><td>4</td><td>9</td><td>12</td><td>dispari</td></tr>
+<tr><td>3 × 3</td><td>9</td><td>16</td><td>24</td><td>pari</td></tr>
+<tr><td>4 × 4</td><td>16</td><td>25</td><td>40</td><td>dispari</td></tr>
+<tr><td>5 × 5</td><td>25</td><td>36</td><td>60</td><td>pari</td></tr>
+<tr><td>6 × 6</td><td>36</td><td>49</td><td>84</td><td>dispari</td></tr>
+<tr><td>8 × 8</td><td>64</td><td>81</td><td>144</td><td>dispari</td></tr>
+<tr><td>10 × 10</td><td>100</td><td>121</td><td>220</td><td>dispari</td></tr>
+<tr><td>15 × 15 (Personalizzato, massimo)</td><td>225</td><td>256</td><td>480</td><td>pari</td></tr>
+</tbody></table></div>
+<p>L’ultima colonna è la regola della catena lunga, spiegata in <a href="#estrategia-it">Strategia</a>. In <strong>Personalizzato</strong>, scegli da 1 a 15 righe e colonne, per esempio 3 × 7. Le iniziali vengono dai nomi; se due nomi iniziano con la stessa lettera, l’app usa due lettere, come AS per Ana Souza e AL per Ana Lima.</p>
+<p>Il <strong>seme</strong> stabilisce le scelte del computer quando ha più mosse ugualmente buone. Con lo stesso seme e le stesse mosse, la partita si ripete uguale. Vuoto, l’app ne estrae uno, mostrato sotto la cronologia.</p>
+<h3>2. Traccia le linee</h3>
+<ol>
+<li>Passa il mouse tra due punti: la linea possibile appare punteggiata. Clicca o tocca per tracciarla.</li>
+<li>L’ultima linea tracciata è arancione. Un quadrato chiuso prende il colore e l’iniziale di chi l’ha chiuso.</li>
+<li>Sopra il tabellone, una frase dice a chi tocca e cosa è successo, come “Ana ha chiuso 1 quadrato e gioca ancora”. Il punteggio evidenzia chi gioca ora.</li>
+</ol>
+<h3>3. Suggerimento e annulla</h3>
+<ul>
+<li><strong>💡 Suggerimento</strong> segna una linea lampeggiante e spiega il motivo: chiude un quadrato, è sicura, regala il meno possibile, rifiuta gli ultimi due di una catena o è la migliore calcolando la fine. Il suggerimento usa lo stesso ragionamento del computer difficile.</li>
+<li><strong>↶ Annulla</strong> torna a prima della tua ultima linea e toglie anche le risposte del computer. Tra persone, torna indietro di una linea alla volta.</li>
+</ul>
+<h3>4. Tastiera</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>Tasto</th><th>Cosa fa</th></tr></thead>
+<tbody>
+<tr><td>Tab</td><td>Raggiunge il tabellone.</td></tr>
+<tr><td>Frecce</td><td>Muovono il cursore dorato tra le linee libere. Il lettore di schermo annuncia la linea e se chiude un quadrato, è sicura o dà il terzo lato.</td></tr>
+<tr><td>Invio o Spazio</td><td>Traccia la linea del cursore.</td></tr>
+<tr><td>S</td><td>Mostra il suggerimento.</td></tr>
+<tr><td>Ctrl+Z</td><td>Annulla.</td></tr>
+</tbody></table></div>
+<h3>5. Fine della partita</h3>
+<figure>
+<img src="rc_images/PontinhosFim-it.png" alt="Finestra Fine della partita sopra il tabellone pieno: Ana ha vinto con 22 quadrati; la classifica mostra Ana, persona, con 22 quadrati e il Computer, difficile, con 3; sotto, il tabellone, il seme 2026 e i pulsanti Chiudi, Cambia configurazione e Gioca ancora" width="1100" height="860" loading="lazy">
+<figcaption>Fine della partita: Gioca ancora ripete la configurazione con un altro seme, e inizia il giocatore successivo.</figcaption>
+</figure>
+<p>La partita resta salvata nel browser: chiudi la pagina e riaprila per continuare. Il pannello <strong>Partita</strong>, accanto al tabellone, mostra la dimensione, la regola, quante linee sono state tracciate e, nelle partite a due, la parità che la regola della catena lunga consiglia a chi ha iniziato. Il selettore in alto cambia la lingua, e il pulsante ◐ alterna i temi chiaro e scuro.</p>
+<a class="back" href="#top">↑ Torna su</a>
+</section>
+<section id="estrategia-it" aria-labelledby="h-estrategia-it">
+<h2 id="h-estrategia-it">Strategia</h2>
+<h3>1. Non dare il terzo lato</h3>
+<p>Per chi comincia, l’unica strategia è evitare di tracciare il terzo lato di un quadrato. <sup><a href="#ref-3-it">[3]</a></sup> Un quadrato con tre lati è un regalo: il giocatore successivo lo chiude e gioca ancora. Le linee che non danno il terzo lato a nessun quadrato sono <strong>sicure</strong>. All’inizio della partita lo sono quasi tutte.</p>
+<h3>2. Catene e anelli</h3>
+<p>Le linee sicure finiscono. Da lì in poi, ogni linea regala quadrati, e il tabellone si divide in <strong>catene</strong>: gruppi di quadrati vicini in cui qualsiasi mossa li dà tutti all’avversario. <sup><a href="#ref-3-it">[3]</a></sup> Una catena di tre o più quadrati è una <strong>catena lunga</strong>. <sup><a href="#ref-7-it">[7]</a></sup> Quando la catena si richiude su se stessa, senza estremità, è un <strong>anello</strong>.</p>
+<figure>
+<img src="rc_images/PontinhosCadeias-it.svg" alt="Tabellone di 2 per 5 quadrati senza più linee sicure: ogni quadrato libero ha due lati tracciati. I quadrati formano quattro pezzi: a, un anello di 4 quadrati a sinistra; b, una catena lunga di 3 quadrati nella fila in alto; c, una catena di 2 quadrati sotto; e d, una catena di 1 quadrato nell’angolo. Qualsiasi linea tracciata regala uno di questi pezzi." width="1000" height="420" loading="lazy">
+<figcaption>Senza linee sicure, il tabellone diventa un insieme di pezzi. Chi gioca deve regalarne uno.</figcaption>
+</figure>
+<p>Quando sei costretto a regalare, regala il pezzo più piccolo. Una catena di 1 costa un quadrato; una catena lunga può costare la partita.</p>
+<h3>3. Il doppio rifiuto: prendi tutti tranne due</h3>
+<p>Quando l’avversario apre una catena lunga, viene naturale prendere tutti i quadrati. Ma chi chiude gioca ancora e, se non è rimasta una linea sicura, deve aprire la catena successiva. La soluzione è prendere tutti tranne gli ultimi due e tracciare la linea dell’estremità: i due quadrati rimasti vanno all’avversario, che li chiude con una sola linea e poi deve aprire la catena successiva. <sup><a href="#ref-3-it">[3]</a></sup> In inglese la mossa si chiama <em>double-cross</em> o <em>double-dealing</em>.</p>
+<figure>
+<img src="rc_images/PontinhosRecusa-it.svg" alt="Tre disegni della stessa catena di 4 quadrati. Nel primo, l’avversario ha appena aperto la catena dall’estremità sinistra. Nel secondo, Ana prende tutti e quattro i quadrati, ma poi deve tracciare un’altra linea e aprire la catena successiva. Nel terzo, Ana prende due quadrati e traccia la linea dell’estremità destra: gli ultimi due quadrati hanno tre lati e una linea centrale li chiude entrambi; l’avversario, Bruno, li prende e deve aprire la catena successiva." width="1000" height="330" loading="lazy">
+<figcaption>Prendere tutto dà 4 quadrati subito; lasciarne due costa 2, ma obbliga l’avversario ad aprire la catena successiva.</figcaption>
+</figure>
+<p>Chi riesce a far aprire all’avversario la prima catena lunga ha il <strong>controllo</strong> e, con catene abbastanza lunghe, vince. <sup><a href="#ref-3-it">[3]</a></sup> Il doppio rifiuto costa due quadrati per catena; in un anello la stessa idea ne costa quattro, perché restano due coppie. Per questo conviene solo quando quello che viene dopo vale di più. Il computer difficile fa questo conto prima di rifiutare.</p>
+<h3>4. Regala le coppie dal centro</h3>
+<figure>
+<img src="rc_images/PontinhosEntrega-it.svg" alt="Due disegni di una catena di 2 quadrati. A sinistra, la catena è stata aperta da un’estremità: solo il primo quadrato ha tre lati, e chi la riceve può rifiutarli entrambi tracciando l’altra estremità. A destra, la catena è stata aperta con la linea centrale: entrambi i quadrati hanno tre lati, ciascuno chiuso da una linea diversa, e non si possono rifiutare entrambi con una sola mossa." width="1000" height="380" loading="lazy">
+<figcaption>Lo stesso regalo di due quadrati, con conseguenze diverse.</figcaption>
+</figure>
+<p>Se devi regalare una catena di due, traccia la linea centrale. Dall’estremità, l’avversario può rifiutarli entrambi e tenere il controllo. Dal centro, ogni quadrato si chiude con una linea diversa, e il doppio rifiuto non è più possibile.</p>
+<h3>5. La regola della catena lunga</h3>
+<p>Chi avrà il controllo alla fine? Per due giocatori, la regola della catena lunga risponde con la parità. Su un tabellone di m righe e n colonne di quadrati: se m e n sono entrambi pari, chi inizia deve giocare perché il numero di catene lunghe sia dispari; se m o n è dispari, perché sia pari. Gli anelli non contano come catene lunghe. <sup><a href="#ref-7-it">[7]</a></sup></p>
+<ul>
+<li>Sul 5 × 5, chi inizia vuole un numero <strong>pari</strong> di catene lunghe; il secondo giocatore ne vuole un numero dispari.</li>
+<li>Sul 4 × 4, 6 × 6, 8 × 8 e 10 × 10, chi inizia vuole un numero <strong>dispari</strong>.</li>
+<li>A metà partita, le linee sicure che scegli possono unire o separare le catene. È lì che si combatte per la parità.</li>
+</ul>
+<p>L’app mostra questa indicazione nel pannello <strong>Partita</strong>. Il computer dell’app non pianifica la parità a metà partita: usa il doppio rifiuto e il calcolo della fine, ma sceglie le linee sicure a caso.</p>
+<a class="back" href="#top">↑ Torna su</a>
+</section>
+<section id="computador-it" aria-labelledby="h-computador-it">
+<h2 id="h-computador-it">Cosa mostra il computer dell’app</h2>
+<p>I tre livelli seguono regole semplici e verificabili:</p>
+<ul>
+<li><strong>Facile:</strong> chiude i quadrati quando può, quasi sempre, ma spesso dà il terzo lato.</li>
+<li><strong>Medio:</strong> chiude tutto ciò che può, gioca solo linee sicure e, quando finiscono, gioca la linea che regala meno quadrati.</li>
+<li><strong>Difficile:</strong> fa ciò che fa il medio, rifiuta gli ultimi due di una catena quando il conto della fine dice che conviene, regala le coppie dal centro e, con 18 linee libere o meno e due giocatori, calcola tutte le sequenze fino alla fine e sceglie la migliore.</li>
+</ul>
+<p>Con 3 o 4 giocatori, il difficile usa le stesse regole, pensate per due. Per misurare la differenza tra i livelli, ho fatto giocare il computer contro se stesso.</p>
+<figure>
+<img src="rc_images/PontinhosResultados-it.svg" alt="Barre orizzontali con i risultati delle partite tra livelli del computer. 3 × 3: difficile vince 91,0%, pareggi 0,0%, medio vince 9,0%; 3 × 3: medio vince 88,0%, pareggi 0,0%, facile vince 12,0%; 5 × 5: difficile vince 92,0%, pareggi 0,0%, medio vince 8,0%; 5 × 5: medio vince 98,0%, pareggi 0,0%, facile vince 2,0%; 8 × 8: difficile vince 77,5%, pareggi 2,5%, medio vince 20,0%." width="1000" height="408" loading="lazy">
+<figcaption>Il difficile batte il medio con ampio margine sui tabelloni piccoli; sul 8 × 8 il vantaggio si riduce.</figcaption>
+</figure>
+<div class="table-wrap"><table>
+<thead><tr><th>Tabellone</th><th>Partita</th><th>Partite</th><th>Vince sinistra</th><th>Pareggi</th><th>Vince destra</th></tr></thead>
+<tbody>
+<tr><td>3 × 3</td><td>difficile × medio</td><td>200</td><td>91,0%</td><td>0,0%</td><td>9,0%</td></tr>
+<tr><td>3 × 3</td><td>medio × facile</td><td>200</td><td>88,0%</td><td>0,0%</td><td>12,0%</td></tr>
+<tr><td>5 × 5</td><td>difficile × medio</td><td>200</td><td>92,0%</td><td>0,0%</td><td>8,0%</td></tr>
+<tr><td>5 × 5</td><td>medio × facile</td><td>200</td><td>98,0%</td><td>0,0%</td><td>2,0%</td></tr>
+<tr><td>8 × 8</td><td>difficile × medio</td><td>40</td><td>77,5%</td><td>2,5%</td><td>20,0%</td></tr>
+</tbody></table></div>
+<p><strong>Come è stato misurato.</strong> Ogni riga usa i semi da 1 a 200 (da 1 a 40 sul 8 × 8), e ogni livello inizia metà delle partite. Le partite sono state giocate in Chromium, con la stessa funzione di mossa dell’app. Sono numeri di una simulazione: misurano questo computer contro se stesso, non le persone. In un test più piccolo, di 30 partite sul 15 × 15, il difficile ha battuto il medio nel 56,7%: sui tabelloni grandi, la fine della partita ha forme che le regole del difficile non scompongono. La mossa più lenta del difficile ha richiesto 0,4 secondi su un computer fisso; i telefoni più lenti possono metterci di più.</p>
+<a class="back" href="#top">↑ Torna su</a>
+</section>
+<section id="erros-it" aria-labelledby="h-erros-it">
+<h2 id="h-erros-it">Errori comuni</h2>
+<ul class="myths">
+<li><h3>«Chiudere un quadrato conviene sempre.»</h3><p>A metà partita, sì. Alla fine, prendere tutti i quadrati di una catena può costringerti ad aprire la catena lunga successiva. A volte lasciarne due vale di più.</p></li>
+<li><h3>«Se non c’è una linea sicura, è uguale.»</h3><p>No. Regala il pezzo più piccolo, e una catena di due dal centro. La differenza può essere di vari quadrati.</p></li>
+<li><h3>«Chi è in vantaggio a metà partita vincerà.»</h3><p>I quadrati della fine arrivano in catene, spesso lunghe. Chi ha il controllo può ribaltare il punteggio in un colpo.</p></li>
+<li><h3>«Dopo aver chiuso, il turno passa.»</h3><p>Con la regola comune, chi chiude gioca ancora e deve tracciare un’altra linea. Solo nella variante il turno passa sempre.</p></li>
+<li><h3>«Le linee in diagonale valgono.»</h3><p>No. Solo linee orizzontali o verticali tra punti vicini.</p></li>
+</ul>
+<a class="back" href="#top">↑ Torna su</a>
+</section>
+<section id="glossario-it" aria-labelledby="h-glossario-it">
+<h2 id="h-glossario-it">Glossario</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Termine</th><th>Significato</th></tr></thead>
+<tbody>
+<tr><td>Anello</td><td>Catena che si richiude su se stessa, senza estremità.</td></tr>
+<tr><td>Catena</td><td>Gruppo di quadrati vicini in cui qualsiasi linea li regala tutti all’avversario.</td></tr>
+<tr><td>Catena lunga</td><td>Catena di tre o più quadrati.</td></tr>
+<tr><td>Controllo</td><td>Situazione di chi fa aprire all’avversario le catene lunghe.</td></tr>
+<tr><td>Doppio rifiuto</td><td>Prendere tutti i quadrati di una catena tranne gli ultimi due, lasciandoli all’avversario; in inglese, <em>double-cross</em>.</td></tr>
+<tr><td>Linea sicura</td><td>Linea che non dà il terzo lato a nessun quadrato.</td></tr>
+<tr><td>Pipopipette</td><td>Nome che Édouard Lucas diede al gioco nel 1889.</td></tr>
+<tr><td>Regalo dal centro</td><td>Aprire una catena di due con la linea centrale, perché non si possa rifiutare.</td></tr>
+<tr><td>Regola della catena lunga</td><td>Regola di parità che dice quante catene lunghe vuole ogni giocatore, secondo la dimensione del tabellone.</td></tr>
+<tr><td>Seme</td><td>Numero che stabilisce le scelte del computer nell’app.</td></tr>
+</tbody></table></div>
+<a class="back" href="#top">↑ Torna su</a>
+</section>
+<section id="revisao-it" aria-labelledby="h-revisao-it">
+<h2 id="h-revisao-it">Ripasso veloce</h2>
+<div class="quiz">
+<details><summary>1. Quante linee ha un tabellone di 3 × 3 quadrati?</summary><p>24: 4 file di 3 linee orizzontali e 3 file di 4 linee verticali.</p></details>
+<details><summary>2. Cosa succede quando chiudi un quadrato?</summary><p>Ci scrivi la tua iniziale e giochi ancora, tracciando un’altra linea.</p></details>
+<details><summary>3. Perché evitare il terzo lato di un quadrato?</summary><p>Perché il giocatore successivo chiude il quadrato e gioca ancora.</p></details>
+<details><summary>4. L’avversario ha aperto una catena di 5, e dopo restano solo catene lunghe. Cosa fai?</summary><p>Ne prendi 3 e lasci gli ultimi 2: l’avversario li chiude e deve aprire la catena successiva.</p></details>
+<details><summary>5. Perché regalare una catena di due dal centro?</summary><p>Perché così ogni quadrato si chiude con una linea diversa, e l’avversario non può rifiutarli entrambi per tenere il controllo.</p></details>
+<details><summary>6. Sul 5 × 5, chi inizia vuole un numero pari o dispari di catene lunghe?</summary><p>Pari, perché 5 è dispari. Sul 4 × 4, dispari.</p></details>
+<details><summary>7. Gli anelli contano nella regola della catena lunga?</summary><p>No. Solo le catene di tre o più quadrati.</p></details>
+<details><summary>8. A cosa serve il seme nell’app?</summary><p>Ripete le scelte del computer. Con lo stesso seme e le stesse mosse, la partita viene uguale.</p></details>
+</div>
+<a class="back" href="#top">↑ Torna su</a>
+</section>
+<section id="referencias-it" aria-labelledby="h-referencias-it">
+<h2 id="h-referencias-it">Riferimenti</h2>
+<ol class="refs">
+<li id="ref-1-it"><strong>Giovani Perotto Mesquita</strong>, “Pontinhos”, gioco di questo sito, <a href="Pontinhos.html#it">giovanipm.github.io/Pontinhos.html</a>.</li>
+<li id="ref-2-it"><strong>Wikipédia</strong>, “Timbiriche (jogo)”, consultato il 20/11/2026, <a href="https://pt.wikipedia.org/wiki/Timbiriche_(jogo)" rel="noopener">pt.wikipedia.org/wiki/Timbiriche_(jogo)</a>.</li>
+<li id="ref-3-it"><strong>Wikipedia</strong>, “Dots and boxes”, consultato il 20/11/2026, <a href="https://en.wikipedia.org/wiki/Dots_and_boxes" rel="noopener">en.wikipedia.org/wiki/Dots_and_boxes</a>. Tratta la storia, le regole, le catene, il doppio rifiuto e il controllo; cita Berlekamp (2000) e Lucas, <em>L’arithmétique amusante</em> (1895), pp. 204–209.</li>
+<li id="ref-4-it"><strong>Wikipédia</strong>, “La Pipopipette”, consultato il 20/11/2026, <a href="https://fr.wikipedia.org/wiki/La_Pipopipette" rel="noopener">fr.wikipedia.org/wiki/La_Pipopipette</a>.</li>
+<li id="ref-5-it"><strong>Wikipedia</strong>, “Timbiriche (juego)”, consultato il 20/11/2026, <a href="https://es.wikipedia.org/wiki/Timbiriche_(juego)" rel="noopener">es.wikipedia.org/wiki/Timbiriche_(juego)</a>. La frase sul tabellone più comune è segnata come priva di fonte nella pagina stessa.</li>
+<li id="ref-6-it"><strong>Wikipedia</strong>, “Punti e linee”, consultato il 20/11/2026, <a href="https://it.wikipedia.org/wiki/Punti_e_linee" rel="noopener">it.wikipedia.org/wiki/Punti_e_linee</a>.</li>
+<li id="ref-7-it"><strong>UCLA Mathematics</strong>, “Dots and Boxes hints”, consultato il 20/11/2026, <a href="https://www.math.ucla.edu/~tom/Games/dots&amp;boxes_hints.html" rel="noopener">math.ucla.edu/~tom/Games/dots&amp;boxes_hints.html</a>. Enuncia la regola della catena lunga e definisce catena lunga una di tre o più quadrati.</li>
+<li id="ref-8-it"><strong>Elwyn Berlekamp</strong>, <em>The Dots-and-Boxes Game: Sophisticated Child’s Play</em>, A K Peters, 2000. Non consultato direttamente; citato dai riferimenti 3 e 6.</li>
+</ol>
+<a class="back" href="#top">↑ Torna su</a>
+</section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== ES ===================== -->
+<div id="es" role="tabpanel" aria-labelledby="tab-es" lang="es" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html#es" data-projects>← Proyectos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Timbiriche: tutorial del juego de unir puntos</h1>
+      <p class="dek">La historia de la Pipopipette de Édouard Lucas, las reglas, cómo jugar en la app en tableros de varios tamaños y las ideas que deciden la partida: cadenas, doble rechazo y regla de la cadena larga.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado el <time datetime="2026-11-20">20/11/2026</time></span>
+        <span class="credit">Revisado y formateado con Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-es">
+    <h2 id="toc-es">Índice</h2>
+    <ol>
+      <li><a href="#intro-es">El juego</a></li>
+      <li><a href="#historia-es">Un poco de historia</a></li>
+      <li><a href="#regras-es">Las reglas</a></li>
+      <li><a href="#app-es">Cómo jugar en la app</a></li>
+      <li><a href="#estrategia-es">Estrategia</a></li>
+      <li><a href="#computador-es">Lo que muestra el ordenador de la app</a></li>
+      <li><a href="#erros-es">Errores comunes</a></li>
+      <li><a href="#glossario-es">Glosario</a></li>
+      <li><a href="#revisao-es">Repaso rápido</a></li>
+      <li><a href="#referencias-es">Referencias</a></li>
+    </ol>
+  </nav>
+
+  <article>
+<section id="intro-es" aria-labelledby="h-intro-es">
+<h2 id="h-intro-es">El juego</h2>
+<p>Timbiriche es un juego de lápiz y papel. Empieza con una cuadrícula de puntos. En tu turno, unes dos puntos vecinos con una línea. Quien traza el cuarto lado de un cuadrado escribe en él su inicial y juega otra vez. Cuando no queda ninguna línea, gana quien tenga más cuadrados. <sup><a href="#ref-2-es">[2]</a></sup></p>
+<p>La app de este sitio juega Timbiriche en tableros de 2 × 2 a 15 × 15 cuadrados, con 2 a 4 jugadores, cada uno persona u ordenador en tres niveles. <sup><a href="#ref-1-es">[1]</a></sup> Es un único archivo HTML, que funciona sin internet y en cuatro idiomas.</p>
+<p><a class="launch" href="Pontinhos.html#es">Abrir el juego <span aria-hidden="true">→</span></a></p>
+<figure>
+<img src="rc_images/PontinhosPartida-es.png" alt="Pantalla del juego en un tablero de 5 por 5 cuadrados: Ana, persona, tiene 5 cuadrados marcados con la letra A en la columna de la izquierda; el Ordenador, nivel difícil, tiene 1 cuadrado marcado con O en la esquina de abajo. Una línea sugerida por la pista aparece en verde agua, la última línea trazada está en naranja, y el panel de al lado muestra el tamaño, la regla, las líneas trazadas y el historial" width="1100" height="860" loading="lazy">
+<figcaption>Partida en el 5 × 5 contra el ordenador difícil, con la pista activada.</figcaption>
+</figure>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+<section id="historia-es" aria-labelledby="h-historia-es">
+<h2 id="h-historia-es">Un poco de historia</h2>
+<p>El juego fue publicado en 1889 por el matemático francés Édouard Lucas, con el nombre de <em>La Pipopipette</em>. <sup><a href="#ref-2-es">[2]</a></sup> <sup><a href="#ref-5-es">[5]</a></sup> Según la Wikipedia en francés, Lucas lo describió en el libro <em>Jeux scientifiques pour servir à l’histoire, à l’enseignement et à la pratique du calcul et du dessin</em> y atribuyó la invención a sus alumnos de la École polytechnique. <sup><a href="#ref-4-es">[4]</a></sup></p>
+<h3>Un juego, muchos nombres</h3>
+<ul>
+<li><strong>Portugués:</strong> Pontinhos o Timbiriche. <sup><a href="#ref-2-es">[2]</a></sup></li>
+<li><strong>Inglés:</strong> <em>Dots and Boxes</em>, y también <em>boxes</em>, <em>dots and dashes</em> y <em>pigs in a pen</em> (cerdos en el corral). <sup><a href="#ref-3-es">[3]</a></sup></li>
+<li><strong>Español:</strong> Timbiriche, además de nombres regionales como <em>puntitos</em>, <em>cuadritos</em> y <em>el juego de los cuadraditos</em>. <sup><a href="#ref-5-es">[5]</a></sup></li>
+<li><strong>Italiano:</strong> <em>Punti e linee</em>. <sup><a href="#ref-6-es">[6]</a></sup></li>
+</ul>
+<h3>Juego de niños, tema de matemáticos</h3>
+<p>El matemático Elwyn Berlekamp escribió un libro entero sobre la estrategia del juego, <em>The Dots-and-Boxes Game: Sophisticated Child’s Play</em> (“un juego de niños sofisticado”), publicado en 2000, y ya lo había tratado en un capítulo de <em>Winning Ways for your Mathematical Plays</em>, con John Conway y Richard Guy. <sup><a href="#ref-3-es">[3]</a></sup> <sup><a href="#ref-8-es">[8]</a></sup> La Wikipedia en inglés registra que jugar de forma óptima es un problema PSPACE-completo: en la práctica, no se conoce un atajo para calcular la mejor jugada en tableros grandes. <sup><a href="#ref-3-es">[3]</a></sup></p>
+<blockquote><p><strong>Discrepancias entre las fuentes.</strong> La fecha de 1889 está en las Wikipedias en portugués, español y francés; la de inglés solo dice “siglo XIX” y cita un texto de Lucas de 1895, <em>L’arithmétique amusante</em>. Solo la Wikipedia en francés atribuye la invención a los alumnos de Lucas. Sobre el tamaño clásico, la Wikipedia en inglés dice que 2 × 2 cuadrados sirve para aprender y 5 × 5 cuadrados es bueno para expertos; la de español dice que el más común y estudiado es el de 5 por 5 <em>puntos</em> (4 × 4 cuadrados), en una frase marcada como sin fuente. <sup><a href="#ref-2-es">[2]</a></sup> <sup><a href="#ref-3-es">[3]</a></sup> <sup><a href="#ref-4-es">[4]</a></sup> <sup><a href="#ref-5-es">[5]</a></sup></p></blockquote>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+<section id="regras-es" aria-labelledby="h-regras-es">
+<h2 id="h-regras-es">Las reglas</h2>
+<figure>
+<img src="rc_images/PontinhosRegras-es.svg" alt="Tres tableros de 2 por 2 cuadrados. En el primero se acaba de trazar una línea entre dos puntos vecinos, resaltada en naranja. En el segundo, el cuadrado de la esquina tiene tres lados trazados y el cuarto lado aparece discontinuo: quien juegue después puede cerrarlo. En el tercero, Ana trazó el cuarto lado: el cuadrado recibe la inicial A y Ana juega otra vez." width="1000" height="400" loading="lazy">
+<figcaption>Una línea por vez; quien cierra un cuadrado escribe su inicial y juega otra vez.</figcaption>
+</figure>
+<ul>
+<li>Un tablero de R × C cuadrados tiene (R + 1) × (C + 1) puntos. En la app, el 5 × 5 tiene 36 puntos y 60 líneas posibles.</li>
+<li>En tu turno, traza una línea horizontal o vertical entre dos puntos vecinos que aún no estén unidos. Las líneas diagonales no valen. <sup><a href="#ref-5-es">[5]</a></sup></li>
+<li>Quien completa el cuarto lado de un cuadrado escribe en él su inicial y juega otra vez. <sup><a href="#ref-2-es">[2]</a></sup> <sup><a href="#ref-3-es">[3]</a></sup> Una sola línea puede cerrar dos cuadrados vecinos a la vez.</li>
+<li>Jugar otra vez no es opcional: después de cerrar, trazas otra línea, aunque entregue cuadrados al rival.</li>
+<li>La partida termina cuando todas las líneas están trazadas. Gana quien tenga más cuadrados. Con un número par de cuadrados, puede haber empate.</li>
+</ul>
+<h3>Variante: el turno siempre pasa</h3>
+<p>La Wikipedia en italiano registra una variante en la que quien cierra un cuadrado no juega otra vez: el turno siempre pasa. <sup><a href="#ref-6-es">[6]</a></sup> En la app, desmarca <strong>Quien cierra un cuadrado juega otra vez</strong>. En esta variante, las estrategias de cadenas de esta página dejan de valer, y el ordenador difícil no hace dobles rechazos.</p>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+<section id="app-es" aria-labelledby="h-app-es">
+<h2 id="h-app-es">Cómo jugar en la app</h2>
+<h3>1. Prepara la partida</h3>
+<p>En la primera visita, la app abre la ventana <strong>Nueva partida</strong>. Elige el tamaño del tablero, arma de 2 a 4 jugadores y decide la regla. Cada jugador puede ser <strong>Persona</strong> u <strong>Ordenador</strong> fácil, medio o difícil. Las personas juegan en el mismo dispositivo, una por vez.</p>
+<figure>
+<img src="rc_images/PontinhosConfiguracao-es.png" alt="Ventana Nueva partida con ocho opciones de tamaño, de 2 por 2 a 10 por 10 y Personalizado, con el 5 por 5 marcado; el recuento de 25 cuadrados, 36 puntos y 60 líneas; los jugadores Ana, persona, y Ordenador, nivel difícil, cada uno con su inicial de color; la opción Quien cierra un cuadrado juega otra vez marcada; el campo Semilla con 2026 y el botón Empezar" width="660" height="782" loading="lazy">
+<figcaption>La ventana de configuración: tamaño, jugadores, regla y semilla.</figcaption>
+</figure>
+<div class="table-wrap"><table>
+<thead><tr><th>Tablero</th><th>Cuadrados</th><th>Puntos</th><th>Líneas</th><th>Quien empieza quiere un número de cadenas largas</th></tr></thead>
+<tbody>
+<tr><td>2 × 2</td><td>4</td><td>9</td><td>12</td><td>impar</td></tr>
+<tr><td>3 × 3</td><td>9</td><td>16</td><td>24</td><td>par</td></tr>
+<tr><td>4 × 4</td><td>16</td><td>25</td><td>40</td><td>impar</td></tr>
+<tr><td>5 × 5</td><td>25</td><td>36</td><td>60</td><td>par</td></tr>
+<tr><td>6 × 6</td><td>36</td><td>49</td><td>84</td><td>impar</td></tr>
+<tr><td>8 × 8</td><td>64</td><td>81</td><td>144</td><td>impar</td></tr>
+<tr><td>10 × 10</td><td>100</td><td>121</td><td>220</td><td>impar</td></tr>
+<tr><td>15 × 15 (Personalizado, máximo)</td><td>225</td><td>256</td><td>480</td><td>par</td></tr>
+</tbody></table></div>
+<p>La última columna es la regla de la cadena larga, explicada en <a href="#estrategia-es">Estrategia</a>. En <strong>Personalizado</strong>, elige de 1 a 15 filas y columnas, por ejemplo 3 × 7. Las iniciales salen de los nombres; si dos nombres empiezan con la misma letra, la app usa dos letras, como AS para Ana Souza y AL para Ana Lima.</p>
+<p>La <strong>semilla</strong> fija las elecciones del ordenador cuando tiene más de una jugada igual de buena. Con la misma semilla y las mismas jugadas, la partida se repite igual. En blanco, la app sortea una, que aparece debajo del historial.</p>
+<h3>2. Traza las líneas</h3>
+<ol>
+<li>Pasa el ratón entre dos puntos: la línea posible aparece punteada. Haz clic o toca para trazarla.</li>
+<li>La última línea trazada queda en naranja. Un cuadrado cerrado toma el color y la inicial de quien lo cerró.</li>
+<li>Encima del tablero, una frase dice a quién le toca y qué pasó, como “Ana cerró 1 cuadrado y juega otra vez”. El marcador destaca quién juega ahora.</li>
+</ol>
+<h3>3. Pista y deshacer</h3>
+<ul>
+<li><strong>💡 Pista</strong> marca una línea parpadeante y explica el motivo: cierra un cuadrado, es segura, entrega lo mínimo, rechaza los dos últimos de una cadena o es la mejor calculando el final. La pista usa el mismo razonamiento del ordenador difícil.</li>
+<li><strong>↶ Deshacer</strong> vuelve a antes de tu última línea y borra también las respuestas del ordenador. Entre personas, vuelve una línea por vez.</li>
+</ul>
+<h3>4. Teclado</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>Tecla</th><th>Qué hace</th></tr></thead>
+<tbody>
+<tr><td>Tab</td><td>Llega al tablero.</td></tr>
+<tr><td>Flechas</td><td>Mueven el cursor dorado entre las líneas libres. El lector de pantalla anuncia la línea y si cierra un cuadrado, es segura o da el tercer lado.</td></tr>
+<tr><td>Enter o Espacio</td><td>Traza la línea del cursor.</td></tr>
+<tr><td>P</td><td>Muestra la pista.</td></tr>
+<tr><td>Ctrl+Z</td><td>Deshace.</td></tr>
+</tbody></table></div>
+<h3>5. Fin de la partida</h3>
+<figure>
+<img src="rc_images/PontinhosFim-es.png" alt="Ventana Fin de la partida sobre el tablero lleno: Ana ganó con 22 cuadrados; la clasificación muestra a Ana, persona, con 22 cuadrados y al Ordenador, difícil, con 3; debajo, el tablero, la semilla 2026 y los botones Cerrar, Cambiar configuración y Jugar otra vez" width="1100" height="860" loading="lazy">
+<figcaption>Fin de la partida: Jugar otra vez repite la configuración con otra semilla, y empieza el siguiente jugador.</figcaption>
+</figure>
+<p>La partida queda guardada en el navegador: cierra la página y ábrela de nuevo para seguir. El panel <strong>Partida</strong>, junto al tablero, muestra el tamaño, la regla, cuántas líneas se trazaron y, en partidas de dos jugadores, la paridad que la regla de la cadena larga recomienda a quien empezó. El selector de arriba cambia el idioma, y el botón ◐ alterna los temas claro y oscuro.</p>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+<section id="estrategia-es" aria-labelledby="h-estrategia-es">
+<h2 id="h-estrategia-es">Estrategia</h2>
+<h3>1. No des el tercer lado</h3>
+<p>Para quien empieza, la única estrategia es evitar trazar el tercer lado de un cuadrado. <sup><a href="#ref-3-es">[3]</a></sup> Un cuadrado con tres lados es un regalo: el siguiente jugador lo cierra y juega otra vez. Las líneas que no dan el tercer lado a ningún cuadrado son <strong>seguras</strong>. Al principio de la partida casi todas lo son.</p>
+<h3>2. Cadenas y ciclos</h3>
+<p>Las líneas seguras se acaban. A partir de ahí, toda línea entrega cuadrados, y el tablero se divide en <strong>cadenas</strong>: grupos de cuadrados vecinos en los que cualquier jugada los da todos al rival. <sup><a href="#ref-3-es">[3]</a></sup> Una cadena de tres cuadrados o más es una <strong>cadena larga</strong>. <sup><a href="#ref-7-es">[7]</a></sup> Cuando la cadena se cierra sobre sí misma, sin extremos, es un <strong>ciclo</strong>.</p>
+<figure>
+<img src="rc_images/PontinhosCadeias-es.svg" alt="Tablero de 2 por 5 cuadrados sin ninguna línea segura: cada cuadrado libre tiene dos lados trazados. Los cuadrados forman cuatro piezas: a, un ciclo de 4 cuadrados a la izquierda; b, una cadena larga de 3 cuadrados en la fila de arriba; c, una cadena de 2 cuadrados abajo; y d, una cadena de 1 cuadrado en la esquina. Cualquier línea trazada entrega una de estas piezas." width="1000" height="420" loading="lazy">
+<figcaption>Sin línea segura, el tablero se convierte en un conjunto de piezas. Quien juega tiene que entregar una.</figcaption>
+</figure>
+<p>Cuando estés obligado a entregar, entrega la pieza más pequeña. Una cadena de 1 cuesta un cuadrado; una cadena larga puede costar la partida.</p>
+<h3>3. El doble rechazo: toma todos menos dos</h3>
+<p>Cuando el rival abre una cadena larga, lo natural es tomar todos los cuadrados. Pero quien cierra juega otra vez y, si no quedó ninguna línea segura, tiene que abrir la siguiente cadena. La salida es tomar todos menos los dos últimos y trazar la línea del extremo: los dos cuadrados que quedan son para el rival, que los cierra con una sola línea y después tiene que abrir la siguiente cadena. <sup><a href="#ref-3-es">[3]</a></sup> En inglés, la jugada se llama <em>double-cross</em> o <em>double-dealing</em>.</p>
+<figure>
+<img src="rc_images/PontinhosRecusa-es.svg" alt="Tres dibujos de la misma cadena de 4 cuadrados. En el primero, el rival acaba de abrir la cadena por el extremo izquierdo. En el segundo, Ana toma los cuatro cuadrados, pero después tiene que trazar otra línea y abrir la siguiente cadena. En el tercero, Ana toma dos cuadrados y traza la línea del extremo derecho: los dos últimos cuadrados tienen tres lados y una línea del medio cierra los dos a la vez; el rival, Bruno, se lleva esos dos y tiene que abrir la siguiente cadena." width="1000" height="330" loading="lazy">
+<figcaption>Tomar todo da 4 cuadrados ahora; dejar dos cuesta 2, pero obliga al rival a abrir la siguiente cadena.</figcaption>
+</figure>
+<p>Quien consigue que el rival abra la primera cadena larga tiene el <strong>control</strong> y, con cadenas lo bastante largas, gana. <sup><a href="#ref-3-es">[3]</a></sup> El doble rechazo cuesta dos cuadrados por cadena; en un ciclo, la misma idea cuesta cuatro, porque quedan dos pares. Por eso solo compensa cuando lo que viene después vale más. El ordenador difícil hace esa cuenta antes de rechazar.</p>
+<h3>4. Entrega los pares por el medio</h3>
+<figure>
+<img src="rc_images/PontinhosEntrega-es.svg" alt="Dos dibujos de una cadena de 2 cuadrados. A la izquierda, la cadena se abrió por un extremo: solo el primer cuadrado tiene tres lados, y quien la recibe puede rechazar los dos trazando el otro extremo. A la derecha, la cadena se abrió con la línea del medio: los dos cuadrados tienen tres lados, cada uno cerrado por una línea distinta, y no se pueden rechazar los dos con una sola jugada." width="1000" height="380" loading="lazy">
+<figcaption>La misma entrega de dos cuadrados, con consecuencias distintas.</figcaption>
+</figure>
+<p>Si tienes que entregar una cadena de dos, traza la línea del medio. Por el extremo, el rival puede rechazar los dos y mantener el control. Por el medio, cada cuadrado se cierra con una línea distinta, y el doble rechazo deja de ser posible.</p>
+<h3>5. La regla de la cadena larga</h3>
+<p>¿Quién tendrá el control al final? Para dos jugadores, la regla de la cadena larga responde con la paridad. En un tablero de m filas y n columnas de cuadrados: si m y n son pares, quien empieza debe jugar para que el número de cadenas largas sea impar; si m o n es impar, para que sea par. Los ciclos no cuentan como cadenas largas. <sup><a href="#ref-7-es">[7]</a></sup></p>
+<ul>
+<li>En el 5 × 5, quien empieza quiere un número <strong>par</strong> de cadenas largas; el segundo jugador quiere un número impar.</li>
+<li>En el 4 × 4, 6 × 6, 8 × 8 y 10 × 10, quien empieza quiere un número <strong>impar</strong>.</li>
+<li>En la mitad de la partida, las líneas seguras que eliges pueden unir o separar cadenas. Ahí se disputa la paridad.</li>
+</ul>
+<p>La app muestra esta recomendación en el panel <strong>Partida</strong>. El ordenador de la app no planifica la paridad en la mitad de la partida: usa el doble rechazo y el cálculo del final, pero elige las líneas seguras al azar.</p>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+<section id="computador-es" aria-labelledby="h-computador-es">
+<h2 id="h-computador-es">Lo que muestra el ordenador de la app</h2>
+<p>Los tres niveles siguen reglas simples y comprobables:</p>
+<ul>
+<li><strong>Fácil:</strong> cierra cuadrados cuando puede, casi siempre, pero a menudo da el tercer lado.</li>
+<li><strong>Medio:</strong> cierra todo lo que puede, juega solo líneas seguras y, cuando se acaban, juega la línea que entrega menos cuadrados.</li>
+<li><strong>Difícil:</strong> hace lo mismo que el medio, rechaza los dos últimos de una cadena cuando la cuenta del final dice que compensa, entrega los pares por el medio y, con 18 líneas libres o menos y dos jugadores, calcula todas las secuencias hasta el final y elige la mejor.</li>
+</ul>
+<p>Con 3 o 4 jugadores, el difícil usa las mismas reglas, pensadas para dos. Para medir la diferencia entre los niveles, puse al ordenador a jugar contra sí mismo.</p>
+<figure>
+<img src="rc_images/PontinhosResultados-es.svg" alt="Barras horizontales con el resultado de partidas entre niveles del ordenador. 3 × 3: difícil gana 91,0%, empates 0,0%, medio gana 9,0%; 3 × 3: medio gana 88,0%, empates 0,0%, fácil gana 12,0%; 5 × 5: difícil gana 92,0%, empates 0,0%, medio gana 8,0%; 5 × 5: medio gana 98,0%, empates 0,0%, fácil gana 2,0%; 8 × 8: difícil gana 77,5%, empates 2,5%, medio gana 20,0%." width="1000" height="408" loading="lazy">
+<figcaption>El difícil gana al medio con holgura en los tableros pequeños; en el 8 × 8 la ventaja se reduce.</figcaption>
+</figure>
+<div class="table-wrap"><table>
+<thead><tr><th>Tablero</th><th>Partida</th><th>Partidas</th><th>Gana la izquierda</th><th>Empates</th><th>Gana la derecha</th></tr></thead>
+<tbody>
+<tr><td>3 × 3</td><td>difícil × medio</td><td>200</td><td>91,0%</td><td>0,0%</td><td>9,0%</td></tr>
+<tr><td>3 × 3</td><td>medio × fácil</td><td>200</td><td>88,0%</td><td>0,0%</td><td>12,0%</td></tr>
+<tr><td>5 × 5</td><td>difícil × medio</td><td>200</td><td>92,0%</td><td>0,0%</td><td>8,0%</td></tr>
+<tr><td>5 × 5</td><td>medio × fácil</td><td>200</td><td>98,0%</td><td>0,0%</td><td>2,0%</td></tr>
+<tr><td>8 × 8</td><td>difícil × medio</td><td>40</td><td>77,5%</td><td>2,5%</td><td>20,0%</td></tr>
+</tbody></table></div>
+<p><strong>Cómo se midió.</strong> Cada fila usa las semillas 1 a 200 (1 a 40 en el 8 × 8), y cada nivel empieza la mitad de las partidas. Las partidas se jugaron en Chromium, con la misma función de jugada de la app. Son números de una simulación: miden este ordenador contra sí mismo, no a personas. En una prueba más pequeña, de 30 partidas en el 15 × 15, el difícil ganó al medio en el 56,7%: en los tableros grandes, el final tiene formas que las reglas del difícil no descomponen. La jugada más lenta del difícil tardó 0,4 segundos en un ordenador de escritorio; los móviles más lentos pueden tardar más.</p>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+<section id="erros-es" aria-labelledby="h-erros-es">
+<h2 id="h-erros-es">Errores comunes</h2>
+<ul class="myths">
+<li><h3>«Cerrar un cuadrado siempre conviene.»</h3><p>En la mitad de la partida, sí. Al final, tomar todos los cuadrados de una cadena puede obligarte a abrir la siguiente cadena larga. A veces, dejar dos vale más.</p></li>
+<li><h3>«Si no hay línea segura, da igual.»</h3><p>No. Entrega la pieza más pequeña, y una cadena de dos por el medio. La diferencia puede ser de varios cuadrados.</p></li>
+<li><h3>«Quien va ganando a mitad de partida va a ganar.»</h3><p>Los cuadrados del final vienen en cadenas, muchas veces largas. Quien tiene el control puede dar vuelta el marcador de una vez.</p></li>
+<li><h3>«Después de cerrar, el turno pasa.»</h3><p>Con la regla común, quien cierra juega otra vez y tiene que trazar otra línea. Solo en la variante el turno pasa siempre.</p></li>
+<li><h3>«Las líneas en diagonal valen.»</h3><p>No. Solo líneas horizontales o verticales entre puntos vecinos.</p></li>
+</ul>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+<section id="glossario-es" aria-labelledby="h-glossario-es">
+<h2 id="h-glossario-es">Glosario</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Término</th><th>Significado</th></tr></thead>
+<tbody>
+<tr><td>Cadena</td><td>Grupo de cuadrados vecinos en el que cualquier línea los entrega todos al rival.</td></tr>
+<tr><td>Cadena larga</td><td>Cadena de tres cuadrados o más.</td></tr>
+<tr><td>Ciclo</td><td>Cadena que se cierra sobre sí misma, sin extremos.</td></tr>
+<tr><td>Control</td><td>Situación de quien hace que el rival abra las cadenas largas.</td></tr>
+<tr><td>Doble rechazo</td><td>Tomar todos los cuadrados de una cadena menos los dos últimos y dejárselos al rival; en inglés, <em>double-cross</em>.</td></tr>
+<tr><td>Entrega por el medio</td><td>Abrir una cadena de dos por la línea del medio, para que no se pueda rechazar.</td></tr>
+<tr><td>Línea segura</td><td>Línea que no da el tercer lado a ningún cuadrado.</td></tr>
+<tr><td>Pipopipette</td><td>Nombre que Édouard Lucas dio al juego en 1889.</td></tr>
+<tr><td>Regla de la cadena larga</td><td>Regla de paridad que dice cuántas cadenas largas quiere cada jugador, según el tamaño del tablero.</td></tr>
+<tr><td>Semilla</td><td>Número que fija las elecciones del ordenador en la app.</td></tr>
+</tbody></table></div>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+<section id="revisao-es" aria-labelledby="h-revisao-es">
+<h2 id="h-revisao-es">Repaso rápido</h2>
+<div class="quiz">
+<details><summary>1. ¿Cuántas líneas tiene un tablero de 3 × 3 cuadrados?</summary><p>24: 4 filas de 3 líneas horizontales y 3 filas de 4 líneas verticales.</p></details>
+<details><summary>2. ¿Qué pasa cuando cierras un cuadrado?</summary><p>Escribes en él tu inicial y juegas otra vez, trazando otra línea.</p></details>
+<details><summary>3. ¿Por qué evitar el tercer lado de un cuadrado?</summary><p>Porque el siguiente jugador cierra el cuadrado y además juega otra vez.</p></details>
+<details><summary>4. El rival abrió una cadena de 5, y después solo quedan cadenas largas. ¿Qué haces?</summary><p>Tomas 3 y dejas los 2 últimos: el rival cierra esos dos y tiene que abrir la siguiente cadena.</p></details>
+<details><summary>5. ¿Por qué entregar una cadena de dos por el medio?</summary><p>Porque así cada cuadrado se cierra con una línea distinta, y el rival no puede rechazar los dos para mantener el control.</p></details>
+<details><summary>6. En el 5 × 5, ¿quien empieza quiere un número par o impar de cadenas largas?</summary><p>Par, porque 5 es impar. En el 4 × 4, impar.</p></details>
+<details><summary>7. ¿Los ciclos cuentan en la regla de la cadena larga?</summary><p>No. Solo las cadenas de tres cuadrados o más.</p></details>
+<details><summary>8. ¿Para qué sirve la semilla en la app?</summary><p>Repite las elecciones del ordenador. Con la misma semilla y las mismas jugadas, la partida sale igual.</p></details>
+</div>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+<section id="referencias-es" aria-labelledby="h-referencias-es">
+<h2 id="h-referencias-es">Referencias</h2>
+<ol class="refs">
+<li id="ref-1-es"><strong>Giovani Perotto Mesquita</strong>, “Pontinhos”, juego de este sitio, <a href="Pontinhos.html#es">giovanipm.github.io/Pontinhos.html</a>.</li>
+<li id="ref-2-es"><strong>Wikipédia</strong>, “Timbiriche (jogo)”, consultado el 20/11/2026, <a href="https://pt.wikipedia.org/wiki/Timbiriche_(jogo)" rel="noopener">pt.wikipedia.org/wiki/Timbiriche_(jogo)</a>.</li>
+<li id="ref-3-es"><strong>Wikipedia</strong>, “Dots and boxes”, consultado el 20/11/2026, <a href="https://en.wikipedia.org/wiki/Dots_and_boxes" rel="noopener">en.wikipedia.org/wiki/Dots_and_boxes</a>. Trata la historia, las reglas, las cadenas, el doble rechazo y el control; cita a Berlekamp (2000) y a Lucas, <em>L’arithmétique amusante</em> (1895), pp. 204–209.</li>
+<li id="ref-4-es"><strong>Wikipédia</strong>, “La Pipopipette”, consultado el 20/11/2026, <a href="https://fr.wikipedia.org/wiki/La_Pipopipette" rel="noopener">fr.wikipedia.org/wiki/La_Pipopipette</a>.</li>
+<li id="ref-5-es"><strong>Wikipedia</strong>, “Timbiriche (juego)”, consultado el 20/11/2026, <a href="https://es.wikipedia.org/wiki/Timbiriche_(juego)" rel="noopener">es.wikipedia.org/wiki/Timbiriche_(juego)</a>. La frase sobre el tablero más común está marcada como sin fuente en la propia página.</li>
+<li id="ref-6-es"><strong>Wikipedia</strong>, “Punti e linee”, consultado el 20/11/2026, <a href="https://it.wikipedia.org/wiki/Punti_e_linee" rel="noopener">it.wikipedia.org/wiki/Punti_e_linee</a>.</li>
+<li id="ref-7-es"><strong>UCLA Mathematics</strong>, “Dots and Boxes hints”, consultado el 20/11/2026, <a href="https://www.math.ucla.edu/~tom/Games/dots&amp;boxes_hints.html" rel="noopener">math.ucla.edu/~tom/Games/dots&amp;boxes_hints.html</a>. Enuncia la regla de la cadena larga y define cadena larga como tres cuadrados o más.</li>
+<li id="ref-8-es"><strong>Elwyn Berlekamp</strong>, <em>The Dots-and-Boxes Game: Sophisticated Child’s Play</em>, A K Peters, 2000. No consultado directamente; citado en las referencias 3 y 6.</li>
+</ol>
+<a class="back" href="#top">↑ Volver arriba</a>
+</section>
+  </article>
+</div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span>Giovani Perotto Mesquita · Porto Alegre, RS</span>
+    <span><a href="projects.html" data-projects data-foot="0">Projetos</a> · <a href="resume.html" data-resume data-foot="1">Currículo</a> · <a href="contact.html" data-contact data-foot="2">Contato</a></span>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('.lang [role="option"]'));
+    var titles = {"pt": "Pontinhos: tutorial do jogo de ligar os pontos · Giovani Perotto Mesquita", "en": "Dots and Boxes: tutorial for the game of joining dots · Giovani Perotto Mesquita", "it": "Punti e linee: tutorial del gioco dei puntini · Giovani Perotto Mesquita", "es": "Timbiriche: tutorial del juego de unir puntos · Giovani Perotto Mesquita"};
+    var foots = {"pt": ["Projetos", "Currículo", "Contato"], "en": ["Projects", "Resume", "Contact"], "it": ["Progetti", "Curriculum", "Contatti"], "es": ["Proyectos", "Currículum", "Contacto"]};
+    var langs = { pt: 'pt-BR', en: 'en', it: 'it', es: 'es' };
+    var bar = document.querySelector('.progress');
+    var article = document.querySelector('[role="tabpanel"]:not([hidden]) article');
+
+    function show(id, focus) {
+      tabs.forEach(function (t) {
+        var on = t.getAttribute('aria-controls') === id;
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+        if (on && focus) t.focus();
+      });
+      document.documentElement.lang = langs[id];
+      document.title = titles[id];
+      var suffix = id === 'pt' ? '' : '#' + id;
+      [['data-home', 'index.html'], ['data-about', 'about.html'], ['data-resume', 'resume.html'], ['data-projects', 'projects.html'], ['data-contact', 'contact.html']].forEach(function (p) {
+        document.querySelectorAll('[' + p[0] + ']').forEach(function (a) { a.href = p[1] + suffix; });
+      });
+      document.querySelectorAll('[data-foot]').forEach(function (a) { a.textContent = foots[id][+a.getAttribute('data-foot')]; });
+      article = document.querySelector('#' + id + ' article');
+      if (history.replaceState) history.replaceState(null, '', id === 'pt' ? location.pathname : '#' + id);
+      progress();
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () { show(t.getAttribute('aria-controls')); });
+      t.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (d) { e.preventDefault(); show(tabs[(i + d + tabs.length) % tabs.length].getAttribute('aria-controls'), true); }
+      });
+    });
+
+    // barra de progresso de leitura
+    function progress() {
+      if (!article) return;
+      var r = article.getBoundingClientRect();
+      var total = r.height - window.innerHeight;
+      var p = total > 0 ? Math.min(Math.max(-r.top / total, 0), 1) : 1;
+      bar.style.width = (p * 100) + '%';
+    }
+    window.addEventListener('scroll', progress, { passive: true });
+    window.addEventListener('resize', progress);
+
+    // destaca a seção atual no índice
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          var panel = e.target.closest('[role="tabpanel"]');
+          panel.querySelectorAll('.toc a').forEach(function (a) {
+            if (a.getAttribute('href') === '#' + e.target.id) a.setAttribute('aria-current', 'true');
+            else a.removeAttribute('aria-current');
+          });
+        });
+      }, { rootMargin: '-20% 0px -70% 0px' });
+      document.querySelectorAll('article section[id]').forEach(function (s) { io.observe(s); });
+    }
+
+    var h = (location.hash || '').replace('#', '');
+    var m = h.match(/^(?:.*-)?(en|it|es)$/);
+    if (m) {
+      show(m[1]);
+      if (h !== m[1]) { var el = document.getElementById(h); if (el) el.scrollIntoView(); if (history.replaceState) history.replaceState(null, '', '#' + h); }
+    } else progress();
+  })();
+</script>
+<script>
+  // seletor de idioma em combobox: abre a lista, sincroniza o botão e fecha
+  (function () {
+    var box = document.querySelector('.lang'); if (!box) return;
+    var btn = box.querySelector('.lang-current'), list = box.querySelector('.lang-list'), now = btn.querySelector('.lang-now');
+    var opts = Array.prototype.slice.call(list.querySelectorAll('[role="option"]'));
+    var menu = {
+      pt: { index: 'Início', about: 'Sobre', resume: 'Currículo', projects: 'Projetos', contact: 'Contato' },
+      en: { index: 'Home', about: 'About', resume: 'Resume', projects: 'Projects', contact: 'Contact' },
+      it: { index: 'Home', about: 'Chi sono', resume: 'Curriculum', projects: 'Progetti', contact: 'Contatti' },
+      es: { index: 'Inicio', about: 'Sobre mí', resume: 'Currículum', projects: 'Proyectos', contact: 'Contacto' }
+    };
+    function translate(id) {
+      document.querySelectorAll('.nav ul a').forEach(function (l) {
+        var k = (l.getAttribute('href') || '').split('#')[0].replace('.html', '');
+        if (menu[id] && menu[id][k]) l.textContent = menu[id][k];
+      });
+      // links do menu para as páginas principais levam o idioma selecionado
+      var suf = id === 'pt' ? '' : '#' + id;
+      document.querySelectorAll('.nav a[href]').forEach(function (l) {
+        var m = l.getAttribute('href').match(/^(index|about|resume|projects|contact)\.html(#(pt|en|it|es))?$/);
+        if (m) l.setAttribute('href', m[1] + '.html' + suf);
+      });
+    }
+    function sync() {
+      var sel = opts.filter(function (o) { return o.getAttribute('aria-selected') === 'true'; })[0] || opts[0];
+      now.innerHTML = sel.querySelector('.flag').outerHTML + sel.getAttribute('data-code');
+      btn.setAttribute('aria-label', btn.getAttribute('data-label') + ': ' + sel.textContent.trim());
+      translate(sel.getAttribute('aria-controls'));
+      return sel;
+    }
+    function open() { list.hidden = false; btn.setAttribute('aria-expanded', 'true'); sync().focus(); }
+    function close(back) { list.hidden = true; btn.setAttribute('aria-expanded', 'false'); if (back) btn.focus(); }
+    btn.addEventListener('click', function () { if (list.hidden) open(); else close(); });
+    btn.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); open(); }
+      else if (e.key === 'Escape') close();
+    });
+    opts.forEach(function (o, i) {
+      o.addEventListener('click', function () { sync(); close(true); });
+      o.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0;
+        if (d) { e.preventDefault(); opts[(i + d + opts.length) % opts.length].focus(); }
+        else if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); opts[e.key === 'Home' ? 0 : opts.length - 1].focus(); }
+        else if (e.key === 'Escape') { e.preventDefault(); close(true); }
+        else if (e.key === 'Tab') close();
+      });
+    });
+    document.addEventListener('click', function (e) { if (!box.contains(e.target)) close(); });
+    new MutationObserver(sync).observe(list, { attributes: true, subtree: true, attributeFilter: ['aria-selected'] });
+    sync();
+  })();
+</script>
+<script>
+document.addEventListener('click', function (e) {
+  var b = e.target.closest && e.target.closest('[data-copy]');
+  if (!b) return;
+  var code = document.getElementById(b.getAttribute('data-copy')), old = b.textContent;
+  function done() { b.textContent = b.getAttribute('data-done'); setTimeout(function () { b.textContent = old; }, 1500); }
+  function fallback() { var r = document.createRange(); r.selectNodeContents(code); var s = getSelection(); s.removeAllRanges(); s.addRange(r); try { document.execCommand('copy'); done(); } catch (x) {} }
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code.textContent).then(done, fallback); else fallback();
+});
+</script>
+</body>
+</html>

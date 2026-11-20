@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; base-uri 'none'; form-action 'none'">
+<title>Pontinhos · Giovani Perotto Mesquita</title>
+<meta name="description" content="Pontinhos (Dots and Boxes): ligue os pontos, feche quadrados e marque com a sua inicial. Tabuleiros de 2×2 a 15×15, de 2 a 4 jogadores, contra o computador ou entre amigos. Em português, inglês, italiano e espanhol.">
+<meta name="author" content="Giovani Perotto Mesquita">
+<style>
+:root{
+  --bg:#FFF7EC; --surface:#FFFFFF; --surface-2:#FBF1E3; --ink:#2B1B3D; --text:#3E3350; --muted:#756986; --line:#F1E2CF;
+  --accent:#0E8074; --accent-ink:#FFFFFF; --accent-soft:#E2F6F2; --gold:#FFB703; --gold-ink:#B35300; --gold-soft:#FFF1C9; --bad:#B3261E;
+  --paper:#FFFDF8; --grid:#E9DDF3; --dot:#2B1B3D; --pen:#2B1B3D; --hover:rgba(14,128,116,.55);
+  --c0:#0E8074; --s0:#CDEFE9; --c1:#C2185B; --s1:#FAD3E3; --c2:#5B2A86; --s2:#E6D8F5; --c3:#B35300; --s3:#FFE2C2;
+  --sans:"Segoe UI","Helvetica Neue",Arial,sans-serif; --serif:Georgia,"Times New Roman",serif; --radius:14px;
+}
+:root[data-theme="dark"]{
+  --bg:#1A1328; --surface:#241A36; --surface-2:#2D2244; --ink:#F7F0FF; --text:#E2D8F0; --muted:#A898C0; --line:#3A2D52;
+  --accent:#5FD3C4; --accent-ink:#10231F; --accent-soft:#1D3A38; --gold:#FFC94D; --gold-ink:#FFC94D; --gold-soft:#3A2E12; --bad:#FF8A80;
+  --paper:#201733; --grid:#33264A; --dot:#F7F0FF; --pen:#EDE3FA; --hover:rgba(95,211,196,.6);
+  --c0:#5FD3C4; --s0:#17423D; --c1:#FF6F91; --s1:#4A1E33; --c2:#C9A7F5; --s2:#3A2A55; --c3:#FFB066; --s3:#4A3018;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-tap-highlight-color:transparent}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+button:disabled{cursor:default;opacity:.45}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.top{display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap;padding:.6rem 1rem;background:var(--surface);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:.6rem;min-width:0}
+.brand svg{width:38px;height:38px;flex:none}
+.brand h1{font-family:var(--serif);font-size:1.35rem;margin:0;color:var(--ink);line-height:1.1}
+.brand p{margin:0;font-size:.82rem;color:var(--muted)}
+.tools{display:flex;gap:.4rem;flex-wrap:wrap;align-items:center}
+.btn{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:.45rem .8rem;min-height:40px;color:var(--ink)}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+select,input[type="number"],input[type="text"]{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:.4rem .5rem;min-height:40px;color:var(--ink)}
+.layout{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(260px,1fr);gap:1rem;max-width:1180px;margin:0 auto;padding:1rem;align-items:start}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1rem;min-width:0}
+.play{display:flex;flex-direction:column;gap:.7rem}
+.status{min-height:2.7em;color:var(--ink);font-weight:600;line-height:1.35}
+.status small{display:block;font-weight:400;color:var(--muted)}
+.score{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:.45rem}
+.score li{display:flex;align-items:center;gap:.45rem;padding:.3rem .65rem .3rem .35rem;border-radius:999px;background:var(--surface-2);border:2px solid transparent;font-size:.92rem}
+.score li.cur{border-color:var(--gold);background:var(--gold-soft)}
+.score .sw{display:inline-grid;place-items:center;min-width:28px;height:28px;padding:0 4px;border-radius:7px;font-weight:800;font-size:.82rem;color:var(--ink);background:var(--sw-s);border:2px solid var(--sw-c)}
+.score .nm{max-width:9em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink);font-weight:600}
+.score .kd{font-size:.74rem;color:var(--muted)}
+.score b{font-size:1.05rem;color:var(--ink);min-width:1.4em;text-align:right}
+.score .turn{font-size:.72rem;font-weight:700;color:var(--gold-ink);text-transform:uppercase;letter-spacing:.04em}
+.boardwrap{overflow:auto;border-radius:12px;background:var(--paper);border:1px solid var(--line);touch-action:manipulation}
+#board{display:block;width:100%;height:auto;margin:0 auto;user-select:none;-webkit-user-select:none}
+#board:focus{outline:none}
+.boardwrap:focus-within{outline:3px solid var(--gold);outline-offset:2px}
+#board .gridln{stroke:var(--grid);stroke-width:1.2;stroke-dasharray:3 6}
+#board .dot{fill:var(--dot)}
+#board .ln{stroke:var(--pen);stroke-width:5.5;stroke-linecap:round}
+#board .ln.last{stroke:var(--gold-ink);stroke-width:7}
+#board .ln.new{stroke-dasharray:var(--len);stroke-dashoffset:var(--len);animation:draw .35s ease-out forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+#board .hit{stroke:transparent;stroke-linecap:round;cursor:pointer}
+#board .prev{stroke:var(--hover);stroke-width:6;stroke-linecap:round;stroke-dasharray:2 10;opacity:0;pointer-events:none}
+#board.live .hit:hover + .prev{opacity:1}
+#board .kcur{stroke:var(--gold);stroke-width:12;stroke-linecap:round;opacity:.9;pointer-events:none}
+#board .hint{stroke:var(--accent);stroke-width:10;stroke-linecap:round;pointer-events:none;animation:blink 1s ease-in-out infinite}
+@keyframes blink{50%{opacity:.25}}
+#board .box{stroke:none}
+#board .box.new{animation:pop .45s ease-out}
+@keyframes pop{from{opacity:0}to{opacity:1}}
+#board .ini{font-family:var(--sans);font-weight:800;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.actions{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+.actions .sp{flex:1}
+.muted{color:var(--muted)}
+.small{font-size:.84rem}
+.side h2{font-size:.98rem;margin:0 0 .45rem;color:var(--ink)}
+.side h2+p{margin-top:0}
+.facts{list-style:none;margin:0 0 .9rem;padding:0;display:grid;gap:.25rem;font-size:.9rem}
+.facts b{color:var(--ink)}
+.log{list-style:none;margin:0;padding:0;max-height:320px;overflow:auto;font-size:.88rem;display:flex;flex-direction:column-reverse;gap:.2rem}
+.log li{padding:.25rem .45rem;border-radius:6px;background:var(--surface-2)}
+dialog{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);color:var(--text);padding:1.1rem 1.2rem;width:min(660px,calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow:auto}
+dialog::backdrop{background:rgba(20,10,30,.55)}
+dialog h2{font-family:var(--serif);margin:0 0 .7rem;color:var(--ink)}
+dialog h3{font-size:1rem;margin:1rem 0 .35rem;color:var(--ink)}
+fieldset{border:1px solid var(--line);border-radius:10px;padding:.6rem .8rem;margin:0 0 .8rem;min-width:0}
+legend{font-weight:700;color:var(--ink);padding:0 .3rem}
+.sizes{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:.4rem}
+.sizes label{display:flex;flex-direction:column;align-items:center;gap:.15rem;padding:.45rem .3rem;border:1.5px solid var(--line);border-radius:10px;cursor:pointer;text-align:center;font-size:.86rem}
+.sizes label:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.sizes input{position:absolute;opacity:0;pointer-events:none}
+.sizes label:has(input:focus-visible){outline:3px solid var(--gold);outline-offset:2px}
+.sizes svg{width:40px;height:40px}
+.sizes b{color:var(--ink)}
+.sizes small{color:var(--muted);font-size:.74rem}
+.custom{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin-top:.6rem}
+.custom label{display:flex;gap:.35rem;align-items:center}
+.custom input{width:5em}
+.sizeinfo{font-size:.84rem;color:var(--muted);margin:.5rem 0 0}
+.prow{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:.4rem;margin-bottom:.45rem;align-items:center}
+.prow .sw{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:8px;font-weight:800;color:var(--ink);background:var(--sw-s);border:2px solid var(--sw-c);font-size:.85rem}
+.prow input{width:100%}
+.opt{display:flex;gap:.55rem;align-items:flex-start;padding:.35rem 0}
+.opt input{margin-top:.25rem;width:18px;height:18px;flex:none}
+.opt span small{display:block;color:var(--muted);font-size:.82rem}
+.seed{display:grid;gap:.25rem;font-size:.9rem}
+.seed input{width:100%}
+.row{display:flex;gap:.5rem;flex-wrap:wrap;justify-content:flex-end;margin-top:.8rem}
+.rules{padding-left:1.15rem;margin:.2rem 0;display:grid;gap:.35rem;line-height:1.45;font-size:.93rem}
+.rank{list-style:none;padding:0;margin:.4rem 0;display:grid;gap:.35rem}
+.rank li{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.45rem .7rem;border-radius:9px;background:var(--surface-2);font-weight:600}
+.rank li.win{background:var(--gold-soft);color:var(--ink)}
+.note{background:var(--gold-soft);border-radius:10px;padding:.55rem .75rem;font-size:.88rem;color:var(--ink)}
+a{color:var(--accent)}
+kbd{font-family:inherit;font-size:.85em;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:0 .3em;background:var(--surface-2)}
+@media (max-width:900px){.layout{grid-template-columns:minmax(0,1fr);padding:.6rem}}
+@media (max-width:480px){
+  .top{padding:.5rem .6rem}.brand p{display:none}.btn{padding:.4rem .55rem}
+  .card{padding:.7rem}.score li{font-size:.85rem}.score .kd{display:none}.score .nm{max-width:6.5em}
+  .prow{grid-template-columns:auto minmax(0,1fr);padding-bottom:.45rem;border-bottom:1px solid var(--line)}
+  .prow select{grid-column:1/2}.prow button{grid-column:2/3;justify-self:end}
+}
+@media (prefers-reduced-motion:reduce){#board .ln.new,#board .box.new,#board .hint{animation:none}#board .ln.new{stroke-dashoffset:0}}
+@media print{.tools,.actions,.side{display:none}body{background:#fff}.layout{display:block}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <svg viewBox="0 0 40 40" aria-hidden="true"><rect x="2" y="2" width="36" height="36" rx="8" fill="#FFF1C9"/><rect x="9" y="9" width="11" height="11" fill="#CDEFE9"/><text x="14.5" y="15.2" font-size="8" font-weight="800" text-anchor="middle" dominant-baseline="central" fill="#2B1B3D" font-family="Arial">A</text><path d="M9 9h22M9 9v22M20 9v11H9" stroke="#2B1B3D" stroke-width="2.4" stroke-linecap="round" fill="none"/><path d="M20 20h11" stroke="#B35300" stroke-width="2.4" stroke-linecap="round"/><g fill="#2B1B3D"><circle cx="9" cy="9" r="2.2"/><circle cx="20" cy="9" r="2.2"/><circle cx="31" cy="9" r="2.2"/><circle cx="9" cy="20" r="2.2"/><circle cx="20" cy="20" r="2.2"/><circle cx="31" cy="20" r="2.2"/><circle cx="9" cy="31" r="2.2"/><circle cx="20" cy="31" r="2.2"/><circle cx="31" cy="31" r="2.2"/></g></svg>
+    <div><h1 data-t="title">Pontinhos</h1><p data-t="subtitle"></p></div>
+  </div>
+  <div class="tools">
+    <button type="button" class="btn" id="bNew" data-t="btn.new"></button>
+    <button type="button" class="btn" id="bRules" data-t="btn.rules"></button>
+    <label class="sr" for="lang" data-t="lang"></label>
+    <select id="lang"><option value="pt">PT</option><option value="en">EN</option><option value="it">IT</option><option value="es">ES</option></select>
+    <button type="button" class="btn" id="bTheme" aria-label="" data-ta="btn.theme">◐</button>
+  </div>
+</header>
+
+<main class="layout" id="game">
+  <section class="card play" aria-labelledby="hPlay">
+    <h2 class="sr" id="hPlay" data-t="board"></h2>
+    <div class="status" id="status" aria-live="polite"></div>
+    <ul class="score" id="score" aria-label=""></ul>
+    <div class="boardwrap" id="bwrap"><svg id="board" tabindex="0" role="application" aria-roledescription="" aria-describedby="kbdHelp"></svg></div>
+    <p class="sr" id="kbdHelp" data-t="kbd.help"></p>
+    <p class="sr" aria-live="polite" id="cursorLive"></p>
+    <div class="actions">
+      <button type="button" class="btn" id="bHint" data-t="btn.hint"></button>
+      <button type="button" class="btn" id="bUndo" data-t="btn.undo"></button>
+      <span class="sp"></span>
+      <span class="muted small" id="left"></span>
+    </div>
+    <p class="muted small" id="help"></p>
+  </section>
+  <section class="card side" aria-labelledby="hSide">
+    <h2 id="hSide" data-t="side"></h2>
+    <ul class="facts" id="facts"></ul>
+    <h2 data-t="log"></h2>
+    <ol class="log" id="log" aria-live="polite"></ol>
+    <p class="muted small" id="seedInfo"></p>
+  </section>
+</main>
+
+<dialog id="dSetup" aria-labelledby="hSetup">
+  <form method="dialog" id="fSetup">
+    <h2 id="hSetup" data-t="setup.title"></h2>
+    <fieldset><legend data-t="setup.size"></legend>
+      <div class="sizes" id="sizes"></div>
+      <div class="custom" id="custom">
+        <label><span data-t="setup.rows"></span><input type="number" name="rows" min="1" max="15" value="6"></label>
+        <span aria-hidden="true">×</span>
+        <label><span data-t="setup.cols"></span><input type="number" name="cols" min="1" max="15" value="9"></label>
+      </div>
+      <p class="sizeinfo" id="sizeInfo" aria-live="polite"></p>
+    </fieldset>
+    <fieldset><legend data-t="setup.players"></legend>
+      <div id="pList"></div>
+      <button type="button" class="btn" id="bAddP" data-t="p.add"></button>
+    </fieldset>
+    <fieldset><legend data-t="setup.rule"></legend>
+      <label class="opt"><input type="checkbox" name="extra" checked><span><span data-t="opt.extra"></span><small data-t="opt.extraD"></small></span></label>
+    </fieldset>
+    <label class="seed"><span data-t="setup.seed"></span><input type="text" name="seed" inputmode="numeric" autocomplete="off"><small class="muted" data-t="setup.seedHelp"></small></label>
+    <div class="row"><button type="button" class="btn" id="bCancel" data-t="close"></button><button type="submit" class="btn primary" data-t="setup.start"></button></div>
+  </form>
+</dialog>
+
+<dialog id="dRules" aria-labelledby="hRules">
+  <h2 id="hRules" data-t="btn.rules" tabindex="-1" autofocus></h2>
+  <ul class="rules" id="rList"></ul>
+  <h3 data-t="rd.stratH"></h3>
+  <ul class="rules" id="rStrat"></ul>
+  <h3 data-t="rd.cpuH"></h3>
+  <ul class="rules" id="rCpu"></ul>
+  <h3 data-t="rd.keysH"></h3>
+  <ul class="rules" id="rKeys"></ul>
+  <h3 data-t="rd.src"></h3>
+  <ul class="rules small">
+    <li><a href="https://pt.wikipedia.org/wiki/Timbiriche_(jogo)" rel="noopener" target="_blank">Wikipédia, “Timbiriche (jogo)”</a></li>
+    <li><a href="https://en.wikipedia.org/wiki/Dots_and_boxes" rel="noopener" target="_blank">Wikipedia, “Dots and boxes”</a></li>
+    <li><a href="https://fr.wikipedia.org/wiki/La_Pipopipette" rel="noopener" target="_blank">Wikipédia, “La Pipopipette”</a></li>
+    <li><a href="https://www.math.ucla.edu/~tom/Games/dots&amp;boxes_hints.html" rel="noopener" target="_blank">UCLA Mathematics, “Dots and Boxes hints”</a></li>
+  </ul>
+  <div class="row"><button type="button" class="btn primary" id="bRulesClose" data-t="close"></button></div>
+</dialog>
+
+<dialog id="dEnd" aria-labelledby="hEnd">
+  <h2 id="hEnd" data-t="e.title"></h2>
+  <p id="endMsg" class="note"></p>
+  <ol class="rank" id="endRank"></ol>
+  <p id="endInfo" class="muted small"></p>
+  <div class="row"><button type="button" class="btn" id="bEndClose" data-t="close"></button><button type="button" class="btn" id="bEndNew" data-t="e.new"></button><button type="button" class="btn primary" id="bEndAgain" data-t="e.again"></button></div>
+</dialog>
+
+<script>
+'use strict';
+/* ===================== Textos ===================== */
+const I18N = {
+  docTitle:['Pontinhos','Dots and Boxes','Punti e linee','Timbiriche'],
+  title:['Pontinhos','Dots and Boxes','Punti e linee','Timbiriche'],
+  subtitle:['Ligue os pontos, feche quadrados e marque com a sua inicial','Join the dots, close boxes and mark them with your initial','Unisci i punti, chiudi i quadrati e segnali con la tua iniziale','Une los puntos, cierra cuadrados y márcalos con tu inicial'],
+  'btn.new':['Nova partida','New game','Nuova partita','Nueva partida'],
+  'btn.rules':['Regras','Rules','Regole','Reglas'],
+  'btn.theme':['Alternar tema claro ou escuro','Toggle light or dark theme','Cambia tema chiaro o scuro','Cambiar tema claro u oscuro'],
+  'btn.hint':['💡 Dica','💡 Hint','💡 Suggerimento','💡 Pista'],
+  'btn.undo':['↶ Desfazer','↶ Undo','↶ Annulla','↶ Deshacer'],
+  lang:['Idioma','Language','Lingua','Idioma'],
+  board:['Tabuleiro','Board','Tabellone','Tablero'],
+  side:['Partida','Game','Partita','Partida'],
+  log:['Histórico','History','Cronologia','Historial'],
+  close:['Fechar','Close','Chiudi','Cerrar'],
+  'board.role':['tabuleiro de pontinhos','dots and boxes board','tabellone di punti e linee','tablero de timbiriche'],
+  'board.label':['Tabuleiro de {0} por {1} quadrados. Use as setas para escolher uma linha e Enter para traçar.','Board of {0} by {1} boxes. Use the arrow keys to choose a line and Enter to draw it.','Tabellone di {0} per {1} quadrati. Usa le frecce per scegliere una linea e Invio per tracciarla.','Tablero de {0} por {1} cuadrados. Usa las flechas para elegir una línea y Enter para trazarla.'],
+  'kbd.help':['Setas: mover entre as linhas livres. Enter ou Espaço: traçar a linha. D: dica. Ctrl+Z: desfazer.','Arrows: move between free lines. Enter or Space: draw the line. H: hint. Ctrl+Z: undo.','Frecce: muoversi tra le linee libere. Invio o Spazio: tracciare la linea. S: suggerimento. Ctrl+Z: annulla.','Flechas: moverse entre las líneas libres. Enter o Espacio: trazar la línea. P: pista. Ctrl+Z: deshacer.'],
+  'kbd.hintKey':['d','h','s','p'],
+  'edge.h':['Linha horizontal entre os pontos ({0}, {1}) e ({0}, {2})','Horizontal line between dots ({0}, {1}) and ({0}, {2})','Linea orizzontale tra i punti ({0}, {1}) e ({0}, {2})','Línea horizontal entre los puntos ({0}, {1}) y ({0}, {2})'],
+  'edge.v':['Linha vertical entre os pontos ({0}, {2}) e ({1}, {2})','Vertical line between dots ({0}, {2}) and ({1}, {2})','Linea verticale tra i punti ({0}, {2}) e ({1}, {2})','Línea vertical entre los puntos ({0}, {2}) y ({1}, {2})'],
+  'edge.closes':['fecha {0}','closes {0}','chiude {0}','cierra {0}'],
+  'edge.third':['dá a terceira linha a um quadrado','gives a box its third side','dà il terzo lato a un quadrato','da el tercer lado a un cuadrado'],
+  'edge.safe':['segura','safe','sicura','segura'],
+  'st.turn':['Vez de {0}','{0} to play','Tocca a {0}','Turno de {0}'],
+  turnTag:['joga agora','to play','tocca a lui','juega ahora'],
+  'st.you':['Escolha uma linha entre dois pontos vizinhos.','Choose a line between two neighbouring dots.','Scegli una linea tra due punti vicini.','Elige una línea entre dos puntos vecinos.'],
+  'st.again':['{0} fechou {1} e joga de novo.','{0} closed {1} and plays again.','{0} ha chiuso {1} e gioca ancora.','{0} cerró {1} y juega otra vez.'],
+  'st.closedNo':['{0} fechou {1}. A vez passa.','{0} closed {1}. The turn passes.','{0} ha chiuso {1}. Il turno passa.','{0} cerró {1}. El turno pasa.'],
+  'st.cpu':['{0} está pensando…','{0} is thinking…','{0} sta pensando…','{0} está pensando…'],
+  'st.over':['Fim de partida.','Game over.','Fine della partita.','Fin de la partida.'],
+  'st.hint':['Dica: {0}','Hint: {0}','Suggerimento: {0}','Pista: {0}'],
+  'why.capture':['esta linha fecha um quadrado.','this line closes a box.','questa linea chiude un quadrato.','esta línea cierra un cuadrado.'],
+  'why.dd':['deixe os dois últimos quadrados da cadeia para o adversário e fique com o controle do resto.','leave the last two boxes of the chain to your opponent and keep control of the rest.','lascia gli ultimi due quadrati della catena all’avversario e tieni il controllo del resto.','deja los dos últimos cuadrados de la cadena al rival y quédate con el control del resto.'],
+  'why.safe':['esta linha é segura: não dá a terceira linha a nenhum quadrado.','this line is safe: it gives no box a third side.','questa linea è sicura: non dà il terzo lato a nessun quadrato.','esta línea es segura: no da el tercer lado a ningún cuadrado.'],
+  'why.give':['não há linha segura; esta entrega o mínimo possível ({0}).','there is no safe line; this one gives away the least ({0}).','non c’è una linea sicura; questa regala il meno possibile ({0}).','no hay línea segura; esta entrega lo mínimo posible ({0}).'],
+  'why.handout':['não há linha segura; entregue os dois quadrados pelo meio, para o adversário não poder recusá-los.','there is no safe line; give the two boxes away through the middle, so your opponent cannot decline them.','non c’è una linea sicura; regala i due quadrati dal centro, così l’avversario non può rifiutarli.','no hay línea segura; entrega los dos cuadrados por el medio, para que el rival no pueda rechazarlos.'],
+  'why.exact':['é a melhor linha calculando o fim da partida até o último quadrado.','it is the best line, working out the end of the game to the last box.','è la linea migliore, calcolando la fine della partita fino all’ultimo quadrato.','es la mejor línea calculando el final de la partida hasta el último cuadrado.'],
+  'why.none':['nenhuma linha livre.','no free line.','nessuna linea libera.','ninguna línea libre.'],
+  'boxes':['{0} quadrado','{0} quadrados'],
+  'left':['Quadrados livres: {0} de {1}','Free boxes: {0} of {1}','Quadrati liberi: {0} su {1}','Cuadrados libres: {0} de {1}'],
+  'f.size':['Tabuleiro','Board','Tabellone','Tablero'],
+  'f.sizeV':['{0} × {1} quadrados ({2} pontos, {3} linhas)','{0} × {1} boxes ({2} dots, {3} lines)','{0} × {1} quadrati ({2} punti, {3} linee)','{0} × {1} cuadrados ({2} puntos, {3} líneas)'],
+  'f.rule':['Regra','Rule','Regola','Regla'],
+  'f.extraY':['quem fecha um quadrado joga de novo','closing a box earns another turn','chi chiude un quadrato gioca ancora','quien cierra un cuadrado juega otra vez'],
+  'f.extraN':['a vez sempre passa','the turn always passes','il turno passa sempre','el turno siempre pasa'],
+  'f.moves':['Linhas traçadas','Lines drawn','Linee tracciate','Líneas trazadas'],
+  'f.chain':['Regra da cadeia longa','Long chain rule','Regola della catena lunga','Regla de la cadena larga'],
+  'f.chainV':['quem começa quer um número {0} de cadeias longas','the first player wants an {0} number of long chains','chi inizia vuole un numero {0} di catene lunghe','quien empieza quiere un número {0} de cadenas largas'],
+  'even':['par','even','pari','par'],'odd':['ímpar','odd','dispari','impar'],
+  'g.seed':['Semente desta partida: {0}','Seed of this game: {0}','Seme di questa partita: {0}','Semilla de esta partida: {0}'],
+  'setup.title':['Nova partida','New game','Nuova partita','Nueva partida'],
+  'setup.size':['Tamanho do tabuleiro','Board size','Dimensione del tabellone','Tamaño del tablero'],
+  'setup.rows':['Linhas','Rows','Righe','Filas'],
+  'setup.cols':['Colunas','Columns','Colonne','Columnas'],
+  'setup.custom':['Personalizado','Custom','Personalizzato','Personalizado'],
+  'setup.customD':['até 15 × 15','up to 15 × 15','fino a 15 × 15','hasta 15 × 15'],
+  'setup.sizeInfo':['{0} quadrados, {1} pontos e {2} linhas. Uma partida tem {2} jogadas de linha.','{0} boxes, {1} dots and {2} lines. A game has {2} line moves.','{0} quadrati, {1} punti e {2} linee. Una partita ha {2} mosse.','{0} cuadrados, {1} puntos y {2} líneas. Una partida tiene {2} jugadas.'],
+  'setup.sizeBad':['Use de 1 a 15 linhas e colunas, com pelo menos 2 quadrados.','Use 1 to 15 rows and columns, with at least 2 boxes.','Usa da 1 a 15 righe e colonne, con almeno 2 quadrati.','Usa de 1 a 15 filas y columnas, con al menos 2 cuadrados.'],
+  'sz.2':['aprender','to learn','per imparare','para aprender'],
+  'sz.3':['rápido','quick','veloce','rápido'],
+  'sz.4':['médio','medium','medio','medio'],
+  'sz.5':['clássico','classic','classico','clásico'],
+  'sz.6':['longo','long','lungo','largo'],
+  'sz.8':['grande','large','grande','grande'],
+  'sz.10':['maratona','marathon','maratona','maratón'],
+  'setup.players':['Jogadores (2 a 4)','Players (2 to 4)','Giocatori (da 2 a 4)','Jugadores (2 a 4)'],
+  'setup.rule':['Regra','Rule','Regola','Regla'],
+  'opt.extra':['Quem fecha um quadrado joga de novo','Closing a box earns another turn','Chi chiude un quadrato gioca ancora','Quien cierra un cuadrado juega otra vez'],
+  'opt.extraD':['A regra mais comum. Desmarque para a variante em que a vez sempre passa.','The most common rule. Untick it for the variant in which the turn always passes.','La regola più comune. Togli la spunta per la variante in cui il turno passa sempre.','La regla más común. Desmárcala para la variante en que el turno siempre pasa.'],
+  'setup.seed':['Semente (opcional)','Seed (optional)','Seme (facoltativo)','Semilla (opcional)'],
+  'setup.seedHelp':['Com a mesma semente e as mesmas jogadas, o computador escolhe as mesmas linhas. Em branco, o app sorteia uma.','With the same seed and the same moves, the computer picks the same lines. Leave blank for a random one.','Con lo stesso seme e le stesse mosse, il computer sceglie le stesse linee. Vuoto, l’app ne estrae uno.','Con la misma semilla y las mismas jugadas, el ordenador elige las mismas líneas. En blanco, la app sortea una.'],
+  'setup.start':['Começar','Start','Inizia','Empezar'],
+  'p.name':['Nome do jogador {0}','Name of player {0}','Nome del giocatore {0}','Nombre del jugador {0}'],
+  'p.type':['Tipo do jogador {0}','Type of player {0}','Tipo del giocatore {0}','Tipo del jugador {0}'],
+  'p.human':['Pessoa','Person','Persona','Persona'],
+  'p.easy':['Computador fácil','Computer, easy','Computer facile','Ordenador fácil'],
+  'p.medium':['Computador médio','Computer, medium','Computer medio','Ordenador medio'],
+  'p.hard':['Computador difícil','Computer, hard','Computer difficile','Ordenador difícil'],
+  'k.human':['pessoa','person','persona','persona'],
+  'k.easy':['fácil','easy','facile','fácil'],'k.medium':['médio','medium','medio','medio'],'k.hard':['difícil','hard','difficile','difícil'],
+  'p.add':['+ Jogador','+ Player','+ Giocatore','+ Jugador'],
+  'p.remove':['Remover','Remove','Rimuovi','Quitar'],
+  'p.removeA':['Remover o jogador {0}','Remove player {0}','Rimuovi il giocatore {0}','Quitar al jugador {0}'],
+  'def.you':['Você','You','Tu','Tú'],
+  'def.cpu':['Computador','Computer','Computer','Ordenador'],
+  'def.cpuN':['Computador {0}','Computer {0}','Computer {0}','Ordenador {0}'],
+  'def.player':['Jogador {0}','Player {0}','Giocatore {0}','Jugador {0}'],
+  'confirmNew':['Abandonar a partida em andamento?','Abandon the game in progress?','Abbandonare la partita in corso?','¿Abandonar la partida en curso?'],
+  'e.title':['Fim de partida','Game over','Fine della partita','Fin de la partida'],
+  'e.win':['{0} venceu com {1}!','{0} won with {1}!','{0} ha vinto con {1}!','¡{0} ganó con {1}!'],
+  'e.tie':['Empate entre {0}, com {1} cada.','Tie between {0}, with {1} each.','Pareggio tra {0}, con {1} ciascuno.','Empate entre {0}, con {1} cada uno.'],
+  'e.and':[' e ',' and ',' e ',' y '],
+  'e.info':['Tabuleiro {0} × {1}, semente {2}. Jogar de novo repete a configuração com outra semente; quem começa passa para o próximo jogador.','Board {0} × {1}, seed {2}. Play again repeats the setup with another seed; the next player starts.','Tabellone {0} × {1}, seme {2}. Gioca ancora ripete la configurazione con un altro seme; inizia il giocatore successivo.','Tablero {0} × {1}, semilla {2}. Jugar otra vez repite la configuración con otra semilla; empieza el siguiente jugador.'],
+  'e.new':['Mudar configuração','Change setup','Cambia configurazione','Cambiar configuración'],
+  'e.again':['Jogar de novo','Play again','Gioca ancora','Jugar otra vez'],
+  'l.start':['Nova partida {0} × {1}, semente {2}. Começa {3}.','New game {0} × {1}, seed {2}. {3} starts.','Nuova partita {0} × {1}, seme {2}. Inizia {3}.','Nueva partida {0} × {1}, semilla {2}. Empieza {3}.'],
+  'l.close':['{0} fechou {1} (total {2}).','{0} closed {1} (total {2}).','{0} ha chiuso {1} (totale {2}).','{0} cerró {1} (total {2}).'],
+  'l.dd':['{0} recusou os dois últimos quadrados da cadeia para manter o controle.','{0} declined the last two boxes of the chain to keep control.','{0} ha rifiutato gli ultimi due quadrati della catena per tenere il controllo.','{0} rechazó los dos últimos cuadrados de la cadena para mantener el control.'],
+  'l.open':['{0} entregou {1}: não havia linha segura.','{0} gave away {1}: there was no safe line.','{0} ha regalato {1}: non c’era una linea sicura.','{0} entregó {1}: no había línea segura.'],
+  'l.undo':['Jogada desfeita.','Move undone.','Mossa annullata.','Jugada deshecha.'],
+  'l.end':['Fim: {0}.','End: {0}.','Fine: {0}.','Fin: {0}.'],
+  'rd.r1':['O tabuleiro é uma grade de pontos. Na sua vez, trace uma linha horizontal ou vertical entre dois pontos vizinhos ainda não ligados.','The board is a grid of dots. On your turn, draw a horizontal or vertical line between two neighbouring dots not yet joined.','Il tabellone è una griglia di punti. Al tuo turno, traccia una linea orizzontale o verticale tra due punti vicini non ancora uniti.','El tablero es una cuadrícula de puntos. En tu turno, traza una línea horizontal o vertical entre dos puntos vecinos aún no unidos.'],
+  'rd.r2':['Quem traça o quarto lado de um quadrado fica com ele: o quadrado recebe a sua inicial e a sua cor.','Whoever draws the fourth side of a box takes it: the box gets that player’s initial and colour.','Chi traccia il quarto lato di un quadrato lo prende: il quadrato riceve la sua iniziale e il suo colore.','Quien traza el cuarto lado de un cuadrado se lo queda: el cuadrado recibe su inicial y su color.'],
+  'rd.r3':['Quem fecha um quadrado joga de novo e é obrigado a traçar mais uma linha. Uma linha pode fechar dois quadrados de uma vez.','Whoever closes a box plays again and must draw another line. One line can close two boxes at once.','Chi chiude un quadrato gioca ancora e deve tracciare un’altra linea. Una linea può chiudere due quadrati insieme.','Quien cierra un cuadrado juega otra vez y debe trazar otra línea. Una línea puede cerrar dos cuadrados a la vez.'],
+  'rd.r4':['A partida acaba quando todas as linhas estão traçadas. Vence quem tem mais quadrados.','The game ends when every line is drawn. The player with the most boxes wins.','La partita finisce quando tutte le linee sono tracciate. Vince chi ha più quadrati.','La partida termina cuando todas las líneas están trazadas. Gana quien tenga más cuadrados.'],
+  'rd.s1':['Não dê a terceira linha: um quadrado com três lados é um presente para o próximo jogador.','Do not draw a third side: a box with three sides is a gift for the next player.','Non dare il terzo lato: un quadrato con tre lati è un regalo per il prossimo giocatore.','No des el tercer lado: un cuadrado con tres lados es un regalo para el siguiente jugador.'],
+  'rd.s2':['Quando as linhas seguras acabam, entregue a menor cadeia de quadrados.','When the safe lines run out, give away the shortest chain of boxes.','Quando le linee sicure finiscono, regala la catena di quadrati più corta.','Cuando se acaban las líneas seguras, entrega la cadena de cuadrados más corta.'],
+  'rd.s3':['Ao receber uma cadeia longa, pegue todos menos os dois últimos e deixe-os ao adversário: ele terá de abrir a próxima cadeia.','When given a long chain, take all but the last two boxes and leave them to your opponent: they will have to open the next chain.','Quando ricevi una catena lunga, prendi tutti i quadrati tranne gli ultimi due e lasciali all’avversario: dovrà aprire la catena successiva.','Cuando recibas una cadena larga, toma todos menos los dos últimos y déjaselos al rival: tendrá que abrir la siguiente cadena.'],
+  'rd.c1':['Fácil: fecha quadrados quando pode, mas muitas vezes dá a terceira linha.','Easy: closes boxes when it can, but often draws a third side.','Facile: chiude i quadrati quando può, ma spesso dà il terzo lato.','Fácil: cierra cuadrados cuando puede, pero a menudo da el tercer lado.'],
+  'rd.c2':['Médio: fecha tudo o que pode, só joga linhas seguras e, quando elas acabam, entrega o mínimo.','Medium: closes everything it can, plays only safe lines and, when they run out, gives away the least.','Medio: chiude tutto ciò che può, gioca solo linee sicure e, quando finiscono, regala il meno possibile.','Medio: cierra todo lo que puede, juega solo líneas seguras y, cuando se acaban, entrega lo mínimo.'],
+  'rd.c3':['Difícil: além disso, recusa os dois últimos quadrados de uma cadeia quando isso compensa, entrega pares pelo meio e, no fim, calcula todas as jogadas.','Hard: on top of that, declines the last two boxes of a chain when it pays off, gives pairs away through the middle and, at the end, works out every move.','Difficile: inoltre rifiuta gli ultimi due quadrati di una catena quando conviene, regala le coppie dal centro e, alla fine, calcola tutte le mosse.','Difícil: además, rechaza los dos últimos cuadrados de una cadena cuando conviene, entrega los pares por el medio y, al final, calcula todas las jugadas.'],
+  'rd.keysH':['Teclado','Keyboard','Tastiera','Teclado'],
+  'rd.k1':['Clique no tabuleiro ou chegue a ele com Tab. As setas movem o cursor dourado entre as linhas livres.','Click the board or reach it with Tab. The arrow keys move the gold cursor between free lines.','Clicca sul tabellone o raggiungilo con Tab. Le frecce muovono il cursore dorato tra le linee libere.','Haz clic en el tablero o llega a él con Tab. Las flechas mueven el cursor dorado entre las líneas libres.'],
+  'rd.k2':['Enter ou Espaço traçam a linha. {0} mostra uma dica. Ctrl+Z desfaz.','Enter or Space draws the line. {0} shows a hint. Ctrl+Z undoes.','Invio o Spazio tracciano la linea. {0} mostra un suggerimento. Ctrl+Z annulla.','Enter o Espacio trazan la línea. {0} muestra una pista. Ctrl+Z deshace.'],
+  'rd.stratH':['Estratégia em três frases','Strategy in three sentences','Strategia in tre frasi','Estrategia en tres frases'],
+  'rd.cpuH':['O computador','The computer','Il computer','El ordenador'],
+  'rd.src':['Fontes','Sources','Fonti','Fuentes']
+};
+const LANGS = ['pt','en','it','es'];
+const HTML_LANG = {pt:'pt-BR',en:'en',it:'it',es:'es'};
+let LANG = 'pt';
+function t(k, ...a) {
+  const r = I18N[k]; let s = r ? r[LANGS.indexOf(LANG)] : k;
+  if (s === undefined) s = r[0];
+  a.forEach((v, i) => { s = s.split('{' + i + '}').join(v); });
+  return s;
+}
+/* "1 quadrado" / "3 quadrados" em cada idioma */
+const BOXW = { pt:['quadrado','quadrados'], en:['box','boxes'], it:['quadrato','quadrati'], es:['cuadrado','cuadrados'] };
+const nBoxes = (n) => n + ' ' + BOXW[LANG][n === 1 ? 0 : 1];
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store = {
+  get(k) { try { return JSON.parse(localStorage.getItem('pontinhos.' + k)); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem('pontinhos.' + k, JSON.stringify(v)); } catch (e) { /* sem armazenamento */ } },
+  del(k) { try { localStorage.removeItem('pontinhos.' + k); } catch (e) { /* sem armazenamento */ } }
+};
+const reduced = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+/* ===================== Gerador semeado (mulberry32) ===================== */
+function rand(st) {
+  st.rng = (st.rng + 0x6D2B79F5) | 0;
+  let x = Math.imul(st.rng ^ (st.rng >>> 15), 1 | st.rng);
+  x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
+  return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+}
+const pick = (arr, rnd) => arr[Math.floor(rnd() * arr.length)];
+
+/* ===================== Geometria do tabuleiro =====================
+   R linhas e C colunas de quadrados. Linhas horizontais: e = r*C + c (r de 0 a R).
+   Linhas verticais: e = nH + r*(C+1) + c (c de 0 a C). Quadrado b = r*C + c. */
+const U = 60, M = 26;
+const GEO = {};
+function geo(R, C) {
+  const key = R + 'x' + C; if (GEO[key]) return GEO[key];
+  const nH = (R + 1) * C, nV = R * (C + 1), nE = nH + nV, nB = R * C;
+  const hE = (r, c) => r * C + c, vE = (r, c) => nH + r * (C + 1) + c;
+  const BE = [], ADJ = Array.from({ length: nE }, () => []), EG = [];
+  for (let r = 0; r < R; r++) for (let c = 0; c < C; c++) {
+    const b = r * C + c, es = [hE(r, c), hE(r + 1, c), vE(r, c), vE(r, c + 1)];
+    BE[b] = es; es.forEach((e) => ADJ[e].push(b));
+  }
+  for (let r = 0; r <= R; r++) for (let c = 0; c < C; c++) EG[hE(r, c)] = { h: true, r, c, x1: M + c * U, y1: M + r * U, x2: M + (c + 1) * U, y2: M + r * U };
+  for (let r = 0; r < R; r++) for (let c = 0; c <= C; c++) EG[vE(r, c)] = { h: false, r, c, x1: M + c * U, y1: M + r * U, x2: M + c * U, y2: M + (r + 1) * U };
+  EG.forEach((g) => { g.cx = (g.x1 + g.x2) / 2; g.cy = (g.y1 + g.y2) / 2; });
+  return (GEO[key] = { R, C, nH, nV, nE, nB, BE, ADJ, EG, W: 2 * M + C * U, H: 2 * M + R * U });
+}
+
+/* ===================== Posição e jogadas ===================== */
+function newPos(g) { return { g, E: new Int8Array(g.nE).fill(-1), B: new Int8Array(g.nB).fill(-1), sd: new Uint8Array(g.nB) }; }
+function clonePos(P) { return { g: P.g, E: P.E.slice(), B: P.B.slice(), sd: P.sd.slice() }; }
+function apply(P, e, p) { P.E[e] = p; const done = []; for (const b of P.g.ADJ[e]) if (++P.sd[b] === 4) { P.B[b] = p; done.push(b); } return done; }
+function unapply(P, e) { for (const b of P.g.ADJ[e]) { if (P.sd[b] === 4) P.B[b] = -1; P.sd[b]--; } P.E[e] = -1; }
+function freeEdges(P) { const o = []; for (let e = 0; e < P.g.nE; e++) if (P.E[e] < 0) o.push(e); return o; }
+const completes = (P, e) => { let k = 0; for (const b of P.g.ADJ[e]) if (P.sd[b] === 3) k++; return k; };
+const isSafe = (P, e) => P.g.ADJ[e].every((b) => P.sd[b] < 2);
+function missing(P, b, not) { for (const e of P.g.BE[b]) if (P.E[e] < 0 && e !== not) return e; return -1; }
+const other = (g, e, b) => { const a = g.ADJ[e]; return a.length === 2 ? (a[0] === b ? a[1] : a[0]) : -1; };
+
+/* quantos quadrados o adversário leva, pegando tudo, depois de a linha e ser traçada */
+function greedyGive(P, e) {
+  const Q = clonePos(P); apply(Q, e, 9); let n = 0, go = true;
+  while (go) { go = false; for (let b = 0; b < Q.g.nB; b++) if (Q.sd[b] === 3) { n += apply(Q, missing(Q, b), 9).length; go = true; } }
+  return n;
+}
+
+/* ===================== Fim de jogo: cadeias e ciclos =====================
+   Sem linha segura e sem quadrado para fechar, todo quadrado livre tem dois lados traçados:
+   os quadrados formam cadeias (que terminam na borda) e ciclos. decompose devolve as peças,
+   ou null se a posição tiver outro formato (por exemplo, um quadrado com três saídas). */
+function decompose(P) {
+  const g = P.g, seen = new Uint8Array(g.nB), comps = [];
+  for (let b = 0; b < g.nB; b++) if (P.B[b] < 0 && P.sd[b] !== 2) return null;
+  for (let s = 0; s < g.nB; s++) {
+    if (P.B[s] >= 0 || seen[s]) continue;
+    // anda pela peça a partir de s nos dois sentidos
+    const fr = g.BE[s].filter((e) => P.E[e] < 0);
+    const walk = (start, e0) => { const path = []; let b = start, e = e0; for (;;) { const n = other(g, e, b); if (n < 0) return { path, ground: true, end: e }; if (n === s) return { path, ground: false, end: e }; path.push({ b: n, via: e }); seen[n] = 1; e = g.BE[n].find((x) => P.E[x] < 0 && x !== e); b = n; } };
+    seen[s] = 1;
+    const a = walk(s, fr[0]);
+    if (!a.ground) { const boxes = [s, ...a.path.map((x) => x.b)]; comps.push({ loop: true, len: boxes.length, boxes, open: fr[0] }); continue; }
+    const z = walk(s, fr[1]);
+    const order = [...z.path.map((x) => x.b).reverse(), s, ...a.path.map((x) => x.b)];
+    const inner = [...z.path.map((x) => x.via).reverse(), ...a.path.map((x) => x.via)];
+    comps.push({ loop: false, len: order.length, boxes: order, ends: [z.end, a.end], inner });
+  }
+  return comps;
+}
+/* valor do fim de jogo simples para quem precisa abrir uma peça (2 jogadores, quem fecha joga de novo).
+   Abrir uma cadeia de 1 ou 2 não deixa o outro recusar (a de 2 é entregue pelo meio). */
+const SEMEMO = new Map();
+function endValue(comps) {
+  if (!comps.length) return 0;
+  const key = comps.map((c) => (c.loop ? 'L' : 'C') + c.len).sort().join(',');
+  if (SEMEMO.has(key)) return SEMEMO.get(key);
+  let best = -Infinity; const tried = new Set();
+  comps.forEach((c, i) => {
+    const k = (c.loop ? 'L' : 'C') + c.len; if (tried.has(k)) return; tried.add(k);
+    const rest = comps.filter((_, j) => j !== i), f = endValue(rest), L = c.len;
+    let opp = L + f;                                   // o adversário pega tudo e abre a próxima
+    if (c.loop) opp = Math.max(opp, L - 8 - f);        // ou pega todos menos 4 e fica com o controle
+    else if (L >= 3) opp = Math.max(opp, L - 4 - f);   // ou pega todos menos 2 e fica com o controle
+    best = Math.max(best, -opp);
+  });
+  if (SEMEMO.size > 50000) SEMEMO.clear();
+  SEMEMO.set(key, best); return best;
+}
+/* linha que abre cada peça: cadeia de 2 pelo meio; demais por uma ponta */
+const openEdge = (c) => c.loop ? c.open : (c.len === 2 ? c.inner[0] : c.ends[0]);
+
+/* recusa dupla: o quadrado A tem 3 lados, a linha que falta (x) leva a B, com 2 lados, e a outra linha livre de B (y)
+   não dá a terceira linha a mais ninguém. Traçar y deixa A e B para o adversário fechar com uma linha só. */
+function ddChance(P) {
+  const g = P.g;
+  for (let A = 0; A < g.nB; A++) {
+    if (P.B[A] >= 0 || P.sd[A] !== 3) continue;
+    const x = missing(P, A), B = other(g, x, A);
+    if (B < 0 || P.sd[B] !== 2) continue;
+    const y = missing(P, B, x), C = other(g, y, B);
+    if (C >= 0 && P.sd[C] >= 2) continue;
+    return { A, B, x, y };
+  }
+  return null;
+}
+
+/* ===================== Busca exata (2 jogadores) =====================
+   Com poucas linhas livres, testa todas as sequências (com memória) e devolve a melhor linha.
+   Valor = quadrados de quem joga menos os do adversário, daqui até o fim. */
+const EXACT_MAX = 18, NODE_CAP = 600000;
+function exact(P0, extra, rnd) {
+  const P = clonePos(P0), F = freeEdges(P), n = F.length; if (!n) return null;
+  const memo = new Map(); let nodes = 0; const full = 2 ** n - 1;
+  const ord = (mask) => { const cap = [], rest = []; for (let i = 0; i < n; i++) if (!(mask & (2 ** i))) (completes(P, F[i]) ? cap : rest).push(i); return cap.concat(rest); };
+  const rec = (mask) => {
+    if (mask === full) return 0;
+    const m = memo.get(mask); if (m !== undefined) return m;
+    if (++nodes > NODE_CAP) throw new Error('cap');
+    let best = -Infinity;
+    for (const i of ord(mask)) {
+      const e = F[i], k = apply(P, e, 0).length, sub = rec(mask + 2 ** i); unapply(P, e);
+      const v = k ? (extra ? k + sub : k - sub) : -sub;
+      if (v > best) best = v;
+    }
+    memo.set(mask, best); return best;
+  };
+  try {
+    let best = -Infinity, list = [];
+    for (const i of ord(0)) {
+      const e = F[i], k = apply(P, e, 0).length, sub = rec(2 ** i); unapply(P, e);
+      const v = k ? (extra ? k + sub : k - sub) : -sub;
+      if (v > best) { best = v; list = [e]; } else if (v === best) list.push(e);
+    }
+    return { e: pick(list, rnd), v: best };
+  } catch (err) { return null; }
+}
+
+/* ===================== Computador ===================== */
+/* devolve {e, why, dd, give} para o jogador da vez; nP = número de jogadores */
+function aiMove(P, level, rnd, nP, extra) {
+  const F = freeEdges(P); if (!F.length) return null;
+  const caps = F.filter((e) => completes(P, e));
+  const safe = F.filter((e) => !completes(P, e) && isSafe(P, e));
+  if (level === 'easy') {
+    if (caps.length && rnd() < 0.85) return { e: pick(caps, rnd), why: 'capture' };
+    if (safe.length && rnd() < 0.5) return { e: pick(safe, rnd), why: 'safe' };
+    const e = pick(F, rnd); return { e, why: completes(P, e) ? 'capture' : isSafe(P, e) ? 'safe' : 'give', give: completes(P, e) || isSafe(P, e) ? 0 : greedyGive(P, e) };
+  }
+  if (level === 'hard' && nP === 2 && F.length <= EXACT_MAX) {
+    const x = exact(P, extra, rnd); if (x) return { e: x.e, why: 'exact', v: x.v };
+  }
+  if (caps.length) {
+    if (level === 'hard' && extra) {
+      const dd = ddChance(P);
+      // fecha primeiro o que não faz parte da decisão de recusar
+      const firstCaps = dd ? caps.filter((e) => e !== dd.x) : caps;
+      if (firstCaps.length) return { e: pick(firstCaps, rnd), why: 'capture' };
+      if (dd) {
+        const Q = clonePos(P); apply(Q, dd.x, 9); apply(Q, dd.y, 9);
+        const QF = freeEdges(Q);
+        if (QF.length && !QF.some((e) => isSafe(Q, e) && !completes(Q, e))) {
+          const comps = decompose(Q);
+          if (comps && comps.length) { const f = endValue(comps); if (-2 - f > 2 + f) return { e: dd.y, why: 'dd', dd: true }; }
+          else if (!comps) {
+            // posição com junções: recusa se, pegando tudo, a entrega mais barata que sobraria já fosse de 3 ou mais
+            let minGive = Infinity; for (const e of QF) { const n = greedyGive(Q, e); if (n < minGive) minGive = n; if (minGive < 3) break; }
+            let left = 0; for (let b = 0; b < Q.g.nB; b++) if (Q.B[b] < 0) left++;
+            if (minGive >= 3 && left > 4) return { e: dd.y, why: 'dd', dd: true };
+          }
+        }
+      }
+    }
+    return { e: pick(caps, rnd), why: 'capture' };
+  }
+  if (safe.length) return { e: pick(safe, rnd), why: 'safe' };
+  // sem linha segura: entregar o mínimo
+  if (level === 'hard' && extra) {
+    const comps = decompose(P);
+    if (comps && comps.length) {
+      let best = -Infinity, list = [];
+      comps.forEach((c, i) => {
+        const rest = comps.filter((_, j) => j !== i), f = endValue(rest), L = c.len;
+        let opp = L + f; if (c.loop) opp = Math.max(opp, L - 8 - f); else if (L >= 3) opp = Math.max(opp, L - 4 - f);
+        if (-opp > best) { best = -opp; list = [c]; } else if (-opp === best) list.push(c);
+      });
+      const c = list.sort((a, b) => a.len - b.len)[0], e = openEdge(c);
+      return { e, why: !c.loop && c.len === 2 ? 'handout' : 'give', give: c.len };
+    }
+  }
+  let best = Infinity, list = [];
+  for (const e of F) { const n = greedyGive(P, e); if (n < best) { best = n; list = [e]; } else if (n === best) list.push(e); }
+  if (level === 'hard' && extra && best === 2) {
+    // entre as que dão 2, prefere as que não deixam o adversário recusar
+    const strict = list.filter((e) => { const Q = clonePos(P); apply(Q, e, 9); return !ddChance(Q); });
+    if (strict.length) return { e: pick(strict, rnd), why: 'handout', give: 2 };
+  }
+  return { e: pick(list, rnd), why: 'give', give: best };
+}
+
+/* ===================== Estado da partida ===================== */
+let S = null, P = null, aiTimer = null;
+const UI = { cur: -1, hint: -1, hintWhy: '', lastBoxes: [], newEdge: -1 };
+const curP = () => S.players[S.cur];
+const isHuman = (p) => p.kind === 'human';
+function scores() { const s = S.players.map(() => 0); for (let b = 0; b < P.g.nB; b++) if (P.B[b] >= 0) s[P.B[b]]++; return s; }
+function initials(players) {
+  const raw = players.map((p) => { const w = p.name.trim().split(/\s+/).filter(Boolean); const l = (s) => (s.match(/\p{L}|\p{N}/u) || ['?'])[0].toUpperCase(); return { one: w.length ? l(w[0]) : '?', two: w.length > 1 ? l(w[0]) + l(w[w.length - 1]) : (w[0] || '??').replace(/[^\p{L}\p{N}]/gu, '').slice(0, 2).replace(/^./, (c) => c.toUpperCase()) }; });
+  const out = raw.map((r) => r.one);
+  const dup = out.map((v) => out.filter((x) => x === v).length > 1);
+  out.forEach((v, i) => { if (dup[i]) out[i] = raw[i].two || v; });
+  out.forEach((v, i) => { if (out.indexOf(v) !== i) out[i] = v.slice(0, 1) + (i + 1); });
+  return out;
+}
+function newGame(cfg) {
+  clearTimeout(aiTimer);
+  const seed = cfg.seed != null && cfg.seed !== '' && isFinite(+cfg.seed) ? (+cfg.seed >>> 0) : ((Math.random() * 4294967295) >>> 0);
+  const ini = initials(cfg.players);
+  S = { v: 1, R: cfg.R, C: cfg.C, extra: cfg.extra !== false, seed, rng: seed | 0, first: cfg.first || 0, cur: cfg.first || 0,
+    players: cfg.players.map((p, i) => ({ name: p.name, kind: p.kind, ini: ini[i] })), moves: [], log: [], over: false };
+  store.set('setup', { R: S.R, C: S.C, extra: S.extra, players: cfg.players, first: S.first });
+  P = newPos(geo(S.R, S.C));
+  UI.cur = -1; UI.hint = -1; UI.lastBoxes = []; UI.newEdge = -1;
+  addLog('l.start', [S.R, S.C, seed, S.players[S.cur].name]);
+  save(); render(); schedule();
+}
+function addLog(k, a) { S.log.push({ k, a }); if (S.log.length > 300) S.log.splice(0, S.log.length - 300); }
+function logText(x) { return t(x.k, ...x.a.map((v) => (v && typeof v === 'object' && 'n' in v) ? nBoxes(v.n) : v)); }
+function save() { store.set('game', { v: 1, R: S.R, C: S.C, extra: S.extra, seed: S.seed, rng: S.rng, first: S.first, cur: S.cur, players: S.players, moves: S.moves, log: S.log, over: S.over }); }
+/* refaz a posição a partir da lista de jogadas */
+function replay() {
+  P = newPos(geo(S.R, S.C)); let cur = S.first;
+  for (const m of S.moves) { const done = apply(P, m.e, m.p); cur = done.length && S.extra ? m.p : (m.p + 1) % S.players.length; }
+  S.cur = cur;
+}
+function play(e, meta) {
+  if (!S || S.over || P.E[e] >= 0) return;
+  const p = S.cur, done = apply(P, e, p);
+  S.moves.push({ e, p });
+  UI.hint = -1; UI.lastBoxes = done; UI.newEdge = e;
+  const pl = S.players[p];
+  if (meta && meta.dd) addLog('l.dd', [pl.name]);
+  else if (meta && meta.why === 'give' && meta.give > 0 && !isHuman(pl)) addLog('l.open', [pl.name, { n: meta.give }]);
+  if (done.length) addLog('l.close', [pl.name, { n: done.length }, scores()[p]]);
+  UI.msg = done.length ? { k: S.extra ? 'st.again' : 'st.closedNo', a: [pl.name, { n: done.length }] } : null;
+  if (!done.length || !S.extra) S.cur = (p + 1) % S.players.length;
+  if (S.moves.length === P.g.nE) { finish(); return; }
+  if (UI.cur === e || (UI.cur >= 0 && P.E[UI.cur] >= 0)) UI.cur = nearestFree(UI.cur);
+  save(); render(); schedule();
+}
+function schedule() {
+  clearTimeout(aiTimer);
+  if (!S || S.over || isHuman(curP())) return;
+  aiTimer = setTimeout(() => {
+    if (!S || S.over || isHuman(curP())) return;
+    const st = { rng: S.rng }, r = () => rand(st);
+    const mv = aiMove(P, curP().kind, r, S.players.length, S.extra);
+    S.rng = st.rng;
+    if (mv) play(mv.e, mv);
+  }, reduced() ? 180 : (UI.lastBoxes.length ? 520 : 680));
+}
+function finish() {
+  S.over = true; clearTimeout(aiTimer);
+  const sc = scores(), top = Math.max(...sc), w = S.players.filter((_, i) => sc[i] === top).map((p) => p.name);
+  addLog('l.end', [w.length > 1 ? t('e.tie', w.join(t('e.and')), nBoxes(top)) : t('e.win', w[0], nBoxes(top))]);
+  save(); render(); showEnd();
+}
+function undo() {
+  if (!S || !S.moves.length) return;
+  const humans = S.players.some(isHuman);
+  if (!humans) return;
+  clearTimeout(aiTimer);
+  // volta até a última jogada de uma pessoa (inclusive), desfazendo as do computador depois dela
+  let i = S.moves.length - 1;
+  while (i >= 0 && !isHuman(S.players[S.moves[i].p])) i--;
+  if (i < 0) return;
+  S.moves.length = i; S.over = false; replay();
+  UI.hint = -1; UI.lastBoxes = []; UI.newEdge = -1; UI.msg = null;
+  addLog('l.undo', []); save(); render(); schedule();
+}
+function canUndo() { return !!(S && S.moves.some((m) => isHuman(S.players[m.p])) && (S.over || isHuman(curP()))); }
+function hint() {
+  if (!S || S.over || !isHuman(curP())) return;
+  const st = { rng: S.seed ^ S.moves.length }, r = () => rand(st);
+  const mv = aiMove(P, 'hard', r, S.players.length, S.extra);
+  if (!mv) return;
+  UI.hint = mv.e; UI.hintWhy = mv.why === 'give' ? t('why.give', nBoxes(mv.give)) : t('why.' + mv.why);
+  if (UI.cur >= 0 || document.activeElement === $('#board')) UI.cur = mv.e;
+  render();
+}
+
+/* ===================== Desenho ===================== */
+function boardSVG(g, Pp, opt) {
+  const s = [];
+  for (let r = 0; r < g.R; r++) for (let c = 0; c < g.C; c++) {
+    const b = r * g.C + c, o = Pp.B[b], x = M + c * U, y = M + r * U;
+    if (o >= 0) s.push(`<rect class="box${opt.newBoxes && opt.newBoxes.includes(b) ? ' new' : ''}" x="${x + 3}" y="${y + 3}" width="${U - 6}" height="${U - 6}" rx="4" fill="var(--s${o})"/><text class="ini" x="${x + U / 2}" y="${y + U / 2 + 1}" font-size="${opt.ini[o].length > 1 ? U * 0.34 : U * 0.42}" fill="var(--c${o})">${esc(opt.ini[o])}</text>`);
+  }
+  for (let e = 0; e < g.nE; e++) {
+    const G = g.EG[e];
+    if (Pp.E[e] >= 0) {
+      const len = U;
+      s.push(`<line class="ln${e === opt.last ? ' last' : ''}${e === opt.newEdge ? ' new' : ''}" style="--len:${len}" x1="${G.x1}" y1="${G.y1}" x2="${G.x2}" y2="${G.y2}"/>`);
+    } else {
+      s.push(`<line class="gridln" x1="${G.x1}" y1="${G.y1}" x2="${G.x2}" y2="${G.y2}"/>`);
+      if (opt.live) s.push(`<line class="hit" data-e="${e}" stroke-width="${U * 0.44}" x1="${G.x1 + (G.h ? 9 : 0)}" y1="${G.y1 + (G.h ? 0 : 9)}" x2="${G.x2 - (G.h ? 9 : 0)}" y2="${G.y2 - (G.h ? 0 : 9)}"/><line class="prev" x1="${G.x1}" y1="${G.y1}" x2="${G.x2}" y2="${G.y2}"/>`);
+    }
+  }
+  if (opt.hint >= 0) { const G = g.EG[opt.hint]; s.push(`<line class="hint" x1="${G.x1}" y1="${G.y1}" x2="${G.x2}" y2="${G.y2}"/>`); }
+  if (opt.cur >= 0) { const G = g.EG[opt.cur]; s.push(`<line class="kcur" x1="${G.x1}" y1="${G.y1}" x2="${G.x2}" y2="${G.y2}"/>`); }
+  for (let r = 0; r <= g.R; r++) for (let c = 0; c <= g.C; c++) s.push(`<circle class="dot" cx="${M + c * U}" cy="${M + r * U}" r="6"/>`);
+  return s.join('');
+}
+function render() {
+  if (!S) return;
+  const g = P.g, sc = scores(), live = !S.over && isHuman(curP());
+  const svg = $('#board');
+  svg.setAttribute('viewBox', `0 0 ${g.W} ${g.H}`);
+  svg.style.minWidth = Math.max(0, Math.min(g.C * 34 + 2 * 18, 2000)) + 'px';
+  svg.style.maxWidth = Math.min(820, Math.max(320, g.C * 120)) + 'px';
+  svg.classList.toggle('live', live);
+  svg.setAttribute('aria-label', t('board.label', g.R, g.C));
+  svg.setAttribute('aria-roledescription', t('board.role'));
+  const last = S.moves.length ? S.moves[S.moves.length - 1].e : -1;
+  svg.innerHTML = boardSVG(g, P, { live, last, newEdge: UI.newEdge, newBoxes: UI.lastBoxes, ini: S.players.map((p) => p.ini), hint: UI.hint, cur: live && UI.kbd && document.activeElement === svg ? UI.cur : -1 });
+  UI.newEdge = -1; UI.lastBoxes = [];
+  // placar
+  $('#score').setAttribute('aria-label', t('side'));
+  $('#score').innerHTML = S.players.map((p, i) => `<li class="${i === S.cur && !S.over ? 'cur' : ''}"${i === S.cur && !S.over ? ' aria-current="true"' : ''}><span class="sw" style="--sw-c:var(--c${i});--sw-s:var(--s${i})">${esc(p.ini)}</span><span class="nm">${esc(p.name)}</span><span class="kd">${esc(t('k.' + p.kind))}</span>${i === S.cur && !S.over ? `<span class="turn">${esc(t('turnTag'))}</span>` : ''}<b>${sc[i]}</b></li>`).join('');
+  // situação
+  const pl = curP();
+  let st;
+  if (S.over) st = esc(t('st.over'));
+  else {
+    const head = UI.msg ? esc(logText({ k: UI.msg.k, a: UI.msg.a })) + ' ' : '';
+    st = head + esc(t('st.turn', pl.name)) + (isHuman(pl) ? `<small>${esc(UI.hint >= 0 ? t('st.hint', UI.hintWhy) : t('st.you'))}</small>` : `<small>${esc(t('st.cpu', pl.name))}</small>`);
+  }
+  $('#status').innerHTML = st;
+  const free = sc.reduce((a, b) => a - b, g.nB);
+  $('#left').textContent = t('left', free, g.nB);
+  $('#bHint').disabled = !live;
+  $('#bUndo').disabled = !canUndo();
+  $('#help').textContent = t('kbd.help');
+  // ficha da partida
+  const dots = (g.R + 1) * (g.C + 1);
+  const chainPar = (g.R % 2 === 0 && g.C % 2 === 0) ? t('odd') : t('even');
+  $('#facts').innerHTML = [
+    [t('f.size'), t('f.sizeV', g.R, g.C, dots, g.nE)],
+    [t('f.rule'), S.extra ? t('f.extraY') : t('f.extraN')],
+    [t('f.moves'), S.moves.length + ' / ' + g.nE],
+    ...(S.players.length === 2 && S.extra ? [[t('f.chain'), t('f.chainV', chainPar)]] : [])
+  ].map(([a, b]) => `<li><b>${esc(a)}:</b> ${esc(b)}</li>`).join('');
+  $('#log').innerHTML = S.log.slice(-80).map((x) => `<li>${esc(logText(x))}</li>`).join('');
+  $('#seedInfo').textContent = t('g.seed', S.seed);
+}
+function edgeLabel(e) {
+  const G = P.g.EG[e]; let s = G.h ? t('edge.h', G.r + 1, G.c + 1, G.c + 2) : t('edge.v', G.r + 1, G.r + 2, G.c + 1);
+  const k = completes(P, e); s += ' · ' + (k ? t('edge.closes', nBoxes(k)) : isSafe(P, e) ? t('edge.safe') : t('edge.third'));
+  return s;
+}
+
+/* ===================== Teclado no tabuleiro ===================== */
+function nearestFree(from) {
+  const g = P.g, F = freeEdges(P); if (!F.length) return -1;
+  const c = from >= 0 ? g.EG[from] : { cx: g.W / 2, cy: g.H / 2 };
+  let best = F[0], bd = Infinity; F.forEach((e) => { const d = (g.EG[e].cx - c.cx) ** 2 + (g.EG[e].cy - c.cy) ** 2; if (d < bd) { bd = d; best = e; } });
+  return best;
+}
+function moveCursor(dx, dy) {
+  const g = P.g; if (UI.cur < 0 || P.E[UI.cur] >= 0) { UI.cur = nearestFree(UI.cur); return; }
+  const a = g.EG[UI.cur]; let best = -1, bs = Infinity;
+  for (const e of freeEdges(P)) {
+    if (e === UI.cur) continue;
+    const b = g.EG[e], vx = b.cx - a.cx, vy = b.cy - a.cy, along = vx * dx + vy * dy, perp = Math.abs(vx * dy - vy * dx);
+    if (along <= 1) continue;
+    const sc = along + perp * 2.2; if (sc < bs) { bs = sc; best = e; }
+  }
+  if (best >= 0) UI.cur = best;
+}
+function announce() { if (UI.cur >= 0 && P.E[UI.cur] < 0) $('#cursorLive').textContent = edgeLabel(UI.cur); }
+
+/* ===================== Idioma, tema e textos fixos ===================== */
+function applyStatic() {
+  document.documentElement.lang = HTML_LANG[LANG];
+  document.title = t('docTitle') + ' · Giovani Perotto Mesquita';
+  document.querySelectorAll('[data-t]').forEach((e) => { e.textContent = t(e.dataset.t); });
+  document.querySelectorAll('[data-ta]').forEach((e) => { e.setAttribute('aria-label', t(e.dataset.ta)); e.title = t(e.dataset.ta); });
+  $('#rList').innerHTML = ['rd.r1','rd.r2','rd.r3','rd.r4'].map((k) => `<li>${esc(t(k))}</li>`).join('');
+  $('#rStrat').innerHTML = ['rd.s1','rd.s2','rd.s3'].map((k) => `<li>${esc(t(k))}</li>`).join('');
+  $('#rCpu').innerHTML = ['rd.c1','rd.c2','rd.c3'].map((k) => `<li>${esc(t(k))}</li>`).join('');
+  $('#rKeys').innerHTML = `<li>${esc(t('rd.k1'))}</li><li>${esc(t('rd.k2', t('kbd.hintKey').toUpperCase()))}</li>`;
+  $('#lang').value = LANG;
+  renderSizes();
+  if ($('#dSetup').open) { renderPlayers(readPlayers()); syncSize(); }
+  if (S && S.over && $('#dEnd').open) showEnd();
+}
+function setLang(L, push) {
+  if (!LANGS.includes(L)) L = 'pt';
+  LANG = L; store.set('lang', L);
+  if (push !== false) history.replaceState(null, '', L === 'pt' ? location.pathname + location.search : '#' + L);
+  applyStatic(); render();
+}
+function setTheme(th) { document.documentElement.dataset.theme = th; }
+
+/* ===================== Configuração ===================== */
+const PRESETS = [[2,2,'sz.2'],[3,3,'sz.3'],[4,4,'sz.4'],[5,5,'sz.5'],[6,6,'sz.6'],[8,8,'sz.8'],[10,10,'sz.10']];
+function miniGrid(R, C) {
+  const n = Math.max(R, C), s = 34 / n, x0 = 3 + (34 - C * s) / 2, y0 = 3 + (34 - R * s) / 2, d = [];
+  for (let r = 0; r <= R; r++) for (let c = 0; c <= C; c++) d.push(`<circle cx="${(x0 + c * s).toFixed(1)}" cy="${(y0 + r * s).toFixed(1)}" r="${Math.max(0.9, 2.4 - n * 0.15).toFixed(1)}"/>`);
+  return `<svg viewBox="0 0 40 40" aria-hidden="true" fill="currentColor">${d.join('')}</svg>`;
+}
+function renderSizes() {
+  const f = $('#fSetup'), cur = f.size ? f.size.value : null;
+  $('#sizes').innerHTML = PRESETS.map(([r, c, k]) => `<label><input type="radio" name="size" value="${r}x${c}">${miniGrid(r, c)}<b>${r} × ${c}</b><small>${esc(t(k))}</small></label>`).join('')
+    + `<label><input type="radio" name="size" value="custom">${miniGrid(3, 5)}<b>${esc(t('setup.custom'))}</b><small>${esc(t('setup.customD'))}</small></label>`;
+  if (cur) { const i = f.querySelector(`input[name="size"][value="${cur}"]`); if (i) i.checked = true; }
+}
+function readSize() {
+  const f = $('#fSetup'), v = (f.querySelector('input[name="size"]:checked') || {}).value || '5x5';
+  if (v !== 'custom') { const [r, c] = v.split('x').map(Number); return { R: r, C: c, ok: true }; }
+  const R = Math.round(+f.rows.value), C = Math.round(+f.cols.value);
+  return { R, C, ok: R >= 1 && C >= 1 && R <= 15 && C <= 15 && R * C >= 2 };
+}
+function syncSize() {
+  const z = readSize(), f = $('#fSetup'), custom = ((f.querySelector('input[name="size"]:checked') || {}).value === 'custom');
+  $('#custom').hidden = !custom;
+  $('#sizeInfo').textContent = z.ok ? t('setup.sizeInfo', z.R * z.C, (z.R + 1) * (z.C + 1), (z.R + 1) * z.C + z.R * (z.C + 1)) : t('setup.sizeBad');
+  f.querySelector('button[type="submit"]').disabled = !z.ok;
+}
+function readPlayers() {
+  return [...document.querySelectorAll('#pList .prow')].map((r) => ({ name: r.querySelector('input').value, kind: r.querySelector('select').value }));
+}
+function renderPlayers(list) {
+  const ini = initials(list.map((p, i) => ({ name: p.name.trim() || t('def.player', i + 1) })));
+  $('#pList').innerHTML = list.map((p, i) => `<div class="prow"><span class="sw" style="--sw-c:var(--c${i});--sw-s:var(--s${i})" aria-hidden="true">${esc(ini[i])}</span><input type="text" aria-label="${esc(t('p.name', i + 1))}" maxlength="18" value="${esc(p.name)}"><select aria-label="${esc(t('p.type', i + 1))}">${['human','easy','medium','hard'].map((k) => `<option value="${k}"${p.kind === k ? ' selected' : ''}>${esc(t('p.' + k))}</option>`).join('')}</select><button type="button" class="btn" data-rm="${i}" aria-label="${esc(t('p.removeA', i + 1))}" ${list.length <= 2 ? 'disabled' : ''}>${esc(t('p.remove'))}</button></div>`).join('');
+  $('#bAddP').disabled = list.length >= 4;
+}
+function openSetup() {
+  const cfg = store.get('setup'), f = $('#fSetup');
+  renderSizes();
+  let v = '5x5';
+  if (cfg && cfg.R && cfg.C) { v = PRESETS.some(([r, c]) => r === cfg.R && c === cfg.C) ? cfg.R + 'x' + cfg.C : 'custom'; if (v === 'custom') { f.rows.value = cfg.R; f.cols.value = cfg.C; } }
+  f.querySelector(`input[name="size"][value="${v}"]`).checked = true;
+  f.extra.checked = !(cfg && cfg.extra === false);
+  f.seed.value = '';
+  renderPlayers(cfg && cfg.players && cfg.players.length >= 2 ? cfg.players : [{ name: t('def.you'), kind: 'human' }, { name: t('def.cpu'), kind: 'medium' }]);
+  syncSize();
+  $('#bCancel').hidden = !S;
+  $('#dSetup').showModal();
+}
+function showEnd() {
+  const sc = scores(), order = S.players.map((p, i) => ({ p, i, s: sc[i] })).sort((a, b) => b.s - a.s), top = order[0].s;
+  const w = order.filter((x) => x.s === top).map((x) => x.p.name);
+  $('#endMsg').textContent = w.length > 1 ? t('e.tie', w.join(t('e.and')), nBoxes(top)) : t('e.win', w[0], nBoxes(top));
+  $('#endRank').innerHTML = order.map((x) => `<li class="${x.s === top ? 'win' : ''}"><span><span class="sw" style="display:inline-grid;place-items:center;min-width:26px;height:26px;border-radius:7px;margin-right:.5rem;border:2px solid var(--c${x.i});background:var(--s${x.i});font-size:.8rem">${esc(x.p.ini)}</span>${x.s === top ? '🏆 ' : ''}${esc(x.p.name)} <small class="muted">${esc(t('k.' + x.p.kind))}</small></span><span>${esc(nBoxes(x.s))}</span></li>`).join('');
+  $('#endInfo').textContent = t('e.info', S.R, S.C, S.seed);
+  if (!$('#dEnd').open) $('#dEnd').showModal();
+}
+
+/* ===================== Eventos ===================== */
+$('#board').addEventListener('click', (e) => {
+  const h = e.target.closest('.hit'); if (!h || !S || S.over || !isHuman(curP())) return;
+  play(+h.dataset.e);
+});
+/* clique ou toque: sem cursor de teclado e sem redesenhar no foco (o redesenho trocaria a linha sob o dedo) */
+$('#board').addEventListener('pointerdown', () => { UI.kbd = false; UI.ptr = true; setTimeout(() => { UI.ptr = false; }, 400); });
+$('#board').addEventListener('focus', () => { if (UI.ptr) return; UI.kbd = true; if (S && !S.over) { if (UI.cur < 0 || P.E[UI.cur] >= 0) UI.cur = nearestFree(-1); render(); announce(); } });
+$('#board').addEventListener('blur', () => { if (S && UI.kbd) render(); });
+$('#board').addEventListener('keydown', (e) => {
+  if (!S || S.over) return;
+  const k = e.key, d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[k];
+  if (d || k === 'Enter' || k === ' ') UI.kbd = true;
+  if (d) { e.preventDefault(); moveCursor(d[0], d[1]); render(); announce(); return; }
+  if ((k === 'Enter' || k === ' ') && isHuman(curP())) { e.preventDefault(); if (UI.cur >= 0 && P.E[UI.cur] < 0) { play(UI.cur); $('#board').focus(); announce(); } }
+});
+$('#bHint').addEventListener('click', hint);
+$('#bUndo').addEventListener('click', undo);
+$('#bNew').addEventListener('click', () => { if (S && !S.over && S.moves.length && !confirm(t('confirmNew'))) return; openSetup(); });
+$('#bRules').addEventListener('click', () => { $('#dRules').showModal(); $('#dRules').scrollTop = 0; $('#hRules').focus(); });
+$('#bRulesClose').addEventListener('click', () => $('#dRules').close());
+$('#bTheme').addEventListener('click', () => { const th = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; setTheme(th); store.set('theme', th); });
+$('#lang').addEventListener('change', (e) => setLang(e.target.value));
+window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (LANGS.includes(h) && h !== LANG) setLang(h, false); });
+$('#fSetup').addEventListener('change', (e) => { if (e.target.name === 'size' || e.target.name === 'rows' || e.target.name === 'cols') syncSize(); });
+$('#fSetup').addEventListener('input', (e) => { if (e.target.name === 'rows' || e.target.name === 'cols') syncSize(); if (e.target.closest('.prow')) { const l = readPlayers(); const ini = initials(l.map((p, i) => ({ name: p.name.trim() || t('def.player', i + 1) }))); document.querySelectorAll('#pList .sw').forEach((s, i) => { s.textContent = ini[i]; }); } });
+$('#bAddP').addEventListener('click', () => { const l = readPlayers(); if (l.length < 4) { l.push({ name: t('def.cpuN', l.filter((x) => x.kind !== 'human').length + 1), kind: 'medium' }); renderPlayers(l); } });
+$('#pList').addEventListener('click', (e) => { const b = e.target.closest('[data-rm]'); if (!b) return; const l = readPlayers(); l.splice(+b.dataset.rm, 1); renderPlayers(l); });
+$('#bCancel').addEventListener('click', () => $('#dSetup').close());
+$('#dSetup').addEventListener('cancel', (e) => { if (!S) e.preventDefault(); });
+$('#fSetup').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const f = e.target, z = readSize(); if (!z.ok) return;
+  const players = readPlayers().map((p, i) => ({ name: p.name.trim().slice(0, 18) || t('def.player', i + 1), kind: ['human','easy','medium','hard'].includes(p.kind) ? p.kind : 'human' }));
+  $('#dSetup').close();
+  newGame({ R: z.R, C: z.C, extra: f.extra.checked, players, seed: f.seed.value.trim(), first: 0 });
+});
+$('#bEndClose').addEventListener('click', () => $('#dEnd').close());
+$('#bEndNew').addEventListener('click', () => { $('#dEnd').close(); openSetup(); });
+$('#bEndAgain').addEventListener('click', () => {
+  $('#dEnd').close();
+  const c = store.get('setup'); if (!c) { openSetup(); return; }
+  newGame(Object.assign({}, c, { seed: '', first: ((c.first || 0) + 1) % c.players.length }));
+});
+document.addEventListener('keydown', (e) => {
+  if (document.querySelector('dialog[open]')) return;
+  const tag = (e.target.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'select' || tag === 'textarea') return;
+  if ((e.ctrlKey || e.metaKey) && !e.altKey && (e.key === 'z' || e.key === 'Z')) { if (canUndo()) { e.preventDefault(); undo(); } return; }
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.key.toLowerCase() === t('kbd.hintKey')) { e.preventDefault(); hint(); }
+});
+
+/* ===================== Início ===================== */
+(function init() {
+  const th = store.get('theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  setTheme(th);
+  const h = location.hash.slice(1), saved = store.get('lang'), nav = (navigator.language || 'pt').slice(0, 2).toLowerCase();
+  LANG = LANGS.includes(h) ? h : LANGS.includes(saved) ? saved : LANGS.includes(nav) ? nav : 'pt';
+  applyStatic();
+  const g = store.get('game');
+  if (g && g.v === 1 && g.R >= 1 && g.C >= 1 && g.R <= 15 && g.C <= 15 && Array.isArray(g.players) && g.players.length >= 2 && Array.isArray(g.moves)) {
+    S = g; S.log = S.log || []; replay();
+    if (S.moves.length === P.g.nE) S.over = true;
+    render();
+    if (S.over) showEnd(); else schedule();
+  } else { S = null; openSetup(); }
+})();
+</script>
+</body>
+</html>
