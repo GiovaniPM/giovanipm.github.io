@@ -639,6 +639,19 @@ const I18N={
 'tl.month':['Mês','Month','Mese','Mes'],
 'tl.deps':['Dependências','Dependencies','Dipendenze','Dependencias'],
 'tl.crit':['Caminho crítico','Critical path','Percorso critico','Ruta crítica'],
+'tl.undo':['↶ Desfazer','↶ Undo','↶ Annulla','↶ Deshacer'],
+'tl.redo':['↷ Refazer','↷ Redo','↷ Ripeti','↷ Rehacer'],
+'tl.undoT':['Desfaz a última mudança no Timeline (Ctrl+Z)','Undoes the last change in the Timeline (Ctrl+Z)','Annulla l’ultima modifica nella Timeline (Ctrl+Z)','Deshace el último cambio en el Cronograma (Ctrl+Z)'],
+'tl.redoT':['Refaz a mudança desfeita (Ctrl+Y ou Ctrl+Shift+Z)','Redoes the undone change (Ctrl+Y or Ctrl+Shift+Z)','Ripete la modifica annullata (Ctrl+Y o Ctrl+Maiusc+Z)','Rehace el cambio deshecho (Ctrl+Y o Ctrl+Mayús+Z)'],
+'tl.undone':['↶ Desfeito: {0}. Ctrl+Y refaz.','↶ Undone: {0}. Ctrl+Y redoes.','↶ Annullato: {0}. Ctrl+Y ripete.','↶ Deshecho: {0}. Ctrl+Y rehace.'],
+'tl.redone':['↷ Refeito: {0}.','↷ Redone: {0}.','↷ Ripetuto: {0}.','↷ Rehecho: {0}.'],
+'tl.nothingUndo':['Nada para desfazer no Timeline.','Nothing to undo in the Timeline.','Niente da annullare nella Timeline.','Nada que deshacer en el Cronograma.'],
+'tl.nothingRedo':['Nada para refazer.','Nothing to redo.','Niente da ripetere.','Nada que rehacer.'],
+'tl.uDates':['datas de {0}','dates of {0}','date di {0}','fechas de {0}'],
+'tl.uPlace':['posição e fase de {0}','position and phase of {0}','posizione e fase di {0}','posición y fase de {0}'],
+'tl.uBoth':['datas, posição e fase de {0}','dates, position and phase of {0}','date, posizione e fase di {0}','fechas, posición y fase de {0}'],
+'tl.uResched':['reagendamento de {0}','rescheduling of {0}','ripianificazione di {0}','reprogramación de {0}'],
+'tl.uSort':['ordenar por data','sort by date','ordina per data','ordenar por fecha'],
 'tl.gripT':['Arraste para mudar a posição ou a fase da tarefa','Drag to change the task’s position or phase','Trascina per cambiare la posizione o la fase dell’attività','Arrastra para cambiar la posición o la fase de la tarea'],
 'tl.rowHint':['também pela lista à esquerda (no celular, pela alça ⋮⋮); Alt+↑/↓ na barra muda a posição','also from the list on the left (on a phone, by the ⋮⋮ handle); Alt+↑/↓ on a bar changes the position','anche dall’elenco a sinistra (sul telefono, con la maniglia ⋮⋮); Alt+↑/↓ sulla barra cambia la posizione','también desde la lista de la izquierda (en el móvil, por el asa ⋮⋮); Alt+↑/↓ en la barra cambia la posición'],
 'tl.placed':['#{0} → {1}, posição {2}','#{0} → {1}, position {2}','#{0} → {1}, posizione {2}','#{0} → {1}, posición {2}'],
@@ -1091,6 +1104,32 @@ function phases(){const o=[];S.tasks.forEach(t=>{const p=phKey(t);if(!o.includes
 function owners(){return [...new Set(S.tasks.map(t=>t.owner).filter(Boolean))].sort((a,b)=>a.localeCompare(b));}
 /* ordem: fases na ordem em que aparecem; dentro da fase, pela data de início, ou na ordem manual (posição no array) depois que o usuário arrasta uma tarefa */
 function sortedTasks(){const ph=phases();return [...S.tasks].sort((a,b)=>ph.indexOf(phKey(a))-ph.indexOf(phKey(b))||(S.manualOrder?0:(a.start<b.start?-1:a.start>b.start?1:0)));}
+/* ===================== Desfazer / refazer do Timeline =====================
+   Guarda só o que o Timeline altera: datas, fase, ordem das tarefas e o modo de ordem manual.
+   Assim desfazer não apaga edições feitas no formulário (título, status, notas...). Um arraste = um passo. */
+let TL={s:null,u:[],r:[]};
+function tlStacks(){if(TL.s!==S)TL={s:S,u:[],r:[]};return TL;}
+function tlSnap(){return {o:S.tasks.map(t=>[t.id,t.start,t.end,t.phase||'']),m:!!S.manualOrder};}
+/* registra o estado ANTERIOR (snap) de uma mudança já feita; what = [chave, argumentos] para o aviso */
+function tlPush(snap,what){const T=tlStacks();snap.w=what;T.u.push(snap);if(T.u.length>100)T.u.shift();T.r.length=0;tlButtons();}
+function tlApply(snap){
+  const pos=new Map(snap.o.map((x,i)=>[x[0],i])),now=nowLocal();
+  snap.o.forEach(([id,st,en,ph])=>{const t=tById(id);if(t&&(t.start!==st||t.end!==en||(t.phase||'')!==ph)){t.start=st;t.end=en;t.phase=ph;t.updatedAt=now;}});
+  S.tasks.sort((a,b)=>(pos.has(a.id)?pos.get(a.id):1e9)-(pos.has(b.id)?pos.get(b.id):1e9));
+  S.manualOrder=snap.m;markDirty();holdGanttScroll();render();
+}
+function tlWhat(w){return w?_t(w[0],...(w[1]||[])):'';}
+function tlUndo(){
+  const T=tlStacks();if(GD||RD)return;if(!T.u.length){toast(_t('tl.nothingUndo'));return;}
+  const snap=T.u.pop(),cur=tlSnap();cur.w=snap.w;T.r.push(cur);tlApply(snap);toast(_t('tl.undone',tlWhat(snap.w)));
+}
+function tlRedo(){
+  const T=tlStacks();if(GD||RD)return;if(!T.r.length){toast(_t('tl.nothingRedo'));return;}
+  const snap=T.r.pop(),cur=tlSnap();cur.w=snap.w;T.u.push(cur);tlApply(snap);toast(_t('tl.redone',tlWhat(snap.w)));
+}
+function tlButtons(){const T=tlStacks(),u=$('[data-act="tlUndo"]'),r=$('[data-act="tlRedo"]');
+  if(u){u.disabled=!T.u.length;u.title=_t('tl.undoT')+(T.u.length?' — '+tlWhat(T.u[T.u.length-1].w):'');}
+  if(r){r.disabled=!T.r.length;r.title=_t('tl.redoT')+(T.r.length?' — '+tlWhat(T.r[T.r.length-1].w):'');}}
 /* põe a tarefa t na fase `phase`, antes da tarefa beforeId (ou no fim da fase). Liga a ordem manual na primeira vez. */
 function placeTask(t,phase,beforeId){
   if(!S.manualOrder){S.tasks=sortedTasks();S.manualOrder=true;}
@@ -1670,6 +1709,7 @@ function vTimeline(){
     <span class="muted small">${_t('tl.zoom')}</span>${['day','week','month'].map(z=>`<button class="btn sm ${UI.zoom===z?'primary':''}" data-act="zoom" data-z="${z}">${_t('tl.'+z)}</button>`).join('')}
     <label class="row small" style="margin-left:8px"><input type="checkbox" data-act="toggleDeps" ${UI.showDeps?'checked':''}> ${_t('tl.deps')}</label>
     <label class="row small"><input type="checkbox" data-act="toggleCrit" ${UI.showCrit?'checked':''}> ${_t('tl.crit')}</label>
+    <button class="btn sm" data-act="tlUndo" ${tlStacks().u.length?'':'disabled'} title="${_t('tl.undoT')}" aria-label="${_t('tl.undo')}">${_t('tl.undo')}</button><button class="btn sm" data-act="tlRedo" ${tlStacks().r.length?'':'disabled'} title="${_t('tl.redoT')}" aria-label="${_t('tl.redo')}">${_t('tl.redo')}</button>
     <button class="btn sm" data-act="resched" title="${_t('tl.reschedT')}">${_t('b.resched')}</button>
     ${S.manualOrder?`<button class="btn sm" data-act="sortByDate" title="${_t('tl.sortDateT')}">${_t('tl.sortDate')}</button>`:''}
     <button class="btn sm" data-act="import">${_t('b.importShort')}</button><button class="btn sm primary" data-act="newTask">${_t('b.task')}</button></div>
@@ -2416,8 +2456,10 @@ const ACT={
     if(need===-Infinity){toast(_t('tf.addOne'));return;}
     const dur=dn(en)-dn(st);f.start.value=iso(need);f.end.value=iso(need+dur);toast(_t('tf.fitted',fmt(iso(need))));},
   resched:()=>openReschedule(planReschedule()),
-  sortByDate:()=>{S.manualOrder=false;markDirty();holdGanttScroll();render();toast(_t('tl.sortedDate'));},
-  applyResched:()=>{(MD.resched||[]).forEach(c=>{c.t.start=c.ns;c.t.end=c.ne;});const n=(MD.resched||[]).length;MD.resched=null;closeModal();markDirty();render();toast(_t('rsch.done',_p(n,'task')));},
+  sortByDate:()=>{const sn=tlSnap();S.manualOrder=false;markDirty();holdGanttScroll();render();tlPush(sn,['tl.uSort']);toast(_t('tl.sortedDate'));},
+  tlUndo:()=>tlUndo(),
+  tlRedo:()=>tlRedo(),
+  applyResched:()=>{const sn=tlSnap();(MD.resched||[]).forEach(c=>{c.t.start=c.ns;c.t.end=c.ne;});const n=(MD.resched||[]).length;MD.resched=null;closeModal();markDirty();holdGanttScroll();render();if(n)tlPush(sn,['tl.uResched',[_p(n,'task')]]);toast(_t('rsch.done',_p(n,'task')));},
   spDownload:()=>{if(!S){toast(_t('sp.noData'));return;}S.savedAt=new Date().toISOString();download(slug(S.project.name)+'.html',serialize(),'text/html');closeModal();toast(_t(spK('dlDone')));},
   restore:()=>{S=pendingRestore.data;pendingRestore=null;normalize();dirty=true;$('#dirty').classList.add('on');render();toast(_t('rs.done'));},
   discardRestore:()=>{pendingRestore=null;try{localStorage.removeItem(BK);}catch(e){}render();}
@@ -2455,7 +2497,9 @@ function gdEnd(apply){
   if(g.moved)gdSuppress=Date.now();
   if(apply&&g.moved){
     const {ns,ne}=ganttDates(g.t,g.mode,g.dd);
+    const sn=tlSnap(),dt=ns!==g.t.start||ne!==g.t.end;
     const placed=g.tg?placeTask(g.t,g.tg.phase,g.tg.beforeId):false;
+    if(placed||dt)tlPush(sn,[placed&&dt?'tl.uBoth':placed?'tl.uPlace':'tl.uDates',['#'+g.t.num]]);
     if(!commitDates(g.t,ns,ne,false)&&placed){holdGanttScroll();render();toastPlaced(g.t);}
   }
 }
@@ -2512,7 +2556,9 @@ document.addEventListener('keydown',e=>{
   if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')return;
   e.preventDefault();
   const dd=e.key==='ArrowRight'?1:-1,mode=e.shiftKey&&!t.milestone?'e':'m';
-  const {ns,ne}=ganttDates(t,mode,dd);commitDates(t,ns,ne,true);
+  const {ns,ne}=ganttDates(t,mode,dd),sn=tlSnap();
+  if(ns!==t.start||ne!==t.end)tlPush(sn,['tl.uDates',['#'+t.num]]);
+  commitDates(t,ns,ne,true);
 },true);
 /* ===================== Gantt: arrastar a tarefa na lista à esquerda para mudar posição e fase =====================
    mouse e caneta: a linha inteira; toque: só a alça ⋮⋮ (o resto da lista continua rolando a página). Esc cancela. */
@@ -2555,7 +2601,7 @@ function rdEnd(apply){
   document.querySelectorAll('.gantt .left .droph').forEach(x=>x.classList.remove('droph'));
   if(d.ind)d.ind.remove();
   if(d.moved)gdSuppress=Date.now();
-  if(apply&&d.moved&&d.tg&&placeTask(d.t,d.tg.phase,d.tg.beforeId)){holdGanttScroll();render();toastPlaced(d.t);}
+  if(apply&&d.moved&&d.tg){const sn=tlSnap();if(placeTask(d.t,d.tg.phase,d.tg.beforeId)){tlPush(sn,['tl.uPlace',['#'+d.t.num]]);holdGanttScroll();render();toastPlaced(d.t);}}
 }
 function rdUpdate(y){RD.tg=noopTarget(RD.t,rowTarget(y));dropInd(RD,RD.tg);}
 document.addEventListener('pointerdown',e=>{
@@ -2581,7 +2627,7 @@ document.addEventListener('keydown',e=>{
   if(!e.altKey||(e.key!=='ArrowUp'&&e.key!=='ArrowDown'))return;
   const bar=e.target.closest&&e.target.closest('.gantt .barg[data-id]');if(!bar)return;
   e.preventDefault();e.stopImmediatePropagation();
-  const t=tById(bar.dataset.id);if(!t||!shiftTask(t,e.key==='ArrowUp'?-1:1))return;
+  const t=tById(bar.dataset.id);if(!t)return;const sn=tlSnap();if(!shiftTask(t,e.key==='ArrowUp'?-1:1))return;tlPush(sn,['tl.uPlace',['#'+t.num]]);
   holdGanttScroll();render();const nb=document.querySelector(`.gantt .barg[data-id="${t.id}"]`);if(nb)nb.focus({preventScroll:true});
   toastPlaced(t);
 },true);
@@ -2597,6 +2643,13 @@ $('#saveAsBtn').addEventListener('click',()=>save(true));
 if(!window.showSaveFilePicker||SP)$('#saveAsBtn').style.display='none';
 $('#langSel').addEventListener('change',e=>setLang(e.target.value));
 window.addEventListener('hashchange',()=>{const h=(location.hash||'').slice(1);if(LANGS.includes(h)&&h!==LANG)setLang(h,true);});
+document.addEventListener('keydown',e=>{
+  if(!(e.ctrlKey||e.metaKey)||e.altKey||!S||UI.view!=='timeline')return;
+  const k=e.key.toLowerCase();if(k!=='z'&&k!=='y')return;
+  if(e.target.closest&&e.target.closest('input,textarea,select,[contenteditable="true"]'))return;
+  if(!$('#modal').classList.contains('hidden'))return;
+  e.preventDefault();if(k==='y'||e.shiftKey)tlRedo();else tlUndo();
+});
 document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();save(false);}if(e.key==='Escape')closeModal();if((e.key==='Enter'||e.key===' ')&&e.target.matches('tr[data-act][tabindex]')){e.preventDefault();e.target.click();}});
 window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
 
