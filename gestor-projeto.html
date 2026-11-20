@@ -2132,14 +2132,15 @@ async function save(as){
 const XNS='http://schemas.microsoft.com/project';
 /* texto seguro para XML (elementos e atributos), sem caracteres de controle */
 const xe=s=>String(s??'').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
-function stamp(){const loc=nowLocal();return `${loc.slice(0,10)}_${loc.slice(11,13)}h${loc.slice(14,16)}`;}
+/* carimbo do nome de arquivo: 2026-11-20_14h05 (com seg=true: 2026-11-20_14h05m32s) */
+function stamp(d,seg){const loc=nowLocal(d);return `${loc.slice(0,10)}_${loc.slice(11,13)}h${loc.slice(14,16)}`+(seg?`m${loc.slice(17,19)}s`:'');}
 function exportJson(){
   if(!S){toast(_t('ex.nothing'));return;}
   const d=new Date(),loc=nowLocal(d);let tz='';try{tz=Intl.DateTimeFormat().resolvedOptions().timeZone||'';}catch(e){}
   const data=Object.assign({app:'gestor-projeto',
     export:{at:loc,utc:d.toISOString(),timezone:tz,local:fmtDT(d),savedAt:S.savedAt?nowLocal(new Date(S.savedAt)):null,
       note:'Datas e horas no fuso local (ISO 8601 com deslocamento). at = momento da exportação; savedAt = último Salvar do HTML. Nas tarefas: history[].at = hora em que a atualização foi registrada; createdAt/updatedAt = criação e última edição.'}},S);
-  download(`${slug(S.project.name)}-${stamp()}.json`,JSON.stringify(data,null,2),'application/json');
+  download(`${slug(S.project.name)}-${stamp(d,true)}.json`,JSON.stringify(data,null,2),'application/json');
   toast(_t('ex.jsonDone',fmtDT(d)));
 }
 function openExportMenu(){
