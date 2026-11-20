@@ -170,6 +170,14 @@ body.gdrag.gresize,body.gdrag.gresize *{cursor:ew-resize!important}
 .act-row.done input[type=text]{text-decoration:line-through;color:var(--muted)}
 .scroll{overflow-x:auto}
 .tbl td.num,.tbl th.num{text-align:right;white-space:nowrap}
+.tbl th.srt-th{padding:0}
+.tbl .srt{all:unset;box-sizing:border-box;display:block;width:100%;padding:8px;cursor:pointer;font:inherit;text-transform:inherit;letter-spacing:inherit;color:inherit;white-space:nowrap}
+.tbl th.num .srt{text-align:right}
+.tbl .srt:hover{color:var(--ink);background:#f1f3f8}
+.tbl .srt:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.tbl .srt .ar{margin-left:4px;font-size:10px;opacity:.45}
+.tbl th[aria-sort="ascending"] .srt,.tbl th[aria-sort="descending"] .srt{color:var(--ink)}
+.tbl th[aria-sort="ascending"] .ar,.tbl th[aria-sort="descending"] .ar{opacity:1}
 .note{font-size:12.5px;color:var(--muted);margin:10px 0 0}
 .note b{color:var(--ink)}
 .stk{display:flex;height:18px;border-radius:5px;overflow:hidden;background:#edf0f5;min-width:120px}
@@ -463,7 +471,8 @@ const I18N={
 'tm.balNone':['Precisa de 2+ pessoas com trabalho pendente','Needs 2+ people with pending work','Servono 2+ persone con lavoro in sospeso','Necesita 2+ personas con trabajo pendiente'],
 'tm.balS':['{0} tem {1}× a média de trabalho pendente','{0} has {1}× the average pending work','{0} ha {1}× la media del lavoro in sospeso','{0} tiene {1}× la media de trabajo pendiente'],
 'tm.byPerson':['Indicadores por pessoa','Indicators per person','Indicatori per persona','Indicadores por persona'],
-'tm.byPersonS':['clique numa pessoa para ver as tarefas dela','click a person to see their tasks','clicca su una persona per vedere le sue attività','haz clic en una persona para ver sus tareas'],
+'tm.sortBy':['Ordenar por {0}','Sort by {0}','Ordina per {0}','Ordenar por {0}'],
+'tm.byPersonS':['clique numa pessoa para ver as tarefas dela · clique no título de uma coluna para ordenar; clique de novo para inverter','click a person to see their tasks · click a column title to sort; click again to reverse','clicca su una persona per vedere le sue attività · clicca sul titolo di una colonna per ordinare; clicca di nuovo per invertire','haz clic en una persona para ver sus tareas · haz clic en el título de una columna para ordenar; otra vez para invertir'],
 'tm.seeTasks':['Ver tarefas de {0}','See tasks of {0}','Vedi le attività di {0}','Ver tareas de {0}'],
 'c.person':['Pessoa','Person','Persona','Persona'],
 'c.tasks':['Tarefas','Tasks','Attività','Tareas'],
@@ -1508,6 +1517,27 @@ const pctTxt=v=>v==null?'—':r0(v)+'%';
 const xTxt=v=>v==null?'—':r1(v)+'×';
 const kpiCard=(l,v,sub,bad)=>`<div class="card kpi"><div class="lbl">${l}</div><div class="val" ${bad?'style="color:var(--bad)"':''}>${v}${bad?` <span style="font-size:15px" title="${_t('attn')}">▲</span>`:''}</div><div class="sub">${sub}</div></div>`;
 function pbarAbs(v,max,c,lbl){return `<div class="pb"><div class="bar" style="flex:1"><i style="width:${Math.min(100,v/max*100)}%;background:${c}"></i></div><span style="min-width:0;text-align:left;white-space:nowrap">${lbl}</span></div>`;}
+/* tabela "Indicadores por pessoa": colunas ordenáveis. Vazios (—) ficam sempre no fim; empate segue pelo nome;
+   a linha "Sem responsável" fica sempre por último. Começa por Pessoa, crescente (a ordem de sempre). */
+const TMC=[
+  {k:'o',l:'c.person',v:r=>r.o},{k:'n',l:'c.tasks',v:r=>r.s.n},{k:'done',l:'c.done',v:r=>r.s.done},{k:'active',l:'c.active',v:r=>r.s.active},
+  {k:'late',l:'c.late',v:r=>r.s.late},{k:'onTime',l:'c.onTime',v:r=>r.s.onTime},{k:'cycle',l:'c.cycle',t:'c.cycleT',v:r=>r.s.cycle},
+  {k:'acc',l:'c.acc',t:'c.accT',v:r=>r.s.acc},{k:'spi',l:'SPI',v:r=>r.s.spi},{k:'thr28',l:'c.thr',t:'c.thrT',v:r=>r.s.thr28},
+  {k:'reg',l:'c.reg',t:'c.regT',v:r=>r.s.reg},{k:'blockDays',l:'c.blk',t:'c.blkT',v:r=>r.s.blockDays},
+  {k:'acts',l:'c.acts',t:'c.actsT',v:r=>r.s.acts?r.s.acts-r.s.actsDone:null},{k:'lu',l:'c.lastUpd',v:r=>r.lu||null}];
+function tmSort(){const s=UI.tmSort;return s&&TMC.some(c=>c.k===s.k)?s:{k:'o',d:1};}
+function tmSorted(rows){
+  const s=tmSort(),c=TMC.find(x=>x.k===s.k),nm=(a,b)=>a.o.localeCompare(b.o);
+  const R=rows.map(r=>({...r,lu:S.tasks.filter(t=>r.o?hasOwn(t,r.o):!ownsOf(t).length).map(lastChange).sort().pop()}));
+  const named=R.filter(r=>r.o),none=R.filter(r=>!r.o);
+  named.sort((a,b)=>{const x=c.v(a),y=c.v(b),nx=x==null||(typeof x==='number'&&!isFinite(x)),ny=y==null||(typeof y==='number'&&!isFinite(y));
+    if(nx||ny)return nx&&ny?nm(a,b):nx?1:-1;
+    const d=typeof x==='string'?x.localeCompare(y):x-y;return d?d*s.d:nm(a,b);});
+  return [...named,...none];
+}
+function tmHead(){const s=tmSort();
+  return TMC.map(c=>{const on=c.k===s.k,lab=c.l==='SPI'?'SPI':_t(c.l),num=c.k!=='o'&&c.k!=='lu';
+    return `<th class="${num?'num ':''}srt-th" aria-sort="${on?(s.d>0?'ascending':'descending'):'none'}"${c.t?` title="${_t(c.t)}"`:''}><button type="button" class="srt" data-act="tmSort" data-k="${c.k}" aria-label="${esc(_t('tm.sortBy',lab))}">${esc(lab)}<span class="ar" aria-hidden="true">${on?(s.d>0?'▲':'▼'):'↕'}</span></button></th>`;}).join('');}
 function vTeam(){
   if(!S.tasks.length)return `<div class="card empty">${_t('tm.empty')}</div>`;
   const T=personStats(S.tasks,S.meetings.flatMap(m=>m.actions)),rows=teamRows(),x=dn(TODAY),kp=kpiCard,dA=_t('dAb');
@@ -1532,8 +1562,8 @@ function vTeam(){
     ${kp(_t('tm.bal'),xTxt(bal),bal==null?_t('tm.balNone'):_t('tm.balS',esc(remMax.o),r1(bal)),bal!=null&&bal>1.8)}
   </div>
   <div class="card" style="margin-top:16px"><h3>${_t('tm.byPerson')} <small>${_t('tm.byPersonS')}</small></h3><div class="scroll"><table class="tbl">
-    <tr><th>${_t('c.person')}</th><th class="num">${_t('c.tasks')}</th><th class="num">${_t('c.done')}</th><th class="num">${_t('c.active')}</th><th class="num">${_t('c.late')}</th><th class="num">${_t('c.onTime')}</th><th class="num" title="${_t('c.cycleT')}">${_t('c.cycle')}</th><th class="num" title="${_t('c.accT')}">${_t('c.acc')}</th><th class="num">SPI</th><th class="num" title="${_t('c.thrT')}">${_t('c.thr')}</th><th class="num" title="${_t('c.regT')}">${_t('c.reg')}</th><th class="num" title="${_t('c.blkT')}">${_t('c.blk')}</th><th class="num" title="${_t('c.actsT')}">${_t('c.acts')}</th><th>${_t('c.lastUpd')}</th></tr>
-    ${rows.map(({o,s:p})=>{const lu=S.tasks.filter(t=>o?hasOwn(t,o):!ownsOf(t).length).map(lastChange).sort().pop();return `<tr class="${o?'click':''}" ${o?`data-act="ownerTasks" data-o="${esc(o)}" tabindex="0" title="${_t('tm.seeTasks',esc(o))}"`:''}><td class="nowrap"><b>${nm(o)}</b></td><td class="num">${p.n}</td><td class="num">${p.done}</td><td class="num">${p.active}</td><td class="num ${p.late?'delta dn':''}">${p.late}</td><td class="num">${pctTxt(p.onTime)}</td><td class="num">${p.cycle==null?'—':r1(p.cycle)+dA}</td><td class="num ${p.acc!=null&&p.acc>1.3?'delta dn':''}">${xTxt(p.acc)}</td><td class="num ${p.spi!=null&&p.spi<0.85?'delta dn':p.spi!=null&&p.spi>=1?'delta up':''}">${p.spi==null?'—':f2(p.spi)}</td><td class="num">${p.thr28}</td><td class="num">${p.reg}</td><td class="num">${p.blockDays}</td><td class="num">${p.acts?`${p.acts-p.actsDone}${p.actsOver?` <span class="delta dn">(${p.actsOver})</span>`:''}`:'—'}</td><td class="nowrap">${lu?fmt(lu)+` <span class="muted small">(${x-dn(lu)}${dA})</span>`:'—'}</td></tr>`;}).join('')}
+    <tr>${tmHead()}</tr>
+    ${tmSorted(rows).map(({o,s:p,lu})=>{return `<tr class="${o?'click':''}" ${o?`data-act="ownerTasks" data-o="${esc(o)}" tabindex="0" title="${_t('tm.seeTasks',esc(o))}"`:''}><td class="nowrap"><b>${nm(o)}</b></td><td class="num">${p.n}</td><td class="num">${p.done}</td><td class="num">${p.active}</td><td class="num ${p.late?'delta dn':''}">${p.late}</td><td class="num">${pctTxt(p.onTime)}</td><td class="num">${p.cycle==null?'—':r1(p.cycle)+dA}</td><td class="num ${p.acc!=null&&p.acc>1.3?'delta dn':''}">${xTxt(p.acc)}</td><td class="num ${p.spi!=null&&p.spi<0.85?'delta dn':p.spi!=null&&p.spi>=1?'delta up':''}">${p.spi==null?'—':f2(p.spi)}</td><td class="num">${p.thr28}</td><td class="num">${p.reg}</td><td class="num">${p.blockDays}</td><td class="num">${p.acts?`${p.acts-p.actsDone}${p.actsOver?` <span class="delta dn">(${p.actsOver})</span>`:''}`:'—'}</td><td class="nowrap">${lu?fmt(lu)+` <span class="muted small">(${x-dn(lu)}${dA})</span>`:'—'}</td></tr>`;}).join('')}
   </table></div>
   <p class="note">${_t('tm.howTo')}</p></div>
   <div class="grid g2" style="margin-top:16px">
@@ -3165,6 +3195,7 @@ const ACT={
   riskCell:el=>{const c=el.dataset.c;UI.riskCell=UI.riskCell===c?null:c;render();const b=document.querySelector(`.rmx [data-c="${c}"]`);if(b)b.focus();},
   riskAll:()=>{UI.riskAll=!UI.riskAll;render();},
   owTog:el=>{const i=$('#taskForm [name="owner"]'),l=ownList(i.value),k=l.findIndex(x=>x.toLowerCase()===el.dataset.o.toLowerCase());if(k>=0)l.splice(k,1);else l.push(el.dataset.o);i.value=l.join(', ');owSync();},
+  tmSort:el=>{const k=el.dataset.k,s=tmSort();UI.tmSort={k,d:s.k===k?-s.d:1};render();$(`main [data-act="tmSort"][data-k="${k}"]`)?.focus();},
   calNav:el=>{const n=+el.dataset.n;UI.calM=n?mAdd(UI.calM,n):TODAY.slice(0,7);if(!n)UI.calDay=TODAY;render();const b=$(`#teamCal [data-act="calNav"][data-n="${n}"]`);(b&&!b.disabled?b:$('#teamCal .cal-m'))?.focus();},
   calDay:el=>{const d=el.dataset.d;UI.calDay=d;render();$(`#teamCal [data-d="${d}"]`)?.focus();},
   ownerTasks:el=>{UI.f={q:'',status:'',phase:'',owner:el.dataset.o,late:false};UI.view='tasks';render();window.scrollTo(0,0);},
