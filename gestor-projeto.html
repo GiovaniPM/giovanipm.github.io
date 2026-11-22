@@ -97,6 +97,20 @@ table.tbl{width:100%;border-collapse:collapse}
 .kc-tags .tag{margin:0 4px 0 0}
 .kc-m{display:flex;flex-wrap:wrap;gap:2px 10px;font-size:12px;color:var(--muted)}
 .kc .pb span{font-size:11.5px}
+/* conexões ao passar o mouse ou focar um cartão */
+.kanban{position:relative}
+.kinfo{min-height:1.6em;margin:0 0 8px;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kinfo b{color:var(--ink)}
+.kanban.klinks .kc:not(.kfocus):not(.kpred):not(.ksucc){opacity:.38}
+.kc.kfocus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-2)}
+.kc.kpred{border-color:#d9480f;box-shadow:0 0 0 2px #ffe8cc}
+.kc.ksucc{border-color:#2b8a3e;box-shadow:0 0 0 2px #d3f9d8}
+.krel{align-self:flex-start;font-size:11px;font-weight:700;border-radius:5px;padding:1px 6px}
+.krel.p{background:#fff4e6;color:#a63d00}.krel.s{background:#ebfbee;color:#1e6b30}
+.klinksvg{position:absolute;left:0;top:0;pointer-events:none;z-index:3;overflow:visible}
+.klinksvg text{font:600 11px system-ui,'Segoe UI',Arial,sans-serif}
+.kanban.konly .kc:not(.kfocus):not(.kpred):not(.ksucc),.kanban.konly .kempty{display:none}
+@media print{.klinksvg,.kinfo{display:none}}
 @media (max-width:720px){.kanban{grid-auto-columns:82%;scroll-snap-type:x mandatory}.kcol{scroll-snap-align:start}.seg{margin-left:0}}
 @media print{.kanban{display:block}.kcol{break-inside:avoid;margin-bottom:10px}.kghost{display:none}}
 input[type=text],input[type=date],input[type=number],select,textarea{border:1px solid #d0d5dd;border-radius:7px;padding:6px 9px;background:#fff;width:100%}
@@ -887,6 +901,14 @@ const I18N={
 'kb.undo':['↶ Desfazer','↶ Undo','↶ Annulla','↶ Deshacer'],
 'kb.undone':['↶ #{0} voltou para {1}.','↶ #{0} is back in {1}.','↶ #{0} è tornata in {1}.','↶ #{0} volvió a {1}.'],
 'kb.nothing':['Nada a desfazer no quadro.','Nothing to undo on the board.','Niente da annullare sulla bacheca.','Nada que deshacer en el tablero.'],
+'kl.hint':['Passe o mouse sobre um cartão (ou foque com Tab) para ver as tarefas ligadas a ele. Com Ctrl pressionado, só as ligadas ficam no quadro.','Hover over a card (or focus it with Tab) to see the tasks linked to it. Hold Ctrl to keep only the linked ones on the board.','Passa il mouse su una scheda (o mettila a fuoco con Tab) per vedere le attività collegate. Tenendo premuto Ctrl, restano sulla bacheca solo quelle collegate.','Pasa el ratón sobre una tarjeta (o enfócala con Tab) para ver las tareas vinculadas. Con Ctrl pulsado, solo las vinculadas quedan en el tablero.'],
+'kl.only':['Só as tarefas ligadas a #{0} estão no quadro. Solte Ctrl para ver todas.','Only the tasks linked to #{0} are on the board. Release Ctrl to see them all.','Sulla bacheca ci sono solo le attività collegate a #{0}. Rilascia Ctrl per vederle tutte.','Solo las tareas vinculadas a #{0} están en el tablero. Suelta Ctrl para verlas todas.'],
+'kl.pred':['⬅ Antecessora','⬅ Predecessor','⬅ Predecessore','⬅ Predecesora'],
+'kl.succ':['Sucessora ➡','Successor ➡','Successore ➡','Sucesora ➡'],
+'kl.sum':['depende de: {0} · libera: {1}','depends on: {0} · unlocks: {1}','dipende da: {0} · sblocca: {1}','depende de: {0} · libera: {1}'],
+'kl.none':['nenhuma','none','nessuna','ninguna'],
+'kl.hidden':['fora do filtro','outside the filter','fuori dal filtro','fuera del filtro'],
+'kl.noLinks':['#{0} não tem dependências.','#{0} has no dependencies.','#{0} non ha dipendenze.','#{0} no tiene dependencias.'],
 'tg.conf':['conflito dep.','dep. conflict','conflitto dip.','conflicto dep.'],
 'tg.waiting':['aguardando predecessora','waiting for predecessor','in attesa della predecessora','esperando predecesora'],
 'tg.late':['atrasada','late','in ritardo','atrasada'],
@@ -2065,7 +2087,7 @@ function kCard(t){
 function kanbanHTML(ts){
   const cols=ST.map(s=>{const list=ts.filter(t=>t.status===s.k);
     return `<section class="kcol" data-st="${s.k}" aria-labelledby="kh-${s.k}"><h3 id="kh-${s.k}"><span class="kdot" style="background:${s.c}" aria-hidden="true"></span>${esc(s.l)}<span class="kn">${list.length}</span></h3><ul class="klist">${list.map(kCard).join('')||`<li class="kempty">${_t('kb.empty')}</li>`}</ul></section>`;}).join('');
-  return `<div class="row small muted" style="margin:0 0 8px"><span>${_t('kb.help')}</span><span class="spacer"></span><button type="button" class="btn sm" data-act="kbUndo" ${UI.kbU&&UI.kbU.length?'':'disabled'}>${_t('kb.undo')}</button></div><div class="kanban" id="kanban">${cols}</div><p class="sr" aria-live="polite" id="kbLive"></p>`;
+  return `<div class="row small muted" style="margin:0 0 8px"><span>${_t('kb.help')}</span><span class="spacer"></span><button type="button" class="btn sm" data-act="kbUndo" ${UI.kbU&&UI.kbU.length?'':'disabled'}>${_t('kb.undo')}</button></div><p class="kinfo" id="kInfo">${_t('kl.hint')}</p><div class="kanban" id="kanban">${cols}</div><p class="sr" aria-live="polite" id="kbLive"></p>`;
 }
 /* muda o status pelo quadro; guarda o estado anterior para o Ctrl+Z */
 function kbMove(id,st){
@@ -2086,6 +2108,95 @@ function kbUndo(){
   toast(_t('kb.undone',t.num,STM[t.status].l));
   const c=document.querySelector(`.kc[data-id="${x.id}"]`);if(c)c.focus();
 }
+/* conexões de um cartão: antecessoras (de quem ele depende) e sucessoras (quem depende dele), com setas sobre o quadro.
+   Mouse: passar sobre o cartão (com Ctrl, só as ligadas ficam no quadro). Teclado: focar o cartão com Tab. Cartões ligados ganham uma etiqueta com texto, não só cor. */
+let KL=null,KLk=null;
+function klRel(t){return {preds:depsOf(t).map(d=>({t:tById(d.id),d})),succs:succsOf(t).map(s=>({t:s,d:s.deps.find(d=>d.id===t.id)}))};}
+function klShow(id){
+  const k=$('#kanban'),t=tById(id);if(!k||!t||(KD&&KD.on))return;
+  if(KL===id&&KLk===k)return;klClear();KL=id;KLk=k;
+  const card=x=>k.querySelector(`.kc[data-id="${x}"]`),me=card(id);if(!me)return;
+  const {preds,succs}=klRel(t),lab=d=>DEPS[d.type]+lagTxt(d),info=$('#kInfo');
+  if(!preds.length&&!succs.length){me.classList.add('kfocus');if(info)info.textContent=_t('kl.noLinks',t.num);return;}
+  k.classList.add('klinks');me.classList.add('kfocus');
+  const tag=(c,cls,txt)=>{c.classList.add(cls==='p'?'kpred':'ksucc');const b=document.createElement('span');b.className='krel '+cls;b.textContent=txt;c.insertBefore(b,c.firstChild);};
+  preds.forEach(x=>{const c=card(x.t.id);if(c)tag(c,'p',_t('kl.pred')+' · '+lab(x.d));});
+  succs.forEach(x=>{const c=card(x.t.id);if(c)tag(c,'s',_t('kl.succ')+' · '+lab(x.d));});
+  if(info){
+    const name=x=>'#'+x.t.num+' '+x.t.title+' ('+lab(x.d)+')'+(card(x.t.id)?'':' — '+_t('kl.hidden'));
+    const nm=a=>a.length?a.map(name).join('; '):_t('kl.none');
+    info.textContent='';const b=document.createElement('b');b.textContent='#'+t.num+' '+t.title;info.appendChild(b);
+    info.appendChild(document.createTextNode(' — '+_t('kl.sum',nm(preds),nm(succs))));info.title=info.textContent;
+  }
+  klDraw();
+}
+function klDraw(){
+  const k=$('#kanban');if(!k||!KL)return;const old=k.querySelector('.klinksvg');if(old)old.remove();
+  const t=tById(KL),me=k.querySelector(`.kc[data-id="${KL}"]`);if(!t||!me)return;
+  const {preds,succs}=klRel(t),kb=k.getBoundingClientRect();
+  const box=c=>{const r=c.getBoundingClientRect();return {l:r.left-kb.left+k.scrollLeft,r:r.right-kb.left+k.scrollLeft,t:r.top-kb.top+k.scrollTop,b:r.bottom-kb.top+k.scrollTop};};
+  const NS='http://www.w3.org/2000/svg',svg=document.createElementNS(NS,'svg');
+  svg.setAttribute('class','klinksvg');svg.setAttribute('aria-hidden','true');svg.setAttribute('width',k.scrollWidth);svg.setAttribute('height',k.scrollHeight);
+  svg.innerHTML='<defs><marker id="klP" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#d9480f"/></marker><marker id="klS" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#2b8a3e"/></marker></defs>';
+  const el=(n,a)=>{const e=document.createElementNS(NS,n);for(const x in a)e.setAttribute(x,a[x]);return e;};
+  // as pontas no cartão em foco se espalham pela altura dele, para as setas e os rótulos não se sobreporem
+  const ends=preds.length+succs.length;let nEnd=0;
+  const spot=bx=>bx.t+(bx.b-bx.t)*(++nEnd)/(ends+1);
+  const line=(from,to,col,mk,txt)=>{
+    const a=box(from),b=box(to),fa=from===me,y1=fa?spot(a):(a.t+a.b)/2,y2=fa?(b.t+b.b)/2:spot(b);let x1,x2,c1,c2;
+    if(a.r<=b.l){x1=a.r;x2=b.l;const m=(x2-x1)/2;c1=x1+m;c2=x2-m;}
+    else if(a.l>=b.r){x1=a.l;x2=b.r;const m=(x1-x2)/2;c1=x1-m;c2=x2+m;}
+    else{x1=a.r;x2=b.r;c1=Math.max(a.r,b.r)+26;c2=c1;} // mesma coluna: a curva passa pelo vão à direita da coluna
+    svg.appendChild(el('path',{d:`M${x1} ${y1}C${c1} ${y1} ${c2} ${y2} ${x2} ${y2}`,fill:'none',stroke:col,'stroke-width':2.2,'marker-end':`url(#${mk})`}));
+    const mx=(x1+3*c1+3*c2+x2)/8,my=(y1+y2)/2,w=txt.length*6.6+10;
+    svg.appendChild(el('rect',{x:mx-w/2,y:my-8,width:w,height:16,rx:4,fill:'#fff',stroke:col}));
+    const tx=el('text',{x:mx,y:my+4,'text-anchor':'middle',fill:col});tx.textContent=txt;svg.appendChild(tx);
+  };
+  preds.forEach(x=>{const c=k.querySelector(`.kc[data-id="${x.t.id}"]`);if(c)line(c,me,'#d9480f','klP',DEPS[x.d.type]+lagTxt(x.d));});
+  succs.forEach(x=>{const c=k.querySelector(`.kc[data-id="${x.t.id}"]`);if(c)line(me,c,'#2b8a3e','klS',DEPS[x.d.type]+lagTxt(x.d));});
+  k.appendChild(svg);
+}
+function klClear(){
+  koOff(true);
+  KL=null;const k=$('#kanban');if(!k)return;k.classList.remove('klinks');
+  k.querySelectorAll('.klinksvg,.krel').forEach(x=>x.remove());
+  k.querySelectorAll('.kfocus,.kpred,.ksucc').forEach(x=>x.classList.remove('kfocus','kpred','ksucc'));
+  const info=$('#kInfo');if(info){info.textContent=_t('kl.hint');info.title='';}
+}
+/* Ctrl pressionado: só a tarefa e as ligadas a ela ficam no quadro. Soltar Ctrl ou sair do quadro volta ao normal.
+   Enquanto o modo dura, a altura do quadro fica travada e mover o mouse dentro dele não troca a tarefa,
+   porque os cartões que sobram mudam de lugar e o ponteiro passaria por outros. */
+let KO=false,KX=-1,KY=-1;
+function koOn(){
+  const k=$('#kanban');if(KO||!KL||!k||(KD&&KD.on))return;
+  KO=true;k.style.minHeight=k.offsetHeight+'px';k.classList.add('konly');klDraw();
+  const t=tById(KL),lv=$('#kbLive');if(t&&lv)lv.textContent=_t('kl.only',t.num);
+}
+function koOff(quiet){
+  if(!KO)return;KO=false;const k=$('#kanban');if(k){k.classList.remove('konly');k.style.minHeight='';}const lv=$('#kbLive');if(lv)lv.textContent='';
+  if(quiet)return;
+  // volta tudo; vale a tarefa que estiver sob o ponteiro (ou a que tem o foco do teclado)
+  const f=document.activeElement&&document.activeElement.closest&&document.activeElement.closest('#kanban .kc');
+  const u=KX>=0&&document.elementFromPoint(KX,KY),c=u&&u.closest&&u.closest('#kanban .kc');
+  if(f&&!c){klDraw();return;}
+  if(c){if(c.dataset.id===KL)klDraw();else klShow(c.dataset.id);}else klClear();
+}
+const inBoard=el=>!!(el&&el.closest&&el.closest('#kanban'));
+document.addEventListener('pointermove',e=>{KX=e.clientX;KY=e.clientY;},{passive:true});
+document.addEventListener('pointerover',e=>{
+  if(e.pointerType==='touch'||(KD&&KD.on))return;
+  if(KO){if(!inBoard(e.target))klClear();return;}
+  const c=e.target.closest&&e.target.closest('#kanban .kc');
+  if(c){klShow(c.dataset.id);if(e.ctrlKey)koOn();}
+  else if(KL&&!(document.activeElement&&document.activeElement.closest&&document.activeElement.closest('#kanban .kc')))klClear();
+});
+document.addEventListener('keydown',e=>{if(e.key==='Control'&&KL&&!e.repeat)koOn();});
+document.addEventListener('keyup',e=>{if(e.key==='Control')koOff();});
+window.addEventListener('blur',()=>koOff());
+document.addEventListener('focusin',e=>{const c=e.target.closest&&e.target.closest('#kanban .kc');if(c&&!KO)klShow(c.dataset.id);});
+document.addEventListener('focusout',e=>{const c=e.target.closest&&e.target.closest('#kanban .kc');if(c&&!KO&&KL===c.dataset.id&&!(e.relatedTarget&&e.relatedTarget.closest&&e.relatedTarget.closest('#kanban .kc')))klClear();});
+document.addEventListener('scroll',e=>{if(KL&&e.target&&e.target.id==='kanban')klDraw();},true);
+window.addEventListener('resize',()=>{if(KL)klDraw();});
 /* arraste com ponteiro (mouse imediato; toque depois de segurar) */
 let KD=null,kdSuppress=0;
 function kdStart(e){
@@ -2094,6 +2205,7 @@ function kdStart(e){
   if(KD.touch)KD.timer=setTimeout(()=>{if(KD&&!KD.cancel)kdBegin();},380);
 }
 function kdBegin(){
+  klClear();
   const r=KD.card.getBoundingClientRect(),g=KD.card.cloneNode(true);
   g.classList.add('kghost');g.removeAttribute('tabindex');g.style.width=r.width+'px';g.style.left=r.left+'px';g.style.top=r.top+'px';
   KD.dx=KD.x0-r.left;KD.dy=KD.y0-r.top;KD.ghost=g;document.body.appendChild(g);KD.card.classList.add('kdrag');KD.on=true;
