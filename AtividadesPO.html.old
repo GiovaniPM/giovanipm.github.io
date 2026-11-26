@@ -1,0 +1,1656 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Atividades entre POs: tutorial · Giovani Perotto Mesquita</title>
+<meta name="description" content="Tutorial do app Atividades entre POs, um único arquivo HTML para acompanhar atividades que dependem de vários times: dados em JSON, status e priorização, abrir e salvar em cada navegador, lista com filtros, painel da atividade, matriz por time, insights com gráficos, erros comuns e um roteiro passo a passo com dados de exemplo. Disponível em português, inglês, italiano e espanhol.">
+<meta name="author" content="Giovani Perotto Mesquita">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Paleta alegre: roxo e magenta vibrantes, amarelo-girassol, verde-água e coral */
+    --bg: #FFF7EC;
+    --surface: #FFFFFF;
+    --ink: #2B1B3D;
+    --text: #3E3350;
+    --muted: #756986;
+    --line: #F1E2CF;
+    --accent: #0E8074;
+    --accent-soft: #E2F6F2;
+    --accent-strong: #5B2A86;
+    --navy: #5B2A86;
+    --navy-deep: #C2185B;
+    --on-navy: #FFFFFF;
+    --on-navy-muted: #FCE4F0;
+    --gold: #FFB703;
+    --gold-ink: #B35300;
+    --gold-soft: #FFF1C9;
+    --coral: #FF6B6B;
+    --sky: #3A86FF;
+    --mint: #2A9D8F;
+    --pink: #EF476F;
+    --sans: "Hanken Grotesk", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1A1328; --surface: #241A36; --ink: #F7F0FF; --text: #E2D8F0; --muted: #A898C0;
+      --line: #3A2D52; --accent: #5FD3C4; --accent-soft: #1D3A38; --accent-strong: #C9A7F5;
+      --navy: #3D1A5C; --navy-deep: #7A1240; --gold: #FFC94D; --gold-ink: #FFC94D; --gold-soft: #3A2E12;
+      --coral: #FF8A8A; --sky: #6FA8FF; --mint: #4CC3B3; --pink: #FF6F91;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: var(--accent); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 4px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 1.5rem; }
+
+  /* navegação */
+  .nav {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: saturate(160%) blur(10px); -webkit-backdrop-filter: saturate(160%) blur(10px);
+    border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top, 0px);
+  }
+  .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 58px; gap: 1rem; }
+  .brand { font-family: var(--serif); font-weight: 600; color: var(--accent-strong); text-decoration: none; font-size: 1.05rem; }
+  .nav ul { list-style: none; display: flex; gap: 1.4rem; margin: 0; padding: 0; }
+  .nav ul a { color: var(--muted); text-decoration: none; font-size: 0.93rem; font-weight: 500; }
+  .nav ul a:hover, .nav ul a[aria-current="page"] { color: var(--ink); }
+  .nav-right { display: flex; align-items: center; gap: 1rem; }
+  .lang { position: relative; }
+  .lang button { font: inherit; cursor: pointer; }
+  .lang .flag { width: 18px; height: 12px; border-radius: 2px; flex: none; box-shadow: 0 0 0 1px rgba(0,0,0,.12); }
+  .lang-current { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.8rem; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 0.3rem 0.5rem 0.3rem 0.55rem; }
+  .lang-current:hover { border-color: var(--muted); }
+  .lang-now { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .lang .chev { width: 12px; height: 12px; color: var(--muted); transition: transform .15s ease; }
+  .lang-current[aria-expanded="true"] .chev { transform: rotate(180deg); }
+  .lang-list { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; min-width: 10.5rem; padding: 0.3rem; display: grid; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 12px 30px rgba(0,0,0,.18); }
+  .lang-list[hidden] { display: none; }
+  .lang-list [role="option"] { display: flex; align-items: center; gap: 0.6rem; width: 100%; text-align: left; font-size: 0.9rem; font-weight: 500; color: var(--ink); background: none; border: 0; border-radius: 6px; padding: 0.45rem 0.6rem; }
+  .lang-list [role="option"]:hover, .lang-list [role="option"]:focus-visible { background: color-mix(in srgb, var(--muted) 14%, transparent); }
+  .lang-list [role="option"][aria-selected="true"] { color: var(--accent-strong); font-weight: 600; }
+  .lang-list [role="option"][aria-selected="true"]::after { content: "✓"; margin-left: auto; }
+  @media (max-width: 480px) { .lang-now { font-size: 0; gap: 0; } }
+  [hidden] { display: none !important; }
+  .progress { position: absolute; left: 0; bottom: -1px; height: 3px; width: 0; background: linear-gradient(90deg, var(--coral), var(--gold), var(--mint)); }
+
+  /* abertura */
+  .hero-band {
+    background:
+      radial-gradient(900px 420px at 85% -10%, rgba(255,255,255,.07), transparent 60%),
+      linear-gradient(160deg, var(--navy) 0%, var(--navy-deep) 100%);
+    border-top: 4px solid var(--gold); color: var(--on-navy);
+  }
+  .hero { padding: 3.5rem 0 3.5rem; max-width: 820px; }
+  .crumb { margin: 0 0 1.4rem; font-size: 0.92rem; }
+  .crumb a { color: var(--on-navy-muted); text-decoration: none; }
+  .crumb a:hover { color: var(--gold); }
+  .eyebrow { color: var(--gold); font-weight: 600; font-size: 1rem; margin: 0 0 0.7rem; }
+  h1 { font-family: var(--serif); font-weight: 600; color: var(--on-navy); font-size: clamp(2.3rem, 5.5vw, 3.8rem); line-height: 1.05; letter-spacing: -0.025em; margin: 0; }
+  .dek { font-family: var(--serif); font-style: italic; font-size: clamp(1.1rem, 2.2vw, 1.35rem); color: var(--on-navy-muted); margin: 1.1rem 0 1.6rem; max-width: 58ch; }
+  .byline { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; font-size: 0.92rem; color: var(--on-navy-muted); }
+  .byline strong { color: var(--on-navy); font-weight: 600; }
+  .byline .credit { margin-left: auto; font-style: italic; }
+
+  /* layout do artigo */
+  .layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 3rem; padding: 3rem 0 4rem; align-items: start; }
+  .toc { position: sticky; top: 82px; font-size: 0.92rem; max-height: calc(100vh - 100px); overflow-y: auto; }
+  .toc h2 { font-family: var(--sans); font-size: 0.85rem; font-weight: 600; color: var(--muted); margin: 0 0 0.7rem; border: 0; padding: 0; }
+  .toc ol { list-style: none; margin: 0; padding: 0; counter-reset: toc; border-left: 2px solid var(--line); }
+  .toc li { counter-increment: toc; }
+  .toc a { display: block; padding: 0.3rem 0 0.3rem 1rem; margin-left: -2px; border-left: 2px solid transparent; color: var(--muted); text-decoration: none; line-height: 1.35; }
+  .toc a::before { content: counter(toc) ". "; color: var(--gold-ink); font-weight: 600; }
+  .toc a:hover { color: var(--ink); }
+  .toc a[aria-current="true"] { color: var(--accent-strong); border-left-color: var(--gold); font-weight: 600; }
+
+  article { background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: var(--radius); padding: 3rem clamp(1.25rem, 4vw, 3.5rem); min-width: 0; }
+  article section + section { margin-top: 3.2rem; }
+  article h2 { font-family: var(--serif); font-weight: 600; color: var(--ink); font-size: clamp(1.5rem, 2.8vw, 1.9rem); letter-spacing: -0.015em; line-height: 1.2; margin: 0 0 1.1rem; padding-left: 0.9rem; border-left: 3px solid var(--gold); }
+  article h3 { font-family: var(--sans); font-size: 1.1rem; font-weight: 600; color: var(--ink); margin: 2rem 0 0.8rem; }
+  article p, article li { font-family: var(--serif); font-size: 1.12rem; line-height: 1.7; color: var(--text); }
+  article p { margin: 0 0 1.1rem; max-width: 68ch; }
+  article ul, article ol { margin: 0 0 1.1rem; padding-left: 1.4rem; max-width: 68ch; }
+  article li { margin-bottom: 0.3rem; }
+  article strong { color: var(--ink); }
+  sup a { font-family: var(--sans); font-size: 0.72rem; font-weight: 700; text-decoration: none; padding: 0 0.15em; }
+
+  figure { margin: 2rem 0; }
+  figure img { display: block; width: 100%; height: auto; border-radius: 10px; border: 1px solid var(--line); background: #FFF7EC; }
+  figcaption { margin-top: 0.6rem; font-size: 0.9rem; color: var(--muted); text-align: center; font-family: var(--sans); line-height: 1.5; }
+
+  blockquote { margin: 1.5rem 0; padding: 1.2rem 1.5rem; background: var(--accent-soft); border-left: 3px solid var(--gold); border-radius: 0 10px 10px 0; }
+  blockquote p { font-size: 1.05rem; margin: 0 0 0.8rem; }
+  blockquote p:last-child { margin-bottom: 0; }
+  blockquote.pull p { font-size: clamp(1.15rem, 2.3vw, 1.35rem); font-style: italic; line-height: 1.45; color: var(--ink); }
+  blockquote cite { font-family: var(--sans); font-size: 0.88rem; font-style: normal; color: var(--muted); }
+
+  /* tabelas */
+  .table-wrap { overflow-x: auto; margin: 1.5rem 0; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-family: var(--sans); font-size: 0.95rem; }
+  th, td { text-align: left; padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.5; }
+  thead th { background: var(--gold-soft); color: var(--ink); font-weight: 600; }
+  tbody th { color: var(--ink); font-weight: 600; }
+  tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
+  td code, th code { font-size: 0.9em; }
+
+  /* mitos */
+  .myths { list-style: none; padding: 0; margin: 1.5rem 0; max-width: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
+  .myths li { margin: 0; padding: 1rem 1.2rem; border: 1px solid var(--line); border-top: 4px solid var(--coral); border-radius: 10px; }
+  .myths li:nth-child(4n+2) { border-top-color: var(--sky); }
+  .myths li:nth-child(4n+3) { border-top-color: var(--mint); }
+  .myths li:nth-child(4n+4) { border-top-color: var(--gold); }
+  .myths h3 { margin: 0 0 0.4rem; font-size: 1rem; }
+  .myths p { margin: 0; font-size: 1rem; line-height: 1.6; }
+
+  /* para fixar */
+  .recap { margin: 1.8rem 0 0; padding: 1.1rem 1.4rem; background: var(--gold-soft); border-left: 4px solid var(--mint); border-radius: 0 10px 10px 0; }
+  .recap h3 { margin: 0 0 0.5rem; font-size: 0.85rem; letter-spacing: .05em; text-transform: uppercase; color: var(--gold-ink); }
+  .recap ul { margin: 0; padding-left: 1.2rem; }
+  .recap li { font-family: var(--sans); font-size: 0.98rem; line-height: 1.55; margin-bottom: 0.25rem; }
+
+  /* revisão rápida */
+  .quiz { display: grid; gap: 0.7rem; margin: 1.5rem 0; }
+  .quiz details { border: 1px solid var(--line); border-left: 4px solid var(--sky); border-radius: 0 10px 10px 0; padding: 0.8rem 1.1rem; }
+  .quiz details:nth-child(3n+2) { border-left-color: var(--pink); }
+  .quiz details:nth-child(3n+3) { border-left-color: var(--mint); }
+  .quiz summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); line-height: 1.45; }
+  .quiz details[open] summary { margin-bottom: 0.5rem; }
+  .quiz p { margin: 0; font-size: 1.02rem; }
+
+  .refs { font-family: var(--sans); padding-left: 1.4rem; margin: 0; }
+  .refs li { font-family: var(--sans); font-size: 0.92rem; line-height: 1.55; margin-bottom: 0.7rem; word-break: break-word; }
+  .refs li:target { background: var(--gold-soft); border-radius: 6px; }
+
+  .back { display: inline-block; margin-top: 1rem; font-family: var(--sans); font-size: 0.85rem; text-decoration: none; }
+
+  footer { background: var(--navy-deep); color: var(--on-navy-muted); border-top: 3px solid var(--gold); padding: 1.5rem 0 calc(1.5rem + env(safe-area-inset-bottom, 0px)); font-size: 0.88rem; }
+  footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1.5rem; }
+  footer a { color: var(--on-navy); text-decoration: none; }
+  footer a:hover { color: var(--gold); }
+
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+    .toc { position: static; max-height: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.2rem 1.4rem; }
+  }
+  @media (max-width: 760px) {
+    .myths { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .nav ul { display: none; }
+    .hero { padding: 2.5rem 0; }
+    .wrap { padding: 0 1rem; }
+    article p, article li { font-size: 1.05rem; }
+    th, td { padding: 0.6rem 0.7rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  @media print {
+    .nav, .toc, footer, .back, .crumb { display: none !important; }
+    body { background: #fff; }
+    .hero-band { background: none; color: #111; border: 0; }
+    .hero-band h1 { color: #5B2A86; }
+    .dek, .byline, .byline strong { color: #333; }
+    .layout { display: block; padding: 0; }
+    article { border: 0; padding: 0; }
+    .table-wrap { overflow: visible; }
+    figure, blockquote, .myths li, .recap, .quiz details, tr { break-inside: avoid; }
+  }
+
+  /* blocos de código (Gherkin) */
+  pre.code { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: #2B1B3D; color: #F7F0FF; border-radius: 10px; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.92rem; line-height: 1.6; tab-size: 2; }
+  pre.code code { font-family: inherit; white-space: pre; }
+  pre.code .k { color: #FFB703; font-weight: 700; }
+  pre.code .s { color: #5FD3C4; font-weight: 700; }
+  pre.code .c { color: #A898C0; }
+  pre.code .p { color: #C9A7F5; }
+  article code { font-family: Consolas, "Courier New", monospace; font-size: 0.92em; }
+  article :not(pre) > code { background: var(--accent-soft); color: var(--ink); padding: 0.05em 0.35em; border-radius: 4px; }
+
+  /* fórmulas */
+  pre.formula { margin: 1.2rem 0 1.5rem; padding: 1rem 1.2rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; overflow-x: auto; font-family: Consolas, "Courier New", monospace; font-size: 0.95rem; line-height: 1.5; }
+
+  /* glossário */
+  dl.glossary { margin: 1.2rem 0; display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  dl.glossary dt, dl.glossary dd { margin: 0; padding: 0.65rem 0.9rem; border-bottom: 1px solid var(--line); font-family: var(--sans); font-size: 0.95rem; line-height: 1.5; }
+  dl.glossary dt { font-weight: 600; color: var(--ink); background: color-mix(in srgb, var(--gold-soft) 60%, var(--surface)); }
+  dl.glossary dd { color: var(--text); }
+  dl.glossary dt:nth-last-of-type(1), dl.glossary dd:last-of-type { border-bottom: 0; }
+  @media (max-width: 720px) { dl.glossary { grid-template-columns: 1fr; } dl.glossary dt { border-bottom: 0; padding-bottom: 0.2rem; } }
+
+  /* figuras geradas pelo PlantUML e código recolhível */
+  figure.puml img { width: auto; max-width: 100%; margin: 0 auto; background: #FFFFFF; padding: 12px; }
+  details.codebox { margin: 1rem 0 1.5rem; border: 1px solid var(--line); border-radius: 10px; padding: 0.6rem 1rem; }
+  details.codebox summary { cursor: pointer; font-family: var(--sans); font-weight: 600; color: var(--ink); }
+  details.codebox pre.code { max-height: 480px; overflow: auto; }
+
+  /* nota de atenção */
+  aside.note { margin: 1.2rem 0 1.5rem; padding: 0.8rem 1.1rem; background: var(--gold-soft); color: var(--ink); border-left: 4px solid var(--gold); border-radius: 0 10px 10px 0; }
+  aside.note p { margin: 0; }
+
+  /* link para o simulador e teclas */
+  .launch { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--sans); font-weight: 600; font-size: 1rem; background: var(--accent-strong); color: var(--surface); text-decoration: none; padding: 0.65rem 1.2rem; border-radius: 10px; }
+  .launch:hover { background: var(--navy-deep); color: #FFFFFF; }
+  kbd { font-family: var(--sans); font-size: 0.85em; font-weight: 600; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 0.05em 0.4em; white-space: nowrap; }
+  /* figura larga rola de lado no celular */
+  @media (max-width: 720px) { figure { overflow-x: auto; } figure img { width: 680px; max-width: none; } }
+</style>
+</head>
+<body id="top">
+
+<nav class="nav" aria-label="Navegação do site">
+  <div class="wrap">
+    <a class="brand" href="index.html" data-home>Giovani Perotto Mesquita</a>
+    <div class="nav-right">
+      <ul>
+        <li><a href="index.html" data-home>Início</a></li>
+        <li><a href="about.html" data-about>Sobre</a></li>
+        <li><a href="resume.html" data-resume>Currículo</a></li>
+        <li><a href="projects.html" data-projects aria-current="page">Projetos</a></li>
+        <li><a href="contact.html" data-contact>Contato</a></li>
+      </ul>
+      <div class="lang">
+        <button type="button" class="lang-current" aria-haspopup="listbox" aria-expanded="false" aria-controls="lang-list" data-label="Idioma / Language / Lingua" aria-label="Idioma / Language / Lingua: Português"><span class="lang-now"><svg class="flag" viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009C3B"/><path d="M10 1.6 18.4 7 10 12.4 1.6 7z" fill="#FEDF00"/><circle cx="10" cy="7" r="3.3" fill="#002776"/><path d="M6.8 6.3c2.1-.6 4.5-.2 6.4 1" stroke="#fff" stroke-width=".7" fill="none"/></svg>PT</span><svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="lang-list" id="lang-list" role="listbox" aria-label="Idioma / Language / Lingua" hidden>
+          <button type="button" role="option" id="tab-pt" aria-controls="pt" aria-selected="true" lang="pt-BR" data-code="PT"><svg class="flag" viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009C3B"/><path d="M10 1.6 18.4 7 10 12.4 1.6 7z" fill="#FEDF00"/><circle cx="10" cy="7" r="3.3" fill="#002776"/><path d="M6.8 6.3c2.1-.6 4.5-.2 6.4 1" stroke="#fff" stroke-width=".7" fill="none"/></svg><span>Português</span></button>
+          <button type="button" role="option" id="tab-en" aria-controls="en" aria-selected="false" lang="en" tabindex="-1" data-code="EN"><svg class="flag" viewBox="0 0 19 10" aria-hidden="true"><rect width="19" height="10" fill="#B22234"/><rect y="0.769" width="19" height="0.769" fill="#fff"/><rect y="2.308" width="19" height="0.769" fill="#fff"/><rect y="3.846" width="19" height="0.769" fill="#fff"/><rect y="5.385" width="19" height="0.769" fill="#fff"/><rect y="6.923" width="19" height="0.769" fill="#fff"/><rect y="8.462" width="19" height="0.769" fill="#fff"/><rect width="7.6" height="5.385" fill="#3C3B6E"/></svg><span>English</span></button>
+          <button type="button" role="option" id="tab-it" aria-controls="it" aria-selected="false" lang="it" tabindex="-1" data-code="IT"><svg class="flag" viewBox="0 0 3 2" aria-hidden="true"><rect width="1" height="2" fill="#009246"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#CE2B37"/></svg><span>Italiano</span></button>
+          <button type="button" role="option" id="tab-es" aria-controls="es" aria-selected="false" lang="es" tabindex="-1" data-code="ES"><svg class="flag" viewBox="0 0 750 500" aria-hidden="true"><rect width="750" height="500" fill="#AA151B"/><rect y="125" width="750" height="250" fill="#F1BF00"/></svg><span>Español</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="progress" aria-hidden="true"></div>
+</nav>
+
+<!-- ===================== PT ===================== -->
+<div id="pt" role="tabpanel" aria-labelledby="tab-pt" lang="pt-BR">
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projetos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Atividades entre POs: tutorial</h1>
+      <p class="dek">Como acompanhar, num único arquivo, as atividades que dependem de vários times: cadastro, datas por time, filtros, matriz, insights e um roteiro passo a passo com dados de exemplo.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado em <time datetime="2026-11-21">21/11/2026</time></span>
+        <span class="credit">Revisado e formatado usando Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-pt">
+    <h2 id="toc-pt">Índice</h2>
+    <ol>
+      <li><a href="#intro-pt">O app</a></li>
+      <li><a href="#porque-pt">Por que um app para isso</a></li>
+      <li><a href="#dados-pt">Os dados</a></li>
+      <li><a href="#status-pt">Status e priorização</a></li>
+      <li><a href="#arquivo-pt">Abrir e salvar</a></li>
+      <li><a href="#roteiro-pt">Roteiro passo a passo</a></li>
+      <li><a href="#lista-pt">A lista e os filtros</a></li>
+      <li><a href="#painel-pt">O painel da atividade</a></li>
+      <li><a href="#matriz-pt">A matriz por time</a></li>
+      <li><a href="#insights-pt">Insights</a></li>
+      <li><a href="#roadmap-pt">Road map</a></li>
+      <li><a href="#erros-pt">Erros comuns</a></li>
+      <li><a href="#interface-pt">Idioma da interface</a></li>
+      <li><a href="#revisao-pt">Revisão rápida</a></li>
+      <li><a href="#referencias-pt">Referências</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="intro-pt" aria-labelledby="h-intro-pt">
+      <h2 id="h-intro-pt">O app</h2>
+      <p><strong>Atividades entre POs</strong> é um app para quem coordena demandas que passam por vários times. Cada atividade guarda o request, o status, a priorização e o responsável de negócio e, para cada time envolvido, a task, as datas de início, SIT, UAT e deploy e a última notificação. A partir disso o app mostra uma lista com filtros, uma matriz por time, uma área de insights com gráficos e um road map com a ordem de prioridade. <sup><a href="#ref-1-pt">[1]</a></sup></p>
+      <p><a class="launch" href="atividades-po.html">Abrir o app Atividades entre POs <span aria-hidden="true">→</span></a></p>
+      <figure>
+        <img src="rc_images/AtividadesPOLista.png" alt="Tela principal do app com o exemplo de 40 atividades: os botões do topo, entre eles Carregar exemplo; os contadores por status; os filtros, inclusive o de marcadores; as abas Lista, Matriz por time, Insights e Road map; e a lista com request, RITM, descrição, status, priorização, marcadores, tipo, sistema, business owner, retorno, predecessor e times envolvidos" loading="lazy" width="1280" height="800">
+        <figcaption>A lista com os dados de exemplo. Todos os nomes e números das figuras são fictícios.</figcaption>
+      </figure>
+      <aside class="note"><p>O app é um único arquivo HTML. Os dados ficam num arquivo JSON no seu computador: o app não envia nada para servidores e começa vazio até você abrir um arquivo ou criar a primeira atividade.</p></aside>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="porque-pt" aria-labelledby="h-porque-pt">
+      <h2 id="h-porque-pt">Por que um app para isso</h2>
+      <p>Quando uma demanda depende de três ou quatro times, cada time costuma ter a sua task, o seu prazo e o seu próprio jeito de registrar o andamento. A pergunta “em que pé está?” vira uma rodada de mensagens. O app junta essas informações num lugar só, com um registro por atividade e um bloco por time dentro dele.</p>
+      <p>Três perguntas guiam o desenho das telas:</p>
+      <ul>
+        <li><strong>O que está parado?</strong> Os contadores e o filtro de status mostram Stand-by e Blocked de imediato.</li>
+        <li><strong>Quem depende de quem?</strong> A matriz por time mostra, numa grade, a task, as datas e a última notificação de cada time.</li>
+        <li><strong>Onde está o trabalho?</strong> Os insights cruzam times e status e apontam campos que ninguém preencheu.</li>
+      </ul>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="dados-pt" aria-labelledby="h-dados-pt">
+      <h2 id="h-dados-pt">Os dados</h2>
+      <p>Tudo fica num arquivo JSON, um formato de texto simples e independente de linguagem de programação. <sup><a href="#ref-2-pt">[2]</a></sup> O arquivo tem duas listas: a dos times e a das atividades.</p>
+      <figure>
+        <img src="rc_images/AtividadesPODados.svg" alt="Um arquivo JSON guarda a lista de times e a lista de atividades. Cada atividade tem request, RITM, descrição, status, priorização, tipo, sistema originador, business owner, retorno em reais, os marcadores Legal, Auditoria e Priorizado Gestão, a atividade predecessora e as datas de criação e de atualização. Dentro dela, cada time envolvido tem task, datas de início, SIT, UAT e deploy e a última notificação." loading="lazy" width="1000" height="470">
+        <figcaption>A estrutura de uma atividade e dos blocos de cada time.</figcaption>
+      </figure>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Campo</th><th scope="col">O que guarda</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Request e RITM</th><td>Os números do chamado e do item de requisição no sistema de chamados da empresa.</td></tr>
+            <tr><th scope="row">Descrição simples</th><td>Uma frase que qualquer pessoa entenda.</td></tr>
+            <tr><th scope="row">Status e Priorização</th><td>Em que etapa a atividade está e se ela deve ser priorizada. Veja a próxima seção.</td></tr>
+            <tr><th scope="row">Tipo</th><td>A classificação usada pela equipe: BL, MP ou PJ.</td></tr>
+            <tr><th scope="row">Sistema originador</th><td>O time ou sistema de onde a demanda veio. As opções são os próprios times.</td></tr>
+            <tr><th scope="row">Business Owner</th><td>A pessoa de negócio responsável pela demanda.</td></tr>
+            <tr><th scope="row">Marcadores: Legal, Auditoria, Priorizado Gestão</th><td>Três caixas de seleção, independentes entre si: uma atividade pode ter nenhuma, uma ou as três. <strong>Priorizado Gestão</strong> é separado do campo Priorização. Na Lista, a coluna Marcadores mostra as marcadas, com ícone e nome, e pode ser ordenada; na Matriz, elas aparecem abaixo do status. O filtro <strong>Todos os marcadores</strong> mostra só as atividades com o marcador escolhido, e a busca também encontra pelo nome do marcador. Em Insights, o gráfico Marcadores conta as atividades de cada um; clicar numa barra aplica o filtro. No JSON, os campos são <code>legal</code>, <code>auditoria</code> e <code>priorizadoGestao</code>, gravados como <code>true</code> só quando marcados. Ao abrir um arquivo, valores como <code>"Sim"</code>, <code>"x"</code> ou <code>1</code> contam como marcado, e qualquer outro valor conta como desmarcado.</td></tr>
+            <tr><th scope="row">Retorno (R$)</th><td>O valor monetário de retorno da atividade, em reais. Digite como de costume, por exemplo <code>1.250,50</code>, <code>1250,5</code> ou <code>R$ 300</code>; ao sair do campo, o app mostra o valor formatado. Um valor que não é número fica marcado em vermelho e a atividade só é salva depois de corrigido. Na Lista, a coluna Retorno pode ser ordenada; na Matriz, o valor aparece ao lado do status; em Insights, um indicador soma o retorno das atividades filtradas e diz quantas têm valor. No JSON, o campo <code>retorno</code> é gravado como número, com ponto decimal. Se um arquivo trouxer ali um texto que não é número, ele é mantido como veio e aparece na Lista como <strong>⚠ inválido</strong>, até ser corrigido.</td></tr>
+            <tr><th scope="row">Predecessor</th><td>A atividade da lista que precisa terminar antes desta. Escolha em <strong>Predecessor</strong> ou deixe <strong>Nenhuma</strong>. A lista de opções esconde as atividades que já dependem desta, para não formar um ciclo, e a dica abaixo do campo mostra de quais atividades esta é predecessora. Na Lista, a coluna Predecessor traz o request e o status da predecessora, com <strong>⚠ ainda não concluída</strong> quando esta atividade já está em WIP, SIT, UAT ou Deploy e a predecessora não chegou a Finished. Na Matriz, a mesma informação aparece abaixo da descrição. A busca também encontra a atividade pelo request da predecessora. Ao excluir uma atividade que é predecessora de outras, o campo delas fica vazio, e o app avisa antes.</td></tr>
+            <tr><th scope="row">Times</th><td>Para cada time envolvido: task, início, SIT, UAT, deploy e última notificação.</td></tr>
+            <tr><th scope="row">Criada em e Atualizada em</th><td>Registradas pelo próprio app quando você salva uma atividade nova ou altera uma existente.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Os times disponíveis são GUS, IRIS, Esales, RPA, BI, IA, SAP, AIT, Mobile, Oracle, View e ServiceNow. Se o seu arquivo tiver outros times, eles continuam lá: o app junta a lista do arquivo com a dele.</p>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="status-pt" aria-labelledby="h-status-pt">
+      <h2 id="h-status-pt">Status e priorização</h2>
+      <p>O status diz em que etapa a atividade está. A ordem abaixo é a mesma dos contadores, dos filtros e dos gráficos.</p>
+      <figure>
+        <img src="rc_images/AtividadesPOFluxo.svg" alt="Uma atividade avança por Analysis, Sizing, WIP, SIT, UAT, Deploy e Finished. Stand-by e Blocked podem acontecer em qualquer etapa: a atividade fica parada e volta ao fluxo de onde saiu." loading="lazy" width="1000" height="310">
+        <figcaption>O fluxo de status. Stand-by e Blocked ficam fora da linha porque podem acontecer em qualquer etapa.</figcaption>
+      </figure>
+      <ul>
+        <li><strong>WIP</strong> vem de <em>work in progress</em>, trabalho em andamento. <sup><a href="#ref-3-pt">[3]</a></sup></li>
+        <li><strong>SIT</strong> é o teste integrado, que verifica o sistema completo funcionando junto com os outros sistemas. <sup><a href="#ref-4-pt">[4]</a></sup></li>
+        <li><strong>UAT</strong> é o teste de aceite, feito pelo usuário final ou por um especialista do negócio para confirmar que a solução serve a ele. <sup><a href="#ref-5-pt">[5]</a></sup></li>
+      </ul>
+      <p>A <strong>priorização</strong> é independente do status e tem três valores: <strong>Priorizar</strong> (▲, pedir prioridade), <strong>Priorizado</strong> (✓, prioridade já concedida) e <strong>Esperando</strong> (⏸, aguardando decisão). Ela pode ficar vazia.</p>
+      <aside class="note"><p>Arquivos antigos são convertidos ao abrir: On-going e Developing viram WIP, Validation vira SIT, Homologation e Validated viram UAT, “???” vira Finished e o campo de data HML vira UAT.</p></aside>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="arquivo-pt" aria-labelledby="h-arquivo-pt">
+      <h2 id="h-arquivo-pt">Abrir e salvar</h2>
+      <p>O jeito de salvar depende do navegador, porque abrir um arquivo e gravar de volta nele usa um recurso que só alguns navegadores oferecem. <sup><a href="#ref-6-pt">[6]</a></sup> <sup><a href="#ref-7-pt">[7]</a></sup> Pelas tabelas de compatibilidade consultadas, Chrome, Edge e Opera têm esse recurso; Firefox e Safari, não. <sup><a href="#ref-8-pt">[8]</a></sup> <sup><a href="#ref-9-pt">[9]</a></sup></p>
+      <figure>
+        <img src="rc_images/AtividadesPOArquivo.svg" alt="Você abre o arquivo JSON com Abrir JSON e edita as atividades. No Chrome, no Edge e no Opera, o app grava as mudanças no mesmo arquivo, inclusive sozinho, alguns instantes depois de cada alteração. No Firefox e no Safari, Salvar JSON baixa uma cópia nova, que você usa no lugar da anterior. Enquanto houver mudanças não salvas, um rascunho fica guardado no navegador." loading="lazy" width="1000" height="330">
+        <figcaption>Abrir, editar e salvar em cada navegador.</figcaption>
+      </figure>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Botão</th><th scope="col">Chrome, Edge e Opera</th><th scope="col">Firefox e Safari</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Abrir JSON</th><td>Abre o arquivo e pede permissão para gravar nele.</td><td>Abre o arquivo só para leitura.</td></tr>
+            <tr><th scope="row">Salvar JSON (<kbd>Ctrl</kbd>+<kbd>S</kbd>)</th><td>Grava no mesmo arquivo. Depois de cada alteração, o app também grava sozinho.</td><td>Baixa uma cópia. Substitua o arquivo antigo por ela.</td></tr>
+            <tr><th scope="row">Salvar como…</th><td>Grava num arquivo novo, que passa a ser o arquivo aberto.</td><td>Não aparece: Salvar JSON já baixa uma cópia.</td></tr>
+            <tr><th scope="row">Reconectar</th><td>Volta a abrir o último arquivo usado, depois de você recarregar a página.</td><td>Não aparece.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>O nome sugerido para um arquivo novo termina com a data e a hora, no formato <code>AAAAMMDD HHmmSS</code>, por exemplo <code>dados 20261121 101747.json</code>. Assim cada cópia fica identificada.</p>
+      <p>Enquanto houver mudanças não salvas, o app guarda um rascunho no armazenamento do navegador, que sobrevive ao fechamento da aba. <sup><a href="#ref-10-pt">[10]</a></sup> Ao reabrir a página, ele pergunta se você quer restaurar. O ponto ao lado do nome do arquivo mostra o estado: verde para salvo, amarelo para alterações pendentes.</p>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="roteiro-pt" aria-labelledby="h-roteiro-pt">
+      <h2 id="h-roteiro-pt">Roteiro passo a passo</h2>
+      <p>Este roteiro usa o exemplo embutido no app, com 40 atividades fictícias. Nada é gravado até você salvar.</p>
+      <ol>
+        <li>Abra o <a href="atividades-po.html">app</a> e clique em <strong>Carregar exemplo</strong>. Os contadores mostram 40 atividades. Para experimentar o salvamento automático do Chrome e do Edge, use em vez disso o <a href="atividades-po-exemplo.json" download>arquivo de exemplo</a> com <strong>Abrir JSON</strong>.</li>
+        <li>Clique no contador <strong>WIP</strong>. A lista fica com as 9 atividades em desenvolvimento. Clique em <strong>Total</strong> para voltar.</li>
+        <li>No filtro <strong>Todas as priorizações</strong>, escolha <strong>Priorizar</strong>. Restam 10 atividades. Clique em <strong>Limpar filtros</strong>.</li>
+        <li>No filtro <strong>Todos os marcadores</strong>, escolha <strong>Legal</strong>. Restam 5 atividades, todas com o selo ⚖ Legal na coluna Marcadores. Clique em <strong>Limpar filtros</strong>.</li>
+        <li>Clique na linha <strong>REQ0100101</strong>. O painel mostra o Retorno de R$ 48.000,00, o marcador <strong>Priorizado Gestão</strong> e a predecessora <strong>REQ0100114</strong>. Clique em <strong>GUS</strong> para ver a task e as datas desse time.</li>
+        <li>Mude a <strong>Priorização</strong> para <strong>Esperando</strong> e clique em <strong>Salvar atividade</strong>. Reabra a atividade: a data de atualização mudou.</li>
+        <li>Clique em <strong>+ Nova atividade</strong>, preencha o Request, escolha Status, Tipo e Sistema originador, digite um Retorno, abra o time <strong>BI</strong>, preencha a task e uma data de SIT e salve. A atividade aparece no topo da lista.</li>
+        <li>Clique em <strong>Matriz por time</strong> e localize a nova atividade na coluna BI.</li>
+        <li>Clique em <strong>Insights</strong>. No mapa <strong>Times × status</strong>, clique numa célula: o app volta para a lista com o time e o status filtrados.</li>
+        <li>Clique em <strong>Road map</strong>. A primeira posição é a REQ0100101, que tem Priorizado Gestão e está em WIP. Abaixo de cada descrição, o app diz qual critério decidiu a posição.</li>
+        <li>Clique em <strong>Salvar como…</strong> para guardar uma cópia com data e hora no nome.</li>
+      </ol>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="lista-pt" aria-labelledby="h-lista-pt">
+      <h2 id="h-lista-pt">A lista e os filtros</h2>
+      <p>No topo ficam os contadores, um por status, com o total à esquerda. Clicar num contador filtra a lista por aquele status.</p>
+      <p>Abaixo vêm a busca e os filtros. A busca procura em request, RITM, descrição, status, priorização, sistema, business owner, tipo, request da predecessora, nome dos marcadores e, dentro dos times, em task e notificação. Os filtros são status, priorização (com a opção <strong>Sem priorização</strong>), sistema, tipo, time e marcador. Os filtros valem para a lista, para a matriz, para os insights e para o road map.</p>
+      <p>Clique no título de uma coluna para ordenar, e de novo para inverter. Status segue a ordem do fluxo; priorização segue Priorizar, Priorizado, Esperando, com as vazias sempre por último. Com um time filtrado, aparece uma coluna com a última notificação daquele time.</p>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="painel-pt" aria-labelledby="h-painel-pt">
+      <h2 id="h-painel-pt">O painel da atividade</h2>
+      <p>Clicar numa linha abre o painel de edição à direita. <strong>+ Nova atividade</strong> abre o mesmo painel vazio.</p>
+      <figure>
+        <img src="rc_images/AtividadesPOPainel.png" alt="Painel de edição da atividade REQ0100101: no topo, as datas de criação e de atualização; os campos Request, RITM, descrição, Status, Priorização, Tipo, Sistema originador, Business Owner e Retorno de R$ 48.000,00; os marcadores, com Priorizado Gestão marcado; o Predecessor REQ0100114; e o time GUS aberto, com task, datas de início, SIT, UAT e deploy e a última notificação" loading="lazy" width="1280" height="1000">
+        <figcaption>O painel com o time GUS aberto. Os outros times ficam recolhidos.</figcaption>
+      </figure>
+      <ul>
+        <li>Status, Priorização, Tipo e Sistema originador são listas de opções. Um valor antigo que não está na lista aparece no fim dela, para não se perder.</li>
+        <li>Os times começam recolhidos. Clique no nome para abrir; a task aparece ao lado do nome mesmo com o bloco fechado.</li>
+        <li>Um time só é gravado na atividade quando algum campo dele é preenchido.</li>
+        <li><strong>Salvar atividade</strong> registra a data de criação numa atividade nova e a de atualização quando algo mudou. Salvar sem mudar nada mostra “Nenhuma alteração”.</li>
+        <li><strong>Duplicar</strong> cria uma cópia como atividade nova. <strong>Excluir</strong> pede confirmação. <kbd>Esc</kbd> fecha o painel.</li>
+      </ul>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="matriz-pt" aria-labelledby="h-matriz-pt">
+      <h2 id="h-matriz-pt">A matriz por time</h2>
+      <p>A matriz põe as atividades nas linhas e os times nas colunas. Cada célula mostra a task, a última notificação e as datas daquele time. Só aparecem os times que participam de alguma atividade da lista filtrada.</p>
+      <figure>
+        <img src="rc_images/AtividadesPOMatriz.png" alt="Matriz por time: cada linha é uma atividade, com request, descrição, status, sistema, retorno, marcadores e predecessora, com o aviso quando a predecessora não está concluída; as colunas GUS, IRIS, Esales, RPA, BI e IA mostram a task, a última notificação e as datas de cada time" loading="lazy" width="1280" height="800">
+        <figcaption>A matriz mostra numa grade quem depende de quem.</figcaption>
+      </figure>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="insights-pt" aria-labelledby="h-insights-pt">
+      <h2 id="h-insights-pt">Insights</h2>
+      <p>A área de insights resume as atividades da lista filtrada em indicadores e gráficos. Os números são contagens do arquivo aberto: o app não estima nada.</p>
+      <figure>
+        <img src="rc_images/AtividadesPOInsights.png" alt="Área de insights com o exemplo de 40 atividades: indicadores de total, em andamento, paradas, concluídas, média de times por atividade, marcos nos próximos 60 dias e retorno somado; gráficos de barras de atividades por status, envolvimento por time e sistema originador; e o mapa de calor de times por status" loading="lazy" width="1280" height="1500">
+        <figcaption>O começo da área de insights. Abaixo dela há mais gráficos e duas tabelas.</figcaption>
+      </figure>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Gráfico</th><th scope="col">O que responde</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Indicadores</th><td>Quantas atividades há, quantas estão em andamento (WIP, SIT, UAT, Deploy), paradas (Stand-by, Blocked) e concluídas, a média de times por atividade e os marcos dos próximos 60 dias.</td></tr>
+            <tr><th scope="row">Atividades por status</th><td>Como as atividades se distribuem no fluxo.</td></tr>
+            <tr><th scope="row">Envolvimento por time</th><td>Em quantas atividades cada time participa.</td></tr>
+            <tr><th scope="row">Times × status</th><td>Em que etapa está o trabalho de cada time. Células mais escuras têm mais atividades.</td></tr>
+            <tr><th scope="row">Sistema originador e Tipo</th><td>De onde vêm as demandas e de que tipo são.</td></tr>
+            <tr><th scope="row">Times por atividade</th><td>Quantas atividades envolvem 1, 2, 3 ou mais times.</td></tr>
+            <tr><th scope="row">Preenchimento dos dados</th><td>Que parte das participações de time tem task, datas e notificação preenchidas.</td></tr>
+            <tr><th scope="row">Business Owners</th><td>Os oito responsáveis com mais atividades.</td></tr>
+            <tr><th scope="row">Retorno somado</th><td>A soma do Retorno das atividades filtradas, abreviada no número grande (por exemplo R$ 2,68 mi) e completa na legenda, com quantas atividades têm valor.</td></tr>
+            <tr><th scope="row">Marcadores</th><td>Quantas atividades têm cada marcador: Legal, Auditoria e Priorizado Gestão.</td></tr>
+            <tr><th scope="row">Próximos marcos e Abertas há mais tempo</th><td>As datas dos próximos 60 dias e as atividades não concluídas com o início mais antigo.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Clique numa barra ou numa célula para ir à lista com aquele filtro. Passe o mouse ou use <kbd>Tab</kbd> para ver o número e o percentual, e abra <strong>Ver tabela</strong> em cada gráfico para ler os valores sem o gráfico.</p>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="roadmap-pt" aria-labelledby="h-roadmap-pt">
+      <h2 id="h-roadmap-pt">Road map</h2>
+      <p>A área <strong>Road map</strong> põe as atividades não concluídas numa ordem de prioridade. Cada critério só desempata o anterior:</p>
+      <figure>
+        <img src="rc_images/AtividadesPORoadmap.png" alt="Road map com o exemplo: a explicação dos sete critérios de ordem e a tabela com posição, request, descrição com o critério que decidiu a posição, status, sistema originador, times, marcadores e retorno com o valor por time; nas primeiras posições, as atividades Priorizado Gestão, seguidas das marcadas Legal e Auditoria" loading="lazy" width="1280" height="1000">
+        <figcaption>O road map do exemplo. Abaixo de cada descrição, o critério que pôs a atividade à frente da seguinte.</figcaption>
+      </figure>
+      <ol><li>Priorizado Gestão;</li><li>Legal;</li><li>Auditoria;</li><li>status WIP;</li><li>maior retorno por time necessário: o Retorno dividido pelo número de times envolvidos (sem time, conta como 1), o que favorece valor alto com poucos times;</li><li>maior Retorno;</li><li>mais antiga: a data de criação ou, sem ela, o início mais antigo entre os times.</li></ol>
+      <p>Atividades sem Retorno vêm depois das que têm, nos critérios 5 e 6, e as que estão em Finished ficam fora. A tabela traz posição, Request, Descrição, Status, Sistema originador, Times, Marcadores e Retorno; quando há mais de um time, o retorno por time aparece abaixo do valor. Abaixo de cada descrição, o app diz qual critério pôs a atividade à frente da seguinte. Os filtros valem também aqui. Clique numa linha, ou chegue a ela com <kbd>Tab</kbd> e tecle <kbd>Enter</kbd>, para abrir a atividade.</p>
+      <blockquote>A ordem é uma sugestão a partir dos campos preenchidos. Retorno em branco ou desatualizado muda a posição, então revise os valores antes de levar o road map a uma reunião.</blockquote>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="erros-pt" aria-labelledby="h-erros-pt">
+      <h2 id="h-erros-pt">Erros comuns</h2>
+      <ul class="myths">
+        <li><h3>Editar no Firefox e esquecer a cópia</h3><p>No Firefox e no Safari, Salvar JSON baixa um arquivo novo. Se você continuar abrindo o antigo, as mudanças somem. Substitua o arquivo antigo pela cópia baixada.</p></li>
+        <li><h3>Esperar salvamento automático sem arquivo</h3><p>O app só grava sozinho depois que um arquivo foi aberto ou salvo com permissão. Antes disso, as mudanças ficam só no rascunho do navegador.</p></li>
+        <li><h3>Insights vazios por falta de datas</h3><p>Próximos marcos e Abertas há mais tempo dependem das datas dos times. Confira o gráfico Preenchimento dos dados para ver o que falta.</p></li>
+        <li><h3>Esquecer os filtros ligados</h3><p>Os filtros valem para a lista, a matriz e os insights. Se um número parecer baixo, veja a linha “N de M atividades” e clique em Limpar filtros.</p></li>
+      </ul>
+      <div class="recap">
+        <h3>Para fixar</h3>
+        <ul>
+          <li>Os dados ficam num arquivo JSON no seu computador.</li>
+          <li>No Chrome, no Edge e no Opera o app grava no mesmo arquivo; no Firefox e no Safari, baixa uma cópia.</li>
+          <li>Um time só entra na atividade quando algum campo dele é preenchido.</li>
+          <li>Os filtros valem para a lista, a matriz e os insights.</li>
+        </ul>
+      </div>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="interface-pt" aria-labelledby="h-interface-pt">
+      <h2 id="h-interface-pt">Idioma da interface</h2>
+      <p>A interface do app está em português. A tabela traz os botões e rótulos principais nos quatro idiomas deste tutorial.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">No app</th><th scope="col">English</th><th scope="col">Italiano</th><th scope="col">Español</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Abrir JSON</th><td>Open JSON</td><td>Apri JSON</td><td>Abrir JSON</td></tr>
+            <tr><th scope="row">Salvar JSON</th><td>Save JSON</td><td>Salva JSON</td><td>Guardar JSON</td></tr>
+            <tr><th scope="row">Salvar como…</th><td>Save as…</td><td>Salva con nome…</td><td>Guardar como…</td></tr>
+            <tr><th scope="row">Reconectar</th><td>Reconnect</td><td>Riconnetti</td><td>Reconectar</td></tr>
+            <tr><th scope="row">+ Nova atividade</th><td>+ New activity</td><td>+ Nuova attività</td><td>+ Nueva actividad</td></tr>
+            <tr><th scope="row">Carregar exemplo</th><td>Load sample</td><td>Carica esempio</td><td>Cargar ejemplo</td></tr>
+            <tr><th scope="row">Lista · Matriz por time · Insights</th><td>List · Matrix by team · Insights</td><td>Elenco · Matrice per team · Insights</td><td>Lista · Matriz por equipo · Insights</td></tr>
+            <tr><th scope="row">Limpar filtros</th><td>Clear filters</td><td>Azzera filtri</td><td>Limpiar filtros</td></tr>
+            <tr><th scope="row">Priorização: Priorizar · Priorizado · Esperando</th><td>Prioritization: Prioritize · Prioritized · Waiting</td><td>Priorità: Da priorizzare · Priorizzata · In attesa</td><td>Priorización: Priorizar · Priorizado · Esperando</td></tr>
+            <tr><th scope="row">Sistema originador</th><td>Originating system</td><td>Sistema di origine</td><td>Sistema de origen</td></tr>
+            <tr><th scope="row">Road map · Ordem do road map · à frente da seguinte por · por time</th><td>Road map · Road map order · ahead of the next one by · per team</td><td>Road map · Ordine del road map · davanti alla successiva per · per team</td><td>Road map · Orden del road map · delante de la siguiente por · por equipo</td></tr>
+            <tr><th scope="row">Marcadores · Legal · Auditoria · Priorizado Gestão · Todos os marcadores</th><td>Flags · Legal · Audit · Prioritized by management · All flags</td><td>Contrassegni · Legale · Audit · Prioritaria per la direzione · Tutti i contrassegni</td><td>Marcadores · Legal · Auditoría · Priorizado por la gerencia · Todos los marcadores</td></tr>
+            <tr><th scope="row">Retorno (R$) · Retorno somado · ⚠ inválido</th><td>Return (R$) · Total return · ⚠ invalid</td><td>Ritorno (R$) · Ritorno totale · ⚠ non valido</td><td>Retorno (R$) · Retorno sumado · ⚠ inválido</td></tr>
+            <tr><th scope="row">Predecessor · Nenhuma · ⚠ ainda não concluída</th><td>Predecessor · None · ⚠ not finished yet</td><td>Predecessore · Nessuna · ⚠ non ancora conclusa</td><td>Predecesora · Ninguna · ⚠ aún no terminada</td></tr>
+            <tr><th scope="row">Última notificação</th><td>Latest update note</td><td>Ultima notifica</td><td>Última notificación</td></tr>
+            <tr><th scope="row">Salvar atividade · Duplicar · Excluir · Fechar</th><td>Save activity · Duplicate · Delete · Close</td><td>Salva attività · Duplica · Elimina · Chiudi</td><td>Guardar actividad · Duplicar · Eliminar · Cerrar</td></tr>
+            <tr><th scope="row">Ver tabela</th><td>Show table</td><td>Mostra tabella</td><td>Ver tabla</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="revisao-pt" aria-labelledby="h-revisao-pt">
+      <h2 id="h-revisao-pt">Revisão rápida</h2>
+      <p>Tente responder antes de abrir cada pergunta.</p>
+      <div class="quiz">
+        <details><summary>1. Onde ficam os dados das atividades?</summary><p>Num arquivo JSON no seu computador. O app não envia nada para servidores; o navegador guarda só um rascunho enquanto houver mudanças não salvas.</p></details>
+        <details><summary>2. Você editou no Firefox e clicou em Salvar JSON. O que aconteceu com o arquivo original?</summary><p>Nada. O Firefox baixou uma cópia nova, com data e hora no nome. Use essa cópia no lugar da antiga.</p></details>
+        <details><summary>3. Uma atividade está parada esperando outro time. Qual status usar?</summary><p>Stand-by, se ela está em pausa aguardando algo; Blocked, se um problema impede o avanço.</p></details>
+        <details><summary>4. Por que um time aberto no painel não aparece na matriz depois de salvar?</summary><p>Porque nenhum campo dele foi preenchido. O time só entra na atividade quando tem task, data ou notificação.</p></details>
+        <details><summary>5. O gráfico Abertas há mais tempo está vazio. Por quê?</summary><p>Ele usa a data de início dos times. Sem datas de início preenchidas, não há como calcular há quanto tempo a atividade está aberta.</p></details>
+      </div>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="referencias-pt" aria-labelledby="h-referencias-pt">
+      <h2 id="h-referencias-pt">Referências</h2>
+      <ol class="refs">
+        <li id="ref-1-pt"><strong>Giovani Perotto Mesquita</strong>, “Atividades entre POs”, app em um único arquivo HTML, <a href="atividades-po.html">giovanipm.github.io/atividades-po.html</a>.</li>
+        <li id="ref-2-pt"><strong>T. Bray (ed.)</strong>, “The JavaScript Object Notation (JSON) Data Interchange Format”, RFC 8259, IETF, dezembro de 2017, <a href="https://datatracker.ietf.org/doc/html/rfc8259" rel="noopener">datatracker.ietf.org/doc/html/rfc8259</a>.</li>
+        <li id="ref-3-pt"><strong>Wikipedia</strong> (em inglês), “Work in process”, acesso em 21/11/2026, <a href="https://en.wikipedia.org/wiki/Work_in_process" rel="noopener">en.wikipedia.org/wiki/Work_in_process</a>. O verbete trata o termo na produção e na contabilidade; o uso para tarefas em andamento é uma extensão comum dele.</li>
+        <li id="ref-4-pt"><strong>Wikipedia</strong> (em inglês), “System integration testing”, acesso em 21/11/2026, <a href="https://en.wikipedia.org/wiki/System_integration_testing" rel="noopener">en.wikipedia.org/wiki/System_integration_testing</a>.</li>
+        <li id="ref-5-pt"><strong>Wikipedia</strong> (em inglês), “Acceptance testing”, acesso em 21/11/2026, <a href="https://en.wikipedia.org/wiki/Acceptance_testing" rel="noopener">en.wikipedia.org/wiki/Acceptance_testing</a>.</li>
+        <li id="ref-6-pt"><strong>MDN Web Docs</strong>, “Window: showOpenFilePicker() method”, acesso em 21/11/2026, <a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/showOpenFilePicker" rel="noopener">developer.mozilla.org/en-US/docs/Web/API/Window/showOpenFilePicker</a>. Recurso experimental, de disponibilidade limitada.</li>
+        <li id="ref-7-pt"><strong>MDN Web Docs</strong>, “Window: showSaveFilePicker() method”, acesso em 21/11/2026, <a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/showSaveFilePicker" rel="noopener">developer.mozilla.org/en-US/docs/Web/API/Window/showSaveFilePicker</a>.</li>
+        <li id="ref-8-pt"><strong>Can I use</strong>, “File System Access API”, acesso em 21/11/2026, <a href="https://caniuse.com/native-filesystem-api" rel="noopener">caniuse.com/native-filesystem-api</a>. Suporte completo no Chrome e no Edge a partir da versão 105 e no Opera a partir da 91; sem suporte no Firefox e no Safari. Marca o Chrome para Android como sem suporte.</li>
+        <li id="ref-9-pt"><strong>Chrome for Developers</strong>, documentação da File System Access API, publicada em 19/08/2024, acesso em 21/11/2026, <a href="https://developer.chrome.com/docs/capabilities/web-apis/file-system-access" rel="noopener">developer.chrome.com/docs/capabilities/web-apis/file-system-access</a>. Diz que a API funciona na maioria dos navegadores Chromium, inclusive no Android, o que diverge do Can I use [8] para o Android. O app não foi testado em celular.</li>
+        <li id="ref-10-pt"><strong>MDN Web Docs</strong>, “Window: localStorage property”, acesso em 21/11/2026, <a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage" rel="noopener">developer.mozilla.org/en-US/docs/Web/API/Window/localStorage</a>. Em janelas anônimas, os dados são apagados quando a última aba anônima é fechada.</li>
+      </ol>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== EN ===================== -->
+<div id="en" role="tabpanel" aria-labelledby="tab-en" lang="en" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Projects</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Activities between POs: tutorial</h1>
+      <p class="dek">How to track, in a single file, the activities that depend on several teams: records, dates per team, filters, matrix, insights and a step-by-step walkthrough with sample data.</p>
+      <div class="byline">
+        <span>By <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Published <time datetime="2026-11-21">21/11/2026</time></span>
+        <span class="credit">Reviewed and formatted using Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-en">
+    <h2 id="toc-en">Contents</h2>
+    <ol>
+      <li><a href="#intro-en">The app</a></li>
+      <li><a href="#porque-en">Why an app for this</a></li>
+      <li><a href="#dados-en">The data</a></li>
+      <li><a href="#status-en">Status and prioritization</a></li>
+      <li><a href="#arquivo-en">Opening and saving</a></li>
+      <li><a href="#roteiro-en">Step-by-step walkthrough</a></li>
+      <li><a href="#lista-en">The list and the filters</a></li>
+      <li><a href="#painel-en">The activity panel</a></li>
+      <li><a href="#matriz-en">The matrix by team</a></li>
+      <li><a href="#insights-en">Insights</a></li>
+      <li><a href="#roadmap-en">Road map</a></li>
+      <li><a href="#erros-en">Common mistakes</a></li>
+      <li><a href="#interface-en">Interface language</a></li>
+      <li><a href="#revisao-en">Quick review</a></li>
+      <li><a href="#referencias-en">References</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="intro-en" aria-labelledby="h-intro-en">
+      <h2 id="h-intro-en">The app</h2>
+      <p><strong>Atividades entre POs</strong> (Activities between POs) is an app for people who coordinate requests that go through several teams. Each activity stores the request, the status, the prioritization and the business owner and, for each team involved, the task, the start, SIT, UAT and deploy dates and the latest update note. From that, the app shows a filterable list, a matrix by team, an insights area with charts and a road map with the priority order. <sup><a href="#ref-1-en">[1]</a></sup></p>
+      <p><a class="launch" href="atividades-po.html">Open the Atividades entre POs app <span aria-hidden="true">→</span></a></p>
+      <figure>
+        <img src="rc_images/AtividadesPOLista.png" alt="Main screen of the app with the 40-activity sample: the buttons at the top, including Carregar exemplo (load sample); the counters by status; the filters, including the flags filter; the List, Matrix by team, Insights and Road map tabs; and the list with request, RITM, description, status, prioritization, flags, type, system, business owner, return, predecessor and teams involved" loading="lazy" width="1280" height="800">
+        <figcaption>The list with the sample data. All names and numbers in the figures are fictitious. The app interface is in Portuguese.</figcaption>
+      </figure>
+      <aside class="note"><p>The app is a single HTML file. The data lives in a JSON file on your computer: the app sends nothing to any server and starts empty until you open a file or create the first activity.</p></aside>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="porque-en" aria-labelledby="h-porque-en">
+      <h2 id="h-porque-en">Why an app for this</h2>
+      <p>When a request depends on three or four teams, each team usually has its own task, its own deadline and its own way of recording progress. The question “where are we?” turns into a round of messages. The app brings this information together in one place, with one record per activity and one block per team inside it.</p>
+      <p>Three questions shape the screens:</p>
+      <ul>
+        <li><strong>What is stuck?</strong> The counters and the status filter show Stand-by and Blocked right away.</li>
+        <li><strong>Who depends on whom?</strong> The matrix by team shows, in a grid, each team's task, dates and latest update note.</li>
+        <li><strong>Where is the work?</strong> The insights cross teams and statuses and point out fields nobody filled in.</li>
+      </ul>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="dados-en" aria-labelledby="h-dados-en">
+      <h2 id="h-dados-en">The data</h2>
+      <p>Everything is stored in a JSON file, a simple text format that does not depend on any programming language. <sup><a href="#ref-2-en">[2]</a></sup> The file has two lists: the teams and the activities.</p>
+      <figure>
+        <img src="rc_images/AtividadesPODados-en.svg" alt="A JSON file stores the list of teams and the list of activities. Each activity has a request, RITM, description, status, prioritization, type, originating system, business owner, return in reais, the Legal, Audit and Prioritized by management flags, the predecessor activity and the creation and update dates. Inside it, each involved team has a task, start, SIT, UAT and deploy dates and the latest update note." loading="lazy" width="1000" height="470">
+        <figcaption>The structure of an activity and of each team's block.</figcaption>
+      </figure>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Field (label in the app)</th><th scope="col">What it stores</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Request and RITM</th><td>The ticket and requested-item numbers in the company's ticketing system.</td></tr>
+            <tr><th scope="row">Short description (Descrição simples)</th><td>A sentence anyone can understand.</td></tr>
+            <tr><th scope="row">Status and Prioritization (Priorização)</th><td>Which stage the activity is in and whether it should be prioritized. See the next section.</td></tr>
+            <tr><th scope="row">Type (Tipo)</th><td>The classification used by the team: BL, MP or PJ.</td></tr>
+            <tr><th scope="row">Originating system (Sistema originador)</th><td>The team or system the request came from. The options are the teams themselves.</td></tr>
+            <tr><th scope="row">Business Owner</th><td>The business person responsible for the request.</td></tr>
+            <tr><th scope="row">Flags (Marcadores): Legal, Auditoria (Audit), Priorizado Gestão (Prioritized by management)</th><td>Three independent checkboxes: an activity can have none, one or all three. <strong>Priorizado Gestão</strong> is separate from the Priorização field. In the List view, the Marcadores column shows the checked ones, with icon and name, and can be sorted; in the Matrix view, they appear below the status. The <strong>Todos os marcadores</strong> (all flags) filter shows only the activities with the chosen flag, and the search also finds them by flag name. In Insights, the Marcadores chart counts the activities with each flag; clicking a bar applies the filter. In the JSON, the fields are <code>legal</code>, <code>auditoria</code> and <code>priorizadoGestao</code>, stored as <code>true</code> only when checked. When a file is opened, values such as <code>"Sim"</code>, <code>"x"</code> or <code>1</code> count as checked, and any other value counts as unchecked.</td></tr>
+            <tr><th scope="row">Return (Retorno, R$)</th><td>The monetary return of the activity, in Brazilian reais. Type it as usual in Brazil, for example <code>1.250,50</code>, <code>1250,5</code> or <code>R$ 300</code> (dot for thousands, comma for cents); when you leave the field, the app shows the formatted value. A value that is not a number is marked in red, and the activity is only saved once it is fixed. In the List view, the Retorno column can be sorted; in the Matrix view, the value appears next to the status; in Insights, a tile adds up the return of the filtered activities and says how many have a value. In the JSON, the <code>retorno</code> field is stored as a number, with a decimal point. If a file brings text there that is not a number, it is kept as it came and shows in the List as <strong>⚠ inválido</strong> (invalid) until it is fixed.</td></tr>
+            <tr><th scope="row">Predecessor</th><td>The activity on the list that has to finish before this one. Pick it in <strong>Predecessor</strong> or leave <strong>Nenhuma</strong> (none). The options hide the activities that already depend on this one, so no cycle can form, and the hint under the field shows which activities this one is a predecessor of. In the List view, the Predecessor column shows the request and status of the predecessor, with <strong>⚠ ainda não concluída</strong> (not finished yet) when this activity is already in WIP, SIT, UAT or Deploy and the predecessor has not reached Finished. In the Matrix view, the same information appears below the description. The search also finds the activity by the request of its predecessor. When you delete an activity that is a predecessor of others, their field is cleared, and the app warns you first.</td></tr>
+            <tr><th scope="row">Teams (Times)</th><td>For each team involved: task, start, SIT, UAT, deploy and latest update note.</td></tr>
+            <tr><th scope="row">Created at and Updated at</th><td>Recorded by the app itself when you save a new activity or change an existing one.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>The available teams are GUS, IRIS, Esales, RPA, BI, IA, SAP, AIT, Mobile, Oracle, View and ServiceNow. If your file has other teams, they stay: the app merges the file's list with its own.</p>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="status-en" aria-labelledby="h-status-en">
+      <h2 id="h-status-en">Status and prioritization</h2>
+      <p>The status tells which stage the activity is in. The order below is the same used by the counters, the filters and the charts.</p>
+      <figure>
+        <img src="rc_images/AtividadesPOFluxo-en.svg" alt="An activity moves through Analysis, Sizing, WIP, SIT, UAT, Deploy and Finished. Stand-by and Blocked can happen at any stage: the activity stops and returns to the flow where it left off." loading="lazy" width="1000" height="310">
+        <figcaption>The status flow. Stand-by and Blocked sit outside the line because they can happen at any stage.</figcaption>
+      </figure>
+      <ul>
+        <li><strong>WIP</strong> stands for <em>work in progress</em>. <sup><a href="#ref-3-en">[3]</a></sup></li>
+        <li><strong>SIT</strong> is system integration testing, which checks the complete system working together with the other systems. <sup><a href="#ref-4-en">[4]</a></sup></li>
+        <li><strong>UAT</strong> is user acceptance testing, done by the end user or a business expert to confirm that the solution works for them. <sup><a href="#ref-5-en">[5]</a></sup></li>
+      </ul>
+      <p><strong>Prioritization</strong> is independent of the status and has three values: <strong>Priorizar</strong> (▲, ask for priority), <strong>Priorizado</strong> (✓, priority already granted) and <strong>Esperando</strong> (⏸, waiting for a decision). It can be left empty.</p>
+      <aside class="note"><p>Older files are converted when opened: On-going and Developing become WIP, Validation becomes SIT, Homologation and Validated become UAT, “???” becomes Finished and the HML date field becomes UAT.</p></aside>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="arquivo-en" aria-labelledby="h-arquivo-en">
+      <h2 id="h-arquivo-en">Opening and saving</h2>
+      <p>How saving works depends on the browser, because opening a file and writing back to it uses a feature that only some browsers offer. <sup><a href="#ref-6-en">[6]</a></sup> <sup><a href="#ref-7-en">[7]</a></sup> According to the compatibility tables consulted, Chrome, Edge and Opera have this feature; Firefox and Safari do not. <sup><a href="#ref-8-en">[8]</a></sup> <sup><a href="#ref-9-en">[9]</a></sup></p>
+      <figure>
+        <img src="rc_images/AtividadesPOArquivo-en.svg" alt="You open the JSON file with Abrir JSON and edit the activities. In Chrome, Edge and Opera, the app writes the changes to the same file, even on its own, a moment after each change. In Firefox and Safari, Salvar JSON downloads a new copy that replaces the previous one. While there are unsaved changes, a draft is kept in the browser." loading="lazy" width="1000" height="330">
+        <figcaption>Opening, editing and saving in each browser.</figcaption>
+      </figure>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Button</th><th scope="col">Chrome, Edge and Opera</th><th scope="col">Firefox and Safari</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Abrir JSON (Open JSON)</th><td>Opens the file and asks permission to write to it.</td><td>Opens the file for reading only.</td></tr>
+            <tr><th scope="row">Salvar JSON (Save JSON, <kbd>Ctrl</kbd>+<kbd>S</kbd>)</th><td>Writes to the same file. After each change, the app also saves on its own.</td><td>Downloads a copy. Replace the old file with it.</td></tr>
+            <tr><th scope="row">Salvar como… (Save as…)</th><td>Writes to a new file, which becomes the open file.</td><td>Not shown: Salvar JSON already downloads a copy.</td></tr>
+            <tr><th scope="row">Reconectar (Reconnect)</th><td>Reopens the last file used, after you reload the page.</td><td>Not shown.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>The name suggested for a new file ends with the date and time, in the format <code>YYYYMMDD HHmmSS</code>, for example <code>dados 20261121 101747.json</code>, so each copy is easy to identify.</p>
+      <p>While there are unsaved changes, the app keeps a draft in the browser's storage, which survives closing the tab. <sup><a href="#ref-10-en">[10]</a></sup> When you reopen the page, it asks whether you want to restore it. The dot next to the file name shows the state: green for saved, yellow for pending changes.</p>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="roteiro-en" aria-labelledby="h-roteiro-en">
+      <h2 id="h-roteiro-en">Step-by-step walkthrough</h2>
+      <p>This walkthrough uses the sample built into the app, with 40 fictitious activities. Nothing is saved until you save. Button names are given as they appear in the app, in Portuguese.</p>
+      <ol>
+        <li>Open the <a href="atividades-po.html">app</a> and click <strong>Carregar exemplo</strong> (load sample). The counters show 40 activities. To try the automatic saving of Chrome and Edge, use the <a href="atividades-po-exemplo.json" download>sample file</a> with <strong>Abrir JSON</strong> instead.</li>
+        <li>Click the <strong>WIP</strong> counter. The list keeps the 9 activities in development. Click <strong>Total</strong> to go back.</li>
+        <li>In the <strong>Todas as priorizações</strong> filter, choose <strong>Priorizar</strong>. 10 activities remain. Click <strong>Limpar filtros</strong>.</li>
+        <li>In the <strong>Todos os marcadores</strong> (all flags) filter, choose <strong>Legal</strong>. 5 activities remain, all with the ⚖ Legal badge in the Marcadores column. Click <strong>Limpar filtros</strong>.</li>
+        <li>Click the <strong>REQ0100101</strong> row. The panel shows a Retorno of R$ 48,000.00, the <strong>Priorizado Gestão</strong> flag and the predecessor <strong>REQ0100114</strong>. Click <strong>GUS</strong> to see that team's task and dates.</li>
+        <li>Change <strong>Priorização</strong> to <strong>Esperando</strong> and click <strong>Salvar atividade</strong>. Reopen the activity: the update date has changed.</li>
+        <li>Click <strong>+ Nova atividade</strong>, fill in the Request, choose Status, Type and Originating system, type a Retorno, open the <strong>BI</strong> team, fill in the task and a SIT date and save. The activity appears at the top of the list.</li>
+        <li>Click <strong>Matriz por time</strong> and find the new activity in the BI column.</li>
+        <li>Click <strong>Insights</strong>. In the <strong>Times × status</strong> map, click a cell: the app goes back to the list with that team and status filtered.</li>
+        <li>Click <strong>Road map</strong>. The first position is REQ0100101, which has Priorizado Gestão and is in WIP. Under each description, the app says which criterion decided the position.</li>
+        <li>Click <strong>Salvar como…</strong> to keep a copy with the date and time in its name.</li>
+      </ol>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="lista-en" aria-labelledby="h-lista-en">
+      <h2 id="h-lista-en">The list and the filters</h2>
+      <p>At the top are the counters, one per status, with the total on the left. Clicking a counter filters the list by that status.</p>
+      <p>Below them are the search box and the filters. The search looks in request, RITM, description, status, prioritization, system, business owner, type, the predecessor's request, flag names and, inside the teams, in task and update note. The filters are status, prioritization (with a <strong>Sem priorização</strong>, “no prioritization”, option), system, type, team and flag. The filters apply to the list, the matrix, the insights and the road map.</p>
+      <p>Click a column title to sort, and again to reverse. Status follows the flow order; prioritization follows Priorizar, Priorizado, Esperando, with empty ones always last. When a team is filtered, a column with that team's latest update note appears.</p>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="painel-en" aria-labelledby="h-painel-en">
+      <h2 id="h-painel-en">The activity panel</h2>
+      <p>Clicking a row opens the editing panel on the right. <strong>+ Nova atividade</strong> opens the same panel, empty.</p>
+      <figure>
+        <img src="rc_images/AtividadesPOPainel.png" alt="Editing panel of activity REQ0100101: at the top, the creation and update dates; the Request, RITM, description, Status, Prioritization, Type, Originating system, Business Owner and Return (R$ 48,000.00) fields; the flags, with Priorizado Gestão checked; the Predecessor REQ0100114; and the GUS team open, with task, start, SIT, UAT and deploy dates and the latest update note" loading="lazy" width="1280" height="1000">
+        <figcaption>The panel with the GUS team open. The other teams stay collapsed.</figcaption>
+      </figure>
+      <ul>
+        <li>Status, Prioritization, Type and Originating system are option lists. An old value that is not in the list appears at its end, so it is not lost.</li>
+        <li>Teams start collapsed. Click the name to open one; the task shows next to the name even when the block is closed.</li>
+        <li>A team is only saved in the activity when one of its fields is filled in.</li>
+        <li><strong>Salvar atividade</strong> (save activity) records the creation date of a new activity and the update date when something changed. Saving with no change shows “Nenhuma alteração” (no change).</li>
+        <li><strong>Duplicar</strong> creates a copy as a new activity. <strong>Excluir</strong> (delete) asks for confirmation. <kbd>Esc</kbd> closes the panel.</li>
+      </ul>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="matriz-en" aria-labelledby="h-matriz-en">
+      <h2 id="h-matriz-en">The matrix by team</h2>
+      <p>The matrix puts activities in rows and teams in columns. Each cell shows that team's task, latest update note and dates. Only teams that take part in some activity of the filtered list are shown.</p>
+      <figure>
+        <img src="rc_images/AtividadesPOMatriz.png" alt="Matrix by team: each row is an activity, with request, description, status, system, return, flags and predecessor, with a warning when the predecessor is not finished; the GUS, IRIS, Esales, RPA, BI and IA columns show the task, the latest update note and the dates of each team" loading="lazy" width="1280" height="800">
+        <figcaption>The matrix shows in a grid who depends on whom.</figcaption>
+      </figure>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="insights-en" aria-labelledby="h-insights-en">
+      <h2 id="h-insights-en">Insights</h2>
+      <p>The insights area summarizes the activities of the filtered list in indicators and charts. The numbers are counts from the open file: the app does not estimate anything.</p>
+      <figure>
+        <img src="rc_images/AtividadesPOInsights.png" alt="Insights area with the 40-activity sample: indicators for total, in progress, stopped, finished, average teams per activity, milestones in the next 60 days and total return; bar charts of activities by status, involvement by team and originating system; and the heat map of teams by status" loading="lazy" width="1280" height="1500">
+        <figcaption>The top of the insights area. Below it there are more charts and two tables.</figcaption>
+      </figure>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Chart</th><th scope="col">What it answers</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Indicators</th><td>How many activities there are, how many are in progress (WIP, SIT, UAT, Deploy), stopped (Stand-by, Blocked) and finished, the average number of teams per activity and the milestones in the next 60 days.</td></tr>
+            <tr><th scope="row">Activities by status</th><td>How activities spread across the flow.</td></tr>
+            <tr><th scope="row">Involvement by team</th><td>How many activities each team takes part in.</td></tr>
+            <tr><th scope="row">Teams × status</th><td>Which stage each team's work is in. Darker cells have more activities.</td></tr>
+            <tr><th scope="row">Originating system and Type</th><td>Where requests come from and what type they are.</td></tr>
+            <tr><th scope="row">Teams per activity</th><td>How many activities involve 1, 2, 3 or more teams.</td></tr>
+            <tr><th scope="row">Data completeness</th><td>What share of team participations have task, dates and update note filled in.</td></tr>
+            <tr><th scope="row">Business Owners</th><td>The eight owners with the most activities.</td></tr>
+            <tr><th scope="row">Total return (Retorno somado)</th><td>The sum of Retorno over the filtered activities, abbreviated in the big number (for example R$ 2,68 mi, about R$ 2.68 million) and in full in the caption, with how many activities have a value.</td></tr>
+            <tr><th scope="row">Flags (Marcadores)</th><td>How many activities have each flag: Legal, Auditoria and Priorizado Gestão.</td></tr>
+            <tr><th scope="row">Upcoming milestones and Open the longest</th><td>The dates in the next 60 days and the unfinished activities with the earliest start.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Click a bar or a cell to go to the list with that filter. Hover or use <kbd>Tab</kbd> to see the number and percentage, and open <strong>Ver tabela</strong> (show table) on each chart to read the values without the chart.</p>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="roadmap-en" aria-labelledby="h-roadmap-en">
+      <h2 id="h-roadmap-en">Road map</h2>
+      <p>The <strong>Road map</strong> view puts the unfinished activities in priority order. Each criterion only breaks ties of the one before:</p>
+      <figure>
+        <img src="rc_images/AtividadesPORoadmap.png" alt="Road map with the sample: the explanation of the seven ordering criteria and the table with position, request, description with the criterion that decided the position, status, originating system, teams, flags and return with the value per team; in the first positions, the Priorizado Gestão activities, followed by those flagged Legal and Auditoria" loading="lazy" width="1280" height="1000">
+        <figcaption>The road map of the sample. Under each description, the criterion that put the activity ahead of the next one.</figcaption>
+      </figure>
+      <ol><li>Priorizado Gestão (prioritized by management);</li><li>Legal;</li><li>Auditoria (audit);</li><li>WIP status;</li><li>highest return per team needed: Retorno divided by the number of teams involved (no team counts as 1), which favors high value with few teams;</li><li>highest Retorno;</li><li>oldest: the creation date or, without it, the earliest start among the teams.</li></ol>
+      <p>Activities without Retorno come after those with one in criteria 5 and 6, and those in Finished are left out. The table shows position, Request, Description, Status, Originating system, Teams, Flags and Return; when there is more than one team, the return per team appears below the value. Under each description, the app says which criterion put the activity ahead of the next one. The filters apply here too. Click a row, or reach it with <kbd>Tab</kbd> and press <kbd>Enter</kbd>, to open the activity.</p>
+      <blockquote>The order is a suggestion based on the fields filled in. A blank or outdated Retorno changes the position, so review the values before taking the road map to a meeting.</blockquote>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="erros-en" aria-labelledby="h-erros-en">
+      <h2 id="h-erros-en">Common mistakes</h2>
+      <ul class="myths">
+        <li><h3>Editing in Firefox and forgetting the copy</h3><p>In Firefox and Safari, Salvar JSON downloads a new file. If you keep opening the old one, the changes are gone. Replace the old file with the downloaded copy.</p></li>
+        <li><h3>Expecting automatic saving without a file</h3><p>The app only saves on its own after a file has been opened or saved with permission. Before that, changes live only in the browser draft.</p></li>
+        <li><h3>Empty insights for lack of dates</h3><p>Upcoming milestones and Open the longest depend on the team dates. Check the Data completeness chart to see what is missing.</p></li>
+        <li><h3>Forgetting filters are on</h3><p>Filters apply to the list, the matrix and the insights. If a number looks low, check the “N de M atividades” line and click Limpar filtros.</p></li>
+      </ul>
+      <div class="recap">
+        <h3>Key points</h3>
+        <ul>
+          <li>The data lives in a JSON file on your computer.</li>
+          <li>In Chrome, Edge and Opera the app writes to the same file; in Firefox and Safari it downloads a copy.</li>
+          <li>A team only joins the activity when one of its fields is filled in.</li>
+          <li>Filters apply to the list, the matrix and the insights.</li>
+        </ul>
+      </div>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="interface-en" aria-labelledby="h-interface-en">
+      <h2 id="h-interface-en">Interface language</h2>
+      <p>The app interface is in Portuguese. The table gives the main buttons and labels in the four languages of this tutorial.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">In the app</th><th scope="col">English</th><th scope="col">Italiano</th><th scope="col">Español</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Abrir JSON</th><td>Open JSON</td><td>Apri JSON</td><td>Abrir JSON</td></tr>
+            <tr><th scope="row">Salvar JSON</th><td>Save JSON</td><td>Salva JSON</td><td>Guardar JSON</td></tr>
+            <tr><th scope="row">Salvar como…</th><td>Save as…</td><td>Salva con nome…</td><td>Guardar como…</td></tr>
+            <tr><th scope="row">Reconectar</th><td>Reconnect</td><td>Riconnetti</td><td>Reconectar</td></tr>
+            <tr><th scope="row">+ Nova atividade</th><td>+ New activity</td><td>+ Nuova attività</td><td>+ Nueva actividad</td></tr>
+            <tr><th scope="row">Carregar exemplo</th><td>Load sample</td><td>Carica esempio</td><td>Cargar ejemplo</td></tr>
+            <tr><th scope="row">Lista · Matriz por time · Insights</th><td>List · Matrix by team · Insights</td><td>Elenco · Matrice per team · Insights</td><td>Lista · Matriz por equipo · Insights</td></tr>
+            <tr><th scope="row">Limpar filtros</th><td>Clear filters</td><td>Azzera filtri</td><td>Limpiar filtros</td></tr>
+            <tr><th scope="row">Priorização: Priorizar · Priorizado · Esperando</th><td>Prioritization: Prioritize · Prioritized · Waiting</td><td>Priorità: Da priorizzare · Priorizzata · In attesa</td><td>Priorización: Priorizar · Priorizado · Esperando</td></tr>
+            <tr><th scope="row">Sistema originador</th><td>Originating system</td><td>Sistema di origine</td><td>Sistema de origen</td></tr>
+            <tr><th scope="row">Road map · Ordem do road map · à frente da seguinte por · por time</th><td>Road map · Road map order · ahead of the next one by · per team</td><td>Road map · Ordine del road map · davanti alla successiva per · per team</td><td>Road map · Orden del road map · delante de la siguiente por · por equipo</td></tr>
+            <tr><th scope="row">Marcadores · Legal · Auditoria · Priorizado Gestão · Todos os marcadores</th><td>Flags · Legal · Audit · Prioritized by management · All flags</td><td>Contrassegni · Legale · Audit · Prioritaria per la direzione · Tutti i contrassegni</td><td>Marcadores · Legal · Auditoría · Priorizado por la gerencia · Todos los marcadores</td></tr>
+            <tr><th scope="row">Retorno (R$) · Retorno somado · ⚠ inválido</th><td>Return (R$) · Total return · ⚠ invalid</td><td>Ritorno (R$) · Ritorno totale · ⚠ non valido</td><td>Retorno (R$) · Retorno sumado · ⚠ inválido</td></tr>
+            <tr><th scope="row">Predecessor · Nenhuma · ⚠ ainda não concluída</th><td>Predecessor · None · ⚠ not finished yet</td><td>Predecessore · Nessuna · ⚠ non ancora conclusa</td><td>Predecesora · Ninguna · ⚠ aún no terminada</td></tr>
+            <tr><th scope="row">Última notificação</th><td>Latest update note</td><td>Ultima notifica</td><td>Última notificación</td></tr>
+            <tr><th scope="row">Salvar atividade · Duplicar · Excluir · Fechar</th><td>Save activity · Duplicate · Delete · Close</td><td>Salva attività · Duplica · Elimina · Chiudi</td><td>Guardar actividad · Duplicar · Eliminar · Cerrar</td></tr>
+            <tr><th scope="row">Ver tabela</th><td>Show table</td><td>Mostra tabella</td><td>Ver tabla</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="revisao-en" aria-labelledby="h-revisao-en">
+      <h2 id="h-revisao-en">Quick review</h2>
+      <p>Try to answer before opening each question.</p>
+      <div class="quiz">
+        <details><summary>1. Where is the activity data stored?</summary><p>In a JSON file on your computer. The app sends nothing to any server; the browser only keeps a draft while there are unsaved changes.</p></details>
+        <details><summary>2. You edited in Firefox and clicked Salvar JSON. What happened to the original file?</summary><p>Nothing. Firefox downloaded a new copy, with the date and time in its name. Use that copy instead of the old one.</p></details>
+        <details><summary>3. An activity is stopped, waiting for another team. Which status should you use?</summary><p>Stand-by, if it is paused waiting for something; Blocked, if a problem prevents it from moving on.</p></details>
+        <details><summary>4. Why doesn't a team opened in the panel show in the matrix after saving?</summary><p>Because none of its fields was filled in. A team only joins the activity when it has a task, a date or an update note.</p></details>
+        <details><summary>5. The Open the longest chart is empty. Why?</summary><p>It uses the teams' start dates. Without start dates there is no way to compute how long the activity has been open.</p></details>
+      </div>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="referencias-en" aria-labelledby="h-referencias-en">
+      <h2 id="h-referencias-en">References</h2>
+      <ol class="refs">
+        <li id="ref-1-en"><strong>Giovani Perotto Mesquita</strong>, “Atividades entre POs”, single-file HTML app, <a href="atividades-po.html">giovanipm.github.io/atividades-po.html</a>.</li>
+        <li id="ref-2-en"><strong>T. Bray (ed.)</strong>, “The JavaScript Object Notation (JSON) Data Interchange Format”, RFC 8259, IETF, December 2017, <a href="https://datatracker.ietf.org/doc/html/rfc8259" rel="noopener">datatracker.ietf.org/doc/html/rfc8259</a>.</li>
+        <li id="ref-3-en"><strong>Wikipedia</strong>, “Work in process”, accessed 21/11/2026, <a href="https://en.wikipedia.org/wiki/Work_in_process" rel="noopener">en.wikipedia.org/wiki/Work_in_process</a>. The article covers the term in production and accounting; using it for tasks in progress is a common extension.</li>
+        <li id="ref-4-en"><strong>Wikipedia</strong>, “System integration testing”, accessed 21/11/2026, <a href="https://en.wikipedia.org/wiki/System_integration_testing" rel="noopener">en.wikipedia.org/wiki/System_integration_testing</a>.</li>
+        <li id="ref-5-en"><strong>Wikipedia</strong>, “Acceptance testing”, accessed 21/11/2026, <a href="https://en.wikipedia.org/wiki/Acceptance_testing" rel="noopener">en.wikipedia.org/wiki/Acceptance_testing</a>.</li>
+        <li id="ref-6-en"><strong>MDN Web Docs</strong>, “Window: showOpenFilePicker() method”, accessed 21/11/2026, <a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/showOpenFilePicker" rel="noopener">developer.mozilla.org/en-US/docs/Web/API/Window/showOpenFilePicker</a>. Experimental feature with limited availability.</li>
+        <li id="ref-7-en"><strong>MDN Web Docs</strong>, “Window: showSaveFilePicker() method”, accessed 21/11/2026, <a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/showSaveFilePicker" rel="noopener">developer.mozilla.org/en-US/docs/Web/API/Window/showSaveFilePicker</a>.</li>
+        <li id="ref-8-en"><strong>Can I use</strong>, “File System Access API”, accessed 21/11/2026, <a href="https://caniuse.com/native-filesystem-api" rel="noopener">caniuse.com/native-filesystem-api</a>. Full support in Chrome and Edge from version 105 and in Opera from 91; no support in Firefox or Safari. Lists Chrome for Android as unsupported.</li>
+        <li id="ref-9-en"><strong>Chrome for Developers</strong>, File System Access API documentation, published 19/08/2024, accessed 21/11/2026, <a href="https://developer.chrome.com/docs/capabilities/web-apis/file-system-access" rel="noopener">developer.chrome.com/docs/capabilities/web-apis/file-system-access</a>. States that the API works in most Chromium browsers, including on Android, which differs from Can I use [8] for Android. The app was not tested on phones.</li>
+        <li id="ref-10-en"><strong>MDN Web Docs</strong>, “Window: localStorage property”, accessed 21/11/2026, <a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage" rel="noopener">developer.mozilla.org/en-US/docs/Web/API/Window/localStorage</a>. In private windows, the data is cleared when the last private tab is closed.</li>
+      </ol>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== IT ===================== -->
+<div id="it" role="tabpanel" aria-labelledby="tab-it" lang="it" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Progetti</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Attività tra PO: tutorial</h1>
+      <p class="dek">Come seguire, in un unico file, le attività che dipendono da più team: schede, date per team, filtri, matrice, insights e un percorso passo passo con dati di esempio.</p>
+      <div class="byline">
+        <span>Di <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Pubblicato il <time datetime="2026-11-21">21/11/2026</time></span>
+        <span class="credit">Rivisto e formattato con Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-it">
+    <h2 id="toc-it">Indice</h2>
+    <ol>
+      <li><a href="#intro-it">L'app</a></li>
+      <li><a href="#porque-it">Perché un'app per questo</a></li>
+      <li><a href="#dados-it">I dati</a></li>
+      <li><a href="#status-it">Stato e priorità</a></li>
+      <li><a href="#arquivo-it">Aprire e salvare</a></li>
+      <li><a href="#roteiro-it">Percorso passo passo</a></li>
+      <li><a href="#lista-it">L'elenco e i filtri</a></li>
+      <li><a href="#painel-it">Il pannello dell'attività</a></li>
+      <li><a href="#matriz-it">La matrice per team</a></li>
+      <li><a href="#insights-it">Insights</a></li>
+      <li><a href="#roadmap-it">Road map</a></li>
+      <li><a href="#erros-it">Errori comuni</a></li>
+      <li><a href="#interface-it">Lingua dell'interfaccia</a></li>
+      <li><a href="#revisao-it">Ripasso veloce</a></li>
+      <li><a href="#referencias-it">Riferimenti</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="intro-it" aria-labelledby="h-intro-it">
+      <h2 id="h-intro-it">L'app</h2>
+      <p><strong>Atividades entre POs</strong> (Attività tra PO) è un'app per chi coordina richieste che passano per più team. Ogni attività conserva la request, lo stato, la priorità e il responsabile di business e, per ogni team coinvolto, il task, le date di inizio, SIT, UAT e deploy e l'ultima notifica. Da qui l'app mostra un elenco con filtri, una matrice per team, un'area di insights con grafici e un road map con l'ordine di priorità. <sup><a href="#ref-1-it">[1]</a></sup></p>
+      <p><a class="launch" href="atividades-po.html">Apri l'app Atividades entre POs <span aria-hidden="true">→</span></a></p>
+      <figure>
+        <img src="rc_images/AtividadesPOLista.png" alt="Schermata principale dell'app con l'esempio di 40 attività: i pulsanti in alto, tra cui Carregar exemplo (carica esempio); i contatori per stato; i filtri, compreso quello dei contrassegni; le schede Elenco, Matrice per team, Insights e Road map; e l'elenco con request, RITM, descrizione, stato, priorità, contrassegni, tipo, sistema, business owner, ritorno, predecessore e team coinvolti" loading="lazy" width="1280" height="800">
+        <figcaption>L'elenco con i dati di esempio. Tutti i nomi e i numeri delle figure sono fittizi. L'interfaccia dell'app è in portoghese.</figcaption>
+      </figure>
+      <aside class="note"><p>L'app è un unico file HTML. I dati stanno in un file JSON sul tuo computer: l'app non invia nulla a server e parte vuota finché non apri un file o crei la prima attività.</p></aside>
+      <a class="back" href="#top">↑ Torna su</a>
+    </section>
+
+    <section id="porque-it" aria-labelledby="h-porque-it">
+      <h2 id="h-porque-it">Perché un'app per questo</h2>
+      <p>Quando una richiesta dipende da tre o quattro team, ogni team di solito ha il suo task, la sua scadenza e il suo modo di registrare l'avanzamento. La domanda “a che punto siamo?” diventa un giro di messaggi. L'app riunisce queste informazioni in un unico posto, con una scheda per attività e un blocco per team al suo interno.</p>
+      <p>Tre domande guidano il disegno delle schermate:</p>
+      <ul>
+        <li><strong>Che cosa è fermo?</strong> I contatori e il filtro di stato mostrano subito Stand-by e Blocked.</li>
+        <li><strong>Chi dipende da chi?</strong> La matrice per team mostra, in una griglia, task, date e ultima notifica di ogni team.</li>
+        <li><strong>Dov'è il lavoro?</strong> Gli insights incrociano team e stati e segnalano i campi che nessuno ha compilato.</li>
+      </ul>
+      <a class="back" href="#top">↑ Torna su</a>
+    </section>
+
+    <section id="dados-it" aria-labelledby="h-dados-it">
+      <h2 id="h-dados-it">I dati</h2>
+      <p>Tutto sta in un file JSON, un formato di testo semplice e indipendente dal linguaggio di programmazione. <sup><a href="#ref-2-it">[2]</a></sup> Il file ha due elenchi: i team e le attività.</p>
+      <figure>
+        <img src="rc_images/AtividadesPODados-it.svg" alt="Un file JSON conserva l'elenco dei team e l'elenco delle attività. Ogni attività ha request, RITM, descrizione, stato, priorità, tipo, sistema di origine, business owner, ritorno in real, i contrassegni Legale, Audit e Prioritaria per la direzione, l'attività predecessore e le date di creazione e di aggiornamento. Al suo interno, ogni team coinvolto ha task, date di inizio, SIT, UAT e deploy e l'ultima notifica." loading="lazy" width="1000" height="470">
+        <figcaption>La struttura di un'attività e dei blocchi di ogni team.</figcaption>
+      </figure>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Campo (etichetta nell'app)</th><th scope="col">Che cosa conserva</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Request e RITM</th><td>I numeri della richiesta e dell'elemento richiesto nel sistema di ticketing dell'azienda.</td></tr>
+            <tr><th scope="row">Descrizione breve (Descrição simples)</th><td>Una frase che chiunque possa capire.</td></tr>
+            <tr><th scope="row">Stato e Priorità (Status, Priorização)</th><td>In quale fase è l'attività e se va prioritizzata. Vedi la sezione successiva.</td></tr>
+            <tr><th scope="row">Tipo</th><td>La classificazione usata dal gruppo: BL, MP o PJ.</td></tr>
+            <tr><th scope="row">Sistema di origine (Sistema originador)</th><td>Il team o il sistema da cui è arrivata la richiesta. Le opzioni sono i team stessi.</td></tr>
+            <tr><th scope="row">Business Owner</th><td>La persona di business responsabile della richiesta.</td></tr>
+            <tr><th scope="row">Contrassegni (Marcadores): Legal (Legale), Auditoria (Audit), Priorizado Gestão (Prioritaria per la direzione)</th><td>Tre caselle di controllo indipendenti: un'attività può averne nessuna, una o tutte e tre. <strong>Priorizado Gestão</strong> è distinto dal campo Priorização. Nell'Elenco, la colonna Marcadores mostra quelle selezionate, con icona e nome, e si può ordinare; nella Matrice, compaiono sotto lo stato. Il filtro <strong>Todos os marcadores</strong> (tutti i contrassegni) mostra solo le attività con il contrassegno scelto, e la ricerca le trova anche dal nome del contrassegno. In Insights, il grafico Marcadores conta le attività di ciascuno; un clic su una barra applica il filtro. Nel JSON, i campi sono <code>legal</code>, <code>auditoria</code> e <code>priorizadoGestao</code>, salvati come <code>true</code> solo quando selezionati. All'apertura di un file, valori come <code>"Sim"</code>, <code>"x"</code> o <code>1</code> contano come selezionati, e qualsiasi altro valore come non selezionato.</td></tr>
+            <tr><th scope="row">Ritorno (Retorno, R$)</th><td>Il ritorno economico dell'attività, in real brasiliani. Scrivilo come si usa in Brasile, per esempio <code>1.250,50</code>, <code>1250,5</code> o <code>R$ 300</code> (punto per le migliaia, virgola per i centesimi); uscendo dal campo, l'app mostra il valore formattato. Un valore che non è un numero viene segnato in rosso e l'attività si salva solo dopo averlo corretto. Nell'Elenco, la colonna Retorno si può ordinare; nella Matrice, il valore compare accanto allo stato; in Insights, un indicatore somma il ritorno delle attività filtrate e dice quante hanno un valore. Nel JSON, il campo <code>retorno</code> è salvato come numero, con il punto decimale. Se un file porta lì un testo che non è un numero, viene mantenuto così com'è e compare nell'Elenco come <strong>⚠ inválido</strong> (non valido) finché non viene corretto.</td></tr>
+            <tr><th scope="row">Predecessore (Predecessor)</th><td>L'attività dell'elenco che deve finire prima di questa. Sceglila in <strong>Predecessor</strong> o lascia <strong>Nenhuma</strong> (nessuna). Le opzioni nascondono le attività che dipendono già da questa, così non si forma un ciclo, e il suggerimento sotto il campo indica di quali attività questa è predecessore. Nell'Elenco, la colonna Predecessor mostra il request e lo stato del predecessore, con <strong>⚠ ainda não concluída</strong> (non ancora conclusa) quando questa attività è già in WIP, SIT, UAT o Deploy e il predecessore non è arrivato a Finished. Nella Matrice, la stessa informazione compare sotto la descrizione. La ricerca trova l'attività anche dal request del predecessore. Quando elimini un'attività che è predecessore di altre, il loro campo viene svuotato, e l'app ti avvisa prima.</td></tr>
+            <tr><th scope="row">Team (Times)</th><td>Per ogni team coinvolto: task, inizio, SIT, UAT, deploy e ultima notifica.</td></tr>
+            <tr><th scope="row">Creata il e Aggiornata il</th><td>Registrate dall'app stessa quando salvi una nuova attività o ne modifichi una esistente.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>I team disponibili sono GUS, IRIS, Esales, RPA, BI, IA, SAP, AIT, Mobile, Oracle, View e ServiceNow. Se il tuo file ha altri team, restano: l'app unisce l'elenco del file con il proprio.</p>
+      <a class="back" href="#top">↑ Torna su</a>
+    </section>
+
+    <section id="status-it" aria-labelledby="h-status-it">
+      <h2 id="h-status-it">Stato e priorità</h2>
+      <p>Lo stato dice in quale fase è l'attività. L'ordine qui sotto è lo stesso dei contatori, dei filtri e dei grafici.</p>
+      <figure>
+        <img src="rc_images/AtividadesPOFluxo-it.svg" alt="Un'attività avanza per Analysis, Sizing, WIP, SIT, UAT, Deploy e Finished. Stand-by e Blocked possono accadere in qualsiasi fase: l'attività si ferma e torna nel flusso da dove era uscita." loading="lazy" width="1000" height="310">
+        <figcaption>Il flusso di stato. Stand-by e Blocked stanno fuori dalla linea perché possono accadere in qualsiasi fase.</figcaption>
+      </figure>
+      <ul>
+        <li><strong>WIP</strong> viene da <em>work in progress</em>, lavoro in corso. <sup><a href="#ref-3-it">[3]</a></sup></li>
+        <li><strong>SIT</strong> è il test di integrazione di sistema, che verifica il sistema completo insieme agli altri sistemi. <sup><a href="#ref-4-it">[4]</a></sup></li>
+        <li><strong>UAT</strong> è il test di accettazione, svolto dall'utente finale o da un esperto del business per confermare che la soluzione funziona per lui. <sup><a href="#ref-5-it">[5]</a></sup></li>
+      </ul>
+      <p>La <strong>priorità</strong> è indipendente dallo stato e ha tre valori: <strong>Priorizar</strong> (▲, chiedere priorità), <strong>Priorizado</strong> (✓, priorità già concessa) ed <strong>Esperando</strong> (⏸, in attesa di decisione). Può restare vuota.</p>
+      <aside class="note"><p>I file più vecchi vengono convertiti all'apertura: On-going e Developing diventano WIP, Validation diventa SIT, Homologation e Validated diventano UAT, “???” diventa Finished e il campo data HML diventa UAT.</p></aside>
+      <a class="back" href="#top">↑ Torna su</a>
+    </section>
+
+    <section id="arquivo-it" aria-labelledby="h-arquivo-it">
+      <h2 id="h-arquivo-it">Aprire e salvare</h2>
+      <p>Il modo di salvare dipende dal browser, perché aprire un file e riscriverlo usa una funzione che solo alcuni browser offrono. <sup><a href="#ref-6-it">[6]</a></sup> <sup><a href="#ref-7-it">[7]</a></sup> Secondo le tabelle di compatibilità consultate, Chrome, Edge e Opera hanno questa funzione; Firefox e Safari no. <sup><a href="#ref-8-it">[8]</a></sup> <sup><a href="#ref-9-it">[9]</a></sup></p>
+      <figure>
+        <img src="rc_images/AtividadesPOArquivo-it.svg" alt="Apri il file JSON con Abrir JSON e modifichi le attività. In Chrome, Edge e Opera, l'app scrive le modifiche nello stesso file, anche da sola, poco dopo ogni modifica. In Firefox e Safari, Salvar JSON scarica una nuova copia che sostituisce la precedente. Finché ci sono modifiche non salvate, una bozza resta nel browser." loading="lazy" width="1000" height="330">
+        <figcaption>Aprire, modificare e salvare in ogni browser.</figcaption>
+      </figure>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Pulsante</th><th scope="col">Chrome, Edge e Opera</th><th scope="col">Firefox e Safari</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Abrir JSON (Apri JSON)</th><td>Apre il file e chiede il permesso di scriverci.</td><td>Apre il file in sola lettura.</td></tr>
+            <tr><th scope="row">Salvar JSON (Salva JSON, <kbd>Ctrl</kbd>+<kbd>S</kbd>)</th><td>Scrive nello stesso file. Dopo ogni modifica, l'app salva anche da sola.</td><td>Scarica una copia. Sostituisci con essa il file vecchio.</td></tr>
+            <tr><th scope="row">Salvar como… (Salva con nome…)</th><td>Scrive in un nuovo file, che diventa il file aperto.</td><td>Non compare: Salvar JSON scarica già una copia.</td></tr>
+            <tr><th scope="row">Reconectar (Riconnetti)</th><td>Riapre l'ultimo file usato, dopo che hai ricaricato la pagina.</td><td>Non compare.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Il nome proposto per un nuovo file termina con data e ora, nel formato <code>AAAAMMGG HHmmSS</code>, per esempio <code>dados 20261121 101747.json</code>, così ogni copia è riconoscibile.</p>
+      <p>Finché ci sono modifiche non salvate, l'app conserva una bozza nella memoria del browser, che resiste alla chiusura della scheda. <sup><a href="#ref-10-it">[10]</a></sup> Quando riapri la pagina, ti chiede se vuoi ripristinarla. Il punto accanto al nome del file mostra lo stato: verde per salvato, giallo per modifiche in sospeso.</p>
+      <a class="back" href="#top">↑ Torna su</a>
+    </section>
+
+    <section id="roteiro-it" aria-labelledby="h-roteiro-it">
+      <h2 id="h-roteiro-it">Percorso passo passo</h2>
+      <p>Questo percorso usa l'esempio incluso nell'app, con 40 attività fittizie. Non viene salvato nulla finché non salvi tu. I nomi dei pulsanti sono quelli dell'app, in portoghese.</p>
+      <ol>
+        <li>Apri l'<a href="atividades-po.html">app</a> e fai clic su <strong>Carregar exemplo</strong> (carica esempio). I contatori mostrano 40 attività. Per provare il salvataggio automatico di Chrome ed Edge, usa invece il <a href="atividades-po-exemplo.json" download>file di esempio</a> con <strong>Abrir JSON</strong>.</li>
+        <li>Fai clic sul contatore <strong>WIP</strong>. L'elenco resta con le 9 attività in sviluppo. Fai clic su <strong>Total</strong> per tornare.</li>
+        <li>Nel filtro <strong>Todas as priorizações</strong>, scegli <strong>Priorizar</strong>. Restano 10 attività. Fai clic su <strong>Limpar filtros</strong>.</li>
+        <li>Nel filtro <strong>Todos os marcadores</strong> (tutti i contrassegni), scegli <strong>Legal</strong>. Restano 5 attività, tutte con il bollino ⚖ Legal nella colonna Marcadores. Fai clic su <strong>Limpar filtros</strong>.</li>
+        <li>Fai clic sulla riga <strong>REQ0100101</strong>. Il pannello mostra un Retorno di R$ 48.000,00, il contrassegno <strong>Priorizado Gestão</strong> e il predecessore <strong>REQ0100114</strong>. Fai clic su <strong>GUS</strong> per vedere il task e le date di quel team.</li>
+        <li>Cambia la <strong>Priorização</strong> in <strong>Esperando</strong> e fai clic su <strong>Salvar atividade</strong>. Riapri l'attività: la data di aggiornamento è cambiata.</li>
+        <li>Fai clic su <strong>+ Nova atividade</strong>, compila la Request, scegli Stato, Tipo e Sistema di origine, scrivi un Retorno, apri il team <strong>BI</strong>, compila il task e una data di SIT e salva. L'attività compare in cima all'elenco.</li>
+        <li>Fai clic su <strong>Matriz por time</strong> e trova la nuova attività nella colonna BI.</li>
+        <li>Fai clic su <strong>Insights</strong>. Nella mappa <strong>Times × status</strong>, fai clic su una cella: l'app torna all'elenco con quel team e quello stato filtrati.</li>
+        <li>Fai clic su <strong>Road map</strong>. La prima posizione è REQ0100101, che ha Priorizado Gestão ed è in WIP. Sotto ogni descrizione, l'app indica quale criterio ha deciso la posizione.</li>
+        <li>Fai clic su <strong>Salvar como…</strong> per conservare una copia con data e ora nel nome.</li>
+      </ol>
+      <a class="back" href="#top">↑ Torna su</a>
+    </section>
+
+    <section id="lista-it" aria-labelledby="h-lista-it">
+      <h2 id="h-lista-it">L'elenco e i filtri</h2>
+      <p>In alto ci sono i contatori, uno per stato, con il totale a sinistra. Fare clic su un contatore filtra l'elenco per quello stato.</p>
+      <p>Sotto ci sono la ricerca e i filtri. La ricerca cerca in request, RITM, descrizione, stato, priorità, sistema, business owner, tipo, request del predecessore, nome dei contrassegni e, dentro i team, in task e notifica. I filtri sono stato, priorità (con l'opzione <strong>Sem priorização</strong>, “senza priorità”), sistema, tipo, team e contrassegno. I filtri valgono per l'elenco, la matrice, gli insights e il road map.</p>
+      <p>Fai clic sul titolo di una colonna per ordinare, e di nuovo per invertire. Lo stato segue l'ordine del flusso; la priorità segue Priorizar, Priorizado, Esperando, con quelle vuote sempre in fondo. Con un team filtrato, compare una colonna con l'ultima notifica di quel team.</p>
+      <a class="back" href="#top">↑ Torna su</a>
+    </section>
+
+    <section id="painel-it" aria-labelledby="h-painel-it">
+      <h2 id="h-painel-it">Il pannello dell'attività</h2>
+      <p>Fare clic su una riga apre il pannello di modifica a destra. <strong>+ Nova atividade</strong> apre lo stesso pannello vuoto.</p>
+      <figure>
+        <img src="rc_images/AtividadesPOPainel.png" alt="Pannello di modifica dell'attività REQ0100101: in alto, le date di creazione e di aggiornamento; i campi Request, RITM, descrizione, Stato, Priorità, Tipo, Sistema di origine, Business Owner e Ritorno (R$ 48.000,00); i contrassegni, con Priorizado Gestão selezionato; il Predecessore REQ0100114; e il team GUS aperto, con task, date di inizio, SIT, UAT e deploy e l'ultima notifica" loading="lazy" width="1280" height="1000">
+        <figcaption>Il pannello con il team GUS aperto. Gli altri team restano chiusi.</figcaption>
+      </figure>
+      <ul>
+        <li>Stato, Priorità, Tipo e Sistema di origine sono elenchi di opzioni. Un valore vecchio che non è nell'elenco compare in fondo, per non perderlo.</li>
+        <li>I team partono chiusi. Fai clic sul nome per aprirne uno; il task compare accanto al nome anche con il blocco chiuso.</li>
+        <li>Un team viene salvato nell'attività solo quando uno dei suoi campi è compilato.</li>
+        <li><strong>Salvar atividade</strong> (salva attività) registra la data di creazione di una nuova attività e quella di aggiornamento quando qualcosa è cambiato. Salvare senza modifiche mostra “Nenhuma alteração” (nessuna modifica).</li>
+        <li><strong>Duplicar</strong> crea una copia come nuova attività. <strong>Excluir</strong> (elimina) chiede conferma. <kbd>Esc</kbd> chiude il pannello.</li>
+      </ul>
+      <a class="back" href="#top">↑ Torna su</a>
+    </section>
+
+    <section id="matriz-it" aria-labelledby="h-matriz-it">
+      <h2 id="h-matriz-it">La matrice per team</h2>
+      <p>La matrice mette le attività nelle righe e i team nelle colonne. Ogni cella mostra task, ultima notifica e date di quel team. Compaiono solo i team che partecipano a qualche attività dell'elenco filtrato.</p>
+      <figure>
+        <img src="rc_images/AtividadesPOMatriz.png" alt="Matrice per team: ogni riga è un'attività, con request, descrizione, stato, sistema, ritorno, contrassegni e predecessore, con l'avviso quando il predecessore non è concluso; le colonne GUS, IRIS, Esales, RPA, BI e IA mostrano il task, l'ultima notifica e le date di ogni team" loading="lazy" width="1280" height="800">
+        <figcaption>La matrice mostra in una griglia chi dipende da chi.</figcaption>
+      </figure>
+      <a class="back" href="#top">↑ Torna su</a>
+    </section>
+
+    <section id="insights-it" aria-labelledby="h-insights-it">
+      <h2 id="h-insights-it">Insights</h2>
+      <p>L'area di insights riassume le attività dell'elenco filtrato in indicatori e grafici. I numeri sono conteggi del file aperto: l'app non stima nulla.</p>
+      <figure>
+        <img src="rc_images/AtividadesPOInsights.png" alt="Area di insights con l'esempio di 40 attività: indicatori di totale, in corso, ferme, concluse, media di team per attività, scadenze nei prossimi 60 giorni e ritorno totale; grafici a barre di attività per stato, coinvolgimento per team e sistema di origine; e la mappa di calore dei team per stato" loading="lazy" width="1280" height="1500">
+        <figcaption>L'inizio dell'area di insights. Più sotto ci sono altri grafici e due tabelle.</figcaption>
+      </figure>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Grafico</th><th scope="col">A cosa risponde</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Indicatori</th><td>Quante attività ci sono, quante sono in corso (WIP, SIT, UAT, Deploy), ferme (Stand-by, Blocked) e concluse, la media di team per attività e le scadenze dei prossimi 60 giorni.</td></tr>
+            <tr><th scope="row">Attività per stato</th><td>Come le attività si distribuiscono nel flusso.</td></tr>
+            <tr><th scope="row">Coinvolgimento per team</th><td>A quante attività partecipa ogni team.</td></tr>
+            <tr><th scope="row">Team × stato</th><td>In quale fase è il lavoro di ogni team. Le celle più scure hanno più attività.</td></tr>
+            <tr><th scope="row">Sistema di origine e Tipo</th><td>Da dove vengono le richieste e di che tipo sono.</td></tr>
+            <tr><th scope="row">Team per attività</th><td>Quante attività coinvolgono 1, 2, 3 o più team.</td></tr>
+            <tr><th scope="row">Compilazione dei dati</th><td>Quale parte delle partecipazioni dei team ha task, date e notifica compilati.</td></tr>
+            <tr><th scope="row">Business Owner</th><td>Gli otto responsabili con più attività.</td></tr>
+            <tr><th scope="row">Ritorno totale (Retorno somado)</th><td>La somma del Retorno delle attività filtrate, abbreviata nel numero grande (per esempio R$ 2,68 mi, circa 2,68 milioni di real) e completa nella didascalia, con quante attività hanno un valore.</td></tr>
+            <tr><th scope="row">Contrassegni (Marcadores)</th><td>Quante attività hanno ciascun contrassegno: Legal, Auditoria e Priorizado Gestão.</td></tr>
+            <tr><th scope="row">Prossime scadenze e Aperte da più tempo</th><td>Le date dei prossimi 60 giorni e le attività non concluse con l'inizio più vecchio.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Fai clic su una barra o su una cella per andare all'elenco con quel filtro. Passa il mouse o usa <kbd>Tab</kbd> per vedere numero e percentuale, e apri <strong>Ver tabela</strong> (mostra tabella) in ogni grafico per leggere i valori senza il grafico.</p>
+      <a class="back" href="#top">↑ Torna su</a>
+    </section>
+
+    <section id="roadmap-it" aria-labelledby="h-roadmap-it">
+      <h2 id="h-roadmap-it">Road map</h2>
+      <p>La vista <strong>Road map</strong> mette le attività non concluse in ordine di priorità. Ogni criterio serve solo a sciogliere le parità del precedente:</p>
+      <figure>
+        <img src="rc_images/AtividadesPORoadmap.png" alt="Road map con l'esempio: la spiegazione dei sette criteri di ordine e la tabella con posizione, request, descrizione con il criterio che ha deciso la posizione, stato, sistema di origine, team, contrassegni e ritorno con il valore per team; nelle prime posizioni, le attività Priorizado Gestão, seguite da quelle contrassegnate Legal e Auditoria" loading="lazy" width="1280" height="1000">
+        <figcaption>Il road map dell'esempio. Sotto ogni descrizione, il criterio che ha messo l'attività davanti alla successiva.</figcaption>
+      </figure>
+      <ol><li>Priorizado Gestão (prioritaria per la direzione);</li><li>Legal (legale);</li><li>Auditoria (audit);</li><li>stato WIP;</li><li>maggior ritorno per team necessario: il Retorno diviso per il numero di team coinvolti (senza team conta come 1), il che favorisce valore alto con pochi team;</li><li>maggior Retorno;</li><li>più vecchia: la data di creazione o, in sua assenza, l'inizio più vecchio tra i team.</li></ol>
+      <p>Le attività senza Retorno vengono dopo quelle che lo hanno, nei criteri 5 e 6, e quelle in Finished restano fuori. La tabella mostra posizione, Request, Descrizione, Stato, Sistema di origine, Team, Contrassegni e Ritorno; con più di un team, il ritorno per team compare sotto il valore. Sotto ogni descrizione, l'app indica quale criterio ha messo l'attività davanti alla successiva. Anche qui valgono i filtri. Fai clic su una riga, o raggiungila con <kbd>Tab</kbd> e premi <kbd>Invio</kbd>, per aprire l'attività.</p>
+      <blockquote>L'ordine è un suggerimento basato sui campi compilati. Un Retorno vuoto o non aggiornato cambia la posizione, quindi rivedi i valori prima di portare il road map in una riunione.</blockquote>
+      <a class="back" href="#top">↑ Torna su</a>
+    </section>
+
+    <section id="erros-it" aria-labelledby="h-erros-it">
+      <h2 id="h-erros-it">Errori comuni</h2>
+      <ul class="myths">
+        <li><h3>Modificare in Firefox e dimenticare la copia</h3><p>In Firefox e Safari, Salvar JSON scarica un file nuovo. Se continui ad aprire quello vecchio, le modifiche spariscono. Sostituisci il file vecchio con la copia scaricata.</p></li>
+        <li><h3>Aspettarsi il salvataggio automatico senza file</h3><p>L'app salva da sola solo dopo che un file è stato aperto o salvato con permesso. Prima, le modifiche restano solo nella bozza del browser.</p></li>
+        <li><h3>Insights vuoti per mancanza di date</h3><p>Prossime scadenze e Aperte da più tempo dipendono dalle date dei team. Controlla il grafico di compilazione dei dati per vedere cosa manca.</p></li>
+        <li><h3>Dimenticare i filtri attivi</h3><p>I filtri valgono per l'elenco, la matrice e gli insights. Se un numero sembra basso, guarda la riga “N de M atividades” e fai clic su Limpar filtros.</p></li>
+      </ul>
+      <div class="recap">
+        <h3>Da ricordare</h3>
+        <ul>
+          <li>I dati stanno in un file JSON sul tuo computer.</li>
+          <li>In Chrome, Edge e Opera l'app scrive nello stesso file; in Firefox e Safari scarica una copia.</li>
+          <li>Un team entra nell'attività solo quando uno dei suoi campi è compilato.</li>
+          <li>I filtri valgono per l'elenco, la matrice e gli insights.</li>
+        </ul>
+      </div>
+      <a class="back" href="#top">↑ Torna su</a>
+    </section>
+
+    <section id="interface-it" aria-labelledby="h-interface-it">
+      <h2 id="h-interface-it">Lingua dell'interfaccia</h2>
+      <p>L'interfaccia dell'app è in portoghese. La tabella riporta i pulsanti e le etichette principali nelle quattro lingue di questo tutorial.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Nell'app</th><th scope="col">English</th><th scope="col">Italiano</th><th scope="col">Español</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Abrir JSON</th><td>Open JSON</td><td>Apri JSON</td><td>Abrir JSON</td></tr>
+            <tr><th scope="row">Salvar JSON</th><td>Save JSON</td><td>Salva JSON</td><td>Guardar JSON</td></tr>
+            <tr><th scope="row">Salvar como…</th><td>Save as…</td><td>Salva con nome…</td><td>Guardar como…</td></tr>
+            <tr><th scope="row">Reconectar</th><td>Reconnect</td><td>Riconnetti</td><td>Reconectar</td></tr>
+            <tr><th scope="row">+ Nova atividade</th><td>+ New activity</td><td>+ Nuova attività</td><td>+ Nueva actividad</td></tr>
+            <tr><th scope="row">Carregar exemplo</th><td>Load sample</td><td>Carica esempio</td><td>Cargar ejemplo</td></tr>
+            <tr><th scope="row">Lista · Matriz por time · Insights</th><td>List · Matrix by team · Insights</td><td>Elenco · Matrice per team · Insights</td><td>Lista · Matriz por equipo · Insights</td></tr>
+            <tr><th scope="row">Limpar filtros</th><td>Clear filters</td><td>Azzera filtri</td><td>Limpiar filtros</td></tr>
+            <tr><th scope="row">Priorização: Priorizar · Priorizado · Esperando</th><td>Prioritization: Prioritize · Prioritized · Waiting</td><td>Priorità: Da priorizzare · Priorizzata · In attesa</td><td>Priorización: Priorizar · Priorizado · Esperando</td></tr>
+            <tr><th scope="row">Sistema originador</th><td>Originating system</td><td>Sistema di origine</td><td>Sistema de origen</td></tr>
+            <tr><th scope="row">Road map · Ordem do road map · à frente da seguinte por · por time</th><td>Road map · Road map order · ahead of the next one by · per team</td><td>Road map · Ordine del road map · davanti alla successiva per · per team</td><td>Road map · Orden del road map · delante de la siguiente por · por equipo</td></tr>
+            <tr><th scope="row">Marcadores · Legal · Auditoria · Priorizado Gestão · Todos os marcadores</th><td>Flags · Legal · Audit · Prioritized by management · All flags</td><td>Contrassegni · Legale · Audit · Prioritaria per la direzione · Tutti i contrassegni</td><td>Marcadores · Legal · Auditoría · Priorizado por la gerencia · Todos los marcadores</td></tr>
+            <tr><th scope="row">Retorno (R$) · Retorno somado · ⚠ inválido</th><td>Return (R$) · Total return · ⚠ invalid</td><td>Ritorno (R$) · Ritorno totale · ⚠ non valido</td><td>Retorno (R$) · Retorno sumado · ⚠ inválido</td></tr>
+            <tr><th scope="row">Predecessor · Nenhuma · ⚠ ainda não concluída</th><td>Predecessor · None · ⚠ not finished yet</td><td>Predecessore · Nessuna · ⚠ non ancora conclusa</td><td>Predecesora · Ninguna · ⚠ aún no terminada</td></tr>
+            <tr><th scope="row">Última notificação</th><td>Latest update note</td><td>Ultima notifica</td><td>Última notificación</td></tr>
+            <tr><th scope="row">Salvar atividade · Duplicar · Excluir · Fechar</th><td>Save activity · Duplicate · Delete · Close</td><td>Salva attività · Duplica · Elimina · Chiudi</td><td>Guardar actividad · Duplicar · Eliminar · Cerrar</td></tr>
+            <tr><th scope="row">Ver tabela</th><td>Show table</td><td>Mostra tabella</td><td>Ver tabla</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <a class="back" href="#top">↑ Torna su</a>
+    </section>
+
+    <section id="revisao-it" aria-labelledby="h-revisao-it">
+      <h2 id="h-revisao-it">Ripasso veloce</h2>
+      <p>Prova a rispondere prima di aprire ogni domanda.</p>
+      <div class="quiz">
+        <details><summary>1. Dove sono conservati i dati delle attività?</summary><p>In un file JSON sul tuo computer. L'app non invia nulla a server; il browser conserva solo una bozza finché ci sono modifiche non salvate.</p></details>
+        <details><summary>2. Hai modificato in Firefox e fatto clic su Salvar JSON. Che cosa è successo al file originale?</summary><p>Niente. Firefox ha scaricato una nuova copia, con data e ora nel nome. Usa quella copia al posto della vecchia.</p></details>
+        <details><summary>3. Un'attività è ferma in attesa di un altro team. Quale stato usare?</summary><p>Stand-by, se è in pausa in attesa di qualcosa; Blocked, se un problema ne impedisce l'avanzamento.</p></details>
+        <details><summary>4. Perché un team aperto nel pannello non compare nella matrice dopo il salvataggio?</summary><p>Perché nessuno dei suoi campi è stato compilato. Un team entra nell'attività solo quando ha un task, una data o una notifica.</p></details>
+        <details><summary>5. Il grafico delle attività aperte da più tempo è vuoto. Perché?</summary><p>Usa le date di inizio dei team. Senza date di inizio non si può calcolare da quanto tempo l'attività è aperta.</p></details>
+      </div>
+      <a class="back" href="#top">↑ Torna su</a>
+    </section>
+
+    <section id="referencias-it" aria-labelledby="h-referencias-it">
+      <h2 id="h-referencias-it">Riferimenti</h2>
+      <ol class="refs">
+        <li id="ref-1-it"><strong>Giovani Perotto Mesquita</strong>, “Atividades entre POs”, app in un unico file HTML, <a href="atividades-po.html">giovanipm.github.io/atividades-po.html</a>.</li>
+        <li id="ref-2-it"><strong>T. Bray (ed.)</strong>, “The JavaScript Object Notation (JSON) Data Interchange Format”, RFC 8259, IETF, dicembre 2017, <a href="https://datatracker.ietf.org/doc/html/rfc8259" rel="noopener">datatracker.ietf.org/doc/html/rfc8259</a>.</li>
+        <li id="ref-3-it"><strong>Wikipedia</strong> (in inglese), “Work in process”, consultato il 21/11/2026, <a href="https://en.wikipedia.org/wiki/Work_in_process" rel="noopener">en.wikipedia.org/wiki/Work_in_process</a>. La voce tratta il termine nella produzione e nella contabilità; l'uso per i lavori in corso è un'estensione comune.</li>
+        <li id="ref-4-it"><strong>Wikipedia</strong> (in inglese), “System integration testing”, consultato il 21/11/2026, <a href="https://en.wikipedia.org/wiki/System_integration_testing" rel="noopener">en.wikipedia.org/wiki/System_integration_testing</a>.</li>
+        <li id="ref-5-it"><strong>Wikipedia</strong> (in inglese), “Acceptance testing”, consultato il 21/11/2026, <a href="https://en.wikipedia.org/wiki/Acceptance_testing" rel="noopener">en.wikipedia.org/wiki/Acceptance_testing</a>.</li>
+        <li id="ref-6-it"><strong>MDN Web Docs</strong>, “Window: showOpenFilePicker() method”, consultato il 21/11/2026, <a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/showOpenFilePicker" rel="noopener">developer.mozilla.org/en-US/docs/Web/API/Window/showOpenFilePicker</a>. Funzione sperimentale, con disponibilità limitata.</li>
+        <li id="ref-7-it"><strong>MDN Web Docs</strong>, “Window: showSaveFilePicker() method”, consultato il 21/11/2026, <a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/showSaveFilePicker" rel="noopener">developer.mozilla.org/en-US/docs/Web/API/Window/showSaveFilePicker</a>.</li>
+        <li id="ref-8-it"><strong>Can I use</strong>, “File System Access API”, consultato il 21/11/2026, <a href="https://caniuse.com/native-filesystem-api" rel="noopener">caniuse.com/native-filesystem-api</a>. Supporto completo in Chrome ed Edge dalla versione 105 e in Opera dalla 91; nessun supporto in Firefox e Safari. Indica Chrome per Android come non supportato.</li>
+        <li id="ref-9-it"><strong>Chrome for Developers</strong>, documentazione della File System Access API, pubblicata il 19/08/2024, consultata il 21/11/2026, <a href="https://developer.chrome.com/docs/capabilities/web-apis/file-system-access" rel="noopener">developer.chrome.com/docs/capabilities/web-apis/file-system-access</a>. Afferma che l'API funziona nella maggior parte dei browser Chromium, anche su Android, il che diverge da Can I use [8] per Android. L'app non è stata provata su telefono.</li>
+        <li id="ref-10-it"><strong>MDN Web Docs</strong>, “Window: localStorage property”, consultato il 21/11/2026, <a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage" rel="noopener">developer.mozilla.org/en-US/docs/Web/API/Window/localStorage</a>. Nelle finestre anonime, i dati vengono cancellati alla chiusura dell'ultima scheda anonima.</li>
+      </ol>
+      <a class="back" href="#top">↑ Torna su</a>
+    </section>
+  </article>
+</div>
+</div>
+
+<!-- ===================== ES ===================== -->
+<div id="es" role="tabpanel" aria-labelledby="tab-es" lang="es" hidden>
+<header class="hero-band">
+  <div class="wrap">
+    <div class="hero">
+      <p class="crumb"><a href="projects.html" data-projects>← Proyectos</a></p>
+      <p class="eyebrow">Tutorial</p>
+      <h1>Actividades entre PO: tutorial</h1>
+      <p class="dek">Cómo seguir, en un único archivo, las actividades que dependen de varios equipos: registros, fechas por equipo, filtros, matriz, insights y un recorrido paso a paso con datos de ejemplo.</p>
+      <div class="byline">
+        <span>Por <strong>Giovani Perotto Mesquita</strong></span>
+        <span>Publicado el <time datetime="2026-11-21">21/11/2026</time></span>
+        <span class="credit">Revisado y formateado con Anthropic Claude</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap layout">
+  <nav class="toc" aria-labelledby="toc-es">
+    <h2 id="toc-es">Índice</h2>
+    <ol>
+      <li><a href="#intro-es">La app</a></li>
+      <li><a href="#porque-es">Por qué una app para esto</a></li>
+      <li><a href="#dados-es">Los datos</a></li>
+      <li><a href="#status-es">Estado y priorización</a></li>
+      <li><a href="#arquivo-es">Abrir y guardar</a></li>
+      <li><a href="#roteiro-es">Recorrido paso a paso</a></li>
+      <li><a href="#lista-es">La lista y los filtros</a></li>
+      <li><a href="#painel-es">El panel de la actividad</a></li>
+      <li><a href="#matriz-es">La matriz por equipo</a></li>
+      <li><a href="#insights-es">Insights</a></li>
+      <li><a href="#roadmap-es">Road map</a></li>
+      <li><a href="#erros-es">Errores comunes</a></li>
+      <li><a href="#interface-es">Idioma de la interfaz</a></li>
+      <li><a href="#revisao-es">Repaso rápido</a></li>
+      <li><a href="#referencias-es">Referencias</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <section id="intro-es" aria-labelledby="h-intro-es">
+      <h2 id="h-intro-es">La app</h2>
+      <p><strong>Atividades entre POs</strong> (Actividades entre PO) es una app para quien coordina pedidos que pasan por varios equipos. Cada actividad guarda el request, el estado, la priorización y el responsable de negocio y, para cada equipo involucrado, la task, las fechas de inicio, SIT, UAT y deploy y la última notificación. A partir de eso, la app muestra una lista con filtros, una matriz por equipo, un área de insights con gráficos y un road map con el orden de prioridad. <sup><a href="#ref-1-es">[1]</a></sup></p>
+      <p><a class="launch" href="atividades-po.html">Abrir la app Atividades entre POs <span aria-hidden="true">→</span></a></p>
+      <figure>
+        <img src="rc_images/AtividadesPOLista.png" alt="Pantalla principal de la app con el ejemplo de 40 actividades: los botones de arriba, entre ellos Carregar exemplo (cargar ejemplo); los contadores por estado; los filtros, incluido el de marcadores; las pestañas Lista, Matriz por equipo, Insights y Road map; y la lista con request, RITM, descripción, estado, priorización, marcadores, tipo, sistema, business owner, retorno, predecesora y equipos involucrados" loading="lazy" width="1280" height="800">
+        <figcaption>La lista con los datos de ejemplo. Todos los nombres y números de las figuras son ficticios. La interfaz de la app está en portugués.</figcaption>
+      </figure>
+      <aside class="note"><p>La app es un único archivo HTML. Los datos quedan en un archivo JSON en tu computadora: la app no envía nada a servidores y empieza vacía hasta que abres un archivo o creas la primera actividad.</p></aside>
+      <a class="back" href="#top">↑ Volver al inicio</a>
+    </section>
+
+    <section id="porque-es" aria-labelledby="h-porque-es">
+      <h2 id="h-porque-es">Por qué una app para esto</h2>
+      <p>Cuando un pedido depende de tres o cuatro equipos, cada equipo suele tener su task, su plazo y su propia forma de registrar el avance. La pregunta “¿en qué punto está?” se vuelve una ronda de mensajes. La app reúne esa información en un solo lugar, con un registro por actividad y un bloque por equipo dentro de él.</p>
+      <p>Tres preguntas guían el diseño de las pantallas:</p>
+      <ul>
+        <li><strong>¿Qué está detenido?</strong> Los contadores y el filtro de estado muestran Stand-by y Blocked de inmediato.</li>
+        <li><strong>¿Quién depende de quién?</strong> La matriz por equipo muestra, en una cuadrícula, la task, las fechas y la última notificación de cada equipo.</li>
+        <li><strong>¿Dónde está el trabajo?</strong> Los insights cruzan equipos y estados y señalan los campos que nadie llenó.</li>
+      </ul>
+      <a class="back" href="#top">↑ Volver al inicio</a>
+    </section>
+
+    <section id="dados-es" aria-labelledby="h-dados-es">
+      <h2 id="h-dados-es">Los datos</h2>
+      <p>Todo queda en un archivo JSON, un formato de texto simple e independiente del lenguaje de programación. <sup><a href="#ref-2-es">[2]</a></sup> El archivo tiene dos listas: la de equipos y la de actividades.</p>
+      <figure>
+        <img src="rc_images/AtividadesPODados-es.svg" alt="Un archivo JSON guarda la lista de equipos y la lista de actividades. Cada actividad tiene request, RITM, descripción, estado, priorización, tipo, sistema de origen, business owner, retorno en reales, los marcadores Legal, Auditoría y Priorizado por la gerencia, la actividad predecesora y las fechas de creación y de actualización. Dentro de ella, cada equipo involucrado tiene task, fechas de inicio, SIT, UAT y deploy y la última notificación." loading="lazy" width="1000" height="470">
+        <figcaption>La estructura de una actividad y de los bloques de cada equipo.</figcaption>
+      </figure>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Campo (etiqueta en la app)</th><th scope="col">Qué guarda</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Request y RITM</th><td>Los números de la solicitud y del ítem solicitado en el sistema de tickets de la empresa.</td></tr>
+            <tr><th scope="row">Descripción breve (Descrição simples)</th><td>Una frase que cualquiera entienda.</td></tr>
+            <tr><th scope="row">Estado y Priorización (Status, Priorização)</th><td>En qué etapa está la actividad y si debe priorizarse. Ve la sección siguiente.</td></tr>
+            <tr><th scope="row">Tipo</th><td>La clasificación que usa el equipo: BL, MP o PJ.</td></tr>
+            <tr><th scope="row">Sistema de origen (Sistema originador)</th><td>El equipo o sistema del que vino el pedido. Las opciones son los propios equipos.</td></tr>
+            <tr><th scope="row">Business Owner</th><td>La persona de negocio responsable del pedido.</td></tr>
+            <tr><th scope="row">Marcadores: Legal, Auditoria (Auditoría), Priorizado Gestão (Priorizado por la gerencia)</th><td>Tres casillas independientes entre sí: una actividad puede tener ninguna, una o las tres. <strong>Priorizado Gestão</strong> es distinto del campo Priorização. En la Lista, la columna Marcadores muestra las marcadas, con ícono y nombre, y se puede ordenar; en la Matriz, aparecen bajo el estado. El filtro <strong>Todos os marcadores</strong> (todos los marcadores) muestra solo las actividades con el marcador elegido, y la búsqueda también las encuentra por el nombre del marcador. En Insights, el gráfico Marcadores cuenta las actividades de cada uno; hacer clic en una barra aplica el filtro. En el JSON, los campos son <code>legal</code>, <code>auditoria</code> y <code>priorizadoGestao</code>, guardados como <code>true</code> solo cuando están marcados. Al abrir un archivo, valores como <code>"Sim"</code>, <code>"x"</code> o <code>1</code> cuentan como marcados, y cualquier otro valor como desmarcado.</td></tr>
+            <tr><th scope="row">Retorno (R$)</th><td>El valor monetario de retorno de la actividad, en reales brasileños. Escríbelo como se usa en Brasil, por ejemplo <code>1.250,50</code>, <code>1250,5</code> o <code>R$ 300</code> (punto para los miles, coma para los centavos); al salir del campo, la app muestra el valor con formato. Un valor que no es un número queda marcado en rojo y la actividad solo se guarda después de corregirlo. En la Lista, la columna Retorno se puede ordenar; en la Matriz, el valor aparece junto al estado; en Insights, un indicador suma el retorno de las actividades filtradas y dice cuántas tienen valor. En el JSON, el campo <code>retorno</code> se guarda como número, con punto decimal. Si un archivo trae ahí un texto que no es un número, se mantiene como vino y aparece en la Lista como <strong>⚠ inválido</strong> hasta que se corrija.</td></tr>
+            <tr><th scope="row">Predecesora (Predecessor)</th><td>La actividad de la lista que tiene que terminar antes que esta. Elígela en <strong>Predecessor</strong> o deja <strong>Nenhuma</strong> (ninguna). Las opciones ocultan las actividades que ya dependen de esta, para que no se forme un ciclo, y la ayuda bajo el campo muestra de qué actividades esta es predecesora. En la Lista, la columna Predecessor muestra el request y el estado de la predecesora, con <strong>⚠ ainda não concluída</strong> (aún no terminada) cuando esta actividad ya está en WIP, SIT, UAT o Deploy y la predecesora no llegó a Finished. En la Matriz, la misma información aparece bajo la descripción. La búsqueda también encuentra la actividad por el request de su predecesora. Al borrar una actividad que es predecesora de otras, su campo queda vacío, y la app avisa antes.</td></tr>
+            <tr><th scope="row">Equipos (Times)</th><td>Para cada equipo involucrado: task, inicio, SIT, UAT, deploy y última notificación.</td></tr>
+            <tr><th scope="row">Creada el y Actualizada el</th><td>Las registra la propia app cuando guardas una actividad nueva o cambias una existente.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Los equipos disponibles son GUS, IRIS, Esales, RPA, BI, IA, SAP, AIT, Mobile, Oracle, View y ServiceNow. Si tu archivo tiene otros equipos, se mantienen: la app junta la lista del archivo con la suya.</p>
+      <a class="back" href="#top">↑ Volver al inicio</a>
+    </section>
+
+    <section id="status-es" aria-labelledby="h-status-es">
+      <h2 id="h-status-es">Estado y priorización</h2>
+      <p>El estado indica en qué etapa está la actividad. El orden de abajo es el mismo de los contadores, los filtros y los gráficos.</p>
+      <figure>
+        <img src="rc_images/AtividadesPOFluxo-es.svg" alt="Una actividad avanza por Analysis, Sizing, WIP, SIT, UAT, Deploy y Finished. Stand-by y Blocked pueden ocurrir en cualquier etapa: la actividad se detiene y vuelve al flujo desde donde salió." loading="lazy" width="1000" height="310">
+        <figcaption>El flujo de estados. Stand-by y Blocked quedan fuera de la línea porque pueden ocurrir en cualquier etapa.</figcaption>
+      </figure>
+      <ul>
+        <li><strong>WIP</strong> viene de <em>work in progress</em>, trabajo en curso. <sup><a href="#ref-3-es">[3]</a></sup></li>
+        <li><strong>SIT</strong> es la prueba de integración de sistemas, que verifica el sistema completo funcionando junto con los demás sistemas. <sup><a href="#ref-4-es">[4]</a></sup></li>
+        <li><strong>UAT</strong> es la prueba de aceptación, hecha por el usuario final o por un experto del negocio para confirmar que la solución le sirve. <sup><a href="#ref-5-es">[5]</a></sup></li>
+      </ul>
+      <p>La <strong>priorización</strong> es independiente del estado y tiene tres valores: <strong>Priorizar</strong> (▲, pedir prioridad), <strong>Priorizado</strong> (✓, prioridad ya concedida) y <strong>Esperando</strong> (⏸, a la espera de una decisión). Puede quedar vacía.</p>
+      <aside class="note"><p>Los archivos antiguos se convierten al abrirlos: On-going y Developing pasan a WIP, Validation pasa a SIT, Homologation y Validated pasan a UAT, “???” pasa a Finished y el campo de fecha HML pasa a UAT.</p></aside>
+      <a class="back" href="#top">↑ Volver al inicio</a>
+    </section>
+
+    <section id="arquivo-es" aria-labelledby="h-arquivo-es">
+      <h2 id="h-arquivo-es">Abrir y guardar</h2>
+      <p>La forma de guardar depende del navegador, porque abrir un archivo y volver a escribir en él usa una función que solo algunos navegadores ofrecen. <sup><a href="#ref-6-es">[6]</a></sup> <sup><a href="#ref-7-es">[7]</a></sup> Según las tablas de compatibilidad consultadas, Chrome, Edge y Opera tienen esta función; Firefox y Safari, no. <sup><a href="#ref-8-es">[8]</a></sup> <sup><a href="#ref-9-es">[9]</a></sup></p>
+      <figure>
+        <img src="rc_images/AtividadesPOArquivo-es.svg" alt="Abres el archivo JSON con Abrir JSON y editas las actividades. En Chrome, Edge y Opera, la app escribe los cambios en el mismo archivo, incluso sola, poco después de cada cambio. En Firefox y Safari, Salvar JSON descarga una copia nueva que reemplaza la anterior. Mientras haya cambios sin guardar, un borrador queda en el navegador." loading="lazy" width="1000" height="330">
+        <figcaption>Abrir, editar y guardar en cada navegador.</figcaption>
+      </figure>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Botón</th><th scope="col">Chrome, Edge y Opera</th><th scope="col">Firefox y Safari</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Abrir JSON</th><td>Abre el archivo y pide permiso para escribir en él.</td><td>Abre el archivo solo para lectura.</td></tr>
+            <tr><th scope="row">Salvar JSON (Guardar JSON, <kbd>Ctrl</kbd>+<kbd>S</kbd>)</th><td>Escribe en el mismo archivo. Después de cada cambio, la app también guarda sola.</td><td>Descarga una copia. Reemplaza con ella el archivo antiguo.</td></tr>
+            <tr><th scope="row">Salvar como… (Guardar como…)</th><td>Escribe en un archivo nuevo, que pasa a ser el archivo abierto.</td><td>No aparece: Salvar JSON ya descarga una copia.</td></tr>
+            <tr><th scope="row">Reconectar</th><td>Vuelve a abrir el último archivo usado, después de recargar la página.</td><td>No aparece.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>El nombre sugerido para un archivo nuevo termina con la fecha y la hora, en el formato <code>AAAAMMDD HHmmSS</code>, por ejemplo <code>dados 20261121 101747.json</code>, así cada copia queda identificada.</p>
+      <p>Mientras haya cambios sin guardar, la app guarda un borrador en el almacenamiento del navegador, que sobrevive al cierre de la pestaña. <sup><a href="#ref-10-es">[10]</a></sup> Al reabrir la página, pregunta si quieres restaurarlo. El punto junto al nombre del archivo muestra el estado: verde para guardado, amarillo para cambios pendientes.</p>
+      <a class="back" href="#top">↑ Volver al inicio</a>
+    </section>
+
+    <section id="roteiro-es" aria-labelledby="h-roteiro-es">
+      <h2 id="h-roteiro-es">Recorrido paso a paso</h2>
+      <p>Este recorrido usa el ejemplo incluido en la app, con 40 actividades ficticias. No se guarda nada hasta que guardes. Los nombres de los botones son los de la app, en portugués.</p>
+      <ol>
+        <li>Abre la <a href="atividades-po.html">app</a> y haz clic en <strong>Carregar exemplo</strong> (cargar ejemplo). Los contadores muestran 40 actividades. Para probar el guardado automático de Chrome y Edge, usa en su lugar el <a href="atividades-po-exemplo.json" download>archivo de ejemplo</a> con <strong>Abrir JSON</strong>.</li>
+        <li>Haz clic en el contador <strong>WIP</strong>. La lista queda con las 9 actividades en desarrollo. Haz clic en <strong>Total</strong> para volver.</li>
+        <li>En el filtro <strong>Todas as priorizações</strong>, elige <strong>Priorizar</strong>. Quedan 10 actividades. Haz clic en <strong>Limpar filtros</strong>.</li>
+        <li>En el filtro <strong>Todos os marcadores</strong> (todos los marcadores), elige <strong>Legal</strong>. Quedan 5 actividades, todas con la etiqueta ⚖ Legal en la columna Marcadores. Haz clic en <strong>Limpar filtros</strong>.</li>
+        <li>Haz clic en la fila <strong>REQ0100101</strong>. El panel muestra un Retorno de R$ 48.000,00, el marcador <strong>Priorizado Gestão</strong> y la predecesora <strong>REQ0100114</strong>. Haz clic en <strong>GUS</strong> para ver la task y las fechas de ese equipo.</li>
+        <li>Cambia la <strong>Priorização</strong> a <strong>Esperando</strong> y haz clic en <strong>Salvar atividade</strong>. Vuelve a abrir la actividad: la fecha de actualización cambió.</li>
+        <li>Haz clic en <strong>+ Nova atividade</strong>, completa el Request, elige Estado, Tipo y Sistema de origen, escribe un Retorno, abre el equipo <strong>BI</strong>, completa la task y una fecha de SIT y guarda. La actividad aparece arriba de la lista.</li>
+        <li>Haz clic en <strong>Matriz por time</strong> y ubica la nueva actividad en la columna BI.</li>
+        <li>Haz clic en <strong>Insights</strong>. En el mapa <strong>Times × status</strong>, haz clic en una celda: la app vuelve a la lista con ese equipo y ese estado filtrados.</li>
+        <li>Haz clic en <strong>Road map</strong>. La primera posición es REQ0100101, que tiene Priorizado Gestão y está en WIP. Bajo cada descripción, la app dice qué criterio decidió la posición.</li>
+        <li>Haz clic en <strong>Salvar como…</strong> para guardar una copia con la fecha y la hora en el nombre.</li>
+      </ol>
+      <a class="back" href="#top">↑ Volver al inicio</a>
+    </section>
+
+    <section id="lista-es" aria-labelledby="h-lista-es">
+      <h2 id="h-lista-es">La lista y los filtros</h2>
+      <p>Arriba están los contadores, uno por estado, con el total a la izquierda. Hacer clic en un contador filtra la lista por ese estado.</p>
+      <p>Debajo vienen la búsqueda y los filtros. La búsqueda busca en request, RITM, descripción, estado, priorización, sistema, business owner, tipo, request de la predecesora, nombre de los marcadores y, dentro de los equipos, en task y notificación. Los filtros son estado, priorización (con la opción <strong>Sem priorização</strong>, “sin priorización”), sistema, tipo, equipo y marcador. Los filtros valen para la lista, la matriz, los insights y el road map.</p>
+      <p>Haz clic en el título de una columna para ordenar, y otra vez para invertir. El estado sigue el orden del flujo; la priorización sigue Priorizar, Priorizado, Esperando, con las vacías siempre al final. Con un equipo filtrado, aparece una columna con la última notificación de ese equipo.</p>
+      <a class="back" href="#top">↑ Volver al inicio</a>
+    </section>
+
+    <section id="painel-es" aria-labelledby="h-painel-es">
+      <h2 id="h-painel-es">El panel de la actividad</h2>
+      <p>Hacer clic en una fila abre el panel de edición a la derecha. <strong>+ Nova atividade</strong> abre el mismo panel vacío.</p>
+      <figure>
+        <img src="rc_images/AtividadesPOPainel.png" alt="Panel de edición de la actividad REQ0100101: arriba, las fechas de creación y de actualización; los campos Request, RITM, descripción, Estado, Priorización, Tipo, Sistema de origen, Business Owner y Retorno (R$ 48.000,00); los marcadores, con Priorizado Gestão marcado; la Predecesora REQ0100114; y el equipo GUS abierto, con task, fechas de inicio, SIT, UAT y deploy y la última notificación" loading="lazy" width="1280" height="1000">
+        <figcaption>El panel con el equipo GUS abierto. Los demás equipos quedan plegados.</figcaption>
+      </figure>
+      <ul>
+        <li>Estado, Priorización, Tipo y Sistema de origen son listas de opciones. Un valor antiguo que no está en la lista aparece al final, para no perderse.</li>
+        <li>Los equipos empiezan plegados. Haz clic en el nombre para abrir uno; la task aparece junto al nombre aunque el bloque esté cerrado.</li>
+        <li>Un equipo solo se guarda en la actividad cuando se llena alguno de sus campos.</li>
+        <li><strong>Salvar atividade</strong> (guardar actividad) registra la fecha de creación de una actividad nueva y la de actualización cuando algo cambió. Guardar sin cambios muestra “Nenhuma alteração” (ningún cambio).</li>
+        <li><strong>Duplicar</strong> crea una copia como actividad nueva. <strong>Excluir</strong> (eliminar) pide confirmación. <kbd>Esc</kbd> cierra el panel.</li>
+      </ul>
+      <a class="back" href="#top">↑ Volver al inicio</a>
+    </section>
+
+    <section id="matriz-es" aria-labelledby="h-matriz-es">
+      <h2 id="h-matriz-es">La matriz por equipo</h2>
+      <p>La matriz pone las actividades en las filas y los equipos en las columnas. Cada celda muestra la task, la última notificación y las fechas de ese equipo. Solo aparecen los equipos que participan en alguna actividad de la lista filtrada.</p>
+      <figure>
+        <img src="rc_images/AtividadesPOMatriz.png" alt="Matriz por equipo: cada fila es una actividad, con request, descripción, estado, sistema, retorno, marcadores y predecesora, con el aviso cuando la predecesora no está terminada; las columnas GUS, IRIS, Esales, RPA, BI e IA muestran la task, la última notificación y las fechas de cada equipo" loading="lazy" width="1280" height="800">
+        <figcaption>La matriz muestra en una cuadrícula quién depende de quién.</figcaption>
+      </figure>
+      <a class="back" href="#top">↑ Volver al inicio</a>
+    </section>
+
+    <section id="insights-es" aria-labelledby="h-insights-es">
+      <h2 id="h-insights-es">Insights</h2>
+      <p>El área de insights resume las actividades de la lista filtrada en indicadores y gráficos. Los números son conteos del archivo abierto: la app no estima nada.</p>
+      <figure>
+        <img src="rc_images/AtividadesPOInsights.png" alt="Área de insights con el ejemplo de 40 actividades: indicadores de total, en curso, detenidas, concluidas, promedio de equipos por actividad, hitos en los próximos 60 días y retorno sumado; gráficos de barras de actividades por estado, participación por equipo y sistema de origen; y el mapa de calor de equipos por estado" loading="lazy" width="1280" height="1500">
+        <figcaption>El comienzo del área de insights. Debajo hay más gráficos y dos tablas.</figcaption>
+      </figure>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Gráfico</th><th scope="col">Qué responde</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Indicadores</th><td>Cuántas actividades hay, cuántas están en curso (WIP, SIT, UAT, Deploy), detenidas (Stand-by, Blocked) y concluidas, el promedio de equipos por actividad y los hitos de los próximos 60 días.</td></tr>
+            <tr><th scope="row">Actividades por estado</th><td>Cómo se distribuyen las actividades en el flujo.</td></tr>
+            <tr><th scope="row">Participación por equipo</th><td>En cuántas actividades participa cada equipo.</td></tr>
+            <tr><th scope="row">Equipos × estado</th><td>En qué etapa está el trabajo de cada equipo. Las celdas más oscuras tienen más actividades.</td></tr>
+            <tr><th scope="row">Sistema de origen y Tipo</th><td>De dónde vienen los pedidos y de qué tipo son.</td></tr>
+            <tr><th scope="row">Equipos por actividad</th><td>Cuántas actividades involucran 1, 2, 3 o más equipos.</td></tr>
+            <tr><th scope="row">Llenado de los datos</th><td>Qué parte de las participaciones de equipo tiene task, fechas y notificación llenas.</td></tr>
+            <tr><th scope="row">Business Owners</th><td>Los ocho responsables con más actividades.</td></tr>
+            <tr><th scope="row">Retorno sumado (Retorno somado)</th><td>La suma del Retorno de las actividades filtradas, abreviada en el número grande (por ejemplo R$ 2,68 mi, unos 2,68 millones de reales) y completa en la leyenda, con cuántas actividades tienen valor.</td></tr>
+            <tr><th scope="row">Marcadores</th><td>Cuántas actividades tienen cada marcador: Legal, Auditoria y Priorizado Gestão.</td></tr>
+            <tr><th scope="row">Próximos hitos y Abiertas hace más tiempo</th><td>Las fechas de los próximos 60 días y las actividades no concluidas con el inicio más antiguo.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Haz clic en una barra o en una celda para ir a la lista con ese filtro. Pasa el mouse o usa <kbd>Tab</kbd> para ver el número y el porcentaje, y abre <strong>Ver tabela</strong> (ver tabla) en cada gráfico para leer los valores sin el gráfico.</p>
+      <a class="back" href="#top">↑ Volver al inicio</a>
+    </section>
+
+    <section id="roadmap-es" aria-labelledby="h-roadmap-es">
+      <h2 id="h-roadmap-es">Road map</h2>
+      <p>La vista <strong>Road map</strong> ordena por prioridad las actividades no terminadas. Cada criterio solo desempata el anterior:</p>
+      <figure>
+        <img src="rc_images/AtividadesPORoadmap.png" alt="Road map con el ejemplo: la explicación de los siete criterios de orden y la tabla con posición, request, descripción con el criterio que decidió la posición, estado, sistema de origen, equipos, marcadores y retorno con el valor por equipo; en las primeras posiciones, las actividades Priorizado Gestão, seguidas de las marcadas Legal y Auditoria" loading="lazy" width="1280" height="1000">
+        <figcaption>El road map del ejemplo. Bajo cada descripción, el criterio que puso la actividad delante de la siguiente.</figcaption>
+      </figure>
+      <ol><li>Priorizado Gestão (priorizado por la gerencia);</li><li>Legal;</li><li>Auditoria (auditoría);</li><li>estado WIP;</li><li>mayor retorno por equipo necesario: el Retorno dividido por el número de equipos involucrados (sin equipo cuenta como 1), lo que favorece valor alto con pocos equipos;</li><li>mayor Retorno;</li><li>más antigua: la fecha de creación o, sin ella, el inicio más antiguo entre los equipos.</li></ol>
+      <p>Las actividades sin Retorno van después de las que lo tienen, en los criterios 5 y 6, y las que están en Finished quedan fuera. La tabla muestra posición, Request, Descripción, Estado, Sistema de origen, Equipos, Marcadores y Retorno; con más de un equipo, el retorno por equipo aparece bajo el valor. Bajo cada descripción, la app dice qué criterio puso la actividad delante de la siguiente. Los filtros también valen aquí. Haz clic en una fila, o llega a ella con <kbd>Tab</kbd> y pulsa <kbd>Enter</kbd>, para abrir la actividad.</p>
+      <blockquote>El orden es una sugerencia basada en los campos completados. Un Retorno en blanco o desactualizado cambia la posición, así que revisa los valores antes de llevar el road map a una reunión.</blockquote>
+      <a class="back" href="#top">↑ Volver arriba</a>
+    </section>
+
+    <section id="erros-es" aria-labelledby="h-erros-es">
+      <h2 id="h-erros-es">Errores comunes</h2>
+      <ul class="myths">
+        <li><h3>Editar en Firefox y olvidar la copia</h3><p>En Firefox y Safari, Salvar JSON descarga un archivo nuevo. Si sigues abriendo el antiguo, los cambios desaparecen. Reemplaza el archivo antiguo por la copia descargada.</p></li>
+        <li><h3>Esperar guardado automático sin archivo</h3><p>La app solo guarda sola después de que se abrió o guardó un archivo con permiso. Antes de eso, los cambios quedan solo en el borrador del navegador.</p></li>
+        <li><h3>Insights vacíos por falta de fechas</h3><p>Próximos hitos y Abiertas hace más tiempo dependen de las fechas de los equipos. Revisa el gráfico de llenado de los datos para ver qué falta.</p></li>
+        <li><h3>Olvidar los filtros activos</h3><p>Los filtros valen para la lista, la matriz y los insights. Si un número parece bajo, mira la línea “N de M atividades” y haz clic en Limpar filtros.</p></li>
+      </ul>
+      <div class="recap">
+        <h3>Para recordar</h3>
+        <ul>
+          <li>Los datos quedan en un archivo JSON en tu computadora.</li>
+          <li>En Chrome, Edge y Opera la app escribe en el mismo archivo; en Firefox y Safari descarga una copia.</li>
+          <li>Un equipo solo entra en la actividad cuando se llena alguno de sus campos.</li>
+          <li>Los filtros valen para la lista, la matriz y los insights.</li>
+        </ul>
+      </div>
+      <a class="back" href="#top">↑ Volver al inicio</a>
+    </section>
+
+    <section id="interface-es" aria-labelledby="h-interface-es">
+      <h2 id="h-interface-es">Idioma de la interfaz</h2>
+      <p>La interfaz de la app está en portugués. La tabla trae los botones y etiquetas principales en los cuatro idiomas de este tutorial.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">En la app</th><th scope="col">English</th><th scope="col">Italiano</th><th scope="col">Español</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Abrir JSON</th><td>Open JSON</td><td>Apri JSON</td><td>Abrir JSON</td></tr>
+            <tr><th scope="row">Salvar JSON</th><td>Save JSON</td><td>Salva JSON</td><td>Guardar JSON</td></tr>
+            <tr><th scope="row">Salvar como…</th><td>Save as…</td><td>Salva con nome…</td><td>Guardar como…</td></tr>
+            <tr><th scope="row">Reconectar</th><td>Reconnect</td><td>Riconnetti</td><td>Reconectar</td></tr>
+            <tr><th scope="row">+ Nova atividade</th><td>+ New activity</td><td>+ Nuova attività</td><td>+ Nueva actividad</td></tr>
+            <tr><th scope="row">Carregar exemplo</th><td>Load sample</td><td>Carica esempio</td><td>Cargar ejemplo</td></tr>
+            <tr><th scope="row">Lista · Matriz por time · Insights</th><td>List · Matrix by team · Insights</td><td>Elenco · Matrice per team · Insights</td><td>Lista · Matriz por equipo · Insights</td></tr>
+            <tr><th scope="row">Limpar filtros</th><td>Clear filters</td><td>Azzera filtri</td><td>Limpiar filtros</td></tr>
+            <tr><th scope="row">Priorização: Priorizar · Priorizado · Esperando</th><td>Prioritization: Prioritize · Prioritized · Waiting</td><td>Priorità: Da priorizzare · Priorizzata · In attesa</td><td>Priorización: Priorizar · Priorizado · Esperando</td></tr>
+            <tr><th scope="row">Sistema originador</th><td>Originating system</td><td>Sistema di origine</td><td>Sistema de origen</td></tr>
+            <tr><th scope="row">Road map · Ordem do road map · à frente da seguinte por · por time</th><td>Road map · Road map order · ahead of the next one by · per team</td><td>Road map · Ordine del road map · davanti alla successiva per · per team</td><td>Road map · Orden del road map · delante de la siguiente por · por equipo</td></tr>
+            <tr><th scope="row">Marcadores · Legal · Auditoria · Priorizado Gestão · Todos os marcadores</th><td>Flags · Legal · Audit · Prioritized by management · All flags</td><td>Contrassegni · Legale · Audit · Prioritaria per la direzione · Tutti i contrassegni</td><td>Marcadores · Legal · Auditoría · Priorizado por la gerencia · Todos los marcadores</td></tr>
+            <tr><th scope="row">Retorno (R$) · Retorno somado · ⚠ inválido</th><td>Return (R$) · Total return · ⚠ invalid</td><td>Ritorno (R$) · Ritorno totale · ⚠ non valido</td><td>Retorno (R$) · Retorno sumado · ⚠ inválido</td></tr>
+            <tr><th scope="row">Predecessor · Nenhuma · ⚠ ainda não concluída</th><td>Predecessor · None · ⚠ not finished yet</td><td>Predecessore · Nessuna · ⚠ non ancora conclusa</td><td>Predecesora · Ninguna · ⚠ aún no terminada</td></tr>
+            <tr><th scope="row">Última notificação</th><td>Latest update note</td><td>Ultima notifica</td><td>Última notificación</td></tr>
+            <tr><th scope="row">Salvar atividade · Duplicar · Excluir · Fechar</th><td>Save activity · Duplicate · Delete · Close</td><td>Salva attività · Duplica · Elimina · Chiudi</td><td>Guardar actividad · Duplicar · Eliminar · Cerrar</td></tr>
+            <tr><th scope="row">Ver tabela</th><td>Show table</td><td>Mostra tabella</td><td>Ver tabla</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <a class="back" href="#top">↑ Volver al inicio</a>
+    </section>
+
+    <section id="revisao-es" aria-labelledby="h-revisao-es">
+      <h2 id="h-revisao-es">Repaso rápido</h2>
+      <p>Intenta responder antes de abrir cada pregunta.</p>
+      <div class="quiz">
+        <details><summary>1. ¿Dónde quedan los datos de las actividades?</summary><p>En un archivo JSON en tu computadora. La app no envía nada a servidores; el navegador solo guarda un borrador mientras haya cambios sin guardar.</p></details>
+        <details><summary>2. Editaste en Firefox e hiciste clic en Salvar JSON. ¿Qué pasó con el archivo original?</summary><p>Nada. Firefox descargó una copia nueva, con la fecha y la hora en el nombre. Usa esa copia en lugar de la antigua.</p></details>
+        <details><summary>3. Una actividad está detenida esperando a otro equipo. ¿Qué estado usar?</summary><p>Stand-by, si está en pausa esperando algo; Blocked, si un problema impide que avance.</p></details>
+        <details><summary>4. ¿Por qué un equipo abierto en el panel no aparece en la matriz después de guardar?</summary><p>Porque no se llenó ninguno de sus campos. Un equipo solo entra en la actividad cuando tiene task, fecha o notificación.</p></details>
+        <details><summary>5. El gráfico de las abiertas hace más tiempo está vacío. ¿Por qué?</summary><p>Usa las fechas de inicio de los equipos. Sin fechas de inicio no hay cómo calcular hace cuánto tiempo está abierta la actividad.</p></details>
+      </div>
+      <a class="back" href="#top">↑ Volver al inicio</a>
+    </section>
+
+    <section id="referencias-es" aria-labelledby="h-referencias-es">
+      <h2 id="h-referencias-es">Referencias</h2>
+      <ol class="refs">
+        <li id="ref-1-es"><strong>Giovani Perotto Mesquita</strong>, “Atividades entre POs”, app en un único archivo HTML, <a href="atividades-po.html">giovanipm.github.io/atividades-po.html</a>.</li>
+        <li id="ref-2-es"><strong>T. Bray (ed.)</strong>, “The JavaScript Object Notation (JSON) Data Interchange Format”, RFC 8259, IETF, diciembre de 2017, <a href="https://datatracker.ietf.org/doc/html/rfc8259" rel="noopener">datatracker.ietf.org/doc/html/rfc8259</a>.</li>
+        <li id="ref-3-es"><strong>Wikipedia</strong> (en inglés), “Work in process”, consultado el 21/11/2026, <a href="https://en.wikipedia.org/wiki/Work_in_process" rel="noopener">en.wikipedia.org/wiki/Work_in_process</a>. El artículo trata el término en la producción y la contabilidad; su uso para tareas en curso es una extensión común.</li>
+        <li id="ref-4-es"><strong>Wikipedia</strong> (en inglés), “System integration testing”, consultado el 21/11/2026, <a href="https://en.wikipedia.org/wiki/System_integration_testing" rel="noopener">en.wikipedia.org/wiki/System_integration_testing</a>.</li>
+        <li id="ref-5-es"><strong>Wikipedia</strong> (en inglés), “Acceptance testing”, consultado el 21/11/2026, <a href="https://en.wikipedia.org/wiki/Acceptance_testing" rel="noopener">en.wikipedia.org/wiki/Acceptance_testing</a>.</li>
+        <li id="ref-6-es"><strong>MDN Web Docs</strong>, “Window: showOpenFilePicker() method”, consultado el 21/11/2026, <a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/showOpenFilePicker" rel="noopener">developer.mozilla.org/en-US/docs/Web/API/Window/showOpenFilePicker</a>. Función experimental, de disponibilidad limitada.</li>
+        <li id="ref-7-es"><strong>MDN Web Docs</strong>, “Window: showSaveFilePicker() method”, consultado el 21/11/2026, <a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/showSaveFilePicker" rel="noopener">developer.mozilla.org/en-US/docs/Web/API/Window/showSaveFilePicker</a>.</li>
+        <li id="ref-8-es"><strong>Can I use</strong>, “File System Access API”, consultado el 21/11/2026, <a href="https://caniuse.com/native-filesystem-api" rel="noopener">caniuse.com/native-filesystem-api</a>. Soporte completo en Chrome y Edge desde la versión 105 y en Opera desde la 91; sin soporte en Firefox ni Safari. Indica Chrome para Android como sin soporte.</li>
+        <li id="ref-9-es"><strong>Chrome for Developers</strong>, documentación de la File System Access API, publicada el 19/08/2024, consultada el 21/11/2026, <a href="https://developer.chrome.com/docs/capabilities/web-apis/file-system-access" rel="noopener">developer.chrome.com/docs/capabilities/web-apis/file-system-access</a>. Dice que la API funciona en la mayoría de los navegadores Chromium, incluso en Android, lo que diverge de Can I use [8] para Android. La app no se probó en teléfonos.</li>
+        <li id="ref-10-es"><strong>MDN Web Docs</strong>, “Window: localStorage property”, consultado el 21/11/2026, <a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage" rel="noopener">developer.mozilla.org/en-US/docs/Web/API/Window/localStorage</a>. En ventanas privadas, los datos se borran al cerrar la última pestaña privada.</li>
+      </ol>
+      <a class="back" href="#top">↑ Volver al inicio</a>
+    </section>
+  </article>
+</div>
+</div>
+
+
+<footer>
+  <div class="wrap">
+    <span>Giovani Perotto Mesquita · Porto Alegre, RS</span>
+    <span><a href="projects.html" data-projects data-foot="0">Projetos</a> · <a href="resume.html" data-resume data-foot="1">Currículo</a> · <a href="contact.html" data-contact data-foot="2">Contato</a></span>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('.lang [role="option"]'));
+    var titles = {"pt": "Atividades entre POs: tutorial · Giovani Perotto Mesquita", "en": "Activities between POs: tutorial · Giovani Perotto Mesquita", "it": "Attività tra PO: tutorial · Giovani Perotto Mesquita", "es": "Actividades entre PO: tutorial · Giovani Perotto Mesquita"};
+    var foots = {"pt": ["Projetos", "Currículo", "Contato"], "en": ["Projects", "Resume", "Contact"], "it": ["Progetti", "Curriculum", "Contatti"], "es": ["Proyectos", "Currículum", "Contacto"]};
+    var langs = { pt: 'pt-BR', en: 'en', it: 'it', es: 'es' };
+    var bar = document.querySelector('.progress');
+    var article = document.querySelector('[role="tabpanel"]:not([hidden]) article');
+
+    function show(id, focus) {
+      tabs.forEach(function (t) {
+        var on = t.getAttribute('aria-controls') === id;
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+        if (on && focus) t.focus();
+      });
+      document.documentElement.lang = langs[id];
+      document.title = titles[id];
+      var suffix = id === 'pt' ? '' : '#' + id;
+      [['data-home', 'index.html'], ['data-about', 'about.html'], ['data-resume', 'resume.html'], ['data-projects', 'projects.html'], ['data-contact', 'contact.html']].forEach(function (p) {
+        document.querySelectorAll('[' + p[0] + ']').forEach(function (a) { a.href = p[1] + suffix; });
+      });
+      document.querySelectorAll('[data-foot]').forEach(function (a) { a.textContent = foots[id][+a.getAttribute('data-foot')]; });
+      article = document.querySelector('#' + id + ' article');
+      if (history.replaceState) history.replaceState(null, '', id === 'pt' ? location.pathname : '#' + id);
+      progress();
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () { show(t.getAttribute('aria-controls')); });
+      t.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (d) { e.preventDefault(); show(tabs[(i + d + tabs.length) % tabs.length].getAttribute('aria-controls'), true); }
+      });
+    });
+
+    // barra de progresso de leitura
+    function progress() {
+      if (!article) return;
+      var r = article.getBoundingClientRect();
+      var total = r.height - window.innerHeight;
+      var p = total > 0 ? Math.min(Math.max(-r.top / total, 0), 1) : 1;
+      bar.style.width = (p * 100) + '%';
+    }
+    window.addEventListener('scroll', progress, { passive: true });
+    window.addEventListener('resize', progress);
+
+    // destaca a seção atual no índice
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          var panel = e.target.closest('[role="tabpanel"]');
+          panel.querySelectorAll('.toc a').forEach(function (a) {
+            if (a.getAttribute('href') === '#' + e.target.id) a.setAttribute('aria-current', 'true');
+            else a.removeAttribute('aria-current');
+          });
+        });
+      }, { rootMargin: '-20% 0px -70% 0px' });
+      document.querySelectorAll('article section[id]').forEach(function (s) { io.observe(s); });
+    }
+
+    var h = (location.hash || '').replace('#', '');
+    var m = h.match(/^(?:.*-)?(en|it|es)$/);
+    if (m) {
+      show(m[1]);
+      if (h !== m[1]) { var el = document.getElementById(h); if (el) el.scrollIntoView(); if (history.replaceState) history.replaceState(null, '', '#' + h); }
+    } else progress();
+  })();
+</script>
+<script>
+  // seletor de idioma em combobox: abre a lista, sincroniza o botão e fecha
+  (function () {
+    var box = document.querySelector('.lang'); if (!box) return;
+    var btn = box.querySelector('.lang-current'), list = box.querySelector('.lang-list'), now = btn.querySelector('.lang-now');
+    var opts = Array.prototype.slice.call(list.querySelectorAll('[role="option"]'));
+    var menu = {
+      pt: { index: 'Início', about: 'Sobre', resume: 'Currículo', projects: 'Projetos', contact: 'Contato' },
+      en: { index: 'Home', about: 'About', resume: 'Resume', projects: 'Projects', contact: 'Contact' },
+      it: { index: 'Home', about: 'Chi sono', resume: 'Curriculum', projects: 'Progetti', contact: 'Contatti' },
+      es: { index: 'Inicio', about: 'Sobre mí', resume: 'Currículum', projects: 'Proyectos', contact: 'Contacto' }
+    };
+    function translate(id) {
+      document.querySelectorAll('.nav ul a').forEach(function (l) {
+        var k = (l.getAttribute('href') || '').split('#')[0].replace('.html', '');
+        if (menu[id] && menu[id][k]) l.textContent = menu[id][k];
+      });
+      // links do menu para as páginas principais levam o idioma selecionado
+      var suf = id === 'pt' ? '' : '#' + id;
+      document.querySelectorAll('.nav a[href]').forEach(function (l) {
+        var m = l.getAttribute('href').match(/^(index|about|resume|projects|contact)\.html(#(pt|en|it|es))?$/);
+        if (m) l.setAttribute('href', m[1] + '.html' + suf);
+      });
+    }
+    function sync() {
+      var sel = opts.filter(function (o) { return o.getAttribute('aria-selected') === 'true'; })[0] || opts[0];
+      now.innerHTML = sel.querySelector('.flag').outerHTML + sel.getAttribute('data-code');
+      btn.setAttribute('aria-label', btn.getAttribute('data-label') + ': ' + sel.textContent.trim());
+      translate(sel.getAttribute('aria-controls'));
+      return sel;
+    }
+    function open() { list.hidden = false; btn.setAttribute('aria-expanded', 'true'); sync().focus(); }
+    function close(back) { list.hidden = true; btn.setAttribute('aria-expanded', 'false'); if (back) btn.focus(); }
+    btn.addEventListener('click', function () { if (list.hidden) open(); else close(); });
+    btn.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); open(); }
+      else if (e.key === 'Escape') close();
+    });
+    opts.forEach(function (o, i) {
+      o.addEventListener('click', function () { sync(); close(true); });
+      o.addEventListener('keydown', function (e) {
+        var d = e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0;
+        if (d) { e.preventDefault(); opts[(i + d + opts.length) % opts.length].focus(); }
+        else if (e.key === 'Home' || e.key === 'End') { e.preventDefault(); opts[e.key === 'Home' ? 0 : opts.length - 1].focus(); }
+        else if (e.key === 'Escape') { e.preventDefault(); close(true); }
+        else if (e.key === 'Tab') close();
+      });
+    });
+    document.addEventListener('click', function (e) { if (!box.contains(e.target)) close(); });
+    new MutationObserver(sync).observe(list, { attributes: true, subtree: true, attributeFilter: ['aria-selected'] });
+    sync();
+  })();
+</script>
+</body>
+</html>

@@ -31,6 +31,14 @@ header h1{font-size:17px;margin:0 12px 0 0;font-weight:650}
 .btn.primary:hover{filter:brightness(1.08)}
 .btn.danger{color:var(--danger)}
 .btn.sm{padding:4px 9px;font-size:12.5px}
+.menu{position:relative}
+.caret{font-size:11px;color:var(--muted);margin-left:2px}
+.mlist{position:absolute;top:calc(100% + 4px);left:0;z-index:8;min-width:260px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:0 6px 24px rgba(0,0,0,.14);padding:4px}
+.mlist button{display:block;width:100%;text-align:left;border:0;background:none;padding:8px 10px;border-radius:6px;cursor:pointer;font-weight:500}
+.mlist button small{display:block;font-size:12px;color:var(--muted);font-weight:400;margin-top:1px}
+.mlist button:hover,.mlist button:focus-visible{background:var(--surface2);outline:0}
+.mlist button:focus-visible{box-shadow:inset 0 0 0 2px var(--accent)}
+.mlist hr{border:0;border-top:1px solid var(--border);margin:4px 2px}
 main{padding:16px 20px 40px;max-width:1600px;margin:0 auto}
 .kpis{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
 .kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:8px 12px;cursor:pointer;min-width:96px;text-align:left}
@@ -181,12 +189,24 @@ table.heat{width:auto;min-width:100%}
 <body>
 <header>
   <h1>Atividades sincronizadas entre POs</h1>
-  <div class="file"><span class="dot" id="dot"></span><span id="fileInfo">Nenhum arquivo aberto — use Abrir JSON</span></div>
-  <button class="btn" id="btnOpen" title="Abrir um arquivo .json">Abrir JSON</button>
-  <button class="btn" id="btnReconnect" hidden>Reconectar arquivo</button>
-  <button class="btn" id="btnSave" title="Ctrl+S">Salvar JSON</button>
-  <button class="btn" id="btnSaveAs">Salvar como…</button>
-  <button class="btn" id="btnSample" title="Carrega 40 atividades fictícias para conhecer o app">Carregar exemplo</button>
+  <div class="file"><span class="dot" id="dot"></span><span id="fileInfo">Nenhum arquivo aberto — use Abrir</span></div>
+  <div class="menu" data-menu>
+    <button class="btn" id="mOpen" aria-haspopup="menu" aria-expanded="false" aria-controls="mOpenList">Abrir <span class="caret" aria-hidden="true">▾</span></button>
+    <div class="mlist" id="mOpenList" role="menu" aria-labelledby="mOpen" hidden>
+      <button type="button" role="menuitem" tabindex="-1" id="btnOpen">Abrir JSON<small>Arquivo .json de atividades</small></button>
+      <button type="button" role="menuitem" tabindex="-1" id="btnXlsIn">Abrir Excel<small>Planilha .xlsx salva pelo app e editada no Excel</small></button>
+      <hr>
+      <button type="button" role="menuitem" tabindex="-1" id="btnSample">Carregar exemplo<small>40 atividades fictícias para conhecer o app</small></button>
+    </div>
+  </div>
+  <div class="menu" data-menu>
+    <button class="btn" id="mSave" aria-haspopup="menu" aria-expanded="false" aria-controls="mSaveList">Salvar <span class="caret" aria-hidden="true">▾</span></button>
+    <div class="mlist" id="mSaveList" role="menu" aria-labelledby="mSave" hidden>
+      <button type="button" role="menuitem" tabindex="-1" id="btnSave">Salvar JSON<small>Grava no arquivo aberto · Ctrl+S</small></button>
+      <button type="button" role="menuitem" tabindex="-1" id="btnXlsOut">Salvar Excel<small>Baixa uma planilha .xlsx para editar no Excel</small></button>
+    </div>
+  </div>
+  <input type="file" id="xlsInput" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
   <button class="btn primary" id="btnNew">+ Nova atividade</button>
   <button class="btn" id="btnTheme" title="Alternar tema">◐</button>
   <input type="file" id="fileInput" accept=".json,application/json" hidden>
@@ -267,9 +287,6 @@ let sort = {k:null, dir:1}, view = 'lista';
 
 /* ---------- persistência ---------- */
 const hasFS = 'showOpenFilePicker' in window;
-function idb(){return new Promise((res,rej)=>{const r=indexedDB.open('atividades-po',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
-async function kvSet(k,v){try{const d=await idb();d.transaction('kv','readwrite').objectStore('kv').put(v,k);}catch{}}
-async function kvGet(k){try{const d=await idb();return await new Promise(r=>{const q=d.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>r(q.result);q.onerror=()=>r(null);});}catch{return null}}
 
 function normalize(data){
   if (Array.isArray(data)) data = {atividades:data};
@@ -321,7 +338,7 @@ const serialize = () => JSON.stringify({...db, atualizadoEm:new Date().toISOStri
 function setDirty(v){
   dirty = v;
   $('#dot').className = 'dot ' + (v ? 'dirty' : (fileHandle ? 'ok' : ''));
-  $('#fileInfo').textContent = (fileName ? fileName : 'Nenhum arquivo aberto — use Abrir JSON') + (v ? ' — alterações não salvas' : (fileHandle ? ' — salvo' : ''));
+  $('#fileInfo').textContent = (fileName ? fileName : 'Nenhum arquivo aberto — use Abrir') + (v ? ' — alterações não salvas' : (fileHandle ? ' — salvo' : ''));
   try{ if(v) localStorage.setItem(DRAFT_KEY, serialize()); else localStorage.removeItem(DRAFT_KEY);}catch{}
 }
 let autoTimer;
@@ -334,6 +351,8 @@ async function writeHandle(h){
 }
 async function save(askIfNone=true){
   try{
+    // Salvar JSON grava sempre num arquivo chamado "Atividades entre POs …"; se o aberto tem outro nome, pede onde criar um com esse nome
+    if (fileHandle && askIfNone && !/^Atividades entre POs\b/i.test(fileName || '')) return saveAs();
     if (fileHandle){
       if (await fileHandle.queryPermission({mode:'readwrite'}) !== 'granted' &&
           await fileHandle.requestPermission({mode:'readwrite'}) !== 'granted') throw new Error('Permissão negada');
@@ -343,7 +362,7 @@ async function save(askIfNone=true){
   }catch(e){ toast('Erro ao salvar: ' + e.message); }
 }
 function stampedName(){
-  const base = (fileName || 'dados.json').replace(/\.json$/i,'').replace(/ \d{8} \d{6}$/,'') || 'dados';
+  const base = 'Atividades entre POs'; // nome fixo dos arquivos salvos (JSON e Excel), seguido de data e hora
   const d = new Date(), p = n => String(n).padStart(2,'0');
   return `${base} ${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())} ${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.json`;
 }
@@ -351,8 +370,8 @@ async function saveAs(){
   if (hasFS){
     try{
       const h = await showSaveFilePicker({suggestedName: stampedName(), types:[{description:'JSON',accept:{'application/json':['.json']}}]});
-      fileHandle = h; fileName = h.name; await kvSet('handle', h);
-      await writeHandle(h); setDirty(false); $('#btnReconnect').hidden = true; toast('Salvo em ' + fileName);
+      fileHandle = h; fileName = h.name;
+      await writeHandle(h); setDirty(false); toast('Salvo em ' + fileName);
     }catch(e){ if(e.name!=='AbortError') toast('Erro: '+e.message); }
   } else {
     const a = document.createElement('a');
@@ -366,17 +385,16 @@ async function openFile(){
   if (hasFS){
     try{
       const [h] = await showOpenFilePicker({types:[{description:'JSON',accept:{'application/json':['.json']}}]});
-      await loadFromHandle(h, true);
+      await loadFromHandle(h);
     }catch(e){ if(e.name!=='AbortError') toast('Erro: '+e.message); }
   } else $('#fileInput').click();
 }
-async function loadFromHandle(h, remember){
+async function loadFromHandle(h){
   if (await h.queryPermission({mode:'readwrite'}) !== 'granted' &&
       await h.requestPermission({mode:'readwrite'}) !== 'granted') throw new Error('Permissão negada');
   const txt = await (await h.getFile()).text();
   db = normalize(JSON.parse(txt)); fileHandle = h; fileName = h.name;
-  if (remember) await kvSet('handle', h);
-  $('#btnReconnect').hidden = true; setDirty(false); refreshAll(); toast('Aberto: ' + fileName);
+  setDirty(false); refreshAll(); toast('Aberto: ' + fileName);
 }
 $('#fileInput').onchange = async e => {
   const f = e.target.files[0]; if(!f) return;
@@ -384,6 +402,358 @@ $('#fileInput').onchange = async e => {
   catch(err){ toast(err.message); }
   e.target.value='';
 };
+
+/* ---------- Excel (.xlsx): exportar e importar, sem bibliotecas externas ----------
+   Abas: Atividades (uma linha por atividade), Times (uma linha por time envolvido), Listas (valores válidos) e Leia-me.
+   Importar substitui os dados do app pelo conteúdo da planilha, depois de mostrar um resumo para confirmar. */
+const XL_EPOCH = Date.UTC(1899,11,30);
+const pad2 = n => String(n).padStart(2,'0');
+const xmlEsc = s => String(s).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f￾￿]/g,'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const colL = i => { let s = ''; i++; while (i){ const m = (i-1)%26; s = String.fromCharCode(65+m) + s; i = Math.floor((i-1)/26); } return s; };
+const colI = L => [...L.toUpperCase()].reduce((n,c)=>n*26 + c.charCodeAt(0)-64, 0) - 1;
+const S = v => v == null ? '' : typeof v === 'boolean' ? (v ? 'Sim' : '') : String(v).trim();
+const hNorm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\(.*?\)/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+const isoToSerial = v => { const d = parseD(v); return d ? (Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()) - XL_EPOCH)/864e5 : null; };
+const tsToSerial = v => { const d = v ? new Date(v) : null; if (!d || isNaN(d)) return null;
+  return (Date.UTC(d.getFullYear(),d.getMonth(),d.getDate(),d.getHours(),d.getMinutes(),d.getSeconds()) - XL_EPOCH)/864e5; };
+const serialParts = v => { const d = new Date(XL_EPOCH + Math.round(v*864e5)); return [d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds()]; };
+// data de célula (número do Excel, dd/mm/aaaa ou aaaa-mm-dd) → 'aaaa-mm-dd'; ok:false quando não dá para entender
+function xlDate(v){
+  const iso = (y,m,d) => { const t = new Date(y, m-1, d); return t.getFullYear()===y && t.getMonth()===m-1 && t.getDate()===d ? {v:`${y}-${pad2(m)}-${pad2(d)}`, ok:true} : null; };
+  if (typeof v === 'number' && isFinite(v)){ const [y,m,d] = serialParts(Math.floor(v)); return iso(y, m+1, d) || {v:'', ok:false}; }
+  const s = S(v); if (!s) return {v:'', ok:true};
+  let m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s); if (m) return iso(+m[1], +m[2], +m[3]) || {v:s, ok:false};
+  m = /^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2}|\d{4})$/.exec(s); if (m) return iso(m[3].length===2 ? 2000 + +m[3] : +m[3], +m[2], +m[1]) || {v:s, ok:false};
+  return {v:s, ok:false};
+}
+function xlStamp(v){
+  if (typeof v === 'number' && isFinite(v)){ const p = serialParts(v); return new Date(p[0],p[1],p[2],p[3],p[4],p[5]).toISOString(); }
+  const s = S(v); if (!s) return '';
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\D+(\d{1,2}):(\d{2}))?/.exec(s);
+  if (m){ const d = new Date(+m[3], m[2]-1, +m[1], +(m[4]||0), +(m[5]||0)); return isNaN(d) ? '' : d.toISOString(); }
+  const t = Date.parse(s); return isNaN(t) ? '' : new Date(t).toISOString();
+}
+
+// estilos: 1 cabeçalho, 2 data, 3 R$, 6 cinza (campos do app), 7 data e hora cinza, 8 título
+const XL_ACT = [
+  {k:'request', h:'Request', w:14},
+  {k:'ritm', h:'RITM', w:14},
+  {k:'descricao', h:'Descrição', w:46, alias:['descricao simples']},
+  {k:'status', h:'Status', w:11, list:'status'},
+  {k:'priorizacao', h:'Priorização', w:13, list:'prior'},
+  {k:'tipo', h:'Tipo', w:8, list:'tipo'},
+  {k:'sistema', h:'Sistema originador', w:17, list:'times', alias:['sistema']},
+  {k:'owner', h:'Business Owner', w:20, alias:['owner']},
+  {k:'retorno', h:'Retorno (R$)', w:16, s:3},
+  {k:'legal', h:'Legal', w:9, list:'flag'},
+  {k:'auditoria', h:'Auditoria', w:10, list:'flag'},
+  {k:'priorizadoGestao', h:'Priorizado Gestão', w:12, list:'flag'},
+  {k:'predecessor', h:'Predecessor (Request)', w:17},
+  {k:'criadoEm', h:'Criado em', w:16, s:7},
+  {k:'atualizadoEm', h:'Atualizado em (automático)', w:16, s:7},
+  {k:'id', h:'ID', importOnly:true}, // planilhas antigas que ainda têm a coluna ID
+];
+const XL_TIME = [
+  {k:'request', h:'Request', w:14},
+  {k:'descricao', h:'Descrição (só leitura)', w:36},
+  {k:'time', h:'Time', w:12, list:'times'},
+  {k:'task', h:'Task', w:16},
+  {k:'inicio', h:'Início', w:12, s:2},
+  {k:'sit', h:'SIT', w:12, s:2},
+  {k:'uat', h:'UAT', w:12, s:2},
+  {k:'deploy', h:'Deploy', w:12, s:2},
+  {k:'notificacao', h:'Última notificação', w:46, alias:['notificacao']},
+];
+const XL_STYLES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="3"><numFmt numFmtId="164" formatCode="dd/mm/yyyy"/><numFmt numFmtId="165" formatCode="[$R$-416]\\ #,##0.00"/><numFmt numFmtId="166" formatCode="dd/mm/yyyy\\ hh:mm"/></numFmts>
+<fonts count="4"><font><sz val="11"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/><family val="2"/></font><font><sz val="11"/><color rgb="FF7F7F7F"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="14"/><name val="Calibri"/><family val="2"/></font></fonts>
+<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF2357D6"/><bgColor indexed="64"/></patternFill></fill></fills>
+<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="9"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="165" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="166" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment wrapText="1" vertical="top"/></xf><xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="166" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyNumberFormat="1"/><xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs>
+<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+
+function xlCell(ci, ri, v, s){
+  if (v == null || v === '') return '';
+  const r = colL(ci) + ri, sa = s ? ` s="${s}"` : '';
+  if (typeof v === 'number' && isFinite(v)) return `<c r="${r}"${sa}><v>${v}</v></c>`;
+  return `<c r="${r}"${sa} t="inlineStr"><is><t xml:space="preserve">${xmlEsc(v)}</t></is></c>`;
+}
+// cols: [{h, w, s}] · rows: matriz de valores · o: {header, freeze, filter, validations:[[col, formula]], selected}
+function xlSheet(cols, rows, o = {}){
+  const header = o.header !== false;
+  const all = header ? [cols.map(c=>c.h), ...rows] : rows;
+  const data = all.map((r,ri)=>`<row r="${ri+1}"${header && !ri ? ' ht="30" customHeight="1"' : ''}>${r.map((v,ci)=>xlCell(ci, ri+1, v, header && !ri ? 1 : (o.rowStyle?.(ri, ci) ?? cols[ci]?.s ?? 0))).join('')}</row>`).join('');
+  const last = colL(cols.length-1), n = Math.max(2, all.length), vmax = Math.max(1000, all.length + 500);
+  const pane = o.freeze ? `<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft" activeCell="A2" sqref="A2"/>` : '';
+  const dvs = (o.validations||[]).map(([ci, f])=>`<dataValidation type="list" allowBlank="1" showErrorMessage="1" errorStyle="warning" errorTitle="Valor fora da lista" error="Este valor não está na lista da aba Listas. Você pode mantê-lo, mas confira." sqref="${colL(ci)}2:${colL(ci)}${vmax}"><formula1>${f}</formula1></dataValidation>`);
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><dimension ref="A1:${last}${n}"/><sheetViews><sheetView workbookViewId="0"${o.selected?' tabSelected="1"':''}>${pane}</sheetView></sheetViews><sheetFormatPr defaultRowHeight="15"/>` +
+    `<cols>${cols.map((c,i)=>`<col min="${i+1}" max="${i+1}" width="${c.w||12}" customWidth="1"${c.s?` style="${c.s}"`:''}/>`).join('')}</cols>` +
+    `<sheetData>${data}</sheetData>${o.filter ? `<autoFilter ref="A1:${last}${n}"/>` : ''}${dvs.length ? `<dataValidations count="${dvs.length}">${dvs.join('')}</dataValidations>` : ''}<pageMargins left="0.7" right="0.7" top="0.75" bottom="0.75" header="0.3" footer="0.3"/></worksheet>`;
+}
+
+const CRC_T = (()=>{ const t = new Uint32Array(256); for (let n=0;n<256;n++){ let c = n; for (let k=0;k<8;k++) c = c & 1 ? 0xEDB88320 ^ (c>>>1) : c>>>1; t[n] = c>>>0; } return t; })();
+const crc32 = b => { let c = 0xFFFFFFFF; for (let i=0;i<b.length;i++) c = CRC_T[(c ^ b[i]) & 255] ^ (c>>>8); return (c ^ 0xFFFFFFFF)>>>0; };
+// .zip sem compressão (o .xlsx é um zip de arquivos XML)
+function zipStore(files){
+  const enc = new TextEncoder(), parts = [], central = []; let off = 0;
+  const d = new Date(), dt = ((d.getFullYear()-1980)<<9) | ((d.getMonth()+1)<<5) | d.getDate(), tm = (d.getHours()<<11) | (d.getMinutes()<<5) | (d.getSeconds()>>1);
+  for (const f of files){
+    const name = enc.encode(f.name), data = enc.encode(f.data), crc = crc32(data);
+    const h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0,0x04034b50,true); h.setUint16(4,20,true); h.setUint16(6,0x0800,true); h.setUint16(10,tm,true); h.setUint16(12,dt,true);
+    h.setUint32(14,crc,true); h.setUint32(18,data.length,true); h.setUint32(22,data.length,true); h.setUint16(26,name.length,true);
+    parts.push(new Uint8Array(h.buffer), name, data);
+    const c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0,0x02014b50,true); c.setUint16(4,20,true); c.setUint16(6,20,true); c.setUint16(8,0x0800,true); c.setUint16(12,tm,true); c.setUint16(14,dt,true);
+    c.setUint32(16,crc,true); c.setUint32(20,data.length,true); c.setUint32(24,data.length,true); c.setUint16(28,name.length,true); c.setUint32(42,off,true);
+    central.push(new Uint8Array(c.buffer), name);
+    off += 30 + name.length + data.length;
+  }
+  const size = central.reduce((s,p)=>s+p.length, 0), e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0,0x06054b50,true); e.setUint16(8,files.length,true); e.setUint16(10,files.length,true); e.setUint32(12,size,true); e.setUint32(16,off,true);
+  return new Blob([...parts, ...central, new Uint8Array(e.buffer)], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+function unzip(buf){
+  const u = new Uint8Array(buf), v = new DataView(buf), dec = new TextDecoder(), ent = {};
+  let e = -1; for (let i = u.length-22; i >= Math.max(0, u.length-65558); i--) if (v.getUint32(i,true) === 0x06054b50){ e = i; break; }
+  if (e < 0) throw new Error('o arquivo não é um .xlsx (salve no Excel como "Pasta de Trabalho do Excel (.xlsx)")');
+  let p = v.getUint32(e+16,true);
+  for (let k = 0, n = v.getUint16(e+10,true); k < n; k++){
+    if (v.getUint32(p,true) !== 0x02014b50) throw new Error('arquivo .xlsx corrompido');
+    const nl = v.getUint16(p+28,true), name = dec.decode(u.subarray(p+46, p+46+nl));
+    ent[name.toLowerCase()] = {method:v.getUint16(p+10,true), size:v.getUint32(p+20,true), lo:v.getUint32(p+42,true)};
+    p += 46 + nl + v.getUint16(p+30,true) + v.getUint16(p+32,true);
+  }
+  return async name => {
+    const f = ent[name.toLowerCase()]; if (!f) return null;
+    const s = f.lo + 30 + v.getUint16(f.lo+26,true) + v.getUint16(f.lo+28,true), raw = u.subarray(s, s + f.size);
+    if (f.method === 0) return dec.decode(raw);
+    if (f.method !== 8) throw new Error('compressão do arquivo não suportada');
+    if (typeof DecompressionStream === 'undefined') throw new Error('este navegador não lê .xlsx; use Chrome, Edge ou Firefox atualizados');
+    return await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();
+  };
+}
+// devolve {nomeDaAba: [[valores da linha 1], [linha 2], ...]}
+async function readXlsx(buf){
+  const get = unzip(buf), P = new DOMParser();
+  const xml = async n => { const t = await get(n); return t == null ? null : P.parseFromString(t, 'application/xml'); };
+  const tags = (d, t) => [...d.getElementsByTagNameNS('*', t)];
+  const wb = await xml('xl/workbook.xml'); if (!wb) throw new Error('o arquivo não é uma planilha do Excel');
+  const rels = await xml('xl/_rels/workbook.xml.rels'), rmap = {};
+  if (rels) tags(rels,'Relationship').forEach(r=>rmap[r.getAttribute('Id')] = r.getAttribute('Target'));
+  const ss = await xml('xl/sharedStrings.xml');
+  const shared = ss ? tags(ss,'si').map(si=>tags(si,'t').filter(t=>t.parentNode.localName !== 'rPh').map(t=>t.textContent).join('')) : [];
+  const out = {};
+  for (const s of tags(wb,'sheet')){
+    const rid = [...s.attributes].find(a=>a.localName === 'id')?.value;
+    let tg = rmap[rid]; if (!tg) continue;
+    tg = tg.startsWith('/') ? tg.slice(1) : 'xl/' + tg.replace(/^\.\//,'');
+    const d = await xml(tg); if (!d) continue;
+    const rows = [];
+    tags(d,'row').forEach((row, ri)=>{
+      const arr = rows[(+row.getAttribute('r') || ri+1) - 1] = []; let ci = 0;
+      tags(row,'c').forEach(c=>{
+        const ref = c.getAttribute('r'); if (ref) ci = colI(ref.replace(/[^A-Za-z]/g,''));
+        const t = c.getAttribute('t'), ve = tags(c,'v')[0], tx = ve ? ve.textContent : '';
+        arr[ci++] = t === 's' ? (shared[+tx] ?? '') : t === 'inlineStr' ? tags(c,'t').map(x=>x.textContent).join('')
+          : t === 'b' ? tx === '1' : t === 'e' ? '' : t === 'str' || t === 'd' ? tx : (ve && tx !== '' ? Number(tx) : '');
+      });
+    });
+    out[s.getAttribute('name')] = rows;
+  }
+  return out;
+}
+
+function exportExcel(){
+  const A = db.atividades;
+  if (!A.length && !confirm('Não há atividades. Exportar uma planilha vazia, para usar como modelo?')) return;
+  { // na planilha, o Request identifica a atividade e liga a aba Times: avisa quando ele falta ou se repete
+    const cnt = new Map(); A.forEach(a=>{ const r = S(a.request).toLowerCase(); if (r) cnt.set(r, (cnt.get(r)||0) + 1); });
+    const bad = A.filter(a=>!S(a.request) || cnt.get(S(a.request).toLowerCase()) > 1);
+    if (bad.length && !confirm(`${bad.length} ${plural(bad.length,'atividade está','atividades estão')} sem Request ou com Request repetido:\n• ` +
+        bad.slice(0,10).map(a=>(S(a.request) || '(sem request)') + (a.descricao ? ' — ' + a.descricao : '')).join('\n• ') + (bad.length > 10 ? `\n• … e mais ${bad.length-10}` : '') +
+        `\n\nNa planilha, o Request identifica a atividade e liga a aba Times. Se importar de volta sem corrigir, os times ${plural(bad.length,'dessa atividade','dessas atividades')} serão ignorados e ${plural(bad.length,'ela pode entrar','elas podem entrar')} como ${plural(bad.length,'atividade nova','atividades novas')}.\n\nExportar mesmo assim?`)) return;
+  }
+  const XC = XL_ACT.filter(c=>!c.importOnly);
+  const predRef = a => { const p = byId(a.predecessor); if (!p) return ''; const r = S(p.request);
+    return r && A.filter(x=>S(x.request) === r).length === 1 ? r : p.id; };
+  const actRows = A.map(a=>XC.map(c=>{
+    const v = a[c.k];
+    if (c.k === 'retorno') return typeof v === 'number' ? v : S(v);
+    if (FLAG_KEYS.includes(c.k)) return v === true ? 'Sim' : '';
+    if (c.k === 'predecessor') return predRef(a);
+    if (c.k === 'criadoEm' || c.k === 'atualizadoEm') return tsToSerial(v) ?? '';
+    return S(v);
+  }));
+  const timeRows = A.flatMap(a=>{
+    const ts = Object.keys(a.times||{}).filter(t=>a.times[t]).sort((x,y)=>(db.times.indexOf(x)+1||99) - (db.times.indexOf(y)+1||99));
+    return ts.map(t=>{ const e = a.times[t]; return XL_TIME.map(c=>{
+      if (c.k === 'request') return S(a.request);
+      if (c.k === 'descricao') return S(a.descricao);
+      if (c.k === 'time') return t;
+      if (DATE_FIELDS.some(([k])=>k === c.k)) return isoToSerial(e[c.k]) ?? S(e[c.k]);
+      return S(e[c.k]);
+    }); });
+  });
+  const LISTS = {status:STATUS_ORDER, prior:PRIORIZACAO, tipo:TIPOS, times:db.times, flag:['Sim','Não']};
+  const lk = Object.keys(LISTS), lmax = Math.max(...lk.map(k=>LISTS[k].length));
+  const listCols = [{h:'Status',w:12},{h:'Priorização',w:13},{h:'Tipo',w:8},{h:'Times / Sistemas',w:16},{h:'Marcadores',w:12}];
+  const listRows = Array.from({length:lmax}, (_,i)=>lk.map(k=>LISTS[k][i] ?? ''));
+  const ref = k => { const i = lk.indexOf(k), L = colL(i); return `Listas!$${L}$2:$${L}$${LISTS[k].length+1}`; };
+  const valid = cols => cols.map((c,i)=>c.list ? [i, ref(c.list)] : null).filter(Boolean);
+  const now = new Date();
+  const help = [
+    ['Como editar esta planilha'], [''],
+    ['• Aba Atividades: uma linha por atividade. Pode alterar, incluir ou apagar linhas.'],
+    ['• Aba Times: uma linha por time envolvido numa atividade, com Task, datas e última notificação. A ligação com a aba Atividades é feita pela coluna Request.'],
+    ['• O Request identifica a atividade: cada um deve aparecer uma única vez na aba Atividades. Se mudar um Request, mude também nas linhas da aba Times.'],
+    ['• Atividade nova: inclua uma linha em Atividades e use o mesmo Request nas linhas da aba Times.'],
+    ['• Datas: dd/mm/aaaa. Retorno: valor em reais (só o número).'],
+    ['• Legal, Auditoria e Priorizado Gestão: escreva Sim ou deixe em branco.'],
+    ['• Predecessor: o Request da atividade que precisa terminar antes desta.'],
+    ['• Status, Priorização, Tipo, Sistema e Time têm lista de valores (aba Listas).'],
+    ['• Criado em vem do app; Atualizado em é preenchido pelo app ao importar.'],
+    ['• Não renomeie as abas nem os títulos das colunas. A ordem das colunas pode mudar.'], [''],
+    ['Ao importar no app (menu Abrir › Abrir Excel), a planilha substitui os dados: linhas apagadas aqui são removidas lá. O app mostra um resumo antes de confirmar.'], [''],
+    [`Exportado em ${now.toLocaleDateString('pt-BR')} às ${now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})} · ${A.length} ${plural(A.length,'atividade','atividades')} · ${timeRows.length} ${plural(timeRows.length,'participação de time','participações de times')}`],
+  ];
+  const sheets = [
+    ['Atividades', xlSheet(XC, actRows, {freeze:true, filter:true, validations:valid(XC), selected:true})],
+    ['Times', xlSheet(XL_TIME, timeRows, {freeze:true, filter:true, validations:valid(XL_TIME)})],
+    ['Listas', xlSheet(listCols, listRows, {freeze:true})],
+    ['Leia-me', xlSheet([{h:'',w:130}], help, {header:false, rowStyle:ri=>ri===0 ? 8 : 0})],
+  ];
+  const files = [
+    {name:'[Content_Types].xml', data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>${sheets.map((_,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`},
+    {name:'_rels/.rels', data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`},
+    {name:'xl/workbook.xml', data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><bookViews><workbookView activeTab="0"/></bookViews><sheets>${sheets.map(([n],i)=>`<sheet name="${n}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join('')}</sheets><definedNames><definedName name="_xlnm._FilterDatabase" localSheetId="0" hidden="1">Atividades!$A$1:$${colL(XC.length-1)}$${Math.max(2,actRows.length+1)}</definedName><definedName name="_xlnm._FilterDatabase" localSheetId="1" hidden="1">Times!$A$1:$${colL(XL_TIME.length-1)}$${Math.max(2,timeRows.length+1)}</definedName></definedNames></workbook>`},
+    {name:'xl/_rels/workbook.xml.rels', data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((_,i)=>`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join('')}<Relationship Id="rId${sheets.length+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`},
+    {name:'xl/styles.xml', data:XL_STYLES},
+    ...sheets.map(([,x],i)=>({name:`xl/worksheets/sheet${i+1}.xml`, data:x})),
+  ];
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(zipStore(files)); a.download = stampedName().replace(/\.json$/i, '.xlsx');
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+  toast('Planilha exportada: ' + a.download);
+}
+
+// planilha → novo conjunto de dados, com resumo do que muda e avisos linha a linha
+function fromSheets(sheets){
+  const warns = [], names = Object.keys(sheets);
+  const find = n => names.find(x=>hNorm(x) === n);
+  const aName = find('atividades') || names[0], tName = find('times');
+  if (!aName) throw new Error('a planilha não tem abas');
+  const table = (rows, spec) => {
+    const head = (rows[0]||[]).map(hNorm), idx = {};
+    spec.forEach(c=>{ const keys = [hNorm(c.h), ...(c.alias||[])]; const i = head.findIndex(h=>keys.includes(h)); if (i >= 0) idx[c.k] = i; });
+    const list = []; rows.forEach((r,i)=>{ if (i && r && r.some(v=>S(v) !== '')) list.push({n:i+1, r}); });
+    return {idx, list, has:k=>k in idx, get:(x,k)=>k in idx ? x.r[idx[k]] : undefined};
+  };
+  const T1 = table(sheets[aName], XL_ACT);
+  if (!T1.has('request') && !T1.has('descricao')) throw new Error(`a aba "${aName}" não tem as colunas Request ou Descrição na primeira linha`);
+  const pick = (v, list) => { const s = S(v); return s ? (list.find(x=>x.toLowerCase() === s.toLowerCase()) || s) : ''; };
+  const teams = [...db.times], newTeams = [];
+  const old = new Map(db.atividades.map(a=>[a.id, a])), seen = new Set(), acts = [], preds = new Map(), oldByReq = new Map();
+  db.atividades.forEach(a=>{ const r = S(a.request).toLowerCase(); if (r) oldByReq.set(r, [...(oldByReq.get(r)||[]), a]); });
+  const L1 = n => `Atividades, linha ${n}`;
+  for (const x of T1.list){
+    const g = k => T1.get(x, k);
+    let id = S(g('id'));
+    if (id && seen.has(id)){ warns.push(`${L1(x.n)}: ID ${id} repetido; a linha entrou como atividade nova`); id = ''; }
+    let base = id && old.has(id) ? structuredClone(old.get(id)) : null;
+    if (!base && !id){ // sem coluna ID: reconhece a atividade do app pelo Request
+      const rq = S(g('request')).toLowerCase(), m = rq && (oldByReq.get(rq) || []).find(a=>!seen.has(a.id));
+      if (m){ id = m.id; base = structuredClone(m); }
+    }
+    if (!id){ do id = uid(); while (seen.has(id) || old.has(id)); }
+    seen.add(id);
+    const o = base || {id, times:{}};
+    ['request','ritm','descricao','owner'].forEach(k=>{ if (T1.has(k)) o[k] = S(g(k)); });
+    if (T1.has('status')){ o.status = pick(g('status'), STATUS_ORDER); if (o.status && !STATUS_ORDER.includes(o.status)) warns.push(`${L1(x.n)}: status "${o.status}" não está na lista (mantido)`); }
+    if (T1.has('priorizacao')){ o.priorizacao = pick(g('priorizacao'), PRIORIZACAO); if (o.priorizacao && !PRIORIZACAO.includes(o.priorizacao)) warns.push(`${L1(x.n)}: priorização "${o.priorizacao}" não está na lista (mantida)`); }
+    if (T1.has('tipo')) o.tipo = pick(g('tipo'), TIPOS);
+    if (T1.has('sistema')) o.sistema = pick(g('sistema'), teams);
+    FLAG_KEYS.forEach(k=>{ if (T1.has(k)){ if (flagOn(g(k))) o[k] = true; else delete o[k]; } });
+    if (T1.has('retorno')){ const raw = g('retorno'), n = parseMoney(typeof raw === 'number' ? raw : S(raw));
+      if (typeof n === 'number') o.retorno = n; else if (n === '') delete o.retorno;
+      else { o.retorno = S(raw); warns.push(`${L1(x.n)}: Retorno "${S(raw)}" não é um número (mantido e marcado como inválido)`); } }
+    if (T1.has('predecessor')) preds.set(id, {v:S(g('predecessor')), n:x.n});
+    if (T1.has('criadoEm')){ const c = xlStamp(g('criadoEm'));
+      if (c && !(base?.criadoEm && Math.abs(Date.parse(c) - Date.parse(base.criadoEm)) < 6e4)) o.criadoEm = c; }
+    if (!S(o.request) && !S(o.descricao)){ warns.push(`${L1(x.n)}: sem Request e sem descrição; linha ignorada`); seen.delete(id); continue; }
+    if (!o.criadoEm) o.criadoEm = new Date().toISOString();
+    acts.push(o);
+  }
+  const byReq = new Map(); acts.forEach(a=>{ const r = S(a.request).toLowerCase(); if (r) byReq.set(r, byReq.has(r) ? null : a); });
+  const ids = new Map(acts.map(a=>[a.id, a]));
+  // times
+  if (tName){
+    const T2 = table(sheets[tName], XL_TIME);
+    if (!T2.has('time')) warns.push(`Aba "${tName}" sem a coluna Time; os times foram mantidos como estavam`);
+    else {
+      acts.forEach(a=>a.times = {});
+      for (const x of T2.list){
+        const g = k => T2.get(x, k), L2 = `Times, linha ${x.n}`;
+        const rq = S(g('request')), a = rq ? byReq.get(rq.toLowerCase()) : null;
+        if (!rq){ warns.push(`${L2}: sem Request; linha ignorada`); continue; }
+        if (a === null){ warns.push(`${L2}: o Request ${rq} aparece em mais de uma linha da aba Atividades; linha ignorada`); continue; }
+        if (!a && db.atividades.some(o=>S(o.request).toLowerCase() === rq.toLowerCase())) continue; // time de atividade apagada da aba Atividades
+        if (!a){ warns.push(`${L2}: nenhuma atividade com Request "${rq}"; linha ignorada`); continue; }
+        let t = S(g('time')); if (!t){ warns.push(`${L2}: sem Time; linha ignorada`); continue; }
+        t = teams.find(x=>x.toLowerCase() === t.toLowerCase()) || t;
+        if (!teams.includes(t)){ teams.push(t); newTeams.push(t); }
+        if (a.times[t]) warns.push(`${L2}: ${t} aparece mais de uma vez para ${a.request || 'a mesma atividade'}; ficou a última linha`);
+        const e = {};
+        ['task','notificacao'].forEach(k=>{ const v = S(g(k)); if (v) e[k] = v; });
+        DATE_FIELDS.forEach(([k,l])=>{ const d = xlDate(g(k)); if (d.v) e[k] = d.v; if (!d.ok) warns.push(`${L2}: data de ${l} "${S(g(k)) || g(k)}" não reconhecida` + (d.v ? ' (mantida como texto)' : '')); });
+        a.times[t] = e;
+      }
+    }
+  } else warns.push('A planilha não tem a aba Times; os times de cada atividade foram mantidos como estavam');
+  // predecessoras
+  preds.forEach(({v, n}, id)=>{
+    const a = ids.get(id); delete a.predecessor; if (!v) return;
+    const p = ids.get(v) || byReq.get(v.toLowerCase());
+    if (!p) warns.push(`${L1(n)}: predecessor "${v}" ` + (byReq.get(v.toLowerCase()) === null ? 'aparece em mais de uma atividade' : 'não encontrado') + '; campo deixado vazio');
+    else if (p.id === id) warns.push(`${L1(n)}: a atividade não pode ser predecessora dela mesma; campo deixado vazio`);
+    else a.predecessor = p.id;
+  });
+  acts.forEach(a=>{ const vis = new Set([a.id]); let p = a.predecessor;
+    while (p){ if (vis.has(p)){ if (p === a.id){ delete a.predecessor; warns.push(`Predecessor de ${a.request || a.id} removido: formava um ciclo`); } break; } vis.add(p); p = ids.get(p)?.predecessor; } });
+  // resumo
+  let added = 0, edited = 0, same = 0; const now = new Date().toISOString();
+  acts.forEach(a=>{ const b = old.get(a.id);
+    if (!b) added++;
+    else if (sameContent(b, a)) same++;
+    else { edited++; a.atualizadoEm = now; } });
+  const removed = [...old.keys()].filter(id=>!seen.has(id)).length;
+  newTeams.forEach(t=>warns.push(`Time novo "${t}" adicionado à lista de times`));
+  return {data: normalize({...db, times: teams, atividades: acts}), warns, added, edited, same, removed};
+}
+
+async function importExcel(file){
+  if (!/\.xlsx$/i.test(file.name)){ alert('Escolha um arquivo .xlsx. No Excel, use Salvar como › Pasta de Trabalho do Excel (.xlsx).'); return; }
+  let r;
+  try{ r = fromSheets(await readXlsx(await file.arrayBuffer())); }
+  catch(e){ alert('Não foi possível importar a planilha: ' + e.message); return; }
+  const n = r.data.atividades.length;
+  if (!r.added && !r.edited && !r.removed && !r.warns.some(w=>w.startsWith('Time novo'))){ toast('A planilha é igual aos dados atuais; nada mudou'); return; }
+  const W = r.warns.length;
+  const msg = `Importar "${file.name}"?\n\nA planilha tem ${n} ${plural(n,'atividade','atividades')}: ${r.added} ${plural(r.added,'nova','novas')}, ${r.edited} ${plural(r.edited,'alterada','alteradas')}, ${r.same} sem alteração.` +
+    (r.removed ? `\n${r.removed} ${plural(r.removed,'atividade atual não está','atividades atuais não estão')} na planilha e ${plural(r.removed,'será removida','serão removidas')}.` : '') +
+    (W ? `\n\n${W} ${plural(W,'aviso','avisos')}:\n• ` + r.warns.slice(0,12).join('\n• ') + (W > 12 ? `\n• … e mais ${W-12}` : '') : '') +
+    (fileHandle ? `\n\nO arquivo conectado (${fileName}) será atualizado.` : '\n\nDepois, use Salvar › Salvar JSON para guardar.');
+  if (!confirm(msg)) return;
+  clearTimeout(autoTimer);
+  db = r.data; changed(); refreshAll();
+  toast(`Planilha importada: ${r.added} ${plural(r.added,'nova','novas')}, ${r.edited} ${plural(r.edited,'alterada','alteradas')}` + (r.removed ? `, ${r.removed} ${plural(r.removed,'removida','removidas')}` : ''));
+}
 
 /* ---------- marcadores ---------- */
 const FLAGS = [['legal','Legal','⚖'],['auditoria','Auditoria','🔍'],['priorizadoGestao','Priorizado Gestão','★']];
@@ -517,7 +887,7 @@ function render(){
   $('#count').textContent = `${rows.length} de ${db.atividades.length} atividades`;
   $('#content').className = rows.length && view==='insights' ? 'insights' : 'card';
   if (!rows.length){ $('#content').innerHTML = db.atividades.length ? `<div class="empty">Nenhuma atividade encontrada.</div>`
-      : `<div class="empty">Nenhuma atividade ainda. Abra um JSON, crie uma atividade ou <button type="button" class="btn sm" data-sample>carregue o exemplo</button> com 40 atividades fictícias.</div>`; return; }
+      : `<div class="empty">Nenhuma atividade ainda. Abra um JSON ou uma planilha Excel, crie uma atividade ou <button type="button" class="btn sm" data-sample>carregue o exemplo</button> com 40 atividades fictícias.</div>`; return; }
   if (view==='insights'){ $('#content').innerHTML = insightsHTML(rows); fitSegLabels(); return; }
   if (view==='roadmap'){ $('#content').innerHTML = roadmapHTML(rows); return; }
   const tm = $('#fTime').value;
@@ -861,17 +1231,38 @@ async function loadSample(){
   db = normalize(raw); fileHandle = null; fileName = 'exemplo-atividades-po.json';
   ['#q','#fStatus','#fPrior','#fSistema','#fTipo','#fTime','#fFlag'].forEach(s=>$(s).value='');
   setDirty(false); refreshAll();
-  const h = hasFS ? await kvGet('handle') : null;
-  if (h){ $('#btnReconnect').hidden = false; $('#btnReconnect').textContent = 'Reconectar ' + h.name; }
-  $('#fileInfo').textContent = 'Exemplo com 40 atividades fictícias — nada foi gravado; use Salvar como… para guardar uma cópia' + (h ? ' ou Reconectar para voltar ao seu arquivo' : '');
+  $('#fileInfo').textContent = 'Exemplo com 40 atividades fictícias — nada foi gravado; use Salvar para guardar uma cópia ou Abrir para voltar ao seu arquivo';
   toast('Exemplo carregado: 40 atividades fictícias');
 }
+/* menus Abrir e Salvar */
+const menus = [...document.querySelectorAll('[data-menu]')];
+const menuItems = m => [...m.querySelectorAll('[role=menuitem]')];
+function closeMenus(except){ menus.forEach(m=>{ if (m===except) return; m.querySelector('.mlist').hidden = true; m.querySelector('[aria-haspopup]').setAttribute('aria-expanded','false'); }); }
+function openMenu(m, focus){ closeMenus(m); const L = m.querySelector('.mlist'); L.hidden = false; L.style.left = L.style.right = ''; if (L.getBoundingClientRect().right > innerWidth - 8){ L.style.left = 'auto'; L.style.right = '0'; } m.querySelector('[aria-haspopup]').setAttribute('aria-expanded','true'); if (focus != null){ const it = menuItems(m); it[(focus + it.length) % it.length].focus(); } }
+menus.forEach(m=>{
+  const btn = m.querySelector('[aria-haspopup]'), list = m.querySelector('.mlist');
+  btn.addEventListener('click', ()=>{ if (list.hidden) openMenu(m); else closeMenus(); });
+  btn.addEventListener('keydown', e=>{ if (e.key==='ArrowDown' || e.key==='Enter' || e.key===' '){ e.preventDefault(); openMenu(m, 0); } else if (e.key==='ArrowUp'){ e.preventDefault(); openMenu(m, -1); } });
+  list.addEventListener('click', e=>{ if (e.target.closest('[role=menuitem]')){ closeMenus(); btn.focus(); } });
+  list.addEventListener('keydown', e=>{
+    const it = menuItems(m), i = it.indexOf(document.activeElement);
+    if (e.key==='ArrowDown'){ e.preventDefault(); it[(i+1) % it.length].focus(); }
+    else if (e.key==='ArrowUp'){ e.preventDefault(); it[(i-1+it.length) % it.length].focus(); }
+    else if (e.key==='Home'){ e.preventDefault(); it[0].focus(); }
+    else if (e.key==='End'){ e.preventDefault(); it[it.length-1].focus(); }
+    else if (e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); closeMenus(); btn.focus(); }
+    else if (e.key==='Tab') closeMenus();
+    else if (e.key==='ArrowRight' || e.key==='ArrowLeft'){ e.preventDefault(); const j = menus.indexOf(m) + (e.key==='ArrowRight' ? 1 : -1); openMenu(menus[(j + menus.length) % menus.length], 0); }
+  });
+});
+document.addEventListener('click', e=>{ if (!e.target.closest('[data-menu]')) closeMenus(); });
 $('#btnSample').onclick = loadSample;
 $('#btnOpen').onclick = openFile;
 $('#btnSave').onclick = ()=>save(true);
-$('#btnSaveAs').onclick = saveAs;
+$('#btnXlsOut').onclick = exportExcel;
+$('#btnXlsIn').onclick = () => $('#xlsInput').click();
+$('#xlsInput').onchange = async e => { const f = e.target.files[0]; e.target.value = ''; if (f) await importExcel(f); };
 $('#btnTheme').onclick = ()=>{ const r=document.documentElement; const dark = r.dataset.theme ? r.dataset.theme==='dark' : matchMedia('(prefers-color-scheme: dark)').matches; r.dataset.theme = dark?'light':'dark'; try{localStorage.setItem('atividades-po-tema', r.dataset.theme);}catch{} };
-$('#btnReconnect').onclick = async ()=>{ const h = await kvGet('handle'); if(!h) return; try{ await loadFromHandle(h,false); }catch(e){ toast(e.message); } };
 document.addEventListener('keydown', e=>{
   if ((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='s'){ e.preventDefault(); if($('#drawer').classList.contains('open')) $('#dSave').click(); else save(true); }
   if (e.key==='Escape' && $('#drawer').classList.contains('open')) closeEditor();
@@ -895,15 +1286,11 @@ let tt; function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add
 /* ---------- inicialização ---------- */
 (async ()=>{
   try{ const th = localStorage.getItem('atividades-po-tema'); if(th) document.documentElement.dataset.theme = th; }catch{}
-  if (!hasFS) $('#btnSaveAs').hidden = true;
   let draft = null; try{ draft = localStorage.getItem(DRAFT_KEY); }catch{}
-  const h = hasFS ? await kvGet('handle') : null;
-  if (h){ fileName = h.name; fileHandle = null; $('#btnReconnect').hidden = false; $('#btnReconnect').textContent = 'Reconectar ' + h.name; }
   if (draft && confirm('Foi encontrado um rascunho com alterações não salvas. Restaurar?')){
     try{ db = normalize(JSON.parse(draft)); refreshAll(); setDirty(true); return; }catch{}
   }
   refreshAll(); setDirty(false);
-  if (h) $('#fileInfo').textContent = 'Nenhum dado carregado — clique em "Reconectar ' + h.name + '" para carregar seu JSON';
 })();
 })();
 </script>
