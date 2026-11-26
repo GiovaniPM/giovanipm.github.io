@@ -633,14 +633,29 @@ function edgeGeometry(d) {
   return res;
 }
 
+// cor própria da relação: só aceita #rrggbb; fora disso vale o cinza padrão do C4
+const EDGE_COLOR = '#707070';
+function edgeColor(e) { return /^#[0-9a-f]{6}$/i.test(e.color || '') ? e.color.toLowerCase() : null; }
+// uma ponta de seta por cor, criada sob demanda nos <defs>, que a exportação SVG/PNG copia
+function arrowFor(hex) {
+  const id = 'arrowC' + hex.slice(1);
+  if (!svg.querySelector('#' + id)) {
+    const m = el('marker', {id, viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 11, markerHeight: 11, markerUnits: 'userSpaceOnUse', orient: 'auto-start-reverse'}, svg.querySelector('defs'));
+    el('path', {d: 'M0,0 L10,5 L0,10 z', fill: hex}, m);
+  }
+  return `url(#${id})`;
+}
 function drawEdge(parent, e, geo, selected, grow) {
   const g = el('g', {'data-role': 'edge', 'data-id': e.id}, parent);
-  let col = selected ? '#f08c00' : '#707070', mk = selected ? 'url(#arrowSel)' : 'url(#arrow)', sw = selected ? 2.2 : 1.6;
+  const ec = edgeColor(e);
+  // relação colorida continua com a sua cor quando selecionada; um halo laranja marca a seleção
+  let col = ec || (selected ? '#f08c00' : EDGE_COLOR), mk = ec ? arrowFor(ec) : selected ? 'url(#arrowSel)' : 'url(#arrow)', sw = selected ? 2.2 : 1.6;
   const sv = simView?.edges.get(e.id);
   if (sv) {
     if (sv.color) { col = sv.color; mk = `url(#${sv.marker})`; sw = sv.width; }
     if (sv.opacity != null) g.setAttribute('opacity', sv.opacity);
   }
+  if (selected && ec && !sv?.color) el('path', {d: geo.path, fill: 'none', stroke: '#f08c00', 'stroke-opacity': 0.45, 'stroke-width': 7, 'stroke-linecap': 'round', 'pointer-events': 'none'}, g);
   el('path', {d: geo.path, fill: 'none', stroke: 'transparent', 'stroke-width': 16, 'pointer-events': 'stroke'}, g);
   el('path', {d: geo.path, fill: 'none', stroke: col, 'stroke-width': sw, 'stroke-dasharray': e.style === 'solid' ? null : '7 5',
     'marker-end': mk, 'marker-start': e.both ? mk : null, 'pointer-events': 'none'}, g);
@@ -828,6 +843,8 @@ function renderProps() {
       <div class="field"><label>Descrição</label><input type="text" data-f="label" value="${esc(e.label)}" placeholder="ex.: Faz chamadas de API para"></div>
       <div class="field"><label>Tecnologia / protocolo</label><input type="text" data-f="tech" value="${esc(e.tech)}" placeholder="ex.: JSON/HTTPS"></div>
       <div class="field"><label>Estilo da linha</label><select data-f="style">${opt('dashed', 'Tracejada (padrão C4)', e.style)}${opt('solid', 'Sólida', e.style)}</select></div>
+      <div class="field"><label>Cor da linha</label>
+        <div class="colorrow"><input type="color" data-f="color" value="${edgeColor(e) || EDGE_COLOR}"><button class="btn" data-act="resetColor">Padrão C4</button></div></div>
       <label class="chk"><input type="checkbox" data-f="both" ${e.both ? 'checked' : ''}> Bidirecional</label>
       <label class="chk" style="align-items:flex-start"><input type="checkbox" data-f="soft" ${e.soft ? 'checked' : ''} style="margin-top:3px"> <span>Não bloqueante na simulação de falhas<br><small style="color:var(--muted)">Se o destino cair, a origem fica só degradada.</small></span></label>
       <div class="btns">
@@ -1227,10 +1244,14 @@ function toPlantUML() {
     });
     return out;
   };
-  const rels = d.edges.filter(e => nodeById(e.from) && nodeById(e.to)).map(e =>
-    `${e.both ? 'BiRel' : 'Rel'}(${alias(nodeById(e.from))}, ${alias(nodeById(e.to))}, ${q(e.label)}${e.tech ? ', ' + q(e.tech) : ''})`);
+  const live = d.edges.filter(e => nodeById(e.from) && nodeById(e.to));
+  // cores das relações viram tags da C4-PlantUML: AddRelTag("cor_rrggbb", $lineColor="#rrggbb") e $tags="cor_rrggbb"
+  const colors = [...new Set(live.map(edgeColor).filter(Boolean))];
+  const tags = colors.map(c => `AddRelTag("cor_${c.slice(1)}", $lineColor="${c}", $legendText="${c}")`);
+  const rels = live.map(e => { const c = edgeColor(e);
+    return `${e.both ? 'BiRel' : 'Rel'}(${alias(nodeById(e.from))}, ${alias(nodeById(e.to))}, ${q(e.label)}${e.tech ? ', ' + q(e.tech) : ''}${c ? `, $tags="cor_${c.slice(1)}"` : ''})`; });
   return ['@startuml', '!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml', '',
-    `title [${LEVELS[d.level] || 'C4'}] ${d.title || ''}`, '', ...emit(null, ''), '', ...rels, '', d.legend ? 'SHOW_LEGEND()' : '', '@enduml'].join('\n');
+    `title [${LEVELS[d.level] || 'C4'}] ${d.title || ''}`, '', ...(tags.length ? [...tags, ''] : []), ...emit(null, ''), '', ...rels, '', d.legend ? 'SHOW_LEGEND()' : '', '@enduml'].join('\n');
 }
 function openModal(title, text) { $('#mTitle').textContent = title; $('#mText').value = text; $('#modal').style.display = 'flex'; }
 function closeModal() { $('#modal').style.display = 'none'; }
