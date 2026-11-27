@@ -304,6 +304,8 @@
       <li><a href="#matriz-pt">A matriz por time</a></li>
       <li><a href="#insights-pt">Insights</a></li>
       <li><a href="#roadmap-pt">Road map</a></li>
+      <li><a href="#advisor-pt">Advisor</a></li>
+      <li><a href="#kanban-pt">Kanban</a></li>
       <li><a href="#erros-pt">Erros comuns</a></li>
       <li><a href="#interface-pt">Idioma da interface</a></li>
       <li><a href="#revisao-pt">Revisão rápida</a></li>
@@ -472,6 +474,8 @@ Depois, use Salvar › Salvar JSON para guardar.</pre>
         <li>Clique em <strong>Matriz por time</strong> e localize a nova atividade na coluna BI.</li>
         <li>Clique em <strong>Insights</strong>. No mapa <strong>Times × status</strong>, clique numa célula: o app volta para a lista com o time e o status filtrados.</li>
         <li>Clique em <strong>Road map</strong>. A primeira posição é a REQ0100126, que tem Priorizado Gestão. A REQ0100101, também Priorizado Gestão e em WIP, aparece entre as últimas, com <strong>⚠ aguarda o predecessor REQ0100114 (Sizing)</strong>, logo depois da própria REQ0100114. Abaixo de cada descrição, o app diz qual critério decidiu a posição.</li>
+        <li>Clique em <strong>Advisor</strong>. A REQ0100101 aparece em segundo, com <strong>▲ Alta Avança sem o predecessor</strong> e <strong>● Média Priorização desatualizada</strong>; a segunda vem do passo 6, em que você mudou a priorização para Esperando. Clique em <strong>Só alta</strong>: restam 7 atividades. Clique em <strong>Todas</strong> e depois no request <strong>REQ0100125</strong> para abrir a atividade.</li>
+        <li>Clique em <strong>Kanban</strong>. Passe o mouse sobre a <strong>REQ0100114</strong>, na coluna Sizing: a REQ0100136 aparece com <strong>↑ predecessora</strong>, a REQ0100101 com <strong>↓ depende dela</strong>, setas ligam as três no sentido da dependência e as outras ficam apagadas. Sem tirar o mouse, segure <kbd>Ctrl</kbd>: o quadro mostra só essas 3; solte e ele volta. Depois arraste a <strong>REQ0100111</strong> da coluna Sizing para a coluna WIP: o aviso mostra <strong>REQ0100111: Sizing → WIP</strong>; clique em <strong>Desfazer</strong> nele.</li>
         <li>Clique em <strong>Salvar › Salvar Excel</strong>. O navegador baixa a planilha <code>Atividades entre POs AAAAMMDD HHmmSS.xlsx</code>.</li>
         <li>Abra a planilha no Excel. Na aba <strong>Atividades</strong>, mude o Status da REQ0100101 para <strong>SIT</strong> e salve no formato .xlsx.</li>
         <li>No app, clique em <strong>Abrir › Abrir Excel</strong> e escolha a planilha. O resumo diz “A planilha tem 41 atividades: 0 novas, 1 alterada, 40 sem alteração”; confirme. Na lista, a REQ0100101 aparece em SIT.</li>
@@ -557,6 +561,64 @@ Depois, use Salvar › Salvar JSON para guardar.</pre>
       <a class="back" href="#top">↑ Voltar ao topo</a>
     </section>
 
+    <section id="advisor-pt" aria-labelledby="h-advisor-pt">
+      <h2 id="h-advisor-pt">Advisor</h2>
+      <p>A área <strong>Advisor</strong> analisa cada atividade e sugere o que revisar. Ela usa regras fixas, escritas no próprio app: roda no navegador, não envia nada para fora e não usa inteligência artificial. Por isso cada sugestão diz qual regra a disparou e por quê.</p>
+      <figure>
+        <img src="rc_images/AtividadesPOAdvisor.png" alt="Advisor com o exemplo depois do passo 10 do roteiro: a explicação, o resumo com 7 sugestões de gravidade alta, 20 média e 28 baixa em 31 de 41 atividades, os botões Todas, Média e alta e Só alta, e os cartões das atividades REQ0100125, REQ0100101 e REQ0100119, cada um com suas sugestões marcadas por gravidade" loading="lazy" width="1280" height="900">
+        <figcaption>O Advisor com o exemplo, depois dos passos 1 a 10 do roteiro. Cada cartão é uma atividade; cada linha, uma sugestão.</figcaption>
+      </figure>
+      <p>Cada sugestão tem uma gravidade, marcada com símbolo e nome além da cor: <strong>▲ Alta</strong>, <strong>● Média</strong> e <strong>○ Baixa</strong>. As atividades com sugestões mais graves vêm primeiro. No topo ficam o total por gravidade e os botões <strong>Todas</strong>, <strong>Média e alta</strong> e <strong>Só alta</strong>. <strong>Sugestões por regra</strong> abre uma tabela com quantas vezes cada regra apareceu, para achar um problema que se repete em muitas atividades. Clique no request de um cartão para abrir a atividade e corrigir. Os filtros do topo valem também aqui.</p>
+      <p>As regras, da mais grave para a menos grave:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Regra</th><th scope="col">Gravidade</th><th scope="col">Quando aparece e o que sugere</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Ciclo de dependência</th><td>▲ Alta</td><td>Seguindo os predecessores, a cadeia volta à própria atividade. Desfaça o ciclo: nenhuma delas consegue terminar primeiro.</td></tr>
+            <tr><th scope="row">Avança sem o predecessor</th><td>▲ Alta</td><td>A atividade está em WIP, SIT, UAT ou Deploy e o predecessor ainda não está em Finished. Confirme com os times se pode seguir; se não, passe para Stand-by ou Blocked.</td></tr>
+            <tr><th scope="row">Predecessor parado</th><td>▲ Alta</td><td>O predecessor de uma atividade aberta está em Stand-by ou Blocked. Escale o impedimento do predecessor.</td></tr>
+            <tr><th scope="row">Prioridade da gestão parada</th><td>▲ Alta</td><td>A atividade tem Priorizado Gestão e está em Stand-by ou Blocked. Leve o impedimento à gestão.</td></tr>
+            <tr><th scope="row">Segura outras atividades</th><td>▲ Alta / ● Média</td><td>Atividades abertas dependem desta, e ela não está entre WIP e Deploy. É alta quando alguma dependente tem Priorizado Gestão ou Legal. Priorize-a para liberar a cadeia.</td></tr>
+            <tr><th scope="row">Marco vencido</th><td>▲ Alta / ● Média</td><td>Num time, a data de SIT, UAT ou Deploy já passou e a atividade ainda não chegou a essa etapa, ou está parada. É alta para Deploy. Atualize a data ou o status.</td></tr>
+            <tr><th scope="row">Concluída antes do predecessor</th><td>● Média</td><td>A atividade está em Finished, mas o predecessor não. Revise o vínculo ou o status do predecessor.</td></tr>
+            <tr><th scope="row">Priorização desatualizada</th><td>● Média</td><td>A atividade está entre WIP e Deploy com a priorização Esperando. Atualize para Priorizado.</td></tr>
+            <tr><th scope="row">Retorno alto sem prioridade</th><td>● Média</td><td>O Retorno está no quartil superior das atividades abertas e acima da mediana, e a atividade não está Priorizado nem tem Priorizado Gestão. Só vale com pelo menos 4 retornos preenchidos. Leve à gestão.</td></tr>
+            <tr><th scope="row">Obrigação sem prazo</th><td>● Média</td><td>A atividade é Legal ou Auditoria e nenhum time tem data de Deploy. Registre o prazo.</td></tr>
+            <tr><th scope="row">Datas fora de ordem</th><td>● Média</td><td>Num time, um marco vem antes do anterior na ordem Início, SIT, UAT e Deploy. Corrija as datas.</td></tr>
+            <tr><th scope="row">Retorno inválido</th><td>● Média</td><td>O Retorno veio do arquivo como texto que não é número. Corrija para que conte no road map.</td></tr>
+            <tr><th scope="row">Sem times</th><td>● Média</td><td>Atividade aberta sem nenhum time envolvido. Indique quem vai trabalhar nela.</td></tr>
+            <tr><th scope="row">Sem request · Request repetido</th><td>● Média</td><td>A atividade não tem request, ou o mesmo request aparece em mais de uma. O request é a chave da ida e volta pelo Excel.</td></tr>
+            <tr><th scope="row">Sem atualização</th><td>● Média / ○ Baixa</td><td>Atividade aberta sem alteração no app há mais de 30 dias. É média quando ela está em Stand-by ou Blocked. Confirme o status com os times.</td></tr>
+            <tr><th scope="row">Sem priorização · Sem Retorno</th><td>○ Baixa</td><td>Atividade aberta sem priorização ou sem Retorno. O Retorno pesa nos critérios 6 e 7 do road map.</td></tr>
+            <tr><th scope="row">Time sem task · Sem cronograma</th><td>○ Baixa</td><td>Um time envolvido não tem task, ou a atividade está entre WIP e Deploy sem nenhuma data nos times.</td></tr>
+            <tr><th scope="row">Cadastro incompleto</th><td>○ Baixa</td><td>Falta Business Owner, sistema originador ou tipo numa atividade aberta.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <blockquote>O Advisor só enxerga os campos preenchidos. Uma atividade sem sugestões pode apenas estar com o cadastro em dia, e uma sugestão pode não se aplicar: “Avança sem o predecessor” é aceitável quando os times combinaram trabalhar em paralelo.</blockquote>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
+    <section id="kanban-pt" aria-labelledby="h-kanban-pt">
+      <h2 id="h-kanban-pt">Kanban</h2>
+      <p>A área <strong>Kanban</strong> mostra as atividades em colunas, uma por status, na ordem Analysis, Sizing, WIP, SIT, UAT, Deploy, Finished, Stand-by e Blocked, com a quantidade no topo de cada coluna. Cada cartão traz o request, a descrição, os marcadores, os times e, se houver, o predecessor, com o aviso <strong>⚠ não concluído</strong> quando ele ainda não está em Finished. Os filtros do topo valem aqui também.</p>
+      <p><strong>Arraste</strong> um cartão para outra coluna para mudar o status. A coluna de destino fica tracejada enquanto você arrasta, e soltar fora das colunas ou teclar <kbd>Esc</kbd> cancela. Depois de soltar, um aviso no rodapé mostra a mudança, como <strong>REQ0100111: Sizing → WIP</strong>, com o botão <strong>Desfazer</strong> por alguns segundos. No celular, toque e segure o cartão antes de arrastar; arrastar o dedo sem segurar continua rolando a tela. Pelo teclado, com o foco no cartão, <kbd>Shift</kbd>+<kbd>→</kbd> e <kbd>Shift</kbd>+<kbd>←</kbd> levam a atividade para o status seguinte ou anterior. A mudança marca a data de atualização e entra no salvamento como qualquer edição.</p>
+      <figure>
+        <img src="rc_images/AtividadesPOKanban.png" alt="Kanban com o exemplo e o mouse sobre a REQ0100114, na coluna Sizing: ela fica com borda forte; uma seta sai da REQ0100136, na coluna Analysis, com a etiqueta ↑ predecessora, e chega à REQ0100114; outra sai da REQ0100114 e chega à REQ0100101, na coluna WIP, com a etiqueta ↓ depende dela; as demais atividades ficam apagadas" loading="lazy" width="1280" height="900">
+        <figcaption>O mouse sobre a REQ0100114 destaca a predecessora dela e a atividade que depende dela; as setas mostram o sentido da dependência.</figcaption>
+      </figure>
+      <p>As relacionadas de uma atividade são as predecessoras, subindo a cadeia, e todas as que dependem dela, direta ou indiretamente. Há quatro formas de vê-las:</p>
+      <ul>
+        <li><strong>Passe o mouse</strong> sobre um cartão, ou leve o foco até ele com <kbd>Tab</kbd>. As relacionadas ganham borda e uma etiqueta, <strong>↑ predecessora</strong> ou <strong>↓ depende dela</strong>, e setas ligam os cartões no sentido da dependência: cada seta sai da predecessora e aponta para a atividade que depende dela. As demais ficam apagadas. A etiqueta e a ponta da seta garantem que a relação não depende só da cor.</li>
+        <li><strong>Segure <kbd>Ctrl</kbd></strong> (<kbd>⌘</kbd> no Mac) com o mouse ou o foco num cartão para ver <strong>só as relacionadas</strong> enquanto a tecla estiver pressionada; ao soltar, o quadro volta. O quadro se reorganiza, então o cartão pode mudar de lugar.</li>
+        <li><strong>Segure <kbd>Ctrl</kbd> e clique</strong> numa atividade, ou tecle <kbd>Ctrl</kbd>+<kbd>Enter</kbd>, para <strong>fixar</strong> essa visão. Uma faixa diz quantas são e a partir de qual atividade, e a atividade escolhida leva a etiqueta <strong>● selecionada</strong>. Nesse modo os filtros não valem, para nenhuma relacionada ficar escondida.</li>
+        <li>Use o botão <strong>🔗</strong> do cartão, que mostra quantas relacionadas a atividade tem. Ele faz o mesmo que o <kbd>Ctrl</kbd>+clique e é o caminho no celular, onde não há mouse nem <kbd>Ctrl</kbd>.</li>
+      </ul>
+      <p>A opção <strong>Mostrar todas as setas de dependência</strong>, acima do quadro, desenha também as demais dependências, em linha tracejada e mais clara.</p>
+      <p>Para voltar ao quadro inteiro, clique em <strong>Mostrar todas</strong>, tecle <kbd>Esc</kbd>, repita o <kbd>Ctrl</kbd>+clique na mesma atividade ou mude um filtro. Um clique simples, ou <kbd>Enter</kbd>, abre a atividade no painel de edição.</p>
+      <a class="back" href="#top">↑ Voltar ao topo</a>
+    </section>
+
     <section id="erros-pt" aria-labelledby="h-erros-pt">
       <h2 id="h-erros-pt">Erros comuns</h2>
       <ul class="myths">
@@ -599,6 +661,9 @@ Depois, use Salvar › Salvar JSON para guardar.</pre>
             <tr><th scope="row">Priorização: Priorizar · Priorizado · Esperando</th><td>Prioritization: Prioritize · Prioritized · Waiting</td><td>Priorità: Da priorizzare · Priorizzata · In attesa</td><td>Priorización: Priorizar · Priorizado · Esperando</td></tr>
             <tr><th scope="row">Sistema originador</th><td>Originating system</td><td>Sistema di origine</td><td>Sistema de origen</td></tr>
             <tr><th scope="row">Road map · Ordem do road map · à frente da seguinte por · por time</th><td>Road map · Road map order · ahead of the next one by · per team</td><td>Road map · Ordine del road map · davanti alla successiva per · per team</td><td>Road map · Orden del road map · delante de la siguiente por · por equipo</td></tr>
+            <tr><th scope="row">Kanban · predecessora · depende dela · selecionada · Mostrar todas · não concluído</th><td>Kanban · predecessor · depends on it · selected · Show all · not finished</td><td>Kanban · predecessore · dipende da essa · selezionata · Mostra tutte · non concluso</td><td>Kanban · predecesora · depende de ella · seleccionada · Mostrar todas · no terminada</td></tr>
+            <tr><th scope="row">Desfazer · Mostrar todas as setas de dependência</th><td>Undo · Show all dependency arrows</td><td>Annulla · Mostra tutte le frecce di dipendenza</td><td>Deshacer · Mostrar todas las flechas de dependencia</td></tr>
+            <tr><th scope="row">Advisor · Todas · Média e alta · Só alta · Sugestões por regra · Maior gravidade · Alta · Média · Baixa</th><td>Advisor · All · Medium and high · High only · Suggestions by rule · Highest severity · High · Medium · Low</td><td>Advisor · Tutte · Media e alta · Solo alta · Suggerimenti per regola · Gravità massima · Alta · Media · Bassa</td><td>Advisor · Todas · Media y alta · Solo alta · Sugerencias por regla · Mayor gravedad · Alta · Media · Baja</td></tr>
             <tr><th scope="row">Status: 2 selecionados</th><td>Status: 2 selected</td><td>Status: 2 selezionati</td><td>Status: 2 seleccionados</td></tr>
             <tr><th scope="row">Todas as dependências · Aguarda o predecessor · Com predecessor · Sem predecessor · É predecessora de outra</th><td>All dependencies · Waiting for the predecessor · Has a predecessor · No predecessor · Is the predecessor of another</td><td>Tutte le dipendenze · In attesa del predecessore · Con predecessore · Senza predecessore · È predecessore di un'altra</td><td>Todas las dependencias · Espera a la predecesora · Con predecesora · Sin predecesora · Es predecesora de otra</td></tr>
             <tr><th scope="row">predecessor concluído · aguarda o predecessor · é a predecessora dela</th><td>predecessor finished · waiting for the predecessor · it is its predecessor</td><td>predecessore concluso · in attesa del predecessore · è la sua predecessora</td><td>predecesora terminada · espera a la predecesora · es su predecesora</td></tr>
@@ -626,6 +691,8 @@ Depois, use Salvar › Salvar JSON para guardar.</pre>
         <details><summary>6. Você apagou uma linha na aba Atividades da planilha e importou. O que acontece com a atividade?</summary><p>Ela é removida do app. O resumo antes da importação avisa quantas atividades serão removidas, e você pode cancelar.</p></details>
         <details><summary>7. Como o app sabe a que atividade pertence uma linha da aba Times?</summary><p>Pelo Request. Ele precisa ser igual nas duas abas e aparecer uma única vez na aba Atividades.</p></details>
         <details><summary>8. Uma atividade com Priorizado Gestão aparece no fim do road map. Por quê?</summary><p>Porque o predecessor dela ainda não está em Finished. Esse é o primeiro critério da ordem: ela só sobe quando o predecessor for concluído.</p></details>
+        <details><summary>9. O Advisor mostra ▲ Alta Avança sem o predecessor numa atividade em WIP. Ela está errada?</summary><p>Não necessariamente. A regra só vê que o predecessor ainda não está em Finished. Confirme com os times: se combinaram trabalhar em paralelo, siga; se não, passe a atividade para Stand-by ou Blocked.</p></details>
+        <details><summary>10. No Kanban, como ver só as atividades ligadas a uma delas no celular, sem mouse nem Ctrl?</summary><p>Toque no botão 🔗 do cartão. Ele mostra só as relacionadas, como o Ctrl+clique; para voltar, toque em Mostrar todas.</p></details>
       </div>
       <a class="back" href="#top">↑ Voltar ao topo</a>
     </section>
@@ -687,6 +754,8 @@ Depois, use Salvar › Salvar JSON para guardar.</pre>
       <li><a href="#matriz-en">The matrix by team</a></li>
       <li><a href="#insights-en">Insights</a></li>
       <li><a href="#roadmap-en">Road map</a></li>
+      <li><a href="#advisor-en">Advisor</a></li>
+      <li><a href="#kanban-en">Kanban</a></li>
       <li><a href="#erros-en">Common mistakes</a></li>
       <li><a href="#interface-en">Interface language</a></li>
       <li><a href="#revisao-en">Quick review</a></li>
@@ -856,6 +925,8 @@ Depois, use Salvar › Salvar JSON para guardar.</pre>
         <li>Click <strong>Matriz por time</strong> and find the new activity in the BI column.</li>
         <li>Click <strong>Insights</strong>. In the <strong>Times × status</strong> map, click a cell: the app goes back to the list with that team and status filtered.</li>
         <li>Click <strong>Road map</strong>. The first position is REQ0100126, which has Priorizado Gestão. REQ0100101, also Priorizado Gestão and in WIP, appears among the last ones, with <strong>⚠ aguarda o predecessor REQ0100114 (Sizing)</strong> (waiting for the predecessor), right after REQ0100114 itself. Under each description, the app says which criterion decided the position.</li>
+        <li>Click <strong>Advisor</strong>. REQ0100101 appears second, with <strong>▲ Alta Avança sem o predecessor</strong> (moves ahead without the predecessor) and <strong>● Média Priorização desatualizada</strong> (outdated prioritization); the second comes from step 6, where you changed the prioritization to Esperando. Click <strong>Só alta</strong> (high only): 7 activities remain. Click <strong>Todas</strong> (all) and then the request <strong>REQ0100125</strong> to open the activity.</li>
+        <li>Click <strong>Kanban</strong>. Hover over <strong>REQ0100114</strong>, in the Sizing column: REQ0100136 shows <strong>↑ predecessora</strong> (predecessor), REQ0100101 shows <strong>↓ depende dela</strong> (depends on it), arrows link the three in the direction of the dependency and the others are dimmed. Without moving the mouse, hold <kbd>Ctrl</kbd>: the board shows only those 3; release it and the board comes back. Then drag <strong>REQ0100111</strong> from the Sizing column to the WIP column: the notice shows <strong>REQ0100111: Sizing → WIP</strong>; click <strong>Desfazer</strong> (undo) on it.</li>
         <li>Click <strong>Salvar › Salvar Excel</strong>. The browser downloads the spreadsheet <code>Atividades entre POs YYYYMMDD HHmmSS.xlsx</code>.</li>
         <li>Open the spreadsheet in Excel. In the <strong>Atividades</strong> tab, change the Status of REQ0100101 to <strong>SIT</strong> and save it as .xlsx.</li>
         <li>In the app, click <strong>Abrir › Abrir Excel</strong> and choose the spreadsheet. The summary says “A planilha tem 41 atividades: 0 novas, 1 alterada, 40 sem alteração” (41 activities: 0 new, 1 changed, 40 unchanged); confirm. In the list, REQ0100101 shows SIT.</li>
@@ -941,6 +1012,64 @@ Depois, use Salvar › Salvar JSON para guardar.</pre>
       <a class="back" href="#top">↑ Back to top</a>
     </section>
 
+    <section id="advisor-en" aria-labelledby="h-advisor-en">
+      <h2 id="h-advisor-en">Advisor</h2>
+      <p>The <strong>Advisor</strong> area analyzes each activity and suggests what to review. It uses fixed rules written into the app itself: it runs in the browser, sends nothing out and does not use artificial intelligence. That is why each suggestion says which rule triggered it and why.</p>
+      <figure>
+        <img src="rc_images/AtividadesPOAdvisor.png" alt="Advisor with the sample after step 10 of the walkthrough: the explanation, the summary with 7 high, 20 medium and 28 low severity suggestions in 31 of 41 activities, the Todas, Média e alta and Só alta buttons, and the cards of activities REQ0100125, REQ0100101 and REQ0100119, each with its suggestions marked by severity" loading="lazy" width="1280" height="900">
+        <figcaption>The Advisor with the sample, after steps 1 to 10 of the walkthrough. Each card is an activity; each line, a suggestion.</figcaption>
+      </figure>
+      <p>Each suggestion has a severity, marked with a symbol and a name besides the color: <strong>▲ Alta</strong> (high), <strong>● Média</strong> (medium) and <strong>○ Baixa</strong> (low). Activities with the most severe suggestions come first. At the top are the totals by severity and the buttons <strong>Todas</strong> (all), <strong>Média e alta</strong> (medium and high) and <strong>Só alta</strong> (high only). <strong>Sugestões por regra</strong> (suggestions by rule) opens a table with how many times each rule appeared, to spot a problem that repeats across many activities. Click the request on a card to open the activity and fix it. The filters at the top apply here too.</p>
+      <p>The rules, from most to least severe:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Rule</th><th scope="col">Severity</th><th scope="col">When it appears and what it suggests</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Ciclo de dependência (dependency cycle)</th><td>▲ Alta (high)</td><td>Following the predecessors, the chain comes back to the activity itself. Break the cycle: none of them can finish first.</td></tr>
+            <tr><th scope="row">Avança sem o predecessor (moves ahead without the predecessor)</th><td>▲ Alta (high)</td><td>The activity is in WIP, SIT, UAT or Deploy and its predecessor is not yet in Finished. Check with the teams whether it can go on; if not, move it to Stand-by or Blocked.</td></tr>
+            <tr><th scope="row">Predecessor parado (predecessor stopped)</th><td>▲ Alta (high)</td><td>The predecessor of an open activity is in Stand-by or Blocked. Escalate the predecessor’s blocker.</td></tr>
+            <tr><th scope="row">Prioridade da gestão parada (management priority stopped)</th><td>▲ Alta (high)</td><td>The activity has Priorizado Gestão and is in Stand-by or Blocked. Take the blocker to management.</td></tr>
+            <tr><th scope="row">Segura outras atividades (holds other activities)</th><td>▲ Alta (high) / ● Média (medium)</td><td>Open activities depend on this one, and it is not between WIP and Deploy. It is high when a dependent has Priorizado Gestão or Legal. Prioritize it to free the chain.</td></tr>
+            <tr><th scope="row">Marco vencido (overdue milestone)</th><td>▲ Alta (high) / ● Média (medium)</td><td>In a team, the SIT, UAT or Deploy date has passed and the activity has not reached that stage yet, or is stopped. It is high for Deploy. Update the date or the status.</td></tr>
+            <tr><th scope="row">Concluída antes do predecessor (finished before the predecessor)</th><td>● Média (medium)</td><td>The activity is in Finished, but its predecessor is not. Review the link or the predecessor’s status.</td></tr>
+            <tr><th scope="row">Priorização desatualizada (outdated prioritization)</th><td>● Média (medium)</td><td>The activity is between WIP and Deploy with the prioritization Esperando (waiting). Update it to Priorizado.</td></tr>
+            <tr><th scope="row">Retorno alto sem prioridade (high return without priority)</th><td>● Média (medium)</td><td>The Retorno is in the top quartile of the open activities and above the median, and the activity is neither Priorizado nor has Priorizado Gestão. It needs at least 4 filled returns. Take it to management.</td></tr>
+            <tr><th scope="row">Obrigação sem prazo (obligation without a deadline)</th><td>● Média (medium)</td><td>The activity is Legal or Auditoria and no team has a Deploy date. Record the deadline.</td></tr>
+            <tr><th scope="row">Datas fora de ordem (dates out of order)</th><td>● Média (medium)</td><td>In a team, a milestone comes before the previous one in the order Início (start), SIT, UAT and Deploy. Fix the dates.</td></tr>
+            <tr><th scope="row">Retorno inválido (invalid return)</th><td>● Média (medium)</td><td>The Retorno came from the file as text that is not a number. Fix it so it counts in the road map.</td></tr>
+            <tr><th scope="row">Sem times (no teams)</th><td>● Média (medium)</td><td>Open activity with no team involved. Say who will work on it.</td></tr>
+            <tr><th scope="row">Sem request · Request repetido (no request · repeated request)</th><td>● Média (medium)</td><td>The activity has no request, or the same request appears in more than one activity. The request is the key of the Excel round trip.</td></tr>
+            <tr><th scope="row">Sem atualização (not updated)</th><td>● Média (medium) / ○ Baixa (low)</td><td>Open activity with no change in the app for more than 30 days. It is medium when the activity is in Stand-by or Blocked. Confirm the status with the teams.</td></tr>
+            <tr><th scope="row">Sem priorização · Sem Retorno (no prioritization · no return)</th><td>○ Baixa (low)</td><td>Open activity without prioritization or without Retorno. The Retorno weighs in criteria 6 and 7 of the road map.</td></tr>
+            <tr><th scope="row">Time sem task · Sem cronograma (team without task · no schedule)</th><td>○ Baixa (low)</td><td>A team involved has no task, or the activity is between WIP and Deploy with no date in any team.</td></tr>
+            <tr><th scope="row">Cadastro incompleto (incomplete record)</th><td>○ Baixa (low)</td><td>An open activity is missing Business Owner, source system or type.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <blockquote>The Advisor only sees the fields that are filled in. An activity with no suggestions may just have an up-to-date record, and a suggestion may not apply: “Avança sem o predecessor” is fine when the teams agreed to work in parallel.</blockquote>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
+    <section id="kanban-en" aria-labelledby="h-kanban-en">
+      <h2 id="h-kanban-en">Kanban</h2>
+      <p>The <strong>Kanban</strong> area shows the activities in columns, one per status, in the order Analysis, Sizing, WIP, SIT, UAT, Deploy, Finished, Stand-by and Blocked, with the count at the top of each column. Each card shows the request, the description, the flags, the teams and, if there is one, the predecessor, with the <strong>⚠ não concluído</strong> (not finished) warning when it is not yet in Finished. The filters at the top apply here too.</p>
+      <p><strong>Drag</strong> a card to another column to change its status. The target column gets a dashed outline while you drag, and dropping outside the columns or pressing <kbd>Esc</kbd> cancels. After the drop, a notice at the bottom shows the change, such as <strong>REQ0100111: Sizing → WIP</strong>, with a <strong>Desfazer</strong> (undo) button for a few seconds. On a phone, touch and hold the card before dragging; moving the finger without holding still scrolls the screen. With the keyboard, with the focus on the card, <kbd>Shift</kbd>+<kbd>→</kbd> and <kbd>Shift</kbd>+<kbd>←</kbd> move the activity to the next or previous status. The change sets the update date and is saved like any other edit.</p>
+      <figure>
+        <img src="rc_images/AtividadesPOKanban.png" alt="Kanban with the sample and the mouse over REQ0100114, in the Sizing column: it gets a strong border; an arrow starts at REQ0100136, in the Analysis column, labeled ↑ predecessora, and reaches REQ0100114; another starts at REQ0100114 and reaches REQ0100101, in the WIP column, labeled ↓ depende dela; the other activities are dimmed" loading="lazy" width="1280" height="900">
+        <figcaption>The mouse over REQ0100114 highlights its predecessor and the activity that depends on it; the arrows show the direction of the dependency.</figcaption>
+      </figure>
+      <p>The related activities of an activity are its predecessors, going up the chain, and all those that depend on it, directly or indirectly. There are four ways to see them:</p>
+      <ul>
+        <li><strong>Hover</strong> over a card, or move the focus to it with <kbd>Tab</kbd>. The related ones get a border and a label, <strong>↑ predecessora</strong> (predecessor) or <strong>↓ depende dela</strong> (depends on it), and arrows link the cards in the direction of the dependency: each arrow starts at the predecessor and points to the activity that depends on it. The others are dimmed. The label and the arrowhead make sure the relation does not rely on color alone.</li>
+        <li><strong>Hold <kbd>Ctrl</kbd></strong> (<kbd>⌘</kbd> on a Mac) with the mouse or the focus on a card to see <strong>only the related ones</strong> while the key is held; when you release it, the board comes back. The board rearranges itself, so the card may move.</li>
+        <li><strong>Hold <kbd>Ctrl</kbd> and click</strong> an activity, or press <kbd>Ctrl</kbd>+<kbd>Enter</kbd>, to <strong>pin</strong> that view. A band says how many there are and from which activity, and the chosen activity gets the <strong>● selecionada</strong> (selected) label. In this mode the filters do not apply, so no related activity is hidden.</li>
+        <li>Use the card’s <strong>🔗</strong> button, which shows how many related activities it has. It does the same as <kbd>Ctrl</kbd>+click and is the way to go on a phone, where there is no mouse or <kbd>Ctrl</kbd>.</li>
+      </ul>
+      <p>The <strong>Mostrar todas as setas de dependência</strong> (show all dependency arrows) option, above the board, also draws the other dependencies, as a lighter dashed line.</p>
+      <p>To go back to the whole board, click <strong>Mostrar todas</strong> (show all), press <kbd>Esc</kbd>, <kbd>Ctrl</kbd>+click the same activity again or change a filter. A plain click, or <kbd>Enter</kbd>, opens the activity in the editing panel.</p>
+      <a class="back" href="#top">↑ Back to top</a>
+    </section>
+
     <section id="erros-en" aria-labelledby="h-erros-en">
       <h2 id="h-erros-en">Common mistakes</h2>
       <ul class="myths">
@@ -983,6 +1112,9 @@ Depois, use Salvar › Salvar JSON para guardar.</pre>
             <tr><th scope="row">Priorização: Priorizar · Priorizado · Esperando</th><td>Prioritization: Prioritize · Prioritized · Waiting</td><td>Priorità: Da priorizzare · Priorizzata · In attesa</td><td>Priorización: Priorizar · Priorizado · Esperando</td></tr>
             <tr><th scope="row">Sistema originador</th><td>Originating system</td><td>Sistema di origine</td><td>Sistema de origen</td></tr>
             <tr><th scope="row">Road map · Ordem do road map · à frente da seguinte por · por time</th><td>Road map · Road map order · ahead of the next one by · per team</td><td>Road map · Ordine del road map · davanti alla successiva per · per team</td><td>Road map · Orden del road map · delante de la siguiente por · por equipo</td></tr>
+            <tr><th scope="row">Kanban · predecessora · depende dela · selecionada · Mostrar todas · não concluído</th><td>Kanban · predecessor · depends on it · selected · Show all · not finished</td><td>Kanban · predecessore · dipende da essa · selezionata · Mostra tutte · non concluso</td><td>Kanban · predecesora · depende de ella · seleccionada · Mostrar todas · no terminada</td></tr>
+            <tr><th scope="row">Desfazer · Mostrar todas as setas de dependência</th><td>Undo · Show all dependency arrows</td><td>Annulla · Mostra tutte le frecce di dipendenza</td><td>Deshacer · Mostrar todas las flechas de dependencia</td></tr>
+            <tr><th scope="row">Advisor · Todas · Média e alta · Só alta · Sugestões por regra · Maior gravidade · Alta · Média · Baixa</th><td>Advisor · All · Medium and high · High only · Suggestions by rule · Highest severity · High · Medium · Low</td><td>Advisor · Tutte · Media e alta · Solo alta · Suggerimenti per regola · Gravità massima · Alta · Media · Bassa</td><td>Advisor · Todas · Media y alta · Solo alta · Sugerencias por regla · Mayor gravedad · Alta · Media · Baja</td></tr>
             <tr><th scope="row">Status: 2 selecionados</th><td>Status: 2 selected</td><td>Status: 2 selezionati</td><td>Status: 2 seleccionados</td></tr>
             <tr><th scope="row">Todas as dependências · Aguarda o predecessor · Com predecessor · Sem predecessor · É predecessora de outra</th><td>All dependencies · Waiting for the predecessor · Has a predecessor · No predecessor · Is the predecessor of another</td><td>Tutte le dipendenze · In attesa del predecessore · Con predecessore · Senza predecessore · È predecessore di un'altra</td><td>Todas las dependencias · Espera a la predecesora · Con predecesora · Sin predecesora · Es predecesora de otra</td></tr>
             <tr><th scope="row">predecessor concluído · aguarda o predecessor · é a predecessora dela</th><td>predecessor finished · waiting for the predecessor · it is its predecessor</td><td>predecessore concluso · in attesa del predecessore · è la sua predecessora</td><td>predecesora terminada · espera a la predecesora · es su predecesora</td></tr>
@@ -1010,6 +1142,8 @@ Depois, use Salvar › Salvar JSON para guardar.</pre>
         <details><summary>6. You deleted a row in the Atividades tab of the spreadsheet and imported it. What happens to the activity?</summary><p>It is removed from the app. The summary before the import says how many activities will be removed, and you can cancel.</p></details>
         <details><summary>7. How does the app know which activity a row of the Times tab belongs to?</summary><p>By the Request. It has to be the same in both tabs and appear only once in the Atividades tab.</p></details>
         <details><summary>8. An activity with Priorizado Gestão shows up at the end of the road map. Why?</summary><p>Because its predecessor is not yet in Finished. That is the first ordering criterion: it only moves up once the predecessor is finished.</p></details>
+        <details><summary>9. The Advisor shows ▲ Alta Avança sem o predecessor on an activity in WIP. Is it wrong?</summary><p>Not necessarily. The rule only sees that the predecessor is not yet in Finished. Check with the teams: if they agreed to work in parallel, go on; if not, move the activity to Stand-by or Blocked.</p></details>
+        <details><summary>10. In the Kanban, how do you see only the activities linked to one of them on a phone, with no mouse or Ctrl?</summary><p>Tap the card’s 🔗 button. It shows only the related ones, like Ctrl+click; to go back, tap Mostrar todas.</p></details>
       </div>
       <a class="back" href="#top">↑ Back to top</a>
     </section>
@@ -1071,6 +1205,8 @@ Depois, use Salvar › Salvar JSON para guardar.</pre>
       <li><a href="#matriz-it">La matrice per team</a></li>
       <li><a href="#insights-it">Insights</a></li>
       <li><a href="#roadmap-it">Road map</a></li>
+      <li><a href="#advisor-it">Advisor</a></li>
+      <li><a href="#kanban-it">Kanban</a></li>
       <li><a href="#erros-it">Errori comuni</a></li>
       <li><a href="#interface-it">Lingua dell'interfaccia</a></li>
       <li><a href="#revisao-it">Ripasso veloce</a></li>
@@ -1240,6 +1376,8 @@ Depois, use Salvar › Salvar JSON para guardar.</pre>
         <li>Fai clic su <strong>Matriz por time</strong> e trova la nuova attività nella colonna BI.</li>
         <li>Fai clic su <strong>Insights</strong>. Nella mappa <strong>Times × status</strong>, fai clic su una cella: l'app torna all'elenco con quel team e quello stato filtrati.</li>
         <li>Fai clic su <strong>Road map</strong>. La prima posizione è REQ0100126, che ha Priorizado Gestão. REQ0100101, anch'essa Priorizado Gestão e in WIP, compare tra le ultime, con <strong>⚠ aguarda o predecessor REQ0100114 (Sizing)</strong> (in attesa del predecessore), subito dopo la stessa REQ0100114. Sotto ogni descrizione, l'app indica quale criterio ha deciso la posizione.</li>
+        <li>Fai clic su <strong>Advisor</strong>. REQ0100101 compare per seconda, con <strong>▲ Alta Avança sem o predecessor</strong> (avanza senza il predecessore) e <strong>● Média Priorização desatualizada</strong> (priorità non aggiornata); la seconda viene dal passo 6, in cui hai cambiato la priorità in Esperando. Fai clic su <strong>Só alta</strong> (solo alta): restano 7 attività. Fai clic su <strong>Todas</strong> (tutte) e poi sul request <strong>REQ0100125</strong> per aprire l'attività.</li>
+        <li>Fai clic su <strong>Kanban</strong>. Passa il mouse su <strong>REQ0100114</strong>, nella colonna Sizing: REQ0100136 compare con <strong>↑ predecessora</strong> (predecessore), REQ0100101 con <strong>↓ depende dela</strong> (dipende da essa), delle frecce collegano le tre nel senso della dipendenza e le altre sono attenuate. Senza spostare il mouse, tieni premuto <kbd>Ctrl</kbd>: la bacheca mostra solo quelle 3; rilascia e torna com'era. Poi trascina <strong>REQ0100111</strong> dalla colonna Sizing alla colonna WIP: l'avviso mostra <strong>REQ0100111: Sizing → WIP</strong>; fai clic su <strong>Desfazer</strong> (annulla).</li>
         <li>Fai clic su <strong>Salvar › Salvar Excel</strong>. Il browser scarica il foglio <code>Atividades entre POs AAAAMMGG HHmmSS.xlsx</code>.</li>
         <li>Apri il foglio in Excel. Nella scheda <strong>Atividades</strong>, cambia lo Status di REQ0100101 in <strong>SIT</strong> e salva in formato .xlsx.</li>
         <li>Nell'app, fai clic su <strong>Abrir › Abrir Excel</strong> e scegli il foglio. Il riepilogo dice “A planilha tem 41 atividades: 0 novas, 1 alterada, 40 sem alteração” (41 attività: 0 nuove, 1 modificata, 40 invariate); conferma. Nell'elenco, REQ0100101 appare in SIT.</li>
@@ -1325,6 +1463,64 @@ Depois, use Salvar › Salvar JSON para guardar.</pre>
       <a class="back" href="#top">↑ Torna su</a>
     </section>
 
+    <section id="advisor-it" aria-labelledby="h-advisor-it">
+      <h2 id="h-advisor-it">Advisor</h2>
+      <p>L'area <strong>Advisor</strong> analizza ogni attività e suggerisce cosa rivedere. Usa regole fisse, scritte nell'app stessa: funziona nel browser, non invia nulla all'esterno e non usa intelligenza artificiale. Per questo ogni suggerimento dice quale regola l'ha generato e perché.</p>
+      <figure>
+        <img src="rc_images/AtividadesPOAdvisor.png" alt="Advisor con l'esempio dopo il passo 10 del percorso: la spiegazione, il riepilogo con 7 suggerimenti di gravità alta, 20 media e 28 bassa in 31 di 41 attività, i pulsanti Todas, Média e alta e Só alta, e le schede delle attività REQ0100125, REQ0100101 e REQ0100119, ognuna con i suoi suggerimenti marcati per gravità" loading="lazy" width="1280" height="900">
+        <figcaption>L'Advisor con l'esempio, dopo i passi da 1 a 10 del percorso. Ogni scheda è un'attività; ogni riga, un suggerimento.</figcaption>
+      </figure>
+      <p>Ogni suggerimento ha una gravità, indicata con simbolo e nome oltre che con il colore: <strong>▲ Alta</strong>, <strong>● Média</strong> (media) e <strong>○ Baixa</strong> (bassa). Le attività con i suggerimenti più gravi vengono prima. In alto ci sono i totali per gravità e i pulsanti <strong>Todas</strong> (tutte), <strong>Média e alta</strong> (media e alta) e <strong>Só alta</strong> (solo alta). <strong>Sugestões por regra</strong> (suggerimenti per regola) apre una tabella con quante volte è comparsa ogni regola, per trovare un problema che si ripete in molte attività. Fai clic sul request di una scheda per aprire l'attività e correggerla. I filtri in alto valgono anche qui.</p>
+      <p>Le regole, dalla più grave alla meno grave:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Regola</th><th scope="col">Gravità</th><th scope="col">Quando compare e cosa suggerisce</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Ciclo de dependência (ciclo di dipendenza)</th><td>▲ Alta</td><td>Seguendo i predecessori, la catena torna all'attività stessa. Rompi il ciclo: nessuna di esse può finire per prima.</td></tr>
+            <tr><th scope="row">Avança sem o predecessor (avanza senza il predecessore)</th><td>▲ Alta</td><td>L'attività è in WIP, SIT, UAT o Deploy e il predecessore non è ancora in Finished. Verifica con i team se può proseguire; altrimenti passala a Stand-by o Blocked.</td></tr>
+            <tr><th scope="row">Predecessor parado (predecessore fermo)</th><td>▲ Alta</td><td>Il predecessore di un'attività aperta è in Stand-by o Blocked. Porta l'impedimento del predecessore a un livello superiore.</td></tr>
+            <tr><th scope="row">Prioridade da gestão parada (priorità della direzione ferma)</th><td>▲ Alta</td><td>L'attività ha Priorizado Gestão ed è in Stand-by o Blocked. Porta l'impedimento alla direzione.</td></tr>
+            <tr><th scope="row">Segura outras atividades (trattiene altre attività)</th><td>▲ Alta / ● Média (media)</td><td>Attività aperte dipendono da questa, che non è tra WIP e Deploy. È alta quando una dipendente ha Priorizado Gestão o Legal. Dalle priorità per liberare la catena.</td></tr>
+            <tr><th scope="row">Marco vencido (scadenza superata)</th><td>▲ Alta / ● Média (media)</td><td>In un team, la data di SIT, UAT o Deploy è passata e l'attività non ha ancora raggiunto quella fase, oppure è ferma. È alta per Deploy. Aggiorna la data o lo stato.</td></tr>
+            <tr><th scope="row">Concluída antes do predecessor (conclusa prima del predecessore)</th><td>● Média (media)</td><td>L'attività è in Finished, ma il predecessore no. Rivedi il collegamento o lo stato del predecessore.</td></tr>
+            <tr><th scope="row">Priorização desatualizada (priorità non aggiornata)</th><td>● Média (media)</td><td>L'attività è tra WIP e Deploy con la priorità Esperando (in attesa). Aggiornala a Priorizado.</td></tr>
+            <tr><th scope="row">Retorno alto sem prioridade (ritorno alto senza priorità)</th><td>● Média (media)</td><td>Il Retorno è nel quartile superiore delle attività aperte e sopra la mediana, e l'attività non è Priorizado né ha Priorizado Gestão. Serve almeno 4 ritorni compilati. Portala alla direzione.</td></tr>
+            <tr><th scope="row">Obrigação sem prazo (obbligo senza scadenza)</th><td>● Média (media)</td><td>L'attività è Legal o Auditoria e nessun team ha una data di Deploy. Registra la scadenza.</td></tr>
+            <tr><th scope="row">Datas fora de ordem (date fuori ordine)</th><td>● Média (media)</td><td>In un team, una tappa viene prima della precedente nell'ordine Início (inizio), SIT, UAT e Deploy. Correggi le date.</td></tr>
+            <tr><th scope="row">Retorno inválido (ritorno non valido)</th><td>● Média (media)</td><td>Il Retorno è arrivato dal file come testo che non è un numero. Correggilo perché conti nel road map.</td></tr>
+            <tr><th scope="row">Sem times (nessun team)</th><td>● Média (media)</td><td>Attività aperta senza alcun team coinvolto. Indica chi ci lavorerà.</td></tr>
+            <tr><th scope="row">Sem request · Request repetido (nessun request · request ripetuto)</th><td>● Média (media)</td><td>L'attività non ha request, oppure lo stesso request compare in più di una. Il request è la chiave dell'andata e ritorno con Excel.</td></tr>
+            <tr><th scope="row">Sem atualização (non aggiornata)</th><td>● Média (media) / ○ Baixa (bassa)</td><td>Attività aperta senza modifiche nell'app da più di 30 giorni. È media quando l'attività è in Stand-by o Blocked. Conferma lo stato con i team.</td></tr>
+            <tr><th scope="row">Sem priorização · Sem Retorno (senza priorità · senza ritorno)</th><td>○ Baixa (bassa)</td><td>Attività aperta senza priorità o senza Retorno. Il Retorno pesa nei criteri 6 e 7 del road map.</td></tr>
+            <tr><th scope="row">Time sem task · Sem cronograma (team senza task · senza calendario)</th><td>○ Baixa (bassa)</td><td>Un team coinvolto non ha task, oppure l'attività è tra WIP e Deploy senza alcuna data nei team.</td></tr>
+            <tr><th scope="row">Cadastro incompleto (registrazione incompleta)</th><td>○ Baixa (bassa)</td><td>Manca Business Owner, sistema di origine o tipo in un'attività aperta.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <blockquote>L'Advisor vede solo i campi compilati. Un'attività senza suggerimenti può solo avere la registrazione in ordine, e un suggerimento può non valere: “Avança sem o predecessor” va bene quando i team hanno concordato di lavorare in parallelo.</blockquote>
+      <a class="back" href="#top">↑ Torna su</a>
+    </section>
+
+    <section id="kanban-it" aria-labelledby="h-kanban-it">
+      <h2 id="h-kanban-it">Kanban</h2>
+      <p>L'area <strong>Kanban</strong> mostra le attività in colonne, una per stato, nell'ordine Analysis, Sizing, WIP, SIT, UAT, Deploy, Finished, Stand-by e Blocked, con il numero in cima a ogni colonna. Ogni scheda riporta il request, la descrizione, i contrassegni, i team e, se c'è, il predecessore, con l'avviso <strong>⚠ não concluído</strong> (non concluso) quando non è ancora in Finished. I filtri in alto valgono anche qui.</p>
+      <p><strong>Trascina</strong> una scheda in un'altra colonna per cambiarne lo stato. La colonna di destinazione ha un bordo tratteggiato durante il trascinamento, e rilasciare fuori dalle colonne o premere <kbd>Esc</kbd> annulla. Dopo il rilascio, un avviso in basso mostra il cambio, come <strong>REQ0100111: Sizing → WIP</strong>, con il pulsante <strong>Desfazer</strong> (annulla) per qualche secondo. Sul cellulare, tocca e tieni premuta la scheda prima di trascinare; muovere il dito senza tenere premuto continua a scorrere lo schermo. Da tastiera, con il focus sulla scheda, <kbd>Shift</kbd>+<kbd>→</kbd> e <kbd>Shift</kbd>+<kbd>←</kbd> portano l'attività allo stato successivo o precedente. Il cambio aggiorna la data di modifica e viene salvato come qualsiasi altra modifica.</p>
+      <figure>
+        <img src="rc_images/AtividadesPOKanban.png" alt="Kanban con l'esempio e il mouse sopra REQ0100114, nella colonna Sizing: ha il bordo marcato; una freccia parte da REQ0100136, nella colonna Analysis, con l'etichetta ↑ predecessora, e arriva a REQ0100114; un'altra parte da REQ0100114 e arriva a REQ0100101, nella colonna WIP, con l'etichetta ↓ depende dela; le altre attività sono attenuate" loading="lazy" width="1280" height="900">
+        <figcaption>Il mouse sopra REQ0100114 evidenzia il suo predecessore e l'attività che dipende da essa; le frecce mostrano il senso della dipendenza.</figcaption>
+      </figure>
+      <p>Le attività collegate a un'attività sono i suoi predecessori, risalendo la catena, e tutte quelle che dipendono da essa, direttamente o indirettamente. Ci sono quattro modi per vederle:</p>
+      <ul>
+        <li><strong>Passa il mouse</strong> su una scheda, oppure portaci il focus con <kbd>Tab</kbd>. Le collegate ricevono un bordo e un'etichetta, <strong>↑ predecessora</strong> (predecessore) o <strong>↓ depende dela</strong> (dipende da essa), e delle frecce collegano le schede nel senso della dipendenza: ogni freccia parte dal predecessore e punta all'attività che dipende da esso. Le altre sono attenuate. L'etichetta e la punta della freccia fanno sì che la relazione non dipenda solo dal colore.</li>
+        <li><strong>Tieni premuto <kbd>Ctrl</kbd></strong> (<kbd>⌘</kbd> su Mac) con il mouse o il focus su una scheda per vedere <strong>solo le collegate</strong> finché il tasto è premuto; quando lo rilasci, la bacheca torna com'era. La bacheca si riorganizza, quindi la scheda può spostarsi.</li>
+        <li><strong>Tieni premuto <kbd>Ctrl</kbd> e fai clic</strong> su un'attività, oppure premi <kbd>Ctrl</kbd>+<kbd>Invio</kbd>, per <strong>fissare</strong> questa vista. Una fascia dice quante sono e a partire da quale attività, e l'attività scelta riceve l'etichetta <strong>● selecionada</strong> (selezionata). In questa modalità i filtri non valgono, così nessuna collegata resta nascosta.</li>
+        <li>Usa il pulsante <strong>🔗</strong> della scheda, che mostra quante collegate ha l'attività. Fa lo stesso del <kbd>Ctrl</kbd>+clic ed è la strada sul cellulare, dove non ci sono mouse né <kbd>Ctrl</kbd>.</li>
+      </ul>
+      <p>L'opzione <strong>Mostrar todas as setas de dependência</strong> (mostra tutte le frecce di dipendenza), sopra la bacheca, disegna anche le altre dipendenze, con una linea tratteggiata più chiara.</p>
+      <p>Per tornare alla bacheca intera, fai clic su <strong>Mostrar todas</strong> (mostra tutte), premi <kbd>Esc</kbd>, ripeti il <kbd>Ctrl</kbd>+clic sulla stessa attività o cambia un filtro. Un clic semplice, o <kbd>Invio</kbd>, apre l'attività nel pannello di modifica.</p>
+      <a class="back" href="#top">↑ Torna su</a>
+    </section>
+
     <section id="erros-it" aria-labelledby="h-erros-it">
       <h2 id="h-erros-it">Errori comuni</h2>
       <ul class="myths">
@@ -1367,6 +1563,9 @@ Depois, use Salvar › Salvar JSON para guardar.</pre>
             <tr><th scope="row">Priorização: Priorizar · Priorizado · Esperando</th><td>Prioritization: Prioritize · Prioritized · Waiting</td><td>Priorità: Da priorizzare · Priorizzata · In attesa</td><td>Priorización: Priorizar · Priorizado · Esperando</td></tr>
             <tr><th scope="row">Sistema originador</th><td>Originating system</td><td>Sistema di origine</td><td>Sistema de origen</td></tr>
             <tr><th scope="row">Road map · Ordem do road map · à frente da seguinte por · por time</th><td>Road map · Road map order · ahead of the next one by · per team</td><td>Road map · Ordine del road map · davanti alla successiva per · per team</td><td>Road map · Orden del road map · delante de la siguiente por · por equipo</td></tr>
+            <tr><th scope="row">Kanban · predecessora · depende dela · selecionada · Mostrar todas · não concluído</th><td>Kanban · predecessor · depends on it · selected · Show all · not finished</td><td>Kanban · predecessore · dipende da essa · selezionata · Mostra tutte · non concluso</td><td>Kanban · predecesora · depende de ella · seleccionada · Mostrar todas · no terminada</td></tr>
+            <tr><th scope="row">Desfazer · Mostrar todas as setas de dependência</th><td>Undo · Show all dependency arrows</td><td>Annulla · Mostra tutte le frecce di dipendenza</td><td>Deshacer · Mostrar todas las flechas de dependencia</td></tr>
+            <tr><th scope="row">Advisor · Todas · Média e alta · Só alta · Sugestões por regra · Maior gravidade · Alta · Média · Baixa</th><td>Advisor · All · Medium and high · High only · Suggestions by rule · Highest severity · High · Medium · Low</td><td>Advisor · Tutte · Media e alta · Solo alta · Suggerimenti per regola · Gravità massima · Alta · Media · Bassa</td><td>Advisor · Todas · Media y alta · Solo alta · Sugerencias por regla · Mayor gravedad · Alta · Media · Baja</td></tr>
             <tr><th scope="row">Status: 2 selecionados</th><td>Status: 2 selected</td><td>Status: 2 selezionati</td><td>Status: 2 seleccionados</td></tr>
             <tr><th scope="row">Todas as dependências · Aguarda o predecessor · Com predecessor · Sem predecessor · É predecessora de outra</th><td>All dependencies · Waiting for the predecessor · Has a predecessor · No predecessor · Is the predecessor of another</td><td>Tutte le dipendenze · In attesa del predecessore · Con predecessore · Senza predecessore · È predecessore di un'altra</td><td>Todas las dependencias · Espera a la predecesora · Con predecesora · Sin predecesora · Es predecesora de otra</td></tr>
             <tr><th scope="row">predecessor concluído · aguarda o predecessor · é a predecessora dela</th><td>predecessor finished · waiting for the predecessor · it is its predecessor</td><td>predecessore concluso · in attesa del predecessore · è la sua predecessora</td><td>predecesora terminada · espera a la predecesora · es su predecesora</td></tr>
@@ -1394,6 +1593,8 @@ Depois, use Salvar › Salvar JSON para guardar.</pre>
         <details><summary>6. Hai cancellato una riga nella scheda Atividades del foglio e l'hai importato. Cosa succede all'attività?</summary><p>Viene rimossa dall'app. Il riepilogo prima dell'importazione dice quante attività saranno rimosse, e puoi annullare.</p></details>
         <details><summary>7. Come sa l'app a quale attività appartiene una riga della scheda Times?</summary><p>Dal Request. Deve essere uguale nelle due schede e comparire una sola volta nella scheda Atividades.</p></details>
         <details><summary>8. Un'attività con Priorizado Gestão compare in fondo al road map. Perché?</summary><p>Perché il suo predecessore non è ancora in Finished. È il primo criterio dell'ordine: sale solo quando il predecessore è concluso.</p></details>
+        <details><summary>9. L'Advisor mostra ▲ Alta Avança sem o predecessor su un'attività in WIP. È sbagliata?</summary><p>Non necessariamente. La regola vede solo che il predecessore non è ancora in Finished. Verifica con i team: se hanno concordato di lavorare in parallelo, prosegui; altrimenti passa l'attività a Stand-by o Blocked.</p></details>
+        <details><summary>10. Nel Kanban, come vedere solo le attività collegate a una di esse sul cellulare, senza mouse né Ctrl?</summary><p>Tocca il pulsante 🔗 della scheda. Mostra solo le collegate, come il Ctrl+clic; per tornare indietro, tocca Mostrar todas.</p></details>
       </div>
       <a class="back" href="#top">↑ Torna su</a>
     </section>
@@ -1455,6 +1656,8 @@ Depois, use Salvar › Salvar JSON para guardar.</pre>
       <li><a href="#matriz-es">La matriz por equipo</a></li>
       <li><a href="#insights-es">Insights</a></li>
       <li><a href="#roadmap-es">Road map</a></li>
+      <li><a href="#advisor-es">Advisor</a></li>
+      <li><a href="#kanban-es">Kanban</a></li>
       <li><a href="#erros-es">Errores comunes</a></li>
       <li><a href="#interface-es">Idioma de la interfaz</a></li>
       <li><a href="#revisao-es">Repaso rápido</a></li>
@@ -1624,6 +1827,8 @@ Depois, use Salvar › Salvar JSON para guardar.</pre>
         <li>Haz clic en <strong>Matriz por time</strong> y ubica la nueva actividad en la columna BI.</li>
         <li>Haz clic en <strong>Insights</strong>. En el mapa <strong>Times × status</strong>, haz clic en una celda: la app vuelve a la lista con ese equipo y ese estado filtrados.</li>
         <li>Haz clic en <strong>Road map</strong>. La primera posición es REQ0100126, que tiene Priorizado Gestão. REQ0100101, también Priorizado Gestão y en WIP, aparece entre las últimas, con <strong>⚠ aguarda o predecessor REQ0100114 (Sizing)</strong> (espera a la predecesora), justo después de la propia REQ0100114. Bajo cada descripción, la app dice qué criterio decidió la posición.</li>
+        <li>Haz clic en <strong>Advisor</strong>. REQ0100101 aparece en segundo lugar, con <strong>▲ Alta Avança sem o predecessor</strong> (avanza sin la predecesora) y <strong>● Média Priorização desatualizada</strong> (priorización desactualizada); la segunda viene del paso 6, en el que cambiaste la priorización a Esperando. Haz clic en <strong>Só alta</strong> (solo alta): quedan 7 actividades. Haz clic en <strong>Todas</strong> y luego en el request <strong>REQ0100125</strong> para abrir la actividad.</li>
+        <li>Haz clic en <strong>Kanban</strong>. Pasa el mouse sobre <strong>REQ0100114</strong>, en la columna Sizing: REQ0100136 aparece con <strong>↑ predecessora</strong> (predecesora), REQ0100101 con <strong>↓ depende dela</strong> (depende de ella), unas flechas unen las tres en el sentido de la dependencia y las otras quedan atenuadas. Sin mover el mouse, mantén <kbd>Ctrl</kbd>: el tablero muestra solo esas 3; suéltala y vuelve. Después arrastra <strong>REQ0100111</strong> de la columna Sizing a la columna WIP: el aviso muestra <strong>REQ0100111: Sizing → WIP</strong>; haz clic en <strong>Desfazer</strong> (deshacer).</li>
         <li>Haz clic en <strong>Salvar › Salvar Excel</strong>. El navegador descarga la planilla <code>Atividades entre POs AAAAMMDD HHmmSS.xlsx</code>.</li>
         <li>Abre la planilla en Excel. En la hoja <strong>Atividades</strong>, cambia el Status de REQ0100101 a <strong>SIT</strong> y guarda en formato .xlsx.</li>
         <li>En la app, haz clic en <strong>Abrir › Abrir Excel</strong> y elige la planilla. El resumen dice “A planilha tem 41 atividades: 0 novas, 1 alterada, 40 sem alteração” (41 actividades: 0 nuevas, 1 cambiada, 40 sin cambios); confirma. En la lista, REQ0100101 aparece en SIT.</li>
@@ -1709,6 +1914,64 @@ Depois, use Salvar › Salvar JSON para guardar.</pre>
       <a class="back" href="#top">↑ Volver arriba</a>
     </section>
 
+    <section id="advisor-es" aria-labelledby="h-advisor-es">
+      <h2 id="h-advisor-es">Advisor</h2>
+      <p>El área <strong>Advisor</strong> analiza cada actividad y sugiere qué revisar. Usa reglas fijas, escritas en la propia app: funciona en el navegador, no envía nada afuera y no usa inteligencia artificial. Por eso cada sugerencia dice qué regla la generó y por qué.</p>
+      <figure>
+        <img src="rc_images/AtividadesPOAdvisor.png" alt="Advisor con el ejemplo después del paso 10 del recorrido: la explicación, el resumen con 7 sugerencias de gravedad alta, 20 media y 28 baja en 31 de 41 actividades, los botones Todas, Média e alta y Só alta, y las tarjetas de las actividades REQ0100125, REQ0100101 y REQ0100119, cada una con sus sugerencias marcadas por gravedad" loading="lazy" width="1280" height="900">
+        <figcaption>El Advisor con el ejemplo, después de los pasos 1 a 10 del recorrido. Cada tarjeta es una actividad; cada línea, una sugerencia.</figcaption>
+      </figure>
+      <p>Cada sugerencia tiene una gravedad, marcada con símbolo y nombre además del color: <strong>▲ Alta</strong>, <strong>● Média</strong> (media) y <strong>○ Baixa</strong> (baja). Las actividades con las sugerencias más graves van primero. Arriba están los totales por gravedad y los botones <strong>Todas</strong>, <strong>Média e alta</strong> (media y alta) y <strong>Só alta</strong> (solo alta). <strong>Sugestões por regra</strong> (sugerencias por regla) abre una tabla con cuántas veces apareció cada regla, para encontrar un problema que se repite en muchas actividades. Haz clic en el request de una tarjeta para abrir la actividad y corregirla. Los filtros de arriba valen también aquí.</p>
+      <p>Las reglas, de la más grave a la menos grave:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Regla</th><th scope="col">Gravedad</th><th scope="col">Cuándo aparece y qué sugiere</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Ciclo de dependência (ciclo de dependencia)</th><td>▲ Alta</td><td>Siguiendo las predecesoras, la cadena vuelve a la propia actividad. Deshaz el ciclo: ninguna puede terminar primero.</td></tr>
+            <tr><th scope="row">Avança sem o predecessor (avanza sin la predecesora)</th><td>▲ Alta</td><td>La actividad está en WIP, SIT, UAT o Deploy y su predecesora todavía no está en Finished. Confirma con los equipos si puede seguir; si no, pásala a Stand-by o Blocked.</td></tr>
+            <tr><th scope="row">Predecessor parado (predecesora detenida)</th><td>▲ Alta</td><td>La predecesora de una actividad abierta está en Stand-by o Blocked. Escala el impedimento de la predecesora.</td></tr>
+            <tr><th scope="row">Prioridade da gestão parada (prioridad de la gerencia detenida)</th><td>▲ Alta</td><td>La actividad tiene Priorizado Gestão y está en Stand-by o Blocked. Lleva el impedimento a la gerencia.</td></tr>
+            <tr><th scope="row">Segura outras atividades (retiene otras actividades)</th><td>▲ Alta / ● Média (media)</td><td>Hay actividades abiertas que dependen de esta, y ella no está entre WIP y Deploy. Es alta cuando alguna dependiente tiene Priorizado Gestão o Legal. Priorízala para liberar la cadena.</td></tr>
+            <tr><th scope="row">Marco vencido (hito vencido)</th><td>▲ Alta / ● Média (media)</td><td>En un equipo, la fecha de SIT, UAT o Deploy ya pasó y la actividad todavía no llegó a esa etapa, o está detenida. Es alta para Deploy. Actualiza la fecha o el estado.</td></tr>
+            <tr><th scope="row">Concluída antes do predecessor (terminada antes que la predecesora)</th><td>● Média (media)</td><td>La actividad está en Finished, pero su predecesora no. Revisa el vínculo o el estado de la predecesora.</td></tr>
+            <tr><th scope="row">Priorização desatualizada (priorización desactualizada)</th><td>● Média (media)</td><td>La actividad está entre WIP y Deploy con la priorización Esperando (en espera). Actualízala a Priorizado.</td></tr>
+            <tr><th scope="row">Retorno alto sem prioridade (retorno alto sin prioridad)</th><td>● Média (media)</td><td>El Retorno está en el cuartil superior de las actividades abiertas y por encima de la mediana, y la actividad no está Priorizado ni tiene Priorizado Gestão. Requiere al menos 4 retornos completos. Llévala a la gerencia.</td></tr>
+            <tr><th scope="row">Obrigação sem prazo (obligación sin plazo)</th><td>● Média (media)</td><td>La actividad es Legal o Auditoria y ningún equipo tiene fecha de Deploy. Registra el plazo.</td></tr>
+            <tr><th scope="row">Datas fora de ordem (fechas fuera de orden)</th><td>● Média (media)</td><td>En un equipo, un hito viene antes del anterior en el orden Início (inicio), SIT, UAT y Deploy. Corrige las fechas.</td></tr>
+            <tr><th scope="row">Retorno inválido (retorno inválido)</th><td>● Média (media)</td><td>El Retorno vino del archivo como texto que no es un número. Corrígelo para que cuente en el road map.</td></tr>
+            <tr><th scope="row">Sem times (sin equipos)</th><td>● Média (media)</td><td>Actividad abierta sin ningún equipo involucrado. Indica quién va a trabajar en ella.</td></tr>
+            <tr><th scope="row">Sem request · Request repetido (sin request · request repetido)</th><td>● Média (media)</td><td>La actividad no tiene request, o el mismo request aparece en más de una. El request es la clave de la ida y vuelta por Excel.</td></tr>
+            <tr><th scope="row">Sem atualização (sin actualización)</th><td>● Média (media) / ○ Baixa (baja)</td><td>Actividad abierta sin cambios en la app hace más de 30 días. Es media cuando está en Stand-by o Blocked. Confirma el estado con los equipos.</td></tr>
+            <tr><th scope="row">Sem priorização · Sem Retorno (sin priorización · sin retorno)</th><td>○ Baixa (baja)</td><td>Actividad abierta sin priorización o sin Retorno. El Retorno pesa en los criterios 6 y 7 del road map.</td></tr>
+            <tr><th scope="row">Time sem task · Sem cronograma (equipo sin task · sin cronograma)</th><td>○ Baixa (baja)</td><td>Un equipo involucrado no tiene task, o la actividad está entre WIP y Deploy sin ninguna fecha en los equipos.</td></tr>
+            <tr><th scope="row">Cadastro incompleto (registro incompleto)</th><td>○ Baixa (baja)</td><td>A una actividad abierta le falta Business Owner, sistema de origen o tipo.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <blockquote>El Advisor solo ve los campos completos. Una actividad sin sugerencias puede solo tener el registro al día, y una sugerencia puede no aplicar: “Avança sem o predecessor” es aceptable cuando los equipos acordaron trabajar en paralelo.</blockquote>
+      <a class="back" href="#top">↑ Volver al inicio</a>
+    </section>
+
+    <section id="kanban-es" aria-labelledby="h-kanban-es">
+      <h2 id="h-kanban-es">Kanban</h2>
+      <p>El área <strong>Kanban</strong> muestra las actividades en columnas, una por estado, en el orden Analysis, Sizing, WIP, SIT, UAT, Deploy, Finished, Stand-by y Blocked, con la cantidad arriba de cada columna. Cada tarjeta trae el request, la descripción, los marcadores, los equipos y, si la hay, la predecesora, con el aviso <strong>⚠ não concluído</strong> (no terminada) cuando todavía no está en Finished. Los filtros de arriba valen también aquí.</p>
+      <p><strong>Arrastra</strong> una tarjeta a otra columna para cambiar su estado. La columna de destino queda con borde punteado mientras arrastras, y soltar fuera de las columnas o pulsar <kbd>Esc</kbd> cancela. Después de soltar, un aviso abajo muestra el cambio, como <strong>REQ0100111: Sizing → WIP</strong>, con el botón <strong>Desfazer</strong> (deshacer) por unos segundos. En el celular, toca y mantén la tarjeta antes de arrastrar; mover el dedo sin mantenerla sigue desplazando la pantalla. Con el teclado, con el foco en la tarjeta, <kbd>Shift</kbd>+<kbd>→</kbd> y <kbd>Shift</kbd>+<kbd>←</kbd> llevan la actividad al estado siguiente o anterior. El cambio marca la fecha de actualización y se guarda como cualquier edición.</p>
+      <figure>
+        <img src="rc_images/AtividadesPOKanban.png" alt="Kanban con el ejemplo y el mouse sobre REQ0100114, en la columna Sizing: queda con borde fuerte; una flecha sale de REQ0100136, en la columna Analysis, con la etiqueta ↑ predecessora, y llega a REQ0100114; otra sale de REQ0100114 y llega a REQ0100101, en la columna WIP, con la etiqueta ↓ depende dela; las demás actividades quedan atenuadas" loading="lazy" width="1280" height="900">
+        <figcaption>El mouse sobre REQ0100114 destaca su predecesora y la actividad que depende de ella; las flechas muestran el sentido de la dependencia.</figcaption>
+      </figure>
+      <p>Las relacionadas de una actividad son sus predecesoras, subiendo la cadena, y todas las que dependen de ella, directa o indirectamente. Hay cuatro formas de verlas:</p>
+      <ul>
+        <li><strong>Pasa el mouse</strong> sobre una tarjeta, o lleva el foco hasta ella con <kbd>Tab</kbd>. Las relacionadas reciben borde y una etiqueta, <strong>↑ predecessora</strong> (predecesora) o <strong>↓ depende dela</strong> (depende de ella), y unas flechas unen las tarjetas en el sentido de la dependencia: cada flecha sale de la predecesora y apunta a la actividad que depende de ella. Las demás quedan atenuadas. La etiqueta y la punta de la flecha aseguran que la relación no dependa solo del color.</li>
+        <li><strong>Mantén <kbd>Ctrl</kbd></strong> (<kbd>⌘</kbd> en Mac) con el mouse o el foco en una tarjeta para ver <strong>solo las relacionadas</strong> mientras la tecla esté pulsada; al soltarla, el tablero vuelve. El tablero se reorganiza, así que la tarjeta puede cambiar de lugar.</li>
+        <li><strong>Mantén <kbd>Ctrl</kbd> y haz clic</strong> en una actividad, o pulsa <kbd>Ctrl</kbd>+<kbd>Enter</kbd>, para <strong>fijar</strong> esa vista. Una franja dice cuántas son y a partir de qué actividad, y la actividad elegida lleva la etiqueta <strong>● selecionada</strong> (seleccionada). En este modo los filtros no valen, para que ninguna relacionada quede oculta.</li>
+        <li>Usa el botón <strong>🔗</strong> de la tarjeta, que muestra cuántas relacionadas tiene la actividad. Hace lo mismo que el <kbd>Ctrl</kbd>+clic y es el camino en el celular, donde no hay mouse ni <kbd>Ctrl</kbd>.</li>
+      </ul>
+      <p>La opción <strong>Mostrar todas as setas de dependência</strong> (mostrar todas las flechas de dependencia), encima del tablero, dibuja también las demás dependencias, con línea punteada y más clara.</p>
+      <p>Para volver al tablero completo, haz clic en <strong>Mostrar todas</strong>, pulsa <kbd>Esc</kbd>, repite el <kbd>Ctrl</kbd>+clic en la misma actividad o cambia un filtro. Un clic simple, o <kbd>Enter</kbd>, abre la actividad en el panel de edición.</p>
+      <a class="back" href="#top">↑ Volver al inicio</a>
+    </section>
+
     <section id="erros-es" aria-labelledby="h-erros-es">
       <h2 id="h-erros-es">Errores comunes</h2>
       <ul class="myths">
@@ -1751,6 +2014,9 @@ Depois, use Salvar › Salvar JSON para guardar.</pre>
             <tr><th scope="row">Priorização: Priorizar · Priorizado · Esperando</th><td>Prioritization: Prioritize · Prioritized · Waiting</td><td>Priorità: Da priorizzare · Priorizzata · In attesa</td><td>Priorización: Priorizar · Priorizado · Esperando</td></tr>
             <tr><th scope="row">Sistema originador</th><td>Originating system</td><td>Sistema di origine</td><td>Sistema de origen</td></tr>
             <tr><th scope="row">Road map · Ordem do road map · à frente da seguinte por · por time</th><td>Road map · Road map order · ahead of the next one by · per team</td><td>Road map · Ordine del road map · davanti alla successiva per · per team</td><td>Road map · Orden del road map · delante de la siguiente por · por equipo</td></tr>
+            <tr><th scope="row">Kanban · predecessora · depende dela · selecionada · Mostrar todas · não concluído</th><td>Kanban · predecessor · depends on it · selected · Show all · not finished</td><td>Kanban · predecessore · dipende da essa · selezionata · Mostra tutte · non concluso</td><td>Kanban · predecesora · depende de ella · seleccionada · Mostrar todas · no terminada</td></tr>
+            <tr><th scope="row">Desfazer · Mostrar todas as setas de dependência</th><td>Undo · Show all dependency arrows</td><td>Annulla · Mostra tutte le frecce di dipendenza</td><td>Deshacer · Mostrar todas las flechas de dependencia</td></tr>
+            <tr><th scope="row">Advisor · Todas · Média e alta · Só alta · Sugestões por regra · Maior gravidade · Alta · Média · Baixa</th><td>Advisor · All · Medium and high · High only · Suggestions by rule · Highest severity · High · Medium · Low</td><td>Advisor · Tutte · Media e alta · Solo alta · Suggerimenti per regola · Gravità massima · Alta · Media · Bassa</td><td>Advisor · Todas · Media y alta · Solo alta · Sugerencias por regla · Mayor gravedad · Alta · Media · Baja</td></tr>
             <tr><th scope="row">Status: 2 selecionados</th><td>Status: 2 selected</td><td>Status: 2 selezionati</td><td>Status: 2 seleccionados</td></tr>
             <tr><th scope="row">Todas as dependências · Aguarda o predecessor · Com predecessor · Sem predecessor · É predecessora de outra</th><td>All dependencies · Waiting for the predecessor · Has a predecessor · No predecessor · Is the predecessor of another</td><td>Tutte le dipendenze · In attesa del predecessore · Con predecessore · Senza predecessore · È predecessore di un'altra</td><td>Todas las dependencias · Espera a la predecesora · Con predecesora · Sin predecesora · Es predecesora de otra</td></tr>
             <tr><th scope="row">predecessor concluído · aguarda o predecessor · é a predecessora dela</th><td>predecessor finished · waiting for the predecessor · it is its predecessor</td><td>predecessore concluso · in attesa del predecessore · è la sua predecessora</td><td>predecesora terminada · espera a la predecesora · es su predecesora</td></tr>
@@ -1778,6 +2044,8 @@ Depois, use Salvar › Salvar JSON para guardar.</pre>
         <details><summary>6. Borraste una fila en la hoja Atividades de la planilla y la importaste. ¿Qué pasa con la actividad?</summary><p>Se elimina de la app. El resumen antes de importar dice cuántas actividades se eliminarán, y puedes cancelar.</p></details>
         <details><summary>7. ¿Cómo sabe la app a qué actividad pertenece una fila de la hoja Times?</summary><p>Por el Request. Tiene que ser igual en las dos hojas y aparecer una sola vez en la hoja Atividades.</p></details>
         <details><summary>8. Una actividad con Priorizado Gestão aparece al final del road map. ¿Por qué?</summary><p>Porque su predecesora todavía no está en Finished. Es el primer criterio del orden: solo sube cuando la predecesora termina.</p></details>
+        <details><summary>9. El Advisor muestra ▲ Alta Avança sem o predecessor en una actividad en WIP. ¿Está mal?</summary><p>No necesariamente. La regla solo ve que la predecesora todavía no está en Finished. Confirma con los equipos: si acordaron trabajar en paralelo, sigue; si no, pasa la actividad a Stand-by o Blocked.</p></details>
+        <details><summary>10. En el Kanban, ¿cómo ver solo las actividades ligadas a una de ellas en el celular, sin mouse ni Ctrl?</summary><p>Toca el botón 🔗 de la tarjeta. Muestra solo las relacionadas, como el Ctrl+clic; para volver, toca Mostrar todas.</p></details>
       </div>
       <a class="back" href="#top">↑ Volver al inicio</a>
     </section>
