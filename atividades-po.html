@@ -47,6 +47,14 @@ main{padding:16px 20px 40px;max-width:1600px;margin:0 auto}
 .kpi.on{border-color:var(--accent);background:var(--accent-soft)}
 .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
 .filters input[type=search]{flex:1 1 240px;min-width:200px}
+.ms{position:relative}
+.ms-btn{display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 10px;cursor:pointer;max-width:260px}
+.ms-l{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ms-car{font-size:11px;color:var(--muted)}
+.ms.on .ms-btn{border-color:var(--accent);background:var(--accent-soft);font-weight:600}
+.ms-btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.ms-panel{position:absolute;top:calc(100% + 4px);left:0;z-index:8;min-width:220px;max-width:calc(100vw - 24px);max-height:min(60vh,360px);overflow:auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:0 6px 24px rgba(0,0,0,.14);padding:4px}
+.ms-foot{border-top:1px solid var(--border);margin-top:4px;padding:6px 6px 2px}
 input,select,textarea{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 10px}
 input:focus,select:focus,textarea:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
 .seg{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
@@ -106,6 +114,9 @@ input[aria-invalid=true]{border-color:var(--danger);outline-color:var(--danger)}
 .pwarn{font-size:11.5px;color:var(--danger,#c4352b);font-weight:600}
 label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
 label input,label select,label textarea{color:var(--text);font-size:14px}
+label.ms-o{flex-direction:row;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;cursor:pointer;white-space:nowrap;font-size:14px;color:var(--text)}
+.ms-o:hover,.ms-o:focus-within{background:var(--surface2)}
+.ms-o input{margin:0;padding:0;width:16px;height:16px;flex:none;accent-color:var(--accent)}
 textarea{resize:vertical;min-height:60px}
 h3{font-size:13px;margin:20px 0 8px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
 .team{border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px}
@@ -216,12 +227,13 @@ table.heat{width:auto;min-width:100%}
   <div class="kpis" id="kpis"></div>
   <div class="filters">
     <input type="search" id="q" placeholder="Buscar request, RITM, task, descrição, owner, notificação…">
-    <select id="fStatus"><option value="">Todos os status</option></select>
-    <select id="fPrior" aria-label="Priorização"><option value="">Todas as priorizações</option></select>
-    <select id="fSistema"><option value="">Todos os sistemas</option></select>
-    <select id="fTipo"><option value="">Todos os tipos</option></select>
-    <select id="fTime"><option value="">Todos os times</option></select>
-    <select id="fFlag" aria-label="Marcadores"><option value="">Todos os marcadores</option><option value="legal">Legal</option><option value="auditoria">Auditoria</option><option value="priorizadoGestao">Priorizado Gestão</option></select>
+    <div class="ms" id="fStatus" data-all="Todos os status" data-name="Status"></div>
+    <div class="ms" id="fPrior" data-all="Todas as priorizações" data-name="Priorização"></div>
+    <div class="ms" id="fSistema" data-all="Todos os sistemas" data-name="Sistemas"></div>
+    <div class="ms" id="fTipo" data-all="Todos os tipos" data-name="Tipos"></div>
+    <div class="ms" id="fTime" data-all="Todos os times" data-name="Times"></div>
+    <div class="ms" id="fFlag" data-all="Todos os marcadores" data-name="Marcadores"></div>
+    <div class="ms" id="fPred" data-all="Todas as dependências" data-name="Dependências"></div>
     <div class="seg" id="view"><button data-v="lista" class="on">Lista</button><button data-v="matriz">Matriz por time</button><button data-v="insights">Insights</button><button data-v="roadmap">Road map</button></div>
     <button class="btn sm" id="btnClear">Limpar filtros</button>
   </div>
@@ -826,32 +838,68 @@ function badge(s){
   return `<span class="badge" style="color:${c};background:${c}1f;border-color:${c}40">${esc(s||'—')}</span>`;
 }
 function fmtDate(v){ if(!v) return ''; const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(v); return m?`${m[3]}/${m[2]}/${m[1].slice(2)}`:v; }
-function fillSelect(sel, values){
-  const cur = sel.value, first = sel.options[0].outerHTML;
-  sel.innerHTML = first + values.map(v=>`<option>${esc(v)}</option>`).join('');
-  if (values.includes(cur)) sel.value = cur;
-}
 function fillList(id, values){ $(id).innerHTML = values.map(v=>`<option value="${esc(v)}">`).join(''); }
+/* filtros de múltipla escolha: botão que abre caixas de seleção. Dentro de um filtro vale qualquer opção marcada;
+   entre filtros, todas as condições. Sem nada marcado, o filtro não restringe. */
+const MS_IDS = ['fStatus','fPrior','fSistema','fTipo','fTime','fFlag','fPred'];
+const msSel = {}, msItems = {};
+function msInit(id){
+  const m = $('#'+id);
+  m.innerHTML = `<button type="button" class="ms-btn" aria-haspopup="true" aria-expanded="false" aria-controls="${id}-p"><span class="ms-l"></span><span class="ms-car" aria-hidden="true">▾</span></button>` +
+    `<div class="ms-panel" id="${id}-p" role="group" aria-label="${esc(m.dataset.name)}" hidden><div class="ms-opts"></div><div class="ms-foot"><button type="button" class="btn sm ms-clear">${esc(m.dataset.all)}</button></div></div>`;
+  msSel[id] = new Set(); msItems[id] = [];
+}
+const msVals = id => [...msSel[id]];
+function msLabel(id){
+  const m = $('#'+id), v = msVals(id), lab = x => (msItems[id].find(([k])=>k===x) || [x, x])[1];
+  m.querySelector('.ms-l').textContent = !v.length ? m.dataset.all : v.length === 1 ? lab(v[0]) : `${m.dataset.name}: ${v.length} selecionados`;
+  m.querySelector('.ms-btn').title = v.length ? v.map(lab).join(' · ') : '';
+  m.classList.toggle('on', v.length > 0);
+}
+function msFill(id, items){
+  items = items.map(i => Array.isArray(i) ? i : [i, i]);
+  msItems[id] = items;
+  const keys = new Set(items.map(([k])=>k));
+  msSel[id] = new Set([...msSel[id]].filter(v=>keys.has(v)));
+  $('#'+id).querySelector('.ms-opts').innerHTML = items.map(([k,l])=>`<label class="ms-o"><input type="checkbox" value="${esc(k)}"${msSel[id].has(k)?' checked':''}><span>${esc(l)}</span></label>`).join('');
+  msLabel(id);
+}
+function msSet(id, vals){
+  msSel[id] = new Set(vals);
+  $('#'+id).querySelectorAll('.ms-opts input').forEach(c=>{ c.checked = msSel[id].has(c.value); });
+  msLabel(id);
+}
+const msClearAll = () => MS_IDS.forEach(id=>msSet(id, []));
+function msClose(except){ MS_IDS.forEach(id=>{ const m = $('#'+id); if (m===except) return; m.querySelector('.ms-panel').hidden = true; m.querySelector('.ms-btn').setAttribute('aria-expanded','false'); }); }
+function msOpen(m, focusFirst){
+  msClose(m); const p = m.querySelector('.ms-panel'); p.hidden = false; p.style.left = p.style.right = '';
+  if (p.getBoundingClientRect().right > innerWidth - 8){ p.style.left = 'auto'; p.style.right = '0'; }
+  if (p.getBoundingClientRect().left < 8){ p.style.left = (8 - m.getBoundingClientRect().left) + 'px'; p.style.right = 'auto'; }
+  m.querySelector('.ms-btn').setAttribute('aria-expanded','true');
+  if (focusFirst) m.querySelector('.ms-panel input, .ms-clear').focus();
+}
+MS_IDS.forEach(msInit);
+msFill('fFlag', FLAGS.map(([k,l])=>[k,l]));
+msFill('fPred', [['aguarda','Aguarda o predecessor'],['com','Com predecessor'],['sem','Sem predecessor'],['eh','É predecessora de outra']]);
 function refreshOptions(){
   const A = db.atividades;
   const sts = uniq(A.map(a=>a.status)).sort((a,b)=>statusRank(a)-statusRank(b));
-  fillSelect($('#fStatus'), sts); fillSelect($('#fSistema'), uniq(A.map(a=>a.sistema)));
-  fillSelect($('#fTipo'), uniq(A.map(a=>a.tipo))); fillSelect($('#fTime'), db.times);
-  { const sel = $('#fPrior'), cur = sel.value;
-    fillSelect(sel, [...PRIORIZACAO, ...uniq(A.map(a=>a.priorizacao)).filter(v=>!PRIORIZACAO.includes(v))]);
-    const o = document.createElement('option'); o.value = PRIOR_NONE; o.textContent = 'Sem priorização'; sel.appendChild(o);
-    if (cur === PRIOR_NONE) sel.value = PRIOR_NONE; }
+  msFill('fStatus', sts); msFill('fSistema', uniq(A.map(a=>a.sistema)));
+  msFill('fTipo', uniq(A.map(a=>a.tipo))); msFill('fTime', db.times);
+  msFill('fPrior', [...PRIORIZACAO, ...uniq(A.map(a=>a.priorizacao)).filter(v=>!PRIORIZACAO.includes(v)), [PRIOR_NONE, 'Sem priorização']]);
   fillList('#lOwner', uniq(A.map(a=>a.owner)));
 }
 function filtered(){
-  const q = $('#q').value.trim().toLowerCase(), st=$('#fStatus').value, si=$('#fSistema').value, ti=$('#fTipo').value, tm=$('#fTime').value, pr=$('#fPrior').value, fl=$('#fFlag').value;
+  const q = $('#q').value.trim().toLowerCase(), F = id => msSel[id], st=F('fStatus'), si=F('fSistema'), ti=F('fTipo'), tm=F('fTime'), pr=F('fPrior'), fl=F('fFlag'), pd=F('fPred');
+  const PD = { aguarda: a=>rmBlocked(a), com: a=>!!predOf(a), sem: a=>!predOf(a), eh: a=>succsOf(a.id).length > 0 };
   let r = db.atividades.filter(a=>{
-    if (pr && (pr===PRIOR_NONE ? a.priorizacao : a.priorizacao!==pr)) return false;
-    if (st && a.status!==st) return false;
-    if (si && a.sistema!==si) return false;
-    if (ti && a.tipo!==ti) return false;
-    if (tm && !a.times[tm]) return false;
-    if (fl && a[fl] !== true) return false;
+    if (pr.size && !pr.has(a.priorizacao || PRIOR_NONE)) return false;
+    if (st.size && !st.has(a.status)) return false;
+    if (si.size && !si.has(a.sistema)) return false;
+    if (ti.size && !ti.has(a.tipo)) return false;
+    if (tm.size && ![...tm].some(t=>a.times[t])) return false;
+    if (fl.size && ![...fl].some(k=>a[k] === true)) return false;
+    if (pd.size && ![...pd].some(k=>PD[k](a))) return false;
     if (q){
       const hay = [a.request,a.ritm,a.descricao,a.status,a.priorizacao,a.sistema,a.owner,a.tipo,predOf(a)?.request,...FLAGS.filter(([k])=>a[k]===true).map(([,l])=>l),
         ...Object.entries(a.times).flatMap(([k,t])=>[k,t.task,t.notificacao])].join(' ').toLowerCase();
@@ -875,10 +923,10 @@ function filtered(){
 }
 function renderKpis(){
   const counts = {}; db.atividades.forEach(a=>counts[a.status||'—']=(counts[a.status||'—']||0)+1);
-  const cur = $('#fStatus').value;
+  const cur = msSel.fStatus;
   const keys = Object.keys(counts).sort((a,b)=>statusRank(a)-statusRank(b));
-  $('#kpis').innerHTML = `<button class="kpi ${cur?'':'on'}" data-s=""><b>${db.atividades.length}</b><span>Total</span></button>` +
-    keys.map(k=>`<button class="kpi ${cur===k?'on':''}" data-s="${esc(k)}"><b style="color:${STATUS_COLOR[k]||'inherit'}">${counts[k]}</b><span>${esc(k)}</span></button>`).join('');
+  $('#kpis').innerHTML = `<button class="kpi ${cur.size?'':'on'}" data-s=""><b>${db.atividades.length}</b><span>Total</span></button>` +
+    keys.map(k=>`<button class="kpi ${cur.has(k)?'on':''}" data-s="${esc(k)}"><b style="color:${STATUS_COLOR[k]||'inherit'}">${counts[k]}</b><span>${esc(k)}</span></button>`).join('');
 }
 function th(k,label,cls=''){ const arrow = sort.k===k ? (sort.dir>0?' ▲':' ▼') : ''; return `<th data-k="${k}" class="${cls}">${label}${arrow}</th>`; }
 function render(){
@@ -890,12 +938,12 @@ function render(){
       : `<div class="empty">Nenhuma atividade ainda. Abra um JSON ou uma planilha Excel, crie uma atividade ou <button type="button" class="btn sm" data-sample>carregue o exemplo</button> com 40 atividades fictícias.</div>`; return; }
   if (view==='insights'){ $('#content').innerHTML = insightsHTML(rows); fitSegLabels(); return; }
   if (view==='roadmap'){ $('#content').innerHTML = roadmapHTML(rows); return; }
-  const tm = $('#fTime').value;
+  const tms = db.times.filter(t=>msSel.fTime.has(t));
   if (view==='lista'){
-    $('#content').innerHTML = `<table><thead><tr>${th('request','Request')}${th('ritm','RITM')}${th('descricao','Descrição')}${th('status','Status')}${th('priorizacao','Priorização')}${th('flags','Marcadores')}${th('tipo','Tipo')}${th('sistema','Sistema')}${th('owner','Business Owner')}${th('retorno','Retorno','money')}${th('predecessor','Predecessor')}${th('times','Times envolvidos')}${tm?'<th>Última notificação ('+esc(tm)+')</th>':''}</tr></thead><tbody>` +
-      rows.map(a=>`<tr data-id="${a.id}"><td class="mono">${esc(a.request)}</td><td class="mono">${esc(a.ritm)}</td><td class="desc">${esc(a.descricao)}</td><td>${badge(a.status)}</td><td>${prior(a.priorizacao)}</td><td>${flagTags(a) ? `<div class="flagset">${flagTags(a)}</div>` : '<span class="muted">—</span>'}</td><td>${esc(a.tipo)}</td><td>${esc(a.sistema)}</td><td>${esc(a.owner)}</td><td class="money">${retCell(a)}</td><td>${predCell(a)}</td><td><div class="chips">${db.times.filter(t=>a.times[t]).map(t=>`<span class="chip" title="${esc(a.times[t].task)}">${esc(t)}</span>`).join('')}</div></td>${tm?`<td class="desc">${esc(a.times[tm]?.notificacao)}</td>`:''}</tr>`).join('') + `</tbody></table>`;
+    $('#content').innerHTML = `<table><thead><tr>${th('request','Request')}${th('ritm','RITM')}${th('descricao','Descrição')}${th('status','Status')}${th('priorizacao','Priorização')}${th('flags','Marcadores')}${th('tipo','Tipo')}${th('sistema','Sistema')}${th('owner','Business Owner')}${th('retorno','Retorno','money')}${th('predecessor','Predecessor')}${th('times','Times envolvidos')}${tms.map(t=>'<th>Última notificação ('+esc(t)+')</th>').join('')}</tr></thead><tbody>` +
+      rows.map(a=>`<tr data-id="${a.id}"><td class="mono">${esc(a.request)}</td><td class="mono">${esc(a.ritm)}</td><td class="desc">${esc(a.descricao)}</td><td>${badge(a.status)}</td><td>${prior(a.priorizacao)}</td><td>${flagTags(a) ? `<div class="flagset">${flagTags(a)}</div>` : '<span class="muted">—</span>'}</td><td>${esc(a.tipo)}</td><td>${esc(a.sistema)}</td><td>${esc(a.owner)}</td><td class="money">${retCell(a)}</td><td>${predCell(a)}</td><td><div class="chips">${db.times.filter(t=>a.times[t]).map(t=>`<span class="chip" title="${esc(a.times[t].task)}">${esc(t)}</span>`).join('')}</div></td>${tms.map(t=>`<td class="desc">${esc(a.times[t]?.notificacao)}</td>`).join('')}</tr>`).join('') + `</tbody></table>`;
   } else {
-    const teams = tm ? [tm] : db.times.filter(t=>rows.some(a=>a.times[t]));
+    const teams = tms.length ? tms : db.times.filter(t=>rows.some(a=>a.times[t]));
     $('#content').innerHTML = `<table class="matrix"><thead><tr><th class="first">Atividade</th>${teams.map(t=>`<th>${esc(t)}</th>`).join('')}</tr></thead><tbody>` +
       rows.map(a=>`<tr data-id="${a.id}"><td class="first"><div class="mono muted">${esc(a.request)}</div><div>${esc(a.descricao)}</div><div style="margin-top:4px">${badge(a.status)} <span class="muted">${esc(a.sistema)}</span>${typeof a.retorno==='number'?` <span class="muted money">· Retorno ${esc(fmtBRL(a.retorno))}</span>`:''}</div>${flagTags(a)?`<div class="flagset" style="margin-top:4px">${flagTags(a)}</div>`:''}${predOf(a)?`<div class="muted" style="margin-top:4px;font-size:12px">↳ Predecessor: <span class="mono">${esc(predOf(a).request || '(sem request)')}</span> (${esc(predOf(a).status || '—')})${predPending(a)?' <span class="pwarn">⚠ ainda não concluída</span>':''}</div>`:''}</td>` +
         teams.map(t=>{ const e=a.times[t]; if(!e) return '<td></td>';
@@ -1216,7 +1264,7 @@ $('#content').addEventListener('click', e=>{
   const fb = e.target.closest('[data-filter]');
   if (fb){
     const f = JSON.parse(fb.dataset.filter);
-    Object.entries(f).forEach(([k,v])=>{ $('#'+k).value = v; });
+    Object.entries(f).forEach(([k,v])=>{ if (k==='q') $('#q').value = v; else msSet(k, [v]); });
     view = 'lista'; document.querySelectorAll('#view button').forEach(x=>x.classList.toggle('on', x.dataset.v==='lista'));
     tipEl.classList.remove('show'); render(); window.scrollTo({top:0}); toast('Filtro aplicado: ' + Object.values(f).join(' · ')); return;
   }
@@ -1225,10 +1273,26 @@ $('#content').addEventListener('click', e=>{
   const tr = e.target.closest('tr[data-id]'); if (tr) openEditor(db.atividades.find(a=>a.id===tr.dataset.id));
 });
 $('#content').addEventListener('keydown', e=>{ if (e.key==='Enter' && e.target.matches('tr[data-id][tabindex]')){ e.preventDefault(); openEditor(db.atividades.find(a=>a.id===e.target.dataset.id)); } });
-$('#kpis').addEventListener('click', e=>{ const b=e.target.closest('.kpi'); if(!b) return; $('#fStatus').value=b.dataset.s; render(); });
-['#q','#fStatus','#fPrior','#fSistema','#fTipo','#fTime','#fFlag'].forEach(s=>$(s).addEventListener('input', render));
+$('#kpis').addEventListener('click', e=>{ const b=e.target.closest('.kpi'); if(!b) return; msSet('fStatus', b.dataset.s ? [b.dataset.s] : []); render(); });
+$('#q').addEventListener('input', render);
+MS_IDS.forEach(id=>{
+  const m = $('#'+id), btn = m.querySelector('.ms-btn'), p = m.querySelector('.ms-panel');
+  btn.addEventListener('click', ()=>{ if (p.hidden) msOpen(m); else msClose(); });
+  btn.addEventListener('keydown', e=>{ if (e.key==='ArrowDown'){ e.preventDefault(); msOpen(m, true); } else if (e.key==='Escape' && !p.hidden){ e.preventDefault(); e.stopPropagation(); msClose(); } });
+  p.addEventListener('change', e=>{ const c = e.target; if (!c.matches('input[type=checkbox]')) return; if (c.checked) msSel[id].add(c.value); else msSel[id].delete(c.value); msLabel(id); render(); });
+  p.querySelector('.ms-clear').addEventListener('click', ()=>{ msSet(id, []); render(); msClose(); btn.focus(); });
+  p.addEventListener('keydown', e=>{
+    const it = [...p.querySelectorAll('input, .ms-clear')], i = it.indexOf(document.activeElement);
+    if (e.key==='ArrowDown'){ e.preventDefault(); it[(i+1) % it.length].focus(); }
+    else if (e.key==='ArrowUp'){ e.preventDefault(); it[(i-1+it.length) % it.length].focus(); }
+    else if (e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); msClose(); btn.focus(); }
+    else if (e.key==='Enter' && e.target.matches('input')){ e.preventDefault(); e.target.click(); }
+  });
+  m.addEventListener('focusout', e=>{ if (!m.contains(e.relatedTarget) && e.relatedTarget) msClose(); });
+});
+document.addEventListener('click', e=>{ if (!e.target.closest('.ms')) msClose(); });
 $('#view').addEventListener('click', e=>{ const b=e.target.closest('button'); if(!b) return; view=b.dataset.v; document.querySelectorAll('#view button').forEach(x=>x.classList.toggle('on',x===b)); render(); });
-$('#btnClear').onclick = ()=>{ ['#q','#fStatus','#fPrior','#fSistema','#fTipo','#fTime','#fFlag'].forEach(s=>$(s).value=''); render(); };
+$('#btnClear').onclick = ()=>{ $('#q').value = ''; msClearAll(); msClose(); render(); };
 $('#btnNew').onclick = ()=>openEditor(null);
 /* exemplo: 40 atividades fictícias. As datas foram escritas em relação à "referencia" e são deslocadas para perto de hoje.
    O arquivo conectado é desligado antes, para o salvamento automático nunca gravar o exemplo por cima dele. */
@@ -1246,7 +1310,7 @@ async function loadSample(){
   delete raw.referencia;
   clearTimeout(autoTimer);
   db = normalize(raw); fileHandle = null; fileName = 'exemplo-atividades-po.json';
-  ['#q','#fStatus','#fPrior','#fSistema','#fTipo','#fTime','#fFlag'].forEach(s=>$(s).value='');
+  $('#q').value = ''; msClearAll();
   setDirty(false); refreshAll();
   $('#fileInfo').textContent = 'Exemplo com 40 atividades fictícias — nada foi gravado; use Salvar para guardar uma cópia ou Abrir para voltar ao seu arquivo';
   toast('Exemplo carregado: 40 atividades fictícias');
