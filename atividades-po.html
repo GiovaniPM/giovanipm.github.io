@@ -904,9 +904,12 @@ function render(){
   }
 }
 /* ---------- road map ----------
-   Atividades não concluídas, nesta ordem: 1) Priorizado Gestão; 2) Legal; 3) Auditoria; 4) status WIP;
-   5) maior retorno por time (Retorno ÷ times envolvidos); 6) maior Retorno; 7) mais antiga (criação; sem ela, o início mais antigo entre os times).
-   Atividade sem Retorno vem depois das que têm, nos critérios 5 e 6. */
+   Atividades não concluídas, nesta ordem: 1) sem predecessor pendente (predecessor fora de Finished vai para o fim);
+   2) Priorizado Gestão; 3) Legal; 4) Auditoria; 5) status WIP;
+   6) maior retorno por time (Retorno ÷ times envolvidos); 7) maior Retorno; 8) mais antiga (criação; sem ela, o início mais antigo entre os times).
+   Atividade sem Retorno vem depois das que têm, nos critérios 6 e 7. Depois da ordenação, nenhuma atividade fica à frente da sua predecessora. */
+// predecessor ainda não concluído, qualquer que seja o status da própria atividade
+const rmBlocked = a => { const p = predOf(a); return !!(p && p.status!=='Finished'); };
 const rmTeams = a => Object.keys(a.times||{}).filter(t=>a.times[t]).length;
 const rmPer = a => typeof a.retorno==='number' ? a.retorno / Math.max(1, rmTeams(a)) : null;
 function rmSince(a){
@@ -918,6 +921,7 @@ function rmSince(a){
 }
 const rmDesc = (x, y) => x==null && y==null ? 0 : x==null ? 1 : y==null ? -1 : y - x;
 const RM_RULES = [
+  ['predecessor concluído', (a,b)=>rmBlocked(a)-rmBlocked(b)],
   ['Priorizado Gestão', (a,b)=>(b.priorizadoGestao===true)-(a.priorizadoGestao===true)],
   ['Legal', (a,b)=>(b.legal===true)-(a.legal===true)],
   ['Auditoria', (a,b)=>(b.auditoria===true)-(a.auditoria===true)],
@@ -927,28 +931,41 @@ const RM_RULES = [
   ['mais antiga', (a,b)=>{ const x = rmSince(a).t, y = rmSince(b).t; return x===y ? 0 : x < y ? -1 : 1; }],
 ];
 function roadmap(rows){
-  return rows.filter(a=>a.status!=='Finished').sort((a,b)=>{
+  const sorted = rows.filter(a=>a.status!=='Finished').sort((a,b)=>{
     for (const [,f] of RM_RULES){ const d = f(a,b); if (d) return d; }
     return String(a.request||'').localeCompare(String(b.request||''),'pt-BR');
   });
+  // cadeias (A → B → C): cada atividade entra só depois da sua predecessora, se ela também estiver no road map;
+  // entre as que podem entrar, vale a ordem dos critérios. Num ciclo, entra a primeira que sobrou.
+  const inList = new Set(sorted.map(a=>a.id)), placed = new Set(), out = [], rest = sorted.slice();
+  while (rest.length){
+    let i = rest.findIndex(a=>!inList.has(a.predecessor) || placed.has(a.predecessor));
+    if (i < 0) i = 0;
+    const [a] = rest.splice(i, 1); out.push(a); placed.add(a.id);
+  }
+  return out;
 }
-// o critério que põe a atividade à frente da seguinte (o primeiro em que as duas diferem)
+// o motivo de a atividade estar à frente da seguinte: o primeiro critério em que as duas diferem ou, se os critérios
+// diziam o contrário, ser a predecessora dela
 function rmWhy(a, next){
   if (!next) return '';
-  for (const [l,f] of RM_RULES) if (f(a,next) < 0) return 'à frente da seguinte por: ' + l;
+  for (const [l,f] of RM_RULES){ const d = f(a,next); if (d < 0) return 'à frente da seguinte por: ' + l; if (d > 0) break; }
+  if (next.predecessor === a.id) return 'à frente da seguinte por: é a predecessora dela';
   return 'empate com a seguinte; ordem pelo request';
 }
+const rmWait = a => { if (!rmBlocked(a)) return ''; const p = predOf(a); return `aguarda o predecessor ${p.request || '(sem request)'} (${p.status || '—'})`; };
 function roadmapHTML(rows){
   const list = roadmap(rows), fin = rows.length - list.length;
   const how = `<div class="rm-how"><b>Ordem do road map</b>, critério a critério; o seguinte só desempata o anterior:<ol>
+    <li>Predecessor concluído: atividade cujo predecessor ainda não está em Finished vem depois de todas as outras e nunca à frente do próprio predecessor</li>
     <li>Priorizado Gestão</li><li>Legal</li><li>Auditoria</li><li>Status WIP</li>
     <li>Maior retorno por time necessário (Retorno ÷ times envolvidos; sem time, conta como 1)</li>
     <li>Maior Retorno</li><li>Mais antiga: data de criação ou, sem ela, o início mais antigo entre os times</li></ol>
-    Atividades sem Retorno vêm depois das que têm, nos critérios 5 e 6. ${fin ? `${fin} ${plural(fin,'atividade concluída (Finished) fica','atividades concluídas (Finished) ficam')} fora do road map.` : ''} Os filtros acima valem aqui também.</div>`;
+    Atividades sem Retorno vêm depois das que têm, nos critérios 6 e 7. ${fin ? `${fin} ${plural(fin,'atividade concluída (Finished) fica','atividades concluídas (Finished) ficam')} fora do road map.` : ''} Os filtros acima valem aqui também.</div>`;
   if (!list.length) return how + `<div class="empty">Nenhuma atividade pendente.</div>`;
   return how + `<table><thead><tr><th>#</th><th>Request</th><th>Descrição</th><th>Status</th><th>Sistema originador</th><th>Times</th><th>Marcadores</th><th class="money">Retorno</th></tr></thead><tbody>` +
-    list.map((a,i)=>{ const nt = rmTeams(a), per = rmPer(a), why = rmWhy(a, list[i+1]);
-      return `<tr data-id="${esc(a.id)}" tabindex="0" aria-label="${esc(`Posição ${i+1}: ${a.request||''} ${a.descricao||''}. ${why}`)}"><td class="rm-pos" title="${esc(why)}">${i+1}</td><td class="mono">${esc(a.request)}</td><td class="desc">${esc(a.descricao)}<span class="rm-why">${esc(why)}${why?' · ':''}${esc(rmSince(a).l)}</span></td><td>${badge(a.status)}</td><td>${esc(a.sistema) || '<span class="muted">—</span>'}</td>` +
+    list.map((a,i)=>{ const nt = rmTeams(a), per = rmPer(a), why = rmWhy(a, list[i+1]), wait = rmWait(a);
+      return `<tr data-id="${esc(a.id)}" tabindex="0" aria-label="${esc(`Posição ${i+1}: ${a.request||''} ${a.descricao||''}. ${wait ? wait + '. ' : ''}${why}`)}"><td class="rm-pos" title="${esc(why)}">${i+1}</td><td class="mono">${esc(a.request)}</td><td class="desc">${esc(a.descricao)}${wait ? `<span class="rm-why"><span class="pwarn">⚠ ${esc(wait)}</span></span>` : ''}<span class="rm-why">${esc(why)}${why?' · ':''}${esc(rmSince(a).l)}</span></td><td>${badge(a.status)}</td><td>${esc(a.sistema) || '<span class="muted">—</span>'}</td>` +
         `<td>${nt ? `<div class="chips">${db.times.filter(t=>a.times[t]).map(t=>`<span class="chip">${esc(t)}</span>`).join('')}</div>` : '<span class="muted">nenhum</span>'}</td>` +
         `<td>${flagTags(a) ? `<div class="flagset">${flagTags(a)}</div>` : '<span class="muted">—</span>'}</td>` +
         `<td class="money">${retCell(a)}${per!=null && nt>1 ? `<span class="rm-per">${esc(fmtBRL(per))} por time</span>` : ''}</td></tr>`; }).join('') + `</tbody></table>`;
